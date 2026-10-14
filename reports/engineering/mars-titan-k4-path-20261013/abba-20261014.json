@@ -1,0 +1,210 @@
+{
+ "kind": "chronological_replay_abba",
+ "issue": 548,
+ "commits": {
+  "before": "37f4b7a7",
+  "after": "bb19f7be"
+ },
+ "order": "A B B A por modelo, cada ronda en su propio proceso y trabajo memslot gpu",
+ "view": "US+CN/fold-012 de las vistas v3.1 de A v2 (campaign-a-v2-views-v31-20261013)",
+ "events": {
+  "start_event": 3224,
+  "events_total": 6449,
+  "max_event_inputs": 3199,
+  "file_bytes": 1013478904,
+  "built_from": "develop 06e69db6 con benchmarks/chronological_events.py ... 100 6"
+ },
+ "options": {
+  "titans": "--strict --warmup 2 --segments 8, receta de la campaña (bloques y acumulación de 1.024 filas, fp32_strict)",
+  "readers": "--option precision=fp32_strict --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8",
+  "m3_scalers": "BENCH_M3_EVENTS con los mismos eventos, iguales antes y después"
+ },
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "python": "3.12.14",
+  "cublas_workspace": ":4096:8",
+  "omp_threads": 2,
+  "power_profile": "power-saver",
+  "episodic_native_sha256": "f9e9d13aad9631ff4b4d0e7d21536106e7d71b8149ea9218306961873983d718",
+  "episodic_native_commit": "df7bb523",
+  "concurrent_load": "carga ajena de un renderizador de Chrome (en torno al 48 % de un núcleo); la carga media de cada ronda está en loadavg"
+ },
+ "arms": {
+  "mars_titan_m1_k4": {
+   "rounds": [
+    {
+     "round": "r1",
+     "side": "A",
+     "commit": "37f4b7a7",
+     "rows_per_s": 5930.471455156711,
+     "seconds": 14.843339296989143,
+     "rows": 88028,
+     "labels": 87202,
+     "segments": 8,
+     "segment_rate_median": 6225.088341627877,
+     "segment_rate_min": 5382.896421802602,
+     "segment_rate_max": 6360.666463850503,
+     "optimizer_calls": 11,
+     "peak_allocated_mib": 403,
+     "peak_reserved_mib": 500,
+     "process_mib": 714,
+     "peak_rss_mib": 3545,
+     "setup_seconds": 73.6,
+     "pass_seconds": 22.0,
+     "loadavg": [
+      2.69873046875,
+      2.8955078125,
+      2.6865234375
+     ],
+     "data_fraction": 0.00033910220447917055,
+     "truncated": false,
+     "tf32_matmul": false,
+     "tf32_cudnn": false,
+     "matmul_precision": "highest"
+    },
+    {
+     "round": "r2",
+     "side": "B",
+     "commit": "bb19f7be",
+     "rows_per_s": 6282.1996156344985,
+     "seconds": 14.012289545993553,
+     "rows": 88028,
+     "labels": 87202,
+     "segments": 8,
+     "segment_rate_median": 6572.7160103856795,
+     "segment_rate_min": 5698.246283060358,
+     "segment_rate_max": 6689.700137918262,
+     "optimizer_calls": 11,
+     "peak_allocated_mib": 403,
+     "peak_reserved_mib": 500,
+     "process_mib": 714,
+     "peak_rss_mib": 3540,
+     "setup_seconds": 75.5,
+     "pass_seconds": 20.9,
+     "loadavg": [
+      3.04638671875,
+      3.0830078125,
+      2.79248046875
+     ],
+     "data_fraction": 0.0003497794598386105,
+     "truncated": false,
+     "tf32_matmul": false,
+     "tf32_cudnn": false,
+     "matmul_precision": "highest"
+    },
+    {
+     "round": "r3",
+     "side": "B",
+     "commit": "bb19f7be",
+     "rows_per_s": 6200.871356967091,
+     "seconds": 14.19606938000652,
+     "rows": 88028,
+     "labels": 87202,
+     "segments": 8,
+     "segment_rate_median": 6161.281976377572,
+     "segment_rate_min": 5809.127542047109,
+     "segment_rate_max": 6773.5565879514315,
+     "optimizer_calls": 11,
+     "peak_allocated_mib": 403,
+     "peak_reserved_mib": 500,
+     "process_mib": 714,
+     "peak_rss_mib": 3514,
+     "setup_seconds": 73.9,
+     "pass_seconds": 20.8,
+     "loadavg": [
+      3.4189453125,
+      3.21826171875,
+      2.8779296875
+     ],
+     "data_fraction": 0.00035287717837214315,
+     "truncated": false,
+     "tf32_matmul": false,
+     "tf32_cudnn": false,
+     "matmul_precision": "highest"
+    },
+    {
+     "round": "r4",
+     "side": "A",
+     "commit": "37f4b7a7",
+     "rows_per_s": 5785.048443832734,
+     "seconds": 15.216467217978789,
+     "rows": 88028,
+     "labels": 87202,
+     "segments": 8,
+     "segment_rate_median": 5761.235903545018,
+     "segment_rate_min": 5330.148143481444,
+     "segment_rate_max": 6427.194789545487,
+     "optimizer_calls": 11,
+     "peak_allocated_mib": 403,
+     "peak_reserved_mib": 500,
+     "process_mib": 714,
+     "peak_rss_mib": 3550,
+     "setup_seconds": 74.2,
+     "pass_seconds": 22.1,
+     "loadavg": [
+      3.0625,
+      3.3564453125,
+      2.98779296875
+     ],
+     "data_fraction": 0.000372817017349129,
+     "truncated": false,
+     "tf32_matmul": false,
+     "tf32_cudnn": false,
+     "matmul_precision": "highest"
+    }
+   ],
+   "mean_rows_per_s": {
+    "A": 5857.759949494723,
+    "B": 6241.535486300794
+   },
+   "ratio_after_over_before": 1.0655157500674255,
+   "ratio_worst_pair": 1.0455950094111421
+  }
+ },
+ "bits": [
+  {
+   "first": "mars_titan_m1_k4-r1-A-37f4b7a7",
+   "second": "mars_titan_m1_k4-r2-B-bb19f7be",
+   "steps": 11,
+   "gradient_tensors": 77,
+   "gradients_equal": true,
+   "names_equal": true,
+   "pending": 3347,
+   "pending_equal": true
+  },
+  {
+   "first": "mars_titan_m1_k4-r4-A-37f4b7a7",
+   "second": "mars_titan_m1_k4-r3-B-bb19f7be",
+   "steps": 11,
+   "gradient_tensors": 77,
+   "gradients_equal": true,
+   "names_equal": true,
+   "pending": 3347,
+   "pending_equal": true
+  },
+  {
+   "first": "mars_titan_m1_k4-r1-A-37f4b7a7",
+   "second": "mars_titan_m1_k4-r4-A-37f4b7a7",
+   "steps": 11,
+   "gradient_tensors": 77,
+   "gradients_equal": true,
+   "names_equal": true,
+   "pending": 3347,
+   "pending_equal": true
+  },
+  {
+   "first": "mars_titan_m1_k4-r2-B-bb19f7be",
+   "second": "mars_titan_m1_k4-r3-B-bb19f7be",
+   "steps": 11,
+   "gradient_tensors": 77,
+   "gradients_equal": true,
+   "names_equal": true,
+   "pending": 3347,
+   "pending_equal": true
+  }
+ ],
+ "optimizer_steps": 0,
+ "training_executed": false
+}
