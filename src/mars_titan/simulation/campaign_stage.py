@@ -43,13 +43,15 @@ import re
 import subprocess
 from collections import Counter
 from contextlib import nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 from mars_titan.training import campaign_chain, campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
@@ -62,6 +64,7 @@ from .policy_plan import (
     FIT,
     MARKET_INDEX,
     REFERENCE,
+    SELECTION_GROWTH,
     _number,
     _require,
     count_stage,
@@ -76,6 +79,10 @@ from .reconstructed_tape import NoAdmittedAssets, census
 
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
+BOUND_KIND = "future_information_bound_episode"
+# Las cotas solo son comparables sin costes: la exacta no paga la rotación y la política con
+# información futura rota en cada sesión.
+BOUND_COST_BPS = 0
 STATUSES = ("completed", "ruined", "failed")
 _HEX = re.compile(r"[a-f0-9]{64}")
 
@@ -298,6 +305,19 @@ def episode(cost, result=None, *, failure=None):
     )
 
 
+def best_state(best, metric):
+    """Ruinas y crecimiento de validación del mejor estado de un ajuste, o None sin ellos.
+
+    El crecimiento es el del criterio de selección declarado: liquidado o valorado al cierre.
+    """
+    if not isinstance(best, dict) or type(best.get("ruin_count")) is not int:
+        return None
+    growth = best.get(SELECTION_GROWTH[metric])
+    if best["ruin_count"] < 0 or not isinstance(growth, float) or not math.isfinite(growth):
+        return None
+    return best["ruin_count"], growth
+
+
 def market_rules(tape, market):
     """Reglas de acciones A de una cinta china con el estado de su auditoría. EE. UU. no tiene."""
     from .market_rules import tape_instruments
@@ -332,6 +352,43 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocatio
         )
         records.append(episode(cost, evaluate(env, policy, seed=seed)))
     return records
+
+
+def future_information_bound(tapes, stage, market, *, backend, partition="evaluation"):
+    """Cotas con información futura de una cinta del trabajo, sin costes.
+
+    Guarda la cota exacta, que suma el mejor activo o la caja de cada tenencia, y el episodio
+    de la política de exposición completa sobre la cinta puntuada con el rendimiento de cada
+    tenencia (`integrity.oracle_bound`), con las mismas reglas y liquidez que las políticas
+    evaluadas. El informe de la etapa compara con las cotas de la evaluación los episodios sin
+    costes y con las de la validación el mejor estado que eligió cada ajuste. Superar la cota
+    exacta o alcanzar la fracción sospechosa del crecimiento de esa política obliga a revisar
+    el entorno a mano. Queda fuera de toda comparación.
+
+    La cota depende solo de la cinta, así que una cinta que es evaluación de una ventana y
+    validación de otra tiene la misma.
+    """
+    from mars_titan.integrity import oracle_bound
+
+    tape = getattr(tapes, partition)
+    oracle = replace(tapes, evaluation=oracle_bound.oracle_tape(tape))
+    free = dict(stage, policies=dict(stage["policies"], evaluation_costs_bps=[BOUND_COST_BPS]))
+    (record,) = evaluate_policy(oracle, oracle_bound.full_exposure, free, market, backend=backend)
+    return dict(
+        schema_version=1,
+        kind=BOUND_KIND,
+        rule=oracle_bound.RULE,
+        action=oracle_bound.FULL_EXPOSURE,
+        suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+        exact_rule=oracle_bound.EXACT_RULE,
+        exact_log_growth=oracle_bound.exact_log_growth(tape),
+        exact_tolerance=oracle_bound.EXACT_TOLERANCE,
+        tape_sha256=tape.sha256,
+        oracle_tape_sha256=oracle.evaluation.sha256,
+        episode={key: value for key, value in record.items() if key != "equity"},
+        excluded_from_comparisons=True,
+        final_test_opened=False,
+    )
 
 
 def reference_executor(backend):
@@ -520,6 +577,7 @@ def check_report(stage, job, report, tapes, anchor=None):
             isinstance(selection, dict)
             and selection.get("metric") == policies["selection"]["metric"]
             and selection.get("partition") == "validation"
+            and best_state(selection.get("best"), policies["selection"]["metric"]) is not None
             and spent
             and report["updates"] >= 0
             and isinstance(policy, dict)
@@ -527,7 +585,7 @@ def check_report(stage, job, report, tapes, anchor=None):
             and policy["id"] == job["id"]
             and _HEX.fullmatch(str(policy["sha256"])),
             f"{job['id']}: el ajuste no aplica el presupuesto, el criterio de cartera o "
-            "no identifica la política elegida",
+            "no identifica la política elegida y su mejor estado de validación",
         )
     elif job["kind"] == CARRY:
         _require(
@@ -596,6 +654,8 @@ def _code():
         "simulation/environment.py",
         "simulation/evaluation.py",
         "simulation/portfolio.py",
+        # Cota con información futura que enlaza cada recibo.
+        "integrity/oracle_bound.py",
         "environments/walk_forward_receipt.py",
         "training/masked_campaign.py",
         "training/campaign_plan.py",
@@ -635,6 +695,22 @@ def _base_receipts(base, campaign, stage, pairs=None):
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
         _require(receipt is not None, f"Falta confirmar {job['id']} en la campaña base")
         base.receipts[job["id"]] = receipt
+
+
+def base_platform(receipts, platform, unrecorded_platform=None):
+    """Exigir que la etapa corra en la plataforma de los recibos de la base que lee.
+
+    El informe de la etapa no abre la campaña base, así que la coincidencia se comprueba al
+    ejecutar. Los recibos de la base anteriores al registro solo se admiten si
+    `unrecorded_platform` nombra el perfil al que se atribuyen.
+    """
+    return hardware_profiles.same_platform(
+        {
+            **{f"campaña base {key}": item.get("platform") for key, item in receipts.items()},
+            "esta etapa": platform,
+        },
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
 
 
 def campaign_source(base, campaign_output, seed):
@@ -1098,6 +1174,9 @@ class _Stage:
         self.executors, self.stop = executors, stop
         self.traces = traces
         self.receipts = {}
+        self.platform = None
+        # Contabilidad de la cota con información futura, la misma que la de las referencias.
+        self.bound_backend = "native"
 
     def folder(self, job):
         return self.output / "jobs" / job["id"]
@@ -1129,8 +1208,32 @@ class _Stage:
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
         return dict(receipt, sha256=digest)
 
+    def bound(self, job, tapes, partition="evaluation"):
+        """Cota de una cinta del trabajo, calculada una sola vez por cinta."""
+        tape = getattr(tapes, partition)
+        if tape is None:
+            return None
+        path = self.output / "bounds" / f"{tape.sha256}.json"
+        if path.is_file():
+            document, digest = read_manifest(path, 8 * 1024**2)
+            _require(
+                document.get("kind") == BOUND_KIND and document.get("tape_sha256") == tape.sha256,
+                f"La cota guardada en {path.name} no es la de su cinta de {partition}",
+            )
+        else:
+            document = future_information_bound(
+                tapes, self.stage, job["market"], backend=self.bound_backend, partition=partition
+            )
+            atomic_json(path, document)
+            digest = sha256(path)
+        return dict(path=str(path.relative_to(self.output)), sha256=digest)
+
     def confirm(self, job, identity, tapes, report, anchor):
         check_report(self.stage, job, report, tapes, anchor)
+        bound = self.bound(job, tapes)
+        # Solo un ajuste elige un estado con la validación. Los traslados heredan el de su ancla.
+        chosen = job["kind"] == FIT and report["selection"] is not None
+        validation = self.bound(job, tapes, "validation") if chosen else None
         receipt = dict(
             schema_version=1,
             kind=RECEIPT_KIND,
@@ -1144,9 +1247,14 @@ class _Stage:
             selection=report["selection"],
             policy=report["policy"],
             evaluation=report["evaluation"],
+            future_information_bound=bound,
+            validation_future_information_bound=validation,
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base.
+            receipt["platform"] = self.platform
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
@@ -1298,6 +1406,9 @@ def run_stage(
     sensitivity=False,
     disjunction=None,
     traces=None,
+    platform=None,
+    unrecorded_platform=None,
+    bound_backend="native",
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
@@ -1313,6 +1424,16 @@ def run_stage(
     `traces` declara las trazas de aprendizaje de #448 de los ajustes nativos (cadencia en
     transiciones u oleadas y presupuesto por trabajo) y exige que los binarios las admitan.
     No entra en la identidad de la etapa ni de sus trabajos.
+
+    El informe de la etapa no abre la campaña base, así que la plataforma se contrasta aquí,
+    antes de crear la salida: debe ser la de los recibos de la base que se leen. Los anteriores
+    a su registro solo se admiten si `unrecorded_platform` nombra el perfil al que se
+    atribuyen. Cada recibo nuevo guarda la plataforma. `platform` sustituye la detectada, solo
+    en las pruebas.
+
+    Cada recibo con cinta de evaluación enlaza la cota con información futura de esa cinta,
+    guardada en `bounds/`. `bound_backend` es su contabilidad, la nativa de las referencias
+    salvo en las pruebas que sustituyen sus ejecutores.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1394,6 +1515,8 @@ def run_stage(
     )
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
     _base_receipts(base, campaign, stage, pairs)
+    platform = platform_identity() if platform is None else platform
+    base_platform(base.receipts, platform, unrecorded_platform)
     # La fuente de las predicciones se resuelve antes de crear la salida.
     source = predictor_source(stage["policies"], base, campaign_output, chain_output)
     selections = None
@@ -1438,6 +1561,7 @@ def run_stage(
             table,
         )
         state = _Stage(stage, tapes, output, identity, executors, None, traces)
+        state.platform, state.bound_backend = platform, bound_backend
         signals = StopRequest() if stop is None else nullcontext(stop)
         _summary(output, identity, jobs, state, "running", **checked)
         try:
@@ -1481,6 +1605,10 @@ def main(argv=None):
     execute.add_argument(
         "--execution", type=Path, help="Declaración de ejecución con las trazas de #448"
     )
+    execute.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos de la base sin plataforma",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1497,6 +1625,7 @@ def main(argv=None):
             sensitivity=args.sensitivity,
             disjunction=args.disjunction,
             traces=execution_traces(args.execution),
+            unrecorded_platform=args.unrecorded_platform,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

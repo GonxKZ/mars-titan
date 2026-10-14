@@ -175,12 +175,14 @@ class Rolling:
         ablation_executors=None,
         disk=None,
         edition=None,
+        unrecorded_platform=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
         en las pruebas, `usage` en lugar de `shutil.disk_usage`. `edition` es la edición de
         precios sin ajustar que necesitan la cartera larga y corta y los estratos de liquidez si
-        la comparación los declara.
+        la comparación los declara. `unrecorded_platform` nombra el perfil al que se atribuyen
+        los recibos anteriores al registro de la plataforma al publicar los agregados.
         """
         from . import masked_campaign as engine
 
@@ -192,6 +194,7 @@ class Rolling:
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
+        self.unrecorded_platform = unrecorded_platform
         # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
         # cada activo de la edición una vez por proceso y no una por ventana.
         self._liquidity = None
@@ -434,7 +437,12 @@ class Rolling:
         for scope, window in row["scopes"].items():
             restricted = comparison.restrict_windows(config, scope, [window])
             path = engine.write_sources(
-                self.campaign_path, self.views, self.output, scope, window=window
+                self.campaign_path,
+                self.views,
+                self.output,
+                scope,
+                window=window,
+                unrecorded_platform=self.unrecorded_platform,
             )
             sources = comparison.load_sources(path, restricted, scope)
             # Los agregados se puntúan con los modelos y familias del ámbito, como la
@@ -449,6 +457,7 @@ class Rolling:
                     self.ablation["output"],
                     scope,
                     window=window,
+                    unrecorded_platform=self.unrecorded_platform,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
             if self._liquidity is None:
@@ -673,7 +682,15 @@ def disjunction_report(campaign, views, output, posttraining, window, phase):
 
 
 def default_runners(
-    campaign_path, views, output, *, storage=None, stages=None, stop=None, execution=None
+    campaign_path,
+    views,
+    output,
+    *,
+    storage=None,
+    stages=None,
+    stop=None,
+    unrecorded_platform=None,
+    execution=None,
 ):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
@@ -683,6 +700,8 @@ def default_runners(
     disjunción recién calculado y las políticas leen la cadena de la salida de los adaptadores.
     `execution` es la declaración de ejecución de la campaña base. Sus trazas de #448 llegan
     también a los adaptadores y a las políticas.
+    Las políticas contrastan su plataforma con los recibos de la base, y `unrecorded_platform`
+    nombra el perfil de los anteriores a ese registro.
     """
     from mars_titan.posttraining import campaign_stage as adapter_stage
     from mars_titan.simulation import campaign_stage as rl_stage
@@ -752,6 +771,7 @@ def default_runners(
             chain_output=chain_output,
             disjunction=checked(window, "rl"),
             traces=traces,
+            unrecorded_platform=unrecorded_platform,
         )
     return runners
 
@@ -812,6 +832,10 @@ def main(argv=None):
     parser.add_argument(
         "--execution", type=Path, help="Declaración de ejecución (recursos y trazas de #448)"
     )
+    parser.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -833,6 +857,7 @@ def main(argv=None):
         storage=args.storage,
         stages=stages,
         execution=args.execution,
+        unrecorded_platform=args.unrecorded_platform,
     )
     rolling = Rolling(
         retention,
@@ -844,6 +869,7 @@ def main(argv=None):
         adapters=stages.get("adapters"),
         rl=stages.get("rl"),
         edition=args.edition,
+        unrecorded_platform=args.unrecorded_platform,
         disk=dict(
             storage=args.storage,
             extras=json.loads(args.extras.read_text()),

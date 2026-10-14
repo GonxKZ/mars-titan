@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_robustness",
+  "issue": 37,
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-13",
+  "final_test_opened": false,
+  "executions": 0,
+  "use": "description_only_not_for_model_selection_or_primary_conclusion",
+  "partition": "evaluation",
+  "state": "selected_state_of_each_window_and_seed_without_refitting",
+  "registered": {
+    "costs": {
+      "sources": [
+        "configs/simulation/historical-masked-rl-policies.json",
+        "configs/evaluation/historical-masked-2000-joint-comparison.json"
+      ],
+      "fields": ["evaluation_costs_bps", "long_short.cost_bps_per_side"],
+      "values_bps": [0, 5, 10, 20]
+    },
+    "modality_absence": {
+      "sources": ["configs/evaluation/historical-masked-2000-joint-comparison.json"],
+      "fields": ["modality_ablation", "modality_strata"]
+    },
+    "periods": {
+      "sources": ["configs/evaluation/historical-masked-2000-joint-comparison.json"],
+      "fields": ["scopes"],
+      "unit": "walk_forward_window"
+    },
+    "abstention": {
+      "sources": [],
+      "fields": [],
+      "pending": "Cobertura de la abstención y curva riesgo-cobertura de #442, en revisión en #560"
+    }
+  },
+  "input_perturbations": {
+    "seed": 20261013,
+    "random": "splitmix64_box_muller",
+    "variants": {
+      "burst_absence_21d_10pct": {
+        "kind": "burst_absence",
+        "modalities": ["news", "fundamentals"],
+        "length_days": 21,
+        "share": 0.1
+      },
+      "burst_absence_63d_25pct": {
+        "kind": "burst_absence",
+        "modalities": ["news", "fundamentals"],
+        "length_days": 63,
+        "share": 0.25
+      },
+      "noise_10pct": {
+        "kind": "multiplicative_noise",
+        "modalities": ["news", "charts", "fundamentals", "macro"],
+        "scale": 0.1
+      },
+      "noise_50pct": {
+        "kind": "multiplicative_noise",
+        "modalities": ["news", "charts", "fundamentals", "macro"],
+        "scale": 0.5
+      }
+    },
+    "not_perturbed": {
+      "prices": "Los precios llegan por la lectura de la serie, no por la tabla de muestras, y su contrato de ventanas no admite valores alterados.",
+      "intensity_zero": "No es una variante: las pruebas comprueban que una intensidad nula lee exactamente la entrada original."
+    }
+  },
+  "reader_guards": {
+    "duplicated_session": {
+      "expected": "rejected_by_every_read",
+      "test": "tests/training/test_input_perturbations.py::test_a_duplicated_session_is_rejected_by_every_read"
+    },
+    "availability_after_decision": {
+      "expected": "rejected_by_every_read_that_uses_the_row",
+      "test": "tests/training/test_input_perturbations.py::test_availability_after_the_decision_is_rejected_by_every_read_that_uses_the_row"
+    },
+    "availability_falsified_earlier": {
+      "expected": "not_detectable_by_the_reader",
+      "reason": "Una fecha de disponibilidad anterior a la real es indistinguible en la lectura. La controlan la procedencia de cada fuente y el escáner de fugas por sesión del banco de integridad."
+    }
+  },
+  "measures": ["mae", "direction_accuracy", "interval_coverage", "interval_width", "rows"],
+  "reading": "Cada perturbación se compara con la lectura limpia del mismo modelo, semilla, ventana y estado de partida, sobre las mismas filas. Se informa la degradación por variante sin elegir modelos con ella. Una ausencia mayor con menos filas evaluadas no se presenta como mejora, y un modelo que empeora poco por predecir casi constante no se presenta como robusto sin su error limpio.",
+  "not_measured_yet": {
+    "state_drift_and_recovery": "La deriva del estado de memoria y el tiempo de recuperación tras una ráfaga necesitan la etapa que repite cada trabajo con la variante, pendiente en #37 hasta que se integren #575 y #579.",
+    "execution": "Ninguna perturbación se ha evaluado. La evaluación queda retenida por el bloqueo de aprendizaje."
+  }
+}
