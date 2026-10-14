@@ -17,6 +17,11 @@ Con g sesiones en M mercados, N residuos, n_i residuos en la sesión i y N_m en 
 E[MSW] = σ_w² y E[MSB] = σ_w² + n₀ σ_b², así que σ_b² = max(0, (MSB − MSW) / n₀),
 σ² = σ_b² + MSW y ϱ = min(tope, σ_b² / σ²). Con sesiones del mismo tamaño n₀ es ese tamaño.
 El tope mantiene ϱ < 1, que la regla exige para invertir Σ.
+
+La corrección escribe juntas las etiquetas de un mismo evento, es decir, las que maduran en el
+mismo instante, y la regla trata cada una de esas cohortes con la ϱ de una sesión.
+`cohort_composition` cuenta en qué medida una cohorte de escritura no coincide con una sesión:
+cohortes que mezclan sesiones o mercados y sesiones repartidas entre varias cohortes.
 """
 
 import numpy as np
@@ -89,4 +94,53 @@ def estimate_cohort_noise(residuals, markets, sessions, *, correlation_cap):
         rows=rows,
         sessions=groups,
         markets=market_names.tolist(),
+    )
+
+
+def cohort_composition(maturity, markets, sessions):
+    """Comparar las cohortes de escritura con las sesiones de las etiquetas.
+
+    `maturity` es el instante en que madura cada etiqueta, que fija su cohorte, y `markets` y
+    `sessions` su mercado y su instante de decisión, que fijan su sesión como en
+    `estimate_cohort_noise`. Devuelve los recuentos de cohortes, sesiones y filas.
+    """
+    maturity = np.asarray(maturity)
+    markets = np.asarray(markets)
+    sessions = np.asarray(sessions)
+    rows = len(maturity)
+    _require(
+        rows >= 1
+        and maturity.shape == markets.shape == sessions.shape == (rows,)
+        and maturity.dtype.kind in "iu"
+        and sessions.dtype.kind in "iu"
+        and markets.dtype.kind == "U",
+        "Las etiquetas necesitan su madurez, su mercado y su sesión alineados",
+    )
+    _, market = np.unique(markets, return_inverse=True)
+    pairs = np.stack([market.astype(np.int64), sessions.astype(np.int64)], axis=1)
+    session_keys, session = np.unique(pairs, axis=0, return_inverse=True)
+    cohort_keys, cohort = np.unique(maturity, return_inverse=True)
+    session, cohort = session.reshape(-1), cohort.reshape(-1)
+
+    def distinct(left, right, size):
+        """Número de valores distintos de `right` para cada valor de `left`."""
+        found = np.unique(np.stack([left, right], axis=1), axis=0)
+        return np.bincount(found[:, 0], minlength=size)
+
+    sessions_per_cohort = distinct(cohort, session, len(cohort_keys))
+    markets_per_cohort = distinct(cohort, market, len(cohort_keys))
+    cohorts_per_session = distinct(session, cohort, len(session_keys))
+    rows_per_cohort = np.bincount(cohort, minlength=len(cohort_keys))
+    mixed_sessions, mixed_markets = sessions_per_cohort > 1, markets_per_cohort > 1
+    return dict(
+        rows=rows,
+        cohorts=len(cohort_keys),
+        sessions=len(session_keys),
+        cohorts_mixing_sessions=int(mixed_sessions.sum()),
+        rows_in_cohorts_mixing_sessions=int(rows_per_cohort[mixed_sessions].sum()),
+        cohorts_mixing_markets=int(mixed_markets.sum()),
+        rows_in_cohorts_mixing_markets=int(rows_per_cohort[mixed_markets].sum()),
+        max_sessions_per_cohort=int(sessions_per_cohort.max()),
+        sessions_split_across_cohorts=int((cohorts_per_session > 1).sum()),
+        max_cohorts_per_session=int(cohorts_per_session.max()),
     )
