@@ -111,6 +111,48 @@ uv run python -m mars_titan.integrity.leakage_scan INPUTS.parquet --lag 1 --outp
 
 Tres mutaciones dirigidas hacen fallar las pruebas: ordenar el objetivo también en las filas ausentes, quitar el mínimo de activos y quitar el umbral por sesión.
 
+### Matriz real de cada ventana
+
+`integrity/window_leakage.py` aplica el escáner a la validación de cada vista de un ámbito de la campaña. Recorre la partición con `CorpusDataset` y construye la matriz con `tabular_corpus._matrix`, la misma que reciben Ridge y XGBoost, con las ventanas de precios ya filtradas por su canal de presencia. Las familias neuronales leen las mismas entradas con el mismo lector, así que una fuga en la construcción de entradas de la ventana aparecería también aquí. No se lee calibración, evaluación ni el test reservado.
+
+- **Columnas.** Cada columna tiene nombre propio (`prices.<sesión>.<canal>`, `news.<i>`, `charts.<i>`, `fundamentals.<i>`, `macro.<i>` y `presence.<bloque>`), para localizar una fuga en su modalidad y su posición.
+- **Bloques ausentes.** Con la política de máscaras, un bloque ausente vale 0 en la matriz. El escáner lo trata como ausente, porque ese relleno empataría a muchos activos de la sesión y diluiría una fuga presente en las demás filas. Los bits de presencia se escanean como columnas, así que una fuga escondida en la ausencia de un bloque también se vería.
+- **Memoria.** La matriz de una ventana conjunta ocupa varios GB en float32, así que se escribe por columnas en un archivo temporal junto al informe y se escanea en bloques de 32 columnas con `leakage_scan.scan_blocks`. Las correlaciones coinciden exactamente con las de la tabla completa en memoria. El archivo se borra al terminar, también si el escaneo falla.
+- **Placebo.** El objetivo es el residual apertura-cierre de la sesión siguiente, así que el placebo usa un retardo de dos decisiones, que ya ha madurado al decidir.
+- **Informe y reanudación.** Cada ventana publica su informe con la huella de su vista, y el resumen del ámbito enumera las ventanas, sus columnas marcadas y las cinco con mayor |IC| medio. Una ventana con informe de la misma vista no se repite, y una vista distinta se vuelve a escanear. El ámbito solo pasa si están todas las ventanas, ninguna tiene columnas marcadas y todas han comprobado al menos una columna.
+
+```bash
+uv run python -m mars_titan.integrity.window_leakage \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json --scope US+CN \
+  --views <vistas A v2>/US+CN --lag 2 --output <escáner>
+```
+
+**Pruebas.** Con un corpus técnico de 64 activos y objetivos aleatorios:
+- la matriz coincide con la tabular en las filas presentes, tiene los bloques ausentes vacíos y conserva claves, objetivos y orden del lector;
+- una columna de gráficos con el objetivo y un poco de ruido queda marcada, y otra con solo ruido no;
+- el resumen del ámbito reanuda por huella de vista, rechaza otro retardo y ventanas ajenas, y no aprueba ventanas marcadas, incompletas o sin columnas comprobadas;
+- escanear en bloques de cualquier anchura da los mismos resultados que la tabla completa.
+
+Con sesiones de 64 activos, una columna sin relación tiene un |IC| por sesión con desviación típica de 0,126, y el umbral de 0,2 sobre la media no queda tan lejos. Con una de las semillas probadas, un bit de presencia llegó a 0,208 por azar. En las ventanas reales casi todas las sesiones tienen cientos o miles de activos y esa dispersión baja a unas centésimas, pero una modalidad que empieza a tener cobertura puede llegar con pocas filas por sesión, como las noticias de fold-005.
+
+**Revisión de una marca.** `review_window` revisa una modalidad marcada de una ventana sin cambiar los umbrales ni el resultado del escaneo. Reúne las filas que cuentan para la regla (sesiones con al menos 20 filas con la modalidad presente) y describe cada sesión por activos y vectores distintos, porque muchos activos con el mismo vector reducen la muestra efectiva. Después repite la puntuación del escáner, que debe marcar exactamente las mismas columnas que el informe, y la compara con un nulo por permutación (`leakage_scan.permutation_null`): el objetivo se permuta dentro de cada sesión, lo que conserva la composición de las sesiones y los empates de cada columna, y se cuenta cuántas columnas marcaría la regla y cuál sería la mayor media de |IC|. Las 1.000 permutaciones usan la semilla 20261014, fijada al escribir la revisión. El nulo solo dice si el azar basta para explicar la marca. Una asociación real con el objetivo queda fuera de él tanto si es una fuga como si es una exposición legítima a un factor, así que la decisión sobre la marca necesita además la fecha de las entradas y el placebo.
+
+```bash
+uv run python -m mars_titan.integrity.window_leakage \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json --scope US+CN \
+  --views <vistas A v2>/US+CN --lag 2 --output <escáner> --review fold-005 --modality news
+```
+
+### Resultado en las vistas v3.1 de US+CN
+
+El escaneo recorrió las 19 ventanas de A v2 sobre las vistas v3.1 conjuntas el 13 y 14 de octubre de 2026: 7.985.418 filas de validación entre abril de 2004 y septiembre de 2022, 1.783 columnas por ventana y entre 831 y 1.286 comprobadas, según las modalidades con cobertura. Las ventanas sumaron 6,2 horas repartidas en tres procesos paralelos (2,2 horas de reloj), con 3,8 GiB de memoria como máximo por proceso. El resumen ([`window-leakage-20261014`](../../reports/engineering/window-leakage-20261014/summary.json)) está completo y no pasa: 17 ventanas salen sin marcas y dos tienen columnas marcadas. En las dos, la modalidad marcada aparece por primera vez en la validación.
+
+**fold-005, noticias de US (validación de abril a septiembre de 2009).** Las noticias de US empiezan el 8 de abril de 2009 y en esta validación solo tres sesiones tienen al menos 20 activos con noticias: el 15 y el 16 de abril y el 25 de junio, con 25 activos cada una y 206 de las 384 columnas de noticias marcadas. Los 25 activos son ETF y comparten 3 o 4 vectores distintos por sesión, porque cada noticia es un artículo general asociado a muchos símbolos: «Leveraged ETFs Beat Margin» (fecha de origen 8 de abril, 17 ETF apalancados e inversos), «Metals ETFs: Precious and Base» (14 de abril, 8 ETF de metales) y «Top Steal Stock to Buy Now» (12 de abril, WOR) en abril, y en junio «Fundamental ETFs and Alternative Weighting», «ProShares Expands ETF Lineup», «Are Leveraged and Short ETFs Right for You?» y «U.S. Treasury ETFs and Inflation», del 18 al 24 de junio. Todas tienen fecha de origen entre uno y siete días antes de la decisión y llegan por la regla declarada de disponibilidad al cierre de la sesión siguiente, y las dos sesiones de abril comparten los mismos artículos. La [revisión](../../reports/engineering/window-leakage-20261014/fold-005.review-news.json) reproduce las marcas del informe sin ninguna diferencia. El 23,1 % de las permutaciones marca 206 columnas o más (mediana 68,5 y percentil 95 de 347), así que el número de columnas marcadas cabe en el azar con 75 filas y tres o cuatro grupos por sesión. En cambio, ninguna permutación alcanza la media de |IC| de 0,459 de la columna más fuerte (percentil 95 del nulo, 0,367). Como cada artículo da el mismo vector a todos sus ETF, esa asociación solo puede venir de qué ETF agrupa cada artículo, sobre todo metales frente a renta variable apalancada, y esa pertenencia se conoce antes de decidir. La lectura que encaja con la evidencia es una exposición a la clase de activo en dos cortes transversales, no información posterior a la decisión.
+
+**fold-018, fundamentales de China (validación de abril a septiembre de 2022).** Se marcan las tres columnas de valor de los conceptos chinos (`cn-reported` activos, pasivos y patrimonio en CNY, posiciones 23 a 25 del catálogo conjunto), con una media de |IC| de 0,207 a 0,225 en 123 sesiones de China de entre 24 y 49 activos (49 en 87 de ellas), cada activo con su propio vector. Es la primera ventana con fundamentales chinos en la validación. El placebo con el objetivo de dos decisiones antes da prácticamente lo mismo (0,208 a 0,223) y la media con signo es casi cero (0,009 a 0,026): el signo cambia de una sesión a otra. Es lo que se espera de una medida de tamaño de la empresa en el mercado de acciones A, donde el factor tamaño cambia de dirección de un día a otro, y lo contrario de una copia del objetivo, que tendría el mismo signo y un placebo mucho menor. La [revisión](../../reports/engineering/window-leakage-20261014/fold-018.review-fundamentals.json) reproduce las marcas del informe sin ninguna diferencia. Ninguna de las 1.000 permutaciones marca ninguna columna, y la mayor media de |IC| del nulo tiene un percentil 95 de 0,137 frente al 0,225 observado, así que el azar no explica la asociación. El nulo no separa una fuga de una exposición legítima. Lo que las separa es el placebo: una columna que copiara el objetivo de t perdería casi toda su relación con el objetivo de dos decisiones antes, y estas la conservan entera. La lectura que encaja con la evidencia es una exposición al tamaño de la empresa, que se conoce antes de decidir.
+
+Las dos marcas quedan revisadas con una explicación que no requiere información posterior a la decisión, pero el resultado del escaneo no cambia: la regla declarada marca estas columnas y el ámbito no pasa. Los umbrales no se han tocado. Cómo trata la puerta de publicación una marca revisada se decidirá al integrarla, y esa regla se escribirá conociendo estos resultados.
+
 ## Cota con información futura en el entorno financiero
 
 `integrity/oracle_bound.py` pone en escala los resultados de las políticas y detecta trampas por el resultado. El entorno decide al cierre de t y ejecuta en la apertura de t+1. La posición se mantiene hasta la apertura de t+2, donde la decisión siguiente puede cambiarla, y la última se valora al cierre final. El rendimiento de esa tenencia es `open[t+2] / open[t+1] - 1` (en la última decisión, `close[T-1] / open[T-1] - 1`), con los desdoblamientos, dividendos y bajas que la cartera aplica dentro de ella. Una baja con precio de salida cambia las acciones por su cobro, una baja sin recuperación lo pierde todo y una baja sin precio de salida deja la tenencia sin rendimiento, porque el episodio que la mantenga termina sin patrimonio. Una apertura ausente no se negocia y la posición pasa a la sesión siguiente: esa tenencia se reparte entre las dos decisiones valorándola al cierre de su misma sesión, y el producto de los dos tramos es el rendimiento real.
@@ -184,7 +226,7 @@ uv run python -m mars_titan.integrity.preregistration check \
 
 Siguen en #442, en este orden:
 1. Sondas sin ajuste:
-   - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
+   - aplicar el escáner de fugas a la matriz tabular real de cada ventana de los ámbitos US y CN, cuando se preparen sus vistas v3.1 (el ámbito conjunto está en [Matriz real de cada ventana](#matriz-real-de-cada-ventana));
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
