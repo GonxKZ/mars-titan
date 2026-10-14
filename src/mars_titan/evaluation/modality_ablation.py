@@ -221,16 +221,36 @@ def report(config, per_window, markets, names, *, sources_sha256):
     con máximo estudentizado, y la confianza corrige por Bonferroni el número de variantes
     por vistas.
     """
-    declared = config["modality_ablation"]
+    return variant_report(
+        config["modality_ablation"],
+        VARIANTS,
+        config,
+        per_window,
+        markets,
+        names,
+        sources_sha256=sources_sha256,
+    )
+
+
+def variant_report(
+    declared, variant_modalities, config, per_window, markets, names, *, sources_sha256
+):
+    """Informe de una familia de variantes de lectura frente a la lectura original.
+
+    Lo comparten la ablación y la robustez (`evaluation.robustness`). `declared` es su
+    declaración, con los umbrales `min_rows` y `min_sessions`, y `variant_modalities` asigna
+    a cada variante las modalidades que cambia. En las puntuaciones, `masked` es siempre la
+    lectura con la variante.
+    """
     comparison = config["comparison"]
     weighting = config["metrics"]["market_weighting"]
     thresholds = {key: declared[key] for key in ("min_rows", "min_sessions")}
-    cells = len(VARIANTS) * len(names)
+    cells = len(variant_modalities) * len(names)
     confidence = modality_strata.adjusted_confidence(comparison["confidence"], cells)
     windows = list(per_window)
     keys = list(per_window[windows[0]])
     variants = {}
-    for variant, modalities in VARIANTS.items():
+    for variant, modalities in variant_modalities.items():
         by_key = {}
         for key in keys:
             parts = [per_window[window][key][variant] for window in windows]

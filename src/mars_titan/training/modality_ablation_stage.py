@@ -20,6 +20,11 @@ un gancho global rechaza cualquier paso de un optimizador de PyTorch antes de mo
 pesos. Cada trabajo confirma un recibo con su identidad, el estado de partida, las huellas
 y las filas, que deben ser las de la campaña base en la misma ventana. `sources` publica el
 manifiesto que lee `evaluation.walk_forward_comparison` con `--ablation-sources`.
+
+La etapa de robustez (#37) es la misma con su propio tipo: repite cada trabajo con las
+perturbaciones de `data.input_perturbations` en lugar de las ablaciones. Su declaración vive
+fuera de la comparación (`evaluation.robustness`), sus recibos y su salida tienen otra
+identidad y su manifiesto lo lee la comparación con `--robustness-sources`.
 """
 
 import argparse
@@ -35,9 +40,11 @@ from pathlib import Path
 
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_perturbations import PERTURBATIONS, perturbation_identity
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
+from mars_titan.evaluation import robustness
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.hardware import hardware_profiles
 from mars_titan.hardware.platform_identity import platform_identity
@@ -60,6 +67,34 @@ from .learning_hold import LearningHoldError, hold_path, learning_blocked
 STAGE_KIND = "historical_masked_modality_ablation_stage"
 RUN_KIND = "historical_masked_modality_ablation_stage_run"
 RECEIPT_KIND = "masked_modality_ablation_job"
+ROBUSTNESS_KIND = "historical_masked_robustness_stage"
+# Cada familia de variantes de lectura con sus tipos, su identidad y sus fuentes.
+FAMILIES = {
+    STAGE_KIND: dict(
+        run=RUN_KIND,
+        receipt=RECEIPT_KIND,
+        variants=tuple(VARIANTS),
+        field="modality_ablation",
+        identity=ablation_identity,
+        sources=analysis.SOURCES_KIND,
+        action="la etapa de ablación de modalidades",
+        code=(),
+    ),
+    ROBUSTNESS_KIND: dict(
+        run="historical_masked_robustness_stage_run",
+        receipt="masked_robustness_job",
+        variants=tuple(PERTURBATIONS),
+        field="read_variant",
+        identity=perturbation_identity,
+        sources=robustness.SOURCES_KIND,
+        action="la etapa de robustez",
+        code=(
+            "data/input_perturbations.py",
+            "evaluation/robustness.py",
+            "evaluation/robustness_protocol.py",
+        ),
+    ),
+}
 PARTITION = "evaluation"
 MAX_ATTEMPTS = 32
 _FIELDS = {
@@ -117,7 +152,7 @@ def load_stage(path):
         isinstance(config, dict)
         and set(config) == _FIELDS
         and config["schema_version"] == 1
-        and config["kind"] == STAGE_KIND
+        and config["kind"] in FAMILIES
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
         and isinstance(config["name"], str)
@@ -126,10 +161,15 @@ def load_stage(path):
     )
     campaign = load_campaign((path.parent / config["campaign"]).resolve())
     declared = campaign["comparison_config"]
-    _require(
-        comparison.ABLATION_FIELD in declared,
-        "La comparación de la campaña no declara la ablación de modalidades",
-    )
+    if config["kind"] == ROBUSTNESS_KIND:
+        # La declaración de la robustez vive fuera de la comparación.
+        declaration = robustness.declaration()
+    else:
+        _require(
+            comparison.ABLATION_FIELD in declared,
+            "La comparación de la campaña no declara la ablación de modalidades",
+        )
+        declaration = declared[comparison.ABLATION_FIELD]
     scopes = config["scopes"]
     _require(
         isinstance(scopes, list)
@@ -158,7 +198,8 @@ def load_stage(path):
         sha256=digest,
         path=str(path.resolve()),
         campaign=campaign,
-        declaration=declared[comparison.ABLATION_FIELD],
+        declaration=declaration,
+        family=FAMILIES[config["kind"]],
         specs=specs,
         scope_specs=scope_specs,
     )
@@ -172,7 +213,7 @@ def plan_stage(stage):
         for row in schedule(folds, campaign["period"]):
             for spec in stage["scope_specs"][scope]:
                 for seed in spec["seeds"]:
-                    for variant in VARIANTS:
+                    for variant in stage["family"]["variants"]:
                         jobs.append(
                             dict(
                                 id=f"{scope}/{row['window']}/{spec['arm']}/{variant}-s{seed}",
@@ -364,9 +405,9 @@ EXECUTORS = {
 }
 
 
-def _code():
+def _code(family):
     root = Path(__file__).parents[1]
-    names = (
+    names = family["code"] + (
         "training/modality_ablation_stage.py",
         "data/modality_ablation.py",
         "evaluation/modality_ablation.py",
@@ -440,7 +481,7 @@ class _Stage:
                     "variant",
                 )
             },
-            modality_ablation=ablation_identity(job["variant"]),
+            **{self.stage["family"]["field"]: self.stage["family"]["identity"](job["variant"])},
             view_sha256=self.view(job["scope"], job["window"])["sha256"],
             source=dict(job=key, receipt_sha256=receipt["sha256"]),
             window_source=dict(job=used, receipt_sha256=window["sha256"]),
@@ -498,9 +539,10 @@ class _Stage:
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
         if self.campaign.get("numerics"):
             campaign_numerics.require_job(self.campaign["numerics"], job["id"], report)
+        # El traslado publica la variante de lectura en `modality_ablation` en las dos familias.
         _require(
-            report.get("modality_ablation") == identity["modality_ablation"],
-            f"{job['id']} no declara la ablación pedida",
+            report.get("modality_ablation") == identity[self.stage["family"]["field"]],
+            f"{job['id']} no declara la variante de lectura pedida",
         )
         _require(
             report.get("anchor", {}).get("checkpoint_sha256") == identity["parent"]["sha256"],
@@ -532,7 +574,7 @@ class _Stage:
         )
         receipt = dict(
             schema_version=1,
-            kind=RECEIPT_KIND,
+            kind=self.stage["family"]["receipt"],
             status="completed",
             identity=identity,
             attempt=str(run.folder.relative_to(self.output)),
@@ -564,7 +606,7 @@ class _Stage:
             identity = self.job_identity(job)
             receipt = self.confirmed(job, identity)
             if receipt is None:
-                require_evaluation_allowed(f"la ablación {job['id']}")
+                require_evaluation_allowed(f"{self.stage['family']['action']}: {job['id']}")
                 run = self.prepare(job, identity)
                 report = self.executors[job["model"]](run)
                 receipt = self.confirm(job, identity, run, report)
@@ -576,7 +618,7 @@ def _identity(stage, views):
     campaign = stage["campaign"]
     return dict(
         schema_version=1,
-        kind=RUN_KIND,
+        kind=stage["family"]["run"],
         stage_sha256=stage["sha256"],
         campaign_sha256=campaign["sha256"],
         comparison_sha256=campaign["comparison_config"]["sha256"],
@@ -587,7 +629,7 @@ def _identity(stage, views):
             scope: {window: value["sha256"] for window, value in record["windows"].items()}
             for scope, record in views.items()
         },
-        code=_code(),
+        code=_code(stage["family"]),
         final_test_opened=False,
     )
 
@@ -596,7 +638,7 @@ def _summary(output, identity, jobs, state, status, **extra):
     done = [job for job in jobs if job["id"] in state.receipts]
     summary = dict(
         schema_version=1,
-        kind=RUN_KIND,
+        kind=identity["kind"],
         status=status,
         identity_sha256=_digest(identity),
         planned=dict(training_jobs=0, prediction_jobs=len(jobs)),
@@ -659,8 +701,8 @@ def run_stage(
     """
     from .checkpoints import StopRequest
 
-    require_evaluation_allowed("la etapa de ablación de modalidades")
     stage = load_stage(path)
+    require_evaluation_allowed(stage["family"]["action"])
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     pairs = None
@@ -753,8 +795,10 @@ def write_sources(
     )
     if window is not None:
         validation = comparison.restrict_windows(validation, scope, [window])
+    family = stage["family"]
     _require(
-        validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
+        family["sources"] == robustness.SOURCES_KIND
+        or validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
     )
     produced = {spec["arm"]: spec for spec in stage["scope_specs"][scope]}
@@ -800,7 +844,7 @@ def write_sources(
     )
     manifest = dict(
         schema_version=2,
-        kind=analysis.SOURCES_KIND,
+        kind=family["sources"],
         scope=scope,
         input_policy=stage["campaign"]["input_policy"],
         comparison_sha256=validation["sha256"],
@@ -808,17 +852,19 @@ def write_sources(
         variants=variants,
         platform=platform,
     )
+    if family["sources"] == robustness.SOURCES_KIND:
+        manifest["declaration_sha256"] = stage["declaration"]["sha256"]
     destination = folder / f"{scope}.json"
     candidate = folder / f".{scope}.candidate.json"
     safe_destination(destination)
     atomic_json(candidate, manifest)
     resolved = validation["resolved_scopes"][scope]
+    expected = dict(scope=scope, views=manifest["windows"], windows=resolved["windows"])
     try:
-        comparison._ablation_sources(
-            candidate,
-            validation,
-            dict(scope=scope, views=manifest["windows"], windows=resolved["windows"]),
-        )
+        if family["sources"] == robustness.SOURCES_KIND:
+            comparison._robustness_sources(candidate, validation, expected, stage["declaration"])
+        else:
+            comparison._ablation_sources(candidate, validation, expected)
     except BaseException:
         candidate.unlink()
         raise

@@ -83,6 +83,7 @@ from mars_titan.evaluation import (
     predictive_ability,
     regime_calendar,
     retention_interference,
+    robustness,
 )
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import (
@@ -154,6 +155,9 @@ _CONFIG_FIELDS = {
 }
 STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
+# Sección del informe, no de la configuración: su declaración vive fuera para no cambiar
+# la huella de la comparación.
+ROBUSTNESS_SECTION = "robustness"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
 PREDICTIVE_FIELD = "predictive_ability"
@@ -923,23 +927,54 @@ def _ablation_sources(path, config, sources):
     evaluación que predijo el estado elegido con la modalidad ausente. Las vistas y la
     configuración deben ser las de la comparación.
     """
+    return _variant_sources(
+        path, config, sources, modality_ablation.SOURCES_KIND, modality_ablation.VARIANTS
+    )
+
+
+def _robustness_sources(path, config, sources, declared):
+    """Manifiesto de la etapa de robustez, con la huella de su declaración (#37)."""
+    found = _variant_sources(
+        path,
+        config,
+        sources,
+        robustness.SOURCES_KIND,
+        robustness.VARIANTS,
+        extra={"declaration_sha256": declared["sha256"]},
+        what="la robustez",
+    )
+    _require(
+        found["document"]["schema_version"] == 2,
+        "Las fuentes de la robustez necesitan la plataforma de sus recibos",
+    )
+    return found
+
+
+def _variant_sources(path, config, sources, kind, variant_names, *, extra=None, what="la ablación"):
+    """Validar un manifiesto de predicciones con variantes de lectura.
+
+    `extra` son campos adicionales del manifiesto con su valor exigido.
+    """
+    extra = extra or {}
     path = Path(path)
     document, digest = read_manifest(path, 16 * 1024**2)
     # La versión 2 añade la plataforma común de sus recibos y de los de la base.
     version = document.get("schema_version") if isinstance(document, dict) else None
     fields = {"schema_version", "kind", "scope", "input_policy", "comparison_sha256", "windows"}
+    fields |= {"variants", *extra}
     _require(
         isinstance(document, dict)
         and version in (1, 2)
-        and set(document) == fields | {"variants"} | ({"platform"} if version == 2 else set())
-        and document["kind"] == modality_ablation.SOURCES_KIND
-        and document["scope"] == sources["scope"],
-        "Las fuentes de la ablación no cumplen su contrato",
+        and set(document) == fields | ({"platform"} if version == 2 else set())
+        and document["kind"] == kind
+        and document["scope"] == sources["scope"]
+        and all(document[name] == value for name, value in extra.items()),
+        f"Las fuentes de {what} no cumplen su contrato",
     )
     platform = document.get("platform")
     _require(
         version == 1 or _platform_record(platform),
-        "La plataforma de las fuentes de la ablación no es válida",
+        f"La plataforma de las fuentes de {what} no es válida",
     )
     # Las predicciones enmascaradas se comparan con las principales: una sola plataforma.
     digests = {
@@ -949,18 +984,18 @@ def _ablation_sources(path, config, sources):
     }
     _require(
         len(digests) <= 1,
-        "La ablación se ejecutó en otra plataforma que las fuentes principales",
+        f"Las predicciones de {what} se calcularon en otra plataforma que las principales",
     )
     _require(
         document["input_policy"] == config["input_policy"]
         and document["comparison_sha256"] == config["sha256"]
         and document["windows"] == sources["views"],
-        "Las fuentes de la ablación declaran otra política, comparación o vista",
+        f"Las fuentes de {what} declaran otra política, comparación o vista",
     )
     variants = document["variants"]
     _require(
-        isinstance(variants, dict) and set(variants) == set(modality_ablation.VARIANTS),
-        "Las fuentes de la ablación no contienen exactamente las variantes declaradas",
+        isinstance(variants, dict) and set(variants) == set(variant_names),
+        f"Las fuentes de {what} no contienen exactamente las variantes declaradas",
     )
     declared = {name: arm for name, arm in config["arms"].items() if arm["output"] != ZERO_CONTROL}
     files = {}
@@ -992,35 +1027,41 @@ def _ablation_sources(path, config, sources):
                         f"{where} en {window_id}",
                         predictions=True,
                     )
-    return dict(sha256=digest, files=files)
+    return dict(sha256=digest, files=files, document=document, variants=tuple(variant_names))
 
 
-def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated, record, context):
-    """Puntuaciones de las variantes de un modelo y semilla frente a su predicción original.
+def _variant_scores(found, sources, window_id, seed, record, context, score):
+    """Puntuaciones de las variantes de lectura de un modelo y semilla.
 
-    Las predicciones enmascaradas pasan las mismas comprobaciones de tramo y filas que las
-    originales y se corrigen con el mismo calibrador, sin volver a ajustarlo.
+    Las predicciones de cada variante pasan las mismas comprobaciones de tramo y filas que
+    las originales y se corrigen con el mismo calibrador, sin volver a ajustarlo. `score`
+    recibe la variante, su panel y sus cuantiles calibrados.
     """
-    name, output, columns, bits, reference, minimum = context
+    name, output, columns, reference = context
     result = {}
-    for variant in modality_ablation.VARIANTS:
+    for variant in found["variants"]:
         label = f"{name} semilla {seed} en {window_id} con {variant}"
-        table = _read_predictions(ablation["files"][variant, name, seed, window_id], columns)
+        table = _read_predictions(found["files"][variant, name, seed, window_id], columns)
         table = _restricted(table, sources, window_id, name)[0]
         window = sources["windows"][window_id]
         masked = _panel(table, window, "evaluation", sources, label, output=output)
         _same_rows(reference, masked, label)
         adjusted = None if record is None else _calibrated(masked, record)[0]
-        result[variant] = modality_ablation.score_pair(
-            original,
-            masked,
-            modality_ablation.affected_rows(bits, variant),
-            rank_ic_min_assets=minimum,
-            calibrated=tuple(
-                None if panel is None else panel.quantiles for panel in (calibrated, adjusted)
-            ),
-        )
+        result[variant] = score(variant, masked, None if adjusted is None else adjusted.quantiles)
     return result
+
+
+def _burst_context(table, reference, found):
+    """Ráfagas y días desde la última de cada fila evaluada, en el orden del panel.
+
+    Solo se leen el activo y el instante. El objetivo no interviene.
+    """
+    order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
+    return robustness.burst_context(
+        table["asset_id"].cast(pa.string()).to_numpy(zero_copy_only=False)[order],
+        table["prediction_at"].cast(pa.int64()).to_numpy()[order],
+        found["declaration"]["recovery_bins_days"][-1],
+    )
 
 
 def _liquidity_codes(liquidity, table, reference):
@@ -1039,20 +1080,23 @@ def _liquidity_codes(liquidity, table, reference):
     return codes, liquidity_strata.record(codes, reasons[order])
 
 
-def _score_window(sources, config, window_id, ablation=None, liquidity=None):
+def _score_window(
+    sources, config, window_id, ablation=None, liquidity=None, robustness_sources=None
+):
     """Puntuar todos los modelos de una ventana. Cada calibrador se fija antes de evaluar.
 
     Devuelve las puntuaciones por modelo y semilla, el registro de presencia de la ventana
     si se declaran estratos de modalidades (o None) y el de liquidez si se pasa
     `liquidity` (``liquidity_strata.EditionLiquidity``, o None). Con `ablation`, cada modelo
-    con predicciones añade las puntuaciones de sus variantes enmascaradas.
+    con predicciones añade las puntuaciones de sus variantes enmascaradas, y con
+    `robustness_sources`, las de sus perturbaciones con la deriva tras cada ráfaga.
     """
     window = sources["windows"][window_id]
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
     row_codes, presence, bits = None, None, None
-    liquid_codes, liquid_record = None, None
+    liquid_codes, liquid_record, bursts = None, None, None
     extremes = None if liquidity is None else config[LIQUIDITY_FIELD]["extremes"][-1]
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
@@ -1092,6 +1136,14 @@ def _score_window(sources, config, window_id, ablation=None, liquidity=None):
                         row_codes = modality_strata.codes(bits)
                 if liquidity is not None:
                     liquid_codes, liquid_record = _liquidity_codes(liquidity, table, reference)
+                if robustness_sources is not None:
+                    # Los bits son exactos fila a fila aunque falte una modalidad obligatoria:
+                    # eso solo invalida los estratos, no qué filas cambia una perturbación.
+                    _require(
+                        bits is not None,
+                        "La robustez necesita la presencia de cada fila de los estratos declarados",
+                    )
+                    bursts = _burst_context(table, reference, robustness_sources)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
             calibrated = None
@@ -1117,11 +1169,47 @@ def _score_window(sources, config, window_id, ablation=None, liquidity=None):
                     names=liquidity_strata.NAMES,
                 )
                 entry["extremes"] = liquidity_strata.window_extremes(panel, liquid_codes, extremes)
+            record = entry["calibrator"]["record"] if quantile else None
+            context = (name, arm["output"], columns, reference)
+            original = None if calibrated is None else calibrated.quantiles
             if ablation is not None:
-                record = entry["calibrator"]["record"] if quantile else None
-                context = (name, arm["output"], columns, bits, reference, minimum)
-                entry["ablation"] = _masked_scores(
-                    ablation, sources, window_id, name, seed, panel, calibrated, record, context
+
+                def masked(variant, other, quantiles, panel=panel, original=original, bits=bits):
+                    return modality_ablation.score_pair(
+                        panel,
+                        other,
+                        modality_ablation.affected_rows(bits, variant),
+                        rank_ic_min_assets=minimum,
+                        calibrated=(original, quantiles),
+                    )
+
+                entry["ablation"] = _variant_scores(
+                    ablation, sources, window_id, seed, record, context, masked
+                )
+            if robustness_sources is not None:
+
+                def perturbed(
+                    variant,
+                    other,
+                    quantiles,
+                    panel=panel,
+                    original=original,
+                    bits=bits,
+                    bursts=bursts,
+                ):
+                    return robustness.score(
+                        panel,
+                        other,
+                        variant,
+                        bits,
+                        bursts,
+                        robustness_sources["declaration"]["recovery_bins_days"],
+                        rank_ic_min_assets=minimum,
+                        calibrated=(original, quantiles),
+                    )
+
+                entry["robustness"] = _variant_scores(
+                    robustness_sources, sources, window_id, seed, record, context, perturbed
                 )
             results[name, seed] = entry
     for name, arm in config["arms"].items():
@@ -1663,6 +1751,7 @@ def evaluate_walk_forward(
     scope,
     *,
     ablation_sources=None,
+    robustness_sources=None,
     aggregates=None,
     edition=None,
     regimes=None,
@@ -1671,7 +1760,9 @@ def evaluate_walk_forward(
 
     `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
-    admite si la configuración declara la ablación. `aggregates` es la carpeta de los
+    admite si la configuración declara la ablación. `robustness_sources` es el manifiesto de
+    la etapa de robustez (#37), cuya declaración vive fuera de la configuración y añade la
+    sección `robustness`. `aggregates` es la carpeta de los
     agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
     lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
     `edition` es la edición sin ajustar que asigna los estratos de liquidez. Sin ella, una
@@ -1695,10 +1786,19 @@ def evaluate_walk_forward(
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
+    robust = None
+    if robustness_sources is not None:
+        _require(
+            aggregates is None,
+            "La robustez lee las predicciones por fila y no admite los agregados por ventana",
+        )
+        declared = robustness.declaration()
+        robust = _robustness_sources(robustness_sources, config, sources, declared)
+        robust["declaration"] = declared
     liquidity = liquidity_source(config, edition)
     if aggregates is None:
         scored = {
-            window: _score_window(sources, config, window, ablation, liquidity)
+            window: _score_window(sources, config, window, ablation, liquidity, robust)
             for window in sources["windows"]
         }
     else:
@@ -1839,6 +1939,27 @@ def evaluate_walk_forward(
         )
         for name in ("evaluation/modality_ablation.py", "data/modality_ablation.py"):
             report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if robust is not None:
+        report[ROBUSTNESS_SECTION] = robustness.report(
+            robust["declaration"],
+            config,
+            {
+                window: {
+                    key: entry["robustness"] for key, entry in results.items() if key[1] is not None
+                }
+                for window, results in per_window.items()
+            },
+            markets,
+            names,
+            sources_sha256=robust["sha256"],
+        )
+        for name in (
+            "evaluation/robustness.py",
+            "evaluation/robustness_protocol.py",
+            "evaluation/modality_ablation.py",
+            "data/input_perturbations.py",
+        ):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     return report, pa.concat_tables(tables, promote_options="default")
 
 
@@ -1849,6 +1970,7 @@ def write_walk_forward(
     output,
     *,
     ablation_sources=None,
+    robustness_sources=None,
     aggregates=None,
     edition=None,
     regimes=None,
@@ -1858,8 +1980,9 @@ def write_walk_forward(
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
     folders = [Path(config_path).parent, Path(sources_path).parent]
-    if ablation_sources is not None:
-        folders.append(Path(ablation_sources).parent)
+    for extra in (ablation_sources, robustness_sources):
+        if extra is not None:
+            folders.append(Path(extra).parent)
     if edition is not None:
         folders.append(Path(edition))
     if regimes is not None:
@@ -1872,6 +1995,7 @@ def write_walk_forward(
         sources_path,
         scope,
         ablation_sources=ablation_sources,
+        robustness_sources=robustness_sources,
         aggregates=aggregates,
         edition=edition,
         regimes=regimes,
@@ -1891,6 +2015,7 @@ def main(argv=None):
     parser.add_argument("--scope", choices=tuple(SCOPES), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
+    parser.add_argument("--robustness-sources", type=Path, help="Manifiesto de la robustez (#37)")
     parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     parser.add_argument(
         "--edition", type=Path, help="Edición sin ajustar para los estratos de liquidez"
@@ -1903,6 +2028,7 @@ def main(argv=None):
         args.scope,
         args.output,
         ablation_sources=args.ablation_sources,
+        robustness_sources=args.robustness_sources,
         aggregates=args.aggregates,
         edition=args.edition,
         regimes=args.regimes,

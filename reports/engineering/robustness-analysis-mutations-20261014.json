@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Análisis de robustez: días desde la última ráfaga, filas afectadas y deriva (#37)",
+  "measured_at": "2026-10-14",
+  "baseline": {
+    "tests/evaluation/test_robustness.py": {
+      "pytest": "15 passed in 1.59s",
+      "seconds": 8.04
+    }
+  },
+  "mutations": [
+    {
+      "id": "R02",
+      "description": "Horizonte incluido",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/evaluation/test_robustness.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 1.57s",
+      "seconds": 6.79
+    },
+    {
+      "id": "R03",
+      "description": "Ráfaga sin exigir estar dentro de ella",
+      "file": "src/mars_titan/evaluation/robustness.py",
+      "tests": [
+        "tests/evaluation/test_robustness.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 6 passed in 1.69s",
+      "seconds": 8.58
+    },
+    {
+      "id": "R04",
+      "description": "Deriva en las filas que cambian",
+      "file": "src/mars_titan/evaluation/robustness.py",
+      "tests": [
+        "tests/evaluation/test_robustness.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 7 passed in 1.99s",
+      "seconds": 9.0
+    },
+    {
+      "id": "R05",
+      "description": "Media sin filas en lugar de ausente",
+      "file": "src/mars_titan/evaluation/robustness.py",
+      "tests": [
+        "tests/evaluation/test_robustness.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 8 passed in 1.52s",
+      "seconds": 7.29
+    },
+    {
+      "id": "R06",
+      "description": "Tramo far con las filas de cualquier horizonte",
+      "file": "src/mars_titan/evaluation/robustness.py",
+      "tests": [
+        "tests/evaluation/test_robustness.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 7 passed in 1.40s",
+      "seconds": 6.71
+    }
+  ],
+  "killed": 5,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después.",
+    "R01 (contar el bloque actual al buscar la última ráfaga) era equivalente: dentro de una ráfaga la fila queda fuera y fuera de ella la última ráfaga es la misma. El código se simplificó a esa forma y R01 se retiró.",
+    "Los defectos de la etapa y de la comparación (identidad de la variante, huella de la declaración y agregados) los cubren aserciones explícitas de tests/training/test_modality_ablation_stage.py, que tardan unos 7 minutos por ejecución y no se mutaron."
+  ]
+}
