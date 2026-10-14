@@ -205,6 +205,13 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
     monkeypatch.setattr(rolling.comparison, "scope_config", lambda config, scope: config)
     monkeypatch.setattr(rolling.window_aggregates, "write", unchecked)
     monkeypatch.setattr(rolling.comparison_integrity, "write_checked", write_checked)
+    # El efecto de la selección no interviene en la integridad y se sustituye.
+    monkeypatch.setattr(engine, "search_records", lambda *a, **k: (None, {}))
+    monkeypatch.setattr(
+        rolling.selection_effect,
+        "write_window",
+        lambda *a, **k: dict(path="a.selection.json", sha256="c"),
+    )
     walker = SimpleNamespace(
         comparison_config=dict,
         folder=tmp_path,
@@ -213,6 +220,7 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
         output=tmp_path / "out",
         ablation=None,
         edition=None,
+        unrecorded_platform=None,
         _liquidity=None,
         _record=lambda record: record,
         posttraining_aggregates=lambda *a: {},
@@ -229,6 +237,7 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
     )
     written = rolling.Rolling.aggregates(walker, row)
     assert written["US"]["integrity"] == dict(path="a.integrity.json", sha256="b")
+    assert set(written["US"]) == {"walk_forward", "integrity", "selection_effect"}
 
 
 def test_the_stage_checks_each_window_before_its_rows_are_released(tmp_path, monkeypatch):
