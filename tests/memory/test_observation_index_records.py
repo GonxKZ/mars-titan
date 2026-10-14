@@ -115,10 +115,20 @@ def test_records_keep_the_rows_and_order_of_the_grouped_reading(
     for phase in phases():
         tables = list(api._records(reader, phase))
         assert pa.concat_tables(tables).equals(grouped_records(reader, phase)), phase
-        # Cada tabla salvo la última reúne al menos `_RAW_ROWS` filas y ninguna está vacía.
+        # Cada tabla salvo la última reúne al menos `_RAW_ROWS` filas, y ni ellas ni sus
+        # fragmentos están vacíos: un activo sin filas no deja una pieza vacía en el Parquet.
         assert all(table.num_rows >= raw_rows for table in tables[:-1])
-        assert all(table.num_rows for table in tables)
+        assert all(len(chunk) for table in tables for chunk in table.column(0).chunks)
         assert tables[-1].column("kind").to_pylist()[-1] == 2
+
+
+def test_assets_without_matured_labels_leave_no_empty_piece(tmp_path, monkeypatch):
+    reader = dataset(corpus(tmp_path))
+    empty = np.empty(0, np.int64), np.empty(0, np.int64), np.empty(0), np.empty(0, np.int64)
+    monkeypatch.setattr(reader, "_labels", lambda *args: empty)
+    tables = list(api._records(reader, phases()[0]))
+    assert set(pa.concat_tables(tables).column("kind").to_pylist()) == {0, 2}
+    assert all(len(chunk) for table in tables for chunk in table.column(0).chunks)
 
 
 def test_inner_empty_groups_shift_the_physical_group_of_later_rows(tmp_path):
