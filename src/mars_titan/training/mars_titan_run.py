@@ -1132,9 +1132,11 @@ class ReadoutTrainer(MarsTitanInference):
     def _restore_extra(self, state):
         """Recuperar el estado de `_extra_state` antes de reconstruir los flujos."""
 
-    def _load_best(self, report):
+    def _load_best(self, report, directory=None):
+        """Cargar el lector elegido. `directory` lee los estados de otra carpeta con la misma
+        identidad, como la del ajuste confirmado que se regenera desde una salida nueva."""
         state = load_training_state(
-            self.output / "checkpoints",
+            Path(directory or self.output / "checkpoints"),
             expected_identity=self.identity,
             selection="best",
             expected_sha256=report["best_checkpoint"]["sha256"],

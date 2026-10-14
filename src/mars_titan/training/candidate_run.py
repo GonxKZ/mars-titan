@@ -996,6 +996,21 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             )
         return result
 
+    def _load_best(self, report, directory=None):
+        """Cargar el estado elegido que acredita el informe. `directory` lee los estados de
+        otra carpeta con la misma identidad, como la del ajuste que se regenera."""
+        best = load_training_state(
+            Path(directory or self.output / "checkpoints"),
+            expected_identity=self.identity,
+            selection="best",
+            expected_sha256=report["best_checkpoint"]["sha256"],
+        )
+        _load_parameters(self.model, best["model"])
+        if self.model.parameter_fingerprint() != best["parameters_sha256"]:
+            raise ValueError("El estado seleccionado no conserva su huella")
+        self._restore_extra(best)
+        return best
+
     def run(self, *, resume=False, stop=None, joint_epoch=None):
         """Recorrer épocas con la regla declarada, conservar el mejor estado y predecir.
 
@@ -1143,16 +1158,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
-            best = load_training_state(
-                checkpoints,
-                expected_identity=self.identity,
-                selection="best",
-                expected_sha256=report["best_checkpoint"]["sha256"],
-            )
-            _load_parameters(self.model, best["model"])
-            if self.model.parameter_fingerprint() != best["parameters_sha256"]:
-                raise ValueError("El estado seleccionado no conserva su huella")
-            self._restore_extra(best)
+            self._load_best(report)
             report["predictions"] = self._predict(stop)
             report.update(
                 status="completed",

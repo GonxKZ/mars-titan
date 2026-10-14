@@ -24,7 +24,9 @@ from mars_titan.posttraining import campaign_stage
 from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
+from mars_titan.training import prediction_regeneration as regeneration
 from mars_titan.training.campaign_plan import TITANS
+from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.posttraining.real_only import real_data_only
@@ -300,3 +302,52 @@ def test_rerunning_confirms_without_new_optimizers(stage_run, campaign_run):  # 
     again = run(stage_run["path"], campaign_run, stage_run["output"])
     assert again["status"] == "completed" and not StageRecorder.made
     assert again["chain"] == stage_run["summary"]["chain"]
+
+
+def regenerate(stage_run, campaign_run, job_id, destination):  # noqa: F811
+    with pytest.MonkeyPatch.context() as patch, real_data_only():
+        patch.setattr(torch.optim, "AdamW", StageRecorder)
+        return regeneration.regenerate_adapter(
+            stage_run["path"],
+            campaign_run.views,
+            campaign_run.output,
+            stage_run["output"],
+            job_id,
+            destination,
+            device="cpu",
+            lease=CpuLease,
+        )
+
+
+def test_confirmed_jobs_regenerate_their_tables_bit_for_bit(stage_run, campaign_run, tmp_path):  # noqa: F811
+    StageRecorder.made.clear()
+    for job_id in (FROZEN_JOB, *FITS.values()):
+        report = regenerate(stage_run, campaign_run, job_id, tmp_path / job_id.replace("/", "_"))
+        assert report["identical"] is True, job_id
+        assert set(report["partitions"]) == {"validation", "calibration", "evaluation"}
+        assert all(item["same_file"] for item in report["partitions"].values())
+        assert (report["stage"], report["optimizer_steps"]) == ("adapters", 0)
+    # Los ajustes reconstruyen su optimizador, que entra en la identidad, sin dar ningún paso.
+    assert StageRecorder.made and not any(item.calls for item in StageRecorder.made)
+
+
+def test_a_regenerated_fit_with_other_weights_is_not_identical(
+    stage_run,
+    campaign_run,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    loaded = ChronologicalTrainer._load_best
+
+    def perturbed(self, report, directory=None):
+        state = loaded(self, report, directory)
+        with torch.no_grad():
+            self.predictor.head.bias.add_(1e-3)
+        # El predictor rechaza pesos cambiados sin una carga identificada: se sella el cambio.
+        self.predictor._seal_parameters()
+        return state
+
+    monkeypatch.setattr(ChronologicalTrainer, "_load_best", perturbed)
+    report = regenerate(stage_run, campaign_run, FITS["full_continuation"], tmp_path / "again")
+    assert report["identical"] is False
+    assert not any(item["same_file"] for item in report["partitions"].values())
