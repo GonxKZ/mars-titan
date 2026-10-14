@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mars_titan.memory.cohort_noise import METHOD, estimate_cohort_noise
+from mars_titan.memory.cohort_noise import METHOD, cohort_composition, estimate_cohort_noise
 
 CAP = 0.95
 
@@ -132,3 +132,39 @@ def test_degenerate_panels_are_rejected(values, markets, sessions, cap, message)
             np.asarray(sessions, dtype=np.int64),
             correlation_cap=cap,
         )
+
+
+def test_cohort_composition_counts_cohorts_that_are_not_one_session():
+    # Cohortes por instante de madurez: 10 es una sesión de US, 20 junta dos sesiones de US
+    # (la de 2 y la de 3), 30 junta US y CN y la sesión de CN en 4 se reparte entre 30 y 40.
+    maturity = np.array([10, 10, 20, 20, 20, 30, 30, 40])
+    markets = np.array(["US", "US", "US", "US", "US", "US", "CN", "CN"])
+    sessions = np.array([1, 1, 2, 3, 3, 5, 4, 4])
+    assert cohort_composition(maturity, markets, sessions) == dict(
+        rows=8,
+        cohorts=4,
+        sessions=5,
+        cohorts_mixing_sessions=2,
+        rows_in_cohorts_mixing_sessions=5,
+        cohorts_mixing_markets=1,
+        rows_in_cohorts_mixing_markets=2,
+        max_sessions_per_cohort=2,
+        sessions_split_across_cohorts=1,
+        max_cohorts_per_session=2,
+    )
+    # El mismo instante de decisión en dos mercados son dos sesiones.
+    same = cohort_composition(np.array([7, 7]), np.array(["US", "CN"]), np.array([1, 1]))
+    assert same["sessions"] == 2 and same["cohorts_mixing_markets"] == 1
+
+
+@pytest.mark.parametrize(
+    ("maturity", "markets", "sessions"),
+    [
+        (np.array([], dtype=np.int64), np.array([], dtype="U2"), np.array([], dtype=np.int64)),
+        (np.array([1.0]), np.array(["US"]), np.array([1])),
+        (np.array([1, 2]), np.array(["US"]), np.array([1, 2])),
+    ],
+)
+def test_cohort_composition_rejects_misaligned_labels(maturity, markets, sessions):
+    with pytest.raises(ValueError, match="alineados"):
+        cohort_composition(maturity, markets, sessions)
