@@ -80,7 +80,8 @@ from .reconstructed_tape import NoAdmittedAssets, census
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
 BOUND_KIND = "future_information_bound_episode"
-# Solo sin costes la cota elige la mejor tenencia de cada decisión sin perder nada al rotar.
+# Las cotas solo son comparables sin costes: la exacta no paga la rotación y la política con
+# información futura rota en cada sesión.
 BOUND_COST_BPS = 0
 STATUSES = ("completed", "ruined", "failed")
 _HEX = re.compile(r"[a-f0-9]{64}")
@@ -338,14 +339,15 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocatio
 
 
 def future_information_bound(tapes, stage, market, *, backend, partition="evaluation"):
-    """Episodio sin costes de la cota con información futura en una cinta del trabajo.
+    """Cotas con información futura de una cinta del trabajo, sin costes.
 
-    Es la política de exposición completa sobre la cinta puntuada con el rendimiento de cada
+    Guarda la cota exacta, que suma el mejor activo o la caja de cada tenencia, y el episodio
+    de la política de exposición completa sobre la cinta puntuada con el rendimiento de cada
     tenencia (`integrity.oracle_bound`), con las mismas reglas y liquidez que las políticas
-    evaluadas. El informe de la etapa compara con la cota de la evaluación los episodios sin
-    costes y con la de la validación el mejor estado que eligió cada ajuste. Trata como un
-    fallo del entorno, hasta demostrar lo contrario, el que la supere o el que alcance la
-    fracción sospechosa de su crecimiento. Queda fuera de toda comparación.
+    evaluadas. El informe de la etapa compara con las cotas de la evaluación los episodios sin
+    costes y con las de la validación el mejor estado que eligió cada ajuste. Superar la cota
+    exacta o alcanzar la fracción sospechosa del crecimiento de esa política obliga a revisar
+    el entorno a mano. Queda fuera de toda comparación.
 
     La cota depende solo de la cinta, así que una cinta que es evaluación de una ventana y
     validación de otra tiene la misma.
@@ -362,6 +364,9 @@ def future_information_bound(tapes, stage, market, *, backend, partition="evalua
         rule=oracle_bound.RULE,
         action=oracle_bound.FULL_EXPOSURE,
         suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+        exact_rule=oracle_bound.EXACT_RULE,
+        exact_log_growth=oracle_bound.exact_log_growth(tape),
+        exact_tolerance=oracle_bound.EXACT_TOLERANCE,
         tape_sha256=tape.sha256,
         oracle_tape_sha256=oracle.evaluation.sha256,
         episode={key: value for key, value in record.items() if key != "equity"},
