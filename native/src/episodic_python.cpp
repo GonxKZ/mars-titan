@@ -4,6 +4,7 @@
 #include "mars_titan/medoid_kernels.hpp"
 #include "mars_titan/simulation_files.hpp"
 
+#include <ATen/Parallel.h>
 #include <c10/util/ScopeExit.h>
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
@@ -243,6 +244,20 @@ void bind_memory(py::module_& module) {
 
 using Matrix = py::array_t<double, py::array::c_style>;
 
+// Productos por debajo de los que la proyección usa un solo hilo: crear y esperar un hilo
+// cuesta más que el trabajo que le tocaría.
+constexpr std::size_t projection_parallel_work = std::size_t{1} << 20;
+
+// Hilos de una proyección de rows · width · outputs productos: los de ATen en este proceso,
+// que siguen OMP_NUM_THREADS o torch.set_num_threads, o uno si el trabajo es pequeño. El
+// resultado no depende de los hilos.
+std::size_t projection_threads(std::size_t rows, std::size_t width, std::size_t outputs) {
+    const std::size_t work = rows * width * outputs;
+    return work < projection_parallel_work
+               ? 1
+               : static_cast<std::size_t>(std::max(at::get_num_threads(), 1));
+}
+
 // Proyección del codec episódico. Solo acepta float64 contiguo, sin conversiones implícitas,
 // y calcula sin el GIL porque la salida es nueva y las entradas son inmutables en el codec.
 void bind_projection(py::module_& module) {
@@ -260,13 +275,19 @@ void bind_projection(py::module_& module) {
             const std::span<const double> source(block.data(), rows * width);
             const std::span<const double> weights(transposed.data(), width * outputs);
             const std::span<double> target(out.mutable_data(), rows * outputs);
+            const std::size_t threads = projection_threads(rows, width, outputs);
             {
                 const py::gil_scoped_release released;
-                mars_titan::episodic::project_block(source, rows, width, weights, outputs, target);
+                mars_titan::episodic::project_block(
+                    source, rows, width, weights, outputs, target,
+                    mars_titan::episodic::default_projection_isa(), threads);
             }
             return out;
         },
         py::arg("block").noconvert(), py::arg("transposed").noconvert());
+    // Hilos que usaría project_codec_block con esas formas, para registrarlos en las medidas.
+    module.def("codec_projection_threads", &projection_threads, py::arg("rows"),
+               py::arg("width"), py::arg("outputs"));
     // Versión del núcleo que usa project_codec_block en este procesador, para registrarla en las
     // medidas. Todas dan los mismos bits.
     module.attr("codec_projection_isa") = std::string(

@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 import pytest
+import torch
 
 import mars_titan.memory.episodic_codec as codec_module
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
@@ -448,6 +449,26 @@ def test_native_kernel_matches_the_declared_order_on_any_platform(native):
         transposed = random.normal(size=(width, outputs))
         actual = native.project_codec_block(block, transposed)
         assert_same_bits(actual, codec_module._declared_order(block, transposed))
+
+
+def test_native_projection_bits_do_not_depend_on_the_threads(native):
+    if not hasattr(native, "codec_projection_threads"):
+        pytest.skip("El enlace nativo es anterior al reparto de la proyección en hilos")
+    random = np.random.default_rng(93)
+    previous = torch.get_num_threads()
+    try:
+        # 64 · 512 · 127 productos superan el umbral, así que la llamada reparte los grupos.
+        for rows, width in ((64, 512), (37, 420), (3, 5)):
+            block = random.normal(size=(rows, width)) * np.ldexp(1.0, random.integers(-60, 60))
+            transposed = random.normal(size=(width, 127))
+            expected = codec_module._declared_order(block, transposed)
+            for threads in (1, 2, 4):
+                torch.set_num_threads(threads)
+                used = native.codec_projection_threads(rows, width, 127)
+                assert used == (threads if rows * width * 127 >= 1 << 20 else 1)
+                assert_same_bits(native.project_codec_block(block, transposed), expected)
+    finally:
+        torch.set_num_threads(previous)
 
 
 @pytest.mark.parametrize("size,absent,scale", [(1, True, 1.0), (17, True, 1.0), (5, False, 1e30)])
