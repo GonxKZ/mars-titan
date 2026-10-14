@@ -1,10 +1,36 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "campaign_publication",
   "status": "declared_before_results",
   "name": "historical-masked-publication-a",
   "campaign": "../baselines/historical-masked-campaign-a.json",
   "comparison_matrix": "comparison-matrix-a.json",
   "posttraining_comparison": "../posttraining/historical-masked-adapter-comparison-a.json",
+  "budget_differences": {
+    "ridge": {
+      "iterations": "Solución cerrada de mínimos cuadrados con penalización, sin épocas ni regla de parada",
+      "search_cases": "Rejilla de la configuración tabular: tres valores de alpha",
+      "seeds": "Ajuste determinista con una sola semilla (seed_policy.deterministic_arms y finalist_seeds de la configuración tabular)"
+    },
+    "xgboost": {
+      "iterations": "Rondas de boosting con selección por validación (mínimo de rondas y paciencia de la configuración tabular) en lugar de épocas",
+      "search_cases": "Rejilla de la configuración tabular: doce combinaciones de profundidad, bins y tasa"
+    },
+    "rnn": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "lstm": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "gru": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "dlinear": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    },
+    "transformer_compact": {
+      "iterations": "Las mismas épocas y la misma regla del protocolo, pero con lotes de filas en lugar del recorrido cronológico de los modelos con memoria"
+    }
+  },
   "final_test_opened": false
 }

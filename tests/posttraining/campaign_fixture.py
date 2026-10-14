@@ -5,8 +5,11 @@ un único modelo GRU con la semilla 42. El ejecutor neuronal sustituto construye
 referencia de la campaña con la cabeza `quantile_head_v1` y pesos iniciales, guarda su
 estado elegido y escribe validación, calibración y evaluación con sus predicciones
 reales en CPU. Así la etapa de postentrenamiento carga padres verdaderos sin que la
-campaña base aplique ningún paso de optimizador. Los traslados de la variante B usan el
-doble de las pruebas de la campaña, que escribe predicciones nulas.
+campaña base aplique ningún paso de optimizador. Su informe declara las épocas que habría
+recorrido el ejecutor real con su puntuación fija, siguiendo la regla de selección del caso,
+para que el presupuesto consumido del informe de integridad lo lea como un ajuste completo.
+Los traslados de la variante B usan el doble de las pruebas de la campaña, que escribe
+predicciones nulas.
 """
 
 import json
@@ -28,6 +31,7 @@ from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
+from mars_titan.training.selection import FINISH, advance_selection, epoch_decision
 from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
@@ -180,16 +184,19 @@ def quantile_reference(run):
         **policy_identity(HISTORICAL_MASKED),
     )
     score = SCORES[run.job["candidate"]] if run.job["stage"] == "search" else 0.015
+    declared = _declared_epochs(case, score, dataset.manifest["counts"]["train"], run)
+    best = declared["selection"]["best_epoch"]
     run.folder.mkdir(parents=True, exist_ok=True)
+    # El estado elegido conserva los pesos iniciales con la época y la puntuación declaradas.
     checkpoint = save_training_state(
         run.folder / "checkpoints",
         dict(
-            global_step=0,
-            epoch=0,
+            global_step=declared["global_step"] // len(declared["epochs"]) * best,
+            epoch=best,
             confirmed_cursor=None,
             model=model.state_dict(),
             statistics={"samples": 0},
-            selection=dict(best_score=score, best_epoch=0),
+            selection=dict(best_score=score, best_epoch=best),
         ),
         identity=identity,
         best=True,
@@ -210,11 +217,29 @@ def quantile_reference(run):
         predictions=predictions,
         train_summary={},
         checkpoint=dict(path=str(checkpoint.relative_to(run.folder)), sha256=sha256(checkpoint)),
-        selection=dict(best_epoch=0, best_score=score, last_epoch=0),
         final_test_opened=False,
     )
+    report.update(declared)
     atomic_json(run.folder / "run.json", report)
     return report
+
+
+def _declared_epochs(case, score, rows, run):
+    """Épocas, actualizaciones y selección del ejecutor real con una puntuación fija.
+
+    El doble no ajusta nada: repite el bucle de selección del ejecutor con la misma
+    validación en cada época, así que la primera es la elegida.
+    """
+    options = {key: value for key, value in case["selection"].items() if key != "max_epochs"}
+    selection, epochs = None, []
+    while True:
+        epoch = len(epochs) + 1
+        epochs.append(dict(epoch=epoch, validation=dict(session_mae=score)))
+        selection = advance_selection(selection, score, epoch, options)
+        if epoch_decision(selection, options, case["epochs"]) == FINISH:
+            break
+    steps = -(-rows // run.batch_size)
+    return dict(epochs=epochs, global_step=steps * len(epochs), selection=selection)
 
 
 def fixed_tabular(run):

@@ -13,7 +13,9 @@ informe superado. Reúne:
   intentos, sin recibos de más, y las semillas y ventanas de cada comparación publicada
   (`declared_runs`);
 - `selection`: elección con la validación anterior a cada ventana, recibos de ventana, orden
-  de los tramos y, con el diseño por etapas, la disjunción de #437 (`window_selection`).
+  de los tramos y, con el diseño por etapas, la disjunción de #437 (`window_selection`);
+- `budget`: presupuesto de cada modelo frente al de los modelos propios, con sus diferencias
+  declaradas, y presupuesto consumido por cada ajuste confirmado (`fit_budget`).
 
 Nada de este módulo ajusta modelos ni abre la reserva de 2024.
 """
@@ -25,7 +27,7 @@ from pathlib import Path
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import walk_forward_comparison as walk
 
-from . import comparison_integrity, declared_runs, window_selection
+from . import comparison_integrity, declared_runs, fit_budget, window_selection
 
 KIND = "campaign_publication_integrity"
 REPORT = "integrity.json"
@@ -109,7 +111,8 @@ def build(loaded, views, output, comparisons, *, adapter_output=None):
         selection["chain"] = window_selection.check_chain(
             campaign, views, output, adapter_output if posttraining is not None else None
         )
-    sections = dict(comparisons=checked, runs=runs, selection=selection)
+    budget = dict(campaign=fit_budget.check(campaign, jobs, output, loaded["budget_differences"]))
+    sections = dict(comparisons=checked, runs=runs, selection=selection, budget=budget)
     failing = sorted(
         f"{name}/{key}"
         for name, entries in sections.items()

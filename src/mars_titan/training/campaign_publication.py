@@ -1,10 +1,13 @@
 """Paso final de la campaña: comparación, cartera, matriz y comparación postentrenada.
 
 La declaración (``campaign_publication``) fija antes de ver resultados qué campaña se publica,
-con qué matriz de comparaciones y con qué comparación de su etapa de adaptadores.
+con qué matriz de comparaciones y con qué comparación de su etapa de adaptadores, y en qué
+difiere el presupuesto de cada modelo del de los modelos propios (``budget_differences``).
 ``load_publication`` exige que la matriz lea la misma comparación que la campaña, con la
-misma huella, y que la comparación postentrenada derive de una etapa de esa campaña. Así una
-matriz declarada para otra campaña no llega a evaluarse.
+misma huella, que la comparación postentrenada derive de una etapa de esa campaña y que las
+diferencias de presupuesto declaradas sean exactamente las de la campaña
+(`integrity.fit_budget`). Así una matriz declarada para otra campaña no llega a evaluarse y
+ninguna diferencia de presupuesto queda sin declarar.
 
 ``run_publication`` se ejecuta cuando la campaña y sus etapas están confirmadas, después del
 recorrido ventana a ventana si lo hubo:
@@ -42,7 +45,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import comparison_matrix, long_short_comparison
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
-from mars_titan.integrity import publication_gate
+from mars_titan.integrity import fit_budget, publication_gate
 from mars_titan.posttraining import stage_comparison
 
 from .campaign_plan import load_campaign
@@ -58,6 +61,7 @@ _FIELDS = {
     "campaign",
     "comparison_matrix",
     "posttraining_comparison",
+    "budget_differences",
     "final_test_opened",
 }
 # Marca de la carpeta provisional. Solo una carpeta con ella se descarta al repetir.
@@ -76,7 +80,7 @@ def load_publication(path):
     _require(
         isinstance(document, dict)
         and set(document) == _FIELDS
-        and document["schema_version"] == 1
+        and document["schema_version"] == 2
         and document["kind"] == KIND
         and document["status"] == DECLARED
         and document["final_test_opened"] is False
@@ -92,6 +96,13 @@ def load_publication(path):
     )
     folder = path.parent
     campaign = load_campaign(folder / document["campaign"])
+    budget = fit_budget.check_declared(campaign, document["budget_differences"])
+    _require(
+        budget["passed"],
+        "Las diferencias de presupuesto declaradas no son las de la campaña: sin declarar "
+        f"{budget['undeclared'] or 'ninguna'}, "
+        f"declaradas sin existir {budget['stale'] or 'ninguna'}",
+    )
     matrix_path = (folder / document["comparison_matrix"]).resolve()
     matrix = comparison_matrix.load_matrix(matrix_path)
     _require(
@@ -119,6 +130,7 @@ def load_publication(path):
         matrix=matrix,
         posttraining_path=None if posttraining_path is None else str(posttraining_path),
         posttraining=posttraining,
+        budget=budget,
     )
 
 
@@ -136,6 +148,10 @@ def check_publication(path):
         scopes=campaign["scopes"],
         long_short=walk.LONG_SHORT_FIELD in config,
         matrix=comparison_matrix.summary(loaded["matrix"]),
+        budget=dict(
+            reference=loaded["budget"]["reference"],
+            differences=loaded["budget"]["differences"],
+        ),
         posttraining=None
         if posttraining is None
         else dict(

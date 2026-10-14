@@ -201,6 +201,14 @@ Con la retención v2 las filas de una ventana se liberan en cuanto se guardan su
 
 Con el walk-forward por etapas, o con una etapa de adaptadores por etapas publicada, añade el verificador de disjunción de [#437](https://github.com/GonxKZ/mars-titan/issues/437) sobre vistas, recibos base y selecciones de la cadena, sin duplicarlo.
 
+**Presupuesto.** `integrity/fit_budget.py` compara el presupuesto de cada modelo ajustado con el de los modelos propios (MARS-TITAN, Titans-MAC y CM-v1), que fija el primer modelo propio declarado. Reúne del plan los casos de búsqueda, las semillas y la forma de iterar: unidad (épocas, rondas, actualizaciones en línea o solución cerrada), entrenador (lotes de filas o recorrido cronológico), máximo, regla de parada y paciencia. Cada campo distinto debe figurar con su motivo en `budget_differences` de la declaración de la publicación. Una diferencia sin declarar, o una declarada que la campaña ya no tiene, impide cargar la declaración y hace fallar el informe. En A v2 se declaran los tabulares (rejilla propia, una semilla y sin épocas), las referencias neuronales (mismas épocas y regla, con lotes de filas) y el control en línea (rejilla de tasas y actualizaciones limitadas por el banco). Después, para cada ajuste confirmado:
+- repite la regla de selección sobre su historial de validación y exige que el ajuste termine donde la regla lo manda (todas las épocas con presupuesto fijo, la primera meseta con parada individual y la época común con parada conjunta) y que entregue la época que la regla elige;
+- un ajuste sin padre que entrega su estado inicial, la época 0 que evalúan los entrenadores cronológicos, o que no declara actualizaciones, no está ajustado. Una referencia sin ajustar no cuenta como control y un modelo propio sin ajustar tampoco cuenta como modelo;
+- con presupuesto fijo, los ajustes del mismo entrenador en el mismo ámbito y ventana aplican las mismas actualizaciones, y los de un grupo de parada conjunta terminan en la misma época;
+- XGBoost no supera sus rondas, elige una ronda ajustada y declara por qué para antes, y el control en línea no usa en ningún tramo más etiquetas que las escrituras del banco que lo limita.
+
+La etapa de adaptadores ya rechaza en su ejecutor un número de actualizaciones distinto del de su diseño. El informe todavía no repite esa comprobación.
+
 **Pruebas.** Cada mutación dirigida rompe el código principal o un artefacto y debe hacer fallar el informe:
 - una fila de 2024 en las predicciones con la comprobación de tramos desactivada en la comparación;
 - una media por sesión sesgada en el código principal, al publicar desde filas y al guardar los agregados de una ventana, que entonces no se libera;
@@ -210,7 +218,8 @@ Con el walk-forward por etapas, o con una etapa de adaptadores por etapas public
 - filas quitadas mal contadas, un recuento publicado que no coincide con el recontado y un mercado elegible quitado a todos los modelos en el diseño conjunto;
 - un trabajo sin recibo, un recibo sin declarar y una comparación sin una semilla, sin una ventana o con un modelo de más;
 - una puntuación de búsqueda que no es la de su validación, una última etiqueta que alcanza la evaluación, un recibo de ventana que no nombra el estado elegido y tramos fuera de orden;
-- un fallo del verificador de disjunción.
+- un fallo del verificador de disjunción;
+- una diferencia de presupuesto sin declarar o declarada sin existir, un ajuste truncado, otro que sigue tras su meseta o su época común, una época entregada distinta de la que elige la regla, un estado inicial entregado sin padre, actualizaciones distintas entre ajustes del mismo entrenador y los límites de XGBoost y del control en línea. Una prueba con las cuatro variantes reales de Titans-MAC y un optimizador que no cambia pesos espera que el informe las marque sin ajustar, porque ninguna época mejora la validación inicial. Esa prueba y la de la referencia neuronal real ejecutan los entrenadores, así que se omiten mientras rige el bloqueo y todavía no se han ejecutado. El resto de `tests/integrity/test_fit_budget.py` usa el plan real de A v2 con recibos e historiales escritos en la prueba.
 
 Las pruebas que recorren la campaña reducida con su etapa de adaptadores necesitan rebajar la protección de aprendizaje y se omiten mientras rige el bloqueo (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)). `tests/integrity/test_declared_runs.py`, `tests/integrity/test_window_selection.py` y `tests/integrity/test_publication_gate.py` repiten las mismas comprobaciones y la conexión del informe con la publicación, el recorrido y la etapa sobre recibos escritos en la prueba, sin ejecutar ninguna campaña.
 
@@ -223,4 +232,4 @@ Siguen en #442, en este orden:
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
-3. Comprobaciones contra atajos que entran en el mismo informe: presupuesto declarado frente al consumido por cada modelo, abstención acompañada de su cobertura y pruebas con ajustes deliberados con el futuro en el preprocesado.
+3. Comprobaciones contra atajos que entran en el mismo informe: abstención acompañada de su cobertura y pruebas con ajustes deliberados con el futuro en el preprocesado.

@@ -37,12 +37,29 @@ def _loaded(design=None, stages=False):
         campaign["walk_forward_stages"] = dict(windows=2)
     posttraining = None if design is None else dict(stage=dict(design=design))
     return dict(
-        name="publication", sha256="2" * 64, campaign_config=campaign, posttraining=posttraining
+        name="publication",
+        sha256="2" * 64,
+        campaign_config=campaign,
+        posttraining=posttraining,
+        budget_differences={},
     )
 
 
 @pytest.fixture
-def chain_calls(monkeypatch):
+def budget_result(monkeypatch):
+    """Presupuesto superado que una prueba puede cambiar antes de construir el informe."""
+    state = SimpleNamespace(passed=True, calls=[])
+
+    def check(campaign, jobs, output, declarations):
+        state.calls.append(declarations)
+        return dict(kind="fit_budget", passed=state.passed)
+
+    monkeypatch.setattr(gate.fit_budget, "check", check)
+    return state
+
+
+@pytest.fixture
+def chain_calls(monkeypatch, budget_result):
     """Secciones superadas salvo la disjunción de la cadena, que registra sus llamadas."""
     calls = []
 
@@ -80,6 +97,17 @@ def test_the_staged_design_adds_the_chain_disjunction_to_the_report(
     assert report["passed"] is not checked and report["training_executed"] is False
     # Sin etapa publicada, la disjunción solo recorre la campaña.
     assert chain_calls == ([adapters] if checked else [])
+
+
+def test_the_budget_of_the_campaign_is_one_more_section_that_blocks(
+    chain_calls, budget_result, tmp_path
+):
+    loaded = _loaded()
+    assert gate.build(loaded, {}, tmp_path, [])["budget"]["campaign"]["passed"]
+    assert budget_result.calls == [loaded["budget_differences"]]
+    budget_result.passed = False
+    report = gate.build(loaded, {}, tmp_path, [])
+    assert report["failing"] == ["budget/campaign"] and not report["passed"]
 
 
 def test_a_failed_report_is_kept_and_stops_the_publication(chain_calls, tmp_path):

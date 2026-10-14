@@ -49,6 +49,15 @@ INVENTORY = {
         "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
         "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
     ),
+    "tests/integrity/test_fit_budget.py::"
+    "test_a_chronological_fit_with_unchanged_weights_keeps_its_initial_state": (
+        "lee los informes reales de las cuatro variantes de Titans-MAC del fixture `base`, "
+        "que las ejecuta con la protección rebajada y un optimizador que no cambia pesos"
+    ),
+    "tests/integrity/test_fit_budget.py::test_a_neural_reference_from_scratch_counts_as_fitted": (
+        "ejecuta la referencia neuronal enmascarada en CPU con la protección rebajada por "
+        "`cpu_runner` para leer su informe real"
+    ),
     _POLICY_TAPES + "test_ppo_pauses_on_real_tapes_before_its_first_update": (
         "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del "
         "primer recorrido para comprobar la pausa, la reanudación y que una selección abierta "
