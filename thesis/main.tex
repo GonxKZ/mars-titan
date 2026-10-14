@@ -599,9 +599,13 @@ edición v3.1. La edición, sus objetivos residuales y sus verificaciones se
 describen en el capítulo~\ref{cap:datos}. Las vistas de la campaña A original
 se prepararon y verificaron el 9 de octubre sobre la edición v3, con 19
 ventanas en Estados Unidos y 13 en China y en la unión de ambos mercados. La
-v3.1 las sustituye, y las vistas de la campaña A v2 se prepararán sobre
-\texttt{targets-v3.1} con los tres ámbitos (la unión desde 2004 y los
-controles de cada mercado). Hasta entonces no se puede lanzar ningún trabajo.
+v3.1 las sustituye. Las vistas de la campaña A v2 se prepararon sobre
+\texttt{targets-v3.1} el 13 y el 14 de octubre con sus tres ámbitos: la unión
+desde 2004, con 19 ventanas y China elegible desde la séptima, y los controles
+de Estados Unidos (19 ventanas) y China (13). Un verificador independiente
+recalculó fronteras, purga, objetivos y elegibilidad en los 5.008 activos y
+comparó cada ventana conjunta con su gemela por mercado, sin encontrar
+diferencias.
 
 La campaña A v2 se declaró el 9 de octubre, antes de cualquier resultado. Los
 casos de búsqueda se ajustan con la semilla 42 y el caso elegido en validación
@@ -616,7 +620,7 @@ esa búsqueda.
 \begin{table}[htbp]
 \centering
 \small
-\caption{Estado de las etapas de la campaña A v2 a 13 de octubre de 2026.
+\caption{Estado de las etapas de la campaña A v2 a 14 de octubre de 2026.
 Ninguna etapa se ha ejecutado con aprendizaje y la campaña no se ha lanzado.
 Los recuentos son límites declarados en las configuraciones y fijados por
 pruebas.}
@@ -627,10 +631,11 @@ Etapa & Implementado y comprobado sin aprendizaje & Pendiente \\
 \midrule
 Edición y objetivos & Edición v3.1 y \texttt{targets-v3.1} generadas y
 verificadas el 11 de octubre. Diagnóstico de la etiqueta repetido el 13 de
-octubre & Ninguno antes de preparar las vistas \\
+octubre & Ninguno \\
 Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
-regla de parada común y walk-forward por etapas & Preparar y verificar las
-vistas de A v2 sobre la v3.1 \\
+regla de parada común y walk-forward por etapas. Vistas de A v2 sobre la v3.1
+preparadas y verificadas el 14 de octubre & Decidir el destino de las tablas de
+los adaptadores y liberar disco \\
 Campaña base & 3.177 ajustes de referencias, Titans-MAC, GRU candidata,
 MARS-TITAN y CM-v1, 2.056 mesetas de la parada conjunta y 133 trabajos del
 control en línea. Recibos por trabajo y reanudación & Fijar las opciones de memoria y lanzar \\
@@ -646,8 +651,9 @@ con LibTorch CUDA y perfilados sin pasos de Adam & Medir el coste de la
 actualización. Ningún ajuste ejecutado \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
 común por mercado, estratos por presencia de noticias y fundamentales, cartera
-larga y corta, matriz de 356 contrastes con atribución por componentes y banco
-de integridad & Aplicarla a predicciones reales \\
+larga y corta, matriz de 356 contrastes con atribución por componentes, banco
+de integridad e informe de integridad que bloquea la publicación & Aplicarla a
+predicciones reales \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -700,6 +706,24 @@ cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
 interacciones y valores de Shapley, declarando como limitación los efectos que
 ningún modelo del plan permite identificar. Ambos se han comprobado con datos
 escritos en las pruebas, sin predicciones reales.
+
+Desde el 14 de octubre, publicar una campaña exige un informe de integridad
+que repite las comparaciones con la segunda implementación, vuelve a planificar
+los trabajos declarados y comprueba la selección, el presupuesto de cada
+modelo, la abstención con su cobertura y que ningún preprocesado use datos
+posteriores a su corte. Además reconstruye cada resumen desde un registro de
+métricas declarado. Si alguna comprobación falla, la campaña no se publica. El
+escaneo de fugas sobre la matriz tabular real de las 19 ventanas de la unión
+marcó dos grupos de columnas: noticias de ETF en una validación de 2009 y
+fundamentales chinos en otra de 2022. La revisión las explica como exposición
+a la clase de activo y al tamaño de la empresa, que se conocen antes de
+decidir. Los controles de cada mercado repiten esas marcas y el de China añade
+el volumen relativo de las dos últimas sesiones en la validación de 2015, que
+la unión diluía al promediar con las sesiones de Estados Unidos. Su revisión
+lo explica como una exposición al volumen reciente, con un signo que cambia de
+una sesión a otra y una relación aún mayor con el objetivo pasado. La regla
+declarada sigue sin pasar en los tres ámbitos y sus umbrales no se han
+cambiado.
 
 \chapter{Resultados y discusión}
 Los ensayos de GRU y DLinear están documentados en el informe de variantes del
