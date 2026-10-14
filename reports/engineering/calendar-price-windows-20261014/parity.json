@@ -1,0 +1,91 @@
+{
+ "reference": "develop 06e69db6",
+ "measured": "2026-10-14",
+ "pipeline": {
+  "decode_workers": 2,
+  "prefetch_batches": 2,
+  "group_cache_mib": 4096,
+  "block_rows": 1024
+ },
+ "note": "Huellas SHA-256 por instante de todo lo que entrega batched_events; combined resume la lista. gapped_rows cuenta filas con alguna sesión de presencia cero; la primera medida de develop en CN no lo contaba.",
+ "cases": {
+  "cn-train-mid": {
+   "view": "CN/fold-012",
+   "phase": "train",
+   "cursor": 1942,
+   "events": 300,
+   "rows": 198635,
+   "gapped_rows": {
+    "develop": null,
+    "branch": 0
+   },
+   "identical": true,
+   "combined_sha256": "eb9d2aaaa1fa8f0922457bf49dd1739b14393eda12ac16a04589b2e993c1a7af"
+  },
+  "cn-train-gap": {
+   "view": "CN/fold-012",
+   "phase": "train",
+   "cursor": 3169,
+   "events": 120,
+   "rows": 90834,
+   "gapped_rows": {
+    "develop": 47570,
+    "branch": 47570
+   },
+   "identical": true,
+   "combined_sha256": "efa85a243edde7f4d93ac236a14e9c8f9040986d03a0b93fa6c9f819bb79b1bf"
+  },
+  "cn-eval-start": {
+   "view": "CN/fold-012",
+   "phase": "evaluation",
+   "cursor": 0,
+   "events": 400,
+   "rows": 323221,
+   "gapped_rows": {
+    "develop": 0,
+    "branch": 0
+   },
+   "identical": true,
+   "combined_sha256": "629f9edb419f6f7e60564b41bca9bac7f32fca591ec8d393829efd57fd58df1e"
+  },
+  "uscn-train-mid": {
+   "view": "US+CN/fold-018",
+   "phase": "train",
+   "cursor": 4709,
+   "events": 300,
+   "rows": 501810,
+   "gapped_rows": {
+    "develop": 0,
+    "branch": 0
+   },
+   "identical": true,
+   "combined_sha256": "8e9cc3b082ae0a883144d954101cb23cc4658637c89f002a82293306aba2632d"
+  },
+  "uscn-train-gap": {
+   "view": "US+CN/fold-018",
+   "phase": "train",
+   "cursor": 7960,
+   "events": 120,
+   "rows": 280437,
+   "gapped_rows": {
+    "develop": 39990,
+    "branch": 39990
+   },
+   "identical": true,
+   "combined_sha256": "c4412d3d3c06641b49f41b9bd65f70651b268caf34a1a9594039608467c91f8a"
+  },
+  "uscn-eval-start": {
+   "view": "US+CN/fold-018",
+   "phase": "evaluation",
+   "cursor": 0,
+   "events": 200,
+   "rows": 508068,
+   "gapped_rows": {
+    "develop": 0,
+    "branch": 0
+   },
+   "identical": true,
+   "combined_sha256": "059206011c4affee1bb87d7172b20c36b1ce9522f0398cf67e0dae1114bb17b4"
+  }
+ }
+}

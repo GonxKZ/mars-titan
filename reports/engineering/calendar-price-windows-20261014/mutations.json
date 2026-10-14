@@ -1,0 +1,92 @@
+{
+ "full_without_span": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_financial_observation_blocks.py::test_calendar_blocks_give_each_row_the_bits_of_its_window_alone"
+  ],
+  "tail": [
+   "1 failed, 1 passed, 11 deselected in 6.62s"
+  ]
+ },
+ "presence_zero": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_financial_observation_blocks.py::test_calendar_blocks_give_each_row_the_bits_of_its_window_alone"
+  ],
+  "tail": [
+   "1 failed, 1 passed, 11 deselected in 6.85s"
+  ]
+ },
+ "positions_not_cached": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_calendar_price_windows.py::test_block_reader_checks_the_calendar_positions_of_each_asset_once_per_pass"
+  ],
+  "tail": [
+   "1 failed, 17 passed, 11 deselected in 25.57s"
+  ]
+ },
+ "full_rows_shifted": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_financial_observation_blocks.py::test_calendar_blocks_give_each_row_the_bits_of_its_window_alone"
+  ],
+  "tail": [
+   "1 failed, 1 passed, 11 deselected in 7.39s"
+  ]
+ },
+ "gap_rows_without_window_rows": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_financial_observation_blocks.py::test_calendar_blocks_give_each_row_the_bits_of_its_window_alone"
+  ],
+  "tail": [
+   "1 failed, 1 passed, 11 deselected in 6.76s"
+  ]
+ },
+ "budget_off_by_one": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_instants.py::test_an_instant_at_its_budget_is_delivered_whole"
+  ],
+  "tail": [
+   "1 failed, 10 passed in 1.91s"
+  ]
+ },
+ "no_step_back_check": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_instants.py::test_a_step_back_fails_after_the_same_complete_instants[moments0-cuts0]"
+  ],
+  "tail": [
+   "1 failed, 4 passed in 1.63s"
+  ]
+ },
+ "cursor_off_by_one": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_instants.py::test_instants_match_the_row_by_row_grouping_across_batch_borders[1]"
+  ],
+  "tail": [
+   "1 failed, 1 passed in 1.57s"
+  ]
+ },
+ "one_instant_per_batch": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_instants.py::test_instants_match_the_row_by_row_grouping_across_batch_borders[0]"
+  ],
+  "tail": [
+   "1 failed in 1.61s"
+  ]
+ },
+ "empty_batch_unguarded": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_instants.py::test_instants_match_the_row_by_row_grouping_across_batch_borders[0]"
+  ],
+  "tail": [
+   "1 failed in 1.53s"
+  ]
+ }
+}

@@ -796,10 +796,13 @@ class CorpusDataset:
             self._calendars[market] = decisions, absent
         return self._calendars[market]
 
-    def price_windows(self, asset, prices, available, ends):
-        """Ventanas de entrada que terminan en las filas `ends`, según el contrato de la edición."""
-        if self.price_window is None:
-            return _price_contexts(prices, ends, self.context)
+    def calendar_positions(self, asset, available):
+        """Posiciones en el calendario declarado de los precios de un activo y sus ausencias.
+
+        Cada precio debe ser una decisión del calendario, en orden y fuera de las sesiones
+        ausentes de todo el mercado. Solo dependen del activo, así que la lectura por bloques
+        las calcula una vez por recorrido.
+        """
         decisions, absent = self._calendar(asset["market"])
         positions = np.searchsorted(decisions, available)
         if (positions >= len(decisions)).any() or not np.array_equal(
@@ -807,6 +810,13 @@ class CorpusDataset:
         ):
             raise ValueError("Un precio no corresponde a una decisión del calendario declarado")
         check_row_positions(positions, absent)
+        return positions, absent
+
+    def price_windows(self, asset, prices, available, ends):
+        """Ventanas de entrada que terminan en las filas `ends`, según el contrato de la edición."""
+        if self.price_window is None:
+            return _price_contexts(prices, ends, self.context)
+        positions, absent = self.calendar_positions(asset, available)
         if not 1 <= len(ends) <= 256:
             raise ValueError("Las ventanas del bloque no tienen índices o dimensiones válidos")
         return _calendar_price_contexts(prices, window_rows(positions, ends, self.context, absent))
