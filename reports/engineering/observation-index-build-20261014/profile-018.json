@@ -1,0 +1,32 @@
+{
+ "profile": "index622-018.txt",
+ "main_thread_samples": 10939,
+ "inclusive_percent": {
+  "prepare_observation_index": 95.1,
+  "_records": 81.8,
+  "_labels": 54.6,
+  "_asset_samples": 8.2,
+  "unique": 9.8,
+  "assign": 9.3,
+  "read_bounded_table": 8.6,
+  "validate_cohort_rows": 4.5,
+  "__init__": 16.0,
+  "execute": 0.0,
+  "_partition_labels": 0.5,
+  "atomic_parquet_batches": 84.1
+ },
+ "own_percent": {
+  "prepare_observation_index": 0.5,
+  "_records": 5.8,
+  "_labels": 16.2,
+  "_asset_samples": 0.4,
+  "unique": 0.1,
+  "assign": 4.2,
+  "read_bounded_table": 6.3,
+  "validate_cohort_rows": 3.2,
+  "__init__": 11.2,
+  "execute": 0.0,
+  "_partition_labels": 0.3,
+  "atomic_parquet_batches": 0.0
+ }
+}
