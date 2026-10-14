@@ -2,6 +2,8 @@
 
 Escriben las filas nulas de la vista como `test_masked_campaign.Recorder` y anotan cada
 llamada en un registro de líneas JSON que indica `SLOT_LOG`. No usan CUDA ni ajustan nada.
+Las referencias neuronales escriben además las columnas de cuantiles, y `record_job` las
+añade a cualquier otro trabajo que lo pida.
 `SLOT_DELAY` alarga cada trabajo y `SLOT_CRASH` hace que ese trabajo muera sin resultado.
 `SLOT_OOM` hace que ese trabajo agote su VRAM la primera vez, con una marca en `SLOT_MARKS`.
 Con `SLOT_PAUSE_AFTER`, el primer trabajo que empieza tras ese número de trabajos terminados
@@ -56,7 +58,7 @@ def _rows(view, partition):
     return parts
 
 
-def _table(run, partition):
+def _table(run, partition, quantiles):
     rows = _rows(run.view, partition)
     count = len(rows["target"])
     columns = dict(
@@ -68,7 +70,7 @@ def _table(run, partition):
         prediction=np.zeros(count, dtype=np.float32),
         zero=np.zeros(count, dtype=np.float64),
     )
-    if run.job["family"] == "neural_reference":
+    if quantiles:
         columns.update({name: np.zeros(count, dtype=np.float32) for name in QUANTILE_COLUMNS})
     return pa.table(columns)
 
@@ -92,8 +94,15 @@ def _environment():
     return values
 
 
-def record_job(run):
-    """Escribir el resultado del trabajo y anotar proceso, inicio y fin."""
+def record_job(run, *, quantiles=None, report_name=None):
+    """Escribir el resultado del trabajo y anotar proceso, inicio y fin.
+
+    Sin `quantiles`, solo las referencias neuronales escriben las columnas de cuantiles.
+    `report_name` es el informe que la campaña lee del ejecutor, `run.json` o `carry.json`
+    si no se indica.
+    """
+    if quantiles is None:
+        quantiles = run.job["family"] == "neural_reference"
     started = time.time()
     if os.environ.get("SLOT_CRASH") == run.job["id"]:
         os._exit(3)
@@ -120,18 +129,18 @@ def record_job(run):
     predictions = {}
     for partition in ("calibration", "evaluation"):
         path = run.folder / f"{partition}-predictions.parquet"
-        pq.write_table(_table(run, partition), path)
+        pq.write_table(_table(run, partition, quantiles), path)
         predictions[partition] = dict(path=path.name, sha256=sha256(path))
     predictions["validation"] = dict(metrics=dict(session_mae=_score(run.job)))
     report = dict(status="completed", final_test_opened=False, predictions=predictions)
     if run.job["kind"] == "carry":
         anchor = json.loads((run.anchor["folder"] / "run.json").read_text())
         report["anchor"] = dict(checkpoint_sha256=anchor["checkpoint"]["sha256"])
-        atomic_json(run.folder / "carry.json", report)
+        atomic_json(run.folder / (report_name or "carry.json"), report)
     else:
         (run.folder / "model.bin").write_text(run.job["id"])
         report["checkpoint"] = dict(path="model.bin", sha256=sha256(run.folder / "model.bin"))
-        atomic_json(run.folder / "run.json", report)
+        atomic_json(run.folder / (report_name or "run.json"), report)
     _log(
         id=run.job["id"],
         pid=os.getpid(),

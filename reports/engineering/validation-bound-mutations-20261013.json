@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Cota con información futura en la validación de cada ajuste (#442)",
+  "measured_at": "2026-10-13",
+  "baseline": {
+    "tests/simulation/test_campaign_stage.py -k without_best or without_growth": {
+      "pytest": "2 passed, 61 deselected in 34.33s",
+      "seconds": 42.38
+    },
+    "tests/simulation/test_future_information_bound.py": {
+      "pytest": "44 passed in 3.63s",
+      "seconds": 10.87
+    }
+  },
+  "mutations": [
+    {
+      "id": "V01",
+      "description": "Todos los trabajos enlazan la cota de validación",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 33 passed in 3.53s",
+      "seconds": 10.27
+    },
+    {
+      "id": "V02",
+      "description": "Ajustes sin selección con cota de validación",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 33 passed in 3.63s",
+      "seconds": 10.48
+    },
+    {
+      "id": "V03",
+      "description": "Cota de la evaluación en lugar de la cinta pedida",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 31 passed in 3.51s",
+      "seconds": 10.36
+    },
+    {
+      "id": "V04",
+      "description": "La etapa guarda la cota con la cinta de evaluación",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 31 passed in 3.25s",
+      "seconds": 9.93
+    },
+    {
+      "id": "V05",
+      "description": "Cota de validación cotejada con la cinta de evaluación",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 36 passed in 3.32s",
+      "seconds": 9.34
+    },
+    {
+      "id": "V06",
+      "description": "Estados arruinados comparados",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 39 passed in 3.06s",
+      "seconds": 8.71
+    },
+    {
+      "id": "V07",
+      "description": "Sin fracción sospechosa en validación",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 37 passed in 3.51s",
+      "seconds": 9.64
+    },
+    {
+      "id": "V08",
+      "description": "Superar la cota de validación no se marca",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 38 passed in 3.10s",
+      "seconds": 9.2
+    },
+    {
+      "id": "V09",
+      "description": "Enlaces de validación sin exigir",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 40 passed in 3.30s",
+      "seconds": 8.83
+    },
+    {
+      "id": "V10",
+      "description": "Crecimiento de otro criterio",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 36 passed in 3.22s",
+      "seconds": 9.3
+    },
+    {
+      "id": "V11",
+      "description": "Estado del informe sin la validación",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 30 passed in 3.31s",
+      "seconds": 9.65
+    },
+    {
+      "id": "V12",
+      "description": "Cotas de validación sin terminar comparadas",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 39 passed in 3.05s",
+      "seconds": 8.6
+    },
+    {
+      "id": "V13",
+      "description": "Ajuste confirmado sin mejor estado",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_campaign_stage.py",
+        "-k",
+        "without_best or without_growth"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 61 deselected in 40.33s",
+      "seconds": 46.8
+    },
+    {
+      "id": "V14",
+      "description": "Ruinas negativas admitidas",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 41 passed in 3.23s",
+      "seconds": 9.33
+    }
+  ],
+  "killed": 14,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "kind": "edition_subset_definition",
+  "markets": [
+    "CN",
+    "US"
+  ],
+  "years": {
+    "first": 2000,
+    "last": 2023
+  },
+  "labels": "usable",
+  "name": "usable-2000-2023",
+  "notes": "Todas las filas con objetivo usable de los dos mercados. Es el diseño completo con el que se comparan los demás."
+}

@@ -1,0 +1,696 @@
+{
+ "issue": 548,
+ "date": "2026-10-13",
+ "commits": {
+  "base": "d020ff07 (rama de #549)",
+  "branch": "b630de4b"
+ },
+ "environment": {
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "driver": "595.91.07",
+  "threads": {
+   "OMP_NUM_THREADS": 2,
+   "MKL_NUM_THREADS": 2
+  },
+  "cublas_workspace": ":4096:8",
+  "tf32": false,
+  "matmul_precision": "highest"
+ },
+ "optimizer_steps": 0,
+ "script": "f8a5fc5455b0b9cfc4dd615e1586fe271187411ccb0dd1dfcc331d3298859b32",
+ "script_note": "La copia ejecutada solo difería en los saltos de línea que aplica ruff format, con el mismo árbol sintáctico",
+ "compare": "reports/engineering/titans-event-path-20261013/parity_compare.py",
+ "all_equal": true,
+ "cases": {
+  "cpu-float64": {
+   "device": "cpu",
+   "dtype": "float64",
+   "same_keys": true,
+   "captures": {
+    "readout/m1/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cpu-float32": {
+   "device": "cpu",
+   "dtype": "float32",
+   "same_keys": true,
+   "captures": {
+    "readout/m1/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cuda-float32": {
+   "device": "cuda:0",
+   "dtype": "float32",
+   "same_keys": true,
+   "captures": {
+    "readout/m1/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cuda-float64": {
+   "device": "cuda:0",
+   "dtype": "float64",
+   "same_keys": true,
+   "captures": {
+    "readout/m1/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m1/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k1/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k2/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/per_step": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    },
+    "readout/m3/k4/first_read": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 2,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.episodic_readout"
+     ],
+     "same_report": true
+    }
+   }
+  }
+ }
+}

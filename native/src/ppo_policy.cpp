@@ -2,6 +2,7 @@
 #include "mars_titan/ppo_objectives.hpp"
 #include "mars_titan/quantile_dqn.hpp"
 #include "mars_titan/klpo_terminal.hpp"
+#include "mars_titan/learning_hold.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <ATen/ATen.h>
@@ -67,6 +68,13 @@ constexpr double terminal_adam_epsilon = 1e-8;
 // y aquí se conserva la variante QR-DQN-1.
 constexpr double qr_dqn_kappa = 1;
 constexpr int64_t metric_count = 6;
+
+// Todo paso de Adam de la política pasa por aquí, para que el cerrojo de solo evaluación lo
+// detenga aunque una ruta nueva olvide comprobarlo al entrar.
+void apply_adam_step(torch::optim::Adam& optimizer, std::string_view action) {
+    require_optimizer_steps_allowed(action);
+    optimizer.step();
+}
 
 struct RecurrentSequence {
     int64_t lane;
@@ -646,11 +654,19 @@ struct PpoPolicy::Impl {
         controller.beta = objective.beta_initial;
         controller.last_beta = objective.beta_initial;
         network.pack_recurrent_weights();
-        optimizer = std::make_unique<torch::optim::Adam>(
-            network.policy_parameters(), torch::optim::AdamOptions(parameters.learning_rate));
+        // En el modo de solo evaluación la política solo infiere y no construye optimizadores.
+        // Sus entradas de ajuste se detienen antes en el cerrojo.
+        const bool learning = !evaluation_only();
+        if (learning) {
+            optimizer = std::make_unique<torch::optim::Adam>(
+                network.policy_parameters(), torch::optim::AdamOptions(parameters.learning_rate));
+        }
         if (architecture.auxiliary) {
-            auxiliary_optimizer = std::make_unique<torch::optim::Adam>(
-                network.auxiliary_parameters(), torch::optim::AdamOptions(parameters.learning_rate));
+            if (learning) {
+                auxiliary_optimizer = std::make_unique<torch::optim::Adam>(
+                    network.auxiliary_parameters(),
+                    torch::optim::AdamOptions(parameters.learning_rate));
+            }
             auxiliary_rng = at::detail::createCPUGenerator(seed ^ auxiliary_seed_offset);
         }
         if (architecture.double_dqn) {
@@ -756,7 +772,7 @@ struct PpoPolicy::Impl {
         loss.backward();
         const double gradient = torch::nn::utils::clip_grad_norm_(
             network.policy_parameters(), parameters.gradient_norm, gradient_norm_order, true);
-        optimizer->step();
+        apply_adam_step(*optimizer, "la actualización PPO");
         const at::NoGradGuard no_grad;
         const auto log_ratio = selected.to(at::kDouble) - previous;
         const auto ratio = log_ratio.exp();
@@ -1062,7 +1078,10 @@ struct PpoPolicy::Impl {
     }
 
     [[nodiscard]] std::size_t optimizer_step_count() const {
-        return adam_steps(terminal_optimizer ? *terminal_optimizer : *optimizer);
+        if (terminal_optimizer) {
+            return adam_steps(*terminal_optimizer);
+        }
+        return optimizer ? adam_steps(*optimizer) : 0;
     }
 };
 
@@ -1163,6 +1182,7 @@ at::Tensor PpoPolicy::act(const at::Tensor& observations, bool deterministic) {
 at::Tensor PpoPolicy::values(const at::Tensor& observations) const { return forward(observations).values; }
 
 PpoUpdateStats PpoPolicy::update(const PpoRollout& rollout) {
+    require_optimizer_steps_allowed("la actualización PPO");
     require(!impl_->terminal_optimizer, "El actor terminal no admite actualizaciones PPO");
     require(!impl_->architecture.double_dqn, "Double DQN debe usar su actualización con red objetivo");
     impl_->validate_rollout(rollout, impl_->tensor_device);
@@ -1181,6 +1201,7 @@ PpoUpdateStats PpoPolicy::update(const PpoRollout& rollout) {
     return result;
 }
 PpoUpdateStats PpoPolicy::update_from_cpu(const PpoRollout& rollout) {
+    require_optimizer_steps_allowed("la actualización PPO desde CPU");
     require(!impl_->terminal_optimizer, "El actor terminal no admite actualizaciones PPO");
     require(impl_->architecture.kind == PpoNetworkKind::mlp && !impl_->architecture.double_dqn,
             "La actualización desde CPU requiere una política PPO de tipo MLP");
@@ -1205,6 +1226,8 @@ std::optional<double> PpoPolicy::full_kl(const PpoRollout& rollout) const {
 }
 
 void PpoPolicy::save(std::ostream& destination) const {
+    require(impl_->optimizer || impl_->terminal_optimizer,
+            "Una política de solo evaluación no tiene optimizador que guardar");
     if (impl_->terminal_optimizer) { impl_->validate_terminal_optimizer(); }
     torch::serialize::OutputArchive archive;
     archive.write("schema_version", c10::IValue(impl_->terminal_optimizer ? terminal_checkpoint_version :
@@ -1273,6 +1296,9 @@ PpoPolicy PpoPolicy::load_terminal(std::istream& source, std::string_view device
 }
 
 PpoPolicy PpoPolicy::load_mode(std::istream& source, std::string_view device_name, bool terminal) {
+    // Un archivo de política restaura también su optimizador. El modo de solo evaluación no
+    // los construye ni evalúa políticas aprendidas, así que no carga archivos.
+    require_optimizer_steps_allowed("la carga de una política con su optimizador");
     validate_stream(source);
     torch::serialize::InputArchive archive;
     archive.load_from(source, at::Device(at::kCPU));
@@ -1571,6 +1597,7 @@ std::string PpoPolicy::parameter_fingerprint() const {
 }
 
 void PpoPolicy::enable_terminal_adam(PpoTerminalAdamOptions options) {
+    require_optimizer_steps_allowed("el Adam terminal");
     options.validate();
     require(!impl_->terminal_optimizer && !impl_->terminal_failed && !impl_->objective.enabled() &&
                 !impl_->architecture.auxiliary && !impl_->architecture.double_dqn &&
@@ -1633,6 +1660,7 @@ std::vector<at::Tensor> PpoPolicy::terminal_gradients() const {
 }
 
 double PpoPolicy::terminal_step() {
+    require_optimizer_steps_allowed("el paso de Adam terminal");
     double norm = validate_terminal_gradients();
     const auto previous = optimizer_steps();
     require(previous < static_cast<std::size_t>(maximum_optimizer_steps),
@@ -1644,7 +1672,7 @@ double PpoPolicy::terminal_step() {
     }
     // A partir de aquí un fallo exige recuperar el checkpoint anterior.
     impl_->terminal_failed = true;
-    impl_->terminal_optimizer->step();
+    apply_adam_step(*impl_->terminal_optimizer, "el paso de Adam terminal");
     impl_->network.validate(static_cast<int64_t>(impl_->width), impl_->tensor_device);
     require(at::equal(critic, impl_->critic_bits()), "Adam modificó los bits de la fila del crítico");
     impl_->terminal_failed = false;
@@ -1673,6 +1701,7 @@ PpoPolicy PpoPolicy::frozen_reference(const PpoRandomState& initial_rng) const {
 
 PpoAuxiliaryStats PpoPolicy::consolidate(const at::Tensor& observations,
                                        const at::Tensor& matured_rewards, int64_t steps) {
+    require_optimizer_steps_allowed("la consolidación auxiliar");
     require(impl_->architecture.auxiliary && steps > 0 && steps <= maximum_auxiliary_updates,
             "La consolidación requiere una MLP64 auxiliar y entre 1 y 64 pasos explícitos");
     impl_->validate_observations(observations, true);
@@ -1697,7 +1726,7 @@ PpoAuxiliaryStats PpoPolicy::consolidate(const at::Tensor& observations,
         loss.backward();
         const auto gradient = torch::nn::utils::clip_grad_norm_(
             impl_->network.auxiliary_parameters(), impl_->parameters.gradient_norm, gradient_norm_order, true);
-        impl_->auxiliary_optimizer->step();
+        apply_adam_step(*impl_->auxiliary_optimizer, "la consolidación auxiliar");
         const at::NoGradGuard no_grad;
         const auto after = (impl_->network.predict_auxiliary(selected) - targets).abs().mean();
         require(at::isfinite(after).item<bool>(), "El MAE auxiliar no es finito después de actualizar");
@@ -1830,6 +1859,7 @@ DqnLoss PpoPolicy::double_dqn_loss(const DqnBatch& batch) const {
 
 DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t environment_step,
                                             std::size_t target_interval) {
+    require_optimizer_steps_allowed("la actualización Double DQN");
     require(impl_->architecture.double_dqn && environment_step >= dqn_warmup_steps &&
                 environment_step <= static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
                 environment_step > impl_->dqn_environment_step && target_interval > 0 &&
@@ -1848,7 +1878,7 @@ DqnUpdateStats PpoPolicy::update_double_dqn(const DqnBatch& batch, std::size_t e
     computed.loss.backward();
     result.gradient_norm = torch::nn::utils::clip_grad_norm_(
         impl_->network.policy_parameters(), impl_->parameters.gradient_norm, gradient_norm_order, true);
-    impl_->optimizer->step();
+    apply_adam_step(*impl_->optimizer, "la actualización Double DQN");
     result.target_synchronized = environment_step % target_interval == 0;
     if (result.target_synchronized) {
         impl_->target->copy_parameters(impl_->network);

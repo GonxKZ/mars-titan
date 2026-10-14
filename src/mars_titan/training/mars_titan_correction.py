@@ -41,6 +41,12 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.hooks import (
+    EMPTY_CURSOR,
+    MAX_PENDING,
+    open_recorder,
+    trace_identity,
+)
 from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
@@ -210,6 +216,9 @@ class CorrectionInference(ChronologicalInference):
             raise ValueError("El codec no comparte la entrada del padre")
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
+        # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
+        self.trace_recorder = None
+        self._trace_events, self._trace_phase = 0, "b6"
         self.memory = AssociativeMemory(correction.memory)
         # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
         # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
@@ -287,6 +296,20 @@ class CorrectionInference(ChronologicalInference):
             values=[value for _, _, value, _, _ in staged],
         )
         self.memory = self.memory.write(feedback, cutoff=at)
+        recorder = self.trace_recorder
+        if recorder is not None:
+            # Trazas de #448: B6 no tiene pasos de optimizador y su aprendizaje son las
+            # escrituras de A. Se registran por evento de escritura con la cadencia declarada.
+            self._trace_events += 1
+            if recorder.due(self._trace_events):
+                with recorder.at(self._trace_events, self._trace_phase):
+                    recorder.scalar("associative.writes", self.memory.writes)
+                    recorder.scalar(
+                        "associative.matrix_l2", torch.linalg.vector_norm(self.memory.matrix)
+                    )
+                    recorder.tensor("associative.feedback", feedback.values)
+                if recorder.pending >= MAX_PENDING:
+                    recorder.flush()
 
     def _close(self, run):
         super()._close(run)
@@ -317,6 +340,7 @@ class CorrectionInference(ChronologicalInference):
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
         self._routing = _RoutingLog()
+        self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
         self.predictor.eval()
         with torch.no_grad():
             for event in events:
@@ -475,11 +499,15 @@ def run_correction_window(
     device="cuda:0",
     indices=None,
     stop=None,
+    traces=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente, porque la
-    validación selecciona η entre los casos de la campaña.
+    validación selecciona η entre los casos de la campaña. `traces` declara las trazas de
+    #448: las escrituras de A de cada tramo, con la fase `b6_<tramo>`, en `output/traces`.
+    Su cursor se guarda en `run.json` al confirmar cada tramo, porque B6 no tiene puntos de
+    control y un tramo interrumpido se repite desde el principio.
     """
     from .mars_titan_walk_forward import _cuda, _frozen_parent, _parent
 
@@ -603,6 +631,12 @@ def run_correction_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    recorder = open_recorder(
+        output / "traces", traces, trace_identity("b6", identity), step_unit="write_event"
+    )
+    if recorder is not None:
+        recorder.load_state_dict(report.get("traces") or EMPTY_CURSOR)
+        inference.trace_recorder = recorder
     try:
         _require(
             sha256(output / "selected.json") == report["checkpoint"]["sha256"],
@@ -618,6 +652,13 @@ def run_correction_window(
             rows = PredictionRows(inference.quantiles)
             metrics = inference.predict(sources[name], rows, stop=stop)
             report["predictions"][name] = _prediction(output, rows, metrics, dataset, name)
+            if recorder is not None:
+                if name == "validation":
+                    # Solo la validación guarda su puntuación, como en los demás modelos.
+                    with recorder.at(inference._trace_events, "validation"):
+                        recorder.scalar("validation.score", metrics["session_mae"])
+                recorder.flush()
+                report["traces"] = recorder.state_dict()
             atomic_json(report_path, report)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
