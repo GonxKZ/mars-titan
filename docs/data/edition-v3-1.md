@@ -265,4 +265,5 @@ Frente a la proyección de la porción, la GPU tardó 8,2 h frente a unas 9 h pr
 
 - Preparar y verificar las vistas de la campaña A v2 sobre `targets-v3.1` y repetir el recuento de ventanas de la v2 (paso 7).
 - Retirar, cuando se decida, `targets-v3`, `prepared-accounting-v1/prepared`, el `embeddings.sqlite` de la v3 y las vistas de la v3, y actualizar los documentos que aún las presentan como vigentes (paso 8).
-- El catálogo global de la edición y sus subconjuntos declarados siguen en [#537](https://github.com/GonxKZ/mars-titan/issues/537).
+
+El [catálogo global de la edición y sus subconjuntos declarados](edition-catalog.md) se construyeron el 13 de octubre en [#537](https://github.com/GonxKZ/mars-titan/issues/537).

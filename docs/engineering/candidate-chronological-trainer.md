@@ -250,10 +250,9 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
   El mismo archivo compara también el ajuste de una ventana v2 y su traslado a la siguiente en CPU y en `cuda:0`, y el traslado en `cuda:0` del estado elegido en CPU, con la misma inicialización de la semilla en ambos dispositivos.
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
 - Ventanas sobre la edición real. Las entradas por ventana solo se han comprobado con vistas v2 del corpus técnico, con un activo por mercado.
-- Igualar `memory_options` de A v2 con la opción de memoria de la receta (`accumulation_rows=128` sin `recompute`), que hoy sigue en `pending`.
 - Índices de observaciones compartidos. Cada ajuste y cada traslado preparan los suyos aunque solo dependen de la vista y del tramo, así que las semillas repiten ese trabajo. Conviene medir antes su coste con la edición real.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
-- Elegir la opción de memoria con la [medida en `cuda:0`](#medida-en-cuda0). La medida se repite con el enlace CUDA compilado como arriba, desde la raíz:
+- Repetir sobre la v3.1 la [medida en `cuda:0`](#medida-en-cuda0) que fija la opción de memoria de A v2 (`accumulation_rows=128` sin `recompute`). La medida se repite con el enlace CUDA compilado como arriba, desde la raíz:
 
   ```bash
   CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 \
