@@ -3,10 +3,11 @@
 Mide `select_anchored_medoids` con la forma de las llamadas del recorrido real de los
 lectores de MARS-TITAN y CM-v1 (1.024 episodios retenidos y 4.040 nuevos, 1.016 centros
 fijos y 16 candidatos, 64 coordenadas FP32) sobre dos geometrías sintéticas. Compara la
-ruta de referencia con `bounded_background` y `reuse_distances`, exige los mismos campos
-salvo la memoria declarada y las propias opciones, y registra las medianas. La poda de la
-cota depende de la geometría, así que estas cifras no sustituyen a la medida con claves
-reales del informe. Sin banco, sin modelo y sin GPU.
+ruta de referencia con `bounded_background` y `reuse_distances` y, si
+`MARS_TITAN_EPISODIC_NATIVE` apunta a un enlace con los núcleos de los medoids, también con el
+fondo y las sumas nativos. Exige los mismos campos salvo la memoria declarada y las propias
+opciones, y registra las medianas. La poda de la cota depende de la geometría, así que estas
+cifras no sustituyen a la medida con claves reales del informe. Sin banco, sin modelo y sin GPU.
 
 Uso: `PYTHONPATH=src python benchmarks/anchored_medoid_options.py salida.json`
 """
@@ -25,8 +26,26 @@ from mars_titan.cm.anchored_medoids import select_anchored_medoids
 
 RETAINED, INCOMING, FIXED, CANDIDATES, DIMENSIONS = 1024, 4040, 1016, 16, 64
 OPTIONS = dict(reuse_distances=True, bounded_background=True)
-CHANGED = {"reused_distances", "bounded_background", "estimated_peak_bytes"}
+CHANGED = {
+    "reused_distances",
+    "bounded_background",
+    "native_background",
+    "native_sums",
+    "estimated_peak_bytes",
+}
 REPETITIONS = 5
+
+
+def native_module():
+    """Enlace declarado con los núcleos de los medoids, o None si no hay enlace o es anterior."""
+    path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
+    if not path:
+        return None
+    from mars_titan.memory.native_backend import load_native
+
+    module = load_native(path)
+    kernels = ("nearest_reference_block", "min_column_sums")
+    return module if all(hasattr(module, name) for name in kernels) else None
 
 
 def geometry(kind, rng):
@@ -58,14 +77,16 @@ def same_fields(reference, other):
     ) and repr(reference.objective) == repr(other.objective)
 
 
-def measure(kind):
+def measure(kind, native):
     points, ids, fixed, candidates = problem(kind)
     variants = {"reference": {}, "bounded_and_reused": OPTIONS}
+    if native is not None:
+        variants["bounded_reused_native"] = dict(OPTIONS, native=native)
     results, seconds = {}, {name: [] for name in variants}
     for name, options in variants.items():
         results[name] = select_anchored_medoids(points, ids, fixed, candidates, RETAINED, **options)
     for repetition in range(REPETITIONS):
-        # Se alterna el orden para repartir entre las dos variantes la deriva de la máquina.
+        # Se alterna el orden para repartir entre las variantes la deriva de la máquina.
         order = list(variants) if repetition % 2 == 0 else list(reversed(variants))
         for name in order:
             began = time.perf_counter()
@@ -75,31 +96,39 @@ def measure(kind):
             seconds[name].append(time.perf_counter() - began)
             if not same_fields(results[name], result):
                 raise RuntimeError("Dos llamadas iguales devolvieron selecciones distintas")
-    reference, optimized = results["reference"], results["bounded_and_reused"]
+    reference = results["reference"]
     medians = {name: statistics.median(values) for name, values in seconds.items()}
+    optimized = {name: result for name, result in results.items() if name != "reference"}
     return dict(
         geometry=kind,
         clients=len(points) - len(fixed),
         fixed=len(fixed),
         candidates=len(candidates),
-        same_fields_and_objective_bits=same_fields(reference, optimized),
-        applied=dict(
-            reused_distances=optimized.reused_distances,
-            bounded_background=optimized.bounded_background,
-        ),
+        same_fields_and_objective_bits={
+            name: same_fields(reference, result) for name, result in optimized.items()
+        },
+        applied={
+            name: dict(
+                reused_distances=result.reused_distances,
+                bounded_background=result.bounded_background,
+                native_background=result.native_background,
+                native_sums=result.native_sums,
+            )
+            for name, result in optimized.items()
+        },
         swaps=reference.swaps,
         distance_pairs=reference.distance_pairs,
-        estimated_peak_bytes=dict(
-            reference=reference.estimated_peak_bytes,
-            bounded_and_reused=optimized.estimated_peak_bytes,
-        ),
+        estimated_peak_bytes={
+            name: result.estimated_peak_bytes for name, result in results.items()
+        },
         seconds=seconds,
         median_seconds=medians,
-        speedup=medians["reference"] / medians["bounded_and_reused"],
+        speedup={name: medians["reference"] / medians[name] for name in optimized},
     )
 
 
 def main(output):
+    native = native_module()
     report = dict(
         shape=dict(
             retained=RETAINED,
@@ -110,8 +139,9 @@ def main(output):
         ),
         repetitions=REPETITIONS,
         warmup_calls_per_variant=1,
-        measurements=[measure(kind) for kind in ("isotropic", "clustered")],
+        measurements=[measure(kind, native) for kind in ("isotropic", "clustered")],
         versions=dict(python=platform.python_version(), numpy=np.__version__),
+        native=os.environ.get("MARS_TITAN_EPISODIC_NATIVE") if native is not None else None,
         threads={name: os.environ.get(name) for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS")},
         load_average=list(os.getloadavg()),
         limits=[
@@ -123,7 +153,9 @@ def main(output):
     with open(output, "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
         handle.write("\n")
-    if not all(row["same_fields_and_objective_bits"] for row in report["measurements"]):
+    if not all(
+        all(row["same_fields_and_objective_bits"].values()) for row in report["measurements"]
+    ):
         raise SystemExit("Las opciones cambiaron la selección")
 
 
