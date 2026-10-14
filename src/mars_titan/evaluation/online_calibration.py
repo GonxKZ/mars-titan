@@ -23,6 +23,11 @@ promediada sobre los intervalos declarados. En los años de evaluación se compa
 estática con un bootstrap circular por bloques de días y el interval score por sesión con la
 comparación emparejada común. Las semillas se promedian sesión a sesión. Es un análisis de
 calibración: la mediana no cambia, así que el MAE y los demás contrastes tampoco.
+
+Si la comparación declara los eventos de D2 (``declared_events``), cada modelo da también la
+cobertura de todas las variantes en las sesiones de cada evento, con las filas como peso y el
+tramo de años al que pertenecen. Los eventos de los años de selección sirven para describir,
+no para contrastar, porque κ se eligió con ellos.
 """
 
 import dataclasses
@@ -34,6 +39,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.calibration import online_conformal, periodic_conformal
+from mars_titan.evaluation import declared_events
 from mars_titan.evaluation.forecast_panel import SessionSeries
 from mars_titan.evaluation.forecast_scores import score_sessions
 from mars_titan.evaluation.paired_comparisons import circular_block_counts, compare_series, delta
@@ -422,7 +428,50 @@ def _matches(primary, interval_scores, chosen):
     )
 
 
-def _arm_report(section, comparison, weighting, nominals, per_seed):
+def _period(years, section):
+    """Tramo de años de un evento: selección, evaluación o fuera de los dos."""
+    for name in ("selection", "assessment"):
+        first, last = section[f"{name}_years"]
+        if all(first <= year <= last for year in years):
+            return name
+    return "outside_or_mixed"
+
+
+def _event_coverage(events, section, reference, coverage, names, nominals):
+    """Cobertura de cada variante en las sesiones de cada evento, con las filas como peso."""
+    years = _session_years(reference)
+    result = {}
+    for name, event in events["events"].items():
+        if event["market"] not in reference.markets:
+            continue
+        found = declared_events.event_sessions(
+            event, reference.session_time, reference.session_market, reference.markets
+        )
+        if found is None:
+            result[name] = dict(market=event["market"], reason="Sin sesiones evaluadas en el tramo")
+            continue
+        index, counts = found
+        weights = reference.samples[index].astype(np.float64)
+        covered = np.tensordot(weights, coverage[index], axes=1) / weights.sum()
+        spanned = sorted({int(year) for year in years[index]})
+        result[name] = dict(
+            market=event["market"],
+            **counts,
+            rows=int(weights.sum()),
+            years=spanned,
+            period=_period(spanned, section),
+            coverage={
+                variant: {
+                    f"{nominal:g}": float(covered[position, column])
+                    for position, nominal in enumerate(nominals)
+                }
+                for column, variant in enumerate(names)
+            },
+        )
+    return result
+
+
+def _arm_report(section, comparison, weighting, nominals, per_seed, events=None):
     """Selección de κ, métrica primaria, interval score y regla de un modelo."""
     names = [STATIC, *variants(section)]
     joined = [
@@ -446,6 +495,8 @@ def _arm_report(section, comparison, weighting, nominals, per_seed):
     # Con un empate se queda la tasa más pequeña, la primera de la lista.
     chosen = min(online, key=lambda name: (candidates[name], online.index(name)))
     result.update(selection=candidates, chosen=chosen)
+    if events is not None:
+        result["events"] = _event_coverage(events, section, reference, coverage, names, nominals)
     first, last = section["assessment_years"]
     assessed = (years >= first) & (years <= last)
     views = {"+".join(reference.markets): np.ones(len(years), dtype=bool)}
@@ -525,7 +576,14 @@ def report(config, per_window):
             [dict(entry[FIELD]["scores"], **{STATIC: entry["calibrated"]}) for entry in items]
             for items in entries.values()
         ]
-        result = _arm_report(section, comparison, weighting, nominals, per_seed)
+        result = _arm_report(
+            section,
+            comparison,
+            weighting,
+            nominals,
+            per_seed,
+            config.get(declared_events.FIELD),
+        )
         totals = {}
         for items in entries.values():
             for entry in items:

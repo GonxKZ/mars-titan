@@ -896,5 +896,42 @@
       "economic_causes_of_the_regimes",
       "retention_across_windows_of_states_refit_from_scratch"
     ]
+  },
+  "declared_events": {
+    "status": "declared_not_executed",
+    "declared_at": "2026-10-14",
+    "source": "docs/research/memory-diagnostics.md (D2), con los eventos que repiten las declaraciones de PT1, PT2 y PT3",
+    "use": "La regla de PT1 usa el cambio relativo del percentil 95 del MAE por sesión frente a su control (no más de un 1 %). En los demás contrastes y en la cobertura de PT2 es descriptivo y no elige modelos.",
+    "quantile": 0.95,
+    "events": {
+      "lehman_2008": {
+        "market": "US",
+        "first": "2008-09-15",
+        "last": "2008-09-15",
+        "sessions_before": 60,
+        "sessions_after": 60
+      },
+      "march_2020": {
+        "market": "US",
+        "first": "2020-02-24",
+        "last": "2020-03-23",
+        "sessions_before": 60,
+        "sessions_after": 60
+      },
+      "rate_hikes_2022": {
+        "market": "US",
+        "first": "2022-03-16",
+        "last": "2022-03-16",
+        "sessions_before": 60,
+        "sessions_after": 60
+      },
+      "china_summer_2015": {
+        "market": "CN",
+        "first": "2015-06-01",
+        "last": "2015-08-31",
+        "sessions_before": 0,
+        "sessions_after": 0
+      }
+    }
   }
 }
