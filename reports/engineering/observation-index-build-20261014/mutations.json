@@ -1,0 +1,92 @@
+{
+ "no_order_check": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_reject_samples_out_of_order[repetida-en-un-grupo]"
+  ],
+  "tail": [
+   "1 failed, 11 passed in 32.53s"
+  ]
+ },
+ "repeated_dates_allowed": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_reject_samples_out_of_order[repetida-en-un-grupo]"
+  ],
+  "tail": [
+   "1 failed, 11 passed in 32.03s"
+  ]
+ },
+ "group_left_side": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_keep_the_rows_and_order_of_the_grouped_reading[1-compacto]"
+  ],
+  "tail": [
+   "1 failed in 6.82s"
+  ]
+ },
+ "row_without_group_start": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_keep_the_rows_and_order_of_the_grouped_reading[1-compacto]"
+  ],
+  "tail": [
+   "1 failed in 3.55s"
+  ]
+ },
+ "empty_file_read_as_rows": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_keep_the_rows_and_order_of_the_grouped_reading[1-compacto]"
+  ],
+  "tail": [
+   "1 failed in 4.07s"
+  ]
+ },
+ "empty_tables_written": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_assets_without_matured_labels_leave_no_empty_piece"
+  ],
+  "tail": [
+   "1 failed, 9 passed in 55.20s"
+  ]
+ },
+ "no_limit_after_samples": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_stop_at_the_record_limit[0]"
+  ],
+  "tail": [
+   "1 failed, 15 passed in 75.90s (0:01:15)"
+  ]
+ },
+ "no_limit_after_labels": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_stop_at_the_record_limit[1]"
+  ],
+  "tail": [
+   "1 failed, 16 passed in 64.03s (0:01:04)"
+  ]
+ },
+ "buffer_not_cleared": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_keep_the_rows_and_order_of_the_grouped_reading[1-compacto]"
+  ],
+  "tail": [
+   "1 failed in 6.60s"
+  ]
+ },
+ "close_row_lost": {
+  "detected": true,
+  "failed": [
+   "tests/memory/test_observation_index_records.py::test_records_keep_the_rows_and_order_of_the_grouped_reading[1-compacto]"
+  ],
+  "tail": [
+   "1 failed in 8.20s"
+  ]
+ }
+}
