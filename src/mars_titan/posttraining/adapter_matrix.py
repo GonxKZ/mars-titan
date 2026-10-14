@@ -12,7 +12,9 @@ objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versi�
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
 (`chronological_matrix`) y, de forma opcional, dos secciones de #444: `variety`, con modelos
 de un solo punto (`adapter_variety`), y `anchored_continuation`, con el control de
-continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`).
+continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`). La
+sección opcional `replay_continuation` de #55 añade los tres controles de repaso
+(`replay_continuation`), que comparten entre ellos un presupuesto mayor que el de los demás.
 """
 
 import itertools
@@ -25,6 +27,7 @@ from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
 from . import adapter_variety, anchored_continuation
+from . import replay_continuation as replay
 from .anchored_continuation import ANCHOR
 from .inputs import fingerprint
 from .selection import selection_policy
@@ -33,8 +36,9 @@ POINTS = ("head", "readout", "fusion")
 # Formas de los puntos y modelos de las versiones 1 a 3. La variedad declara las suyas.
 BASE_FORMS = ("residual", "low_rank")
 CONTROLS = ("frozen_parent", "linear_residual", "full_continuation")
-# Controles que ajustan todos los parámetros del padre: la continuación y su versión anclada.
-CONTINUATIONS = ("full_continuation", anchored_continuation.CONTROL)
+# Controles que ajustan todos los parámetros del padre: la continuación, su versión anclada
+# y las tres con repaso.
+CONTINUATIONS = ("full_continuation", anchored_continuation.CONTROL, *replay.CONTROLS)
 # Familias de MultimodalReference que el postentrenamiento puede cargar como padre.
 FAMILIES = ("rnn", "lstm", "gru", "dlinear", "transformer")
 # Solo el Transformer compacto tiene una lectura con consulta, claves y salida.
@@ -117,9 +121,11 @@ def validate_matrix(matrix):
         "selection",
         "architectures",
     }
-    # Solo la versión 3 admite las secciones opcionales de #444.
+    # Solo la versión 3 admite las secciones opcionales de #444 y #55.
     version_three = isinstance(matrix, dict) and matrix.get("schema_version") == 3
-    optional = {"variety", anchored_continuation.CONTROL} if version_three else set()
+    optional = (
+        {"variety", anchored_continuation.CONTROL, replay.SECTION_NAME} if version_three else set()
+    )
     _require(
         isinstance(matrix, dict)
         and keys <= set(matrix) <= keys | optional
@@ -208,6 +214,8 @@ def validate_matrix(matrix):
         adapter_variety.validate(matrix["variety"], matrix)
     if anchored_continuation.CONTROL in matrix:
         anchored_continuation.validate(matrix[anchored_continuation.CONTROL], matrix)
+    if replay.SECTION_NAME in matrix:
+        replay.validate(matrix[replay.SECTION_NAME], matrix)
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
@@ -329,7 +337,7 @@ def arms(matrix, family, *, reserve=False):
     return result + adapter_variety.neural_arms(matrix, family, reserve=reserve)
 
 
-def _case(matrix, seed, mode, adapter=None, anchor=None):
+def _case(matrix, seed, mode, adapter=None, anchor=None, replayed=None):
     budget = matrix["budget"]
     case = {key: budget[key] for key in sorted(BUDGET - {"seeds", "batch_size"})} | dict(
         mode=mode, condition="real", seed=seed, selection=dict(matrix["selection"])
@@ -338,6 +346,8 @@ def _case(matrix, seed, mode, adapter=None, anchor=None):
         case["adapter"] = adapter
     if anchor is not None:
         case[ANCHOR] = anchor
+    if replayed is not None:
+        case[replay.KEY] = replayed
     selection_policy(case)
     return case
 
@@ -346,8 +356,9 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso. La continuación anclada sigue a la completa si la matriz la propone
-    para las referencias. `reserve` incluye los modelos y los controles de reserva de #444.
+    no genera caso. La continuación anclada y después los tres controles de repaso siguen a
+    la completa si la matriz los propone para las referencias. `reserve` incluye los modelos
+    y los controles de reserva de #444 y #55.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -381,6 +392,21 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
                     ),
                 )
             )
+        if replay.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            ratio = replay.declared(matrix)["ratio"]
+            result += [
+                dict(
+                    id=f"seed-{seed}/{control}",
+                    control=control,
+                    case=_case(
+                        matrix,
+                        seed,
+                        declared["full_continuation"],
+                        replayed=replay.spec(control, ratio),
+                    ),
+                )
+                for control in replay.CONTROLS
+            ]
         for arm in arms(matrix, family, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
@@ -489,7 +515,9 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
 
     Los bytes de estado cuentan parámetros entrenables y los dos momentos de AdamW en
     la precisión de los pesos, más las anclas en la continuación anclada. No incluyen
-    activaciones, que se miden al ejecutar.
+    activaciones, que se miden al ejecutar. Los controles de repaso suman en cada época sus
+    actualizaciones adicionales (`extra_updates`) y comparten entre ellos ese presupuesto.
+    El resto de casos comparte el de la continuación completa.
     """
     _require(
         type(updates_per_epoch) is int
@@ -527,16 +555,25 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
             size, invalidates = itemsize, _states(case["adapter"]["points"])
         # Pesos y dos momentos. La continuación anclada guarda además el padre como ancla.
         copies = 4 if item["control"] == anchored_continuation.CONTROL else 3
+        extra = 0
+        if replay.KEY in case:
+            extra = case["epochs"] * replay.extra_updates(
+                updates_per_epoch, case[replay.KEY]["ratio"]
+            )
         rows.append(
             dict(
                 id=item["id"],
                 control=item["control"],
                 trainable_parameters=count,
                 state_bytes=copies * size * count,
-                updates=updates,
+                updates=updates + extra,
                 invalidates=invalidates,
                 case=case,
             )
         )
-    _require(len({row["updates"] for row in rows[1:]}) == 1, "Los modelos no comparten presupuesto")
+    for group in (False, True):
+        shared = {
+            row["updates"] for row in rows[1:] if (row["control"] in replay.CONTROLS) == group
+        }
+        _require(len(shared) <= 1, "Los modelos no comparten presupuesto")
     return rows

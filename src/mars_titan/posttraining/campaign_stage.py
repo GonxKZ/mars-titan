@@ -88,6 +88,7 @@ from mars_titan.training.learning_hold import LearningHoldError, require_learnin
 
 from . import adapter_matrix, anchored_continuation, staged_chain, staged_rows
 from . import chronological_matrix as cm
+from . import replay_continuation as replay
 from .heldout import evaluate_partition
 from .matrix_runs import MatrixParent, MatrixWindow, index_manifest, predict_heldout
 from .parents import load_parent
@@ -115,8 +116,16 @@ _FIELDS = {
 }
 # Campos que solo declara la variante A, la única con walk-forward por etapas.
 _STAGED_FIELDS = {"chain_rule", "data_policy"}
-# Controles de la matriz que una etapa ejecuta solo si los nombra (#444).
+# Secciones de la matriz cuyos controles una etapa ejecuta solo si las nombra: la
+# continuación anclada de #444 y los tres controles de repaso de #55.
 ADDITIONAL = "additional_controls"
+OPTIONAL_CONTROLS = {
+    anchored_continuation.CONTROL: (
+        anchored_continuation.declared,
+        (anchored_continuation.CONTROL,),
+    ),
+    replay.SECTION_NAME: (replay.declared, replay.CONTROLS),
+}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 # Diseños de la etapa: por etapas en A y el plan anclado de B, que no se ejecuta.
 STAGED, ANCHORED = "staged_chain_v1", "anchored_not_executed"
@@ -241,7 +250,12 @@ def load_stage(path):
         "La matriz debe compartir la política y el lote de la campaña",
     )
     if ADDITIONAL in config:
-        anchored_continuation.stage_controls(config[ADDITIONAL], matrix)
+        _stage_controls(config[ADDITIONAL], matrix)
+        # El repaso necesita la frontera de las filas nuevas, que solo existe en A.
+        _require(
+            staged or replay.SECTION_NAME not in config[ADDITIONAL],
+            "El repaso solo existe en el walk-forward por etapas de la variante A",
+        )
     scopes = _names(config["scopes"], campaign["scopes"], "Los ámbitos")
     _require(
         scopes == [scope for scope in campaign["scopes"] if scope in scopes],
@@ -374,10 +388,28 @@ def arm_name(base_arm, point):
     return f"{base_arm}__{point.replace('+', '_')}"
 
 
+def _stage_controls(value, matrix):
+    """Secciones opcionales que ejecuta una etapa. Su matriz debe declararlas."""
+    _require(
+        isinstance(value, list)
+        and value
+        and len(set(value)) == len(value)
+        and all(
+            isinstance(name, str)
+            and name in OPTIONAL_CONTROLS
+            and OPTIONAL_CONTROLS[name][0](matrix) is not None
+            for name in value
+        ),
+        "La etapa solo añade controles que su matriz declara",
+    )
+    return value
+
+
 def _cases(stage, spec):
     """Casos de la matriz de un modelo base: los neuronales o los cronológicos.
 
-    La continuación anclada solo entra si la etapa la nombra en `additional_controls`.
+    La continuación anclada y los controles de repaso solo entran si la etapa nombra su
+    sección en `additional_controls`.
     """
     matrix, digest = stage["matrix"], stage["matrix_sha256"]
     if spec["design"] == FROZEN_ONLY:
@@ -386,12 +418,11 @@ def _cases(stage, spec):
         items = adapter_matrix.cases(matrix, digest, spec["family"], head=QUANTILE_HEAD)
     else:
         items = cm.cases(matrix, digest, spec["family"], variant=spec["variant"], bank=spec["bank"])
-    chosen = stage.get(ADDITIONAL, [])
-    items = [
-        item
-        for item in items
-        if item["control"] != anchored_continuation.CONTROL or item["control"] in chosen
-    ]
+    optional = {control for _, controls in OPTIONAL_CONTROLS.values() for control in controls}
+    chosen = {
+        control for name in stage.get(ADDITIONAL, []) for control in OPTIONAL_CONTROLS[name][1]
+    }
+    items = [item for item in items if item["control"] not in optional or item["control"] in chosen]
     for item in items:
         _require(item["case"].get("condition", REAL) == REAL, REAL_ONLY)
     return items
@@ -676,6 +707,9 @@ def _code():
         "posttraining/adapter_variety.py",
         "posttraining/anchored_continuation.py",
         "training/anchored_decay.py",
+        "posttraining/replay_continuation.py",
+        "posttraining/replay_inputs.py",
+        "memory/regimes.py",
         "posttraining/run.py",
         "posttraining/heldout.py",
         "posttraining/evaluation.py",
@@ -945,6 +979,7 @@ class _Stage:
                 lease=self.lease,
                 stop=self.stop,
                 population=self.population(job["scope"], job["parent_window"]),
+                parent_view=Path(self.view(job["scope"], job["parent_window"])["path"]),
             )
             self.parent_key = key
             self.budgets["/".join(map(str, key))] = self.parent.budget
@@ -1051,6 +1086,9 @@ class _Stage:
             score=report["predictions"]["validation"]["metrics"]["session_mae"],
             updates=report["global_step"],
             selection=report["selection"],
+            # Las filas de repaso son anteriores y las ajustó el padre: no entran en la
+            # prueba de filas nuevas y el recibo las declara aparte.
+            replay=report["identity"]["dataset"].get("replay"),
         )
 
     def fit_chronological(self, job, folder):
@@ -1351,6 +1389,8 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if result.get("replay") is not None:
+            receipt["replay"] = result["replay"]
         if self.platform is not None:
             # Fuera de la identidad, como en la campaña base: los recibos anteriores siguen
             # siendo válidos y la publicación de fuentes exige una sola plataforma.
@@ -1408,13 +1448,24 @@ class _Stage:
         )
 
     def equal_updates(self, job, receipt):
-        """Todos los casos ajustados de un padre aplican el mismo número de actualizaciones."""
+        """Los casos ajustados de un padre aplican el mismo número de actualizaciones.
+
+        Los controles de repaso de #55 comparten entre ellos un presupuesto mayor, con sus
+        actualizaciones adicionales, y se comparan solo entre sí.
+        """
         if job["kind"] != FIT:
             return
-        key = (job["scope"], job["window"], job["base_arm"], job["seed"])
+        replayed = replay.KEY in (job["case"] or {})
+        key = (job["scope"], job["window"], job["base_arm"], job["seed"], replayed)
         for name, other in self.receipts.items():
             identity = other["identity"]
-            same = (identity["scope"], identity["window"], identity["base_arm"], identity["seed"])
+            same = (
+                identity["scope"],
+                identity["window"],
+                identity["base_arm"],
+                identity["seed"],
+                replay.KEY in (identity["case"] or {}),
+            )
             if identity["kind"] == FIT and same == key:
                 _require(
                     other["updates"] == receipt["updates"],

@@ -6,8 +6,9 @@ modelos a mano. Por cada modelo base y ámbito hay una comparación walk-forward
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
 modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
 continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
-con su propio papel. Una familia cuya base no existe para un padre no se deriva para él y
-un papel ausente no aporta variantes.
+con su propio papel, y lo mismo ocurre con cada control de repaso de #55
+(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``). Una familia cuya
+base no existe para un padre no se deriva para él y un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
@@ -50,6 +51,7 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.hardware import hardware_profiles
 from mars_titan.training import campaign_chain
 
+from . import replay_continuation as replay
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
     FROZEN_ONLY,
@@ -68,9 +70,9 @@ USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
 ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
-ROLES = (FROZEN, CONTINUATION, ANCHORED, ADAPTED, CHAIN, BASE)
 # Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
-CONTROLS = (CONTINUATION, ANCHORED)
+CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS)
+ROLES = (FROZEN, *CONTROLS, ADAPTED, CHAIN, BASE)
 # Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
 # reentreno.
 BASE_ROLES = (FROZEN, *CONTROLS, BASE)
@@ -80,6 +82,7 @@ ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
     ANCHORED: "posttraining_control",
+    **{control: "posttraining_control" for control in replay.CONTROLS},
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -139,8 +142,7 @@ def _groups(stage):
             job["base_arm"],
             {
                 FROZEN: job["base_arm"],
-                CONTINUATION: None,
-                ANCHORED: None,
+                **{control: None for control in CONTROLS},
                 ADAPTED: [],
                 CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
@@ -298,6 +300,9 @@ def check_declaration(path):
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
                 anchored_continuation=loaded["groups"][base_arm][ANCHORED],
+                replay={
+                    control: loaded["groups"][base_arm][control] for control in replay.CONTROLS
+                },
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
                 if loaded["groups"][base_arm][CHAIN] in config["arms"]

@@ -39,6 +39,7 @@ from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
+from . import replay_continuation as replay
 from .adapter_traces import AdapterObserver
 from .anchored_continuation import ANCHOR
 from .evaluation import centers, evaluate
@@ -52,9 +53,9 @@ MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 PINBALL_MODE = "neural_pinball"
 
 
-def code_identity(*, masked=False, adapters=False, quantiles=False, anchored=False):
-    """Huellas del código. Máscaras, adaptadores, pinball y el decaimiento anclado añaden
-    solo sus propios módulos."""
+def code_identity(*, masked=False, adapters=False, quantiles=False, anchored=False, replayed=False):
+    """Huellas del código. Máscaras, adaptadores, pinball, el decaimiento anclado y el
+    repaso añaden solo sus propios módulos."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -100,6 +101,16 @@ def code_identity(*, masked=False, adapters=False, quantiles=False, anchored=Fal
     names += ("posttraining/adapter_matrix.py",) if adapters else ()
     names += ("models/quantile_head.py",) if quantiles else ()
     names += ("training/anchored_decay.py",) if anchored else ()
+    names += (
+        (
+            "posttraining/replay_continuation.py",
+            "posttraining/replay_inputs.py",
+            "environments/view_cohorts.py",
+            "memory/regimes.py",
+        )
+        if replayed
+        else ()
+    )
     return {name: sha256(root / name) for name in names}
 
 
@@ -110,6 +121,7 @@ def case_code(case, dataset=None, *, masked=None):
         adapters="adapter" in case,
         quantiles=case["mode"] == PINBALL_MODE,
         anchored=ANCHOR in case,
+        replayed=replay.KEY in case,
     )
 
 
@@ -128,7 +140,7 @@ def validate_case(case):
     }
     if (
         not isinstance(case, dict)
-        or not required <= set(case) <= required | {"selection", "adapter", ANCHOR}
+        or not required <= set(case) <= required | {"selection", "adapter", ANCHOR, replay.KEY}
         or case["mode"] not in (*MODES, PINBALL_MODE)
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
@@ -171,6 +183,16 @@ def validate_case(case):
                 "El decaimiento anclado pertenece a una continuación completa con datos reales "
                 "y λ positivo"
             )
+    if replay.KEY in case:
+        # El repaso es otra continuación completa supervisada, sin ancla ni adaptador.
+        replay.check_spec(case[replay.KEY])
+        if (
+            "adapter" in case
+            or ANCHOR in case
+            or not case["mode"].startswith("neural_")
+            or case["condition"] != "real"
+        ):
+            raise ValueError("El repaso pertenece a una continuación completa con datos reales")
 
 
 def _statistics():
@@ -287,6 +309,10 @@ def _validate_run(
         or parent.identity.get("counts") != dataset.population_counts
     ):
         raise ValueError("El padre no acredita la misma población completa")
+    if case.get(replay.KEY) != getattr(dataset, "spec", None) or (
+        replay.KEY in case and dataset.seed != case["seed"]
+    ):
+        raise ValueError("Las cohortes no llevan el repaso que declara el caso")
     budget = dataset.budget(case["condition"], batch_size)
     if diagnostic and budget["rows"] > 5000:
         raise ValueError("El diagnóstico supera el presupuesto de filas aumentadas")

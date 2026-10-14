@@ -22,6 +22,7 @@ from mars_titan.posttraining import (
     stage_comparison,
 )
 from mars_titan.posttraining import chronological_matrix as cm
+from mars_titan.posttraining import replay_continuation as replay
 from mars_titan.posttraining.run import case_code, run_case, validate_case
 from mars_titan.training.anchored_decay import INITIAL
 from mars_titan.training.candidate_run import CandidateRecipe
@@ -58,7 +59,8 @@ def _mutated(document, change):
 def test_the_references_add_the_anchored_continuation_after_the_full_one(matrix, head):
     document, digest = matrix
     assert document[ANCHORED] == dict(anchor=INITIAL, campaign=["references"])
-    expected = ["full_continuation", ANCHORED]
+    # Los tres controles de repaso de #55 siguen a la continuación anclada.
+    expected = ["full_continuation", ANCHORED, *replay.CONTROLS]
     if head == adapter_matrix.SCALAR:
         expected = ["linear_residual", *expected]
     for family in adapter_matrix.FAMILIES:
@@ -66,7 +68,7 @@ def test_the_references_add_the_anchored_continuation_after_the_full_one(matrix,
         for seed in document["budget"]["seeds"]:
             own = [item for item in items if item["case"]["seed"] == seed]
             assert controls(own) == expected
-            full, anchored = (own[expected.index(name)] for name in expected[-2:])
+            full, anchored = (own[expected.index(name)] for name in ("full_continuation", ANCHORED))
             # Mismo objetivo, presupuesto, λ y selección. Solo cambia el ancla.
             assert anchored["case"] == dict(full["case"], weight_decay_anchor=INITIAL)
             # Presupuesto fijo sin paciencia: ninguna de las dos para antes que la otra, así

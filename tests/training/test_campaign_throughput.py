@@ -362,6 +362,34 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
+def test_the_replay_controls_add_their_epoch_rows_to_the_estimate():
+    """Los tres controles de repaso de #55 son ajustes con más filas por época.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade tres
+    ajustes que recorren las 6.000 filas nuevas y sus lotes de repaso estimados.
+    """
+    from mars_titan.posttraining import replay_continuation as replay
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(stage, additional_controls=[*stage["additional_controls"], replay.SECTION_NAME])
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 3 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    rows = replay.estimated_epoch_rows(6_000, 0.5, stage["matrix"]["budget"]["batch_size"])
+    assert rows >= 6_000 * 1.5
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * rows / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
 def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
     # huella, y A añade los adaptadores de la variedad, así que se mide A en cualquier orden.
@@ -601,6 +629,7 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     )
     budget = dict(stage["matrix"]["budget"], batch_size=1)
     stage.update(families={"gru": "gru"}, matrix=dict(stage["matrix"], budget=budget))
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining import run as posttraining_run
 
     built, build = [], posttraining_run.build_model
@@ -614,13 +643,15 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
     # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
-    # de la variedad de adaptadores.
+    # de la variedad de adaptadores. La etapa A no nombra el repaso (#55), así que sus tres
+    # controles no se ejecutan ni se miden.
+    assert replay.SECTION_NAME not in stage["additional_controls"]
     declared = [
         item["id"].split("/", 1)[1]
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
         )
-        if item["case"]["seed"] == 42
+        if item["case"]["seed"] == 42 and item["control"] not in replay.CONTROLS
     ]
     assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks

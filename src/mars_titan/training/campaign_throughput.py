@@ -312,8 +312,12 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
     recorre todo su tramo.
 
     La medida de la matriz solo cubre las redes de referencia. Las variantes de Titans-MAC y la
-    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas. Un
+    control de repaso ajusta en cada época además sus filas de repaso, estimadas con
+    `replay_continuation.estimated_epoch_rows`. La lectura de las sesiones anteriores no
+    se cuenta, como el resto de lecturas de disco.
     """
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
@@ -349,6 +353,15 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
         if job["kind"] == FROZEN:
             return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
         rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
+        if replay.KEY in job["case"]:
+            rows = dict(
+                rows,
+                train=replay.estimated_epoch_rows(
+                    rows["train"],
+                    job["case"][replay.KEY]["ratio"],
+                    stage["matrix"]["budget"]["batch_size"],
+                ),
+            )
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
             total += (rows["train"] + rows["validation"]) / cache
