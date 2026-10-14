@@ -28,7 +28,6 @@ from mars_titan.training.corpus_inputs import (
     _fill_batch,
     _historical_times,
     _new_batch,
-    _populated_groups,
     _window_contexts,
 )
 from mars_titan.training.input_pipeline import background, drain, submit
@@ -42,6 +41,8 @@ _MAX_ROWS = 100_000_000
 _MAX_BYTES = 4 * 1024**3
 # Filas de un instante: una entrada y una maduración por activo, más el cierre.
 _EVENT_ROWS = 16385
+# Filas del índice sin ordenar que se escriben juntas en un grupo de Parquet.
+_RAW_ROWS = 1 << 18
 # Instantes cuyos grupos se piden antes de montarlos cuando hay hilos de decodificación.
 EVENTS_AHEAD = 4
 
@@ -110,40 +111,53 @@ def _table(columns):
     return pa.Table.from_pydict(columns, schema=_SCHEMA)
 
 
+def _asset_samples(file, phase, identity):
+    """Filas de muestras de un activo dentro del tramo, con su grupo y su fila de origen.
+
+    Lee `prediction_at` de todo el archivo en una llamada. Los grupos vacíos no aportan
+    filas, así que los desplazamientos de los metadatos dan el grupo físico de cada fila
+    igual que la lectura grupo a grupo. El orden estricto de todas las filas equivale al de
+    cada grupo más el del primer valor de cada grupo frente al último del anterior.
+    """
+    sizes = np.array(
+        [file.metadata.row_group(g).num_rows for g in range(file.num_row_groups)], np.int64
+    )
+    if sizes.sum():
+        stamps = _historical_times(file.read(columns=["prediction_at"], use_threads=False))
+        if np.any(np.diff(stamps) <= 0):
+            raise ValueError("Las muestras necesitan orden temporal único")
+    else:
+        stamps = np.empty(0, np.int64)
+    rows = np.flatnonzero((stamps >= phase.warmup_start) & (stamps < phase.decision_end))
+    ends = np.cumsum(sizes)
+    groups = np.searchsorted(ends, rows, side="right")
+    return dict(
+        event_at=stamps[rows],
+        kind=np.zeros(len(rows), np.int64),
+        asset_id=np.full(len(rows), identity, np.int64),
+        source_group=groups.astype(np.int64),
+        source_row=rows - (ends - sizes)[groups],
+        sample_at=stamps[rows],
+    )
+
+
 def _records(dataset, phase):
-    total = 0
+    """Registros sin ordenar del índice, en tablas de hasta `_RAW_ROWS` filas.
+
+    Las filas salen en el mismo orden que la lectura grupo a grupo: por activo, sus
+    muestras y después sus maduraciones, y al final el cierre. Solo cambia cómo se reparten
+    en grupos del Parquet sin ordenar, que DuckDB ordena después por una clave única.
+    """
+    total, pending, buffered = 0, [], 0
     for identity, asset in enumerate(_assets(dataset)):
         path = dataset._file(asset, "samples")
         with pq.ParquetFile(path) as file:
             if file.metadata.num_rows > 1_000_000:
                 raise ValueError("Un activo supera el presupuesto de muestras")
-            previous = None
-            for group in _populated_groups(file):
-                stamps = _historical_times(
-                    file.read_row_group(group, columns=["prediction_at"], use_threads=False)
-                )
-                if len(stamps) and (
-                    np.any(np.diff(stamps) <= 0) or (previous is not None and stamps[0] <= previous)
-                ):
-                    raise ValueError("Las muestras necesitan orden temporal único")
-                if len(stamps):
-                    previous = stamps[-1]
-                rows = np.flatnonzero(
-                    (stamps >= phase.warmup_start) & (stamps < phase.decision_end)
-                )
-                total += len(rows)
-                if total >= _MAX_ROWS:
-                    raise ValueError("El índice supera su número máximo de registros")
-                yield _table(
-                    dict(
-                        event_at=stamps[rows],
-                        kind=np.zeros(len(rows), np.int64),
-                        asset_id=np.full(len(rows), identity, np.int64),
-                        source_group=np.full(len(rows), group, np.int64),
-                        source_row=rows.astype(np.int64),
-                        sample_at=stamps[rows],
-                    )
-                )
+            samples = _asset_samples(file, phase, identity)
+            total += len(samples["event_at"])
+            if total >= _MAX_ROWS:
+                raise ValueError("El índice supera su número máximo de registros")
             positions, stamps, _, maturity = dataset._labels(
                 asset, phase.partition, file.metadata.num_rows
             )
@@ -155,29 +169,37 @@ def _records(dataset, phase):
             total += len(selected)
             if total >= _MAX_ROWS:
                 raise ValueError("El índice supera su número máximo de registros")
-            yield _table(
-                dict(
-                    event_at=maturity[selected],
-                    kind=np.ones(len(selected), np.int64),
-                    asset_id=np.full(len(selected), identity, np.int64),
-                    source_group=np.full(len(selected), -1, np.int64),
-                    source_row=positions[selected],
-                    sample_at=stamps[selected],
-                )
+            matured = dict(
+                event_at=maturity[selected],
+                kind=np.ones(len(selected), np.int64),
+                asset_id=np.full(len(selected), identity, np.int64),
+                source_group=np.full(len(selected), -1, np.int64),
+                source_row=positions[selected],
+                sample_at=stamps[selected],
             )
         dataset._file(asset, "samples")
         dataset._file(asset, "labels")
+        for columns in (samples, matured):
+            if len(columns["event_at"]):
+                pending.append(_table(columns))
+                buffered += len(columns["event_at"])
+        if buffered >= _RAW_ROWS:
+            yield pa.concat_tables(pending)
+            pending, buffered = [], 0
     # Esta fila es una instrucción administrativa, sin activo, input ni etiqueta.
-    yield _table(
-        dict(
-            event_at=[phase.close_at],
-            kind=[2],
-            asset_id=[-1],
-            source_group=[-1],
-            source_row=[-1],
-            sample_at=[-1],
+    pending.append(
+        _table(
+            dict(
+                event_at=[phase.close_at],
+                kind=[2],
+                asset_id=[-1],
+                source_group=[-1],
+                source_row=[-1],
+                sample_at=[-1],
+            )
         )
     )
+    yield pa.concat_tables(pending)
 
 
 def prepare_observation_index(dataset, output, *, phase, resume=False):
