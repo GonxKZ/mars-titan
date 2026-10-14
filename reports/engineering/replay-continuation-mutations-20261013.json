@@ -1,0 +1,344 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 55,
+ "recorded_at_utc": "2026-10-13T04:28:53.835014+00:00",
+ "files": [
+  "src/mars_titan/environments/view_cohorts.py",
+  "src/mars_titan/posttraining/adapter_matrix.py",
+  "src/mars_titan/posttraining/campaign_stage.py",
+  "src/mars_titan/posttraining/inputs.py",
+  "src/mars_titan/posttraining/matrix_runs.py",
+  "src/mars_titan/posttraining/replay_continuation.py",
+  "src/mars_titan/posttraining/replay_inputs.py",
+  "src/mars_titan/posttraining/run.py",
+  "src/mars_titan/posttraining/stage_comparison.py",
+  "src/mars_titan/training/campaign_throughput.py"
+ ],
+ "tests": [
+  "tests/posttraining/test_replay_continuation.py",
+  "tests/training/test_campaign_throughput.py::test_the_replay_controls_add_their_epoch_rows_to_the_estimate"
+ ],
+ "command": "pytest -q -x tests/posttraining/test_replay_continuation.py y la prueba de repaso de tests/training/test_campaign_throughput.py sobre una copia de src, tests y configs",
+ "baseline": {
+  "code": 0,
+  "tail": "46 passed in 11.50s"
+ },
+ "import_checked": "copia aislada (ruta local omitida)",
+ "killed": 39,
+ "survived": 0,
+ "mutations": [
+  {
+   "id": "R01",
+   "description": "Proporción mayor que uno aceptada",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 1.96s",
+   "seconds": 4.7
+  },
+  {
+   "id": "R02",
+   "description": "Actualizaciones de repaso por defecto",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 16 passed in 1.84s",
+   "seconds": 4.36
+  },
+  {
+   "id": "R03",
+   "description": "Ámbitos distintos de las referencias aceptados",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 4 passed in 1.66s",
+   "seconds": 4.15
+  },
+  {
+   "id": "R04",
+   "description": "Política desconocida aceptada en el caso",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.68s",
+   "seconds": 3.99
+  },
+  {
+   "id": "R05",
+   "description": "Reparto por régimen tratado como uniforme",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 1.64s",
+   "seconds": 3.99
+  },
+  {
+   "id": "R06",
+   "description": "Orden con el generador de las posiciones",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 1.77s",
+   "seconds": 4.31
+  },
+  {
+   "id": "R07",
+   "description": "Regímenes agotados de uno en uno",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 1.69s",
+   "seconds": 4.27
+  },
+  {
+   "id": "R08",
+   "description": "Última sesión sin recortar",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 22 passed in 1.60s",
+   "seconds": 3.82
+  },
+  {
+   "id": "R09",
+   "description": "Posiciones iguales en todas las épocas",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 1.68s",
+   "seconds": 3.97
+  },
+  {
+   "id": "R10",
+   "description": "Régimen con cierres posteriores a la decisión",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 1.70s",
+   "seconds": 4.0
+  },
+  {
+   "id": "R11",
+   "description": "Admisión solo temporal",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 3.53s",
+   "seconds": 5.78
+  },
+  {
+   "id": "R12",
+   "description": "Madurez de las etiquetas ignorada",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 4.15s",
+   "seconds": 6.46
+  },
+  {
+   "id": "R13",
+   "description": "Huella de muestras sin comprobar",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 3.72s",
+   "seconds": 6.01
+  },
+  {
+   "id": "R14",
+   "description": "Sesión admitida con alguna fila del padre",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 27 passed in 3.49s",
+   "seconds": 5.91
+  },
+  {
+   "id": "R15",
+   "description": "Régimen de un mercado en sesiones con dos",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 39 passed in 4.71s",
+   "seconds": 7.0
+  },
+  {
+   "id": "R16",
+   "description": "Actualizaciones nuevas contadas por filas",
+   "file": "src/mars_titan/posttraining/replay_continuation.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 19 passed in 1.55s",
+   "seconds": 3.78
+  },
+  {
+   "id": "R17",
+   "description": "Fuente del repaso sin comprobar",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 37 passed in 3.72s",
+   "seconds": 5.89
+  },
+  {
+   "id": "R18",
+   "description": "Visitas sin límite de lotes",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 4.09s",
+   "seconds": 6.4
+  },
+  {
+   "id": "R19",
+   "description": "Semilla de la época sin comprobar",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 3.88s",
+   "seconds": 6.44
+  },
+  {
+   "id": "R20",
+   "description": "Madurez de la cohorte repasada sin comprobar",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 36 passed in 4.04s",
+   "seconds": 6.24
+  },
+  {
+   "id": "R21",
+   "description": "Rutas declaradas también sin reparto por régimen",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 33 passed in 3.49s",
+   "seconds": 5.62
+  },
+  {
+   "id": "R22",
+   "description": "Visitas de repaso al final de la época",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 4.28s",
+   "seconds": 6.96
+  },
+  {
+   "id": "R23",
+   "description": "Origen del repaso declarado como real",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 3.81s",
+   "seconds": 6.27
+  },
+  {
+   "id": "R24",
+   "description": "Presupuesto sin las filas de repaso",
+   "file": "src/mars_titan/posttraining/replay_inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 43 passed in 8.99s",
+   "seconds": 11.79
+  },
+  {
+   "id": "R25",
+   "description": "Límite de filas de la visita ignorado",
+   "file": "src/mars_titan/posttraining/inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 3.62s",
+   "seconds": 5.81
+  },
+  {
+   "id": "R26",
+   "description": "Comprobación adicional de la visita omitida",
+   "file": "src/mars_titan/posttraining/inputs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 36 passed in 3.74s",
+   "seconds": 6.03
+  },
+  {
+   "id": "R27",
+   "description": "Sesiones enumeradas sin filtrar",
+   "file": "src/mars_titan/environments/view_cohorts.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 3.28s",
+   "seconds": 5.36
+  },
+  {
+   "id": "R28",
+   "description": "Plan sin las actualizaciones de repaso",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 16 passed in 1.51s",
+   "seconds": 3.7
+  },
+  {
+   "id": "R29",
+   "description": "Un solo presupuesto para todos los casos",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 16 passed in 1.62s",
+   "seconds": 3.86
+  },
+  {
+   "id": "R30",
+   "description": "Matriz sin el control de repetición",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed in 1.44s",
+   "seconds": 3.66
+  },
+  {
+   "id": "R31",
+   "description": "Repaso con adaptador aceptado",
+   "file": "src/mars_titan/posttraining/run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 1.58s",
+   "seconds": 3.75
+  },
+  {
+   "id": "R32",
+   "description": "Cohortes sin el repaso del caso aceptadas",
+   "file": "src/mars_titan/posttraining/run.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 38 passed in 3.87s",
+   "seconds": 6.01
+  },
+  {
+   "id": "R33",
+   "description": "Huella de código sin los módulos del repaso",
+   "file": "src/mars_titan/posttraining/run.py",
+   "killed": true,
+   "pytest_tail": "1 failed in 1.44s",
+   "seconds": 3.53
+  },
+  {
+   "id": "R34",
+   "description": "Repaso aceptado en la variante B",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 42 passed in 5.75s",
+   "seconds": 7.96
+  },
+  {
+   "id": "R35",
+   "description": "Etapa con todos los controles opcionales",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 40 passed in 5.83s",
+   "seconds": 8.06
+  },
+  {
+   "id": "R36",
+   "description": "Recibo sin el repaso",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 43 passed in 9.66s",
+   "seconds": 12.31
+  },
+  {
+   "id": "R37",
+   "description": "Repaso sin papel propio en la comparación",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 44 passed in 10.26s",
+   "seconds": 13.0
+  },
+  {
+   "id": "R38",
+   "description": "Horas sin las filas de repaso",
+   "file": "src/mars_titan/training/campaign_throughput.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 45 passed in 11.62s",
+   "seconds": 14.42
+  },
+  {
+   "id": "R39",
+   "description": "Cohortes del repaso con otra semilla",
+   "file": "src/mars_titan/posttraining/matrix_runs.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 43 passed in 9.52s",
+   "seconds": 12.17
+  }
+ ]
+}

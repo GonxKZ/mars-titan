@@ -41,13 +41,14 @@ CAMPAIGNS = {
 STAGES = {
     v: Path(f"configs/posttraining/historical-masked-adapter-stage-{v.lower()}.json") for v in "AB"
 }
-# Modelos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A.
+# Modelos de la sección `variety` de la matriz v3 (#444), que solo declara la etapa A, y la
+# continuación anclada, que A añade como control.
 VARIETY = {
     arm["id"]
     for arm in json.loads(Path("configs/posttraining/adapter-matrix-v3.json").read_text())[
         "variety"
     ]["arms"]
-}
+} | {"anchored_continuation"}
 CANDIDATE = Path("configs/candidate/chronological-training.json")
 EXTENSIONS = Path("configs/baselines/historical-masked-campaign-extensions.json")
 TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
@@ -306,9 +307,9 @@ def growing(campaign, step):
 
 @pytest.mark.parametrize(
     ("variant", "fits", "predictions", "parents"),
-    # A ajusta en las redes los 51 casos de la v3 por ventana y semilla, 22 de ellos de la
-    # variedad de adaptadores, y B los 29 de la v2.
-    [("A", 6426, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
+    # A ajusta en las redes los 56 casos de la v3 por ventana y semilla, 22 de ellos de la
+    # variedad de adaptadores y 5 de la continuación anclada, y B los 29 de la v2.
+    [("A", 7056, 630, 42 * 15), ("B", 1479, 2436, 17 * 15)],
 )
 def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     variant, fits, predictions, parents
@@ -362,6 +363,67 @@ def test_posttraining_hours_cover_every_stage_job_and_each_parent_cache(
     assert unmeasured["families"][throughput.POSTTRAINING] == dict(status="not_measured")
 
 
+def test_the_replay_controls_add_their_epoch_rows_to_the_estimate():
+    """Los tres controles de repaso de #55 son ajustes con más filas por época.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade tres
+    ajustes que recorren las 6.000 filas nuevas y sus lotes de repaso estimados.
+    """
+    from mars_titan.posttraining import replay_continuation as replay
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(stage, additional_controls=[*stage["additional_controls"], replay.SECTION_NAME])
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 3 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    rows = replay.estimated_epoch_rows(6_000, 0.5, stage["matrix"]["budget"]["batch_size"])
+    assert rows >= 6_000 * 1.5
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * rows / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
+def test_the_objectives_are_bounded_by_the_rate_of_the_full_continuation():
+    """Los seis objetivos lineales de #128 no tienen medida propia.
+
+    A no los nombra en su etapa. Con ellos, cada ventana, referencia y semilla añade seis
+    ajustes que recorren las 6.000 filas nuevas con el caudal de la continuación completa
+    de su padre, aunque los puntos de los objetivos declaren otro.
+    """
+    from mars_titan.posttraining import predictive_objectives as predictive
+
+    stage = campaign_stage.load_stage(STAGES["A"])
+    campaign = load_campaign(CAMPAIGNS["A"])
+    counts, rates = growing(campaign, 12_000)
+    rates[throughput.POSTTRAINING] = matrix_points(stage, slower=2.0)
+    for candidates in rates[NEURAL].values():
+        list(candidates.values())[-1]["inference"] = 200.0
+    family = throughput.POSTTRAINING
+    base = throughput.estimate_hours(campaign, counts, rates, stage=stage)["families"][family]
+    named = dict(
+        stage, additional_controls=[*stage["additional_controls"], predictive.SECTION_NAME]
+    )
+    for parents in rates[throughput.POSTTRAINING].values():
+        for points in parents.values():
+            for control in predictive.CONTROLS:
+                points[control] = dict(train=1e9, inference=1e9)
+    found = throughput.estimate_hours(campaign, counts, rates, stage=named)["families"][family]
+    jobs = 6 * 630
+    assert found["training_jobs"] == base["training_jobs"] + jobs
+    assert found["parent_caches"] == base["parent_caches"]
+    validation = (7 * 4_000 + 10_000) / 200
+    expected = jobs * (5 * 6_000 / 50 + validation) / 3600
+    assert found["hours"] - base["hours"] == pytest.approx(expected)
+
+
 def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     # A declara la matriz v3 y B la v2. Los casos de las redes de B están en A salvo por la
     # huella, y A añade los adaptadores de la variedad, así que se mide A en cualquier orden.
@@ -374,6 +436,8 @@ def test_the_measured_stage_contains_the_cases_of_both_matrix_versions():
     for arm, cases in measured_b["cases"].items():
         extra = set(measured_a["cases"][arm]) - set(cases)
         assert extra and all(key.split("/", 1)[1] in VARIETY for key in extra), arm
+        # A mide también la continuación anclada que ejecuta, y B no la tiene.
+        assert "seed-42/anchored_continuation" in extra, arm
     # Otro presupuesto o una red que A no mide dejan a B sin medida.
     budget = copy.deepcopy(b)
     budget["matrix"]["budget"]["batch_size"] *= 2
@@ -599,8 +663,18 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
     )
     budget = dict(stage["matrix"]["budget"], batch_size=1)
     stage.update(families={"gru": "gru"}, matrix=dict(stage["matrix"], budget=budget))
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining import run as posttraining_run
 
+    # La etapa nombra aquí los objetivos de #128 para comprobar que se planifican pero no se
+    # miden: su corrección lineal necesita el normalizador del padre y `budget` la acota con
+    # la continuación completa.
+    stage["additional_controls"] = [*stage["additional_controls"], predictive.SECTION_NAME]
+    planned = {
+        item["control"] for item in campaign_stage._cases(stage, dict(design=None, family="gru"))
+    }
+    assert set(predictive.CONTROLS) <= planned
     built, build = [], posttraining_run.build_model
     monkeypatch.setattr(
         posttraining_run,
@@ -612,13 +686,16 @@ def test_matrix_measurement_covers_every_case_without_changing_the_parent(
         stage, views / "fold-018/manifest.json", batches=1, warmup=0
     )
     # Los puntos medidos son los casos de una semilla que la matriz da a la GRU, también los
-    # de la variedad de adaptadores.
+    # de la variedad de adaptadores. La etapa A no nombra el repaso (#55), así que sus tres
+    # controles no se ejecutan ni se miden.
+    assert replay.SECTION_NAME not in stage["additional_controls"]
     declared = [
         item["id"].split("/", 1)[1]
         for item in adapter_matrix.cases(
             stage["matrix"], stage["matrix_sha256"], "gru", head=QUANTILE_HEAD
         )
         if item["case"]["seed"] == 42
+        and item["control"] not in (*replay.CONTROLS, *predictive.CONTROLS)
     ]
     assert built == [42] * len(declared)
     assert len(optim_module._global_optimizer_pre_hooks) == hooks

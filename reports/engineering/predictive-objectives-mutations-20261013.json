@@ -1,0 +1,214 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 128,
+ "recorded_at_utc": "2026-10-13T17:49:38.549367+00:00",
+ "files": [
+  "src/mars_titan/posttraining/adapter_matrix.py",
+  "src/mars_titan/posttraining/campaign_stage.py",
+  "src/mars_titan/posttraining/predictive_objectives.py",
+  "src/mars_titan/posttraining/stage_comparison.py",
+  "src/mars_titan/training/campaign_throughput.py"
+ ],
+ "tests": [
+  "tests/posttraining/test_predictive_objectives.py",
+  "tests/training/test_campaign_throughput.py::test_the_objectives_are_bounded_by_the_rate_of_the_full_continuation",
+  "tests/training/test_campaign_throughput.py::test_matrix_measurement_covers_every_case_without_changing_the_parent",
+  "tests/training/test_campaign_a_joint.py::test_later_stages_of_v2_read_the_joint_model_in_each_market",
+  "tests/posttraining/test_stage_comparison.py"
+ ],
+ "command": "pytest -q -x tests/posttraining/test_predictive_objectives.py, tests/posttraining/test_stage_comparison.py, las dos pruebas de los objetivos y de la medición de tests/training/test_campaign_throughput.py y la de las etapas posteriores de tests/training/test_campaign_a_joint.py sobre una copia de src, tests, configs y scripts, sin CUDA y con OMP_NUM_THREADS=2",
+ "baseline": {
+  "code": 0,
+  "tail": "57 passed in 69.47s (0:01:09)"
+ },
+ "import_checked": "copia aislada (ruta local omitida)",
+ "killed": 23,
+ "survived": 0,
+ "mutations": [
+  {
+   "id": "P01",
+   "description": "Los seis objetivos no se comprueban",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 9 passed in 4.60s",
+   "seconds": 10.71
+  },
+  {
+   "id": "P02",
+   "description": "Ámbitos distintos de las referencias aceptados",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 5 passed in 4.67s",
+   "seconds": 10.48
+  },
+  {
+   "id": "P03",
+   "description": "Exclusiones incompletas o en otro orden aceptadas",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 8 passed in 4.46s",
+   "seconds": 9.84
+  },
+  {
+   "id": "P04",
+   "description": "Motivo de exclusión sin longitud mínima",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 16 passed in 4.73s",
+   "seconds": 10.31
+  },
+  {
+   "id": "P05",
+   "description": "Condición de revisión sin longitud mínima",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 17 passed in 4.79s",
+   "seconds": 10.52
+  },
+  {
+   "id": "P06",
+   "description": "La reserva no añade los objetivos",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 4.56s",
+   "seconds": 10.0
+  },
+  {
+   "id": "P07",
+   "description": "Un padre escalar repite su corrección lineal",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 1 passed in 4.69s",
+   "seconds": 10.34
+  },
+  {
+   "id": "P08",
+   "description": "Objetivo desconocido con control",
+   "file": "src/mars_titan/posttraining/predictive_objectives.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 4.69s",
+   "seconds": 10.43
+  },
+  {
+   "id": "A01",
+   "description": "Todos los controles con el mismo objetivo",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed in 4.51s",
+   "seconds": 10.42
+  },
+  {
+   "id": "A02",
+   "description": "Los objetivos se proponen aunque la matriz no los proponga",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 4.66s",
+   "seconds": 10.53
+  },
+  {
+   "id": "A03",
+   "description": "Plan de los objetivos sin el tamaño de la corrección lineal",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 21 passed in 4.79s",
+   "seconds": 10.72
+  },
+  {
+   "id": "A04",
+   "description": "Sección de la matriz sin validar",
+   "file": "src/mars_titan/posttraining/adapter_matrix.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 5 passed in 4.92s",
+   "seconds": 11.36
+  },
+  {
+   "id": "S01",
+   "description": "Los objetivos compiten en la cadena",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 11.62s",
+   "seconds": 17.43
+  },
+  {
+   "id": "S02",
+   "description": "La cadena no filtra los candidatos",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 24 passed in 11.95s",
+   "seconds": 17.85
+  },
+  {
+   "id": "S03",
+   "description": "Los recibos de los objetivos exigen cuantiles",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 27 passed in 52.33s",
+   "seconds": 60.2
+  },
+  {
+   "id": "S04",
+   "description": "Nombrar la sección no añade sus controles",
+   "file": "src/mars_titan/posttraining/campaign_stage.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 24.82s",
+   "seconds": 32.31
+  },
+  {
+   "id": "C01",
+   "description": "Objetivos comparados con la salida del padre",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 28.27s",
+   "seconds": 35.0
+  },
+  {
+   "id": "C02",
+   "description": "Fuentes de los objetivos con calibración",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 52.14s",
+   "seconds": 60.12
+  },
+  {
+   "id": "C03",
+   "description": "Objetivos en la familia de los controles",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 32.75s",
+   "seconds": 40.35
+  },
+  {
+   "id": "C04",
+   "description": "Papeles ausentes de los objetivos en el informe",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 33 passed in 72.52s (0:01:12)",
+   "seconds": 82.23
+  },
+  {
+   "id": "C05",
+   "description": "Los objetivos no son papeles de la comparación",
+   "file": "src/mars_titan/posttraining/stage_comparison.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 20.69s",
+   "seconds": 27.88
+  },
+  {
+   "id": "T01",
+   "description": "Caudal propio de los objetivos en lugar de la continuación",
+   "file": "src/mars_titan/training/campaign_throughput.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 29 passed in 47.90s",
+   "seconds": 55.45
+  },
+  {
+   "id": "T02",
+   "description": "La medición construye los objetivos",
+   "file": "src/mars_titan/training/campaign_throughput.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 30 passed in 56.16s",
+   "seconds": 64.06
+  }
+ ]
+}

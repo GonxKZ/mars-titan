@@ -4,7 +4,13 @@ La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y e
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
 modelos a mano. Por cada modelo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-modelos adaptados de la matriz para la familia del padre.
+modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
+continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
+con su propio papel, y lo mismo ocurre con cada control de repaso de #55
+(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``) y con cada objetivo
+de la corrección lineal de #128 (``objective_reinforce`` y los demás). Los objetivos solo
+emiten la mediana, así que entran con salida puntual y sin calibración. Una familia cuya
+base no existe para un padre no se deriva para él y un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
@@ -47,6 +53,8 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.hardware import hardware_profiles
 from mars_titan.training import campaign_chain
 
+from . import predictive_objectives as predictive
+from . import replay_continuation as replay
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
     FROZEN_ONLY,
@@ -63,15 +71,22 @@ KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
 USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
+ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
-ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
-# Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
-BASE_ROLES = (FROZEN, CONTINUATION, BASE)
+# Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
+CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS, *predictive.CONTROLS)
+ROLES = (FROZEN, *CONTROLS, ADAPTED, CHAIN, BASE)
+# Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
+# reentreno.
+BASE_ROLES = (FROZEN, *CONTROLS, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
 # Familia de cada modelo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
+    ANCHORED: "posttraining_control",
+    **{control: "posttraining_control" for control in replay.CONTROLS},
+    **{control: "posttraining_objective" for control in predictive.CONTROLS},
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -131,7 +146,7 @@ def _groups(stage):
             job["base_arm"],
             {
                 FROZEN: job["base_arm"],
-                CONTINUATION: None,
+                **{control: None for control in CONTROLS},
                 ADAPTED: [],
                 CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
@@ -140,7 +155,7 @@ def _groups(stage):
         )
         control = job["control"]
         _require(
-            control in (None, CONTINUATION) or job.get("kind") == FROZEN_JOB,
+            control in (None, *CONTROLS) or job.get("kind") == FROZEN_JOB,
             f"El control {control} de {job['arm']} no tiene papel en la comparación",
         )
         if job.get("kind") == FROZEN_JOB:
@@ -149,12 +164,12 @@ def _groups(stage):
                 f"{job['base_arm']} declara dos padres congelados",
             )
             group[FROZEN] = job["arm"]
-        elif control == CONTINUATION:
+        elif control in CONTROLS:
             _require(
-                group[CONTINUATION] in (None, job["arm"]),
-                f"{job['base_arm']} declara dos continuaciones completas",
+                group[control] in (None, job["arm"]),
+                f"{job['base_arm']} declara dos modelos del control {control}",
             )
-            group[CONTINUATION] = job["arm"]
+            group[control] = job["arm"]
         elif job["arm"] not in group[ADAPTED]:
             group[ADAPTED].append(job["arm"])
         group["jobs"].setdefault(job["scope"], []).append(job)
@@ -208,7 +223,7 @@ def derive_config(declaration, stage, base_arm, groups):
     )
     roles = {
         FROZEN: [group[FROZEN]],
-        CONTINUATION: [group[CONTINUATION]],
+        **{control: [group[control]] if group[control] else [] for control in CONTROLS},
         ADAPTED: group[ADAPTED],
         # La cadena solo entra si alguna familia la contrasta, porque exige sus selecciones.
         CHAIN: [group[CHAIN]] if CHAIN in used else [],
@@ -219,9 +234,10 @@ def derive_config(declaration, stage, base_arm, groups):
         for arm in roles[role]:
             if arm == base_arm:
                 continue
-            arms[arm] = dict(
-                family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
-            )
+            # Los objetivos de #128 corrigen la mediana y no emiten cuantiles.
+            output = walk.POINT if role in predictive.CONTROLS else parent["output"]
+            arms[arm] = dict(family=ARM_FAMILIES[role], output=output, seeds=parent["seeds"])
+    # Las familias de la continuación anclada solo existen en los padres que la tienen.
     families = {
         name: dict(
             kind="delta",
@@ -229,6 +245,7 @@ def derive_config(declaration, stage, base_arm, groups):
             variants=[arm for role in family["variants"] for arm in roles[role]],
         )
         for name, family in declaration["families"].items()
+        if roles[family["base"]] and any(roles[role] for role in family["variants"])
     }
     families["levels"] = dict(kind="level", arms=list(arms))
     raw = {
@@ -286,6 +303,13 @@ def check_declaration(path):
                 configuration_sha256=config["sha256"],
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
+                anchored_continuation=loaded["groups"][base_arm][ANCHORED],
+                replay={
+                    control: loaded["groups"][base_arm][control] for control in replay.CONTROLS
+                },
+                objectives={
+                    control: loaded["groups"][base_arm][control] for control in predictive.CONTROLS
+                },
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
                 if loaded["groups"][base_arm][CHAIN] in config["arms"]
@@ -419,7 +443,9 @@ def write_sources(
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
         platforms[job["id"]] = receipt.get("platform")
         entry = dict(input_policy=policy, view_sha256=view_sha256)
-        for part in COMPARED:
+        # Una salida puntual no tiene calibración que comparar.
+        point = job["control"] in predictive.CONTROLS
+        for part in ("evaluation",) if point else COMPARED:
             record = receipt["predictions"][part]
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
@@ -477,6 +503,12 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         roles={
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
+            ANCHORED: loaded["groups"][base_arm][ANCHORED],
+            **{
+                control: loaded["groups"][base_arm][control]
+                for control in predictive.CONTROLS
+                if loaded["groups"][base_arm][control] is not None
+            },
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
             **(
                 {CHAIN: loaded["groups"][base_arm][CHAIN]}

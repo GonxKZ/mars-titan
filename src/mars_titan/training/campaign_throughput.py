@@ -357,8 +357,15 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
     recorre todo su tramo.
 
     La medida de la matriz solo cubre las redes de referencia. Las variantes de Titans-MAC y la
-    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas.
+    cadena trivial de Ridge y XGBoost quedan en `without_estimate`, sin sumar sus horas. Un
+    control de repaso ajusta en cada época además sus filas de repaso, estimadas con
+    `replay_continuation.estimated_epoch_rows`. La lectura de las sesiones anteriores no
+    se cuenta, como el resto de lecturas de disco. Los objetivos lineales de #128 no tienen
+    medida propia: su corrección no recorre la red en cada época, así que se acotan por
+    arriba con el caudal de la continuación completa del mismo padre.
     """
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining import replay_continuation as replay
     from mars_titan.posttraining.campaign_stage import FROZEN, plan_stage
 
     measured, neural = rates[POSTTRAINING], rates[NEURAL]
@@ -393,7 +400,17 @@ def _posttraining_hours(stage, counts, rates, fresh=None):
         cache = _slowest(neural[job["base_arm"]].values())["inference"]
         if job["kind"] == FROZEN:
             return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / cache
-        rate = _slowest([points[job["point"]] for points in measured[job["base_arm"]].values()])
+        point = "full_continuation" if job["control"] in predictive.CONTROLS else job["point"]
+        rate = _slowest([points[point] for points in measured[job["base_arm"]].values()])
+        if replay.KEY in job["case"]:
+            rows = dict(
+                rows,
+                train=replay.estimated_epoch_rows(
+                    rows["train"],
+                    job["case"][replay.KEY]["ratio"],
+                    stage["matrix"]["budget"]["batch_size"],
+                ),
+            )
         total = validated_job_seconds(job, rows, rate, epochs)
         if job["id"] in first:
             total += (rows["train"] + rows["validation"]) / cache
@@ -797,11 +814,13 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
     El padre es la referencia del modelo base con los pesos iniciales de su caso, porque
     los padres elegidos todavía no existen. Cada modelo de la matriz y la continuación
     completa se construyen como en `posttraining.run.build_model`. Los casos de una
-    semilla bastan: las demás solo cambian la inicialización.
+    semilla bastan: las demás solo cambian la inicialización. Los objetivos lineales de #128
+    necesitan el normalizador del padre y no se miden aquí.
     """
     from mars_titan.data.embeddings import require_cuda
-    from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.models.quantile_head import CONTRACT
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining.campaign_stage import _cases
     from mars_titan.posttraining.parents import FrozenParent
     from mars_titan.posttraining.run import build_model
 
@@ -822,10 +841,9 @@ def measure_posttraining(stage, view, *, batches=50, warmup=5):
                 model, shapes = _reference(case, dataset, budget["batch_size"])
                 parent = FrozenParent(model, dict(identity, model=family), shapes, device)
                 points = rates[arm][name] = {}
-                for item in adapter_matrix.cases(
-                    matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
-                ):
-                    if item["case"]["seed"] != seed:
+                for item in _cases(stage, dict(design=None, family=family)):
+                    # La corrección lineal de #128 se acota con la continuación completa.
+                    if item["case"]["seed"] != seed or item["control"] in predictive.CONTROLS:
                         continue
                     adapted = build_model(parent, item["case"], None, None).to(device)
                     record = _batch_rates(
@@ -850,17 +868,15 @@ def _measured_cases(stage):
     """Lo que mide `measure_posttraining`: modelos de las redes, sus casos y el presupuesto.
 
     Los casos se comparan sin la huella de la matriz que los declara, porque un mismo caso
-    cuesta lo mismo en la v2 y en la v3.
+    cuesta lo mismo en la v2 y en la v3. Son los que ejecuta la etapa, con sus controles
+    añadidos.
     """
-    from mars_titan.models.quantile_head import QUANTILE_HEAD
-    from mars_titan.posttraining import adapter_matrix
+    from mars_titan.posttraining.campaign_stage import _cases
 
     cases = {}
     for arm, family in stage["families"].items():
         cases[arm] = {}
-        for item in adapter_matrix.cases(
-            stage["matrix"], stage["matrix_sha256"], family, head=QUANTILE_HEAD
-        ):
+        for item in _cases(stage, dict(design=None, family=family)):
             # La continuación completa no tiene adaptador ni, por tanto, huella de la matriz.
             case = dict(item["case"])
             if "adapter" in case:

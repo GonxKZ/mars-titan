@@ -631,14 +631,15 @@ octubre & Ninguno antes de preparar las vistas \\
 Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
 regla de parada común y walk-forward por etapas & Preparar y verificar las
 vistas de A v2 sobre la v3.1 \\
-Campaña base & 2.873 ajustes de referencias, Titans-MAC, GRU candidata,
-MARS-TITAN y CM-v1, 1.904 mesetas de la parada conjunta y 133 trabajos del
+Campaña base & 3.177 ajustes de referencias, Titans-MAC, GRU candidata,
+MARS-TITAN y CM-v1, 2.056 mesetas de la parada conjunta y 133 trabajos del
 control en línea. Recibos por trabajo y reanudación & Fijar las opciones de memoria y lanzar \\
-Adaptadores & 6.804 ajustes en las 18 ventanas con padre, 1.494 predicciones
-del padre congelado y 1.577 selecciones de la cadena. Pruebas CUDA de
+Adaptadores & 8.694 ajustes en las 18 ventanas con padre (270 de la continuación
+anclada y 1.620 de los objetivos lineales de \#128, solo como contraste), 1.710 predicciones
+del padre congelado y 1.805 selecciones de la cadena. Pruebas CUDA de
 adaptadores y cuantiles superadas & Recorrido de la etapa en \texttt{cuda:0} y
 ejecución \\
-Políticas & 3.096 ajustes y 3.219 ejecuciones de referencia sobre cintas de
+Políticas & 3.384 ajustes y 3.663 ejecuciones de referencia sobre cintas de
 precios reconstruidos, con GRPO, Dr. GRPO y GSPO en el nivel de algoritmos.
 Ejecutores nativos de PPO, Double DQN, KLPO y los objetivos de grupo compilados
 con LibTorch CUDA y perfilados sin pasos de Adam & Medir el coste de la
@@ -652,7 +653,7 @@ de integridad & Aplicarla a predicciones reales \\
 \end{table}
 
 La declaración original de A, con modelos separados por mercado, sumaba 5.985
-ajustes en la campaña base, 10.332 en la etapa de adaptadores y 2.664 en la de
+ajustes en la campaña base, 10.962 en la etapa de adaptadores y 2.664 en la de
 políticas. Se conserva con sus pruebas, pero la campaña elegida es A v2.
 
 Las referencias neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto),
