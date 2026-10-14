@@ -1,8 +1,9 @@
 """Normas de gradientes, pesos y actualizaciones por grupo de parámetros.
 
-Los grupos se declaran por prefijos de nombre (por ejemplo `memory.` para los pesos de la
-memoria neuronal o `head.` para la cabeza). Cada parámetro entrenable pertenece a un único
-grupo. Los que no coinciden con ningún prefijo van a `other`, y el informe lo muestra.
+Los grupos siguen la misma regla en todas las familias: la clave del módulo (por ejemplo
+`predictor` o `readout`) y el primer componente del nombre del parámetro, como
+`predictor.memory` o `readout.bank`. Así no hace falta declarar grupos por familia y cada
+parámetro entrenable cae en un único grupo.
 
 Las normas se acumulan en float64 en el dispositivo de cada parámetro y se entregan al
 registrador como escalares de tensor, de modo que no hay sincronización hasta el volcado.
@@ -12,7 +13,7 @@ antes del paso, que `UpdateProbe` solo toma en los pasos que tocan registro.
 
 import torch
 
-OTHER = "other"
+from .recorder import trace_name
 
 
 def _require(condition, message):
@@ -20,17 +21,20 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-def group_parameters(named_parameters, groups):
-    """Repartir los parámetros entrenables en grupos disjuntos por prefijo."""
-    _require(isinstance(groups, dict) and OTHER not in groups, "Grupos de parámetros inválidos")
-    result = {name: [] for name in groups}
-    for name, parameter in named_parameters:
-        if not parameter.requires_grad:
-            continue
-        matches = [g for g, prefixes in groups.items() if name.startswith(tuple(prefixes))]
-        _require(len(matches) <= 1, f"El parámetro {name} cae en varios grupos: {matches}")
-        result.setdefault(matches[0] if matches else OTHER, []).append((name, parameter))
-    return {name: values for name, values in result.items() if values}
+def parameter_groups(modules):
+    """Parámetros entrenables por clave de módulo y primer componente de su nombre.
+
+    La GRU candidata nativa devuelve un diccionario en `named_parameters()`, en lugar del
+    iterador de pares de PyTorch.
+    """
+    grouped = {}
+    for key, module in modules.items():
+        named = module.named_parameters()
+        for name, parameter in named.items() if isinstance(named, dict) else named:
+            if parameter.requires_grad:
+                group = trace_name(f"{key}.{name.split('.', 1)[0]}")
+                grouped.setdefault(group, []).append((name, parameter))
+    return grouped
 
 
 def _l2(tensors):

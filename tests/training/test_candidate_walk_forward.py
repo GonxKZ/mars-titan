@@ -34,6 +34,8 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 from mars_titan.training.walk_forward_phases import window_phases
+from tests.learning_hold_lowering import allowed_hold
+from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.training.test_financial_run import RecordingOptimizer
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
 from tests.training.test_walk_forward_v2_views import fixture
@@ -71,8 +73,7 @@ class ShiftedStart(RecordingOptimizer):
 @pytest.fixture(scope="module")
 def allowed(tmp_path_factory):
     """Protección temporal permitida para los ajustes compartidos del módulo."""
-    path = tmp_path_factory.mktemp("module-hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("module-hold") / "training-hold.json")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(path))
         yield path
@@ -760,3 +761,31 @@ def test_campaign_reads_the_quantiles_declared_for_the_candidate_arm(views, tmp_
             lease=nullcontext,
             stop=SimpleNamespace(requested=False),
         )
+
+
+def test_traces_keep_the_candidate_window_bit_for_bit_and_resume(views, anchor, tmp_path):
+    """Trazas en cada paso de la GRU candidata (#448): mismo recorrido y reanudación exacta."""
+    view = views.windows["US"]["fold-000"]
+    report, made = fit(view, tmp_path / "traced", traces=EVERY_STEP)
+    # El punto de control con trazas guarda además su cursor, así que cambia su huella. Los
+    # parámetros elegidos son los mismos.
+    assert report["checkpoint"]["sha256"] != anchor.report["checkpoint"]["sha256"]
+    assert report["checkpoint"] | dict(sha256=None) == anchor.report["checkpoint"] | dict(
+        path=report["checkpoint"]["path"], sha256=None
+    )
+    for name, record in report["predictions"].items():
+        assert record["sha256"] == anchor.report["predictions"][name]["sha256"]
+    assert len(made[0].records) == len(anchor.optimizer.records) > 0
+    for one, two in zip(made[0].records, anchor.optimizer.records, strict=True):
+        for a, b in zip(one.values(), two.values(), strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    manifest, rows = trace_rows(tmp_path / "traced" / "traces")
+    assert manifest["identity"]["family"] == "episodic_gru"
+    assert {"loss", "grad_l2", "update_ratio", "grad_l2_total"} <= metrics(rows, "train")
+    assert {"validation.score", "weight_l2"} <= metrics(rows, "validation")
+    output = tmp_path / "resumed"
+    paused, _ = fit(view, output, stop=StopAfter(16), traces=EVERY_STEP)
+    assert paused["status"] == "paused"
+    resumed, _ = fit(view, output, traces=EVERY_STEP)
+    assert resumed["status"] == "completed"
+    assert same_rows(rows, trace_rows(output / "traces")[1])

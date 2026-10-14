@@ -4,18 +4,23 @@ from types import SimpleNamespace
 
 import torch
 
+from mars_titan.training import anchored_decay
+
 
 def install(patch):
     """Sustituir `torch.optim.AdamW` con `patch` y devolver el registro de optimizadores.
 
     El sustituto no hereda de `torch.optim.Optimizer`, así que el gancho global del bloqueo
     no lo intercepta. Cada paso exige pesos idénticos a los iniciales y solo guarda los
-    gradientes. Sirve a un fixture de módulo con `pytest.MonkeyPatch.context()` y al fixture
+    gradientes. La versión anclada de AdamW (#444) se sustituye igual y queda marcada con
+    `anchored`. Sirve a un fixture de módulo con `pytest.MonkeyPatch.context()` y al fixture
     `recorder` de cada prueba.
     """
     record = SimpleNamespace(optimizers=[], on_step=None)
 
     class RecordingOptimizer:
+        anchored = False
+
         def __init__(self, parameters, lr, weight_decay):
             self.parameters = list(parameters)
             self.initial = [value.detach().clone() for value in self.parameters]
@@ -41,5 +46,9 @@ def install(patch):
         def load_state_dict(self, state):
             assert state["kind"] == "recording_without_updates"
 
+    class AnchoredRecordingOptimizer(RecordingOptimizer):
+        anchored = True
+
     patch.setattr(torch.optim, "AdamW", RecordingOptimizer)
+    patch.setattr(anchored_decay, "AnchoredAdamW", AnchoredRecordingOptimizer)
     return record

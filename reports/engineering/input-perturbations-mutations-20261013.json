@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Perturbaciones de entradas en la lectura y declaración de robustez (#37)",
+  "measured_at": "2026-10-13",
+  "baseline": {
+    "tests/evaluation/test_robustness_protocol.py": {
+      "pytest": "18 passed in 2.88s",
+      "seconds": 14.13
+    },
+    "tests/training/test_input_perturbations.py": {
+      "pytest": "25 passed in 62.78s (0:01:02)",
+      "seconds": 76.43
+    }
+  },
+  "mutations": [
+    {
+      "id": "P01",
+      "description": "Ráfagas sin la duración del bloque",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 5 passed in 56.47s",
+      "seconds": 71.79
+    },
+    {
+      "id": "P02",
+      "description": "Proporción de ráfagas invertida",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 3 passed in 37.84s",
+      "seconds": 52.91
+    },
+    {
+      "id": "P03",
+      "description": "Ráfagas iguales para todos los activos",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 5 passed in 38.45s",
+      "seconds": 51.7
+    },
+    {
+      "id": "P04",
+      "description": "Ruido también en máscaras y edades",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 3 passed in 31.47s",
+      "seconds": 44.13
+    },
+    {
+      "id": "P05",
+      "description": "Macro con ruido propio de cada activo",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 11 passed in 55.79s",
+      "seconds": 68.51
+    },
+    {
+      "id": "P06",
+      "description": "Ruido aditivo",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 10 passed in 58.40s",
+      "seconds": 73.63
+    },
+    {
+      "id": "P07",
+      "description": "Ruido según la posición de la fila",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 10 passed in 57.62s",
+      "seconds": 74.04
+    },
+    {
+      "id": "P08",
+      "description": "Ruido en conceptos no observados",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 9 passed in 59.50s",
+      "seconds": 75.36
+    },
+    {
+      "id": "P09",
+      "description": "Proporción mayor que uno admitida",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 12 passed in 58.04s",
+      "seconds": 73.73
+    },
+    {
+      "id": "P10",
+      "description": "Precios perturbables",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 17 passed in 36.46s",
+      "seconds": 50.54
+    },
+    {
+      "id": "P11",
+      "description": "Identidad de la ablación para una perturbación",
+      "file": "src/mars_titan/data/input_perturbations.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 21 passed in 52.91s",
+      "seconds": 65.37
+    },
+    {
+      "id": "A01",
+      "description": "Vectores a cero en todas las filas",
+      "file": "src/mars_titan/data/modality_ablation.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 22.52s",
+      "seconds": 37.79
+    },
+    {
+      "id": "A02",
+      "description": "Disponibilidad nula en todas las filas",
+      "file": "src/mars_titan/data/modality_ablation.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 21.78s",
+      "seconds": 36.98
+    },
+    {
+      "id": "A03",
+      "description": "Recuento de noticias a cero en todas las filas",
+      "file": "src/mars_titan/data/modality_ablation.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 21.77s",
+      "seconds": 36.37
+    },
+    {
+      "id": "A04",
+      "description": "Causa en filas fuera de la ráfaga",
+      "file": "src/mars_titan/data/modality_ablation.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 6 passed in 60.82s (0:01:00)",
+      "seconds": 76.25
+    },
+    {
+      "id": "R01",
+      "description": "El lector identifica mal el activo",
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "tests": [
+        "tests/training/test_input_perturbations.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 24.39s",
+      "seconds": 39.43
+    },
+    {
+      "id": "D01",
+      "description": "Costes sin comparar",
+      "file": "src/mars_titan/evaluation/robustness_protocol.py",
+      "tests": [
+        "tests/evaluation/test_robustness_protocol.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 9 passed in 2.56s",
+      "seconds": 14.07
+    },
+    {
+      "id": "D02",
+      "description": "Guarda sin comprobar su prueba",
+      "file": "src/mars_titan/evaluation/robustness_protocol.py",
+      "tests": [
+        "tests/evaluation/test_robustness_protocol.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 13 passed in 2.25s",
+      "seconds": 11.14
+    },
+    {
+      "id": "D03",
+      "description": "Perturbaciones sin comparar con el código",
+      "file": "src/mars_titan/evaluation/robustness_protocol.py",
+      "tests": [
+        "tests/evaluation/test_robustness_protocol.py"
+      ],
+      "killed": true,
+      "pytest": "1 error in 2.37s",
+      "seconds": 9.4
+    },
+    {
+      "id": "D04",
+      "description": "Sensibilidad sin fuente ni pendiente",
+      "file": "src/mars_titan/evaluation/robustness_protocol.py",
+      "tests": [
+        "tests/evaluation/test_robustness_protocol.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 12 passed in 1.61s",
+      "seconds": 7.92
+    }
+  ],
+  "killed": 20,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después."
+  ]
+}
