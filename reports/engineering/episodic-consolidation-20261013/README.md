@@ -63,12 +63,26 @@ Con tracemalloc, el pico de asignaciones de Python y NumPy de cada propuesta con
 | `cache_keeps_every_client` | se guardan también las claves descartadas | la misma |
 | `writable_cached_rows` | las filas compartidas se pueden escribir | la misma |
 
+## Medidas de tiempo
+
+Las rondas se tomaron el 14 de octubre de 2026 con los mismos eventos, opciones y condiciones que las de [#549](../titans-event-path-20261013/README.md#medidas-de-tiempo): vista `US+CN/fold-012` de las vistas v3.1 de A v2, 88.028 filas y 11 llamadas a `_NoStepOptimizer` sin ningún paso, FP32 estricto, dos hilos, perfil de energía de ahorro y un trabajo `memslot gpu` por ronda. El recibo es [`abba-20261014.json`](abba-20261014.json). Los árboles son A = bb19f7be (`develop` con #591) y B = 89913902, el commit de [#593](https://github.com/GonxKZ/mars-titan/pull/593), sin más cambios entre ellos.
+
+| Modelo | Filas/s antes | Filas/s después | Cociente de medias | Peor par |
+| --- | --- | --- | --- | --- |
+| `mars_titan_m1` | 6.878 y 6.972 | 6.671 y 7.078 | 0,99 | 0,96 |
+| `cm_v1_bm` (B+M) | 5.822 y 5.708 | 6.026 y 6.039 | 1,05 | 1,04 |
+| `cm_v1_bcm` (B+C+M) | 5.908 y 5.683 | 6.026 y 5.661 | 1,01 | 0,96 |
+
+El peor par divide la ronda más lenta de después entre la más rápida de antes. La memoria no cambia en ningún modelo (402 MiB de pico asignado y 492 o 494 MiB reservados). Las capturas de las cuatro rondas de cada modelo coinciden bit a bit entre árboles y dentro de cada árbol: nombres, gradientes de las 11 llamadas (77 tensores) y las 3.347 predicciones pendientes al terminar.
+
+Solo B+M mejora de forma clara: sus dos rondas de después superan a las dos de antes. En M1 y B+C+M las rondas de los dos árboles se solapan, así que el cambio queda dentro de la variación entre rondas. Las cuentas de [Trabajo contado](#trabajo-contado) siguen siendo ciertas, pero en este tramo las propuestas del banco no pesan lo bastante para que retirar ese trabajo se note en el caudal de M1 o de B+C+M.
+
 ## Pendiente
 
-- **Medida por partes y recorrido completo.** La medida de la admisión por partes con py-spy y rangos NVTX y la del recorrido completo de B+M, B+C+M y M1 siguen pendientes. La GPU tenía la carga ajena de un `llama-server` de otro proyecto, y los eventos de `US+CN/fold-012` de #363 ya no se pueden abrir desde que la v3.1 sustituyó las muestras de la v3. Las cuentas muestran qué trabajo sale de cada propuesta, pero no cuánto tiempo ahorra.
-- **Núcleos de los medoids.** La revisión de `_bounded_minimum`, `_compute`, `_sum` y `_reference_chain` en `cm/medoids.py` y `cm/anchored_medoids.py` queda para después de esa medida, porque la issue la condiciona a lo que domine tras retirar este trabajo.
+- **Admisión por partes.** El perfil con py-spy de M1, B+M y B+C+M sobre `develop` debe decir qué parte del recorrido ocupan `propose@memory/retention_bank.py` y `select_anchored_medoids@cm/anchored_medoids.py` después de esta rama.
+- **Núcleos de los medoids.** La revisión de `_bounded_minimum`, `_compute`, `_sum` y `_reference_chain` en `cm/medoids.py` y `cm/anchored_medoids.py` depende de ese perfil, porque la issue la condiciona a lo que domine tras retirar este trabajo.
 
-Órdenes para repetir las medidas desde la raíz de cada árbol (`develop` y la rama), con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, el enlace en `MARS_TITAN_EPISODIC_NATIVE`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda, alternando los árboles:
+Órdenes para repetir las medidas desde la raíz de cada árbol, con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, el enlace en `MARS_TITAN_EPISODIC_NATIVE`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda, alternando los árboles:
 
 - `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family readout --arm mars_titan_m1 --option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para B+M y B+C+M se usa `--family cm_readout --arm cm_v1_bm` y `--arm cm_v1_bcm` con las mismas opciones.
 - `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues` para los bits de las rondas.
