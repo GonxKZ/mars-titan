@@ -77,7 +77,7 @@ from .reference_design import (
     design_cases,
 )
 from .reference_step_graph import GRAPH_KINDS
-from .search_cases import SEARCHED
+from .search_cases import SEARCHED, checked_predictor_changes
 from .selection import JOINT_PLATEAU, VALIDATION_PLATEAU, campaign_rule
 
 CAMPAIGN_KIND = "historical_masked_campaign"
@@ -122,13 +122,17 @@ MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
 MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
-# Nombres de la corrección B6, que no tiene lector. Repiten mars_titan_correction.RECIPE,
-# SEARCHED y RULES y las claves de memory.associative_memory porque el plan no debe importar
-# PyTorch. Una prueba comprueba que siguen coincidiendo. La regla kalman queda fuera porque
-# la ventana B6 todavía no la admite.
+# Nombres de la corrección B6, que no tiene lector. Repiten los de
+# training.mars_titan_correction y las claves de memory.associative_memory porque el plan no
+# debe importar PyTorch. Una prueba comprueba que siguen coincidiendo. La regla kalman (PT3)
+# tiene su propia receta, con κ en los casos, y sus modelos declaran si usan la correlación de
+# cohorte estimada o la anulan.
 MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
+MARS_KALMAN_RECIPE = "mars_titan_kalman_correction_v1"
 MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
-MARS_CORRECTION_RULES = ("delta", "proximal")
+MARS_KALMAN_SEARCHED = ("process_ratio",)
+MARS_CORRECTION_RULES = ("delta", "proximal", "kalman")
+MARS_COHORT_CORRELATIONS = ("estimated", "zero")
 MARS_CORRECTION_KEYS = (
     "codec",
     "constant",
@@ -318,10 +322,14 @@ RECEIPT_DEFAULTS = {"recompute": False}
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
+# Modelos de Titans-MAC que añaden extensiones desactivables del núcleo, como PT1 (#453), sobre
+# la variante de un modelo de la sección. La sección solo los admite si los declara.
+TITANS_EXTENSIONS = "core_extensions"
 _MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
 # La receta de la corrección B6 solo se exige cuando algún modelo usa la memoria asociativa.
 # Sin ese modelo sobraría, y el plan la rechaza.
 _MARS_CORRECTION = "correction_recipe"
+_MARS_KALMAN = "kalman_correction_recipe"
 _CM = {"declaration", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 
@@ -570,53 +578,62 @@ def _titans(section, arms, rule, policy, base, count, rules=None):
     Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
     diseño ajusta cada referencia neuronal (`count`), con el mismo presupuesto y la misma
     selección por validación. `training.titans_walk_forward` vuelve a validar la receta
-    completa en cada ajuste.
+    completa en cada ajuste. Un modelo de `core_extensions` repite la variante, los casos y
+    las semillas del modelo base que declara y añade a su caso los cambios del predictor,
+    que `FinancialConfig` valida al construirlo. Así su contraste con el modelo base solo
+    cambia la extensión.
     """
     if section is None:
         return None
     _require(
-        isinstance(section, dict) and set(section) == _TITANS and policy == HISTORICAL_MASKED,
+        isinstance(section, dict)
+        and _TITANS <= set(section) <= _TITANS | {TITANS_EXTENSIONS}
+        and policy == HISTORICAL_MASKED,
         "La sección Titans no cumple o la campaña no usa la política con máscaras",
     )
     path = (base / section["recipe"]).resolve()
     recipe, digest = read_manifest(path, 64 * 1024)
     declared = {name for name, arm in arms.items() if arm["family"] == TITANS}
-    mapping = section["arms"]
+    mapping, extensions = section["arms"], section.get(TITANS_EXTENSIONS, {})
     _require(
         isinstance(mapping, dict)
-        and set(mapping) == declared
+        and isinstance(extensions, dict)
+        and (TITANS_EXTENSIONS not in section or extensions)
+        and not set(mapping) & set(extensions)
+        and set(mapping) | set(extensions) == declared
         and set(mapping.values()) <= set(TITANS_VARIANTS)
         and len(set(mapping.values())) == len(mapping)
-        and all(arms[name]["output"] == QUANTILE_HEAD for name in mapping),
-        "Cada modelo Titans de la comparación necesita una variante distinta con cuantiles",
+        and all(arms[name]["output"] == QUANTILE_HEAD for name in declared),
+        "Cada modelo Titans de la comparación necesita una variante distinta con cuantiles, "
+        "o una extensión declarada",
     )
+    for name, extension in extensions.items():
+        _require(
+            isinstance(extension, dict)
+            and set(extension) == {"base_arm", "predictor_changes"}
+            and extension["base_arm"] in mapping
+            and arms[name]["seeds"] == arms[extension["base_arm"]]["seeds"],
+            f"{name} debe extender un modelo de la sección con sus mismas semillas",
+        )
+        checked_predictor_changes(extension["predictor_changes"])
     seed = section["search_seed"]
     _require(
-        all(seed in _seeds(arms[name]["seeds"], name) for name in mapping),
+        all(seed in _seeds(arms[name]["seeds"], name) for name in declared),
         "La semilla de búsqueda de Titans debe estar en todos sus modelos",
     )
     cases = _titans_cases(recipe, rule, count)
-    candidates = {
-        name: [
-            (
-                case,
-                _stopping(
-                    dict(
-                        recipe=str(path),
-                        recipe_sha256=digest,
-                        variant=variant,
-                        seed=seed,
-                        search_case=case,
-                    ),
-                    rules,
-                    name,
-                ),
-            )
-            for case in cases
-        ]
-        for name, variant in mapping.items()
-    }
-    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+    def candidates(name, variant, changes=None):
+        common = dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed)
+        if changes is not None:
+            common["predictor_changes"] = changes
+        return [(case, _stopping(dict(common, search_case=case), rules, name)) for case in cases]
+
+    resolved = {name: candidates(name, variant) for name, variant in mapping.items()}
+    for name, extension in extensions.items():
+        variant = mapping[extension["base_arm"]]
+        resolved[name] = candidates(name, variant, extension["predictor_changes"])
+    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=resolved)
 
 
 def _titans_cases(recipe, rule, count):
@@ -653,14 +670,16 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
     Un modelo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
     productor: estima sus escalas con el tramo de entrenamiento de cada ventana. Un modelo con
     `associative_memory` es la corrección B6 sin lector: declara regla y clave, y sus casos
-    de búsqueda (η y λ) salen de `correction_recipe`. `training.mars_titan_walk_forward` y
-    `training.mars_titan_correction` validan la combinación completa en cada trabajo.
+    de búsqueda (η y λ) salen de `correction_recipe`. Un modelo kalman declara además su
+    correlación de cohorte y sus casos (κ) salen de `kalman_correction_recipe`.
+    `training.mars_titan_walk_forward` y `training.mars_titan_correction` validan la
+    combinación completa en cada trabajo.
     """
     if section is None:
         return None
     _require(
         isinstance(section, dict)
-        and _MARS <= set(section) <= _MARS | {_MARS_CORRECTION}
+        and _MARS <= set(section) <= _MARS | {_MARS_CORRECTION, _MARS_KALMAN}
         and policy == HISTORICAL_MASKED,
         "La sección de MARS-TITAN no cumple o la campaña no usa la política con máscaras",
     )
@@ -690,9 +709,12 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
         "corrección B6 y cuantiles, o un motivo pendiente",
     )
     corrections = {name for name, components in mapping.items() if _correction_arm(components)}
+    kalman = {name for name in corrections if _kalman_arm(mapping[name])}
     _require(
-        bool(corrections) == (_MARS_CORRECTION in section),
-        "La receta de la corrección B6 se declara si y solo si algún modelo la usa",
+        bool(corrections - kalman) == (_MARS_CORRECTION in section)
+        and bool(kalman) == (_MARS_KALMAN in section),
+        "Las recetas de la corrección B6 y de su regla kalman se declaran si y solo si algún "
+        "modelo las usa",
     )
     _require(
         seed == titans["seed"]
@@ -704,11 +726,15 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
         "Cada semilla de MARS-TITAN necesita su padre Titans-MAC y la misma semilla de búsqueda",
     )
     recipes = {name: (path, digest, _readout_cases(recipe, rule, count)) for name in mapping}
-    if corrections:
-        correction = (base / section[_MARS_CORRECTION]).resolve()
-        document, correction_sha = read_manifest(correction, 64 * 1024)
-        cases = _correction_cases(document, count)
-        recipes.update(dict.fromkeys(corrections, (correction, correction_sha, cases)))
+    for names, key, name, searched in (
+        (corrections - kalman, _MARS_CORRECTION, MARS_CORRECTION_RECIPE, MARS_CORRECTION_SEARCHED),
+        (kalman, _MARS_KALMAN, MARS_KALMAN_RECIPE, MARS_KALMAN_SEARCHED),
+    ):
+        if names:
+            correction = (base / section[key]).resolve()
+            document, correction_sha = read_manifest(correction, 64 * 1024)
+            cases = _correction_cases(document, count, name, searched)
+            recipes.update(dict.fromkeys(names, (correction, correction_sha, cases)))
     candidates = {
         name: [
             (
@@ -748,20 +774,28 @@ def _correction_arm(components):
     """Decidir si el modelo es una corrección B6.
 
     Solo lo es si declara únicamente `associative_memory` con una regla y una clave
-    conocidas. Cualquier otro campo daría una combinación que la ventana B6 no sabe ejecutar.
+    conocidas, y con la regla kalman también su correlación de cohorte. Cualquier otro campo
+    daría una combinación que la ventana B6 no sabe ejecutar.
     """
     memory = components.get("associative_memory")
+    if set(components) != {"associative_memory"} or not isinstance(memory, dict):
+        return False
+    kalman = memory.get("rule") == "kalman"
     return (
-        set(components) == {"associative_memory"}
-        and isinstance(memory, dict)
-        and set(memory) == {"rule", "key"}
+        set(memory) == ({"rule", "key", "cohort_correlation"} if kalman else {"rule", "key"})
         and memory["rule"] in MARS_CORRECTION_RULES
         and memory["key"] in MARS_CORRECTION_KEYS
+        and (not kalman or memory["cohort_correlation"] in MARS_COHORT_CORRELATIONS)
     )
 
 
-def _correction_cases(recipe, count):
-    """Leer los casos de η y λ de la corrección B6.
+def _kalman_arm(components):
+    """Decidir si la corrección B6 usa la regla kalman, con su propia receta."""
+    return _correction_arm(components) and components["associative_memory"]["rule"] == "kalman"
+
+
+def _correction_cases(recipe, count, name, searched):
+    """Leer los casos de búsqueda de la corrección B6: η y λ, o κ con la regla kalman.
 
     Deben ser tantos como los índices que ajusta cada referencia neuronal, para que B6 no
     disponga de más búsqueda que los modelos con los que se compara.
@@ -771,15 +805,15 @@ def _correction_cases(recipe, count):
     )
     _require(
         isinstance(recipe, dict)
-        and recipe.get("recipe_name") == MARS_CORRECTION_RECIPE
+        and recipe.get("recipe_name") == name
         and isinstance(cases, dict)
         and len(cases) == count
         and all(
-            isinstance(case, dict) and case and set(case) <= set(MARS_CORRECTION_SEARCHED)
+            isinstance(case, dict) and case and set(case) <= set(searched)
             for case in cases.values()
         ),
-        f"La receta de la corrección B6 necesita {count} casos de η y λ, tantos como índices "
-        "ajusta cada referencia neuronal",
+        f"La receta de la corrección B6 necesita {count} casos de η y λ, o de κ con la regla "
+        "kalman, tantos como índices ajusta cada referencia neuronal",
     )
     return cases
 
@@ -1383,7 +1417,8 @@ def _all_arm_specs(campaign):
     sections = [(NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])]
     sections += [(family, campaign[family]) for family in OPTIONAL if campaign.get(family)]
     for family, section in sections:
-        for name, kind in section["arms"].items():
+        # Las extensiones del núcleo de Titans-MAC son modelos de su sección.
+        for name, kind in (section["arms"] | section.get(TITANS_EXTENSIONS, {})).items():
             # En las secciones opcionales, la familia también nombra el modelo del ejecutor.
             model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS, MARS: MARS}.get(
                 family, kind

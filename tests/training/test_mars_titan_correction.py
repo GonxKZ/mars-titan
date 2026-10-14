@@ -8,6 +8,7 @@ tramo de entrenamiento no se abre y los rechazos previos a leer fuentes.
 
 import json
 import shutil
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -19,6 +20,7 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
 from mars_titan.memory.associative_memory import CORRECTION_KEYS, RULES
+from mars_titan.memory.cohort_noise import METHOD
 from mars_titan.memory.mars_titan_variant import load_declaration, select_variant
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import campaign_plan as plan
@@ -29,6 +31,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalInference
 from mars_titan.training.kernel_policy import FP32_STRICT, kernel_policy_identity
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.learning_traces.parity import same_rows, trace_rows
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
@@ -38,6 +41,13 @@ from tests.training.test_titans_walk_forward import recipe, views, window
 DECLARED = Path("configs/titans/mature-correction-historical-masked.json")
 PROXIMAL = {"associative_memory": {"rule": "proximal", "key": "codec"}}
 BIAS = {"associative_memory": {"rule": "proximal", "key": "constant"}}
+KALMAN_RECIPE = Path("configs/titans/kalman-correction-historical-masked.json")
+KALMAN = {
+    "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "estimated"}
+}
+KALMAN_RHO0 = {
+    "associative_memory": {"rule": "kalman", "key": "codec", "cohort_correlation": "zero"}
+}
 PARTITIONS = ("validation", "calibration", "evaluation")
 PREDICTED_COLUMNS = ("prediction", *QUANTILE_COLUMNS)
 
@@ -154,9 +164,12 @@ def test_the_parent_precision_enters_the_identity_and_the_carry_requires_it(
 
 def test_constants_repeat_the_runner_and_memory_names_without_importing_torch():
     assert plan.MARS_CORRECTION_RECIPE == mc.RECIPE
+    assert plan.MARS_KALMAN_RECIPE == mc.KALMAN_RECIPE
     assert plan.MARS_CORRECTION_SEARCHED == mc.SEARCHED
+    assert plan.MARS_KALMAN_SEARCHED == mc.KALMAN_SEARCHED
     assert plan.MARS_CORRECTION_RULES == mc.RULES
-    assert set(mc.RULES) == set(RULES) - {"kalman"}
+    assert set(mc.RULES) == set(RULES)
+    assert plan.MARS_COHORT_CORRELATIONS == mc.COHORT_CORRELATIONS
     assert plan.MARS_CORRECTION_KEYS == CORRECTION_KEYS
 
 
@@ -299,7 +312,12 @@ def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_
         ),
         (PROXIMAL | {"episodic_bank": "m1"}, "eta25e-2", "solo associative_memory"),
         ({"associative_memory": {"rule": "lms", "key": "codec"}}, "eta25e-2", "delta y proximal"),
-        ({"associative_memory": {"rule": "kalman", "key": "codec"}}, "eta25e-2", "no usa η ni λ"),
+        (
+            {"associative_memory": {"rule": "kalman", "key": "codec"}},
+            "eta25e-2",
+            "correlación de cohorte",
+        ),
+        (KALMAN, "eta25e-2", "receta de sus varianzas"),
         (PROXIMAL, "eta1", "casos de búsqueda"),
     ],
 )
@@ -413,6 +431,92 @@ def test_masked_reader_never_substitutes_the_macro_block(base, monkeypatch):
     # El contrato temporal sigue activo, porque se consulta para decidir qué etiquetas son
     # elegibles.
     assert calls
+
+
+class StopAfterEstimation:
+    """Pedir la parada en mitad de la validación, cuando la estimación ya ha terminado."""
+
+    def __init__(self):
+        self.armed, self.seen = False, 0
+
+    @property
+    def requested(self):
+        self.seen += self.armed
+        return self.seen > 10
+
+
+@lowers_learning_hold(
+    "tests/training/test_mars_titan_correction.py::"
+    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it"
+)
+def test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it(
+    base, tmp_path, monkeypatch
+):
+    """σ² y ϱ salen del final del ajuste, entran en la identidad y no se vuelven a estimar."""
+    estimated, original = [], mc.window_cohort_noise
+    stop = StopAfterEstimation()
+
+    def counted(predictor, chronological, source, cap):
+        estimated.append(source.phase)
+        result = original(predictor, chronological, source, cap)
+        stop.armed = True
+        return result
+
+    monkeypatch.setattr(mc, "window_cohort_noise", counted)
+    output = tmp_path / "kalman"
+    with wf.unfused_attention():
+        paused = correct(
+            base["view"], base["parent"], KALMAN_RECIPE, output, KALMAN, case="kappa1e-5", stop=stop
+        )
+        assert paused["status"] == "paused" and paused["predictions"] == {}
+        report = correct(
+            base["view"], base["parent"], KALMAN_RECIPE, output, KALMAN, case="kappa1e-5"
+        )
+        rho0 = correct(
+            base["view"],
+            base["parent"],
+            KALMAN_RECIPE,
+            tmp_path / "rho0",
+            KALMAN_RHO0,
+            case="kappa1e-5",
+        )
+    assert report["status"] == rho0["status"] == "completed"
+    # Una estimación por ventana. La reanudación reutiliza la de su identidad.
+    assert len(estimated) == 2
+    identity = report["identity"]
+    noise = identity["cohort_noise"]
+    phase = mc.estimation_phase(identity["window"], 3, 1)
+    assert estimated[0] == phase and noise["phase"] == asdict(phase)
+    assert noise["estimate"]["method"] == METHOD and noise["estimate"]["rows"] > 0
+    # El tramo de estimación tiene su propio índice, distinto del ajuste del padre.
+    trained = json.loads((base["parent"] / "run.json").read_text())["identity"]["indices"]
+    assert noise["index"] != trained["train"] and noise["index"] not in identity["indices"].values()
+    estimate = noise["estimate"]
+    variance, correlation = estimate["observation_noise"], estimate["cohort_correlation"]
+    assert identity["correction"]["memory"]["kalman"] == dict(
+        process_noise=1e-5 * variance,
+        observation_noise=variance,
+        cohort_correlation=correlation,
+        prior_variance=0.1 * variance,
+        huber_threshold=None,
+    )
+    assert identity["memory_policy"]["associative"].startswith("prior_mean_and_covariance")
+    # La alternativa trivial comparte la estimación y solo anula ϱ.
+    assert rho0["identity"]["cohort_noise"] == noise
+    assert rho0["identity"]["correction"]["memory"]["kalman"] == dict(
+        identity["correction"]["memory"]["kalman"], cohort_correlation=0.0
+    )
+    # El traslado usa la estimación del ancla sin volver a estimar.
+    with wf.unfused_attention():
+        carried = mc.carry_correction(
+            output, base["view"], base["view"], tmp_path / "carry", device="cpu", regenerate=True
+        )
+    assert len(estimated) == 2
+    for partition in PARTITIONS:
+        assert (
+            carried["predictions"][partition]["sha256"]
+            == (report["predictions"][partition]["sha256"])
+        )
 
 
 def test_traces_follow_the_writes_of_a_without_changing_rows(base, tmp_path):
