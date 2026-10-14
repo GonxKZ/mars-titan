@@ -2,7 +2,7 @@
 
 `apply_kernel_policy` fija en el proceso la precisión declarada por la receta y retira las
 sustituciones de `torch._native` que no compensan. La política es la misma para todos los
-brazos que comparten ruta y su identidad entra en la de cada ajuste.
+modelos que comparten ruta y su identidad entra en la de cada ajuste.
 
 La única precisión admitida es `fp32_strict`: FP32 sin TF32 en cuBLAS ni en cuDNN y sin
 autocast. PyTorch permite TF32 en cuDNN por defecto, así que una receta sin precisión

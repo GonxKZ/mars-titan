@@ -1,4 +1,4 @@
-"""Brazos de la matriz de adaptadores para las familias con entrenador cronológico.
+"""Modelos de la matriz de adaptadores para las familias con entrenador cronológico.
 
 La versión 3 de la matriz añade Titans-MAC, los lectores episódicos de MARS-TITAN y CM-v1
 y la GRU candidata nativa. Comparten puntos, formas, controles, objetivos, presupuesto y
@@ -8,19 +8,21 @@ selección con las referencias. Solo cambian los tensores de cada punto:
   de su atención) y primera capa de la fusión. La memoria neuronal y la persistente no se
   adaptan. La lectura solo existe en las variantes que leen la memoria.
 - Lectores episódicos: el núcleo con los mismos destinos que `mac_online`, la lectura
-  episódica (`query_projection` y `value_projection` del lector) o ambos, como brazos
+  episódica (`query_projection` y `value_projection` del lector) o ambos, como modelos
   separados. Sin banco (M0) la lectura no recibe gradiente y solo existe el núcleo.
 - GRU candidata: solo la cabeza, calculada en Python sobre el estado nativo final. Los
   demás puntos viven dentro del módulo LibTorch y se excluyen con su motivo.
 
-La sección opcional `variety` (`adapter_variety`) añade brazos de un solo punto a las
+La sección opcional `variety` (`adapter_variety`) añade modelos de un solo punto a las
 variantes de Titans-MAC donde existe su punto y, si los nombra en `readers`, al núcleo de
 los lectores. La GRU candidata no recibe ninguno: sus otros parámetros viven en LibTorch.
+La sección `anchored_continuation` añade, tras la continuación completa, la misma
+continuación con el decaimiento anclado al padre en los ámbitos donde se propone.
 
 Los casos no incluyen la corrección lineal, excluida para padres de cuantiles, y el padre
 congelado no se ajusta. Las actualizaciones las fija el recorrido cronológico de cada
 ventana: dependen de los datos y del tramo, no de los parámetros, así que coinciden entre
-los brazos de un mismo padre.
+los modelos de un mismo padre.
 """
 
 import itertools
@@ -28,7 +30,7 @@ import itertools
 from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
-from . import adapter_variety
+from . import adapter_variety, anchored_continuation
 from .inputs import fingerprint
 from .selection import selection_policy
 
@@ -47,6 +49,7 @@ TITANS_FROZEN = ["mac.memory", "mac.persistent"]
 COMPONENTS = ("core", "episodic_readout")
 CANDIDATE_HEAD = ("head_weight", "head_bias")
 CONTROL = "full_continuation"
+ANCHORED = anchored_continuation.CONTROL
 OBJECTIVE = "neural_pinball"
 # Pérdida de las recetas cronológicas que corresponde al objetivo de la matriz.
 RECIPE_LOSS = {OBJECTIVE: "pinball"}
@@ -135,7 +138,7 @@ def validate(section, points):
         isinstance(readout["arms"], list)
         and sorted(map(tuple, readout["arms"])) == sorted(map(tuple, expected))
         and all(arm == [c for c in COMPONENTS if c in arm] for arm in readout["arms"]),
-        "Los lectores adaptan el núcleo, la lectura o ambos como brazos separados",
+        "Los lectores adaptan el núcleo, la lectura o ambos como modelos separados",
     )
     candidate = section[CANDIDATE]
     _require(
@@ -165,9 +168,9 @@ def _spec(matrix, arm, name):
 
 
 def arms(matrix, family, *, variant=None, bank=True, reserve=False):
-    """Brazos aplicables, en el orden de la matriz, con la forma resuelta de cada punto.
+    """Modelos aplicables, en el orden de la matriz, con la forma resuelta de cada punto.
 
-    `variant` es la de Titans-MAC y `bank` dice si el lector consulta episodios. Los brazos
+    `variant` es la de Titans-MAC y `bank` dice si el lector consulta episodios. Los modelos
     de la variedad siguen a los de la matriz. `reserve` añade los que no se proponen para
     la campaña.
     """
@@ -225,7 +228,8 @@ def _case(matrix, seed, objective, *, control=None, adapter=None):
 
 
 def cases(matrix, digest, family, *, variant=None, bank=True, reserve=False):
-    """Casos por semilla: continuación completa y brazos, sin corrección lineal ni padre."""
+    """Casos por semilla: continuación completa, la anclada si se propone en el ámbito, y
+    modelos, sin corrección lineal ni padre. `reserve` añade también lo que no se propone."""
     from . import adapter_matrix
 
     kind, _ = design(matrix, family)
@@ -236,15 +240,20 @@ def cases(matrix, digest, family, *, variant=None, bank=True, reserve=False):
         and isinstance(declared["linear_residual"], dict),
         "Las familias cronológicas emiten cuantiles y se ajustan con pinball",
     )
+    scope = anchored_continuation.chronological_scope(kind, variant)
+    controls = [CONTROL]
+    if anchored_continuation.proposed(matrix, scope, reserve=reserve):
+        controls.append(ANCHORED)
     result = []
     for seed in matrix["budget"]["seeds"]:
-        result.append(
-            dict(
-                id=f"seed-{seed}/{CONTROL}",
-                control=CONTROL,
-                case=_case(matrix, seed, declared[CONTROL], control=CONTROL),
+        for control in controls:
+            result.append(
+                dict(
+                    id=f"seed-{seed}/{control}",
+                    control=control,
+                    case=_case(matrix, seed, declared[CONTROL], control=control),
+                )
             )
-        )
         for arm in arms(matrix, family, variant=variant, bank=bank, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
@@ -275,7 +284,11 @@ def validate_case(case):
         and type(case["epochs"]) is int
         and 1 <= case["epochs"] <= 1000
         and (case["control"] is None) != (case["adapter"] is None)
-        and case["control"] in (None, CONTROL),
+        and case["control"] in (None, CONTROL, ANCHORED)
+        and (
+            case["control"] != ANCHORED
+            or (type(case["weight_decay"]) in (int, float) and case["weight_decay"] > 0)
+        ),
         "El caso cronológico no pertenece a la matriz declarada",
     )
     selection_policy(dict(case, condition="real"))
@@ -295,13 +308,18 @@ def validate_case(case):
 
 
 def recipe_options(case):
-    """Optimizador, presupuesto y selección del caso para una receta cronológica."""
+    """Optimizador, presupuesto y selección del caso para una receta cronológica.
+
+    El ancla del decaimiento se fija siempre, también a None, para que el caso no herede
+    la del padre si este se ajustó con ella.
+    """
     from .selection import _options
 
     return dict(
         loss=RECIPE_LOSS[case["objective"]],
         learning_rate=case["learning_rate"],
         weight_decay=case["weight_decay"],
+        weight_decay_anchor=anchored_continuation.INITIAL if case["control"] == ANCHORED else None,
         max_grad_norm=case["clip_norm"],
         epochs=case["epochs"],
         selection=_options(case["selection"], case["epochs"]),
@@ -323,18 +341,18 @@ def _options(spec):
 
 
 def variant_arm(matrix, variant, adapter):
-    """Exigir que el adaptador del caso sea un brazo, de la matriz o de reserva, de la variante."""
+    """Exigir que el adaptador del caso sea un modelo, de la matriz o de reserva, de la variante."""
     _require(
         any(
             arm["id"] == adapter["arm"] and arm["points"] == adapter["points"]
             for arm in arms(matrix, "titans_mac", variant=variant, reserve=True)
         ),
-        "El brazo no pertenece a los puntos de esta variante de Titans-MAC",
+        "El modelo no pertenece a los puntos de esta variante de Titans-MAC",
     )
 
 
 def titans_targets(matrix, points, model=None):
-    """Tensores de Titans-MAC para los puntos del brazo, con su forma resuelta.
+    """Tensores de Titans-MAC para los puntos del modelo, con su forma resuelta.
 
     Los subconjuntos de la variedad (sesgos y normalizaciones) se enumeran sobre `model`.
     """

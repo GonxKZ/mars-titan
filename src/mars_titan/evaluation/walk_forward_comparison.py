@@ -1,8 +1,8 @@
-"""Comparar brazos de un walk-forward anual con las mismas filas y sin abrir 2024.
+"""Comparar modelos de un walk-forward anual con las mismas filas y sin abrir 2024.
 
 La configuración se declara antes de evaluar: política de entradas, protocolos,
-ventanas, brazos, métricas, calibración común y familias de contrastes. Un
-manifiesto de fuentes enlaza cada brazo, semilla y ventana con sus predicciones
+ventanas, modelos, métricas, calibración común y familias de contrastes. Un
+manifiesto de fuentes enlaza cada modelo, semilla y ventana con sus predicciones
 del tramo de evaluación y, si emite cuantiles, con las del tramo de calibración.
 
 Cada ventana se puntúa por separado con ``score_sessions`` y las sesiones se unen
@@ -12,13 +12,13 @@ promedian semillas sesión a sesión y usan ``compare_series``.
 
 Se rechaza cualquier mezcla: otra política, otra vista o edición, otro protocolo,
 ventanas ausentes o sobrantes, filas fuera del tramo declarado, filas de la
-reserva de 2024 y brazos que no evalúan exactamente las mismas filas (activo,
+reserva de 2024 y modelos que no evalúan exactamente las mismas filas (activo,
 mercado e instante) con los mismos objetivos. El mensaje indica cuántas difieren.
 
 La versión 2 de la configuración declara además los estratos por presencia de
 noticias y fundamentales (``modality_strata``), un análisis secundario que no
 cambia ninguna salida de la versión 1. Su presencia sale de la propia vista de
-cada ventana y debe cubrir exactamente las filas evaluadas por los brazos.
+cada ventana y debe cubrir exactamente las filas evaluadas por los modelos.
 
 La versión 3 añade la ablación de modalidades en inferencia (``modality_ablation``),
 otro análisis secundario. Sus predicciones enmascaradas llegan en un manifiesto propio
@@ -33,14 +33,14 @@ todas las versiones la fiabilidad de la probabilidad implícita de subida
 días y curva de fiabilidad, en bruto y con el calibrador común.
 
 La versión 5 añade el diseño conjunto (``joint_design``). El ámbito conjunto compara todos
-los brazos y un mercado solo cuenta en las ventanas en las que su propio protocolo, con su
+los modelos y un mercado solo cuenta en las ventanas en las que su propio protocolo, con su
 historia mínima, recorre los mismos tramos (``market_eligibility``). Las filas de ese
 mercado en las demás ventanas se predicen y se conservan, pero quedan fuera de la
 calibración y de las métricas, y el informe cuenta cuántas se excluyen. Cada ámbito de un
-solo mercado compara los controles separados con el mismo brazo conjunto restringido a
-las filas de su mercado (``<brazo><sufijo>``), en la ventana con los mismos tramos, con una
+solo mercado compara los controles separados con el mismo modelo conjunto restringido a
+las filas de su mercado (``<modelo><sufijo>``), en la ventana con los mismos tramos, con una
 familia de diferencias conjunto menos separado. Sin esta sección cada ámbito compara todos
-los brazos con todas sus filas, como antes.
+los modelos con todas sus filas, como antes.
 
 Cualquier versión admite además la sección opcional de contrastes secundarios de capacidad
 predictiva (``predictive_ability``): Diebold-Mariano con la corrección de Harvey, SPA,
@@ -76,6 +76,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import (
+    liquidity_strata,
     long_short,
     modality_ablation,
     modality_strata,
@@ -156,6 +157,7 @@ ABLATION_FIELD = "modality_ablation"
 LONG_SHORT_FIELD = "long_short"
 JOINT_FIELD = "joint_design"
 PREDICTIVE_FIELD = "predictive_ability"
+LIQUIDITY_FIELD = "liquidity_strata"
 RETENTION_FIELD = "retention_interference"
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
@@ -166,7 +168,7 @@ SECTIONS = {
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 # Secciones secundarias que cualquier versión admite sin exigirlas.
-OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, RETENTION_FIELD}
+OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, LIQUIDITY_FIELD, RETENTION_FIELD}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -271,7 +273,7 @@ def _protocols(folder, scope, declared):
 def _distinct(arms, name):
     _require(
         isinstance(arms, list) and arms and len(set(arms)) == len(arms),
-        f"La familia {name} necesita brazos distintos",
+        f"La familia {name} necesita modelos distintos",
     )
     return arms
 
@@ -303,13 +305,13 @@ def _families(families, arms):
         else:
             contrasts = {arm: level(arm) for arm in _distinct(family["arms"], name)}
         used = {arm for coefficients in contrasts.values() for arm in coefficients}
-        _require(used <= set(arms), f"La familia {name} usa brazos no declarados")
+        _require(used <= set(arms), f"La familia {name} usa modelos no declarados")
         resolved[name] = contrasts
     return resolved
 
 
 def _plain_scopes(resolved, arms, families):
-    """Sin diseño conjunto: cada ámbito compara todos los brazos con todas sus filas."""
+    """Sin diseño conjunto: cada ámbito compara todos los modelos con todas sus filas."""
     for scope in resolved.values():
         scope.update(
             arms=dict(arms),
@@ -371,7 +373,7 @@ def _joint_design(declared, resolved, arms, families, folder):
         and all(arms.get(arm, {}).get("output") not in (None, ZERO_CONTROL) for arm in controls)
         and not {f"{arm}{suffix}" for arm in controls} & set(arms)
         and all(_name(f"{arm}{suffix}") for arm in controls),
-        "Los controles separados deben ser brazos con predicciones y su alias, un nombre libre",
+        "Los controles separados deben ser modelos con predicciones y su alias, un nombre libre",
     )
     zero = {name: arm for name, arm in arms.items() if arm["output"] == ZERO_CONTROL}
     for name, scope in resolved.items():
@@ -434,7 +436,7 @@ def load_config(path):
 def resolve_config(config):
     """Ruta de una configuración declarada o configuración ya validada por ``validate_config``.
 
-    Una configuración derivada (por ejemplo, la de los brazos postentrenados de un padre)
+    Una configuración derivada (por ejemplo, la de los modelos postentrenados de un padre)
     llega ya validada, con su huella y sus ámbitos resueltos.
     """
     if isinstance(config, dict):
@@ -477,7 +479,7 @@ def validate_config(config, digest, folder):
     arms = config["arms"]
     _require(
         isinstance(arms, dict) and 2 <= len(arms) <= MAX_ARMS and all(map(_name, arms)),
-        "Los brazos deben tener nombres válidos y estar acotados",
+        "Los modelos deben tener nombres válidos y estar acotados",
     )
     for name, arm in arms.items():
         _require(
@@ -489,11 +491,11 @@ def validate_config(config, digest, folder):
             and len(set(arm["seeds"])) == len(arm["seeds"])
             and all(type(seed) is int and 0 <= seed < 2**32 for seed in arm["seeds"])
             and (arm["seeds"] == []) == (arm["output"] == ZERO_CONTROL),
-            f"El brazo {name} no declara familia, salida y semillas válidas",
+            f"El modelo {name} no declara familia, salida y semillas válidas",
         )
     _require(
         any(arm["output"] != ZERO_CONTROL for arm in arms.values()),
-        "Se necesita al menos un brazo con predicciones",
+        "Se necesita al menos un modelo con predicciones",
     )
     metrics = config["metrics"]
     _require(
@@ -543,6 +545,8 @@ def validate_config(config, digest, folder):
         long_short.declaration(config[LONG_SHORT_FIELD])
     if PREDICTIVE_FIELD in config:
         predictive_ability.declaration(config[PREDICTIVE_FIELD], comparison)
+    if LIQUIDITY_FIELD in config:
+        liquidity_strata.declaration(config[LIQUIDITY_FIELD], SERIES_METRICS, comparison["metrics"])
     if RETENTION_FIELD in config:
         retention_interference.declaration(config[RETENTION_FIELD], arms)
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
@@ -554,7 +558,7 @@ def validate_config(config, digest, folder):
 
 
 def scope_config(config, scope):
-    """Configuración vista desde un ámbito: sus brazos y sus familias de contrastes."""
+    """Configuración vista desde un ámbito: sus modelos y sus familias de contrastes."""
     resolved = config["resolved_scopes"][scope]
     return dict(config, arms=resolved["arms"], resolved_families=resolved["families"])
 
@@ -658,7 +662,7 @@ def load_sources(path, config, scope_name):
         isinstance(sources["windows"], dict) and set(sources["windows"]) == set(windows),
         "Las fuentes no cubren exactamente las ventanas declaradas",
     )
-    # Un ámbito con brazos prestados del conjunto declara también la vista conjunta emparejada.
+    # Un ámbito con modelos prestados del conjunto declara también la vista conjunta emparejada.
     borrowed = scope["borrowed"]
     fields = {"view", "joint_view"} if borrowed else {"view"}
     views, view_paths, edition, joint_views = {}, {}, None, {}
@@ -688,7 +692,7 @@ def load_sources(path, config, scope_name):
     arms = sources["arms"]
     _require(
         isinstance(arms, dict) and set(arms) == set(declared),
-        "Las fuentes no contienen exactamente los brazos declarados con predicciones",
+        "Las fuentes no contienen exactamente los modelos declarados con predicciones",
     )
     files = {}
     for name, arm in declared.items():
@@ -696,11 +700,11 @@ def load_sources(path, config, scope_name):
         expected = {str(seed) for seed in arm["seeds"]}
         _require(
             isinstance(seeds, dict) and set(seeds) == expected,
-            f"El brazo {name} no contiene exactamente sus semillas declaradas",
+            f"El modelo {name} no contiene exactamente sus semillas declaradas",
         )
         quantile = arm["output"] == QUANTILE_HEAD
         for seed, entries in seeds.items():
-            label = f"El brazo {name} semilla {seed}"
+            label = f"El modelo {name} semilla {seed}"
             present = set(entries) if isinstance(entries, dict) else set()
             _require(
                 present == set(windows),
@@ -805,7 +809,7 @@ def _restricted(table, sources, window_id, arm=None):
     """Quitar las filas que el diseño excluye de la ventana y contarlas por mercado.
 
     En el ámbito conjunto salen las filas de los mercados no elegibles en la ventana. Un
-    brazo prestado del conjunto conserva solo las filas del mercado del ámbito. Cualquier
+    modelo prestado del conjunto conserva solo las filas del mercado del ámbito. Cualquier
     otro mercado sigue llegando a la comprobación del tramo, que lo rechaza.
     """
     excluded, counts = _excluded(table, sources, window_id, arm)
@@ -855,7 +859,7 @@ def _panel(table, window, partition, scope, label, *, output, prediction=None):
 
 
 def _same_rows(reference, panel, label):
-    """Exigir las mismas filas y objetivos que el primer brazo, contando las diferencias."""
+    """Exigir las mismas filas y objetivos que el primer modelo, contando las diferencias."""
     reference_label, expected = reference
     if expected.cohort_sha256 == panel.cohort_sha256:
         return
@@ -866,7 +870,7 @@ def _same_rows(reference, panel, label):
         changed = int(np.count_nonzero(expected.target != panel.target))
     raise ValueError(
         f"{label} no evalúa las mismas filas que {reference_label}: {only_here} filas solo "
-        f"en este brazo, {only_there} filas solo en la referencia y {changed} filas con "
+        f"en este modelo, {only_there} filas solo en la referencia y {changed} filas con "
         "otro objetivo"
     )
 
@@ -886,7 +890,7 @@ def _presence_bits(sources, config, window_id, reference):
     """Presencia de cada fila evaluada, en el orden canónico del panel de referencia.
 
     La presencia se lee de la vista de la ventana y debe cubrir las mismas filas con
-    los mismos objetivos que los brazos, con la misma comprobación que entre brazos.
+    los mismos objetivos que los modelos, con la misma comprobación que entre modelos.
     El registro cuenta las filas sin precios, gráficos o macro. Con alguna, los estratos
     declarados no describen la ventana.
     """
@@ -915,20 +919,37 @@ def _presence_bits(sources, config, window_id, reference):
 def _ablation_sources(path, config, sources):
     """Validar el manifiesto de predicciones enmascaradas frente a las fuentes principales.
 
-    Cada variante declara, para cada brazo con predicciones, semilla y ventana, la
+    Cada variante declara, para cada modelo con predicciones, semilla y ventana, la
     evaluación que predijo el estado elegido con la modalidad ausente. Las vistas y la
     configuración deben ser las de la comparación.
     """
     path = Path(path)
     document, digest = read_manifest(path, 16 * 1024**2)
+    # La versión 2 añade la plataforma común de sus recibos y de los de la base.
+    version = document.get("schema_version") if isinstance(document, dict) else None
     fields = {"schema_version", "kind", "scope", "input_policy", "comparison_sha256", "windows"}
     _require(
         isinstance(document, dict)
-        and set(document) == fields | {"variants"}
-        and document["schema_version"] == 1
+        and version in (1, 2)
+        and set(document) == fields | {"variants"} | ({"platform"} if version == 2 else set())
         and document["kind"] == modality_ablation.SOURCES_KIND
         and document["scope"] == sources["scope"],
         "Las fuentes de la ablación no cumplen su contrato",
+    )
+    platform = document.get("platform")
+    _require(
+        version == 1 or _platform_record(platform),
+        "La plataforma de las fuentes de la ablación no es válida",
+    )
+    # Las predicciones enmascaradas se comparan con las principales: una sola plataforma.
+    digests = {
+        record["platform_sha256"]
+        for record in (platform, sources.get("platform"))
+        if record is not None and record["platform_sha256"] is not None
+    }
+    _require(
+        len(digests) <= 1,
+        "La ablación se ejecutó en otra plataforma que las fuentes principales",
     )
     _require(
         document["input_policy"] == config["input_policy"]
@@ -946,7 +967,7 @@ def _ablation_sources(path, config, sources):
     for variant, arms in variants.items():
         _require(
             isinstance(arms, dict) and set(arms) == set(declared),
-            f"{variant} no contiene exactamente los brazos declarados con predicciones",
+            f"{variant} no contiene exactamente los modelos declarados con predicciones",
         )
         for name, arm in declared.items():
             seeds = arms[name]
@@ -975,7 +996,7 @@ def _ablation_sources(path, config, sources):
 
 
 def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated, record, context):
-    """Puntuaciones de las variantes de un brazo y semilla frente a su predicción original.
+    """Puntuaciones de las variantes de un modelo y semilla frente a su predicción original.
 
     Las predicciones enmascaradas pasan las mismas comprobaciones de tramo y filas que las
     originales y se corrigen con el mismo calibrador, sin volver a ajustarlo.
@@ -1002,18 +1023,37 @@ def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated
     return result
 
 
-def _score_window(sources, config, window_id, ablation=None):
-    """Puntuar todos los brazos de una ventana. Cada calibrador se fija antes de evaluar.
+def _liquidity_codes(liquidity, table, reference):
+    """Estrato de liquidez de cada fila evaluada, en el orden canónico del panel de referencia.
 
-    Devuelve las puntuaciones por brazo y semilla y, si se declaran estratos, el registro
-    de presencia de la ventana. Con `ablation`, cada brazo con predicciones añade las
-    puntuaciones de sus variantes enmascaradas.
+    Solo se leen el mercado, el activo y el instante de cada fila. El objetivo no interviene.
+    """
+    codes, reasons = liquidity.assign(
+        table["market"].cast(pa.string()).to_numpy(zero_copy_only=False),
+        table["asset_id"].cast(pa.string()).to_numpy(zero_copy_only=False),
+        table["prediction_at"].cast(pa.int64()).to_numpy(),
+    )
+    order = pc.index_in(reference[1].row_id, value_set=_row_id(table)).to_numpy()
+    codes = codes[order]
+    codes.setflags(write=False)
+    return codes, liquidity_strata.record(codes, reasons[order])
+
+
+def _score_window(sources, config, window_id, ablation=None, liquidity=None):
+    """Puntuar todos los modelos de una ventana. Cada calibrador se fija antes de evaluar.
+
+    Devuelve las puntuaciones por modelo y semilla, el registro de presencia de la ventana
+    si se declaran estratos de modalidades (o None) y el de liquidez si se pasa
+    `liquidity` (``liquidity_strata.EditionLiquidity``, o None). Con `ablation`, cada modelo
+    con predicciones añade las puntuaciones de sus variantes enmascaradas.
     """
     window = sources["windows"][window_id]
     minimum = config["metrics"]["rank_ic_min_assets"]
     calibration = config["calibration"]
     results, reference, calibration_reference = {}, None, None
     row_codes, presence, bits = None, None, None
+    liquid_codes, liquid_record = None, None
+    extremes = None if liquidity is None else config[LIQUIDITY_FIELD]["extremes"][-1]
     for name, arm in config["arms"].items():
         quantile = arm["output"] == QUANTILE_HEAD
         columns = COLUMNS + (QUANTILE_COLUMNS if quantile else ())
@@ -1050,6 +1090,8 @@ def _score_window(sources, config, window_id, ablation=None):
                     bits, presence = _presence_bits(sources, config, window_id, reference)
                     if not presence["incomplete"]:
                         row_codes = modality_strata.codes(bits)
+                if liquidity is not None:
+                    liquid_codes, liquid_record = _liquidity_codes(liquidity, table, reference)
             _same_rows(reference, panel, label)
             entry["raw"] = score_sessions(panel, rank_ic_min_assets=minimum)
             calibrated = None
@@ -1066,6 +1108,15 @@ def _score_window(sources, config, window_id, ablation=None):
                     rank_ic_min_assets=minimum,
                     calibrated=None if calibrated is None else calibrated.quantiles,
                 )
+            if liquid_codes is not None:
+                entry["liquidity"] = modality_strata.score_strata(
+                    panel,
+                    liquid_codes,
+                    rank_ic_min_assets=minimum,
+                    calibrated=None if calibrated is None else calibrated.quantiles,
+                    names=liquidity_strata.NAMES,
+                )
+                entry["extremes"] = liquidity_strata.window_extremes(panel, liquid_codes, extremes)
             if ablation is not None:
                 record = entry["calibrator"]["record"] if quantile else None
                 context = (name, arm["output"], columns, bits, reference, minimum)
@@ -1092,7 +1143,14 @@ def _score_window(sources, config, window_id, ablation=None):
             results[name, None]["strata"] = modality_strata.score_strata(
                 panel, row_codes, rank_ic_min_assets=minimum
             )
-    return results, presence
+        if liquid_codes is not None:
+            results[name, None]["liquidity"] = modality_strata.score_strata(
+                panel, liquid_codes, rank_ic_min_assets=minimum, names=liquidity_strata.NAMES
+            )
+            results[name, None]["extremes"] = liquidity_strata.window_extremes(
+                panel, liquid_codes, extremes
+            )
+    return results, presence, liquid_record
 
 
 def _views(scores, markets):
@@ -1131,7 +1189,7 @@ def _contrasts(config, overall, views):
             rows = {}
             for metric in comparison["metrics"]:
                 if not all(_metric_available(overall[arm][0][view], metric) for arm in arms):
-                    rows[metric] = dict(reason="Algún brazo de la familia no emite cuantiles")
+                    rows[metric] = dict(reason="Algún modelo de la familia no emite cuantiles")
                     continue
                 series = {arm: _seed_series(overall, arm, view, metric) for arm in arms}
                 rows[metric] = compare_series(series, contrasts, **options)
@@ -1198,7 +1256,7 @@ def _interval_calibration(config, overall, calibrated, views):
             for nominal in config["calibration"]["nominals"]:
                 metric = f"{COVERAGE_ERROR}{nominal:g}"
                 series = {"raw": _seed_series(overall, arm, view, metric)}
-                # Una semilla sin calibración completa deja el brazo sin cobertura calibrada.
+                # Una semilla sin calibración completa deja el modelo sin cobertura calibrada.
                 if None not in calibrated[arm]:
                     series["calibrated"] = _seed_series(calibrated, arm, view, metric)
                 contrasts = {name: level(name) for name in series}
@@ -1295,7 +1353,7 @@ def _ece(items, comparison):
 
 
 def _sign_reliability(config, overall, calibrated, views):
-    """Fiabilidad de la probabilidad implícita de subida por brazo y vista, bruta y calibrada."""
+    """Fiabilidad de la probabilidad implícita de subida por modelo y vista, bruta y calibrada."""
     comparison = config["comparison"]
     resampling = dict(
         method="circular_block_bootstrap",
@@ -1371,9 +1429,9 @@ def _arm_summary(windows, views, calibrated_views, missing, weighting):
     )
 
 
-def _stratum_arm(config, per_window, key, stratum, markets, names):
-    """Vistas en bruto y calibradas de un brazo y semilla en un estrato y sus partes."""
-    parts = [results[key]["strata"][stratum] for results in per_window.values()]
+def _stratum_arm(config, per_window, key, stratum, markets, names, field="strata"):
+    """Vistas en bruto y calibradas de un modelo y semilla en un estrato y sus partes."""
+    parts = [results[key][field][stratum] for results in per_window.values()]
     raw = [part["raw"] for part in parts if part["raw"] is not None]
     views = modality_strata.subset_views(
         SessionScores.concatenate(raw) if raw else None, markets, names
@@ -1389,17 +1447,28 @@ def _stratum_arm(config, per_window, key, stratum, markets, names):
     return views, calibrated, parts
 
 
-def _stratum_summary(scores, calibrated, quantile, cell, weighting):
-    """MAE por sesión y cobertura y anchura calibradas de una celda estimable."""
+def _stratum_summary(scores, calibrated, quantile, cell, weighting, extra=()):
+    """MAE por sesión y cobertura y anchura calibradas de una celda estimable.
+
+    ``extra`` son otras métricas puntuales que la sección informa junto al MAE, como el MSE
+    de los estratos de liquidez, con la clave ``session_<métrica>``.
+    """
     result = dict(
-        session_mae=None, reason=cell["reason"], calibrated_intervals=None, calibrated_reason=None
+        session_mae=None,
+        **{f"session_{metric}": None for metric in extra},
+        reason=cell["reason"],
+        calibrated_intervals=None,
+        calibrated_reason=None,
     )
     if not cell["estimable"]:
         result["calibrated_reason"] = cell["reason"]
         return result
-    result["session_mae"] = scores.summary(market_weighting=weighting)["point"]["mae"]
+    point = scores.summary(market_weighting=weighting)["point"]
+    result["session_mae"] = point["mae"]
+    for metric in extra:
+        result[f"session_{metric}"] = point[metric]
     if not quantile:
-        result["calibrated_reason"] = "El brazo no emite cuantiles"
+        result["calibrated_reason"] = "El modelo no emite cuantiles"
     elif calibrated is None:
         result["calibrated_reason"] = "Alguna ventana no tiene calibrador"
     else:
@@ -1425,45 +1494,32 @@ def _window_mae(parts, cells, weighting):
     return result
 
 
-def _strata_report(config, scored, overall, markets):
-    """Sección secundaria por estrato de presencia, con los umbrales y la confianza declarados.
+def _stratified(config, declared, per_window, overall, markets, strata, field, extra=()):
+    """Población, puntuaciones, contrastes y coberturas por estrato de una sección secundaria.
 
-    Las celdas por debajo del umbral aparecen con su motivo y sin métricas. La confianza de
-    contrastes y coberturas corrige por Bonferroni el número de celdas de estrato y ámbito.
-    Si alguna ventana tiene filas sin precios, gráficos y macro, la sección entera queda no
-    estimable con sus recuentos. La métrica principal no depende de este resultado.
+    ``strata`` son los estratos declarados (nombre y patrón) y ``field`` la clave de cada
+    entrada de ventana con sus puntuaciones. Las celdas por debajo del umbral aparecen con
+    su motivo y sin métricas. La confianza de contrastes y coberturas corrige por Bonferroni
+    el número de celdas de estrato y ámbito.
     """
-    declared = config[STRATA_FIELD]
-    presence = {window: record for window, (_, record) in scored.items()}
-    incomplete = {window: record["incomplete"] for window, record in presence.items()}
-    if any(incomplete.values()):
-        return dict(
-            declaration=declared,
-            status="not_estimable",
-            reason=(
-                f"{sum(incomplete.values())} filas de evaluación no tienen precios, gráficos y "
-                "macro, así que los estratos declarados no describen la población"
-            ),
-            presence=presence,
-        )
-    per_window = {window: results for window, (results, _) in scored.items()}
     thresholds = {key: declared[key] for key in ("min_rows", "min_sessions")}
     weighting = config["metrics"]["market_weighting"]
     keys = list(per_window[next(iter(per_window))])
     reference = overall[keys[0][0]][0]
     names = list(reference)
-    cells = len(modality_strata.STRATA) * len(names)
+    cells = len(strata) * len(names)
     confidence = modality_strata.adjusted_confidence(config["comparison"]["confidence"], cells)
     local = dict(
         config,
         comparison=dict(config["comparison"], metrics=declared["metrics"], confidence=confidence),
     )
     population, arms, contrasts, calibration = {}, {}, {}, {}
-    for stratum, pattern in modality_strata.STRATA.items():
+    for stratum, pattern in strata.items():
         by_key = {
-            key: _stratum_arm(config, per_window, key, stratum, markets, names) for key in keys
+            key: _stratum_arm(config, per_window, key, stratum, markets, names, field)
+            for key in keys
         }
-        # Todos los brazos evalúan las mismas filas, así que la población es la del primero.
+        # Todos los modelos evalúan las mismas filas, así que la población es la del primero.
         first_views, _, first_parts = by_key[keys[0]]
         whole = {}
         for view in names:
@@ -1491,6 +1547,7 @@ def _strata_report(config, scored, overall, markets):
                         quantile,
                         whole[view],
                         weighting,
+                        extra,
                     )
                     for view in names
                 },
@@ -1506,13 +1563,9 @@ def _strata_report(config, scored, overall, markets):
             for arm in calibrated
         }
     return dict(
-        declaration=declared,
-        status="computed",
-        reason=None,
-        presence=presence,
         recalibrated=False,
         multiplicity=dict(
-            method=modality_strata.MULTIPLICITY,
+            method=declared["multiplicity"],
             cells=cells,
             family_confidence=config["comparison"]["confidence"],
             confidence=confidence,
@@ -1524,8 +1577,95 @@ def _strata_report(config, scored, overall, markets):
     )
 
 
+def _strata_report(config, scored, overall, markets):
+    """Sección secundaria por estrato de presencia, con los umbrales y la confianza declarados.
+
+    Si alguna ventana tiene filas sin precios, gráficos y macro, la sección entera queda no
+    estimable con sus recuentos. La métrica principal no depende de este resultado.
+    """
+    declared = config[STRATA_FIELD]
+    presence = {window: record for window, (_, record, _) in scored.items()}
+    incomplete = {window: record["incomplete"] for window, record in presence.items()}
+    if any(incomplete.values()):
+        return dict(
+            declaration=declared,
+            status="not_estimable",
+            reason=(
+                f"{sum(incomplete.values())} filas de evaluación no tienen precios, gráficos y "
+                "macro, así que los estratos declarados no describen la población"
+            ),
+            presence=presence,
+        )
+    per_window = {window: results for window, (results, _, _) in scored.items()}
+    computed = _stratified(
+        config, declared, per_window, overall, markets, modality_strata.STRATA, "strata"
+    )
+    return dict(declaration=declared, status="computed", reason=None, presence=presence, **computed)
+
+
+def _liquidity_report(config, scored, overall, markets, liquidity):
+    """Sección de estratos de liquidez y peso de las filas extremas de cada modelo y semilla.
+
+    Sin la edición sin ajustar la sección queda pendiente con su motivo. El MSE de los
+    contrastes principales se lee junto a esta sección, nunca solo.
+    """
+    declared = config[LIQUIDITY_FIELD]
+    if liquidity is None:
+        return liquidity_strata.pending(
+            declared, "No se ha indicado la edición sin ajustar que asigna los estratos"
+        )
+    per_window = {window: results for window, (results, _, _) in scored.items()}
+    computed = _stratified(
+        config,
+        declared,
+        per_window,
+        overall,
+        markets,
+        liquidity_strata.STRATA,
+        "liquidity",
+        tuple(metric for metric in declared["metrics"] if metric in liquidity_strata.QUADRATIC),
+    )
+    weighting = config["metrics"]["market_weighting"]
+    extremes = {}
+    for arm, seed in per_window[next(iter(per_window))]:
+        parts = [results[arm, seed]["extremes"] for results in per_window.values()]
+        views = _views(
+            SessionScores.concatenate(
+                [results[arm, seed]["raw"] for results in per_window.values()]
+            ),
+            markets,
+        )
+        label = "deterministic" if seed is None else str(seed)
+        extremes.setdefault(arm, {})[label] = liquidity_strata.extremes_report(
+            parts, views, markets, weighting, declared
+        )
+    return dict(
+        declaration=declared,
+        status="computed",
+        reason=None,
+        prices=liquidity.identity(),
+        assignment={window: record for window, (_, _, record) in scored.items()},
+        **computed,
+        extremes=extremes,
+    )
+
+
+def liquidity_source(config, edition):
+    """Asignador de estratos de liquidez si la configuración los declara y hay edición."""
+    if LIQUIDITY_FIELD not in config or edition is None:
+        return None
+    return liquidity_strata.EditionLiquidity(edition, config[LIQUIDITY_FIELD])
+
+
 def evaluate_walk_forward(
-    config_path, sources_path, scope, *, ablation_sources=None, aggregates=None, regimes=None
+    config_path,
+    sources_path,
+    scope,
+    *,
+    ablation_sources=None,
+    aggregates=None,
+    edition=None,
+    regimes=None,
 ):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
@@ -1534,6 +1674,8 @@ def evaluate_walk_forward(
     admite si la configuración declara la ablación. `aggregates` es la carpeta de los
     agregados por ventana (`window_aggregates`) que guardó la retención v2. Con ella no se
     lee ninguna predicción por fila, y cada ventana exige agregados de estas mismas fuentes.
+    `edition` es la edición sin ajustar que asigna los estratos de liquidez. Sin ella, una
+    sección de liquidez declarada queda pendiente.
     `regimes` es el calendario de regímenes de `regime_calendar`. Solo se admite si la
     configuración declara la retención e interferencia.
     """
@@ -1542,7 +1684,7 @@ def evaluate_walk_forward(
     # Sin el extra research, la sección secundaria falla aquí y no tras puntuar las ventanas.
     libraries = predictive_ability.library_versions() if PREDICTIVE_FIELD in config else {}
     sources = load_sources(sources_path, config, scope)
-    # Desde aquí, los brazos y las familias son los del ámbito evaluado.
+    # Desde aquí, los modelos y las familias son los del ámbito evaluado.
     config = scope_config(config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
     _require(
@@ -1553,19 +1695,22 @@ def evaluate_walk_forward(
     if ablation_sources is not None:
         _require(ABLATION_FIELD in config, "La configuración no declara la ablación de modalidades")
         ablation = _ablation_sources(ablation_sources, config, sources)
+    liquidity = liquidity_source(config, edition)
     if aggregates is None:
         scored = {
-            window: _score_window(sources, config, window, ablation)
+            window: _score_window(sources, config, window, ablation, liquidity)
             for window in sources["windows"]
         }
     else:
         from . import window_aggregates
 
         scored = {
-            window: window_aggregates.read(aggregates, config, sources, window, ablation)
+            window: window_aggregates.read(
+                aggregates, config, sources, window, ablation, liquidity=liquidity
+            )
             for window in sources["windows"]
         }
-    per_window = {window: results for window, (results, _) in scored.items()}
+    per_window = {window: results for window, (results, _, _) in scored.items()}
     overall, calibrated, arms, tables = {}, {}, {}, []
     for arm, seed in per_window[next(iter(per_window))]:
         windows = {window: results[arm, seed] for window, results in per_window.items()}
@@ -1664,6 +1809,15 @@ def evaluate_walk_forward(
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
             report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if LIQUIDITY_FIELD in config:
+        report[LIQUIDITY_FIELD] = _liquidity_report(config, scored, overall, markets, liquidity)
+        for name in (
+            "evaluation/liquidity_strata.py",
+            "evaluation/modality_strata.py",
+            "simulation/session_prices.py",
+            "simulation/reconstructed_tape.py",
+        ):
+            report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
     if ABLATION_FIELD in config:
         report[ABLATION_FIELD] = (
             modality_ablation.pending(config)
@@ -1696,6 +1850,7 @@ def write_walk_forward(
     *,
     ablation_sources=None,
     aggregates=None,
+    edition=None,
     regimes=None,
 ):
     """Publicar el informe y las sesiones en un directorio nuevo fuera de las fuentes."""
@@ -1705,6 +1860,8 @@ def write_walk_forward(
     folders = [Path(config_path).parent, Path(sources_path).parent]
     if ablation_sources is not None:
         folders.append(Path(ablation_sources).parent)
+    if edition is not None:
+        folders.append(Path(edition))
     if regimes is not None:
         folders.append(Path(regimes).parent)
     for source in folders:
@@ -1716,6 +1873,7 @@ def write_walk_forward(
         scope,
         ablation_sources=ablation_sources,
         aggregates=aggregates,
+        edition=edition,
         regimes=regimes,
     )
     json.dumps(report, allow_nan=False)
@@ -1734,6 +1892,9 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ablation-sources", type=Path)
     parser.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
+    parser.add_argument(
+        "--edition", type=Path, help="Edición sin ajustar para los estratos de liquidez"
+    )
     parser.add_argument("--regimes", type=Path, help="Calendario de regímenes de la edición")
     args = parser.parse_args(argv)
     report = write_walk_forward(
@@ -1743,10 +1904,11 @@ def main(argv=None):
         args.output,
         ablation_sources=args.ablation_sources,
         aggregates=args.aggregates,
+        edition=args.edition,
         regimes=args.regimes,
     )
     windows = len(report["windows"])
-    print(f"Comparados {len(report['arms'])} brazos en {windows} ventanas. Reserva final cerrada.")
+    print(f"Comparados {len(report['arms'])} modelos en {windows} ventanas. Reserva final cerrada.")
     return 0
 
 

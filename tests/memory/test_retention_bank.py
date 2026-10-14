@@ -10,13 +10,16 @@ import pytest
 from mars_titan.cm.medoids import MedoidBudgetExceeded
 from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.retention_bank import RetentionBank, RetentionConfig
+from tests.suite_support import missing_native
+
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture
 def native():
     path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
     if not path:
-        pytest.skip("Falta el enlace nativo CPU compilado")
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
     return load_native(path)
 
 
@@ -244,3 +247,126 @@ def test_anchored_all_candidates_receipt_remains_recoverable(native):
     assert bank.receipt["status"] == "all_candidates"
     restored = bank.restore(bank.snapshot())
     assert restored.snapshot() == bank.snapshot()
+
+
+def test_anchored_bank_reuses_distances_and_bounds_the_background_with_the_reference_bits(
+    native, monkeypatch
+):
+    from mars_titan.memory import retention_bank
+
+    select = retention_bank.select_anchored_medoids
+    applied = []
+
+    def spied(*args, **kwargs):
+        result = select(*args, **kwargs)
+        applied.append((result.reused_distances, result.bounded_background))
+        return result
+
+    def reference(*args, **kwargs):
+        return select(*args, **dict(kwargs, reuse_distances=False, bounded_background=False))
+
+    def stream(selection):
+        # Claves normales en 64 coordenadas: cada propuesta selecciona sobre 128 clientes.
+        monkeypatch.setattr(retention_bank, "select_anchored_medoids", selection)
+        rng = np.random.default_rng(3)
+        config = RetentionConfig(policy="anchored", capacity=64, frontier=8, new_candidates=16)
+        bank = RetentionBank(
+            native, config, codec_id="c" * 64, world="fixture", partition="train", fold="0"
+        )
+        receipts = []
+        for step in range(4):
+            incoming = []
+            for offset in range(64):
+                value = record(native, 1 + 64 * step + offset)
+                value.key = [float(x) for x in rng.standard_normal(64)]
+                incoming.append(value)
+            bank = bank.propose(incoming, confirmed_at=10_000 * (step + 1))
+            receipts.append(dict(bank.receipt))
+        return receipts, bank.snapshot()
+
+    fast, fast_state = stream(spied)
+    slow, slow_state = stream(reference)
+    # La primera propuesta cabe entera y no tiene clientes fuera de los fijos, así que no
+    # hay fondo que acotar. Las demás seleccionan entre 128 episodios con las dos opciones.
+    assert applied == [(True, False)] + [(True, True)] * 3
+    for step, (got, expected) in enumerate(zip(fast, slow, strict=True)):
+        assert repr(got["objective"]) == repr(expected["objective"])
+        # Solo cambia la memoria declarada, que suma la cota y la tabla reutilizada.
+        more, less = got.pop("estimated_peak_bytes"), expected.pop("estimated_peak_bytes")
+        assert more > less if step else more == less
+        assert got == expected
+    assert fast_state["memory"] == slow_state["memory"]
+
+
+class _CountedKey:
+    """Registro del enlace que anota cada lectura de su clave."""
+
+    def __init__(self, record, reads):
+        self._record, self._reads = record, reads
+
+    def __getattr__(self, name):
+        if name == "key":
+            self._reads.append(self._record.id)
+        return getattr(self._record, name)
+
+
+def _counting(bank, reads, monkeypatch):
+    records = bank.records
+    monkeypatch.setattr(bank, "records", lambda: [_CountedKey(r, reads) for r in records()])
+    return bank
+
+
+@pytest.mark.parametrize("policy", ["reservoir", "uniform", "recent", "anchored"])
+def test_proposals_convert_each_retained_key_once(native, policy, monkeypatch):
+    bank, reads = make_bank(native, policy), []
+    for step in range(4):
+        incoming = [record(native, i) for i in range(1 + 4 * step, 5 + 4 * step)]
+        bank = _counting(bank, reads, monkeypatch).propose(incoming, confirmed_at=10 * (step + 1))
+        retained = bank.records()
+        assert sorted(bank._keys) == sorted(r.id for r in retained)
+        for value in retained:
+            row = bank._keys[value.id]
+            assert row.dtype == np.float32 and not row.flags.writeable
+            assert np.array_equal(row, np.asarray(value.key, dtype=np.float32))
+    # Las claves de los registros que ya estaban retenidos no se vuelven a leer del enlace.
+    assert reads == []
+    # Un banco recuperado no trae claves convertidas: las lee una vez en su primera propuesta.
+    restored = make_bank(native, policy).restore(bank.snapshot())
+    old = sorted(r.id for r in restored.records())
+    after = _counting(restored, reads, monkeypatch).propose([record(native, 17)], confirmed_at=50)
+    assert sorted(reads) == old
+    reads.clear()
+    _counting(after, reads, monkeypatch).propose([record(native, 18)], confirmed_at=60)
+    assert reads == []
+
+
+@pytest.mark.parametrize("policy", ["reservoir", "uniform", "recent", "anchored"])
+def test_proposals_match_the_snapshot_copy_and_full_key_conversion_bit_for_bit(
+    native, policy, monkeypatch
+):
+    def stream():
+        rng = np.random.default_rng(5)
+        config = RetentionConfig(policy=policy, capacity=8, frontier=2, new_candidates=4)
+        bank = RetentionBank(
+            native, config, codec_id="c" * 64, world="fixture", partition="train", fold="0"
+        )
+        states = []
+        for step in range(5):
+            incoming = []
+            for offset in range(6):
+                value = record(native, 1 + 6 * step + offset)
+                value.key = [float(x) for x in rng.standard_normal(64)]
+                incoming.append(value)
+            bank = bank.propose(incoming, confirmed_at=100 * (step + 1))
+            states.append((bank.receipt, bank.snapshot(), [r.id for r in bank.records()]))
+        return states
+
+    fast = stream()
+
+    def reference_points(self, eligible, old_ids):
+        points = np.asarray([r.key for r in eligible], dtype=np.float32)
+        return points, {r.id: points[index] for index, r in enumerate(eligible)}
+
+    monkeypatch.setattr(RetentionBank, "_fork", lambda self: self.restore(self.snapshot()))
+    monkeypatch.setattr(RetentionBank, "_points", reference_points)
+    assert fast == stream()

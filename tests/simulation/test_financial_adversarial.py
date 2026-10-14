@@ -1,4 +1,4 @@
-"""Políticas guionizadas que intentan obtener recompensa financiera sin señal legítima."""
+"""Políticas de reglas fijas que intentan obtener recompensa financiera sin señal legítima."""
 
 import math
 

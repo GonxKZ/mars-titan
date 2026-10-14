@@ -38,7 +38,7 @@ La búsqueda solo acepta la familia en la versión 4. El diseño fija cuatro cab
 
 La selección admite `stopping`. Sin el campo, o con `validation_plateau`, se mantiene la parada por meseta actual. Con `fixed_budget` se recorren todas las épocas declaradas y se conserva el mejor estado según `session_mae` y `min_delta`. La paciencia y la mejora mínima siguen siendo obligatorias y se declaran antes de ejecutar. Solo una validación completa avanza el contador. El estado registra además `plateau_epoch`, la época en la que habría parado la meseta, como diagnóstico sin efecto sobre el número de actualizaciones.
 
-Con la misma población, el mismo lote y el mismo número de épocas, cada brazo aplica `épocas × ⌈N_train / B⌉` pasos de optimizador. Una continuación puede conservar el padre como época 0 si los ajustes empeoran. En la versión 4 de la búsqueda, `stopping` se aplica a la búsqueda y a las continuaciones, y `continuation_selection` no puede declarar otra parada.
+Con la misma población, el mismo lote y el mismo número de épocas, cada modelo aplica `épocas × ⌈N_train / B⌉` pasos de optimizador. Una continuación puede conservar el padre como época 0 si los ajustes empeoran. En la versión 4 de la búsqueda, `stopping` se aplica a la búsqueda y a las continuaciones, y `continuation_selection` no puede declarar otra parada.
 
 `stop_reason` se publica también cuando la selección declara `stopping`. Con presupuesto fijo vale `budget_exhausted`, `stopped_early` es falso y el recibo incluye `plateau_epoch`.
 

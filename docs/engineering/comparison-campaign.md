@@ -7,7 +7,7 @@ ni sustituye las evidencias de las sondas anteriores. Fecha: 22 de septiembre de
 
 La campaña recorrerá la copia completa de FinMultiTime y entrenará las referencias
 sobre todas las muestras admisibles del universo declarado, sin el límite anterior
-de 64 o 128 activos. Se ejecutarán tres brazos: Estados Unidos, China y la unión
+de 64 o 128 activos. Se ejecutarán tres modelos: Estados Unidos, China y la unión
 de ambos mercados. Su procedencia, monedas y calendarios seguirán identificados
 cuando un modelo comparta parámetros. MARS-TITAN y sus ablaciones M0 a M3 quedan
 fuera de esta campaña previa.
@@ -54,7 +54,7 @@ no como clasificación histórica acreditada.
 
 ## Comparaciones US, CN y US+CN
 
-Cada brazo utiliza todas sus muestras admisibles. El conjunto mixto conserva la
+Cada modelo utiliza todas sus muestras admisibles. El conjunto mixto conserva la
 unión, no solo los días en los que ambas bolsas tienen sesión. Sus resultados
 se desglosan por mercado sobre exactamente las mismas observaciones que evalúa
 la referencia local correspondiente.
@@ -76,7 +76,7 @@ Los sectores actuales de los dos catálogos utilizan clasificaciones distintas.
 Hasta disponer de correspondencias históricas defendibles, sus desgloses serán
 descriptivos y no determinarán admisión ni selección de empresas. Los indicadores
 macro conservarán sus 140 posiciones, versiones, máscaras y antigüedad en los
-tres brazos, sin presentar valores ausentes como observaciones.
+tres modelos, sin presentar valores ausentes como observaciones.
 
 ## Regla de admisión y reserva temporal
 

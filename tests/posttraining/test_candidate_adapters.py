@@ -5,7 +5,6 @@ cambia pesos, sobre la vista conjunta US+CN del corpus técnico. Necesitan el en
 """
 
 import json
-import os
 import shutil
 from dataclasses import asdict
 from pathlib import Path
@@ -25,14 +24,13 @@ from mars_titan.posttraining.adapter_matrix import read_matrix
 from mars_titan.training import candidate_walk_forward as walk
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.walk_forward_phases import window_phases
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.training.test_candidate_walk_forward import WARMUP, fit
 from tests.training.test_candidate_walk_forward import allowed as allowed
 from tests.training.test_candidate_walk_forward import views as views
 from tests.training.test_financial_run import RecordingOptimizer
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 ROOT = Path(__file__).resolve().parents[2]
 SCOPE, FIRST, NEXT = "US+CN", "fold-000", "fold-001"
@@ -63,11 +61,15 @@ def parent(views, allowed):
 
 
 def cases(matrix):
+    """Casos propuestos y la continuación anclada de reserva (#444), que se recorre igual."""
     document, digest = matrix
-    return {
-        row["id"].split("/", 1)[1]: row["case"]
-        for row in cm.cases(document, digest, "episodic_gru")
-    }
+    rows = cm.cases(document, digest, "episodic_gru")
+    rows += [
+        row
+        for row in cm.cases(document, digest, "episodic_gru", reserve=True)
+        if row["control"] == cm.ANCHORED
+    ]
+    return {row["id"].split("/", 1)[1]: row["case"] for row in rows}
 
 
 @pytest.fixture(scope="module")
@@ -165,6 +167,22 @@ def test_arms_share_updates_and_only_the_head_corrections_move(arms):
     assert all(value is not None and value.abs().sum() > 0 for value in first.values())
     assert {group["role"] for group in full_optimizer.param_groups} >= {"encoder", "head"}
     assert full["posttraining"]["native_parameters_sha256"] is None
+
+
+def test_the_anchored_continuation_reaches_the_trainer_with_its_anchor(arms):
+    _, full, full_optimizer = arms["full_continuation"]
+    output, anchored, anchored_optimizer = arms[cm.ANCHORED]
+    assert anchored["status"] == "completed"
+    assert anchored["global_step"] == full["global_step"] == anchored_optimizer.calls > 0
+    assert [group["role"] for group in anchored_optimizer.param_groups] == [
+        group["role"] for group in full_optimizer.param_groups
+    ]
+    assert anchored["posttraining"]["case"]["control"] == cm.ANCHORED
+    identity = json.loads((output / "run" / "run.json").read_text())["identity"]
+    assert identity["recipe"]["weight_decay_anchor"] == "initial_parameters"
+    assert identity["anchored_decay"]["anchor"] == "initial_parameters"
+    full_identity = json.loads((arms["full_continuation"][0] / "run" / "run.json").read_text())
+    assert "anchored_decay" not in full_identity["identity"]
 
 
 @pytest.fixture(scope="module")
@@ -324,3 +342,33 @@ def test_adapters_and_the_frozen_parent_never_use_another_warmup(
             parent_id=f"{SCOPE}/{FIRST}/gru_episodic",
             device="cpu",
         )
+
+
+def test_traces_reach_the_adapted_head_without_changing_the_window(
+    views, parent, matrix, arms, tmp_path
+):
+    """Trazas de #448 en el postentrenamiento de la candidata, con la actualización de la cabeza."""
+    document, digest = matrix
+    name = next(key for key in cases(matrix) if key != "full_continuation")
+    output = tmp_path / "traced"
+    report = ca.run_candidate_posttraining(
+        parent,
+        views.windows[SCOPE][FIRST],
+        output,
+        case=cases(matrix)[name],
+        matrix=document,
+        digest=digest,
+        device="cpu",
+        optimizer_factory=RecordingOptimizer,
+        traces=EVERY_STEP,
+    )
+    folder, reference, _ = arms[name]
+    assert report["status"] == "completed"
+    for partition, record in reference["predictions"].items():
+        assert rows(output, report["predictions"][partition]).equals(rows(folder, record))
+    manifest, found = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "posttraining_episodic_gru"
+    deltas = [row for row in found if row["metric"] == "adapter.delta_l2"]
+    # Sin pasos que cambien pesos, la actualización efectiva de la cabeza es exactamente cero.
+    assert deltas and all(row["value"] == 0.0 for row in deltas)
+    assert {"loss", "grad_l2"} <= metrics(found, "train")

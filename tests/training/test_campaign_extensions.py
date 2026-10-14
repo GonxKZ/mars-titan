@@ -29,10 +29,10 @@ COUNTS = dict(
         declared=(2385, 0),
         families={plan.EPISODIC: (180, 0), plan.MARS: (2340, 0), plan.CM: (1080, 0)},
         extended=(5985, 0),
-        adapters=(10332, 1302),
+        adapters=(10962, 1302),
         rl=dict(
-            declared=dict(training_jobs=1368, carried_jobs=0, reference_jobs=1221),
-            extended=dict(training_jobs=2664, carried_jobs=0, reference_jobs=3219),
+            declared=dict(training_jobs=1800, carried_jobs=0, reference_jobs=1221),
+            extended=dict(training_jobs=3096, carried_jobs=0, reference_jobs=3219),
         ),
     ),
     B=dict(
@@ -41,8 +41,8 @@ COUNTS = dict(
         extended=(2261, 2380),
         adapters=(1479, 2436),
         rl=dict(
-            declared=dict(training_jobs=456, carried_jobs=912, reference_jobs=1221),
-            extended=dict(training_jobs=888, carried_jobs=1776, reference_jobs=3219),
+            declared=dict(training_jobs=600, carried_jobs=1200, reference_jobs=1221),
+            extended=dict(training_jobs=1032, carried_jobs=2064, reference_jobs=3219),
         ),
     ),
 )
@@ -150,7 +150,7 @@ def test_the_declared_configurations_stay_untouched():
     [
         (("limits", "max_training_jobs"), 5984, "prevé 5985 trabajos.*max_training_jobs=5984"),
         (("limits", "max_prediction_jobs"), 1, "prevé 0 trabajos.*max_prediction_jobs=1"),
-        (("rl_stage", "limits", "max_training_jobs"), 2665, "políticas ampliada prevé 2664"),
+        (("rl_stage", "limits", "max_training_jobs"), 3097, "políticas ampliada prevé 3096"),
         (("rl_stage", "limits", "max_evaluation_jobs"), 3218, "prevé 3219 trabajos"),
     ],
 )
@@ -215,7 +215,7 @@ def test_extending_rejects_sections_already_declared_or_foreign(tmp_path):
         )
     # Las secciones se validan con las reglas de la campaña: un padre que no es mac_online.
     mars = dict(prepared["sections"][plan.MARS], parent_arm="titans_mac_frozen")
-    with pytest.raises(ValueError, match="padre el brazo mac_online"):
+    with pytest.raises(ValueError, match="padre el modelo mac_online"):
         plan.extend_campaign(campaign, {plan.MARS: mars})
     # Una copia de la campaña fuera de su carpeta no es la que amplía la declaración.
     copied = plan.load_campaign(write_variant(tmp_path, "A"))

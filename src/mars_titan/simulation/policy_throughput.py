@@ -232,7 +232,7 @@ def measure_policies(stage, *, steps=2048, warmup=64, library=None):
 
 # Lo que la estimación con el motor nativo no puede medir mientras rige el bloqueo.
 NATIVE_NOT_MEASURED = [
-    "Paso de Adam: se cuentan los pasos de cada brazo, sin tiempo",
+    "Paso de Adam: se cuentan los pasos de cada modelo, sin tiempo",
     "Muestreo del replay de Double DQN y sincronización de su red objetivo",
     "Puntos de control, lectura de cintas, recibos y arranque de cada proceso",
     "Diseños de activos mayores que el universo: los tiempos se miden con las cintas del "
@@ -252,7 +252,7 @@ NATIVE_FIELDS = (
 # Tiempos de la cabeza cuantílica, exigidos solo cuando la etapa declara qr_dqn o qr_dqn_cvar.
 # Ambas comparten red y coste, porque el CVaR solo cambia qué niveles se promedian.
 QUANTILE_FIELDS = ("qr_dqn_tick_seconds", "qr_dqn_minibatch_seconds", "qr_dqn_forward_seconds")
-# Objetivo de grupo por transición recogida, exigido solo si la etapa declara esos brazos. La
+# Objetivo de grupo por transición recogida, exigido solo si la etapa declara esos modelos. La
 # recogida es la de KLPO y usa su tiempo.
 GROUP_FIELDS = ("group_objective_transition_seconds",)
 DQN_WARMUP = 256
@@ -319,7 +319,7 @@ def native_policy_hours(stage, measured):
     un recorrido y un paso de un carril con y sin red. Un minilote de Double DQN cuenta un
     forward y backward y dos forwards sin gradiente. QR-DQN sigue la misma cuenta con los
     tiempos de `QUANTILE_FIELDS`, que solo se exigen si la etapa declara esas variantes. Sin el
-    paso de Adam, las horas son una cota inferior: el resultado cuenta esos pasos por brazo
+    paso de Adam, las horas son una cota inferior: el resultado cuenta esos pasos por modelo
     para completarla después.
     """
     for market, values in measured.items():

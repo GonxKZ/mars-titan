@@ -11,6 +11,8 @@ from test_native_episode_backend import native as native
 from test_native_episode_backend import record
 from test_write_policy import bank
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 
 def api():
     return importlib.import_module("mars_titan.memory.native_memory_archive")

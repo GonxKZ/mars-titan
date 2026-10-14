@@ -51,7 +51,7 @@
       "adapters": "neural_pinball",
       "full_continuation": "neural_pinball",
       "linear_residual": {
-        "excluded": "La corrección lineal residual corrige la predicción escalar del padre que guarda su caché, que en un padre de cuantiles es solo la mediana. No produce cinco niveles ordenados ni puede optimizar su pinball. El brazo head ya es una corrección por nivel inicializada a cero cuyo orden garantiza la parametrización de la cabeza."
+        "excluded": "La corrección lineal residual corrige la predicción escalar del padre que guarda su caché, que en un padre de cuantiles es solo la mediana. No produce cinco niveles ordenados ni puede optimizar su pinball. El modelo head ya es una corrección por nivel inicializada a cero cuyo orden garantiza la parametrización de la cabeza."
       }
     }
   },
@@ -109,7 +109,7 @@
         },
         "arms": [["core"], ["episodic_readout"], ["core", "episodic_readout"]],
         "frozen": ["refinement", "step_logit"],
-        "without_bank": "M0 no consulta episodios, así que query_projection y value_projection del lector no reciben gradiente. Sin banco solo se ejecuta el brazo del núcleo."
+        "without_bank": "M0 no consulta episodios, así que query_projection y value_projection del lector no reciben gradiente. Sin banco solo se ejecuta el modelo del núcleo."
       },
       "episodic_gru": {
         "points": ["head"],
@@ -220,6 +220,32 @@
     "inapplicable": {
       "norm": "RNN, LSTM, GRU y DLinear no tienen capas de normalización. Solo el Transformer compacto y el codificador de precios de Titans-MAC tienen LayerNorm.",
       "persistent": "Solo la atención de MAC lee la memoria persistente, en mac_frozen y mac_online. Las referencias neuronales y transformer_direct no tienen MAC y mac_disabled atiende solo al segmento."
+    }
+  },
+  "anchored_continuation": {
+    "anchor": "initial_parameters",
+    "campaign": ["references"]
+  },
+  "replay_continuation": {
+    "ratio": 0.5,
+    "campaign": ["references"]
+  },
+  "predictive_objectives": {
+    "modes": ["reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"],
+    "campaign": ["references"],
+    "excluded": {
+      "neural_mae": {
+        "reason": "Un padre de cinco cuantiles se continúa con su pinball (full_continuation). El MAE solo ajusta la mediana y deja sin pérdida los otros cuatro niveles, que leen la cadena y las políticas. run_case lo rechaza para estos padres desde #397.",
+        "revisit_if": "Si objective_mae mejora la mediana del padre congelado y la continuación con pinball no lo hace, se declararía una continuación con MAE como contraste aparte."
+      },
+      "neural_mse": {
+        "reason": "El MSE ajusta la media y no la mediana que se evalúa, y tampoco entrena los cinco niveles del padre. Con un padre de cuantiles la continuación con su pinball ya es el control de pesos completos. run_case lo rechaza para estos padres desde #397.",
+        "revisit_if": "Solo tiene sentido con padres escalares, y el diseño real-matched-posttraining ya la compara con ellos."
+      },
+      "chronological_parents": {
+        "reason": "La corrección lineal lee la predicción del padre en la caché de MatrixParent, que solo carga las cinco redes de referencia. Titans-MAC, los lectores de MARS-TITAN y CM-v1 y la GRU candidata predicen con estado y en orden, y no tienen esa caché.",
+        "revisit_if": "Si en las referencias algún objetivo cambia la conclusión frente al MAE, se implementaría la caché ordenada de los padres cronológicos y se repetiría la comparación con ellos."
+      }
     }
   }
 }

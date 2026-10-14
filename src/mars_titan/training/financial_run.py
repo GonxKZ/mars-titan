@@ -27,6 +27,7 @@ from mars_titan import nvtx_ranges
 from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
@@ -34,8 +35,15 @@ from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
-from mars_titan.models.titans.state import join_mac_rows, map_mac_rows
+from mars_titan.models.titans.state import (
+    deferred_checks,
+    join_mac_rows,
+    map_mac_rows,
+    require_true,
+)
 
+from . import anchored_decay, distillation
+from .anchored_decay import ANCHORS
 from .checkpoints import (
     StopRequest,
     capture_rng,
@@ -96,11 +104,18 @@ class ChronologicalRecipe:
     # None conserva la configuración numérica del proceso. Una precisión declarada aplica
     # `kernel_policy` al construir el recorrido y entra en su identidad.
     precision: str | None = None
+    # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
+    # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
+    weight_decay_anchor: str | None = None
+    # None ajusta solo con las etiquetas. Una fracción w suma la distancia a las salidas de un
+    # profesor en las filas de ajuste con peso w y deja 1 − w a la tarea (#57).
+    distillation_weight: float | None = None
 
     def __post_init__(self):
         # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
         validate_loss("mae" if self.loss == PINBALL else self.loss, self.huber_delta)
         validate_selection(self.selection, epochs=self.epochs)
+        distillation.checked_weight(self.distillation_weight)
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
             any(type(v) is not int or not 1 <= v <= m for v, m in self._bounded())
@@ -109,6 +124,7 @@ class ChronologicalRecipe:
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
             or not valid_precision(self.precision)
+            or self.weight_decay_anchor not in ANCHORS
             or (
                 self.accumulation_rows is not None
                 and (
@@ -146,6 +162,12 @@ class ChronologicalRecipe:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["weight_decay_anchor"] is None:
+            fields.pop("weight_decay_anchor")
+        if fields["distillation_weight"] is None:
+            fields.pop("distillation_weight")
+        else:
+            fields["distillation_distance"] = distillation.DISTANCE
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -362,6 +384,8 @@ class _Pass:
     # Con la penalización C, un elemento por grupo lógico medido del tramo: su término con
     # grafo o, con acumulación, la tupla de sus flujos medidos, que la repetición recalcula.
     penalties: list = field(default_factory=list)
+    # Con PT4, el contexto de mercado del recorrido. Entre eventos no guarda nada pendiente.
+    context: object = None
 
 
 class ChronologicalInference:
@@ -380,6 +404,10 @@ class ChronologicalInference:
             raise ValueError("El diagnóstico C pertenece a la sesión congelada, no al ajuste")
         # Solo la penalización necesita un plan de C por evento. disabled conserva SDPA Math.
         self.penalized = control is not None and control.config.mode == "penalty"
+        # La repetición por bloques de la acumulación no reconstruye el contexto de PT4.
+        self.uses_context = predictor.session_context is not None
+        if self.uses_context and recipe.accumulation_rows is not None:
+            raise ValueError("PT4 no se combina con la acumulación por bloques")
         self.quantiles = predictor.config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
@@ -412,46 +440,66 @@ class ChronologicalInference:
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
-        for cpu in validated:
-            batch = DecisionBatch.from_validated(
-                cpu, device=self.device, dtype=predictor.head.weight.dtype
-            )
-            new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
-            if new:
-                run.flows.put(predictor.initial_state(new, differentiable=grad))
-            if accumulate:
-                for flow in batch.flow_ids:
-                    if flow not in run.starts:
-                        # La repetición parte del estado sin grafo de cada flujo al empezar.
-                        run.starts[flow] = None if flow in new else run.flows.handle(flow)
-                run.segment.append((batch, plan))
-            state = run.flows.gather(batch.flow_ids)
-            with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
-                prepared = predictor.prepare(batch, state, differentiable=grad, **plan)
-            result = prepared.local_control
-            if result is not None:
-                # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
-                term = result.penalty.detach() if accumulate else result.penalty
-                measured.append((term, result.flow_ids))
-            run.flows.put(prepared.next_state, detach=accumulate)
-            size = len(batch.flow_ids)
-            run.counters["observations"] += size
-            if warmup:
-                run.counters["warmup_observations"] += size
-                continue
-            # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
-            # `unbind` deja un solo nodo de autograd para las filas del bloque.
-            graphs = (prepared.quantiles if self.quantiles else prepared.point_predictions).unbind()
-            if grad:
-                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                    run.graphs[key] = _REPLAY if accumulate else graphs[row]
-            emitted.append((batch, prepared))
-            run.counters["predictions"] += size
-        with nvtx_ranges.phase("titans.emit"):
-            self._emit(run, source, emitted)
-        if measured:
-            with nvtx_ranges.phase("titans.penalty"):
-                self._penalty(run, measured, keep=grad, replay=accumulate)
+        if self.uses_context and run.context is None:
+            run.context = predictor.initial_context(differentiable=grad)
+        context = dict(context=run.context) if self.uses_context else {}
+        # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
+        # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
+        # checkpoints o cierra recibos. Así no se espera a la GPU tras cada bloque.
+        with deferred_checks():
+            for cpu in validated:
+                batch = DecisionBatch.from_validated(
+                    cpu, device=self.device, dtype=predictor.head.weight.dtype
+                )
+                new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
+                if new:
+                    run.flows.put(predictor.initial_state(new, differentiable=grad))
+                if accumulate:
+                    for flow in batch.flow_ids:
+                        if flow not in run.starts:
+                            # La repetición parte del estado sin grafo de cada flujo al empezar.
+                            run.starts[flow] = None if flow in new else run.flows.handle(flow)
+                    run.segment.append((batch, plan))
+                state = run.flows.gather(batch.flow_ids)
+                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
+                    prepared = predictor.prepare(
+                        batch, state, differentiable=grad, **plan, **context
+                    )
+                if self.uses_context:
+                    # Los bloques siguientes del evento leen el mismo contexto confirmado.
+                    context = dict(context=prepared.next_context)
+                result = prepared.local_control
+                if result is not None:
+                    # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
+                    term = result.penalty.detach() if accumulate else result.penalty
+                    measured.append((term, result.flow_ids))
+                run.flows.put(prepared.next_state, detach=accumulate)
+                size = len(batch.flow_ids)
+                run.counters["observations"] += size
+                if warmup:
+                    run.counters["warmup_observations"] += size
+                    continue
+                # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
+                # `unbind` deja un solo nodo de autograd para las filas del bloque.
+                graphs = (
+                    prepared.quantiles if self.quantiles else prepared.point_predictions
+                ).unbind()
+                if grad:
+                    for row, key in enumerate(
+                        zip(batch.flow_ids, batch.prediction_at, strict=True)
+                    ):
+                        run.graphs[key] = _REPLAY if accumulate else graphs[row]
+                emitted.append((batch, prepared))
+                run.counters["predictions"] += size
+            if self.uses_context:
+                # La sesión se escribe una vez, después de emitir todas sus predicciones.
+                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
+                    run.context = predictor.commit_context(context["context"], differentiable=grad)
+            with nvtx_ranges.phase("titans.emit"):
+                self._emit(run, source, emitted)
+            if measured:
+                with nvtx_ranges.phase("titans.penalty"):
+                    self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -574,6 +622,7 @@ class ChronologicalInference:
     def _close(self, run):
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
+        run.context = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -645,6 +694,13 @@ class ChronologicalTrainer(ChronologicalInference):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
+    # None, `traced_update` y `observing` son bloques vacíos.
+    traces = None
+
+    def _trace_modules(self):
+        """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
+        return dict(predictor=self.predictor)
 
     def __init__(
         self,
@@ -657,6 +713,7 @@ class ChronologicalTrainer(ChronologicalInference):
         optimizer_factory=None,
         pairing=None,
         posttraining=None,
+        teacher=None,
         audit=False,
     ):
         super().__init__(predictor, recipe, audit=audit)
@@ -681,6 +738,17 @@ class ChronologicalTrainer(ChronologicalInference):
             or pairing.get("runtime_state_transferred") is not False
         ):
             raise ValueError("El recibo de emparejamiento no corresponde a estos parámetros")
+        # Las salidas del profesor solo entran en la pérdida y deben ser de este tramo (#57).
+        if (recipe.distillation_weight is None) != (teacher is None) or (
+            teacher is not None
+            and (
+                type(teacher) is not distillation.TeacherTargets
+                or teacher.quantiles != self.quantiles
+                or teacher.source != distillation.bound_source(train)
+            )
+        ):
+            raise ValueError("La destilación necesita las salidas del profesor de este tramo")
+        self.teacher = teacher
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
@@ -708,11 +776,7 @@ class ChronologicalTrainer(ChronologicalInference):
             for role, names in self.roles.items()
             if names
         ]
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
+        factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
         trainable = {id(named[name]) for names in self.roles.values() for name in names}
@@ -764,6 +828,17 @@ class ChronologicalTrainer(ChronologicalInference):
         if posttraining is not None:
             # Sin postentrenamiento la identidad conserva literalmente su forma anterior.
             self.identity.update(posttraining=posttraining, frozen_parameters=frozen)
+        if teacher is not None:
+            # Sin destilación la identidad conserva literalmente su forma anterior.
+            self.identity["distillation"] = dict(
+                teacher.identity,
+                weight=recipe.distillation_weight,
+                implementation_sha256=sha256(Path(distillation.__file__)),
+            )
+        anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
+        if anchored is not None:
+            # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
+            self.identity["anchored_decay"] = anchored
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -791,18 +866,26 @@ class ChronologicalTrainer(ChronologicalInference):
             return functional.mse_loss(prediction, target)
         return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
 
+    def _distilled(self, loss, prediction, keys):
+        """Objetivo del tramo: la tarea o, con profesor, su mezcla con la distancia a él."""
+        if self.teacher is None:
+            return loss
+        teacher = self.teacher.values(keys, device=prediction.device, dtype=prediction.dtype)
+        return distillation.objective(loss, prediction, teacher, self.recipe.distillation_weight)
+
     def _backward(self, run):
         """Gradiente de la pérdida media del tramo con los grafos conservados.
 
-        Con la penalización C, el objetivo suma la media de los términos de los grupos
-        medidos en el tramo. La pérdida devuelta sigue siendo la de la tarea.
+        Con profesor, la tarea se mezcla con la distancia a sus salidas. Con la penalización
+        C, el objetivo suma la media de los términos de los grupos medidos en el tramo. La
+        pérdida devuelta sigue siendo la de la tarea.
         """
         prediction = torch.stack(run.predictions)
         target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
         loss = self._loss(prediction, target)
-        objective = loss
+        objective = self._distilled(loss, prediction, [(flow, at) for flow, at, _ in run.used])
         if run.penalties:
-            objective = loss + torch.stack(run.penalties).mean()
+            objective = objective + torch.stack(run.penalties).mean()
         if not torch.isfinite(objective).item():
             raise ValueError("La pérdida del tramo no es finita")
         objective.backward()
@@ -839,45 +922,55 @@ class ChronologicalTrainer(ChronologicalInference):
             states.detach()
             if predictor.config.variant == "mac_frozen":
                 self._anchor_frozen(states)
-            members, graphs, penalties = set(group), {}, []
-            for batch, plan in run.segment:
-                rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
-                if not rows:
-                    continue
-                batch = batch.select(rows)
-                new = tuple(flow for flow in batch.flow_ids if flow not in states)
-                if new:
-                    states.put(predictor.initial_state(new, differentiable=True))
-                state = states.gather(batch.flow_ids)
-                with torch.enable_grad():
-                    prepared = predictor.prepare(batch, state, differentiable=True, **plan)
-                states.put(prepared.next_state)
-                if prepared.local_control is not None:
-                    penalties.append(prepared.local_control.penalty)
-                    replayed += len(prepared.local_control.flow_ids)
-                outputs = (
-                    prepared.quantiles if self.quantiles else prepared.point_predictions
-                ).unbind()
-                for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
-                    if key in targets:
-                        graphs[key] = outputs[row]
-            keys = [(flow, at) for flow, at, _ in run.used if flow in members]
-            if any(key not in graphs for key in keys):
-                raise ValueError("La repetición del tramo no reproduce sus predicciones")
-            terms = []
-            if keys:
-                prediction = torch.stack([graphs[key] for key in keys])
-                target = torch.tensor(
-                    [targets[key] for key in keys], dtype=prediction.dtype, device=prediction.device
-                )
-                loss = self._loss(prediction, target) * (len(keys) / len(run.used))
-                total += float(loss.detach())
-                terms.append(loss)
-            if penalties:
-                terms.append(sum(penalties) / len(run.penalties))
-            objective = sum(terms[1:], terms[0])
-            if not torch.isfinite(objective).item():
-                raise ValueError("La pérdida del tramo no es finita")
+            # Las comprobaciones de todos los lotes del grupo y la de su pérdida se resuelven
+            # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
+            with deferred_checks():
+                members, graphs, penalties = set(group), {}, []
+                for batch, plan in run.segment:
+                    rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
+                    if not rows:
+                        continue
+                    batch = batch.select(rows)
+                    new = tuple(flow for flow in batch.flow_ids if flow not in states)
+                    if new:
+                        states.put(predictor.initial_state(new, differentiable=True))
+                    state = states.gather(batch.flow_ids)
+                    with torch.enable_grad():
+                        prepared = predictor.prepare(batch, state, differentiable=True, **plan)
+                    states.put(prepared.next_state)
+                    if prepared.local_control is not None:
+                        penalties.append(prepared.local_control.penalty)
+                        replayed += len(prepared.local_control.flow_ids)
+                    outputs = (
+                        prepared.quantiles if self.quantiles else prepared.point_predictions
+                    ).unbind()
+                    for row, key in enumerate(
+                        zip(batch.flow_ids, batch.prediction_at, strict=True)
+                    ):
+                        if key in targets:
+                            graphs[key] = outputs[row]
+                keys = [(flow, at) for flow, at, _ in run.used if flow in members]
+                if any(key not in graphs for key in keys):
+                    raise ValueError("La repetición del tramo no reproduce sus predicciones")
+                terms = []
+                if keys:
+                    prediction = torch.stack([graphs[key] for key in keys])
+                    target = torch.tensor(
+                        [targets[key] for key in keys],
+                        dtype=prediction.dtype,
+                        device=prediction.device,
+                    )
+                    task = self._loss(prediction, target)
+                    share = len(keys) / len(run.used)
+                    loss = task * share
+                    total += float(loss.detach())
+                    if self.teacher is not None:
+                        loss = self._distilled(task, prediction, keys) * share
+                    terms.append(loss)
+                if penalties:
+                    terms.append(sum(penalties) / len(run.penalties))
+                objective = sum(terms[1:], terms[0])
+                require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
             objective.backward()
         if replayed != len(controlled):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
@@ -892,17 +985,20 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
                 ) + len(run.penalties)
-            with nvtx_ranges.phase("titans.clip"):
-                torch.nn.utils.clip_grad_norm_(
-                    self.predictor.parameters(),
-                    self.recipe.max_grad_norm or math.inf,
-                    error_if_nonfinite=True,
-                )
-            with nvtx_ranges.phase("titans.optimizer"):
-                self.optimizer.step()
-                self.optimizer.zero_grad(set_to_none=True)
-                # El paso es la única modificación admitida de los parámetros. Se sella de nuevo.
-                self.predictor._seal_parameters()
+            with traced_update(self.traces, self.global_step + 1, self.optimizer, loss) as probe:
+                with nvtx_ranges.phase("titans.clip"):
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        self.predictor.parameters(),
+                        self.recipe.max_grad_norm or math.inf,
+                        error_if_nonfinite=True,
+                    )
+                    probe.clip(norm, self.recipe.max_grad_norm)
+                with nvtx_ranges.phase("titans.optimizer"):
+                    self.optimizer.step()
+                    self.optimizer.zero_grad(set_to_none=True)
+                    # El paso es la única modificación admitida de los parámetros. Se sella
+                    # de nuevo.
+                    self.predictor._seal_parameters()
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += len(run.predictions)
@@ -917,6 +1013,8 @@ class ChronologicalTrainer(ChronologicalInference):
         parameter_id = self.predictor._parameter_id
         with nvtx_ranges.phase("titans.truncate"):
             run.flows.detach(parameter_id)
+            if run.context is not None:
+                run.context = self.predictor.detach_context(run.context, parameter_id)
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -970,7 +1068,10 @@ class ChronologicalTrainer(ChronologicalInference):
                         if stop.requested:
                             raise Paused
             if event.inputs:
-                with nvtx_ranges.phase("titans.observe"):
+                with (
+                    nvtx_ranges.phase("titans.observe"),
+                    observing(self.traces, self.global_step + 1),
+                ):
                     self._observe(run, source, event, differentiable=True)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
@@ -993,9 +1094,16 @@ class ChronologicalTrainer(ChronologicalInference):
             ),
             errors=[[m, t, *values] for (m, t), values in sorted(run.errors.sessions.items())],
             counters=dict(run.counters),
+            **(
+                dict(context=None if run.context is None else predictor.export_context(run.context))
+                if self.uses_context
+                else {}
+            ),
         )
 
     def _restore(self, payload):
+        if self.uses_context != ("context" in payload):
+            raise ValueError("El recorrido guardado no corresponde al contexto del predictor")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1011,6 +1119,8 @@ class ChronologicalTrainer(ChronologicalInference):
         }
         run.errors.sessions = {(m, t): [c, a, s] for m, t, c, a, s in payload["errors"]}
         run.counters = dict(payload["counters"])
+        if self.uses_context and payload["context"] is not None:
+            run.context = self.predictor.restore_context(payload["context"])
         return run
 
     def _load_best(self, report):
@@ -1049,6 +1159,8 @@ class ChronologicalTrainer(ChronologicalInference):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if self.traces is not None:
+                self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 self.predictor.train()
                 run = self._restore(state["run"])
@@ -1059,6 +1171,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 return report
         else:
             output.mkdir(parents=True)
+            if self.traces is not None:
+                self.traces.restore(None)
             report = dict(
                 schema_version=1,
                 kind="titans_financial_chronological_run",
@@ -1084,6 +1198,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
             )
+            if self.traces is not None:
+                state["traces"] = self.traces.checkpoint()
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
@@ -1114,14 +1230,17 @@ class ChronologicalTrainer(ChronologicalInference):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    if self.trace is not None:
+                    if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
                             score=metrics["session_mae"],
                         )
-                        self.trace(event, dict(predictor=self.predictor))
+                        if self.traces is not None:
+                            self.traces.validation(event)
+                        if self.trace is not None:
+                            self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

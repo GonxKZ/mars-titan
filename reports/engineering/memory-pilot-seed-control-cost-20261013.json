@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "kind": "memory_pilot_seed_control_cost",
+  "recorded_at_utc": "2026-10-13T02:51:31.943257+00:00",
+  "commit": "b0ef762d446fbdd06d5692a6667fa539336441b3",
+  "scope": "Ajuste cronol\u00f3gico con _NoStepOptimizer y el gancho que proh\u00edbe pasos, e inferencia congelada. Sin p\u00e9rdidas ni errores registrados.",
+  "device": "cuda:0",
+  "gpu_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1379 MiB, 595.91.07, 1605 MHz, 51",
+  "gpu_after": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1662 MiB, 595.91.07, 1605 MHz, 57",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cudnn": 92400
+  },
+  "precision": {
+    "dtype": "float32",
+    "tf32_matmul": false,
+    "tf32_cudnn": false,
+    "matmul_precision": "highest",
+    "cublas_workspace": ":4096:8"
+  },
+  "threads": 4,
+  "campaign": "configs/baselines/historical-masked-campaign-a.json",
+  "campaign_sha256": "691581aeded25d54e0cb376cbe0c01b47aaad83ddf9c6e8c15c9d6c74cbce021",
+  "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+  "model": "titans_mac_online",
+  "search_case": "lr1e-4",
+  "search_cases": [
+    "lr1e-4",
+    "lr1e-3"
+  ],
+  "measured_case": "lr1e-4",
+  "recipe_block_rows": 1024,
+  "recipe_accumulation_rows": 1024,
+  "inputs": {
+    "corpus": {
+      "path": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/targets-v3.1/manifest.json",
+      "sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a"
+    },
+    "view_identity": "1641bd70d84a3ecdf07ab1c555d7f68f94f9e2801b6597a771ea9f60078e01b2",
+    "window": "fold-012",
+    "assets": [
+      "A",
+      "AA",
+      "AAME",
+      "AAON",
+      "AAPL",
+      "AB",
+      "ABCB",
+      "ABEO",
+      "ABEV",
+      "ABM",
+      "ABT",
+      "ACGL",
+      "ACHC",
+      "ACHV",
+      "ACIW",
+      "ACNB",
+      "ACU",
+      "ADBE",
+      "ADC",
+      "ADI",
+      "ADM",
+      "ADP",
+      "ADSK",
+      "ADTN",
+      "ADX",
+      "AEE",
+      "AEF",
+      "AEG",
+      "AEHR",
+      "AEIS",
+      "AEM",
+      "AEMD",
+      "AEO",
+      "AEP",
+      "AES",
+      "AFG",
+      "AFL",
+      "AGCO",
+      "AGM",
+      "AGM-A",
+      "AGX",
+      "AGYS",
+      "AIG",
+      "AIN",
+      "AIR",
+      "AIRT",
+      "AIT",
+      "AIV",
+      "AJG",
+      "AKAM",
+      "AKO-A",
+      "AKO-B",
+      "AKR",
+      "ALB",
+      "ALCO",
+      "ALE",
+      "ALG",
+      "ALK",
+      "ALKS",
+      "ALL",
+      "ALOT",
+      "ALV",
+      "ALX",
+      "AMAT"
+    ],
+    "selection": "64 activos de EE. UU. con m\u00e1s filas de ajuste en el corpus de la edici\u00f3n",
+    "events": 4024,
+    "rows": 257472,
+    "max_event_rows": 64,
+    "labels_saved": false
+  },
+  "settings": {
+    "segments": 160,
+    "segment_warmup": 10,
+    "events": 512,
+    "event_warmup": 32
+  },
+  "sources_open_seconds": 3.917632353999579,
+  "repeats": 3,
+  "measurement_seconds": [
+    175.31385279400092,
+    133.42046288500023,
+    139.90210236699932
+  ],
+  "gpu_after_each_repeat": [
+    "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1663 MiB, 595.91.07, 1605 MHz, 56",
+    "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1662 MiB, 595.91.07, 1605 MHz, 57",
+    "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1662 MiB, 595.91.07, 1605 MHz, 57"
+  ],
+  "records": [
+    {
+      "declared_option": "recipe",
+      "options": {
+        "recipe": {
+          "train": 1220.8507438895247,
+          "measured_train_rows": 81920,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        },
+        "block_rows=64,accumulation_rows=64": {
+          "train": 1092.8760793881224,
+          "measured_train_rows": 81920,
+          "block_rows": 64,
+          "accumulation_rows": 64,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        }
+      },
+      "inference": 1848.681613815591,
+      "measured_inference_rows": 32768,
+      "inference_peak_vram_allocated_bytes": 83954176
+    },
+    {
+      "declared_option": "recipe",
+      "options": {
+        "recipe": {
+          "train": 1526.3043239871536,
+          "measured_train_rows": 81920,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        },
+        "block_rows=64,accumulation_rows=64": {
+          "train": 1450.2058594585858,
+          "measured_train_rows": 81920,
+          "block_rows": 64,
+          "accumulation_rows": 64,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        }
+      },
+      "inference": 2601.3303214695266,
+      "measured_inference_rows": 32768,
+      "inference_peak_vram_allocated_bytes": 83954176
+    },
+    {
+      "declared_option": "recipe",
+      "options": {
+        "recipe": {
+          "train": 1474.033509855318,
+          "measured_train_rows": 81920,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        },
+        "block_rows=64,accumulation_rows=64": {
+          "train": 1322.2559079549403,
+          "measured_train_rows": 81920,
+          "block_rows": 64,
+          "accumulation_rows": 64,
+          "step_calls_without_update": 164,
+          "peak_vram_allocated_bytes": 214824960
+        }
+      },
+      "inference": 2665.754632563603,
+      "measured_inference_rows": 32768,
+      "inference_peak_vram_allocated_bytes": 83954176
+    }
+  ],
+  "rates": {
+    "train": [
+      1220.8507438895247,
+      1526.3043239871536,
+      1474.033509855318
+    ],
+    "inference": [
+      1848.681613815591,
+      2601.3303214695266,
+      2665.754632563603
+    ]
+  },
+  "estimate": {
+    "slowest": {
+      "assumptions": {
+        "assets": 64,
+        "validation_windows": [
+          2018,
+          2019,
+          2020
+        ],
+        "training_from": "2000-01-03",
+        "epochs": 30,
+        "search_cases": 2,
+        "validation_passes_per_case": 32,
+        "warmup_months": 12,
+        "excludes": "lecturas de disco, \u00edndices, normalizadores y reanudaciones"
+      },
+      "train_rows_per_epoch": 917632,
+      "validation_rows_per_pass": 96640,
+      "fit_rows_per_seed": 55057920,
+      "inference_rows_per_seed": 6184960,
+      "hours_per_seed": 13.456555619158527,
+      "hours_extra_control_seeds": 26.913111238317054
+    },
+    "median": {
+      "assumptions": {
+        "assets": 64,
+        "validation_windows": [
+          2018,
+          2019,
+          2020
+        ],
+        "training_from": "2000-01-03",
+        "epochs": 30,
+        "search_cases": 2,
+        "validation_passes_per_case": 32,
+        "warmup_months": 12,
+        "excludes": "lecturas de disco, \u00edndices, normalizadores y reanudaciones"
+      },
+      "train_rows_per_epoch": 917632,
+      "validation_rows_per_pass": 96640,
+      "fit_rows_per_seed": 55057920,
+      "inference_rows_per_seed": 6184960,
+      "hours_per_seed": 11.035970097443863,
+      "hours_extra_control_seeds": 22.071940194887727
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "final_test_opened": false
+}

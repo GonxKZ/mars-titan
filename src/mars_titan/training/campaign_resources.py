@@ -15,6 +15,12 @@ recetas medidas en una máquina no se reutilizan en otra.
 
 Sin declaración, la campaña conserva su ejecución anterior: los trabajos CUDA de uno en
 uno en el mismo proceso y los CPU con los `cpu_workers` de la sección tabular.
+
+La sección opcional `learning_traces` declara las trazas de aprendizaje de #448: cada
+cuántos pasos del optimizador se registran (`every`), la cadencia propia de otras unidades
+de paso (`every_by_unit`, opcional, por ejemplo transiciones u oleadas de la etapa RL) y el
+presupuesto de cada trabajo en MiB (`max_mib_per_job`). Las trazas solo observan, así que
+tampoco entran en la identidad.
 """
 
 import json
@@ -48,7 +54,10 @@ _FIELDS = {
     "pipeline",
     "models",
     "notes",
+    "learning_traces",
 }
+_OPTIONAL = {"notes", "learning_traces"}
+_TRACES = {"every", "max_mib_per_job", "every_by_unit"}
 _GPU = {"slots", "vram_budget_mib", "mps", "mps_pipe_directory"}
 _HOST = {"cpu_workers", "threads_per_job", "ram_budget_mib", "reserve_mib"}
 _MODEL = {"device", "vram_mib", "host_mib", "scopes", "arms", "campaign_process"}
@@ -100,6 +109,8 @@ class Execution:
     pipeline: PipelineOptions | None = None
     models: dict = field(default_factory=dict)
     hardware_profile: dict | None = None
+    # Cadencia y presupuesto de las trazas de cada trabajo (`TraceConfig`), o None sin trazas.
+    traces: dict | None = None
     path: str | None = None
     sha256: str | None = None
 
@@ -109,7 +120,7 @@ class Execution:
         return self.gpu_slots > 1
 
     def resources(self, job, default_device):
-        """Recursos del trabajo: los de su brazo, modelo y ámbito, o su dispositivo sin más."""
+        """Recursos del trabajo según su configuración, modelo y ámbito, o solo su dispositivo."""
         declared = self.models.get(job["model"])
         if declared is None:
             return JobResources(device=default_device)
@@ -131,6 +142,7 @@ class Execution:
             hardware_profile=None
             if self.hardware_profile is None
             else {key: self.hardware_profile[key] for key in ("name", "sha256")},
+            learning_traces=self.traces,
         )
 
 
@@ -148,7 +160,8 @@ def _model(name, value, scopes):
     )
 
     def resources(label, *entries):
-        # Cada entrada sustituye a las anteriores: modelo, ámbito, brazo y brazo en el ámbito.
+        # Cada entrada sustituye a las anteriores: modelo, ámbito, configuración y
+        # configuración en el ámbito.
         sizes = {}
         for entry in entries:
             sizes.update(entry)
@@ -184,7 +197,7 @@ def _model(name, value, scopes):
             isinstance(entry, dict) and entry and set(entry) <= _SIZES | {"scopes"}
             for entry in arms.values()
         ),
-        f"Los brazos de {name} deben declarar VRAM, RAM o ámbitos",
+        f"Los modelos de {name} deben declarar VRAM, RAM o ámbitos",
     )
     declared = dict(
         default=resources(name, base),
@@ -194,7 +207,7 @@ def _model(name, value, scopes):
         },
         arms={},
     )
-    # Un brazo hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
+    # Una configuración hereda lo del modelo en cada ámbito y lo sustituye con lo suyo. Sus recursos
     # se resuelven aquí para todos los ámbitos y un error aparece al cargar la declaración.
     for arm, entry in arms.items():
         own, arm_scopes = {key: entry[key] for key in _SIZES & set(entry)}, scoped(entry, arm)
@@ -220,7 +233,7 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
     document, digest = read_manifest(path, 256 * 1024)
     _require(
         isinstance(document, dict)
-        and _FIELDS - {"notes"} <= set(document) <= _FIELDS
+        and _FIELDS - _OPTIONAL <= set(document) <= _FIELDS
         and document["schema_version"] == 2
         and document["kind"] == EXECUTION_KIND,
         "La declaración de ejecución no cumple su contrato de la versión 2, que nombra su "
@@ -269,6 +282,28 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
         host_bytes=host_budget,
         threads=(gpu["slots"] + host["cpu_workers"]) * host["threads_per_job"],
     )
+    traces = document.get("learning_traces")
+    if traces is not None:
+        # Importación local: el registrador carga PyTorch y esta lectura no lo necesita.
+        from mars_titan.learning_traces.recorder import STEP_UNITS
+
+        by_unit = traces.get("every_by_unit", {}) if isinstance(traces, dict) else None
+        _require(
+            isinstance(traces, dict)
+            and _TRACES - {"every_by_unit"} <= set(traces) <= _TRACES
+            and type(traces["every"]) is int
+            and traces["every"] >= 1
+            and type(traces["max_mib_per_job"]) is int
+            and 1 <= traces["max_mib_per_job"] <= 1024
+            and isinstance(by_unit, dict)
+            and set(by_unit) <= set(STEP_UNITS) - {"optimizer_step"}
+            and all(type(value) is int and value >= 1 for value in by_unit.values()),
+            "Las trazas declaran every y max_mib_per_job enteros, con 1 a 1024 MiB por trabajo, "
+            "y every_by_unit con cadencias enteras positivas de unidades conocidas",
+        )
+        traces = dict(every=traces["every"], max_bytes=traces["max_mib_per_job"] * MIB) | (
+            dict(every_by_unit=dict(sorted(by_unit.items()))) if by_unit else {}
+        )
     return Execution(
         gpu_slots=gpu["slots"],
         cpu_workers=host["cpu_workers"],
@@ -281,9 +316,19 @@ def load_execution(path, *, scopes=("US", "CN", "US+CN")):
         pipeline=PipelineOptions(**pipeline),
         models={name: _model(name, value, scopes) for name, value in models.items()},
         hardware_profile=profile,
+        traces=traces,
         path=str(path.resolve()),
         sha256=digest,
     )
+
+
+def execution_traces(path):
+    """Sección `learning_traces` validada de una declaración, o None sin declaración.
+
+    Las etapas posteriores (posentrenamiento y políticas) solo toman las trazas de la
+    declaración, porque sus recursos los fija su propia orden.
+    """
+    return None if path is None else load_execution(path).traces
 
 
 def check_plan(execution, jobs, executors):
@@ -324,7 +369,7 @@ def check_plan(execution, jobs, executors):
             )
     for name, declared in execution.models.items():
         unknown = sorted(set(declared["arms"]) - arms.get(name, set()))
-        _require(not unknown, f"{name} declara brazos que no tiene en el plan: {unknown}")
+        _require(not unknown, f"{name} declara modelos que no tiene en el plan: {unknown}")
 
 
 def available_host_bytes():
@@ -421,7 +466,7 @@ def environment(execution):
 class PeakEstimates:
     """VRAM de cada tipo de trabajo: la declarada o la observada, la mayor de las dos.
 
-    El tipo es el modelo, el brazo y el ámbito. Cuando un trabajo termina en su proceso, su
+    El tipo es el modelo, la configuración y el ámbito. Cuando un trabajo termina en su proceso, su
     pico reservado por el asignador más `CONTEXT_MIB` sustituye a la estimación si es mayor,
     de modo que los siguientes trabajos del mismo tipo se admiten con lo observado. Nunca baja
     de lo declarado, que se mide en la ventana más poblada. Si un trabajo agota su VRAM, la
@@ -449,8 +494,8 @@ class PeakEstimates:
 
     @staticmethod
     def key(job):
-        # Los brazos de un mismo modelo pueden diferir mucho en VRAM, así que cada uno corrige
-        # solo su propia estimación.
+        # Las configuraciones de un mismo modelo pueden diferir mucho en VRAM, así que
+        # cada una corrige solo su propia estimación.
         return f"{job['model']}/{job.get('arm')}/{job['scope']}"
 
     def resources(self, job, default_device):

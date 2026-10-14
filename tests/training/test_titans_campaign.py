@@ -2,7 +2,7 @@
 
 Se registra `titans_mac_online` en una campaña B sobre US con las vistas v2 del corpus
 técnico. Sus ajustes y traslados usan los ejecutores reales con un optimizador que solo
-registra gradientes. Los demás brazos son los dobles de `test_masked_campaign.py`. Se
+registra gradientes. Los demás modelos son los dobles de `test_masked_campaign.py`. Se
 comprueban trabajos, recibos, mismas filas, estado del ancla en los traslados, recibos
 de ventana y el manifiesto de fuentes de la comparación.
 """
@@ -32,6 +32,7 @@ from mars_titan.training.campaign_plan import (
     plan_campaign,
 )
 from mars_titan.training.search_cases import SEARCHED
+from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
 from tests.training.test_titans_walk_forward import Factory, ShiftFirstTarget
 from tests.training.test_walk_forward_v2_views import fixture
@@ -53,15 +54,14 @@ def unfused():
 def permitted(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("learning-hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("learning-hold") / "training-hold.json")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(HOLD_ENV, str(path))
         yield path
 
 
 def titans_campaign(folder):
-    """Campaña B reducida con un brazo Titans de una semilla y la receta de campaña reducida."""
+    """Campaña B reducida con un modelo Titans de una semilla y la receta de campaña reducida."""
     path = write_campaign(folder, arms=("gru", "ridge"))
     declared = json.loads((folder / "comparison.json").read_text())
     declared["arms"][ARM] = dict(family="titans_mac", output="quantile_head_v1", seeds=[42])
@@ -261,6 +261,7 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         policy="historical_masked_2000_v1",
         stop=SimpleNamespace(requested=False),
         joint_epoch=None,
+        traces=None,
     )
     report = wf.titans_fit(run, device="cpu")
     assert report["status"] == "completed"
@@ -294,6 +295,7 @@ def test_executors_declare_unfused_attention_only_while_their_job_runs(monkeypat
         stop=None,
         anchor=dict(folder=tmp_path, view="a"),
         joint_epoch=None,
+        traces=None,
     )
     previous = torch.backends.mha.get_fastpath_enabled()
     torch.backends.mha.set_fastpath_enabled(True)

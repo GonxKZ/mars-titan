@@ -31,6 +31,7 @@ from mars_titan.training.carried_predictions import reference_model, selected_re
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.titans_walk_forward import _sources
+from tests.learning_traces.parity import EVERY_STEP, trace_rows
 from tests.training.test_carried_predictions import cpu as cpu
 from tests.training.test_carried_predictions import neural_anchor
 from tests.training.test_mars_titan_walk_forward import M1, mars, readout_recipe
@@ -197,6 +198,7 @@ def predictions(rows):
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("partition", online.PARTITIONS)
 def test_cap_zero_keeps_the_predictions_of_the_frozen_reference(base, anchor, tmp_path, partition):
     rows, metrics, recorder, audit = passed(base, anchor, tmp_path / "idx", partition, cap=0)
@@ -209,6 +211,7 @@ def test_cap_zero_keeps_the_predictions_of_the_frozen_reference(base, anchor, tm
         assert math.isclose(emitted[key], value, rel_tol=1e-6, abs_tol=1e-7), key
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("update_every", [1, 2])
 def test_every_step_uses_labels_matured_after_their_prediction(
     base, anchor, tmp_path, update_every
@@ -250,6 +253,7 @@ def test_every_step_uses_labels_matured_after_their_prediction(
     assert metrics["labels_used"] + metrics["labels_after_last_update"] == metrics["labels"]
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("partition", online.PARTITIONS)
 def test_accumulation_blocks_do_not_change_the_gradient_of_a_step(
     base, anchor, tmp_path, partition
@@ -276,6 +280,7 @@ def test_accumulation_blocks_do_not_change_the_gradient_of_a_step(
             assert torch.allclose(found, expected, rtol=1e-5, atol=1e-8)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_cap_limits_the_labels_used(base, anchor, tmp_path):
     _, full, _, complete = passed(base, anchor, tmp_path / "idx", "evaluation", cap=10**6)
     _, metrics, recorder, audit = passed(base, anchor, tmp_path / "idx", "evaluation", cap=3)
@@ -364,6 +369,7 @@ class Poisoned(Shifted):
             yield event
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_non_finite_label_in_any_block_stops_the_step(base, anchor, tmp_path):
     _, built = sources(base, tmp_path / "idx")
     rule = dict(RULE, accumulation_rows=1)
@@ -411,6 +417,7 @@ class Thinned(Shifted):
             yield replace(event, labels=labels)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_an_instant_with_a_single_label_still_updates(base, anchor, tmp_path):
     _, built = sources(base, tmp_path / "idx")
     source = Thinned(built["evaluation"])
@@ -422,6 +429,7 @@ def test_an_instant_with_a_single_label_still_updates(base, anchor, tmp_path):
     assert recorder.steps == metrics["updates"] == metrics["update_instants"] == len(steps)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_label_of_a_decision_never_predicted_is_refused(base, anchor, tmp_path):
     _, built = sources(base, tmp_path / "idx")
     with pytest.raises(ValueError, match="predicción emitida antes de su maduración"):
@@ -435,6 +443,7 @@ def test_a_label_of_a_decision_never_predicted_is_refused(base, anchor, tmp_path
         )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_decision_without_label_in_the_partition_is_predicted_and_not_kept(
     base, anchor, tmp_path
 ):
@@ -449,6 +458,7 @@ def test_a_decision_without_label_in_the_partition_is_predicted_and_not_kept(
     assert any(source.dropped[0] in e[2] for e in audit if e[:2] == ("predict", source.dropped[1]))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize("offset", [0, -1])
 def test_a_label_moved_before_its_prediction_is_refused(base, anchor, tmp_path, offset):
     _, built = sources(base, tmp_path / "idx")
@@ -463,6 +473,7 @@ def test_a_label_moved_before_its_prediction_is_refused(base, anchor, tmp_path, 
         )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_window_writes_the_bank_rows_with_its_labels_and_cap(base, anchor, tmp_path):
     report, factory = run(base, anchor, tmp_path / "online")
     assert report["status"] == "completed" and report["final_test_opened"] is False
@@ -501,6 +512,7 @@ def test_the_window_writes_the_bank_rows_with_its_labels_and_cap(base, anchor, t
         )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "flags",
     [("highest", False, True), ("highest", True, False), ("high", False, False)],
@@ -596,6 +608,7 @@ def bank_copy(base, folder, change):
     return folder
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "change",
     [
@@ -612,6 +625,7 @@ def test_the_bank_must_be_m1_in_the_same_view_and_seed(base, anchor, tmp_path, c
     assert not (tmp_path / "online").exists()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_indices_and_labels_must_be_those_of_the_bank(base, anchor, tmp_path):
     other = bank_copy(
         base,
@@ -629,12 +643,14 @@ def test_indices_and_labels_must_be_those_of_the_bank(base, anchor, tmp_path):
         run(base, anchor, tmp_path / "b", bank=labels)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_only_a_transformer_reference_starts_the_control(base, tmp_path, cpu):
     neural_anchor(tmp_path / "gru", base.view, kind="gru")
     with pytest.raises(ValueError, match="parte de transformer_compact"):
         run(base, tmp_path / "gru", tmp_path / "online")
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_engine_runs_the_control_and_pauses_between_instants(
     base, anchor, tmp_path, monkeypatch
 ):
@@ -768,6 +784,7 @@ def test_the_engine_gives_finalists_the_rate_with_the_best_validation(tmp_path):
         state.resolve(dict(finalist, depends=list(state.receipts)[:3]))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_label_decisions_come_from_the_maturity_events_of_the_index(base, tmp_path):
     _, built = sources(base, tmp_path / "idx")
     for name, source in built.items():
@@ -785,8 +802,30 @@ def test_label_decisions_come_from_the_maturity_events_of_the_index(base, tmp_pa
         )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_a_copied_output_is_never_reused(base, anchor, tmp_path):
     run(base, anchor, tmp_path / "online")
     shutil.copytree(tmp_path / "online", tmp_path / "copy")
     with pytest.raises(ValueError, match="directorio nuevo"):
         run(base, anchor, tmp_path / "copy")
+
+
+def test_traces_keep_the_online_control_bit_for_bit(base, anchor, tmp_path):
+    """Trazas en cada paso del control en línea (#448), una fase por tramo."""
+    plain, plain_factory = run(base, anchor, tmp_path / "plain")
+    traced, traced_factory = run(base, anchor, tmp_path / "traced", traces=EVERY_STEP)
+    assert plain["predictions"] == traced["predictions"]
+    left = [g for item in plain_factory.instances for g in item.gradients]
+    right = [g for item in traced_factory.instances for g in item.gradients]
+    assert len(left) == len(right) > 0
+    assert all(torch.equal(a, b) for a, b in zip(left, right, strict=True))
+    manifest, rows = trace_rows(tmp_path / "traced" / "traces")
+    assert manifest["identity"]["family"] == "transformer_compact_online"
+    phases = {row["phase"] for row in rows}
+    updates = {name: plain["predictions"][name]["metrics"]["updates"] for name in online.PARTITIONS}
+    assert phases == {"validation"} | {f"online_{n}" for n, count in updates.items() if count}
+    for name, count in updates.items():
+        steps = {r["step"] for r in rows if r["phase"] == f"online_{name}"}
+        assert steps == set(range(1, count + 1))
+    (score,) = [r for r in rows if r["metric"] == "validation.score"]
+    assert score["value"] == plain["predictions"]["validation"]["metrics"]["session_mae"]

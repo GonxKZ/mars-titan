@@ -1,7 +1,7 @@
-"""Brazos de la variedad de #444 en la matriz de versión 3, comprobados hasta el paso.
+"""Adaptadores de la variedad de #444 en la matriz de versión 3, comprobados hasta el paso.
 
 Las pruebas que recorren un ajuste usan optimizadores que registran gradientes sin cambiar
-pesos. Así cada brazo debe aplicar las mismas actualizaciones que los de #364 y su época
+pesos. Así cada modelo debe aplicar las mismas actualizaciones que los de #364 y su época
 cero debe coincidir bit a bit con el padre congelado. Las trazas de #448 se activan en
 algunas ejecuciones para demostrar que no cambian el cálculo.
 """
@@ -39,7 +39,7 @@ from tests.training.test_mars_titan_run import native as native
 
 ROOT = Path(__file__).resolve().parents[2]
 MATRIX_PATH = ROOT / "configs/posttraining/adapter-matrix-v3.json"
-# Brazos propuestos en las referencias y, por su coste, solo tres en Titans-MAC `mac_online`.
+# Modelos propuestos en las referencias y, por su coste, solo tres en Titans-MAC `mac_online`.
 CAMPAIGN = {
     "fusion": ["fusion_dora", "fusion_ia3", "fusion_parallel_adapter", "bias"],
     "readout": ["fusion_dora", "readout_dora", "fusion_ia3", "readout_ia3"],
@@ -90,7 +90,7 @@ def test_the_matrix_declares_each_variety_arm_where_its_point_exists(matrix):
     assert titans["transformer_direct"] == titans["mac_disabled"] == base
     assert titans["mac_frozen"] == full
     assert titans["mac_online"] == [*full, *CAMPAIGN["titans"]]
-    # En reserva, cada variante recibe todos los brazos cuyo punto existe en ella.
+    # En reserva, cada variante recibe todos los modelos cuyo punto existe en ella.
     reserve = {
         variant: ids(cm.arms(document, "titans_mac", variant=variant, reserve=True))
         for variant in cm.TITANS_VARIANTS
@@ -186,7 +186,7 @@ def test_only_version_three_admits_the_variety(matrix):
     second, _ = adapter_matrix.read_matrix(ROOT / "configs/posttraining/adapter-matrix-v2.json")
     with pytest.raises(ValueError):
         adapter_matrix.validate_matrix(second | dict(variety=document["variety"]))
-    # Sin la sección la versión 3 sigue siendo válida y no declara brazos nuevos.
+    # Sin la sección la versión 3 sigue siendo válida y no declara modelos nuevos.
     plain = {key: value for key, value in document.items() if key != "variety"}
     adapter_matrix.validate_matrix(plain)
     assert ids(adapter_matrix.arms(plain, "gru")) == [
@@ -236,7 +236,7 @@ def _variety_cases(document, digest, kind):
 def test_variety_arms_reach_each_step_with_the_parent_at_epoch_zero(
     tmp_path, recorder, edition, matrix, kind
 ):
-    """Cada brazo aplica las mismas actualizaciones que la fusión LoRA y empieza en el padre.
+    """Cada modelo aplica las mismas actualizaciones que la fusión LoRA y empieza en el padre.
 
     Con el registrador no cambia ningún peso, así que la validación elegida es la época cero
     y sus predicciones deben ser las del padre bit a bit, también las reservadas.
@@ -278,7 +278,7 @@ def test_variety_arms_reach_each_step_with_the_parent_at_epoch_zero(
         table = pq.read_table(output / "validation-predictions.parquet").to_pydict()
         np.testing.assert_array_equal(table["prediction"], table["parent"], err_msg=arm)
         model, action_grid, neural = _adjustment(output / "run.json", report, parent, "cpu")
-        # La evaluación reservada reconstruye el mismo brazo, ya congelado.
+        # La evaluación reservada reconstruye el mismo modelo, ya congelado.
         rebuilt = sum(model.get_parameter(name).numel() for name in adapter_names(model))
         assert rebuilt == report["trainable_parameters"] and not trainable_parameters(model), arm
         path = tmp_path / f"{arm}-evaluation.parquet"
@@ -296,7 +296,7 @@ def test_variety_arms_reach_each_step_with_the_parent_at_epoch_zero(
         rows = pq.read_table(path).to_pydict()
         np.testing.assert_array_equal(rows["prediction"], rows["parent"], err_msg=arm)
         held[arm] = np.column_stack([rows[name] for name in QUANTILE_COLUMNS])
-    # Todos los brazos reservan los mismos cuantiles: los del padre sin actualizaciones.
+    # Todos los modelos reservan los mismos cuantiles: los del padre sin actualizaciones.
     first = next(iter(held.values()))
     assert all(np.array_equal(value, first) for value in held.values())
     assert base_digest(parent.model) == before
@@ -383,7 +383,7 @@ def test_titans_variety_arms_reach_each_step_with_the_trace(shared, matrix, tmp_
 
 @pytest.mark.parametrize("arm", ["fusion_parallel_adapter", "readout_dora", "bias", "persistent"])
 def test_titans_variety_arms_reload_their_state_after_a_rebuild(shared, matrix, arm):
-    """Al reanudar, el brazo se reconstruye desde la matriz y recupera sus correcciones.
+    """Al reanudar, el modelo se reconstruye desde la matriz y recupera sus correcciones.
 
     La reconstrucción usa otra semilla a propósito: el estado guardado debe sustituir por
     completo la inicialización, también la proyección aleatoria de los adaptadores por módulo.
@@ -473,7 +473,7 @@ def test_titans_subsets_skip_the_memory_gate_biases_of_the_recipe(shared, matrix
 
 
 def test_a_titans_case_must_be_an_arm_of_its_variant(matrix):
-    """La ventana rechaza un brazo que la variante del padre no tiene o con otros puntos."""
+    """La ventana rechaza un modelo que la variante del padre no tiene o con otros puntos."""
     document, digest = matrix
     persistent = next(
         item["case"]["adapter"]
@@ -484,7 +484,7 @@ def test_a_titans_case_must_be_an_arm_of_its_variant(matrix):
     for variant in ("transformer_direct", "mac_disabled"):
         with pytest.raises(ValueError, match="no pertenece a los puntos"):
             cm.variant_arm(document, variant, persistent)
-    # Los brazos de reserva también son brazos de la variante.
+    # Los modelos de reserva también son modelos de la variante.
     serial = next(
         item["case"]["adapter"]
         for item in cm.cases(document, digest, "titans_mac", variant="mac_disabled", reserve=True)
@@ -497,6 +497,7 @@ def test_a_titans_case_must_be_an_arm_of_its_variant(matrix):
         cm.variant_arm(document, "mac_disabled", changed)
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_the_reader_core_learns_its_persistent_prompt_with_the_same_events(
     shared, tmp_path, native
 ):

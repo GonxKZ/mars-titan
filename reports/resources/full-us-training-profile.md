@@ -22,7 +22,7 @@ Las 6.993 exclusiones se reparten en 5.777 casos sin historial suficiente,
 811 etiquetas que cruzan una frontera temporal y 405 sin siguiente sesión.
 Los recuentos se reconcilian con los recibos por activo. La preparación de
 etiquetas duró 405,853 segundos, con un pico RSS de proceso de 289.173.504 bytes.
-La reserva desde 2024 permanece cerrada. China y el brazo conjunto siguen
+La reserva desde 2024 permanece cerrada. China y el modelo conjunto siguen
 pendientes de procedencia contable admisible.
 
 ## Carga medida

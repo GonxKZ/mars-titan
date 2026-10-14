@@ -8,7 +8,7 @@
   "comparison": "historical-masked-2000-comparison.json",
   "conditional_arms": {
     "titans_reference_mac": {
-      "condition": "Brazo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay brazo previsto. Solo existiría con una aprobación expresa",
+      "condition": "Modelo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay modelo previsto. Solo existiría con una aprobación expresa",
       "issue": 434
     },
     "mars_titan_m1_k4_first_read": {
@@ -120,7 +120,7 @@
     "between_families": {
       "kind": "pairwise",
       "arms": "family_representatives",
-      "question": "¿Qué familia predice mejor que cada una de las demás con las mismas filas? Cada familia entra con su brazo representativo declarado"
+      "question": "¿Qué familia predice mejor que cada una de las demás con las mismas filas? Cada familia entra con su modelo representativo declarado"
     },
     "mars_titan_vs_families": {
       "kind": "against",
@@ -132,7 +132,7 @@
       "kind": "against",
       "each": "cm_v1_variants",
       "references": "references",
-      "question": "¿Cuánto mejora o empeora cada brazo de CM-v1 frente a cada familia de referencia?"
+      "question": "¿Cuánto mejora o empeora cada variante de CM-v1 frente a cada familia de referencia?"
     },
     "titans_reference_core": {
       "kind": "pairs",
@@ -544,7 +544,7 @@
       "lineage": "titans",
       "producer": "reader_fit",
       "code": "existing",
-      "change": "Solo un brazo más en la sección mars_titan: episodic_bank m2 con refinements 4",
+      "change": "Solo un modelo más en la sección mars_titan: episodic_bank m2 con refinements 4",
       "cost_like": "mars_titan_m1_k4",
       "purpose": "Interacción entre los refinamientos y la selección por error"
     },

@@ -111,6 +111,7 @@
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones del padre y de los modelos.",
     "La regla no ajusta umbrales: compara la volatilidad reciente con la anterior dentro de la misma ventana y usa el signo de la tendencia. La issue preveía umbrales estimados con entrenamiento, que serían otro ajuste por ventana bloqueado y un grado de libertad más.",
     "El filtro HMM de native/src/markov_filter.cpp sigue sin conexión. Como contexto de la fusión exigiría un padre Titans-MAC propio por ventana.",
-    "La partición del banco episódico por régimen solo se contrastaría después de A2 (M1 frente a M0), como fija la matriz de ablaciones."
+    "La partición del banco episódico por régimen solo se contrastaría después de A2 (M1 frente a M0), como fija la matriz de ablaciones.",
+    "La campaña A v2 (configs/baselines/historical-masked-campaign-a-v2.json) declara también los cuatro modelos en el ámbito US+CN, con estas familias en su comparación conjunta, la cadena trivial del padre congelado en la etapa de adaptadores, la ablación de modalidades y las políticas. Suman 304 trabajos de la base, 1,6 h cada modelo a 16.000 filas/s porque solo predicen."
   ]
 }

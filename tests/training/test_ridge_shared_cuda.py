@@ -7,19 +7,20 @@ obliga a recalcularla.
 
 import numpy as np
 import pytest
-import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.models.baselines.ridge import RidgeModel
 from mars_titan.training import tabular_corpus
 from mars_titan.training.corpus_inputs import CorpusDataset
+from tests.suite_support import skip_without_cuda
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
+
+pytestmark = pytest.mark.cuda
 
 
 @pytest.fixture
 def solved(monkeypatch, learning_doubles):
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta acelerada")
+    skip_without_cuda()
     calls = []
 
     def solve(statistics, alpha):
@@ -70,8 +71,7 @@ def test_after_the_hold_shared_statistics_fit_the_same_ridge(tmp_path):
     Bajo el bloqueo, `run_tabular_reference` se detiene antes de abrir fuentes y la
     prueba se omite sin resolver ningún sistema.
     """
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta acelerada")
+    skip_without_cuda()
     manifest = historical_temporal_fixture(tmp_path / "fixture").parent
 
     def run(name, alpha):

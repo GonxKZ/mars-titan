@@ -2,7 +2,7 @@
 
 Ridge y XGBoost no tienen puntos de adaptación. En cada ventana k ≥ 1 su cadena solo tiene
 el padre congelado de k-1, que se predice con el traslado tabular de la campaña base y se
-confirma con el mismo recibo y la misma selección que los demás brazos. Así las políticas
+confirma con el mismo recibo y la misma selección que los demás modelos. Así las políticas
 leen de todas las familias el mismo tipo de predicción fuera de muestra. El recorrido usa
 la campaña reducida de `campaign_fixture` con un Ridge sustituto sin parámetros ajustados.
 """
@@ -103,8 +103,9 @@ def test_the_tabular_chain_is_the_frozen_parent_carried_from_the_previous_window
             device="cpu",
         )
     assert summary["status"] == "completed"
-    # La GRU ajusta sus cinco casos y Ridge solo predice con su padre congelado.
-    assert summary["planned"] == dict(training_jobs=5, prediction_jobs=2, selection_jobs=4)
+    # La GRU ajusta sus cinco casos de la v2 y la continuación anclada, y Ridge solo predice
+    # con su padre congelado.
+    assert summary["planned"] == dict(training_jobs=6, prediction_jobs=2, selection_jobs=4)
     assert summary["planned"] == summary["completed"]
     receipt = json.loads((output / "jobs" / FROZEN / "receipt.json").read_text())
     assert receipt["updates"] == 0 and receipt["fit_rows"] is None

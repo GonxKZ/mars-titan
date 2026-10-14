@@ -4,30 +4,30 @@ Este documento describe la implementación del factorial B, B+C, B+M y B+C+M sob
 
 La declaración está en [`configs/titans/cm-v1-factorial.json`](../../../configs/titans/cm-v1-factorial.json) y el código en [`training/cm_v1_factorial.py`](../../../src/mars_titan/training/cm_v1_factorial.py).
 
-## B y los cuatro brazos
+## B y las cuatro variantes
 
 B es la referencia del factorial y tiene identidad propia. Se compone de dos partes:
 
 1. Un núcleo Titans-MAC `mac_online` ajustado con la receta del núcleo de la campaña (`chronological-training-historical-masked.json`, con memoria residual normalizada y `gate_bias`). Lleva el control local C en modo `disabled`, así que usa SDPA Math y la misma base de proyección que B+C, pero no mide nada.
 2. Un lector episódico M1 con K = 1 y selección por paso, ajustado sobre ese núcleo congelado con la receta del lector (`episodic-readout-historical-masked.json`) y retención `reservoir`.
 
-La receta del núcleo entra como parámetro de la declaración y su huella forma parte de la identidad de cada brazo. C solo cambia el ajuste del núcleo y M solo la retención del banco del lector. Por eso hay dos núcleos auxiliares y cuatro brazos:
+La receta del núcleo entra como parámetro de la declaración y su huella forma parte de la identidad de cada modelo. C solo cambia el ajuste del núcleo y M solo la retención del banco del lector. Por eso hay dos núcleos auxiliares y cuatro variantes:
 
-| Brazo | Núcleo | Control C del núcleo | Retención del lector |
+| Modelo | Núcleo | Control C del núcleo | Retención del lector |
 | --- | --- | --- | --- |
 | `cm_v1_b` | `cm_v1_core_b` | `disabled` | `reservoir` |
 | `cm_v1_bc` | `cm_v1_core_c` | `penalty` | `reservoir` |
 | `cm_v1_bm` | `cm_v1_core_b` | `disabled` | `anchored` |
 | `cm_v1_bcm` | `cm_v1_core_c` | `penalty` | `anchored` |
 
-B y B+M comparten el mismo núcleo elegido, así que su diferencia se reduce al factor M. B+C y B+C+M comparten el suyo. Los dos núcleos parten de los mismos parámetros iniciales con la misma semilla y tienen la misma base de C, que se genera con su propio generador. Los cuatro lectores parten también de los mismos parámetros. Todos los brazos usan los mismos casos de búsqueda (tasas 1e-4 y 1e-3), las mismas 30 épocas con presupuesto fijo y la misma selección por `session_mae` de validación.
+B y B+M comparten el mismo núcleo elegido, así que su diferencia se reduce al factor M. B+C y B+C+M comparten el suyo. Los dos núcleos parten de los mismos parámetros iniciales con la misma semilla y tienen la misma base de C, que se genera con su propio generador. Los cuatro lectores parten también de los mismos parámetros. Todos los modelos usan los mismos casos de búsqueda (tasas 1e-4 y 1e-3), las mismas 30 épocas con presupuesto fijo y la misma selección por `session_mae` de validación.
 
 Valores declarados antes de ejecutar, sin ajuste con datos:
 
 - C: rango 4, frecuencia 16, semilla 91, 64 ángulos, umbral 1, peso 0,1, dos flujos medidos por evento y 128 MiB de presupuesto. Con dimensión 64 en FP32 la estimación del control es 72 MiB para dos flujos.
 - M: retención con centros fijos con frontera 8, ocho candidatos nuevos y ocho intercambios, con la capacidad (1.024) y la semilla (73) del banco de B.
 
-`load_declaration` rechaza cualquier cambio de B, de los brazos, de los núcleos o de los campos de los factores. Un cambio de valores exige otra identidad de los cuatro brazos.
+`load_declaration` rechaza cualquier cambio de B, de los modelos, de los núcleos o de los campos de los factores. Un cambio de valores exige otra identidad de las cuatro variantes.
 
 ## C durante el ajuste del núcleo
 
@@ -99,11 +99,11 @@ El contraejemplo de la issue pasa por las tres. A1 y A2 tienen radio numérico 0
 
 ## Ventanas, traslado y campaña
 
-`run_cm_v1_core_window` ajusta un núcleo con `run_titans_window`, que acepta ahora `local_control` solo en `mac_online` y lo registra en la petición. `run_cm_v1_window` ajusta el lector del brazo sobre el núcleo elegido y comprueba que la petición del padre declara exactamente el control C del brazo. `carry_cm_v1` traslada núcleo y lector elegidos a una ventana posterior. Las tres comprueban la protección del aprendizaje antes de leer fuentes.
+`run_cm_v1_core_window` ajusta un núcleo con `run_titans_window`, que acepta ahora `local_control` solo en `mac_online` y lo registra en la petición. `run_cm_v1_window` ajusta el lector del modelo sobre el núcleo elegido y comprueba que la petición del padre declara exactamente el control C del modelo. `carry_cm_v1` traslada núcleo y lector elegidos a una ventana posterior. Las tres comprueban la protección del aprendizaje antes de leer fuentes.
 
 La ventana del lector es común con MARS-TITAN. `ReadoutFamily` reúne lo que distingue a cada familia: control esperado en el padre, variante, retención e identidad. MARS-TITAN rechaza ahora cualquier padre con control C.
 
-La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un brazo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de los cuatro brazos son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos brazos, nunca los núcleos auxiliares. Las configuraciones A y B no declaran todavía la sección. La campaña elegida, la A, la incluye en su [declaración ampliada](../../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 1.080 ajustes (360 de núcleos). En B añadiría 408 ajustes con 336 traslados (136 de núcleos).
+La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un modelo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de las cuatro variantes son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos modelos, nunca los núcleos auxiliares. Las configuraciones A y B no declaran todavía la sección. La campaña elegida, la A, la incluye en su [declaración ampliada](../../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 1.080 ajustes (360 de núcleos). En B añadiría 408 ajustes con 336 traslados (136 de núcleos).
 
 ## Comprobaciones
 
@@ -114,7 +114,7 @@ Todas en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo.
 | `tests/training/test_financial_run_control.py` | Parámetros y base emparejados, identidad, rechazos, paridad exacta con B sin flujos medidos con acumulación y sin ella, objetivo de cada tramo igual a la tarea más la media de sus grupos, frecuencia según el contador de cada flujo, términos descartados sin paso, linealidad del gradiente en el peso sin recorte, la cabeza fuera del camino de C, grupo lógico frente a bloque físico, validación igual a B y reanudación exacta con acumulación y sin ella. Con `accumulation_rows` de 1, 2 y 3, gradientes iguales al tramo completo en float64 con un flujo medido sin etiquetas en algún tramo, contadores iguales bit a bit, término emitido sin grafo y menor grafo vivo |
 | `tests/cm/test_operator_dynamics.py` | A1/A2, expresión del operador fijo, productos frente a su cálculo explícito, un operador expansivo que no se confunde con el contraejemplo y rechazos |
 | `tests/models/titans/test_transition_jacobian.py` | `RᵀJR` igual a la compresión de C, J frente a diferencias centrales en FP64, trayectoria, `I + η D_z f` en los dos modos de selección y sin banco, y `first_read` con el episodio del primer paso donde una nueva búsqueda elegiría otro |
-| `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un brazo completo, rechazo de una declaración cambiada al ajustar y al trasladar, y retención con episodios reales dentro de la capacidad |
+| `tests/training/test_cm_v1_factorial.py` | Declaración, presupuesto de C, núcleos emparejados con el mismo número de pasos, cada factor solo donde se declara, control del padre, recuperación de un modelo completo, rechazo de una declaración cambiada al ajustar y al trasladar, y retención con episodios reales dentro de la capacidad |
 | `tests/memory/test_mars_titan_session_parity.py` | El recorrido cronológico del lector emite lo mismo que `FinancialSession` también con centros fijos |
 | `tests/training/test_cm_v1_campaign.py` | Plan, dependencias, salida de los auxiliares, auxiliares sin traslado ni recibo ni papel de predictor en la etapa de políticas y campaña B reducida con los ejecutores reales hasta la tercera ventana |
 
@@ -135,13 +135,13 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   uv run --no-sync python -m pytest -q tests/training/cuda_cm_v1_control_check.py
 ```
 
-El lector de los brazos usa la comprobación CUDA de MARS-TITAN (`tests/training/cuda_mars_titan_run_check.py`). La retención con centros fijos se calcula en CPU por diseño.
+El lector de los modelos usa la comprobación CUDA de MARS-TITAN (`tests/training/cuda_mars_titan_run_check.py`). La retención con centros fijos se calcula en CPU por diseño.
 
 La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y en 128 pueden medirse con la [orden de caudal de la campaña](../../research/training-campaign-2000.md#medición-de-caudal) y la declaración preparada (`--extensions`), que necesita las vistas reales. Los núcleos comparten la receta de `mac_online`, cuya estimación en `cuda:0` es de 14,74 GiB por tramo con 5.023 flujos sin acumulación y 1,24 GiB con `accumulation_rows=128` ([resumen](../../../reports/engineering/cuda-checks-20261009/README.md)).
 
 ## Pendiente
 
-- Ajustar y comparar los cuatro brazos en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
-- Copiar la sección a la configuración de A con la opción de memoria de la receta de Titans-MAC, `accumulation_rows=1024`. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
+- Ajustar y comparar las cuatro variantes en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
+- Copiar la sección a la configuración de A con la opción de memoria de la receta de Titans-MAC, `accumulation_rows=1024`. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada modelo.
 - Una condición de contracción común a todos los Jacobianos admisibles, si se quiere una garantía para productos variables. Ninguna lectura actual la aporta.
 - La comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md).

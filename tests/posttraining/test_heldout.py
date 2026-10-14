@@ -435,7 +435,7 @@ def test_freeze_preserves_matching_parents_and_rejects_a_rebound_seed(tmp_path, 
 def test_frozen_evaluation_rejects_unsupported_markets_before_opening_sources(tmp_path, arm):
     from mars_titan.posttraining.heldout import _jobs
 
-    with pytest.raises(ValueError, match="brazo declarado"):
+    with pytest.raises(ValueError, match="modelo declarado"):
         _jobs(tmp_path / "neural", tmp_path / "tabular", tmp_path / "adjustments", arm=arm)
 
 

@@ -1,7 +1,7 @@
 """Recalcular una comparación walk-forward publicada y cotejarla con su informe.
 
 La comparación escribe `comparison.json` y `sessions.parquet`. Esta comprobación vuelve a
-leer las predicciones crudas de cada brazo, semilla y ventana desde el manifiesto de
+leer las predicciones crudas de cada modelo, semilla y ventana desde el manifiesto de
 fuentes, con sus huellas, y recalcula las métricas por sesión con
 `integrity.independent_scores`. Después exige:
 

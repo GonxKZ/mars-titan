@@ -485,7 +485,7 @@ def test_session_constant_presence_recombines_the_primary_session_mae(tmp_path, 
                     bits,
                 )
             ),
-            "0 filas solo en este brazo, 1 filas solo en la referencia y 0 filas",
+            "0 filas solo en este modelo, 1 filas solo en la referencia y 0 filas",
         ),
         (
             lambda fold, table, bits: (
@@ -765,7 +765,7 @@ def test_missing_common_calibrator_leaves_stratum_intervals_absent_with_reason(
     assert calibration["calibrated_coverage_error"] is None
     assert calibration["raw_coverage_error"] is not None
     ridge = section["arms"]["ridge"]["42"]["neither"]["overall"]["US"]
-    assert ridge["calibrated_reason"] == "El brazo no emite cuantiles"
+    assert ridge["calibrated_reason"] == "El modelo no emite cuantiles"
 
 
 def presence_table(presence, counts):

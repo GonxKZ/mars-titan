@@ -22,7 +22,7 @@ La reserva final permanece cerrada.
 ## Búsqueda, finalistas y controles
 
 La búsqueda utiliza la semilla 42. Se elige una configuración por familia y
-brazo mediante el MAE de sesión de las predicciones de validación del estado
+modelo mediante el MAE de sesión de las predicciones de validación del estado
 seleccionado. Un empate se resuelve por identificador, de forma determinista.
 La selección sigue siendo un resultado de desarrollo, no una prueba independiente
 de superioridad.
@@ -33,12 +33,12 @@ continuaciones de cinco épocas, con MAE y MSE, tasa 0,0001 y un optimizador
 AdamW nuevo. Mantienen arquitectura, datos, semilla y tamaño de lote. Las
 continuaciones no cambian retrospectivamente el ganador de la búsqueda.
 
-Un brazo con cuatro familias contiene 48 casos de búsqueda, ocho finalistas
+Un modelo con cuatro familias contiene 48 casos de búsqueda, ocho finalistas
 nuevos y 24 continuaciones. Son 80 entrenamientos distintos, además de las
 referencias tabulares que se ejecutan por separado. La configuración multimercado
 declara US, CN y la unión, esta última con ponderación natural y equilibrada
 durante el ajuste. Requiere 320 ejecuciones neurales y datos admisibles en ambos
-mercados. No sustituye un brazo chino ausente por datos estadounidenses.
+mercados. No sustituye un modelo chino ausente por datos estadounidenses.
 
 ## Ejecución y recuperación
 
@@ -64,7 +64,7 @@ ocultan descartando ese modelo.
 Las pruebas de este controlador usan datos sintéticos y comprobaciones de
 recuperación. No acreditan que haya terminado la campaña científica del corpus.
 La preparación actual todavía necesita resolver las publicaciones contables
-chinas antes de ejecutar los brazos CN y mixto con cuatro modalidades.
+chinas antes de ejecutar las comparaciones CN y mixta con cuatro modalidades.
 
 La [evidencia de verificación](../../reports/resources/reference-search-quality.json)
 registra el recorrido funcional, cobertura y mutaciones dirigidas, con esos

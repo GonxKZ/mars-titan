@@ -39,6 +39,8 @@ GROUP_KIND = "native_group_relative"
 # Capacidad de los binarios que publican el patrimonio por sesión y aceptan los costes de
 # evaluación declarados por la etapa con --evaluation-cost.
 EQUITY_AND_COSTS = "native_policy_equity_and_costs"
+# Capacidad de los binarios que escriben las trazas de aprendizaje de #448 en `fit/traces`.
+LEARNING_TRACES = "native_policy_learning_traces"
 RECONSTRUCTED_SCHEMA = 4
 ROLLOUT_BYTES = 128 * 1024**2
 # Contrato klpo_terminal_token_full_v1: KL con peso uno y retorno terminal sin descuento.
@@ -84,7 +86,7 @@ def _environment(policies):
 
 
 def ppo_config(stage, job):
-    """Configuración de esquema 4 de un brazo PPO o Double DQN con el presupuesto común."""
+    """Configuración de esquema 4 de una variante PPO o Double DQN con el presupuesto común."""
     policies = stage["policies"]
     entry, budget = policies["policies"][job["arm"]], policies["budget"]
     selection = policies["selection"]
@@ -187,7 +189,7 @@ def _record(row, cost, manifest):
 
 
 class NativePolicyExecutor:
-    """Ejecutor de un brazo aprendido con su binario nativo y el lanzador común.
+    """Ejecutor de una política aprendida con su binario nativo y el lanzador común.
 
     ``diagnostic`` lanza el diagnóstico explícito en CPU de los binarios, limitado a 32
     transiciones, y solo sirve para pruebas técnicas. ``stop_after`` pide una pausa al
@@ -206,7 +208,33 @@ class NativePolicyExecutor:
     def config(self, stage, job):
         return (ppo_config if self.engine == "native_ppo" else klpo_config)(stage, job)
 
-    def launch(self, config, output, *, train=(), validation=(), audit=None, tapes=(), costs=()):
+    def trace_options(self, traces):
+        """Cadencia y presupuesto nativos: PPO cuenta transiciones y KLPO oleadas."""
+        from mars_titan.learning_traces.hooks import unit_config
+
+        unit = "wave" if self.engine in WAVE_ENGINES else "transition"
+        config = unit_config(traces, unit)
+        if config is None or not config.enabled:
+            return []
+        return [
+            "--learning-trace-every",
+            str(config.every),
+            "--learning-trace-max-bytes",
+            str(config.max_bytes),
+        ]
+
+    def launch(
+        self,
+        config,
+        output,
+        *,
+        train=(),
+        validation=(),
+        audit=None,
+        tapes=(),
+        costs=(),
+        traces=None,
+    ):
         command = [self.python, str(LAUNCHER), "--binary", str(binary_path(self.engine))]
         command += ["--config", str(config), "--output", str(output)]
         for option, paths in (
@@ -222,6 +250,8 @@ class NativePolicyExecutor:
                 command += ["--evaluation-cost", repr(float(cost))]
         elif self.stop_after is not None:
             command += ["--stop-after", str(self.stop_after)]
+        if audit is None:
+            command += self.trace_options(traces)
         if (output / "identity.json").is_file():
             command.append("--resume")
         if self.diagnostic:
@@ -238,7 +268,7 @@ class NativePolicyExecutor:
             raise RuntimeError(f"{self.engine} terminó con {result.returncode}: {result.stderr}")
         return True
 
-    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
+    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
         policies = stage["policies"]
         if job["kind"] == FIT:
             config = folder / "config.json"
@@ -252,7 +282,11 @@ class NativePolicyExecutor:
                 atomic_json(config, document)
             fit = folder / "fit"
             if not self.launch(
-                config, fit, train=tapes.paths["train"], validation=[tapes.paths["validation"]]
+                config,
+                fit,
+                train=tapes.paths["train"],
+                validation=[tapes.paths["validation"]],
+                traces=traces,
             ):
                 return dict(status="paused")
             run = read_manifest(fit / "run.json")[0]

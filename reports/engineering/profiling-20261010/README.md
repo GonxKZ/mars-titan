@@ -21,7 +21,7 @@ Cada recorrido con GPU se ejecutó en la plaza exclusiva `memslot gpu` y los de 
 
 ## Recorridos medidos
 
-Los recorridos de tiempo repiten con `--events` los 254 eventos guardados de US+CN `fold-012` de la edición v3 con máscaras, desde el evento 127, con dos actualizaciones de calentamiento y ocho tramos medidos (151.797 filas y 11 llamadas al optimizador sustituto). `replay_stored_events.py` es el envoltorio de lectura bloqueada de la medida de medoids de `perf/campaign-kernels-wiring`. Reutiliza los índices guardados y falla si el recorrido intenta leer muestras de la vista, así que la medida aísla el cálculo. Los dos brazos son:
+Los recorridos de tiempo repiten con `--events` los 254 eventos guardados de US+CN `fold-012` de la edición v3 con máscaras, desde el evento 127, con dos actualizaciones de calentamiento y ocho tramos medidos (151.797 filas y 11 llamadas al optimizador sustituto). `replay_stored_events.py` es el envoltorio de lectura bloqueada de la medida de medoids de `perf/campaign-kernels-wiring`. Reutiliza los índices guardados y falla si el recorrido intenta leer muestras de la vista, así que la medida aísla el cálculo. Los dos modelos son:
 
 - Titans-MAC `titans_mac_online` con bloque y acumulación de 1.024 filas.
 - Lector MARS-TITAN M1 con bloque de 512 filas.
@@ -32,7 +32,7 @@ El código es develop en b92e07a0 y esta rama sobre la misma base. Dos tandas ej
 
 py-spy detiene por defecto el proceso en cada muestra para leer una pila coherente. Con `--nonblocking` lee la memoria del proceso sin detenerlo y a cambio pierde algunas muestras cuya pila cambia durante la lectura.
 
-| Brazo | Modo | Tanda 1 (s) | Tanda 2 (s) | Frente a la rama sin herramienta | Muestras perdidas |
+| Modelo | Modo | Tanda 1 (s) | Tanda 2 (s) | Frente a la rama sin herramienta | Muestras perdidas |
 |---|---|---:|---:|---:|---:|
 | mac_online | Rama sin herramienta | 10,46 | 13,51 | | |
 | mac_online | py-spy bloqueante | 13,95 | 16,47 | +33 % y +22 % | 0 |

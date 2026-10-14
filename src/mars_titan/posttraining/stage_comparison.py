@@ -1,27 +1,33 @@
-"""Comparar los brazos postentrenados de cada padre con su padre congelado y su continuación.
+"""Comparar los modelos postentrenados de cada padre con su padre congelado y su continuación.
 
 La declaración (``posttraining_stage_comparison``) se fija antes de evaluar y enlaza la
 etapa de postentrenamiento. La comparación se deriva del plan de la etapa, sin listar
-brazos a mano. Por cada brazo base y ámbito hay una comparación walk-forward con el padre
+modelos a mano. Por cada modelo base y ámbito hay una comparación walk-forward con el padre
 congelado, la continuación completa (control ``full_continuation`` de la matriz) y los
-brazos adaptados de la matriz para la familia del padre.
+modelos adaptados de la matriz para la familia del padre. Si la etapa ejecuta la
+continuación con el decaimiento anclado al padre (``anchored_continuation``, #444), entra
+con su propio papel, y lo mismo ocurre con cada control de repaso de #55
+(``replay_uniform``, ``replay_regime_balanced`` y ``repeat_new_rows``) y con cada objetivo
+de la corrección lineal de #128 (``objective_reinforce`` y los demás). Los objetivos solo
+emiten la mediana, así que entran con salida puntual y sin calibración. Una familia cuya
+base no existe para un padre no se deriva para él y un papel ausente no aporta variantes.
 
 En el walk-forward por etapas de la variante A, el padre congelado es el trabajo
 ``frozen`` de la etapa, que aplica a la ventana k el estado elegido por la base en k-1. El
-brazo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
+modelo base, reentrenado por la campaña en k, sigue en la comparación como contraste de
 nivel y solo entra en una familia si la declaración usa su papel ``base_retrain``. Con el
-papel ``chain``, la comparación añade el predictor de la cadena (``<brazo>__chain``), cuyas
+papel ``chain``, la comparación añade el predictor de la cadena (``<modelo>__chain``), cuyas
 predicciones son las del trabajo que eligió `chain_validation_score_v1` en cada ventana y
 semilla, leído de su ``selection.json``. Es el contraste que el diseño por etapas informa
 aparte: el reentreno completo de k frente a la cadena, con las mismas filas de test. Como
 la primera ventana de cada ámbito no tiene postentrenamiento, la comparación solo cubre las
 ventanas con trabajos de la etapa.
 En un plan sin padre congelado, como el anclado de B, el padre congelado es el propio
-brazo base con las predicciones de la campaña.
+modelo base con las predicciones de la campaña.
 
 Así una familia nueva de la matriz entra sin reescribir la declaración. Cada comparación
 hereda de la comparación de la campaña la política, los protocolos, las métricas, la
-calibración común, el remuestreo y las secciones secundarias. Solo cambian los brazos y
+calibración común, el remuestreo y las secciones secundarias. Solo cambian los modelos y
 las familias de contrastes, que salen de los papeles declarados. La corrección por
 máximo estudentizado se aplica dentro de cada familia, como en la comparación principal.
 No hay corrección entre padres: cada padre es un análisis secundario propio.
@@ -30,7 +36,7 @@ El manifiesto de fuentes de un padre y un ámbito une las predicciones del padre
 leídas del manifiesto de fuentes ya validado de la campaña, con los recibos confirmados de
 la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta declaración y
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
-los brazos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
+los modelos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
 """
 
 import argparse
@@ -44,14 +50,17 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.hardware import hardware_profiles
 from mars_titan.training import campaign_chain
 
+from . import predictive_objectives as predictive
+from . import replay_continuation as replay
 from .campaign_stage import FROZEN as FROZEN_JOB
 from .campaign_stage import (
+    FROZEN_ONLY,
     RECEIPT_KIND,
     RUN_KIND,
     STAGED,
-    TABULAR,
     _digest,
     load_stage,
     plan_stage,
@@ -62,15 +71,22 @@ KIND = "posttraining_stage_comparison"
 DECLARED = "declared_before_evaluation"
 USE = "secondary_contrasts_not_for_selecting_the_base_architecture"
 FROZEN, CONTINUATION, ADAPTED = "frozen_parent", "full_continuation", "adapted"
+ANCHORED = "anchored_continuation"
 CHAIN, BASE = "chain", "base_retrain"
-ROLES = (FROZEN, CONTINUATION, ADAPTED, CHAIN, BASE)
-# Papeles que pueden hacer de base de una familia: los dos controles y el reentreno.
-BASE_ROLES = (FROZEN, CONTINUATION, BASE)
+# Papeles que puede tener un control de la matriz. El padre congelado sale del plan.
+CONTROLS = (CONTINUATION, ANCHORED, *replay.CONTROLS, *predictive.CONTROLS)
+ROLES = (FROZEN, *CONTROLS, ADAPTED, CHAIN, BASE)
+# Papeles que pueden hacer de base de una familia: el padre congelado, los controles y el
+# reentreno.
+BASE_ROLES = (FROZEN, *CONTROLS, BASE)
 _FIELDS = {"schema_version", "kind", "status", "name", "stage", "use", "families"}
-# Familia de cada brazo derivado en la configuración de la comparación.
+# Familia de cada modelo derivado en la configuración de la comparación.
 ARM_FAMILIES = {
     FROZEN: "posttraining_frozen_parent",
     CONTINUATION: "posttraining_control",
+    ANCHORED: "posttraining_control",
+    **{control: "posttraining_control" for control in replay.CONTROLS},
+    **{control: "posttraining_objective" for control in predictive.CONTROLS},
     ADAPTED: "posttraining_adapter",
     CHAIN: "posttraining_chain",
 }
@@ -113,14 +129,14 @@ def _used(families):
 
 
 def _groups(stage):
-    """Brazos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
+    """Modelos de cada padre por papel, en el orden del plan, y sus trabajos por ámbito.
 
-    Un trabajo ``frozen`` del plan por etapas fija el brazo del padre congelado. Sin él,
-    el padre congelado es el propio brazo base. Ridge y XGBoost quedan fuera: su cadena solo
-    tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
+    Un trabajo ``frozen`` del plan por etapas fija el modelo del padre congelado. Sin él,
+    el padre congelado es el propio modelo base. Ridge, XGBoost y B6 quedan fuera: su cadena
+    solo tiene el padre congelado y no hay continuación ni adaptadores que contrastar. El
     predictor de la cadena solo existe en el plan por etapas.
     """
-    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == TABULAR}
+    trivial = {arm for arm, spec in stage_arms(stage)[0].items() if spec["design"] == FROZEN_ONLY}
     staged = stage["design"] == STAGED
     groups = {}
     for job in plan_stage(stage):
@@ -130,7 +146,7 @@ def _groups(stage):
             job["base_arm"],
             {
                 FROZEN: job["base_arm"],
-                CONTINUATION: None,
+                **{control: None for control in CONTROLS},
                 ADAPTED: [],
                 CHAIN: campaign_chain.chain_arm(job["base_arm"]) if staged else None,
                 BASE: job["base_arm"],
@@ -139,7 +155,7 @@ def _groups(stage):
         )
         control = job["control"]
         _require(
-            control in (None, CONTINUATION) or job.get("kind") == FROZEN_JOB,
+            control in (None, *CONTROLS) or job.get("kind") == FROZEN_JOB,
             f"El control {control} de {job['arm']} no tiene papel en la comparación",
         )
         if job.get("kind") == FROZEN_JOB:
@@ -148,18 +164,18 @@ def _groups(stage):
                 f"{job['base_arm']} declara dos padres congelados",
             )
             group[FROZEN] = job["arm"]
-        elif control == CONTINUATION:
+        elif control in CONTROLS:
             _require(
-                group[CONTINUATION] in (None, job["arm"]),
-                f"{job['base_arm']} declara dos continuaciones completas",
+                group[control] in (None, job["arm"]),
+                f"{job['base_arm']} declara dos modelos del control {control}",
             )
-            group[CONTINUATION] = job["arm"]
+            group[control] = job["arm"]
         elif job["arm"] not in group[ADAPTED]:
             group[ADAPTED].append(job["arm"])
         group["jobs"].setdefault(job["scope"], []).append(job)
     for base_arm, group in groups.items():
         _require(group[CONTINUATION] is not None, f"{base_arm} no tiene continuación completa")
-        _require(group[ADAPTED], f"{base_arm} no tiene brazos adaptados")
+        _require(group[ADAPTED], f"{base_arm} no tiene modelos adaptados")
     return groups
 
 
@@ -207,7 +223,7 @@ def derive_config(declaration, stage, base_arm, groups):
     )
     roles = {
         FROZEN: [group[FROZEN]],
-        CONTINUATION: [group[CONTINUATION]],
+        **{control: [group[control]] if group[control] else [] for control in CONTROLS},
         ADAPTED: group[ADAPTED],
         # La cadena solo entra si alguna familia la contrasta, porque exige sus selecciones.
         CHAIN: [group[CHAIN]] if CHAIN in used else [],
@@ -218,9 +234,10 @@ def derive_config(declaration, stage, base_arm, groups):
         for arm in roles[role]:
             if arm == base_arm:
                 continue
-            arms[arm] = dict(
-                family=ARM_FAMILIES[role], output=parent["output"], seeds=parent["seeds"]
-            )
+            # Los objetivos de #128 corrigen la mediana y no emiten cuantiles.
+            output = walk.POINT if role in predictive.CONTROLS else parent["output"]
+            arms[arm] = dict(family=ARM_FAMILIES[role], output=output, seeds=parent["seeds"])
+    # Las familias de la continuación anclada solo existen en los padres que la tienen.
     families = {
         name: dict(
             kind="delta",
@@ -228,6 +245,7 @@ def derive_config(declaration, stage, base_arm, groups):
             variants=[arm for role in family["variants"] for arm in roles[role]],
         )
         for name, family in declaration["families"].items()
+        if roles[family["base"]] and any(roles[role] for role in family["variants"])
     }
     families["levels"] = dict(kind="level", arms=list(arms))
     raw = {
@@ -272,7 +290,7 @@ def _stage_windows(inherited, scope, group):
 
 
 def check_declaration(path):
-    """Resumen de los padres, brazos y familias derivados, sin leer predicciones."""
+    """Resumen de los padres, modelos y familias derivados, sin leer predicciones."""
     loaded = load_declaration(path)
     return dict(
         status="checked",
@@ -285,6 +303,13 @@ def check_declaration(path):
                 configuration_sha256=config["sha256"],
                 arms=len(config["arms"]),
                 continuation=loaded["groups"][base_arm][CONTINUATION],
+                anchored_continuation=loaded["groups"][base_arm][ANCHORED],
+                replay={
+                    control: loaded["groups"][base_arm][control] for control in replay.CONTROLS
+                },
+                objectives={
+                    control: loaded["groups"][base_arm][control] for control in predictive.CONTROLS
+                },
                 adapted=loaded["groups"][base_arm][ADAPTED],
                 chain=loaded["groups"][base_arm][CHAIN]
                 if loaded["groups"][base_arm][CHAIN] in config["arms"]
@@ -300,7 +325,7 @@ def check_declaration(path):
 
 
 def _base_sources(path, inherited, scope, base_arm):
-    """Fuentes ya publicadas de la campaña, validadas con los brazos que contienen."""
+    """Fuentes ya publicadas de la campaña, validadas con los modelos que contienen."""
     manifest, _ = read_manifest(path, 16 * 1024**2)
     present = set(manifest.get("arms", {})) if isinstance(manifest, dict) else set()
     _require(base_arm in present, f"Las fuentes de la campaña no contienen {base_arm}")
@@ -373,12 +398,20 @@ def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     return entries[chosen][1]
 
 
-def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_output):
-    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo."""
+def write_sources(
+    declaration_path, scope, base_arm, *, base_sources, stage_output, unrecorded_platform=None
+):
+    """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo.
+
+    La comparación junta predicciones de la base y de la etapa, así que los recibos de la
+    etapa deben venir de una sola plataforma y coincidir con la de las fuentes de la base
+    (`hardware_profiles.inherited_platform`). Los recibos o las fuentes anteriores a ese
+    registro solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
+    """
     loaded = load_declaration(declaration_path)
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
-    _require(base_arm in loaded["groups"], "El brazo no es un padre de la etapa")
+    _require(base_arm in loaded["groups"], "El modelo no es un padre de la etapa")
     inherited = stage["campaign"]["comparison_config"]
     config = loaded["configs"][base_arm]
     base = _base_sources(Path(base_sources), inherited, scope, base_arm)
@@ -404,12 +437,15 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             entries[window] = dict(input_policy=policy, view_sha256=view_sha256)
             for part, record in files.items():
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
-    entries = {}
+    entries, platforms = {}, {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
+        platforms[job["id"]] = receipt.get("platform")
         entry = dict(input_policy=policy, view_sha256=view_sha256)
-        for part in COMPARED:
+        # Una salida puntual no tiene calibración que comparar.
+        point = job["control"] in predictive.CONTROLS
+        for part in ("evaluation",) if point else COMPARED:
             record = receipt["predictions"][part]
             entry[part] = dict(
                 path=relative(stage_output / record["path"]), sha256=record["sha256"]
@@ -424,8 +460,13 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
                 arms[chain].setdefault(str(seed), {})[window] = _chain_entry(
                     stage_output, stage, scope, window, base_arm, seed, entries
                 )
+    platform = hardware_profiles.inherited_platform(
+        platforms,
+        base["platform"],
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=walk.SOURCES_KIND,
         scope=scope,
         input_policy=policy,
@@ -434,6 +475,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
             for window, digest in views.items()
         },
         arms=arms,
+        platform=platform,
     )
     safe_destination(destination)
     candidate = folder / f".{base_arm}.candidate.json"
@@ -448,11 +490,11 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
 
 
 def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera larga y corta."""
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
     loaded = load_declaration(declaration_path)
-    _require(base_arm in loaded["configs"], "El brazo no es un padre de la etapa")
+    _require(base_arm in loaded["configs"], "El modelo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope)
+    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
@@ -461,6 +503,12 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         roles={
             FROZEN: loaded["groups"][base_arm][FROZEN],
             CONTINUATION: loaded["groups"][base_arm][CONTINUATION],
+            ANCHORED: loaded["groups"][base_arm][ANCHORED],
+            **{
+                control: loaded["groups"][base_arm][control]
+                for control in predictive.CONTROLS
+                if loaded["groups"][base_arm][control] is not None
+            },
             ADAPTED: loaded["groups"][base_arm][ADAPTED],
             **(
                 {CHAIN: loaded["groups"][base_arm][CHAIN]}
@@ -515,9 +563,9 @@ def write(declaration_path, sources_path, scope, base_arm, output, *, edition=No
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    check = commands.add_parser("check", help="Derivar padres, brazos y familias sin datos")
+    check = commands.add_parser("check", help="Derivar padres, modelos y familias sin datos")
     sources = commands.add_parser("sources", help="Publicar las fuentes de un padre")
-    run = commands.add_parser("evaluate", help="Comparar un padre con sus brazos postentrenados")
+    run = commands.add_parser("evaluate", help="Comparar un padre con sus modelos postentrenados")
     for command in (check, sources, run):
         command.add_argument("--declaration", type=Path, required=True)
     for command in (sources, run):
@@ -525,6 +573,10 @@ def main(argv=None):
         command.add_argument("--base-arm", required=True)
     sources.add_argument("--base-sources", type=Path, required=True)
     sources.add_argument("--stage-output", type=Path, required=True)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos o fuentes sin plataforma",
+    )
     run.add_argument("--sources", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--edition", type=Path)
@@ -538,6 +590,7 @@ def main(argv=None):
             args.base_arm,
             base_sources=args.base_sources,
             stage_output=args.stage_output,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     else:

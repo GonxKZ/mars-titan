@@ -1,17 +1,17 @@
-"""Comparar la cartera larga y corta por cuartiles de los brazos de una comparación walk-forward.
+"""Comparar la cartera larga y corta por cuartiles de los modelos de una comparación walk-forward.
 
 Lee la configuración declarada (versión 4 o posterior, sección ``long_short``) y el mismo
 manifiesto de fuentes que ``walk_forward_comparison``, con sus comprobaciones: política,
 vistas, ventanas, tramo de evaluación, reserva de 2024 cerrada y mismas filas y objetivos
-en todos los brazos. Las predicciones se leen con ``_read_predictions``, la única lectura
+en todos los modelos. Las predicciones se leen con ``_read_predictions``, la única lectura
 por fila. Los precios proceden de la edición sin ajustar (``simulation.session_prices``).
 Con el diseño conjunto de la versión 5 se aplican las mismas exclusiones que en la
-comparación: un mercado solo entra en las ventanas en las que es elegible y un brazo
+comparación: un mercado solo entra en las ventanas en las que es elegible y un modelo
 prestado del modelo conjunto conserva solo las filas del mercado de su ámbito.
 
-Cada ventana y brazo produce un libro por sesión. Las sesiones de todas las ventanas se
+Cada ventana y modelo produce un libro por sesión. Las sesiones de todas las ventanas se
 unen y cada mercado se informa por separado, porque una cartera no mezcla monedas ni
-calendarios. Las semillas de un brazo se promedian sesión a sesión antes de calcular
+calendarios. Las semillas de un modelo se promedian sesión a sesión antes de calcular
 estadísticos y remuestrear, y cada semilla conserva además su resumen. La incertidumbre
 usa el bootstrap circular por bloques y las familias de contrastes de la comparación, con
 la corrección por máximo estudentizado dentro de cada familia, coste y estadístico.
@@ -80,12 +80,12 @@ def _execution(prices, panel, assets):
 
 
 def _ordered(arms):
-    """Brazos con predicciones primero y el control cero al final, como en la comparación."""
+    """Modelos con predicciones primero y el control cero al final, como en la comparación."""
     return sorted(arms.items(), key=lambda item: item[1]["output"] == walk.ZERO_CONTROL)
 
 
 def _window(sources, config, window_id, edition, declared):
-    """Libros por sesión de todos los brazos y semillas en una ventana, con las mismas filas."""
+    """Libros por sesión de todos los modelos y semillas en una ventana, con las mismas filas."""
     window = sources["windows"][window_id]
     start, end = window["evaluation"]
     markets = [market for market in sources["markets"] if window_id in sources["eligible"][market]]
@@ -256,7 +256,7 @@ def evaluate_long_short(config_path, sources_path, scope, edition, *, aggregates
     _require(SECTION in config, "La configuración no declara la cartera larga y corta")
     declared = config[SECTION]
     sources = walk.load_sources(sources_path, config, scope)
-    # Desde aquí, los brazos y las familias son los del ámbito evaluado.
+    # Desde aquí, los modelos y las familias son los del ámbito evaluado.
     config = walk.scope_config(config, scope)
     parts, sessions, unfilled, windows = {}, [], Counter(), {}
     for window_id in sources["windows"]:
@@ -388,7 +388,7 @@ def main(argv=None):
         aggregates=args.aggregates,
     )
     print(
-        f"Cartera de {len(report['views'][report['markets'][0]]['arms'])} brazos en "
+        f"Cartera de {len(report['views'][report['markets'][0]]['arms'])} modelos en "
         f"{len(report['windows'])} ventanas. Reserva final cerrada."
     )
     return 0

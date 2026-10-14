@@ -1,7 +1,7 @@
 """Cartera larga y corta de una comparación walk-forward sobre predicciones y precios sintéticos.
 
 Las predicciones se escriben en cada prueba y los precios proceden de una edición sintética
-con el formato real. Un brazo conoce de antemano el rendimiento de la sesión siguiente, otro
+con el formato real. Un modelo conoce de antemano el rendimiento de la sesión siguiente, otro
 lo invierte y el control cero se abstiene, así que el resultado esperado se conoce a mano.
 Nada procede de un modelo ajustado ni de datos de mercado.
 """

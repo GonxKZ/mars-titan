@@ -133,7 +133,7 @@ uv run --no-sync --offline python native/tests/klpo_terminal_oracle.py \
 
 Los perfiles `native-asan-ubsan`, `native-static-analysis` y `native-coverage`
 usan las mismas opciones con salidas separadas. Las pruebas solo evalúan
-constantes y gradientes. El [oráculo portátil](../../reports/engineering/terminal-klpo-oracle-20261008.json)
+constantes y gradientes. El [referencia portátil](../../reports/engineering/terminal-klpo-oracle-20261008.json)
 conserva cuatro puntos de dos parámetros y contraejemplos de recompensa,
 longitud, descuento y selección de resultados. No se ejecuta `optimizer.step`
 ni ajuste de parámetros.

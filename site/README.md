@@ -34,12 +34,14 @@ uv run --locked python scripts/serve_observatory.py \
 
 Todas las fuentes son opcionales. Sin `--public-dir` solo hay telemetría. La orden imprime la dirección, por defecto `http://127.0.0.1:8765/`, y termina con `Ctrl+C`. Los límites son de cuatro clientes SSE, dos eventos por segundo y cliente, 24 conexiones, 8 MiB por archivo JSON y 256 MiB por paquete de trazas. `--allow-remote` es necesario para escuchar fuera del bucle local.
 
-Los paquetes de trazas se preparan a partir de la carpeta del registrador de aprendizaje, sin modificarla:
+Los paquetes de trazas se preparan a partir de la carpeta del registrador de aprendizaje, sin modificarla. Con `--root` y `--watch` se mantienen al día todas las carpetas `traces/` de una salida:
 
 ```bash
 uv run --locked python scripts/export_learning_traces.py \
   --traces RUTA_DEL_REGISTRADOR --output RUTA_DE_LOS_PAQUETES \
   --name NOMBRE --run-id RUN_ID --attempt-id ATTEMPT_ID --model-id MODEL_ID
+uv run --locked python scripts/export_learning_traces.py \
+  --root SALIDA_DE_LA_CAMPAÑA --output RUTA_DE_LOS_PAQUETES --watch 30
 ```
 
 ## Código

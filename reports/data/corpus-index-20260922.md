@@ -75,5 +75,5 @@ con sus convenciones, sin presentarlos como garantía de ausencia de defectos.
 
 El índice completo es una entrada para el contraste de noticias y la preparación
 por bloques. No es un Parquet supervisado ni acredita nuevos entrenamientos.
-Los brazos US, CN y US+CN siguen pendientes de completar sus datos admisibles,
+Los modelos US, CN y US+CN siguen pendientes de completar sus datos admisibles,
 la lectura supervisada y la reanudación operativa de las referencias.

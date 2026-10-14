@@ -1,6 +1,8 @@
 #ifndef MARS_TITAN_PPO_EXPERIMENT_HPP
 #define MARS_TITAN_PPO_EXPERIMENT_HPP
 
+#include "mars_titan/learning_traces.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <cstddef>
@@ -21,6 +23,16 @@ struct PpoExperimentOptions {
     // Costes de la evaluación congelada sobre cintas reconstruidas. Si la lista está vacía,
     // la evaluación usa los costes por omisión.
     std::vector<double> evaluation_costs;
+    // Registrar acción y logits de cada decisión de la evaluación congelada (decisions.json).
+    // Solo con --audit-run sobre cintas reconstruidas. Sirve para comparar CPU y CUDA.
+    bool decisions = false;
+    // Modos sin aprendizaje que la protección admite sin rebajarse. Ambos activan el cerrojo de
+    // solo evaluación antes de leer nada y no crean entrenador, controlador ni Adam terminal.
+    // La evaluación inicial evalúa con argmax la política inicial de la configuración sobre
+    // cintas de evaluación. La comprobación de fuentes lee y valida las cintas de ajuste y
+    // validación como el ajuste y publica su identidad.
+    bool initial_evaluation = false;
+    bool source_check = false;
     std::string device = "cuda:0";
     bool diagnostic = false;
     bool resume = false;
@@ -28,6 +40,9 @@ struct PpoExperimentOptions {
     std::optional<std::size_t> vram_budget_bytes;
     std::optional<std::size_t> vram_total_bytes;
     std::optional<int> gpu_lease_fd;
+    // Trazas de aprendizaje de #448 en `output/traces`. Solo observan y no entran en la
+    // identidad de la ejecución.
+    LearningTraceOptions learning_traces;
 };
 
 [[nodiscard]] nlohmann::json run_ppo_experiment(const PpoExperimentOptions& options,

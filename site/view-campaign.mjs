@@ -1,4 +1,4 @@
-// Vista de campaña: series, etapas y matriz de ventana por brazo y semilla.
+// Vista de campaña: series, etapas y matriz de ventana por modelo y semilla.
 
 import { STATUS_LABELS, ACTIVITY_LABELS, WINDOW_STAGES, publicMetrics } from "./state.mjs";
 import * as fmt from "./format.mjs";
@@ -126,7 +126,7 @@ function matrixTable(ctx, members, runs, selectedCell, scale) {
   const table = byId("matrix");
   const marks = new Map();
   const coloured = scale && !scale.empty;
-  const head = el("thead", {}, el("tr", {}, el("th", { text: "Brazo", attrs: { scope: "col" } }), ...matrix.windows.map(window => el("th", { text: window === "—" ? "Sin ventana" : window, attrs: { scope: "col" } }))));
+  const head = el("thead", {}, el("tr", {}, el("th", { text: "Modelo", attrs: { scope: "col" } }), ...matrix.windows.map(window => el("th", { text: window === "—" ? "Sin ventana" : window, attrs: { scope: "col" } }))));
   const body = el("tbody");
   for (const stage of matrix.stages) {
     body.append(el("tr", { className: "stage-row" }, el("th", { text: STAGES[stage] ?? "Otras", attrs: { scope: "rowgroup", colspan: matrix.windows.length + 1 } })));
@@ -270,7 +270,7 @@ function windowCampaigns(ctx) {
   }
   const charts = [];
   const matrix = windowCampaignMatrix(state);
-  const head = el("thead", {}, el("tr", {}, el("th", { text: "Ámbito · brazo", attrs: { scope: "col" } }), ...matrix.windows.map(w => el("th", { text: w, attrs: { scope: "col" } }))));
+  const head = el("thead", {}, el("tr", {}, el("th", { text: "Ámbito · modelo", attrs: { scope: "col" } }), ...matrix.windows.map(w => el("th", { text: w, attrs: { scope: "col" } }))));
   const body = el("tbody", {}, ...matrix.rows.map(row => el("tr", {},
     el("th", { attrs: { scope: "row" } }, el("span", { text: row.arm }), el("small", { text: `${row.scope} · ${ctx.modelName(row.model ?? "unknown")}` })),
     ...matrix.windows.map(window => {

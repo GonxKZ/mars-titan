@@ -1,23 +1,39 @@
 name: Tarea de investigación
-description: Definir una pregunta o experimento con criterios de cierre verificables.
+description: Definir una pregunta o experimento con un control que permita descartarlo y criterios de cierre verificables.
 title: '[Investigación] '
 body:
   - type: textarea
     id: question
     attributes:
-      label: Pregunta y objetivo relacionado
-      description: Indicar el objetivo 1–6 y qué incertidumbre se quiere resolver.
+      label: Contexto y pregunta
+      description: Objetivo relacionado (del 1 al 6), incertidumbre que se quiere resolver y antecedentes u objeciones conocidas.
+    validations:
+      required: true
+  - type: textarea
+    id: work
+    attributes:
+      label: Trabajo delimitado
+      description: >-
+        Datos, filas, cortes y presupuesto comunes, configuración, semillas y pasos. Separar fuente,
+        derivación propia, hipótesis e implementación, y distinguir los archivos que ya existen de las rutas futuras.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Criterios de aceptación
+      description: Comparación declarada antes de ejecutar, control que permitiría descartar la propuesta y resultado que cerraría la tarea, también si es negativo.
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
-      label: Evidencia y criterio de aceptación
-      description: Datos, comparación, controles temporales y resultado que permitiría cerrar la tarea.
+      label: Evidencia
+      description: Recibos, informes y métricas que se publicarán, con su disponibilidad temporal y sin abrir la prueba final durante la selección.
     validations:
       required: true
   - type: textarea
     id: constraints
     attributes:
       label: Recursos, riesgos y fuentes
-      description: Presupuesto, dependencias, fuentes y restricciones del experimento.
+      description: Memoria, GPU y tiempo previstos, dependencias, fuentes bibliográficas y restricciones del experimento.

@@ -1,6 +1,6 @@
 # Datos y evaluación conjunta de US y CN
 
-El brazo `US+CN` utiliza una representación común y conserva el calendario de cada mercado. La preparación parte de dos ediciones reales con cuatro modalidades y 140 indicadores macro. Exige los mismos codificadores, longitudes de contexto, orden de indicadores y regla de agregación de noticias.
+El modelo `US+CN` utiliza una representación común y conserva el calendario de cada mercado. La preparación parte de dos ediciones reales con cuatro modalidades y 140 indicadores macro. Exige los mismos codificadores, longitudes de contexto, orden de indicadores y regla de agregación de noticias.
 
 La edición estadounidense aporta 402.826 muestras de 2.198 empresas. La edición china revisada aporta 5.374 muestras de 25 empresas. Su unión contiene 408.200 muestras y sigue siendo una edición parcial, porque la cobertura china está pendiente de ampliación. Estos recuentos describen las muestras disponibles antes de aplicar las ventanas temporales. No son filas de entrenamiento de cada modelo ni se suman entre folds.
 
@@ -28,7 +28,7 @@ El análisis conjunto informa errores e intervalos por mercado. El bootstrap tem
 
 `cases.csv` conserva una fila por estado y partición e incluye sus recuentos locales. Los agregados, intervalos y diagnósticos de fiabilidad incluyen `market` en su identidad. Las figuras separan los mercados en paneles. El exportador comprueba que los recuentos, estados congelados y huellas de predicciones coinciden entre los informes.
 
-Para atribuir diferencias al mercado añadido, los tres brazos deben partir de esta misma representación, presupuesto y protocolo. La campaña estadounidense anterior conserva su representación de 69 componentes contables. Compararla directamente con un modelo de 78 componentes requiere declarar también ese cambio. Esta preparación no completa la comparación científica entre los tres brazos ni acredita una mejora predictiva.
+Para atribuir diferencias al mercado añadido, los tres modelos deben partir de esta misma representación, presupuesto y protocolo. La campaña estadounidense anterior conserva su representación de 69 componentes contables. Compararla directamente con un modelo de 78 componentes requiere declarar también ese cambio. Esta preparación no completa la comparación científica entre los tres modelos ni acredita una mejora predictiva.
 
 El candidato MARS-TITAN continúa en diseño. La simulación histórica con posiciones persistentes mantiene su condición de admisión sobre precios, ajustes y acciones corporativas.
 

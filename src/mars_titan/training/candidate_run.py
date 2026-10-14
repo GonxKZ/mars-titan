@@ -31,6 +31,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.evaluation.splits import PARTITIONS, stopping_rule
+from mars_titan.learning_traces.hooks import traced_update
 from mars_titan.memory.candidate_bank import (
     CandidateBankConfig,
     CandidateEpisodeBank,
@@ -51,6 +52,8 @@ from mars_titan.models.quantile_head import (
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 
+from . import anchored_decay
+from .anchored_decay import ANCHORS
 from .checkpoints import (
     StopRequest,
     capture_rng,
@@ -122,6 +125,9 @@ class CandidateRecipe:
     checkpoint_seconds: float = 900.0
     # None conserva la configuración numérica del proceso y la identidad anterior.
     precision: str | None = None
+    # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
+    # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
+    weight_decay_anchor: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -147,6 +153,7 @@ class CandidateRecipe:
             or self.weight_decay < 0
             or self.checkpoint_seconds <= 0
             or not valid_precision(self.precision)
+            or self.weight_decay_anchor not in ANCHORS
             or (
                 rows is not None
                 and (type(rows) is not int or not self.block_rows <= rows <= 65_536)
@@ -165,6 +172,8 @@ class CandidateRecipe:
         fields = asdict(self)
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["weight_decay_anchor"] is None:
+            fields.pop("weight_decay_anchor")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -189,7 +198,7 @@ def load_recipe(path, *, variant, search_case=None):
     """Leer la receta, su variante, su caso de búsqueda y la regla del protocolo.
 
     La sección `walk_forward` declara el calentamiento de entradas, el mismo que los demás
-    brazos con memoria, y los casos de búsqueda del optimizador con la regla común de
+    modelos con memoria, y los casos de búsqueda del optimizador con la regla común de
     `search_cases`. Si la receta los declara, el caso es obligatorio.
     """
     path = Path(path)
@@ -222,7 +231,7 @@ def load_recipe(path, *, variant, search_case=None):
         <= set(document["walk_forward"])
         <= {"warmup_months", "search_cases"}
     ):
-        raise ValueError("La receta no conserva su esquema, variantes y brazo principal")
+        raise ValueError("La receta no conserva su esquema, variantes y modelo principal")
     checked_warmup(document["walk_forward"]["warmup_months"])
     cases = document["walk_forward"].get("search_cases")
     if cases is not None:
@@ -246,7 +255,7 @@ def load_recipe(path, *, variant, search_case=None):
     }:
         raise ValueError("La selección o el presupuesto no coinciden con el protocolo")
     if document["model"].get("seeds") != protocol["seeds"]:
-        raise ValueError("Las semillas del brazo no son las del protocolo")
+        raise ValueError("Las semillas del modelo no son las del protocolo")
     return recipe, dict(document, protocol_sha256=sha256(protocol_path))
 
 
@@ -694,6 +703,9 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
+    # None, `traced_update` es un bloque vacío.
+    traces = None
 
     def _trace_modules(self):
         """Módulos con parámetros del recorrido: el nativo y, en un adaptador, su cabeza."""
@@ -732,11 +744,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         self.trainable = [value for group in groups for value in group["params"]]
         if not all(value.requires_grad for value in self.trainable):
             raise ValueError("Los parámetros ajustables del candidato deben requerir gradiente")
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
+        factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
         if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in self.trainable}:
@@ -765,6 +773,10 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
+        if anchored is not None:
+            # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
+            self.identity["anchored_decay"] = anchored
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -859,11 +871,17 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                     if value.grad is not None:
                         value.grad.div_(labels)
         if labels:
-            torch.nn.utils.clip_grad_norm_(
-                self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
-            )
-            self.optimizer.step()
-            self.optimizer.zero_grad(set_to_none=True)
+            with traced_update(
+                self.traces, self.global_step + 1, self.optimizer, total / labels
+            ) as probe:
+                norm = torch.nn.utils.clip_grad_norm_(
+                    self.trainable,
+                    self.recipe.max_grad_norm or math.inf,
+                    error_if_nonfinite=True,
+                )
+                probe.clip(norm, self.recipe.max_grad_norm)
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += labels
@@ -1009,10 +1027,14 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if self.traces is not None:
+                self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 run = self._restore(state["run"])
         else:
             output.mkdir(parents=True)
+            if self.traces is not None:
+                self.traces.restore(None)
             report = dict(
                 schema_version=1,
                 kind="candidate_gru_chronological_run",
@@ -1040,6 +1062,8 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                 run=None if current is None else self._export(current),
                 **self._extra_state(),
             )
+            if self.traces is not None:
+                state["traces"] = self.traces.checkpoint()
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
@@ -1072,14 +1096,17 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    if self.trace is not None:
+                    if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
                             score=metrics["session_mae"],
                         )
-                        self.trace(event, self._trace_modules())
+                        if self.traces is not None:
+                            self.traces.validation(event)
+                        if self.trace is not None:
+                            self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

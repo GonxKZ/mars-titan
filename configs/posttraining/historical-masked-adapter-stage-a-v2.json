@@ -25,17 +25,25 @@
     "mars_titan_m3",
     "mars_titan_m1_k2",
     "mars_titan_m1_k4",
+    "mars_titan_m1_k4_first_read",
+    "mars_titan_b6",
+    "mars_titan_b6_bias",
+    "mars_titan_b6_regime",
+    "mars_titan_b6_calendar",
+    "mars_titan_b6_regime_banks",
+    "mars_titan_b6_calendar_banks",
     "cm_v1_b",
     "cm_v1_bc",
     "cm_v1_bm",
     "cm_v1_bcm"
   ],
   "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
+  "additional_controls": ["anchored_continuation", "predictive_objectives"],
   "chain_rule": "chain_validation_score_v1",
   "data_policy": "real_edition_only",
   "limits": {
-    "max_training_jobs": 6588,
-    "max_prediction_jobs": 1116
+    "max_training_jobs": 8694,
+    "max_prediction_jobs": 1494
   },
   "final_test_opened": false
 }

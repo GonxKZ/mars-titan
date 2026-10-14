@@ -1,17 +1,22 @@
 """Matriz finita de adaptadores sobre padres congelados, declarada antes de ajustar.
 
-Cada brazo combina uno, dos o tres puntos de inserción con la misma población, las
+Cada modelo combina uno, dos o tres puntos de inserción con la misma población, las
 mismas semillas, el mismo número de actualizaciones y la misma validación temporal.
 El padre congelado, la corrección lineal residual y la continuación completa son
-controles de todos los brazos. La matriz no añade combinaciones después de leerse.
+controles de todos los modelos. La matriz no añade combinaciones después de leerse.
 
 La versión 1 solo declara objetivos para padres de salida escalar. La versión 2 los
 declara por cabeza del padre: los escalares conservan los de la versión 1 y los de
 `quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
 objetivo para una cabeza se excluye con su motivo, no se reinterpreta. La versión 3
 conserva todo lo anterior y añade los destinos de las familias con entrenador cronológico
-(`chronological_matrix`) y, de forma opcional, la sección `variety` de #444 con brazos de
-un solo punto (`adapter_variety`).
+(`chronological_matrix`) y, de forma opcional, dos secciones de #444: `variety`, con modelos
+de un solo punto (`adapter_variety`), y `anchored_continuation`, con el control de
+continuación completa cuyo decaimiento se ancla al padre (`anchored_continuation`). La
+sección opcional `replay_continuation` de #55 añade los tres controles de repaso
+(`replay_continuation`), que comparten entre ellos un presupuesto mayor que el de los demás.
+La sección opcional `predictive_objectives` de #128 añade un control por objetivo de la
+corrección lineal residual (`predictive_objectives`), con el presupuesto de la continuación.
 """
 
 import itertools
@@ -23,14 +28,20 @@ from mars_titan.data.input_policy import INPUT_POLICIES
 from mars_titan.models.predictive_adaptation import AdapterTarget, target_shape
 from mars_titan.models.quantile_head import QUANTILE_HEAD
 
-from . import adapter_variety
+from . import adapter_variety, anchored_continuation
+from . import predictive_objectives as predictive
+from . import replay_continuation as replay
+from .anchored_continuation import ANCHOR
 from .inputs import fingerprint
 from .selection import selection_policy
 
 POINTS = ("head", "readout", "fusion")
-# Formas de los puntos y brazos de las versiones 1 a 3. La variedad declara las suyas.
+# Formas de los puntos y modelos de las versiones 1 a 3. La variedad declara las suyas.
 BASE_FORMS = ("residual", "low_rank")
 CONTROLS = ("frozen_parent", "linear_residual", "full_continuation")
+# Controles que ajustan todos los parámetros del padre: la continuación, su versión anclada
+# y las tres con repaso.
+CONTINUATIONS = ("full_continuation", anchored_continuation.CONTROL, *replay.CONTROLS)
 # Familias de MultimodalReference que el postentrenamiento puede cargar como padre.
 FAMILIES = ("rnn", "lstm", "gru", "dlinear", "transformer")
 # Solo el Transformer compacto tiene una lectura con consulta, claves y salida.
@@ -99,7 +110,7 @@ def _arm_id(points):
 
 
 def validate_matrix(matrix):
-    """Rechazar matrices incompletas, abiertas o con presupuestos distintos por brazo."""
+    """Rechazar matrices incompletas, abiertas o con presupuestos distintos por modelo."""
     keys = {
         "schema_version",
         "kind",
@@ -113,11 +124,16 @@ def validate_matrix(matrix):
         "selection",
         "architectures",
     }
-    # Solo la versión 3 admite la sección opcional de variedad de #444.
-    variety = isinstance(matrix, dict) and matrix.get("schema_version") == 3 and "variety" in matrix
+    # Solo la versión 3 admite las secciones opcionales de #444, #55 y #128.
+    version_three = isinstance(matrix, dict) and matrix.get("schema_version") == 3
+    optional = (
+        {"variety", anchored_continuation.CONTROL, replay.SECTION_NAME, predictive.SECTION_NAME}
+        if version_three
+        else set()
+    )
     _require(
         isinstance(matrix, dict)
-        and set(matrix) == keys | ({"variety"} if variety else set())
+        and keys <= set(matrix) <= keys | optional
         and matrix["schema_version"] in (1, 2, 3)
         and type(matrix["schema_version"]) is int
         and matrix["kind"] == KIND
@@ -175,12 +191,12 @@ def validate_matrix(matrix):
             and len(set(arm["points"])) == len(arm["points"])
             and arm["id"] not in seen
             and arm["id"] not in CONTROLS,
-            "Cada brazo combina de uno a tres puntos distintos en orden canónico",
+            "Cada modelo combina de uno a tres puntos distintos en orden canónico",
         )
         seen.add(arm["id"])
         overrides = arm.get("overrides")
         if overrides is None:
-            _require(arm["id"] == _arm_id(arm["points"]), "El brazo se nombra por sus puntos")
+            _require(arm["id"] == _arm_id(arm["points"]), "El modelo se nombra por sus puntos")
             combinations.add(tuple(arm["points"]))
         else:
             _require(
@@ -199,8 +215,14 @@ def validate_matrix(matrix):
         combinations == expected, "La matriz contiene todas las combinaciones de 1, 2 y 3 puntos"
     )
     _architectures(matrix["architectures"], matrix["schema_version"])
-    if variety:
+    if "variety" in matrix:
         adapter_variety.validate(matrix["variety"], matrix)
+    if anchored_continuation.CONTROL in matrix:
+        anchored_continuation.validate(matrix[anchored_continuation.CONTROL], matrix)
+    if replay.SECTION_NAME in matrix:
+        replay.validate(matrix[replay.SECTION_NAME], matrix)
+    if predictive.SECTION_NAME in matrix:
+        predictive.validate(matrix[predictive.SECTION_NAME])
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
@@ -304,9 +326,9 @@ def _family(family):
 
 
 def arms(matrix, family, *, reserve=False):
-    """Brazos aplicables a la familia, con la forma resuelta de cada punto.
+    """Modelos aplicables a la familia, con la forma resuelta de cada punto.
 
-    Los de la variedad siguen a los de la matriz. `reserve` añade los brazos de la variedad
+    Los de la variedad siguen a los de la matriz. `reserve` añade los adaptadores de la variedad
     implementados que la matriz no propone para la campaña.
     """
     _family(family)
@@ -322,13 +344,17 @@ def arms(matrix, family, *, reserve=False):
     return result + adapter_variety.neural_arms(matrix, family, reserve=reserve)
 
 
-def _case(matrix, seed, mode, adapter=None):
+def _case(matrix, seed, mode, adapter=None, anchor=None, replayed=None):
     budget = matrix["budget"]
     case = {key: budget[key] for key in sorted(BUDGET - {"seeds", "batch_size"})} | dict(
         mode=mode, condition="real", seed=seed, selection=dict(matrix["selection"])
     )
     if adapter is not None:
         case["adapter"] = adapter
+    if anchor is not None:
+        case[ANCHOR] = anchor
+    if replayed is not None:
+        case[replay.KEY] = replayed
     selection_policy(case)
     return case
 
@@ -337,7 +363,9 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
     """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
 
     Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
-    no genera caso. `reserve` incluye los brazos de reserva de la variedad.
+    no genera caso. La continuación anclada, los tres controles de repaso y los objetivos de
+    #128 siguen a la completa si la matriz los propone para las referencias. `reserve`
+    incluye los modelos y los controles de reserva de #444, #55 y #128.
     """
     _family(family)
     declared = objectives(matrix, head)
@@ -358,6 +386,44 @@ def cases(matrix, digest, family, *, head=SCALAR, reserve=False):
                 case=_case(matrix, seed, declared["full_continuation"]),
             )
         )
+        if anchored_continuation.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            result.append(
+                dict(
+                    id=f"seed-{seed}/{anchored_continuation.CONTROL}",
+                    control=anchored_continuation.CONTROL,
+                    case=_case(
+                        matrix,
+                        seed,
+                        declared["full_continuation"],
+                        anchor=anchored_continuation.INITIAL,
+                    ),
+                )
+            )
+        if replay.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            ratio = replay.declared(matrix)["ratio"]
+            result += [
+                dict(
+                    id=f"seed-{seed}/{control}",
+                    control=control,
+                    case=_case(
+                        matrix,
+                        seed,
+                        declared["full_continuation"],
+                        replayed=replay.spec(control, ratio),
+                    ),
+                )
+                for control in replay.CONTROLS
+            ]
+        if predictive.proposed(matrix, adapter_variety.REFERENCES, reserve=reserve):
+            linear = declared["linear_residual"]
+            result += [
+                dict(
+                    id=f"seed-{seed}/{predictive.control(mode)}",
+                    control=predictive.control(mode),
+                    case=_case(matrix, seed, mode),
+                )
+                for mode in predictive.modes(matrix, None if isinstance(linear, dict) else linear)
+            ]
         for arm in arms(matrix, family, reserve=reserve):
             adapter = dict(
                 matrix_sha256=digest,
@@ -390,8 +456,8 @@ def validate_adapter(adapter):
         "El adaptador del caso no pertenece a una matriz declarada",
     )
     variety = [adapter_variety.is_variety(*item) for item in adapter["points"].items()]
-    # Un brazo de la variedad tiene un solo punto y no se combina con los de la matriz.
-    _require(not any(variety) or len(variety) == 1, "La variedad declara brazos de un punto")
+    # Un adaptador de la variedad tiene un solo punto y no se combina con los de la matriz.
+    _require(not any(variety) or len(variety) == 1, "La variedad declara modelos de un punto")
     for name, spec in adapter["points"].items():
         if adapter_variety.is_variety(name, spec):
             adapter_variety.check_spec(name, spec)
@@ -401,7 +467,7 @@ def validate_adapter(adapter):
 
 
 def targets(adapter, model):
-    """Traducir los puntos del brazo a tensores del padre, sin tocar sus pesos."""
+    """Traducir los puntos del modelo a tensores del padre, sin tocar sus pesos."""
     validate_adapter(adapter)
     family = _family(getattr(model, "kind", None))
     hidden = model.architecture["hidden_size"]
@@ -462,10 +528,13 @@ def _states(points):
 
 
 def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
-    """Registrar antes del primer ajuste brazos, controles, parámetros y actualizaciones.
+    """Registrar antes del primer ajuste modelos, controles, parámetros y actualizaciones.
 
     Los bytes de estado cuentan parámetros entrenables y los dos momentos de AdamW en
-    la precisión de los pesos. No incluyen activaciones, que se miden al ejecutar.
+    la precisión de los pesos, más las anclas en la continuación anclada. No incluyen
+    activaciones, que se miden al ejecutar. Los controles de repaso suman en cada época sus
+    actualizaciones adicionales (`extra_updates`) y comparten entre ellos ese presupuesto.
+    El resto de casos comparte el de la continuación completa.
     """
     _require(
         type(updates_per_epoch) is int
@@ -492,25 +561,36 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
     ]
     for item in cases(matrix, digest, family, head=head):
         case = item["case"]
-        if item["control"] == "linear_residual":
+        if item["control"] == "linear_residual" or item["control"] in predictive.CONTROLS:
             # Una capa lineal float32 sobre modalidades, bits y predicción del padre.
             count, size, invalidates = linear_features + 1, 4, []
-        elif item["control"] == "full_continuation":
+        elif item["control"] in CONTINUATIONS:
             count = sum(value.numel() for value in model.parameters())
             size, invalidates = itemsize, every
         else:
             count = describe(case["adapter"], model)["trainable_parameters"]
             size, invalidates = itemsize, _states(case["adapter"]["points"])
+        # Pesos y dos momentos. La continuación anclada guarda además el padre como ancla.
+        copies = 4 if item["control"] == anchored_continuation.CONTROL else 3
+        extra = 0
+        if replay.KEY in case:
+            extra = case["epochs"] * replay.extra_updates(
+                updates_per_epoch, case[replay.KEY]["ratio"]
+            )
         rows.append(
             dict(
                 id=item["id"],
                 control=item["control"],
                 trainable_parameters=count,
-                state_bytes=3 * size * count,
-                updates=updates,
+                state_bytes=copies * size * count,
+                updates=updates + extra,
                 invalidates=invalidates,
                 case=case,
             )
         )
-    _require(len({row["updates"] for row in rows[1:]}) == 1, "Los brazos no comparten presupuesto")
+    for group in (False, True):
+        shared = {
+            row["updates"] for row in rows[1:] if (row["control"] in replay.CONTROLS) == group
+        }
+        _require(len(shared) <= 1, "Los modelos no comparten presupuesto")
     return rows

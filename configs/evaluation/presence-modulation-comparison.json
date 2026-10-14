@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt6_presence_conditioned_fusion",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 458,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/presence-modulation.md",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "variant": "mac_online",
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {}
+    },
+    "titans_mac_online_pt6_film": {
+      "role": "innovation",
+      "predictor_changes": {"presence_modulation": "film_v1"}
+    },
+    "titans_mac_online_pt6_wide": {
+      "role": "trivial_alternative",
+      "predictor_changes": {"presence_modulation": "wide_fusion_v1"}
+    }
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "purge",
+    "seeds",
+    "initial_shared_parameters",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "accumulation_rows"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_innovation_minus_trivial_alternative",
+    "rows": "rows_with_some_absent_modality",
+    "secondary": "relative_difference_of_session_mae_innovation_minus_control_on_all_rows",
+    "pairing": "same_sessions_assets_seeds_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "validation"
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence < -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control_on_all_rows <= 0.002",
+      "minimum_interpretable_difference_between_control_seeds_on_all_rows < 0.002"
+    ],
+    "abandon_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence >= -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control_on_all_rows > 0.005"
+    ],
+    "abandon_by_margin_requires": "minimum_interpretable_difference_between_control_seeds_on_all_rows < 0.005",
+    "trivial_alternative": "Si la rama ancha con el mismo número aproximado de parámetros iguala a FiLM en las filas con ausencias, la mejora no procede de condicionar la fusión a la presencia sino de añadir capacidad.",
+    "complete_rows": "En las filas con las cinco modalidades FiLM es la identidad exacta, así que cualquier diferencia en ellas solo puede venir del ajuste compartido.",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt6", "pt6_control"]
+    }
+  },
+  "pilot": {
+    "assets": "los 64 activos de EE. UU. del piloto que comparte el control de PT7, con al menos una modalidad ausente en una parte de sus filas de validación",
+    "validation_windows": [2018, 2019, 2020],
+    "training": "expansivo desde 2000",
+    "seeds": {"titans_mac_online": 3, "titans_mac_online_pt6_film": 1, "titans_mac_online_pt6_wide": 1},
+    "gpu_hours_max": 6,
+    "seed_control_gpu_hours": 27
+  },
+  "budget": {
+    "declared": {
+      "gpu_hours_max": 6,
+      "models": 3,
+      "seeds_per_model": 1,
+      "search_cases_per_model": "los de la receta base, iguales para los tres"
+    },
+    "consumed": {"gpu_hours": 0, "executions": 0, "optimizer_updates": 0}
+  },
+  "prediction": "Sin diferencia detectable frente a la alternativa trivial, porque la atención y la memoria que siguen a la fusión ya pueden modelar la interacción entre la presencia y cada codificación.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
+    "Antes de lanzar el piloto hay que contar en la edición, sin leer objetivos, cuántas filas de validación de 2018 a 2020 tienen alguna modalidad ausente. Si son pocas, la regla no tendrá potencia y se registrará así antes de ejecutar.",
+    "La rama ancha usa 8 unidades con H = 64, 3.112 parámetros frente a los 3.200 de FiLM. La diferencia queda registrada en la identidad de cada modelo."
+  ]
+}

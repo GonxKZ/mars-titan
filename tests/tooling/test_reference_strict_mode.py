@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.suite_support import reference_problems
+from tests.suite_support import inner_environment, reference_problems
 
 ROOT = Path(__file__).parents[2]
 STRICT = "MARS_TITAN_REQUIRE_REFERENCE"
@@ -38,7 +38,7 @@ def test_runs():
 
 def probe(tmp_path, **env):
     (tmp_path / "test_probe.py").write_text(PROBE, encoding="utf-8")
-    environment = {key: value for key, value in os.environ.items() if key != STRICT}
+    environment = inner_environment([STRICT])
     environment.update(env, PYTHONPATH=os.pathsep.join([str(ROOT / "src"), str(ROOT)]))
     command = [sys.executable, "-m", "pytest", "-p", "tests.conftest", "-q", "-rs"]
     command += ["-c", os.devnull, "--rootdir", str(tmp_path), "-p", "no:cacheprovider"]

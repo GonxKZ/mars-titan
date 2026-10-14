@@ -15,7 +15,6 @@ import torch
 from torch.optim import optimizer as optim_module
 
 from mars_titan.simulation import policy_plan, policy_throughput, window_tapes
-from mars_titan.simulation.native_runtime import library_path
 
 STAGES = {v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"}
 RATES = dict(
@@ -50,14 +49,14 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     estimate = policy_throughput.policy_hours(stage, RATES)
     assert estimate["status"] == "approximate" and estimate["not_measured"]
     expected_jobs = dict(
-        A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221)
+        A=dict(fit=1800, reference=1221), B=dict(fit=600, carry=1200, reference=1221)
     )
     assert estimate["jobs"] == expected_jobs[variant]
     levels = dict(
-        A=dict(all_predictors=dict(fit=792, reference=1221), algorithms=dict(fit=576)),
+        A=dict(all_predictors=dict(fit=792, reference=1221), algorithms=dict(fit=1008)),
         B=dict(
             all_predictors=dict(fit=264, carry=528, reference=1221),
-            algorithms=dict(fit=192, carry=384),
+            algorithms=dict(fit=336, carry=672),
         ),
     )
     assert {name: value["jobs"] for name, value in estimate["levels"].items()} == levels[variant]
@@ -158,7 +157,7 @@ def test_measurement_steps_the_environment_and_the_network_without_changing_weig
     assert not {"loss", "reward", "return"} & set(network)
 
 
-@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+@pytest.mark.native("MARS_TITAN_NATIVE_LIBRARY")
 def test_native_accounting_is_measured_where_the_engine_admits_the_market(cpu):
     rates = policy_throughput.measure_policies(reduced(), steps=8, warmup=2)
     assert rates["stepping"]["US"]["native"]["steps_per_second"] > 0
@@ -204,7 +203,10 @@ NATIVE = dict(
     gae_seconds=1e-3,
     evaluation_step_seconds=1e-4,
     reference_step_seconds=1e-5,
+    # La etapa declara GRPO, Dr. GRPO y GSPO, que exigen el tiempo de su objetivo.
+    group_objective_transition_seconds=2e-5,
 )
+GROUP_ARMS = ("grpo_outcome", "dr_grpo_outcome", "gspo_outcome")
 
 
 def test_native_work_follows_each_engine():
@@ -244,7 +246,7 @@ def test_native_hours_add_collection_updates_and_evaluations_per_job():
     stage = policy_plan.load_stage(STAGES["A"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
     assert estimate["status"] == "lower_bound_without_adam" and estimate["not_measured"]
-    assert estimate["jobs"] == dict(fit=1368, reference=1221)
+    assert estimate["jobs"] == dict(fit=1800, reference=1221)
     plan = policy_plan.plan_stage(stage)
     costs = len(stage["policies"]["evaluation_costs_bps"])
     dqn = [j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit"]
@@ -286,7 +288,7 @@ def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
     plan = policy_plan.plan_stage(stage)
     job = next(j for j in plan if j["arm"] == "double_dqn" and j["kind"] == "fit")
     scalar = policy_throughput.native_fit_work(stage, job)
-    # El brazo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
+    # El modelo conserva su nombre y solo cambia la cabeza, así que el plan no se altera.
     stage["policies"]["policies"]["double_dqn"]["variant"] = variant
     quantile = policy_throughput.native_fit_work(stage, job)
     assert quantile == dict(scalar, engine=variant)
@@ -310,31 +312,35 @@ def test_quantile_variants_count_like_double_dqn_with_their_own_times(variant):
     assert estimate["arms"]["double_dqn"] * 3600 == pytest.approx(total)
 
 
-def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time(monkeypatch):
+def test_group_arms_collect_the_klpo_waves_with_their_own_objective_time():
     stage = policy_plan.load_stage(STAGES["A"])
     plan = policy_plan.plan_stage(stage)
-    jobs = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "fit"]
-    klpo = policy_throughput.native_fit_work(stage, jobs[0])
-    group = policy_throughput.native_fit_work(stage, dict(jobs[0], engine="native_group_relative"))
-    assert group == dict(klpo, engine="group")
-    # El brazo KLPO pasa a objetivo de grupo con las mismas oleadas. Sin el tiempo de su
-    # objetivo la estimación falla en lugar de reutilizar el de KLPO.
-    grouped = [
-        dict(j, engine="native_group_relative") if j["arm"] == "klpo_terminal" else j for j in plan
-    ]
-    monkeypatch.setattr(policy_throughput, "plan_stage", lambda _: grouped)
+    klpo = {
+        (j["scope"], j["window"], j["predictor"], j["seed"]): j
+        for j in plan
+        if j["arm"] == "klpo_terminal" and j["kind"] == "fit"
+    }
+    # Sin el tiempo de su objetivo la estimación falla en lugar de reutilizar el de KLPO.
+    untimed = {k: v for k, v in NATIVE.items() if k != "group_objective_transition_seconds"}
     with pytest.raises(ValueError, match="group_objective_transition_seconds"):
-        policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
-    times = dict(NATIVE, group_objective_transition_seconds=2e-5)
-    estimate = policy_throughput.native_policy_hours(stage, dict(US=times, CN=times))
+        policy_throughput.native_policy_hours(stage, dict(US=untimed, CN=untimed))
+    estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
     costs = len(stage["policies"]["evaluation_costs_bps"])
-    total = 0.0
-    for job in jobs:
-        work = policy_throughput.native_fit_work(stage, job)
-        days = work["validations"] * sessions(stage, job["scope"], job["validation"])
-        days += costs * sessions(stage, job["scope"], job["window"])
-        total += work["collected"] * (5e-5 + 2e-5) + days * 1e-4
-    assert estimate["arms"]["klpo_terminal"] * 3600 == pytest.approx(total)
+    for arm in GROUP_ARMS:
+        fits = [j for j in plan if j["arm"] == arm]
+        assert len(fits) == 144 and {j["kind"] for j in fits} == {"fit"}
+        total, steps = 0.0, 0
+        for job in fits:
+            work = policy_throughput.native_fit_work(stage, job)
+            # Cada política de grupo recoge las mismas oleadas que KLPO con la misma semilla.
+            twin = klpo[(job["scope"], job["window"], job["predictor"], job["seed"])]
+            assert work == dict(policy_throughput.native_fit_work(stage, twin), engine="group")
+            days = work["validations"] * sessions(stage, job["scope"], job["validation"])
+            days += costs * sessions(stage, job["scope"], job["window"])
+            total += work["collected"] * (5e-5 + 2e-5) + days * 1e-4
+            steps += work["adam_steps"]
+        assert estimate["arms"][arm] * 3600 == pytest.approx(total)
+        assert estimate["adam_steps"][arm] == steps
 
 
 @pytest.mark.parametrize("value", [None, -1.0, float("nan"), "1"])
@@ -348,7 +354,7 @@ def test_native_hours_reject_missing_or_invalid_times(value):
 def test_native_carry_evaluates_each_cost_without_fitting():
     stage = policy_plan.load_stage(STAGES["B"])
     estimate = policy_throughput.native_policy_hours(stage, dict(US=NATIVE, CN=NATIVE))
-    assert estimate["jobs"] == dict(fit=456, carry=912, reference=1221)
+    assert estimate["jobs"] == dict(fit=600, carry=1200, reference=1221)
     plan = policy_plan.plan_stage(stage)
     costs = len(stage["policies"]["evaluation_costs_bps"])
     carried = [j for j in plan if j["arm"] == "klpo_terminal" and j["kind"] == "carry"]

@@ -1,11 +1,11 @@
-"""Mismas filas y objetivos en todos los brazos, y ninguna fila de 2024, por otro camino.
+"""Mismas filas y objetivos en todos los modelos, y ninguna fila de 2024, por otro camino.
 
-La comparación walk-forward ya exige que todos los brazos evalúen las mismas filas mediante
+La comparación walk-forward ya exige que todos los modelos evalúen las mismas filas mediante
 `ForecastPanel.cohort_sha256`. Esta comprobación lo repite sin ese código:
 1. Ordena las filas de cada archivo de predicciones por (mercado, activo, instante).
 2. Calcula una huella SHA-256 propia con los bytes de esas tres columnas y los bits exactos
    del objetivo en float64.
-3. Exige la misma huella para todos los brazos y semillas en cada ventana y tramo.
+3. Exige la misma huella para todos los modelos y semillas en cada ventana y tramo.
 4. Exige que cada fila caiga en el tramo declarado, sea de un mercado del ámbito, no esté
    duplicada, tenga un objetivo finito y no pertenezca a la reserva de 2024.
 

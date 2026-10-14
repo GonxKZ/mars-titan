@@ -21,7 +21,13 @@ from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from tests.evaluation.test_comparison_sources import save
 from tests.evaluation.test_modality_strata import by_asset, provider
-from tests.evaluation.test_walk_forward_comparison import CONFIG, Study, rows
+from tests.evaluation.test_walk_forward_comparison import (
+    CONFIG,
+    PLATFORM,
+    Study,
+    rewrite_sources,
+    rows,
+)
 
 DECLARED = json.loads(CONFIG.read_text())
 VARIANTS = list(ablation.VARIANTS)
@@ -264,7 +270,7 @@ def test_masked_sources_do_not_change_the_primary_report_nor_refit_any_calibrato
         key: value for key, value in primary(pending).items() if key != "modality_ablation"
     }
     assert joint.sessions.equals(joint.pending[1])
-    # Dos brazos de cuantiles con dos semillas en dos ventanas: ocho ajustes en cada informe.
+    # Dos modelos de cuantiles con dos semillas en dos ventanas: ocho ajustes en cada informe.
     assert joint.fits == [8, 8, 8]
     section = report["modality_ablation"]
     assert section["status"] == "computed" and section["recalibrated"] is False
@@ -317,7 +323,7 @@ def test_difference_is_the_masked_minus_original_session_mae_on_affected_rows(
             assert summary["difference"] == 0.0
         if arm == "ridge":
             assert summary["calibrated_intervals"] is None
-            assert summary["calibrated_reason"] == "El brazo no emite cuantiles"
+            assert summary["calibrated_reason"] == "El modelo no emite cuantiles"
         else:
             intervals = summary["calibrated_intervals"]
             assert [row["nominal"] for row in intervals["original"]] == [0.8, 0.95]
@@ -354,7 +360,7 @@ def test_rows_without_the_modality_that_change_are_counted(joint, tmp_path, monk
     first = study.folds[0]["id"]
 
     def change(variant, arm, seed, window, values):
-        # Un brazo con memoria cambia una fila sin la modalidad: el activo G no tiene ninguna.
+        # Un modelo con memoria cambia una fila sin la modalidad: el activo G no tiene ninguna.
         if (arm, seed, window) == ("titans", 43, first):
             row = values["asset_id"].index("US/G")
             values["prediction"][row] += 1.0
@@ -405,7 +411,7 @@ def _other_view(manifest):
         (lambda m: m.update(input_policy="strict_four_modalities_v1"), "otra política"),
         (_other_view, "otra política, comparación o vista"),
         (_drop_variant, "exactamente las variantes"),
-        (_drop_arm, "exactamente los brazos"),
+        (_drop_arm, "exactamente los modelos"),
         (_drop_seed, "exactamente las semillas"),
         (_drop_window, "exactamente las ventanas"),
         (_add_calibration, "solo declara su evaluación"),
@@ -447,6 +453,32 @@ def test_masked_predictions_must_evaluate_the_same_rows_and_segment(
     sources = write_ablation(study, change=edited)
     with pytest.raises(ValueError, match=message):
         evaluate(study, monkeypatch, sources)
+
+
+def test_masked_sources_come_from_the_platform_of_the_primary_sources(tmp_path, monkeypatch):
+    study = declare(Study(tmp_path / "study"))
+    rewrite_sources(study, lambda s: s.update(schema_version=2, platform=PLATFORM))
+    same = write_ablation(study, edit=lambda m: m.update(schema_version=2, platform=PLATFORM))
+    report, _ = evaluate(study, monkeypatch, same)
+    assert report["modality_ablation"]["status"] == "computed"
+    # Unas fuentes principales anteriores al registro no impiden comparar.
+    legacy = declare(Study(tmp_path / "legacy"))
+    unrecorded = dict(PLATFORM, platform_sha256=None, recorded=0, unrecorded=3)
+    unrecorded["unrecorded_profile"] = "rtx4070-laptop"
+    evaluate(
+        legacy,
+        monkeypatch,
+        write_ablation(legacy, edit=lambda m: m.update(schema_version=2, platform=unrecorded)),
+    )
+    other = dict(PLATFORM, platform_sha256="b" * 64)
+    for edit, message in (
+        (lambda m: m.update(schema_version=2, platform=other), "otra plataforma"),
+        (lambda m: m.update(schema_version=2), "no cumplen su contrato"),
+        (lambda m: m.update(platform=PLATFORM), "no cumplen su contrato"),
+        (lambda m: m.update(schema_version=2, platform=dict(PLATFORM, recorded=0)), "no es válida"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            evaluate(study, monkeypatch, write_ablation(study, edit=edit))
 
 
 def test_score_pair_rejects_another_cohort_and_counts_empty_cells():

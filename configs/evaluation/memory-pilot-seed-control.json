@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kind": "seed_variance_control",
+  "proposal": "pt7_seed_variance_control",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 459,
+  "proposal_document": "docs/research/post-titans-proposals.md",
+  "control": {
+    "model": "titans_mac_online",
+    "recipe": "configs/titans/chronological-training-historical-masked.json",
+    "variant": "mac_online",
+    "seeds": [42, 43, 44]
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "purge",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "accumulation_rows"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_variant_minus_base",
+    "partition": "validation",
+    "market_weighting": "session",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "bootstrap_seed": 20261009,
+    "confidence": 0.95
+  },
+  "discard_if": "same_decision_with_and_without_band_in_every_evaluated_rule",
+  "band": {
+    "statistic": "max_symmetric_relative_difference_between_control_seeds",
+    "quantile": 0.95
+  },
+  "rules": {
+    "pt1": {
+      "declaration": "configs/evaluation/titans-memory-stability-comparison.json",
+      "kind": "non_inferiority",
+      "variant": "innovation",
+      "base": "control",
+      "seeds": [42],
+      "rows": "all",
+      "keep_margin": 0.002,
+      "abandon_margin": 0.005
+    },
+    "pt1_trivial_alternative": {
+      "declaration": "configs/evaluation/titans-memory-stability-comparison.json",
+      "kind": "equivalence",
+      "variant": "innovation",
+      "base": "trivial_alternative",
+      "seeds": [42],
+      "rows": "all"
+    },
+    "pt4": {
+      "declaration": "configs/evaluation/market-memory-comparison.json",
+      "kind": "superiority",
+      "variant": "innovation",
+      "base": "control",
+      "seeds": [42],
+      "rows": "all"
+    },
+    "pt4_trivial_alternative": {
+      "declaration": "configs/evaluation/market-memory-comparison.json",
+      "kind": "superiority",
+      "variant": "innovation",
+      "base": "trivial_alternative",
+      "seeds": [42],
+      "rows": "all"
+    },
+    "pt5": {
+      "declaration": "configs/evaluation/multiscale-memory-comparison.json",
+      "kind": "superiority",
+      "variant": "innovation",
+      "base": "trivial_alternative",
+      "seeds": [42],
+      "rows": "all"
+    },
+    "pt6": {
+      "declaration": "configs/evaluation/presence-modulation-comparison.json",
+      "kind": "superiority",
+      "variant": "innovation",
+      "base": "trivial_alternative",
+      "seeds": [42],
+      "rows": "missing_modality"
+    },
+    "pt6_control": {
+      "declaration": "configs/evaluation/presence-modulation-comparison.json",
+      "kind": "non_inferiority",
+      "variant": "innovation",
+      "base": "control",
+      "seeds": [42],
+      "rows": "all",
+      "keep_margin": 0.002,
+      "abandon_margin": 0.005
+    }
+  },
+  "pilot": {
+    "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
+    "validation_windows": [2018, 2019, 2020],
+    "training": "expansivo desde 2000",
+    "shared_by": [
+      "pt1",
+      "pt1_trivial_alternative",
+      "pt5",
+      "pt6",
+      "pt6_control"
+    ],
+    "extra_control_seeds": [43, 44],
+    "extra_seed_procedure": "same_search_cases_validation_selection_and_budget_as_paired_seed",
+    "gpu_hours_reserved": 27,
+    "gpu_hours_basis": "reports/engineering/memory-pilot-seed-control-cost-20261013.json"
+  },
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide ajustar las semillas del control y los pilotos."
+  ]
+}

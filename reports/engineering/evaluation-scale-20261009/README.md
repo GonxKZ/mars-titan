@@ -4,8 +4,8 @@ Medido el 9 de octubre de 2026 con `scripts/benchmark_evaluation_scale.py` sobre
 sintéticos. No hay predicciones de ningún modelo ni datos de mercado. Las formas son las
 de la campaña A en el ámbito US: las filas de calibración y evaluación de cada ventana
 del [informe de vistas](../../data/campaign-a-views-20261009.json), el protocolo US v2 y
-los 23 brazos de la comparación declarada, con 64 series de brazo y semilla (tres
-semillas en casi todos los brazos, una en Ridge y ninguna en el control cero).
+los 23 modelos de la comparación declarada, con 64 series de modelo y semilla (tres
+semillas en casi todos los modelos, una en Ridge y ninguna en el control cero).
 
 ## Condiciones
 
@@ -15,9 +15,9 @@ semillas en casi todos los brazos, una en Ridge y ninguna en el control cero).
 - Cada medida es un proceso aparte bajo `/usr/bin/time` y dentro de `memslot heavy`
   (límite de 8 GiB). Una sola repetición por tamaño, porque cada una ocupa la plaza de
   memoria pesada que comparten los demás trabajos.
-- Cada ventana escribe tres variantes de predicción que los brazos comparten en ciclo,
+- Cada ventana escribe tres variantes de predicción que los modelos comparten en ciclo,
   para no ocupar 64 veces el disco. La lectura, la comprobación de huellas y la
-  puntuación se repiten igualmente para cada brazo y semilla.
+  puntuación se repiten igualmente para cada modelo y semilla.
 - La comparación se mide con la configuración de versión 1, sin estratos ni ablación,
   porque los estratos necesitan las muestras reales de las vistas. La cartera usa la
   versión 4 completa y una edición sintética con 4.126 activos, precios en céntimos
@@ -40,7 +40,7 @@ La comparación usó 4.762 días de remuestreo, bloques de 16 días y 2.000 rép
 
 - El tiempo crece de forma casi lineal con las filas leídas: multiplicar por 6,26 las
   filas de la medida de dos ventanas da 1.659 s frente a 1.678 s medidos. La puntuación
-  de cada brazo, semilla y ventana domina el coste, unos 2 µs por fila y serie. El
+  de cada modelo, semilla y ventana domina el coste, unos 2 µs por fila y serie. El
   remuestreo sobre 4.762 días es una parte pequeña.
 - La memoria crece poco con las ventanas, porque cada ventana se puntúa por separado y
   solo se conservan los estadísticos por sesión.
@@ -54,7 +54,7 @@ No son medidas. Suponen el mismo coste por fila y serie.
 - Ámbito conjunto US+CN con 19 ventanas: unos 15,4 millones de filas de evaluación
   (12,8 en US y unos 2,6 en CN), un 20 % más que la medida US. Unos 34 minutos para la
   comparación y 17 para la cartera.
-- Ámbitos US y CN de los tres controles separados con sus brazos conjuntos prestados
+- Ámbitos US y CN de los tres controles separados con sus modelos conjuntos prestados
   (18 series): unos 8 y 1,3 minutos.
 - Comparaciones de los adaptadores de las cinco referencias (102 series en total sobre
   el ámbito conjunto): alrededor de una hora.

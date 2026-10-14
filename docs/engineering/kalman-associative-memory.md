@@ -112,7 +112,7 @@ Puede no ayudar porque la señal es muy débil. Si el residuo no tiene estructur
 
 ## Control con el que se descarta
 
-La [declaración del brazo](../../configs/evaluation/kalman-associative-comparison.json) fija, antes de ejecutar nada, cuatro brazos con las mismas predicciones, claves, cohortes y madurez: Titans-MAC `mac_online` sin corrección, B6 proximal como control directo, B6 kalman y la alternativa trivial con ϱ = 0. σ² y ϱ se estiman por momentos con los residuos de entrenamiento de cada ventana, p0 = 0,1 σ² y q = κ σ² con κ elegido entre 10⁻⁶ y 10⁻⁵ en las ventanas de 2005 a 2013. La regla conserva PT3 si el límite superior del 95 % de la diferencia relativa de MAE por sesión frente a B6 proximal es negativo, o si no supera +0,1 % y la cobertura del intervalo ±1,645 desviaciones predictivas de la corrección queda entre el 85 % y el 95 %, y además conserva al menos la mitad de la ganancia con una sesión más de retraso (D3). Se abandona si empeora más de un 0,1 % o si la ganancia desaparece con el retraso. Si ϱ = 0 iguala a PT3, la correlación de cohorte no aporta. Nada se ha ejecutado.
+La [declaración del modelo](../../configs/evaluation/kalman-associative-comparison.json) fija, antes de ejecutar nada, cuatro variantes con las mismas predicciones, claves, cohortes y madurez: Titans-MAC `mac_online` sin corrección, B6 proximal como control directo, B6 kalman y la alternativa trivial con ϱ = 0. σ² y ϱ se estiman por momentos con los residuos de entrenamiento de cada ventana, p0 = 0,1 σ² y q = κ σ² con κ elegido entre 10⁻⁶ y 10⁻⁵ en las ventanas de 2005 a 2013. La regla conserva PT3 si el límite superior del 95 % de la diferencia relativa de MAE por sesión frente a B6 proximal es negativo, o si no supera +0,1 % y la cobertura del intervalo ±1,645 desviaciones predictivas de la corrección queda entre el 85 % y el 95 %, y además conserva al menos la mitad de la ganancia con una sesión más de retraso (D3). Se abandona si empeora más de un 0,1 % o si la ganancia desaparece con el retraso. Si ϱ = 0 iguala a PT3, la correlación de cohorte no aporta. Nada se ha ejecutado.
 
 ## Comprobaciones
 
@@ -130,8 +130,8 @@ La [declaración del brazo](../../configs/evaluation/kalman-associative-comparis
 | Causalidad y madurez: inmaduras, repetidas o con pesos rechazadas sin cambiar el estado | `test_immature_repeated_or_weighted_cohorts_are_rejected_without_changing_the_state` y `test_labels_of_a_later_cohort_do_not_change_earlier_reads` |
 | Recuperación exacta de A, P y cursor, y rechazo de estados alterados | `test_recovery_restores_matrix_covariance_and_cursor_exactly` |
 | Corrección madura y variante con d = 64 y simetría exacta tras BLAS | `test_mature_correction_and_variant_accept_the_kalman_rule` |
-| Brazo declarado sin ejecutar | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
-| Sesión financiera con oráculo, causalidad y corte antes de publicar | `test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance` en `tests/memory/test_financial_session_associative.py`, que necesita `MARS_TITAN_EPISODIC_NATIVE` |
+| Modelo declarado sin ejecutar | `test_comparison_arm_is_declared_with_its_control_and_rule_but_not_executed` |
+| Sesión financiera con referencia, causalidad y corte antes de publicar | `test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance` en `tests/memory/test_financial_session_associative.py`, que necesita `MARS_TITAN_EPISODIC_NATIVE` |
 
 Las pruebas están en `tests/memory/test_kalman_associative_memory.py`. El aislamiento entre activos y sesiones lo da el contrato de B6: A es común a la variante por diseño y cada escritura devuelve una memoria nueva sin tocar la anterior. La prueba de la sesión financiera no se ha ejecutado en este equipo porque falta el enlace nativo compilado y se omite sin él.
 
@@ -156,7 +156,7 @@ La escritura kalman cuesta lo mismo que la proximal en orden de magnitud y basta
 - El paseo aleatorio se aplica una vez por escritura con resultados, no por sesión transcurrida. Una cohorte vacía no añade q.
 - Los pesos de Huber se calculan en un solo paso con el residuo previo y no se iteran hasta converger.
 - La propuesta daba q ∈ {10⁻⁶, 10⁻⁵} sin unidad. La escala del residuo solo se conoce al estimar σ², así que esos valores pasan a ser fracciones de σ², q = κ σ², igual que la tasa de PT2 pasó a ser relativa a su escala.
-- La propuesta no fijaba p0. La declaración usa p0 = 0,1 σ² antes de ver datos y el brazo principal no usa Huber.
+- La propuesta no fijaba p0. La declaración usa p0 = 0,1 σ² antes de ver datos y el modelo principal no usa Huber.
 - Los estimadores por momentos de σ² y ϱ no están implementados. Se escribirán con la integración, usando solo residuos de la ventana de entrenamiento.
 
 ## Pendiente sin medir

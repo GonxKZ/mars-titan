@@ -23,7 +23,7 @@ ejecutores de la campaña eligen ese recorrido cuando la combinación declara
 `associative_memory`.
 
 `ReadoutFamily` reúne lo que distingue a una familia de lector sobre el núcleo congelado:
-MARS-TITAN con sus componentes y los brazos del factorial CM-v1 con su control C y su
+MARS-TITAN con sus componentes y los modelos del factorial CM-v1 con su control C y su
 retención. El recorrido de la ventana y el traslado son comunes.
 """
 
@@ -41,6 +41,8 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.recorder import trace_name
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.mars_titan_variant import (
     check_components,
@@ -91,7 +93,7 @@ KIND = "mars_titan_walk_forward_window"
 CARRY_KIND = "mars_titan_carried_predictions"
 CARRIED = ("calibration", "evaluation")
 WORLD = "mars_titan_walk_forward"
-# Campos del caso que la campaña declara para cada brazo de MARS-TITAN.
+# Campos del caso que la campaña declara para cada modelo de MARS-TITAN.
 CASE_FIELDS = {"recipe", "recipe_sha256", "components", "seed", "search_case", "parent_arm"}
 # La regla de parada solo aparece si la campaña declara una parada temprana.
 STOPPING_FIELD = "stopping_rule"
@@ -110,7 +112,7 @@ _CODE = (
 class ReadoutFamily:
     """Lo que distingue a una familia de lector sobre un núcleo Titans-MAC congelado.
 
-    `request` son los campos de la petición que identifican el brazo y `control` el control
+    `request` son los campos de la petición que identifican el modelo y `control` el control
     C que debe declarar la petición del padre (None si no lo admite). `variant` construye
     la variante sobre el padre elegido y `retention` la configuración de su banco. M3 la
     recibe además con las escalas congeladas de entrenamiento (`scalers`).
@@ -332,13 +334,15 @@ def run_mars_titan_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Ajustar el lector de una combinación sobre el padre elegido y escribir sus filas.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente.
     `optimizer_factory` solo existe para comprobar el bucle con un optimizador que no
     modifica pesos. `stopping` y `joint_epoch` son la parada temprana de la campaña y la
-    época común del grupo, como en `titans_walk_forward.run_titans_window`.
+    época común del grupo, como en `titans_walk_forward.run_titans_window`, y `traces` las
+    trazas de #448.
     """
     require_learning_allowed("run_mars_titan_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
@@ -356,6 +360,7 @@ def run_mars_titan_window(
         optimizer_factory=optimizer_factory,
         stopping=stopping,
         joint_epoch=joint_epoch,
+        traces=traces,
     )
 
 
@@ -374,6 +379,7 @@ def run_readout_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    traces=None,
 ):
     """Recorrido común de la ventana para cualquier familia de lector."""
     require_learning_allowed(f"run_readout_window de {family.label}")
@@ -499,6 +505,9 @@ def run_readout_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    # Familia de las trazas: mars_titan_readout o cm_v1_readout.
+    label = trace_name(family.label).replace("-", "_")
+    attach_traces(trainer, output / "traces", traces, f"{label}_readout")
     try:
         fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
@@ -821,7 +830,9 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
 
             # B6 no tiene épocas, así que su caso no puede traer una regla de parada.
             _require(STOPPING_FIELD not in case, "Un caso B6 no declara una regla de parada")
-            report = run_correction_window(run.view, run.parent["folder"], case["recipe"], **common)
+            report = run_correction_window(
+                run.view, run.parent["folder"], case["recipe"], traces=run.traces, **common
+            )
         else:
             report = run_mars_titan_window(
                 run.view,
@@ -830,6 +841,7 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
                 optimizer_factory=optimizer_factory,
                 stopping=case.get(STOPPING_FIELD),
                 joint_epoch=run.joint_epoch,
+                traces=run.traces,
                 **common,
             )
     if report["status"] == "paused":
@@ -843,22 +855,31 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
+def carry_mars_titan_arm(anchor, anchor_view, view, output, **options):
+    """Trasladar cualquier modelo de MARS-TITAN con la función de su ventana.
+
+    El tipo del ancla decide el recorrido. Una ventana B6 no tiene lector que trasladar, así
+    que se traslada con `mars_titan_correction.carry_correction`. Lo usan la variante B, la
+    regeneración y la ablación de modalidades, que no distinguen los modelos de la familia.
+    """
+    from .mars_titan_correction import KIND as CORRECTION_KIND
+    from .mars_titan_correction import carry_correction
+
+    report, _ = read_manifest(Path(anchor) / "run.json", 16 * 1024**2)
+    carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
+    return carry(anchor, anchor_view, view, output, **options)
+
+
 def mars_titan_carry(run, *, device="cuda:0", regenerate=False):
     """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B).
 
     Con `regenerate`, `run.anchor` es el intento del propio ajuste.
     """
-    from .mars_titan_correction import KIND as CORRECTION_KIND
-    from .mars_titan_correction import carry_correction
     from .masked_campaign import Paused as CampaignPaused
 
-    report, _ = read_manifest(Path(run.anchor["folder"]) / "run.json", 16 * 1024**2)
-    # El tipo del ancla decide el recorrido. Una ventana B6 no tiene lector que trasladar, así
-    # que se traslada con su propia función.
-    carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
     try:
         with unfused_attention():
-            return carry(
+            return carry_mars_titan_arm(
                 run.anchor["folder"],
                 run.anchor["view"],
                 run.view,

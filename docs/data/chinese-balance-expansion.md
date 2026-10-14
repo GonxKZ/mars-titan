@@ -91,10 +91,10 @@ cohorte. Los textos mantienen la categoría `original_audited`, sin atribuirles
 una verificación editorial externa.
 
 La comparación CN puede utilizar los nueve componentes contables comunes
-entre sus modelos. El brazo US+CN requiere una proyección versionada que
+entre sus modelos. La comparación US+CN requiere una proyección versionada que
 conserve por separado los 23 conceptos estadounidenses y los tres chinos,
 sus máscaras y sus edades. También falta conectar los dos calendarios con el
-coordinador y evaluar cada brazo sobre las mismas claves. El modo de
+coordinador y evaluar cada modelo sobre las mismas claves. El modo de
 ponderación común disponible es `natural`. No se presenta `balanced_markets`
 como implementado para Ridge y XGBoost.
 

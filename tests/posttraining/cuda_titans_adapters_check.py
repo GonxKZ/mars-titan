@@ -1,9 +1,9 @@
 """Comprobación CUDA de los adaptadores de Titans-MAC, sin pasos de optimizador.
 
-Se ejecuta de forma explícita (por ejemplo con `memslot gpu`). Usa float64, como los brazos
+Se ejecuta de forma explícita (por ejemplo con `memslot gpu`). Usa float64, como los modelos
 de la campaña con máscaras, y el registrador de gradientes que no modifica pesos. En el
-dispositivo, cada brazo con correcciones nulas debe emitir exactamente las predicciones y el
-registro del padre congelado en ese mismo dispositivo. Las predicciones del brazo con todos
+dispositivo, cada modelo con correcciones nulas debe emitir exactamente las predicciones y el
+registro del padre congelado en ese mismo dispositivo. Las predicciones del modelo con todos
 sus puntos deben coincidir entre CPU y el dispositivo dentro de las tolerancias declaradas,
 y el ajuste debe recorrer los mismos pasos en los dos, con gradiente solo en los adaptadores
 y valores iguales dentro de esas tolerancias.

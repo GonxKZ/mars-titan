@@ -1,5 +1,7 @@
 """Memoria asociativa funcional con momentum y olvido dependientes de la entrada."""
 
+from dataclasses import replace
+
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
@@ -14,6 +16,10 @@ from .state import (
     require_payload,
     require_true,
 )
+
+# Filas que puede escribir o leer de una vez la memoria compartida de PT4: todas las
+# decisiones de una sesión de un mercado.
+MAX_SHARED_ROWS = 16384
 
 
 def clip_rows(gradient: Tensor, limit: float) -> Tensor:
@@ -31,6 +37,10 @@ def clip_rows(gradient: Tensor, limit: float) -> Tensor:
 
 class NeuralMemory(nn.Module):
     """Los parámetros lentos son compartidos y el estado rápido pertenece al llamante."""
+
+    # Observador de las trazas de #448 (`learning_traces.memory`). Solo se activa en los pasos
+    # que tocan registro, lee copias separadas del grafo y no forma parte del estado.
+    observer = None
 
     def __init__(
         self,
@@ -87,7 +97,8 @@ class NeuralMemory(nn.Module):
     def _check_size(self, batch_size: int) -> None:
         bounded_integer(batch_size, "lote", 1, self.config.max_batch)
         element_size = self._reference().element_size()
-        required = batch_size * (2 * self.config.depth * self.config.dim**2 * element_size + 8)
+        matrices = (2 + self.config.hidden_levels) * self.config.depth
+        required = batch_size * (matrices * self.config.dim**2 * element_size + 8)
         # Se cuentan las tres ventanas de q, k y v porque dependen de esta configuración,
         # aunque la de q viaje en el estado de MAC.
         required += batch_size * 3 * self.config.window * self.config.dim * element_size
@@ -100,12 +111,20 @@ class NeuralMemory(nn.Module):
         reference = self._reference()
         with torch.set_grad_enabled(differentiable):
             weights = tuple(w.unsqueeze(0).repeat(batch_size, 1, 1) for w in self.initial_weights)
+            # PT5 parte de copias de los pesos iniciales en cada nivel oculto, así que al
+            # empezar la lectura coincide con la de la memoria sin niveles.
+            levels = tuple(
+                w.unsqueeze(0).repeat(batch_size, 1, 1)
+                for w in self.initial_weights
+                for _ in range(self.config.hidden_levels)
+            )
         state = NeuralMemoryState(
             weights,
             tuple(torch.zeros_like(w) for w in weights),
             torch.zeros(batch_size, dtype=torch.int64, device=reference.device),
             self.config.fingerprint(),
             self.initial_windows(batch_size, 2),
+            levels,
         )
         self.validate_state(state)
         return state
@@ -166,8 +185,10 @@ class NeuralMemory(nn.Module):
         if (
             type(state.weights) is not tuple
             or type(state.momentum) is not tuple
+            or type(state.levels) is not tuple
             or len(state.weights) != self.config.depth
             or len(state.momentum) != self.config.depth
+            or len(state.levels) != self.config.depth * self.config.hidden_levels
             or not isinstance(state.steps, Tensor)
             or state.steps.ndim != 1
         ):
@@ -179,7 +200,7 @@ class NeuralMemory(nn.Module):
         expected = (batch, self.config.dim, self.config.dim)
         storage_ids: set[tuple[torch.device, int]] = set()
         storage_bytes = 0
-        tensors = (*state.weights, *state.momentum, state.steps)
+        tensors = (*state.weights, *state.momentum, *state.levels, state.steps)
         for index, value in enumerate(tensors):
             is_steps = index == len(tensors) - 1
             shape = (batch,) if is_steps else expected
@@ -274,10 +295,153 @@ class NeuralMemory(nn.Module):
         theta = self.config.theta_max * theta_logits.sigmoid().unsqueeze(-1)
         return alpha, eta, theta
 
+    def readable_weights(self, state: NeuralMemoryState) -> tuple[Tensor, ...]:
+        """Pesos que lee la memoria: el primer nivel, salvo en el banco de PT5, su media.
+
+        La media se escribe como w + ((z2 - w) + (z3 - w)) / 3. Es la misma cantidad que
+        (w + z2 + z3) / 3, pero con tres copias iguales devuelve w sin redondeo, así que el
+        banco arranca leyendo exactamente los pesos del control.
+        """
+        multiscale = self.config.multiscale
+        if multiscale is None or multiscale.form == "cascade":
+            return state.weights
+        hidden = self.config.hidden_levels
+        return tuple(
+            weight
+            + (
+                (state.levels[hidden * index] - weight)
+                + (state.levels[hidden * index + 1] - weight)
+            )
+            / 3
+            for index, weight in enumerate(state.weights)
+        )
+
+    def _advance_levels(self, weights, levels, momentum, alpha):
+        """Olvido y escritura con PT5: Euler de paso 1 con los valores del token anterior."""
+        multiscale = self.config.multiscale
+        g12, g23, g34 = multiscale.conductances
+        hidden = self.config.hidden_levels
+        new_weights, new_levels = [], []
+        for index, (first, surprise) in enumerate(zip(weights, momentum, strict=True)):
+            second, third = levels[hidden * index], levels[hidden * index + 1]
+            if multiscale.form == "cascade":
+                # Capacidades 1, 2 y 4. El primer nivel conserva el olvido α de Titans.
+                new_weights.append((1 - alpha) * first + surprise + g12 * (second - first))
+                new_levels.append(second + (g12 * (first - second) + g23 * (third - second)) / 2)
+                new_levels.append(third + (g23 * (second - third) - g34 * third) / 4)
+            else:
+                decay_second, decay_third = multiscale.bank_decays
+                new_weights.append((1 - alpha) * first + surprise)
+                new_levels.append((1 - decay_second) * second + surprise)
+                new_levels.append((1 - decay_third) * third + surprise)
+        return tuple(new_weights), tuple(new_levels)
+
+    def _write(self, weights, momentum, levels, gradients, gates, differentiable):
+        """Momentum, olvido y escritura de un paso con el gradiente asociativo ya calculado."""
+        alpha, eta, theta = gates
+        stability = self.config.stability
+        if stability is not None and stability.gradient_clip is not None:
+            # PT1 recorta antes del momentum para que cada escritura quede acotada.
+            gradients = tuple(
+                clip_rows(gradient, stability.gradient_clip) for gradient in gradients
+            )
+        momentum = tuple(
+            eta * previous - theta * gradient
+            for previous, gradient in zip(momentum, gradients, strict=True)
+        )
+        if self.config.multiscale is None:
+            weights = tuple(
+                (1 - alpha) * weight + surprise
+                for weight, surprise in zip(weights, momentum, strict=True)
+            )
+        else:
+            weights, levels = self._advance_levels(weights, levels, momentum, alpha)
+        for value in (*weights, *momentum, *levels):
+            check_finite(value, "La actualización de memoria")
+        if not differentiable:
+            weights = tuple(w.detach() for w in weights)
+            momentum = tuple(m.detach() for m in momentum)
+            levels = tuple(level.detach() for level in levels)
+        return weights, momentum, levels
+
+    def read_shared(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
+        """Leer n consultas [n, dim] con un único estado compartido de lote 1 (PT4)."""
+        self._check_shared(query, state)
+        result = self._apply_memory(query.unsqueeze(0), self.readable_weights(state)).squeeze(0)
+        check_finite(result, "La lectura de memoria")
+        return result
+
+    def update_shared(
+        self, observed: Tensor, state: NeuralMemoryState, *, differentiable: bool = False
+    ) -> NeuralMemoryState:
+        """Una sola escritura con la media de los gradientes de n observaciones (PT4).
+
+        Todas las filas [n, dim] se escriben a la vez en el estado compartido de lote 1. La
+        pérdida asociativa es la media de las n pérdidas en los mismos pesos, así que su
+        gradiente es la media de los gradientes internos. Las puertas salen de la media de
+        los logits, que coincide con los logits de la observación media porque las
+        proyecciones son lineales. El orden de las filas solo cambia el redondeo.
+        """
+        check_differentiable(differentiable)
+        if torch.is_inference_mode_enabled():
+            raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        self._check_shared(observed, state)
+        require_true(
+            (state.steps < torch.iinfo(torch.int64).max).all(),
+            "El contador de pasos desbordaría int64",
+        )
+        with torch.enable_grad():
+            token = observed if differentiable else observed.detach()
+            keys = self.key_projection(token)
+            values = self.value_projection(token)
+            logits = tuple(
+                projection(token).mean(dim=0, keepdim=True)
+                for projection in (
+                    self.alpha_projection,
+                    self.eta_projection,
+                    self.theta_projection,
+                )
+            )
+            for projected in (keys, values, *logits):
+                check_finite(projected, "Las proyecciones asociativas")
+            if self.config.normalize_qk:
+                keys = F.normalize(keys, dim=-1, eps=1e-12)
+            gates = self._gates(*logits)
+            local = tuple(
+                (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
+                for w in self.readable_weights(state)
+            )
+            residual = self._apply_memory(keys.unsqueeze(0), local).squeeze(0) - values
+            loss = residual.square().sum() / observed.shape[0]
+            check_finite(loss, "La pérdida asociativa")
+            gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+            weights, momentum, levels = self._write(
+                state.weights, state.momentum, state.levels, gradients, gates, differentiable
+            )
+        return NeuralMemoryState(weights, momentum, state.steps + 1, state.config_id, (), levels)
+
+    def _check_shared(self, values: Tensor, state: NeuralMemoryState) -> None:
+        self.validate_state(state)
+        reference = self._reference()
+        if self.config.window or self.config.qkv_silu:
+            raise ValueError("La memoria compartida no admite ventanas causales ni SiLU por flujo")
+        if (
+            state.steps.shape != (1,)
+            or not isinstance(values, Tensor)
+            or values.layout != torch.strided
+            or values.ndim != 2
+            or not 1 <= values.shape[0] <= MAX_SHARED_ROWS
+            or values.shape[1] != self.config.dim
+            or values.dtype != reference.dtype
+            or values.device != reference.device
+        ):
+            raise ValueError("La memoria compartida necesita [n, dim] y un estado de lote 1")
+        check_finite(values, "La entrada")
+
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
-        result = self._apply_memory(query, state.weights)
+        result = self._apply_memory(query, self.readable_weights(state))
         check_finite(result, "La lectura de memoria")
         return result
 
@@ -293,10 +457,8 @@ class NeuralMemory(nn.Module):
             (state.steps <= torch.iinfo(torch.int64).max - observed.shape[1]).all(),
             "El contador de pasos desbordaría int64",
         )
-        weights, momentum = state.weights, state.momentum
+        weights, momentum, levels = state.weights, state.momentum, state.levels
         key_window, value_window = state.convolution or (None, None)
-        stability = self.config.stability
-        clip = None if stability is None else stability.gradient_clip
         with torch.enable_grad():
             for token in observed.unbind(1):
                 if not differentiable:
@@ -321,36 +483,34 @@ class NeuralMemory(nn.Module):
                 if self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
-                # La copia separa la variable de derivación interna de y(M_prev).
+                # La copia separa la variable de derivación interna de y(M_prev). Con el banco
+                # de PT5 la memoria lee la media de sus niveles, y el gradiente se toma en ella.
+                readable = self.readable_weights(replace(state, weights=weights, levels=levels))
                 local = tuple(
                     (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
-                    for w in weights
+                    for w in readable
                 )
                 residual = self._apply_memory(keys.unsqueeze(1), local).squeeze(1) - values
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
-                if clip is not None:
-                    # PT1 recorta antes del momentum para que cada escritura quede acotada.
-                    gradients = tuple(clip_rows(gradient, clip) for gradient in gradients)
-                momentum = tuple(
-                    eta * previous - theta * gradient
-                    for previous, gradient in zip(momentum, gradients, strict=True)
+                weights, momentum, levels = self._write(
+                    weights, momentum, levels, gradients, (alpha, eta, theta), differentiable
                 )
-                weights = tuple(
-                    (1 - alpha) * weight + surprise
-                    for weight, surprise in zip(weights, momentum, strict=True)
-                )
-                for value in (*weights, *momentum):
-                    check_finite(value, "La actualización de memoria")
-                if not differentiable:
-                    weights = tuple(w.detach() for w in weights)
-                    momentum = tuple(m.detach() for m in momentum)
+                if self.observer is not None:
+                    self.observer(
+                        alpha=alpha,
+                        eta=eta,
+                        theta=theta,
+                        loss=loss,
+                        weights=weights,
+                        momentum=momentum,
+                    )
         windows = () if key_window is None else (key_window, value_window)
         if not differentiable:
             windows = tuple(w.detach() for w in windows)
         return NeuralMemoryState(
-            weights, momentum, state.steps + observed.shape[1], state.config_id, windows
+            weights, momentum, state.steps + observed.shape[1], state.config_id, windows, levels
         )
 
     def get_extra_state(self) -> dict:
@@ -375,11 +535,17 @@ class NeuralMemory(nn.Module):
         }
         if self.config.window:
             payload["convolution"] = copied.convolution
+        if self.config.hidden_levels:
+            payload["levels"] = copied.levels
         return payload
 
     def payload_fields(self) -> set[str]:
         fields = {"schema_version", "configuration", "weights", "momentum", "steps"}
-        return fields | {"convolution"} if self.config.window else fields
+        if self.config.window:
+            fields |= {"convolution"}
+        if self.config.hidden_levels:
+            fields |= {"levels"}
+        return fields
 
     def restore_state(self, payload: object) -> NeuralMemoryState:
         value = require_payload(payload, self.payload_fields())
@@ -390,6 +556,7 @@ class NeuralMemory(nn.Module):
             value["steps"],
             self.config.fingerprint(),
             value.get("convolution", ()),
+            value.get("levels", ()),
         )
         self.validate_state(state)
         return copy_state(state, differentiable=False)

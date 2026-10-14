@@ -143,7 +143,7 @@ def test_declared_quantile_recipe_builds_the_four_paired_controls(shared):  # no
         assert config.identity()["output"] == QUANTILE_HEAD
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+@pytest.mark.cuda
 def test_cuda_quantile_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):  # noqa: F811
     _, streams = shared
     engines = {}

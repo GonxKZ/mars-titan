@@ -1,7 +1,9 @@
 #include "mars_titan/klpo_experiment.hpp"
 #include "mars_titan/learning_hold.hpp"
+#include "mars_titan/learning_traces.hpp"
 #include "mars_titan/policy_evaluation.hpp"
 #include "mars_titan/policy_tapes.hpp"
+#include "mars_titan/ppo_training.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <torch/version.h>
@@ -168,7 +170,14 @@ bool contains(const std::filesystem::path& parent, const std::filesystem::path& 
 }
 
 void validate_options(const PpoExperimentOptions& options, const KlpoExperimentConfig& config) {
-    if (options.audit_run) {
+    require(!options.source_check || options.device == "cpu",
+            "La comprobación de fuentes no usa la GPU y se ejecuta en CPU con --diagnostic");
+    if (options.initial_evaluation) {
+        require(!options.output.empty() && options.train_tapes.empty() &&
+                    options.validation_tapes.empty() && !options.audit_tapes.empty() &&
+                    options.audit_tapes.size() <= maximum_klpo_episodes && !options.stop_after,
+                "La evaluación inicial KLPO solo admite cintas de evaluación acotadas y una salida");
+    } else if (options.audit_run) {
         require(!options.output.empty() && options.train_tapes.empty() &&
                     options.validation_tapes.empty() && !options.audit_tapes.empty() &&
                     options.audit_tapes.size() <= maximum_klpo_episodes && !options.stop_after &&
@@ -182,7 +191,9 @@ void validate_options(const PpoExperimentOptions& options, const KlpoExperimentC
                     options.validation_tapes.size() == 1,
                 "KLPO necesita entre una y tantas cintas de ajuste como entornos y una validación");
     }
-    require_policy_device(options, config.total_transitions);
+    // Los modos sin aprendizaje no consumen transiciones: la CPU solo exige el diagnóstico.
+    const bool learning = !options.initial_evaluation && !options.source_check;
+    require_policy_device(options, learning ? config.total_transitions : 0);
     require(!contains(options.output, options.config),
             "La configuración debe quedar fuera de la salida KLPO");
     for (const auto* sources :
@@ -224,6 +235,87 @@ PpoLearningOptions evaluation_context(const KlpoExperimentConfig& config) {
 
 double elapsed_seconds(std::chrono::steady_clock::time_point started) {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+}
+
+// Cintas de ajuste y validación de un experimento KLPO, con los carriles y el presupuesto en
+// oleadas completas. El ajuste y la comprobación de fuentes las leen con esta misma función.
+struct KlpoFitTapes {
+    std::vector<simulation::BatchInput> lanes;
+    std::vector<simulation::BatchInput> validation;
+    Json sources;
+    std::size_t wave_transitions = 0;
+    std::size_t planned_waves = 0;
+    std::size_t evaluation_waves = 1;
+};
+
+KlpoFitTapes load_fit_tapes(const PpoExperimentOptions& options,
+                            const KlpoExperimentConfig& config) {
+    std::vector<PolicyTape> tapes;
+    tapes.reserve(options.train_tapes.size() + 1);
+    for (const auto& path : options.train_tapes) {
+        tapes.push_back(load_policy_tape(path, PolicyTapeRole::train, config.environment));
+    }
+    tapes.push_back(load_policy_tape(options.validation_tapes.front(), PolicyTapeRole::validation,
+                                     config.environment));
+    require_policy_sequence(tapes);
+    for (const auto& tape : tapes) {
+        require(tape.input.tape->close_times.size() <= static_cast<std::size_t>(ppo_maximum_history),
+                "Una cinta reconstruida supera la historia recurrente acotada");
+    }
+    KlpoFitTapes result;
+    Json train = Json::array();
+    for (std::size_t index = 0; index + 1 < tapes.size(); ++index) {
+        train.push_back(tapes[index].identity);
+    }
+    result.sources = Json{{"train", train}, {"validation", Json::array({tapes.back().identity})}};
+    result.validation = {tapes.back().input};
+    // Cada entorno recorre una cinta de ajuste en ciclo y forma un episodio por oleada.
+    for (std::size_t lane = 0; lane < config.environments; ++lane) {
+        const auto& input = tapes[lane % (tapes.size() - 1)].input;
+        result.wave_transitions += input.tape->close_times.size() - 1;
+        result.lanes.push_back(input);
+    }
+    // Cada cinta de ajuste necesita al menos dos carriles para formar un grupo con línea base.
+    // Con 16 entornos esto admite hasta ocho cintas.
+    require(!config.learning.group || config.environments >= 2 * (tapes.size() - 1),
+            "Los objetivos de grupo necesitan al menos dos carriles por cinta de ajuste");
+    result.planned_waves = config.total_transitions / result.wave_transitions;
+    require(result.planned_waves > 0, "El presupuesto KLPO no admite ni una oleada completa");
+    result.evaluation_waves =
+        std::max<std::size_t>(1, config.evaluation_transitions / result.wave_transitions);
+    return result;
+}
+
+// Identidad de un experimento KLPO sin la del controlador, que solo existe al ajustar. El
+// ajuste la completa con `controller_identity_sha256` y la comprobación de fuentes la publica
+// tal cual. Las claves de nlohmann se ordenan, así que añadir una no cambia el resto del texto.
+Json klpo_sources_identity(const PpoExperimentOptions& options, const KlpoExperimentConfig& config,
+                           const Json& sources, std::size_t wave_transitions,
+                           std::size_t planned_waves, std::size_t evaluation_waves) {
+    auto identity = Json{{"schema_version", 1},
+                         {"kind", "native_klpo"},
+                         {"configuration", config.document},
+                         {"sources", sources},
+                         {"sources_contract", simulation::reconstructed_tape_contract},
+                         {"lane_rule", "train_tape_index_is_lane_modulo_train_tapes"},
+                         {"budget_rule", "complete_waves_within_declared_transitions"},
+                         {"wave_transitions", wave_transitions},
+                         {"planned_waves", planned_waves},
+                         {"evaluation_waves", evaluation_waves},
+                         {"device", options.device},
+                         {"diagnostic", options.diagnostic},
+                         {"representation", "adaptive_context_ppo_fixed_projection_1729_v1"},
+                         {"evaluation_policy", "greedy_argmax"},
+                         {"rollout_policy", "categorical_sampling"},
+                         {"torch_version", TORCH_VERSION},
+                         {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                         {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                         {"parent_frozen", true},
+                         {"final_test_opened", false}};
+    if (config.learning.group) {
+        identity["group_rule"] = std::string(group_wave_rule);
+    }
+    return identity;
 }
 
 class KlpoRun {
@@ -271,70 +363,25 @@ class KlpoRun {
         if (state_.at("status") == "completed") {
             return publish("completed");
         }
+        open_learning_traces();
         return loop();
     }
 
   private:
     void load_tapes() {
-        std::vector<PolicyTape> tapes;
-        tapes.reserve(options_.train_tapes.size() + 1);
-        for (const auto& path : options_.train_tapes) {
-            tapes.push_back(load_policy_tape(path, PolicyTapeRole::train, config_.environment));
-        }
-        tapes.push_back(load_policy_tape(options_.validation_tapes.front(),
-                                         PolicyTapeRole::validation, config_.environment));
-        require_policy_sequence(tapes);
-        for (const auto& tape : tapes) {
-            require(tape.input.tape->close_times.size() <=
-                        static_cast<std::size_t>(ppo_maximum_history),
-                    "Una cinta reconstruida supera la historia recurrente acotada");
-        }
-        Json train = Json::array();
-        for (std::size_t index = 0; index + 1 < tapes.size(); ++index) {
-            train.push_back(tapes[index].identity);
-        }
-        sources_ = Json{{"train", train}, {"validation", Json::array({tapes.back().identity})}};
-        validation_ = {tapes.back().input};
-        // Cada entorno recorre una cinta de ajuste en ciclo y forma un episodio por oleada.
-        for (std::size_t lane = 0; lane < config_.environments; ++lane) {
-            const auto& input = tapes[lane % (tapes.size() - 1)].input;
-            wave_transitions_ += input.tape->close_times.size() - 1;
-            lanes_.push_back(input);
-        }
-        // Cada cinta de ajuste necesita al menos dos carriles para formar un grupo con línea
-        // base. Con 16 entornos esto admite hasta ocho cintas.
-        require(!config_.learning.group || config_.environments >= 2 * (tapes.size() - 1),
-                "Los objetivos de grupo necesitan al menos dos carriles por cinta de ajuste");
-        planned_waves_ = config_.total_transitions / wave_transitions_;
-        require(planned_waves_ > 0, "El presupuesto KLPO no admite ni una oleada completa");
-        evaluation_waves_ = std::max<std::size_t>(1, config_.evaluation_transitions / wave_transitions_);
+        auto loaded = load_fit_tapes(options_, config_);
+        lanes_ = std::move(loaded.lanes);
+        validation_ = std::move(loaded.validation);
+        sources_ = std::move(loaded.sources);
+        wave_transitions_ = loaded.wave_transitions;
+        planned_waves_ = loaded.planned_waves;
+        evaluation_waves_ = loaded.evaluation_waves;
     }
 
     Json experiment_identity() const {
-        auto identity = Json{{"schema_version", 1},
-                             {"kind", "native_klpo"},
-                             {"configuration", config_.document},
-                             {"sources", sources_},
-                             {"sources_contract", simulation::reconstructed_tape_contract},
-                             {"lane_rule", "train_tape_index_is_lane_modulo_train_tapes"},
-                             {"budget_rule", "complete_waves_within_declared_transitions"},
-                             {"wave_transitions", wave_transitions_},
-                             {"planned_waves", planned_waves_},
-                             {"evaluation_waves", evaluation_waves_},
-                             {"controller_identity_sha256", store_->identity_sha256()},
-                             {"device", options_.device},
-                             {"diagnostic", options_.diagnostic},
-                             {"representation", "adaptive_context_ppo_fixed_projection_1729_v1"},
-                             {"evaluation_policy", "greedy_argmax"},
-                             {"rollout_policy", "categorical_sampling"},
-                             {"torch_version", TORCH_VERSION},
-                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
-                             {"parent_frozen", true},
-                             {"final_test_opened", false}};
-        if (config_.learning.group) {
-            identity["group_rule"] = std::string(group_wave_rule);
-        }
+        auto identity = klpo_sources_identity(options_, config_, sources_, wave_transitions_,
+                                              planned_waves_, evaluation_waves_);
+        identity["controller_identity_sha256"] = store_->identity_sha256();
         return identity;
     }
 
@@ -342,6 +389,46 @@ class KlpoRun {
         const auto envelope = parse_bounded_json(read_bounded_file(
             options_.output / "ppo-index.json", simulation::maximum_manifest_bytes));
         return !envelope.at("payload").at("recent").empty();
+    }
+
+    // Trazas de aprendizaje de #448. El paso es la oleada. La actualización de la oleada w
+    // lleva la marca (w, 0) y se escribe antes del paso de Adam, que la confirma al publicar
+    // los contadores. Su validación lleva (w, 1) y la confirma `evaluated_waves`. Al reanudar
+    // se borran las partes posteriores al estado recuperado, también si el corte llegó entre
+    // la parte y su confirmación.
+    TraceCommit confirmed_commit() const {
+        const auto consumed = static_cast<uint64_t>(controller_->counters().consumed_waves);
+        const auto& evaluated = state_.at("evaluated_waves");
+        return {consumed, !evaluated.is_null() && count(evaluated) == consumed ? 1U : 0U};
+    }
+
+    void open_learning_traces() {
+        if (!options_.learning_traces.enabled()) {
+            return;
+        }
+        const Json identity{{"family", config_.learning.group
+                                           ? config_.learning.group->id()
+                                           : std::string("klpo_terminal")},
+                            {"run_identity_sha256", identity_sha256_}};
+        learning_traces_ = std::make_unique<LearningTraceWriter>(
+            options_.output / "traces", options_.learning_traces, identity, "wave",
+            confirmed_commit());
+    }
+
+    void record_update(const KlpoGradientSummary& summary) {
+        const auto wave = static_cast<uint64_t>(controller_->counters().consumed_waves) + 1;
+        if (!learning_traces_ || !learning_traces_->due(wave - 1, wave)) {
+            return;
+        }
+        learning_traces_->scalar(wave, "train", "policy.surrogate", summary.surrogate);
+        learning_traces_->scalar(wave, "train", "rl.grad_l2_total", summary.gradient_norm);
+        learning_traces_->scalar(wave, "train", "rl.episodes",
+                                 static_cast<double>(summary.episodes));
+        learning_traces_->scalar(wave, "train", "rl.sampled_decisions",
+                                 static_cast<double>(summary.sampled_decisions));
+        learning_traces_->scalar(wave, "train", "rl.gradient_blocks",
+                                 static_cast<double>(summary.blocks));
+        learning_traces_->flush({wave, 0});
     }
 
     Json fresh_state() const {
@@ -446,6 +533,22 @@ class KlpoRun {
              score > finite_number(best.at("score")) + config_.min_delta);
         next["evaluations"] = count(state_.at("evaluations")) + 1;
         next["evaluated_waves"] = wave;
+        if (learning_traces_) {
+            // Cada validación completa se registra antes de confirmar la selección.
+            learning_traces_->scalar(wave, "validation", "rl.selection_score", score);
+            learning_traces_->scalar(wave, "validation", "rl.mean_log_growth",
+                                     evaluation.mean_log_growth);
+            if (config_.liquidated_selection) {
+                learning_traces_->scalar(wave, "validation", "rl.mean_liquidated_log_growth",
+                                         evaluation.mean_liquidated_log_growth);
+            }
+            learning_traces_->scalar(wave, "validation", "rl.ruin_count",
+                                     static_cast<double>(evaluation.ruined));
+            learning_traces_->scalar(wave, "validation", "rl.episodes",
+                                     static_cast<double>(evaluation.episodes));
+            learning_traces_->scalar(wave, "validation", "rl.improved", improved ? 1. : 0.);
+            learning_traces_->flush({wave, 1});
+        }
         if (improved) {
             const auto digest = content_sha256(bytes);
             const auto name = std::string(best_prefix) + digest + ".pt";
@@ -520,7 +623,8 @@ class KlpoRun {
                     return pause();
                 }
                 // Ruta real de Adam, pendiente de ejecución bajo el bloqueo de aprendizaje.
-                static_cast<void>(controller_->update_ready(*store_));
+                static_cast<void>(controller_->update_ready(
+                    *store_, {}, [&](const KlpoGradientSummary& summary) { record_update(summary); }));
                 require(controller_->phase() == KlpoLearningPhase::consumed,
                         "La actualización KLPO no consumió la oleada completa");
                 break;
@@ -585,6 +689,7 @@ class KlpoRun {
     Json identity_;
     std::string identity_sha256_;
     Json state_;
+    std::unique_ptr<LearningTraceWriter> learning_traces_;
 };
 
 // Evaluación de la política KLPO elegida en cintas posteriores a su selección.
@@ -614,7 +719,7 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
                                     evaluation_context(config),
                                     config.learning.collection.workers,
-                                    frozen_costs(options.evaluation_costs)};
+                                    frozen_costs(options.evaluation_costs), options.decisions};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -639,17 +744,106 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
                             {"seed", config.learning.collection.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
                             {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
                             {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(actor, request, stop);
 }
+// Evaluación congelada del actor inicial de la configuración, sin controlador ni Adam terminal.
+// Ese actor no ha aprendido nada y su evaluación solo sirve para comprobaciones técnicas, como
+// la paridad entre dispositivos. Se construye como el actor de la recogida de un ajuste, con los
+// pesos del generador de CPU y la semilla de la configuración.
+Json run_initial_evaluation(const PpoExperimentOptions& options, const KlpoExperimentConfig& config,
+                            const std::function<bool()>& stop) {
+    FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
+                                    evaluation_context(config),
+                                    config.learning.collection.workers,
+                                    frozen_costs(options.evaluation_costs), options.decisions};
+    Json tapes = Json::array();
+    std::vector<simulation::BatchInput> inputs;
+    for (const auto& path : options.audit_tapes) {
+        auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
+        tapes.push_back(tape.identity);
+        inputs.push_back(tape.input);
+        request.tapes.push_back(std::move(tape));
+    }
+    require_policy_sequence(request.tapes);
+    configure_policy_runtime(options);
+    auto collection = config.learning.collection;
+    collection.device = options.device;
+    const auto width = policy_observation_width(inputs, collection.context, collection.seed,
+                                                collection.workers);
+    const auto actor = initial_klpo_actor(width, collection);
+    request.identity = Json{{"schema_version", 1},
+                            {"kind", "native_klpo_initial_evaluation"},
+                            {"weights", "initial_from_configuration_seed"},
+                            {"evaluation_only", evaluation_only()},
+                            {"configuration_sha256", content_sha256(config.document.dump())},
+                            {"parameter_fingerprint", actor.parameter_fingerprint()},
+                            {"optimizer_steps", actor.optimizer_steps()},
+                            {"transitions", 0},
+                            {"tapes", tapes},
+                            {"cost_bps", request.costs},
+                            {"seed", collection.seed},
+                            {"device", options.device},
+                            {"diagnostic", options.diagnostic},
+                            {"decisions", options.decisions},
+                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"final_test_opened", false}};
+    return run_frozen_evaluation(actor, request, stop);
+}
+
+// Lee y valida las cintas de ajuste y validación como el ajuste, monta la recogida sin
+// controlador y publica en sources.json las fuentes, las oleadas y el actor inicial.
+Json run_source_check(const PpoExperimentOptions& options, const KlpoExperimentConfig& config) {
+    const auto loaded = load_fit_tapes(options, config);
+    configure_policy_runtime(options);
+    auto collection = config.learning.collection;
+    collection.device = options.device;
+    // La recogida monta los entornos y el actor inicial sin dar ningún paso.
+    const KlpoTerminalCollector collector(loaded.lanes, collection);
+    require(collector.policy().observation_width() ==
+                policy_observation_width(loaded.validation, collection.context, collection.seed,
+                                         collection.workers),
+            "La validación utiliza otro esquema de observación que el ajuste");
+    const auto identity =
+        klpo_sources_identity(options, config, loaded.sources, loaded.wave_transitions,
+                              loaded.planned_waves, loaded.evaluation_waves);
+    const Json report{{"schema_version", 1},
+                      {"kind", "native_policy_source_check"},
+                      {"status", "completed"},
+                      {"evaluation_only", evaluation_only()},
+                      {"identity", identity},
+                      {"identity_sha256", content_sha256(identity.dump())},
+                      {"observation_width", collector.policy().observation_width()},
+                      {"initial_parameter_fingerprint", collector.records().reference_sha256},
+                      {"transitions", 0},
+                      {"optimizer_steps", 0},
+                      {"final_test_opened", false}};
+    const simulation::OutputLock lock(options.output, false);
+    atomic_json_file(options.output / "sources.json", seal(report));
+    return report;
+}
 } // namespace
 
 Json run_klpo_experiment(const PpoExperimentOptions& options, const std::function<bool()>& stop) {
+    const bool without_learning = options.initial_evaluation || options.source_check;
+    if (without_learning) {
+        // Nada aprende: el cerrojo se activa antes de leer la configuración y la protección no
+        // se consulta, ni para rebajarla ni para pedirla.
+        enter_evaluation_only();
+    }
     auto config = configuration(options.config);
     validate_options(options, config);
     admit_policy_gpu(options);
+    if (options.initial_evaluation) {
+        return run_initial_evaluation(options, config, stop);
+    }
+    if (options.source_check) {
+        return run_source_check(options, config);
+    }
     // Ajustar o evaluar sobre el histórico reconstruido se detiene antes de leer cintas o
     // crear salidas si la protección local no lo permite.
     const bool group = config.learning.group.has_value();

@@ -1,0 +1,271 @@
+{
+ "schema_version": 1,
+ "kind": "targeted_mutation_testing",
+ "issue": 459,
+ "recorded_at_utc": "2026-10-13T14:30:10.767243+00:00",
+ "files": [
+  "src/mars_titan/evaluation/paired_comparisons.py",
+  "src/mars_titan/evaluation/seed_variance_control.py"
+ ],
+ "tests": [
+  "tests/evaluation/test_seed_variance_control.py"
+ ],
+ "command": "pytest -q -x tests/evaluation/test_seed_variance_control.py sobre una copia de src, tests/evaluation, configs y el recibo de coste",
+ "baseline": {
+  "code": 0,
+  "tail": "59 passed in 2.01s"
+ },
+ "import_checked": "copia aislada (ruta local omitida)",
+ "killed": 31,
+ "survived": 0,
+ "mutations": [
+  {
+   "id": "M01",
+   "description": "Banda con la diferencia con signo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 2.12s",
+   "seconds": 16.45
+  },
+  {
+   "id": "M02",
+   "description": "Banda con la media de los pares en lugar del máximo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 1.28s",
+   "seconds": 11.35
+  },
+  {
+   "id": "M03",
+   "description": "Banda con la mediana y no con el cuantil declarado",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 54 passed in 2.36s",
+   "seconds": 12.83
+  },
+  {
+   "id": "M04",
+   "description": "Banda con la dispersión observada sin remuestreo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 2.12s",
+   "seconds": 16.1
+  },
+  {
+   "id": "M05",
+   "description": "Intervalo con la cola sin dividir entre dos",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 53 passed in 2.71s",
+   "seconds": 17.67
+  },
+  {
+   "id": "M06",
+   "description": "Contraste con el signo invertido",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 2.12s",
+   "seconds": 15.74
+  },
+  {
+   "id": "M07",
+   "description": "Base promediada sobre todas las semillas del control",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 1.41s",
+   "seconds": 12.94
+  },
+  {
+   "id": "M08",
+   "description": "Superioridad sin exigir la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 37 passed in 1.04s",
+   "seconds": 8.3
+  },
+  {
+   "id": "M09",
+   "description": "Superioridad con desigualdad no estricta",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 37 passed in 0.85s",
+   "seconds": 7.7
+  },
+  {
+   "id": "M10",
+   "description": "Equivalencia sin el límite inferior",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 41 passed in 0.70s",
+   "seconds": 5.64
+  },
+  {
+   "id": "M11",
+   "description": "No inferioridad sin comprobar la banda al conservar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 0.61s",
+   "seconds": 5.47
+  },
+  {
+   "id": "M12",
+   "description": "No inferioridad con banda igual al margen interpretable",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 31 passed in 1.35s",
+   "seconds": 7.43
+  },
+  {
+   "id": "M13",
+   "description": "Abandono sin comprobar la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 34 passed in 1.83s",
+   "seconds": 13.76
+  },
+  {
+   "id": "M14",
+   "description": "Margen ensanchado con la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 32 passed in 2.07s",
+   "seconds": 15.98
+  },
+  {
+   "id": "M15",
+   "description": "Decisión sin banda calculada con la banda",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 2.35s",
+   "seconds": 16.71
+  },
+  {
+   "id": "M16",
+   "description": "Sin comprobar que todas las series cubren las mismas sesiones",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 56 passed in 2.74s",
+   "seconds": 16.89
+  },
+  {
+   "id": "M17",
+   "description": "Criterio de descarte invertido",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 57 passed in 2.74s",
+   "seconds": 17.18
+  },
+  {
+   "id": "M18",
+   "description": "Semillas de la regla pueden ser todas las del control",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 7 passed in 1.93s",
+   "seconds": 16.85
+  },
+  {
+   "id": "M19",
+   "description": "Semillas añadidas sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 15 passed in 2.00s",
+   "seconds": 16.03
+  },
+  {
+   "id": "M20",
+   "description": "Partición de la métrica sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 20 passed in 2.04s",
+   "seconds": 16.53
+  },
+  {
+   "id": "M21",
+   "description": "Procedimiento de las semillas añadidas sin comprobar",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 9 passed in 1.83s",
+   "seconds": 15.37
+  },
+  {
+   "id": "M22",
+   "description": "Propuesta con otro control admitida",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 2.24s",
+   "seconds": 16.4
+  },
+  {
+   "id": "M23",
+   "description": "Réplicas relativas divididas por la estimación de la base",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 44 passed in 1.82s",
+   "seconds": 15.15
+  },
+  {
+   "id": "M24",
+   "description": "Pérdida de la base cero admitida",
+   "file": "src/mars_titan/evaluation/paired_comparisons.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 45 passed, 1 warning in 2.00s",
+   "seconds": 12.33
+  },
+  {
+   "id": "M25",
+   "description": "Banda con la semilla anterior como base (no simétrica)",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 1.62s",
+   "seconds": 12.65
+  },
+  {
+   "id": "M26",
+   "description": "Dispersión observada sin la diferencia simétrica",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 46 passed in 1.76s",
+   "seconds": 12.15
+  },
+  {
+   "id": "M27",
+   "description": "Control de la propuesta sin comprobar su modelo",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 27 passed in 1.37s",
+   "seconds": 11.27
+  },
+  {
+   "id": "M28",
+   "description": "Control de la propuesta sin comprobar su receta",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 26 passed in 1.11s",
+   "seconds": 10.15
+  },
+  {
+   "id": "M29",
+   "description": "Control de la propuesta sin comprobar su variante",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 25 passed in 1.02s",
+   "seconds": 7.94
+  },
+  {
+   "id": "M30",
+   "description": "Propuesta que no enlaza la regla admitida",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 28 passed in 0.80s",
+   "seconds": 8.74
+  },
+  {
+   "id": "M31",
+   "description": "Receta común cambiada con semillas compartidas",
+   "file": "src/mars_titan/evaluation/seed_variance_control.py",
+   "killed": true,
+   "pytest_tail": "1 failed, 3 passed in 0.64s",
+   "seconds": 5.02
+  }
+ ]
+}

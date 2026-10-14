@@ -10,7 +10,7 @@ Se conciliaron 160 casos de referencia, 68 tabulares, 528 ajustes y sus 756 eval
 
 La comparación incluye 688 estados seleccionados o continuados. Los otros 68 son candidatos de búsqueda no elegidos. El ganador de la búsqueda con semilla 42 sí se incluye, junto con los finalistas 43 y 44. Las [tablas por caso, método, ventana y contraste](campaign-comparison-20261005/evidence.json) conservan esta distinción. Los 216 ajustes de cobertura macro incompleta permanecen en la [revisión histórica](historical-validation-20261001.md).
 
-La cohorte corresponde al brazo estadounidense con cuatro modalidades y 140 indicadores admitidos. Esta revisión comprueba su identidad y la población de las predicciones. No repite la verificación editorial de noticias ni convierte exclusiones anteriores en datos válidos. Todas las ventanas entrenan desde el 1 de noviembre de 2022, con historia creciente. No contienen varios años completos de entrenamiento.
+La cohorte corresponde a la parte estadounidense del estudio con cuatro modalidades y 140 indicadores admitidos. Esta revisión comprueba su identidad y la población de las predicciones. No repite la verificación editorial de noticias ni convierte exclusiones anteriores en datos válidos. Todas las ventanas entrenan desde el 1 de noviembre de 2022, con historia creciente. No contienen varios años completos de entrenamiento.
 
 | Ventana | Fin exclusivo de entrenamiento | Filas de entrenamiento | Validación | Calibración | Evaluación | Filas evaluadas | Sesiones evaluadas |
 | --- | --- | ---: | --- | --- | --- | ---: | ---: |

@@ -30,7 +30,7 @@ def test_a_faithful_comparison_passes_the_recheck(tmp_path, scope):
     study, output = publish(tmp_path, scope)
     result = score_recheck.recheck(study.config_path, study.sources_path, scope, output)
     assert result["passed"], json.dumps(result, indent=1)[:2000]
-    # Brazos ridge (1 semilla), gru y titans (2 semillas) en 2 ventanas.
+    # Modelos ridge (1 semilla), gru y titans (2 semillas) en 2 ventanas.
     assert len(result["windows"]) == 2 * (1 + 2 + 2)
     assert all(check["sessions"] > 0 for check in result["windows"])
     views = {entry["view"] for entry in result["aggregates"]}

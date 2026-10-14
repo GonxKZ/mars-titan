@@ -1,4 +1,4 @@
-"""Oráculos pequeños y límites de la selección de representantes reales."""
+"""Enumeración exacta en tamaños pequeños y límites de la selección de representantes reales."""
 
 import itertools
 import math

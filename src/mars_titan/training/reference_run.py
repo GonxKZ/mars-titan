@@ -20,6 +20,7 @@ from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import open_traces, trace_identity, traced_update
 from mars_titan.models.baselines.multimodal import (
     PRESENCE_FUSION,
     STRICT_FUSION,
@@ -52,6 +53,7 @@ from .checkpoints import (
 from .corpus_inputs import CorpusDataset
 from .kernel_policy import PRECISIONS, declared_policy, require_policy
 from .learning_hold import require_learning_allowed
+from .reference_design import MAX_BATCH_SIZE
 from .reference_step_graph import GRAPH_KINDS, ReferenceStepGraph
 from .selection import (
     AWAIT,
@@ -193,7 +195,7 @@ def _options(
         or type(case["seed"]) is not int
         or not 0 <= case["seed"] < 2**32
         or type(batch_size) is not int
-        or not 1 <= batch_size <= 4096
+        or not 1 <= batch_size <= MAX_BATCH_SIZE
         or type(checkpoint_steps) is not int
         or checkpoint_steps < 0
         or not math.isfinite(checkpoint_seconds)
@@ -529,8 +531,12 @@ def run_reference_case(
     input_policy: str = STRICT_INPUTS,
     prediction_retention: str = FULL_TRAIN_VALIDATION,
     joint_epoch: int | None = None,
+    traces: dict | None = None,
 ) -> dict:
     """Ajustar una referencia sobre toda la edición, sin abrir el test final.
+
+    `traces` declara las trazas de #448 (cadencia y presupuesto). Se escriben en
+    `output/traces`, no entran en la identidad y no cambian el cálculo.
 
     Sin argumentos nuevos se conserva la ruta estricta: lectura, identidad y archivos.
     La política con máscaras activa la fusión con presencia y la registra en la identidad.
@@ -554,7 +560,7 @@ def run_reference_case(
     device = require_cuda()
     dataset = configured_corpus(manifest, input_policy=input_policy)
     if min(dataset.manifest["counts"].values()) < 1:
-        raise ValueError("Se necesitan datos de ajuste y validación en este brazo")
+        raise ValueError("Se necesitan datos de ajuste y validación en este modelo")
     if case["kind"] == "transformer":
         architecture = case["architecture"]
         validate_attention_budget(
@@ -669,6 +675,13 @@ def run_reference_case(
     epoch, cursor, step, statistics, history = 0, None, 0, _statistics(), []
     selection, selection_options = None, case.get("selection")
     evaluating_selected = False
+    hooks = open_traces(
+        output / "traces",
+        traces,
+        trace_identity("neural_reference", identity),
+        dict(model=model),
+    )
+    state = None
     if resume and (output / "checkpoints/latest.json").exists():
         state = load_training_state(output / "checkpoints", expected_identity=identity)
         model.load_state_dict(state["model"])
@@ -679,6 +692,8 @@ def run_reference_case(
         selection = state.get("selection")
         if state.get("initial_validation") is not None:
             report["initial_validation"] = state["initial_validation"]
+    if hooks is not None:
+        hooks.restore(None if state is None else state.get("traces"))
     report["selection"] = selection
     bind_joint_epoch(report, joint_epoch, case.get("selection"), case["epochs"])
     stop = stop or StopRequest()
@@ -709,6 +724,8 @@ def run_reference_case(
             selection=selection,
             initial_validation=report.get("initial_validation"),
         )
+        if hooks is not None:
+            state["traces"] = hooks.checkpoint()
         path = save_training_state(
             output / "checkpoints", state, identity=identity, pin=pin, best=best
         )
@@ -729,6 +746,8 @@ def run_reference_case(
                 model, dataset, batch_size, device=device, stop=stop, quantiles=quantiles
             )
             report["initial_validation"] = baseline
+            if hooks is not None:
+                hooks.validation(dict(epoch=0, global_step=step, score=baseline["session_mae"]))
             selection = initial_selection(baseline["session_mae"], selection_options)
             save(best=True)
             atomic_json(report_path, report)
@@ -757,6 +776,8 @@ def run_reference_case(
                 )
                 if step_graph is not None and step_graph.admits(batch):
                     prediction = step_graph.step(batch, target, rows)
+                    # Búfer del grafo: las trazas copian su valor antes de la repetición siguiente.
+                    loss = step_graph.loss_value
                 else:
                     optimizer.zero_grad(set_to_none=True)
                     emitted = _forward(model, batch, device)
@@ -764,10 +785,12 @@ def run_reference_case(
                     if not torch.isfinite(loss).item():
                         raise ValueError("La pérdida no es finita")
                     loss.backward()
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), math.inf, error_if_nonfinite=True
-                )
-                optimizer.step()
+                with traced_update(hooks, step + 1, optimizer, loss) as probe:
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        model.parameters(), math.inf, error_if_nonfinite=True
+                    )
+                    probe.clip(norm)
+                    optimizer.step()
                 _update(statistics, prediction, torch.from_numpy(batch["target"]).to(device))
                 cursor, step = batch["confirmed_cursor"], step + 1
                 if (
@@ -791,6 +814,10 @@ def run_reference_case(
                 model, dataset, batch_size, device=device, stop=stop, quantiles=quantiles
             )
             history.append(dict(epoch=epoch + 1, train=_metrics(statistics), validation=validation))
+            if hooks is not None:
+                hooks.validation(
+                    dict(epoch=epoch + 1, global_step=step, score=validation["session_mae"])
+                )
             epoch, cursor, statistics = epoch + 1, None, _statistics()
             if selection_options:
                 selection = advance_selection(

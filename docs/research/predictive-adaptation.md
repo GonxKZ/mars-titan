@@ -142,3 +142,17 @@ CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run --no-sync \
   --parent data/interim/tabular-post-scan-20260923/ridge-1/run.json \
   --output data/interim/predictive-adaptation-verified-check-20260923 --resume
 ```
+
+## Etapa de la campaña A v2
+
+La campaña A v2 declara estos tres objetivos y las tres variantes de KLPO
+([revisión](../references/klpo-review.md)) como controles de la etapa de
+adaptadores en las cinco referencias (#128). Allí el padre es el estado
+elegido de la base en la ventana anterior, el ajuste solo usa las filas nuevas
+y el presupuesto y la selección son los comunes de la matriz de adaptadores,
+los mismos de la continuación completa. Los padres emiten cinco cuantiles y la
+corrección solo corrige su mediana, así que los objetivos se comparan como
+salida puntual y no compiten en la cadena que leen las políticas. La
+declaración, lo que queda fuera y su coste están en la
+[etapa de adaptadores](../engineering/masked-posttraining.md#objetivos-de-la-corrección-lineal-de-128).
+Ninguno de estos ajustes se ha ejecutado.

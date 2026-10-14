@@ -97,3 +97,14 @@ def test_dictionary_encoded_indicator_has_an_explicit_length_limit(tmp_path):
     pq.write_table(pa.Table.from_pylist([{**macro_rows()[0], "indicator_id": "x" * 200}]), path)
     with pytest.raises(ValueError, match="indicador"):
         module().MacroContexts(path)
+
+
+def test_bounded_reads_by_row_group_return_the_same_table_and_keep_the_decoded_limit(tmp_path):
+    path = tmp_path / "labels.parquet"
+    table = pa.table({"row": list(range(1000)), "text": [f"r{i}" * (i % 7) for i in range(1000)]})
+    pq.write_table(table, path, row_group_size=300)
+    read = module().read_bounded_table(path, max_rows=1000)
+    assert read.equals(table) and read.schema == pq.read_schema(path)
+    assert [len(chunk) for chunk in read["row"].chunks] == [300, 300, 300, 100]
+    with pytest.raises(ValueError, match="decodificada"):
+        module().read_bounded_table(path, max_rows=1000, max_bytes=read.nbytes // 2)

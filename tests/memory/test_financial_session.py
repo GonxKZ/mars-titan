@@ -21,6 +21,8 @@ from mars_titan.training.corpus_inputs import CorpusDataset, _price_contexts
 from mars_titan.training.prefix_eligibility import PrefixTargetVerifier
 from tests.training.test_historical_corpus_inputs import supervised
 
+pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
 native = backend_fixtures.native
 
 

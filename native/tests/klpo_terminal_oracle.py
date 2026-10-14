@@ -1,4 +1,4 @@
-"""Oráculo Decimal de trayectorias finitas, sin entorno, muestreo ni optimizador."""
+"""Referencia Decimal de trayectorias finitas, sin entorno, muestreo ni optimizador."""
 
 import argparse
 import json
@@ -6,7 +6,7 @@ from decimal import Decimal as D
 from decimal import localcontext
 from pathlib import Path
 
-parser = argparse.ArgumentParser(description="Oráculo terminal KLPO sin aprendizaje")
+parser = argparse.ArgumentParser(description="Referencia terminal KLPO sin aprendizaje")
 parser.add_argument("--output", type=Path, required=True)
 args = parser.parse_args()
 ZERO, ONE = D(0), D(1)

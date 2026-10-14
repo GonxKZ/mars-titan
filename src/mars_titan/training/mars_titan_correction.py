@@ -4,7 +4,7 @@ B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la le
 una memoria asociativa lineal escrita solo con resultados maduros
 (`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Los casos de
 búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
-sesión de validación, igual que en los demás brazos.
+sesión de validación, igual que en los demás modelos.
 
 Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
 la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
@@ -41,6 +41,12 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.learning_traces.hooks import (
+    EMPTY_CURSOR,
+    MAX_PENDING,
+    open_recorder,
+    trace_identity,
+)
 from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
@@ -89,8 +95,8 @@ RECIPE = "mars_titan_mature_correction_v1"
 # La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
 # los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
-# Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del brazo.
+# Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
+# campaña los busca y no forman parte de la definición del modelo.
 ARM_FIELDS = ("rule", "key")
 # Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
 # esta receta no declara ni busca, así que todavía no tiene ventana.
@@ -163,9 +169,9 @@ def case_values(document, search_case):
 
 
 def arm_components(components, values):
-    """Completar la combinación de un brazo B6 con el η y el λ del caso.
+    """Completar la combinación de un modelo B6 con el η y el λ del caso.
 
-    El brazo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
+    El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
@@ -174,7 +180,7 @@ def arm_components(components, values):
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
         and set(memory) == set(ARM_FIELDS),
-        "Un brazo B6 declara solo associative_memory con su regla y su clave",
+        "Un modelo B6 declara solo associative_memory con su regla y su clave",
     )
     _require(
         memory["rule"] in RULES,
@@ -210,6 +216,9 @@ class CorrectionInference(ChronologicalInference):
             raise ValueError("El codec no comparte la entrada del padre")
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
+        # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
+        self.trace_recorder = None
+        self._trace_events, self._trace_phase = 0, "b6"
         self.memory = AssociativeMemory(correction.memory)
         # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
         # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
@@ -287,6 +296,20 @@ class CorrectionInference(ChronologicalInference):
             values=[value for _, _, value, _, _ in staged],
         )
         self.memory = self.memory.write(feedback, cutoff=at)
+        recorder = self.trace_recorder
+        if recorder is not None:
+            # Trazas de #448: B6 no tiene pasos de optimizador y su aprendizaje son las
+            # escrituras de A. Se registran por evento de escritura con la cadencia declarada.
+            self._trace_events += 1
+            if recorder.due(self._trace_events):
+                with recorder.at(self._trace_events, self._trace_phase):
+                    recorder.scalar("associative.writes", self.memory.writes)
+                    recorder.scalar(
+                        "associative.matrix_l2", torch.linalg.vector_norm(self.memory.matrix)
+                    )
+                    recorder.tensor("associative.feedback", feedback.values)
+                if recorder.pending >= MAX_PENDING:
+                    recorder.flush()
 
     def _close(self, run):
         super()._close(run)
@@ -317,6 +340,7 @@ class CorrectionInference(ChronologicalInference):
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
         self._routing = _RoutingLog()
+        self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
         self.predictor.eval()
         with torch.no_grad():
             for event in events:
@@ -405,7 +429,7 @@ def _parent_recipe(parent_report):
     """Recuperar la receta cronológica con la que predijo el padre.
 
     Bloques y truncamiento deben ser los mismos, porque con otros el núcleo de B6 dejaría de
-    coincidir con el del brazo Titans-MAC.
+    coincidir con el del modelo Titans-MAC.
     """
     identity, request = parent_report["identity"], parent_report["request"]
     return identity["recipe"], case_recipe(identity["recipe"], request.get("search_case"))
@@ -475,11 +499,15 @@ def run_correction_window(
     device="cuda:0",
     indices=None,
     stop=None,
+    traces=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente, porque la
-    validación selecciona η entre los casos de la campaña.
+    validación selecciona η entre los casos de la campaña. `traces` declara las trazas de
+    #448: las escrituras de A de cada tramo, con la fase `b6_<tramo>`, en `output/traces`.
+    Su cursor se guarda en `run.json` al confirmar cada tramo, porque B6 no tiene puntos de
+    control y un tramo interrumpido se repite desde el principio.
     """
     from .mars_titan_walk_forward import _cuda, _frozen_parent, _parent
 
@@ -488,7 +516,7 @@ def run_correction_window(
     document = load_correction_recipe(recipe)
     combination = arm_components(components, case_values(document, search_case))
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
-    # un brazo mal declarado falle sin crear la carpeta de salida.
+    # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
     _require(
         correction is not None and set(checked) == {"associative_memory"},
@@ -603,6 +631,12 @@ def run_correction_window(
         atomic_json(report_path, report)
     stop = stop or StopRequest()
     started = time.perf_counter()
+    recorder = open_recorder(
+        output / "traces", traces, trace_identity("b6", identity), step_unit="write_event"
+    )
+    if recorder is not None:
+        recorder.load_state_dict(report.get("traces") or EMPTY_CURSOR)
+        inference.trace_recorder = recorder
     try:
         _require(
             sha256(output / "selected.json") == report["checkpoint"]["sha256"],
@@ -618,6 +652,13 @@ def run_correction_window(
             rows = PredictionRows(inference.quantiles)
             metrics = inference.predict(sources[name], rows, stop=stop)
             report["predictions"][name] = _prediction(output, rows, metrics, dataset, name)
+            if recorder is not None:
+                if name == "validation":
+                    # Solo la validación guarda su puntuación, como en los demás modelos.
+                    with recorder.at(inference._trace_events, "validation"):
+                        recorder.scalar("validation.score", metrics["session_mae"])
+                recorder.flush()
+                report["traces"] = recorder.state_dict()
             atomic_json(report_path, report)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
@@ -633,7 +674,16 @@ def run_correction_window(
 
 
 def carry_correction(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, regenerate=False
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
+    frozen_parent=False,
 ):
     """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
 
@@ -643,9 +693,18 @@ def carry_correction(
     propio ajuste y se repiten su validación, su calibración y su evaluación en la misma
     vista. Como cada tramo empieza con A en cero, la repetición debe coincidir bit a bit con
     las tablas del ajuste antes de que la retención las libere.
+
+    Con `modality_ablation` se vuelve a predecir la evaluación de la propia ventana con la
+    variante aplicada en la lectura. El calentamiento, el núcleo y las claves del codec leen
+    las mismas entradas ablacionadas, y A se escribe con los errores de ese recorrido.
+    `frozen_parent` es el padre congelado de la cadena trivial de B6 en el walk-forward por
+    etapas: el ancla es el estado elegido en k-1 y además se predice la validación de k, con
+    la que la cadena puntúa.
     """
     from .carried_predictions import (
+        ablation_record,
         carried_window,
+        frozen_parent_record,
         predicted_partitions,
         regeneration_record,
         same_view,
@@ -694,17 +753,23 @@ def carry_correction(
         request["components"], case_values(identity["recipe"], request["search_case"])
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
-    partitions = predicted_partitions(None, regenerate)
-    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
+    dataset = CorpusDataset(
+        view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
+    )
     same_view(anchor_manifest, dataset.manifest, regenerate)
     anchor_fold, fold, age = carried_window(
-        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED, same_window=regenerate
+        anchor_manifest,
+        dataset.manifest,
+        input_policy=HISTORICAL_MASKED,
+        same_window=modality_ablation is not None or regenerate,
     )
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
     sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
-    specification = sources["calibration"].specification()
+    # La ablación solo predice la evaluación, así que la entrada se toma del primer tramo.
+    specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
@@ -752,7 +817,9 @@ def carry_correction(
         scientific_training_started=False,
         seconds=time.perf_counter() - started,
         finished_at_utc=datetime.now(UTC).isoformat(),
+        **ablation_record(modality_ablation),
         **regeneration_record(regenerate),
+        **frozen_parent_record(frozen_parent),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

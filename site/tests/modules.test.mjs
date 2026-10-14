@@ -158,6 +158,15 @@ test("un paquete de trazas se lee sin copiar y comprueba tamaño y huella", asyn
   assert.equal(await sha256Hex(buffer, null), null);
 });
 
+test("el eje usa la unidad del paso que declara cada familia", () => {
+  const buffer = bundleBytes();
+  const units = { transition: "Transición", wave: "Oleada", write_event: "Escritura de la memoria asociativa" };
+  for (const [unit, label] of Object.entries(units)) {
+    assert.equal(validateManifest(manifest(buffer, { x_unit: unit })).xLabel, label);
+  }
+  assert.throws(() => validateManifest(manifest(buffer, { x_unit: "episodio" })), TypeError);
+});
+
 test("el manifiesto rechaza referencias fuera del bloque, grupos desconocidos y versiones ajenas", () => {
   const buffer = bundleBytes();
   const base = manifest(buffer);
@@ -317,7 +326,7 @@ test("la campaña leída en directo decodifica el vocabulario y estima con recib
   assert.equal(matrix.rows[0].model, null, "un estado sin catálogo no inventa modelo");
 });
 
-test("la matriz de políticas separa mercado y predictor y conserva el modelo de cada brazo", () => {
+test("la matriz de políticas separa mercado y predictor y conserva el modelo de cada configuración", () => {
   const state = {
     vocabulary: { scopes: ["US+CN/US", "US+CN/CN"], windows: ["fold-002"], arms: ["gru/klpo_terminal", "gru/cash"], names: ["fit-s42", "reference"] },
     models: { "gru/klpo_terminal": "klpo", "gru/cash": "cash" },

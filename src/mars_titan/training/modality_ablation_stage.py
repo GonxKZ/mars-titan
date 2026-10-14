@@ -1,8 +1,8 @@
 """Etapa de ablación de modalidades: volver a predecir la evaluación sin reentrenar.
 
 La etapa parte de una campaña base confirmada (`training.masked_campaign`). Para cada
-ámbito, ventana, brazo comparado que la campaña produce, semilla y variante declarada en
-la sección `modality_ablation` de la comparación, carga el estado elegido de ese brazo y
+ámbito, ventana, modelo comparado que la campaña produce, semilla y variante declarada en
+la sección `modality_ablation` de la comparación, carga el estado elegido de ese modelo y
 semilla y predice la evaluación de la ventana con la variante aplicada en la lectura
 (`data.modality_ablation`). En una ventana reentrenada el estado es el elegido en ella y en
 una ventana trasladada de la variante B, el del ancla que la campaña base traslada. Se
@@ -39,6 +39,8 @@ from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.hardware import hardware_profiles
+from mars_titan.hardware.platform_identity import platform_identity
 
 from . import campaign_numerics, campaign_schedule, masked_campaign
 from .campaign_plan import (
@@ -144,8 +146,8 @@ def load_stage(path):
         and 0 <= limits["max_prediction_jobs"] <= 1_000_000,
         "El límite de predicciones debe ser un entero declarado",
     )
-    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
-    # ámbito vuelve a predecir solo los brazos que la campaña ajusta en él.
+    # Modelos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
+    # ámbito vuelve a predecir solo los modelos que la campaña ajusta en él.
     specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
     scope_specs = {
         scope: [spec for spec in _arm_specs(campaign, scope) if not spec["helper"]]
@@ -163,7 +165,7 @@ def load_stage(path):
 
 
 def plan_stage(stage):
-    """Una predicción por ámbito, ventana, brazo, semilla y variante, en orden del plan."""
+    """Una predicción por ámbito, ventana, modelo, semilla y variante, en orden del plan."""
     campaign, jobs = stage["campaign"], []
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
@@ -189,7 +191,7 @@ def plan_stage(stage):
 
 
 def count_stage(stage, jobs=None):
-    """Contar predicciones por ámbito, brazo, semilla y variante y aplicar el límite."""
+    """Contar predicciones por ámbito, modelo, semilla y variante y aplicar el límite."""
     jobs = plan_stage(stage) if jobs is None else jobs
     scopes = {}
     for scope in stage["scopes"]:
@@ -338,9 +340,10 @@ def _titans():
 
 
 def _mars_titan():
-    from .mars_titan_walk_forward import carry_mars_titan
+    # Los lectores y la corrección B6 comparten familia, pero no el traslado.
+    from .mars_titan_walk_forward import carry_mars_titan_arm
 
-    return carry_mars_titan
+    return carry_mars_titan_arm
 
 
 def _cm_v1():
@@ -405,6 +408,7 @@ class _Stage:
         self.identity, self.identity_sha256 = identity, _digest(identity)
         self.executors, self.stop = executors, stop
         self.receipts = {}
+        self.platform = None
 
     def folder(self, job):
         return self.output / "jobs" / job["id"]
@@ -543,6 +547,9 @@ class _Stage:
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
+        if self.platform is not None:
+            # Fuera de la identidad, como en la campaña base.
+            receipt["platform"] = self.platform
         target = self.folder(job) / "receipt.json"
         atomic_json(target, receipt)
         # Con el recibo escrito, los índices del calentamiento ya no se leen.
@@ -631,13 +638,24 @@ def _opened(path, views, campaign_output, output, pairs=None):
 
 
 def run_stage(
-    path, views, campaign_output, output, *, executors=None, lease=None, stop=None, window=None
+    path,
+    views,
+    campaign_output,
+    output,
+    *,
+    executors=None,
+    lease=None,
+    stop=None,
+    window=None,
+    platform=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por modelo y `lease`, la reserva de la GPU. La
     protección se comprueba antes de abrir fuentes y antes de cada trabajo pendiente.
     `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
+    Cada recibo nuevo guarda la identidad de la plataforma. `platform` sustituye la detectada,
+    solo en las pruebas.
     """
     from .checkpoints import StopRequest
 
@@ -672,6 +690,7 @@ def run_stage(
             # La precisión de la campaña base, antes de crear cualquier modelo.
             campaign_numerics.apply(stage["campaign"]["numerics"])
         state = _Stage(stage, base, output, identity, executors, None)
+        state.platform = platform_identity() if platform is None else platform
         signals = StopRequest() if stop is None else nullcontext(stop)
         reservation = (lease or _gpu_lease)()
         _summary(output, identity, jobs, state, "running")
@@ -692,13 +711,25 @@ def run_stage(
 
 
 def write_sources(
-    path, views, campaign_output, output, scope, *, comparison_path=None, window=None
+    path,
+    views,
+    campaign_output,
+    output,
+    scope,
+    *,
+    comparison_path=None,
+    window=None,
+    unrecorded_platform=None,
 ):
     """Escribir el manifiesto de predicciones enmascaradas de un ámbito y validarlo.
 
     Sin `comparison_path` se valida con la comparación de la campaña. Una comparación con
-    un subconjunto de brazos publica solo esos brazos, como `masked_campaign.write_sources`.
+    un subconjunto de modelos publica solo esos modelos, como `masked_campaign.write_sources`.
     Con `window` se publica solo esa ventana en `sources/windows/<ventana>/`.
+
+    Las predicciones enmascaradas se comparan con las de la base, así que sus recibos y los de
+    la base de los que parten deben venir de una sola plataforma. Los anteriores a ese registro
+    solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
     """
     pairs = None
     if window is not None:
@@ -740,7 +771,7 @@ def write_sources(
     folder = output / "sources"
     if window is not None:
         windows, folder = {window: windows[window]}, folder / "windows" / window
-    variants = {}
+    variants, platforms = {}, {}
     for job in plan_stage(stage):
         if job["scope"] != scope or job["arm"] not in wanted or job["window"] not in windows:
             continue
@@ -748,8 +779,14 @@ def write_sources(
             job["seed"] in wanted[job["arm"]]["seeds"],
             f"La comparación declara otras semillas para {job['arm']}",
         )
-        receipt = state.confirmed(job, state.job_identity(job))
+        job_identity = state.job_identity(job)
+        receipt = state.confirmed(job, job_identity)
         _require(receipt is not None, f"Falta confirmar {job['id']} antes de publicar fuentes")
+        platforms[job["id"]] = receipt.get("platform")
+        # El estado del ancla y la predicción de la ventana con los que se compara.
+        for origin in ("source", "window_source"):
+            key = job_identity[origin]["job"]
+            platforms[f"campaña base {key}"] = base.receipts[key].get("platform")
         record = receipt["prediction"]
         seeds = variants.setdefault(job["variant"], {}).setdefault(job["arm"], {})
         seeds.setdefault(str(job["seed"]), {})[job["window"]] = dict(
@@ -757,14 +794,19 @@ def write_sources(
                 path=os.path.relpath(output / record["path"], folder), sha256=record["sha256"]
             )
         )
+    platform = hardware_profiles.same_platform(
+        platforms,
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
+    )
     manifest = dict(
-        schema_version=1,
+        schema_version=2,
         kind=analysis.SOURCES_KIND,
         scope=scope,
         input_policy=stage["campaign"]["input_policy"],
         comparison_sha256=validation["sha256"],
         windows={window: value["sha256"] for window, value in windows.items()},
         variants=variants,
+        platform=platform,
     )
     destination = folder / f"{scope}.json"
     candidate = folder / f".{scope}.candidate.json"
@@ -799,6 +841,10 @@ def main(argv=None):
     execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
+    sources.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -814,6 +860,7 @@ def main(argv=None):
             args.output,
             args.scope,
             comparison_path=args.comparison,
+            unrecorded_platform=args.unrecorded_platform,
         )
         result = dict(sources=str(destination), sha256=sha256(destination))
     print(json.dumps(result, ensure_ascii=False, indent=2))

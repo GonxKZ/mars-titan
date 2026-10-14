@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "innovation_arm_declaration",
+  "innovation": "pt5_multiscale_fast_weights",
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-10",
+  "final_test_opened": false,
+  "executions": 0,
+  "issue": 457,
+  "proposal": "docs/research/post-titans-proposals.md",
+  "specification": "docs/engineering/multiscale-memory.md",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "variant": "mac_online",
+  "arms": {
+    "titans_mac_online": {
+      "role": "control",
+      "predictor_changes": {}
+    },
+    "titans_mac_online_pt5_cascade": {
+      "role": "innovation",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        }
+      }
+    },
+    "titans_mac_online_pt5_ema_bank": {
+      "role": "trivial_alternative",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        }
+      }
+    }
+  },
+  "equal": [
+    "rows",
+    "windows",
+    "purge",
+    "seeds",
+    "initial_shared_parameters",
+    "search_cases",
+    "optimizer_updates",
+    "stopping_rule",
+    "truncation",
+    "accumulation_rows",
+    "fast_state_matrices_per_flow"
+  ],
+  "metric": {
+    "primary": "relative_difference_of_session_mae_innovation_minus_trivial_alternative",
+    "secondary": "relative_difference_of_session_mae_innovation_minus_control",
+    "pairing": "same_sessions_assets_seeds_and_windows",
+    "uncertainty": "circular_block_bootstrap",
+    "block_length": 16,
+    "replicates": 2000,
+    "confidence": 0.95,
+    "partition": "validation"
+  },
+  "decision_rule": {
+    "keep_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative < -minimum_interpretable_difference"
+    ],
+    "abandon_if": [
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= -minimum_interpretable_difference"
+    ],
+    "trivial_alternative": "El banco tiene las mismas escalas ocultas (64 y 256 observaciones con g = 1/16), el mismo olvido α en el primer nivel y el mismo número de matrices por flujo. Si iguala a la cascada, el acoplamiento en cadena no aporta.",
+    "control": "El control sin niveles solo indica si cualquiera de las dos formas mejora a Titans-MAC. No decide entre ellas.",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt5"]
+    }
+  },
+  "pilot": {
+    "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
+    "validation_windows": [
+      2018,
+      2019,
+      2020
+    ],
+    "training": "expansivo desde 2000",
+    "seeds": {
+      "titans_mac_online": 3,
+      "titans_mac_online_pt5_cascade": 1,
+      "titans_mac_online_pt5_ema_bank": 1
+    },
+    "gpu_hours_max": 9,
+    "seed_control_gpu_hours": 27
+  },
+  "budget": {
+    "declared": {
+      "gpu_hours_max": 9,
+      "models": 3,
+      "seeds_per_model": 1,
+      "search_cases_per_model": "los de la receta base, iguales para los tres"
+    },
+    "consumed": {
+      "gpu_hours": 0,
+      "executions": 0,
+      "optimizer_updates": 0
+    }
+  },
+  "prediction": "El banco EMA igualará a la cascada. Las dos formas triplican las copias de los pesos rápidos y duplican el estado rápido por flujo.",
+  "pending": [
+    "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
+    "g = 1/16 se fija antes de ver datos para que las escalas ocultas sean de unas 16, 64 y 256 sesiones (un mes, un trimestre y un año de negociación). No se ajusta.",
+    "La condición de contracción uniforme exige el suelo de olvido de PT1. La receta base no lleva PT1, así que la comparación declarada no tiene esa garantía, igual que el núcleo. Si PT1 se conserva en su propia comparación, los tres modelos se repiten con PT1 y la cascada hereda la cota."
+  ]
+}

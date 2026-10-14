@@ -5,6 +5,8 @@ import importlib
 import numpy as np
 import pytest
 
+from tests.suite_support import missing_extra, skip_without_cuda
+
 
 def module():
     try:
@@ -14,15 +16,15 @@ def module():
 
 
 def cuda_device():
-    torch = pytest.importorskip("torch")
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA no disponible, sin alternativa CPU para la ruta acelerada")
+    pytest.importorskip("torch", reason=missing_extra("torch"))
+    skip_without_cuda()
     return "cuda:0"
 
 
+@pytest.mark.cuda
 @pytest.mark.parametrize("block_size", [1, 7, 40])
 def test_block_ridge_matches_sklearn_with_constant_and_collinear_features(tmp_path, block_size):
-    pytest.importorskip("sklearn")
+    pytest.importorskip("sklearn", reason=missing_extra("sklearn"))
     from sklearn.linear_model import Ridge
     from sklearn.preprocessing import StandardScaler
 
@@ -53,6 +55,7 @@ def test_block_ridge_matches_sklearn_with_constant_and_collinear_features(tmp_pa
     np.testing.assert_array_equal(predictions, module().RidgeModel.load(artifact).predict(x))
 
 
+@pytest.mark.cuda
 def test_ridge_rejects_a_second_pass_with_changed_training_rows():
     calls = 0
 
@@ -65,12 +68,14 @@ def test_ridge_rejects_a_second_pass_with_changed_training_rows():
         module().fit_ridge_blocks(factory, device=cuda_device())
 
 
+@pytest.mark.cuda
 def test_ridge_rejects_oversized_feature_space_and_nonfinite_inputs():
     for x in (np.ones((2, 4097)), np.array([[float("nan")], [2.0]])):
         with pytest.raises(ValueError):
             module().fit_ridge_blocks(lambda x=x: iter([(x, np.ones(2))]), device=cuda_device())
 
 
+@pytest.mark.cuda
 def test_ridge_constant_decimal_features_keep_unit_scale():
     x = np.full((40, 2), 0.1)
     model = module().fit_ridge_blocks(
@@ -94,6 +99,7 @@ def test_failed_model_save_does_not_publish_a_partial_checkpoint(tmp_path, monke
     assert not path.exists()
 
 
+@pytest.mark.cuda
 def test_large_offset_does_not_penalize_the_intercept():
     x = np.array([[1e16], [1e16], [1e16 + 2]])
     y = np.array([0.0, 0.0, 1.0])
@@ -101,6 +107,7 @@ def test_large_offset_does_not_penalize_the_intercept():
     np.testing.assert_allclose(model.predict(x), [1 / 11, 1 / 11, 9 / 11], rtol=1e-10, atol=1e-12)
 
 
+@pytest.mark.cuda
 def test_statistical_overflow_fails_instead_of_producing_a_finite_wrong_model():
     x = np.array([[-1e200], [1e200]])
     with pytest.raises(ValueError, match="estadísticas|desbordamiento|finit"):

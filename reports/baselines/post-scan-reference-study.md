@@ -73,7 +73,7 @@ Los intervalos del 95 % usan bloques móviles de cinco fechas observadas y
 
 La [cobertura editorial de esta instantánea](../data/editorial-pass-20260923.md)
 explica por qué las cuatro fuentes presentes no producen miles de empresas
-entrenables. China y el brazo conjunto siguen pendientes. La coincidencia con
+entrenables. China y el modelo conjunto siguen pendientes. La coincidencia con
 una página editorial actual no demuestra por sí sola su versión histórica
 inmutable. Los límites de preentrenamiento de los codificadores también se
 mantienen y no quedan resueltos por entrenar más épocas.

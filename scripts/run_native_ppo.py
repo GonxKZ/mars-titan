@@ -41,6 +41,8 @@ KLPO_KIND = "native_klpo_terminal"
 # Configuraciones de mars-titan-klpo: KLPO terminal y objetivos de grupo con las mismas oleadas.
 WAVE_KINDS = (KLPO_KIND, "native_group_relative")
 RECONSTRUCTED_SCHEMA = 4
+# Capacidad de los binarios con el cerrojo de solo evaluación (#546).
+EVALUATION_ONLY = "native_policy_evaluation_only"
 
 
 def catalog_config(document):
@@ -55,6 +57,29 @@ def reconstructed_config(document):
     return (
         document.get("schema_version") == RECONSTRUCTED_SCHEMA or document.get("kind") in WAVE_KINDS
     )
+
+
+def require_evaluation_only(binary):
+    """Puerta de evaluación sobre cintas reales, separada de la puerta de ajuste.
+
+    `--initial-evaluation` y `--check-sources` no consultan la protección. El binario activa
+    su cerrojo de solo evaluación antes de leer nada y rechaza entrenadores, controladores y
+    optimizadores. Esta puerta exige que el binario anuncie ese cerrojo antes de lanzarlo.
+    """
+    result = subprocess.run(
+        [str(binary), "--capabilities"],
+        env=dict(os.environ, CUDA_VISIBLE_DEVICES="-1"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    try:
+        capabilities = json.loads(result.stdout).get("capabilities", [])
+    except (json.JSONDecodeError, AttributeError):
+        capabilities = []
+    if result.returncode != 0 or EVALUATION_ONLY not in capabilities:
+        raise ValueError(f"{binary.name} no anuncia el modo de solo evaluación {EVALUATION_ONLY}")
 
 
 class GpuWaiting(RuntimeError):
@@ -84,6 +109,9 @@ def command_identity(command):
         "--vram-total-bytes",
         "--stop-after",
         "--parent-pid",
+        # Las trazas de #448 solo observan y no cambian la ejecución que se reanuda.
+        "--learning-trace-every",
+        "--learning-trace-max-bytes",
     }
     selected = []
     index = 0
@@ -436,6 +464,22 @@ def main(argv=None):
         default=[],
         help="Coste en pb de la evaluación separada. Repetible y solo con --audit-run",
     )
+    parser.add_argument(
+        "--decisions",
+        action="store_true",
+        help="Guardar la acción y las salidas de la red de cada decisión. Solo con --audit-run "
+        "o --initial-evaluation",
+    )
+    parser.add_argument(
+        "--initial-evaluation",
+        action="store_true",
+        help="Evaluar en --audit-tape la política inicial de la configuración, sin aprender",
+    )
+    parser.add_argument(
+        "--check-sources",
+        action="store_true",
+        help="Comprobar las cintas de ajuste y validación como el ajuste, sin aprender y en CPU",
+    )
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--stop-after", type=int)
@@ -445,6 +489,8 @@ def main(argv=None):
     parser.add_argument(
         "--diagnostic", action="store_true", help="Diagnóstico CPU de hasta 32 transiciones"
     )
+    parser.add_argument("--learning-trace-every", type=int, help="Cadencia de las trazas")
+    parser.add_argument("--learning-trace-max-bytes", type=int, help="Presupuesto de las trazas")
     args = parser.parse_args(argv)
     try:
         document, _ = read_manifest(args.config, 4 * MIB)
@@ -453,7 +499,35 @@ def main(argv=None):
     maximum_sources = 512 if catalog_config(document) else 12
     if max(len(args.train_tape), len(args.validation_tape), len(args.audit_tape)) > maximum_sources:
         parser.error(f"Se admiten como máximo {maximum_sources} fuentes por partición")
-    if args.audit_run is not None:
+    if args.initial_evaluation or args.check_sources:
+        # Modos sin aprendizaje: solo sobre cintas reconstruidas y sin ninguna fuente o opción
+        # que lleve a un ajuste.
+        evaluation = args.initial_evaluation and not args.check_sources and bool(args.audit_tape)
+        check = args.check_sources and not args.initial_evaluation and args.diagnostic
+        if (
+            not reconstructed_config(document)
+            or args.audit_run is not None
+            or args.stop_after is not None
+            or not (evaluation or check)
+            or (evaluation and (args.train_tape or args.validation_tape))
+            or (
+                check
+                and (
+                    args.audit_tape
+                    or not args.train_tape
+                    or not args.validation_tape
+                    or args.resume
+                    or args.decisions
+                    or args.evaluation_cost
+                )
+            )
+        ):
+            parser.error(
+                "--initial-evaluation solo admite --audit-tape y --check-sources solo las cintas "
+                "de ajuste y validación en CPU, ambos sobre cintas reconstruidas y sin "
+                "--audit-run ni --stop-after"
+            )
+    elif args.audit_run is not None:
         if (
             not catalog_config(document)
             or not args.audit_tape
@@ -467,7 +541,7 @@ def main(argv=None):
     elif args.audit_tape or not args.train_tape or not args.validation_tape:
         parser.error("El entrenamiento necesita --train-tape y --validation-tape")
     if args.evaluation_cost and (
-        args.audit_run is None
+        (args.audit_run is None and not args.initial_evaluation)
         or len(args.evaluation_cost) > 16
         or any(not math.isfinite(cost) or not 0 <= cost <= 1000 for cost in args.evaluation_cost)
         or any(a >= b for a, b in zip(args.evaluation_cost, args.evaluation_cost[1:], strict=False))
@@ -475,6 +549,19 @@ def main(argv=None):
         parser.error(
             "Los costes de evaluación solo acompañan a --audit-run y deben ser crecientes, "
             "finitos y estar entre 0 y 1000 pb"
+        )
+    if args.decisions and args.audit_run is None and not args.initial_evaluation:
+        parser.error("--decisions solo acompaña a --audit-run o a --initial-evaluation")
+    # Las trazas solo existen mientras se aprende. En la auditoría y en los dos modos sin
+    # aprendizaje el binario no las abriría, así que se rechazan en lugar de ignorarlas.
+    traced = (args.learning_trace_every, args.learning_trace_max_bytes)
+    frozen = args.audit_run is not None or args.initial_evaluation or args.check_sources
+    if (traced[0] is None) != (traced[1] is None) or (
+        traced[0] is not None and (frozen or traced[0] < 1 or not 1024 <= traced[1] <= 1024 * MIB)
+    ):
+        parser.error(
+            "Las trazas necesitan --learning-trace-every positivo y --learning-trace-max-bytes "
+            "entre 1 KiB y 1 GiB, y solo acompañan a un ajuste"
         )
     if args.stop_after is not None and not 0 <= args.stop_after <= 2**63 - 1:
         parser.error("La parada debe ser un número entero no negativo de 64 bits")
@@ -498,18 +585,23 @@ def main(argv=None):
             ]
         ):
             parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
-    if args.audit_run is None:
+    # Los modos sin aprendizaje no llevan --audit-run y pasan por la puerta de evaluación
+    # cuando se conoce el binario. El ajuste y la auditoría siguen con la puerta de ajuste.
+    without_learning = args.initial_evaluation or args.check_sources
+    if args.audit_run is None and not without_learning:
         activity = {
             KLPO_KIND: "el entrenamiento KLPO nativo",
             "native_group_relative": "el entrenamiento nativo con objetivo de grupo",
         }.get(document.get("kind"), "el entrenamiento PPO nativo")
         require_learning_allowed(activity)
-    elif reconstructed_config(document):
+    elif args.audit_run is not None and reconstructed_config(document):
         require_learning_allowed("la evaluación nativa sobre cintas reconstruidas")
     try:
         binary = args.binary.resolve(strict=True)
         if not binary.is_file() or not os.access(binary, os.X_OK):
             raise ValueError("El binario nativo debe ser un archivo ejecutable")
+        if without_learning:
+            require_evaluation_only(binary)
         command = [str(binary), "--config", str(args.config), "--output", str(args.output)]
         for option, sources in (
             ("--train-tape", args.train_tape),
@@ -522,10 +614,19 @@ def main(argv=None):
             command.extend(("--audit-run", str(args.audit_run)))
         for cost in args.evaluation_cost:
             command.extend(("--evaluation-cost", repr(cost)))
+        if args.decisions:
+            command.append("--decisions")
+        if args.initial_evaluation:
+            command.append("--initial-evaluation")
+        if args.check_sources:
+            command.append("--check-sources")
         if args.resume:
             command.append("--resume")
         if args.stop_after is not None:
             command.extend(("--stop-after", str(args.stop_after)))
+        if args.learning_trace_every is not None:
+            command.extend(("--learning-trace-every", str(args.learning_trace_every)))
+            command.extend(("--learning-trace-max-bytes", str(args.learning_trace_max_bytes)))
         command.extend(("--device", "cpu" if args.diagnostic else "cuda:0"))
         command.extend(("--parent-pid", str(os.getpid())))
         if args.diagnostic:

@@ -1,4 +1,4 @@
-"""Agentes guionizados que intentan obtener etiquetas o créditos sin señal legítima."""
+"""Agentes de reglas fijas que intentan obtener etiquetas o créditos sin señal legítima."""
 
 import copy
 import importlib
@@ -8,10 +8,11 @@ import numpy as np
 import pytest
 
 from mars_titan.environments.actions import ActionGrid
+from tests.suite_support import missing_extra
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("gymnasium") is None,
-    reason="Requiere el extra reinforcement",
+    reason=missing_extra("gymnasium"),
 )
 
 SHAPES = dict(prices=(2, 5), news=(3,), charts=(2,), fundamentals=(4,), macro=(2,))

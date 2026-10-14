@@ -3,7 +3,7 @@
 La cola tiene dos modos identificados por su configuración. Un diseño de #128 ejecuta
 los ocho objetivos de cada padre (`paired_posttraining_queue` o
 `real_continuations_queue`). Una matriz de adaptadores (`adapter_matrix_queue`)
-ejecuta sus brazos y controles sobre cada padre neuronal y semilla de la vista.
+ejecuta sus modelos y controles sobre cada padre neuronal y semilla de la vista.
 """
 
 import argparse

@@ -7,16 +7,16 @@ KLPO con sus controles. No ajusta ni evalúa nada: solo agrega episodios ya conf
 
 Reglas declaradas antes de ver resultados:
 
-- La serie de un brazo en una ventana es su patrimonio a cada cierre. El último valor es la
+- La serie de un modelo en una ventana es su patrimonio a cada cierre. El último valor es la
   liquidación hipotética al último cierre, de modo que cada ventana paga su salida.
-- Un brazo aprendido con varias semillas reparte el capital a partes iguales entre ellas.
+- Una política aprendida con varias semillas reparte el capital a partes iguales entre ellas.
   Su patrimonio es la media de los patrimonios por semilla y una semilla arruinada vale
   cero desde su ruina. Las métricas de cada semilla se publican aparte.
 - Las ventanas se encadenan en orden. La serie completa reúne los retornos por sesión de
   las ventanas usadas, como si el patrimonio liquidado de una ventana pasara a la siguiente.
   Si la serie encadenada se arruina, sus métricas terminan en la ruina.
 - Una familia compara, en un ámbito, un mercado, un predictor y un coste, KLPO con todos
-  sus controles disponibles. Solo usa las ventanas en que todos sus brazos tienen un
+  sus controles disponibles. Solo usa las ventanas en que todos sus modelos tienen un
   episodio terminado (completo o arruinado) con los mismos cierres. Las ventanas excluidas
   se publican con su motivo.
 - Incertidumbre con el bootstrap circular por bloques de sesiones de
@@ -25,6 +25,10 @@ Reglas declaradas antes de ver resultados:
   control, con intervalos simultáneos por máximo estudentizado dentro de cada familia y
   métrica. No hay corrección entre predictores, costes ni métricas. Cada familia responde
   una pregunta separada y el coste principal declarado es el que se interpreta primero.
+- Los contrastes de componente declarados en `contrasts.components`, como Dr. GRPO y GSPO
+  frente a GRPO, usan las mismas sesiones y réplicas de la familia. Cada control forma con
+  sus variantes otra familia de multiplicidad, con diferencias variante menos control, y
+  `contrasts.csv` distingue las dos en la columna `family`.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
 - Una baja sin precio de salida con posición abierta termina el episodio con la recompensa
@@ -33,6 +37,18 @@ Reglas declaradas antes de ver resultados:
   declarada es secundaria. Mientras alguna ventana la necesite, el informe queda como
   `pending_survival_sensitivity` y no se da por cerrado, porque excluir la ventana depende
   de lo que hizo la política evaluada.
+- El episodio sin costes de cada recibo terminado se compara con las cotas con información
+  futura de su cinta (`integrity.oracle_bound`). Superar la cota exacta, que suma el mejor
+  activo o la caja de cada tenencia, no es posible sin un fallo del entorno. Una política
+  que reparte con las puntuaciones y alcanza la fracción sospechosa del crecimiento
+  logarítmico positivo de la política con información futura, que no es un máximo, casi
+  seguro usa información futura. Ambos casos se publican en `future_information` y el
+  informe queda como `environment_review_required`, por delante de cualquier otro estado,
+  para revisarlos a mano. Si la política con información futura no terminó, la fracción se
+  publica como no comprobada.
+- El mejor estado de validación que eligió cada ajuste se compara igual con las cotas de su
+  cinta de validación (`validation_information`). Una fuga presente solo en la validación
+  influiría en la selección sin aparecer en la evaluación.
 """
 
 import argparse
@@ -57,11 +73,25 @@ from mars_titan.evaluation.financial_metrics import (
     block_bootstrap,
     equity_metrics,
 )
+from mars_titan.hardware import hardware_profiles
+from mars_titan.integrity import oracle_bound
 
 from . import index_benchmark
-from .campaign_stage import RUN_KIND, _digest, _record, summarize
+from .campaign_stage import (
+    BOUND_COST_BPS,
+    BOUND_KIND,
+    RUN_KIND,
+    _digest,
+    _record,
+    best_state,
+    summarize,
+)
+from .environment import ALLOCATIONS
+from .evaluation import REFERENCE_ALLOCATIONS
 from .policy_plan import (
+    FIT,
     MARKET_INDEX,
+    REFERENCE,
     _require,
     load_stage,
     plan_stage,
@@ -73,6 +103,9 @@ REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
 WINDOW_RULE = "liquidated_last_close_then_chained_windows"
 DIFFERENCE = "primary_minus_control"
+# Familias de multiplicidad de `contrasts.csv`: KLPO con todos sus controles y cada control
+# de componente con sus variantes.
+PRIMARY_FAMILY, COMPONENT_FAMILY = "primary", "components"
 # Motivo de un episodio terminado por una baja sin precio de salida con posición abierta.
 UNPRICED_EXIT = "unpriced_exit"
 STATUSES = ("completed", "paused")
@@ -143,7 +176,7 @@ def _window_nav(record, close_times, capital):
     times = equity["close_times"]
     _require(
         times == close_times[: len(times)] and nav[0] == capital,
-        "Los brazos de una ventana deben empezar con el capital y compartir sus cierres",
+        "Los modelos de una ventana deben empezar con el capital y compartir sus cierres",
     )
     if record["status"] == "ruined":
         # Sin patrimonio desde la ruina hasta el final de la ventana.
@@ -154,7 +187,7 @@ def _window_nav(record, close_times, capital):
 
 
 def _arm_window(records, close_times, capital):
-    """Patrimonio de un brazo en una ventana: media de sus semillas, cada una con su capital."""
+    """Patrimonio de un modelo en una ventana: media de sus semillas, cada una con su capital."""
     navs = [_window_nav(record, close_times, capital) for record in records]
     return dict(
         nav=np.mean(navs, axis=0),
@@ -364,8 +397,215 @@ def survival(policies, output):
     )
 
 
-def _bootstrap(family, report, primary):
+def _bound(root, reference, receipt, partition="evaluation"):
+    """Episodio y cota exacta que enlaza un recibo para una de sus cintas, comprobados."""
+    job = receipt["job"]["id"]
+    path = (root / reference["path"]).resolve()
+    _require(path.is_relative_to(root), f"La cota de {job} está fuera de su salida")
+    document, digest = read_manifest(path, 1024**2)
+    episode, exact = document.get("episode"), document.get("exact_log_growth")
+    _require(
+        digest == reference["sha256"]
+        and document.get("kind") == BOUND_KIND
+        and document.get("tape_sha256") == receipt["identity"]["tapes"][partition]
+        and document.get("action") == oracle_bound.FULL_EXPOSURE
+        and document.get("suspicious_fraction") == oracle_bound.SUSPICIOUS_FRACTION
+        and document.get("exact_rule") == oracle_bound.EXACT_RULE
+        and document.get("exact_tolerance") == oracle_bound.EXACT_TOLERANCE
+        and type(exact) is float
+        and 0 <= exact < math.inf
+        and document.get("excluded_from_comparisons") is True
+        and document.get("final_test_opened") is False
+        and isinstance(episode, dict)
+        and episode.get("cost_bps") == BOUND_COST_BPS,
+        f"La cota de {job} no es la de su cinta de {partition}",
+    )
+    return episode, exact
+
+
+def reads_scores(job):
+    """La política reparte con las puntuaciones de la cinta, por donde entraría una fuga."""
+    return job["kind"] != REFERENCE or REFERENCE_ALLOCATIONS[job["arm"]] == ALLOCATIONS[0]
+
+
+def _against_bounds(where, growth, bounds, path, *, fraction, flagged, unchecked):
+    """Compara un crecimiento con la cota exacta y con la política con información futura.
+
+    Superar la cota exacta se señala siempre. La fracción sospechosa necesita que la política
+    con información futura termine su episodio. Si no terminó, queda como no comprobada.
+    """
+    episode, exact = bounds
+    finished = episode["status"] == "completed"
+    limit = math.log1p(episode["net_return"]) if finished else None
+    if growth > exact + oracle_bound.EXACT_TOLERANCE:
+        reason = "exceeds_bound"
+    elif not finished:
+        unchecked.append(dict(where, bound_status=episode["status"], reason=episode["reason"]))
+        return
+    elif fraction and limit > 0 and growth >= oracle_bound.SUSPICIOUS_FRACTION * limit:
+        reason = "suspicious_fraction"
+    else:
+        return
+    flagged.append(
+        dict(
+            where,
+            reason=reason,
+            log_growth=growth,
+            exact_log_growth=exact,
+            bound_log_growth=limit,
+            fraction_of_bound=growth / limit if limit is not None and limit > 0 else None,
+            bound=path,
+        )
+    )
+
+
+def future_information(policies, output):
+    """Episodios sin costes que superan la cota exacta o se acercan a la información futura.
+
+    Sin costes, apalancamiento ni cortos, ningún episodio puede superar la cota exacta de su
+    cinta, que suma el mejor activo o la caja de cada tenencia. La fracción sospechosa compara
+    con la política con información futura bajo la regla del entorno, que no es un máximo, y
+    solo se aplica a las políticas que reparten con las puntuaciones de la cinta: una
+    referencia que no las lee no puede aprovechar una fuga en ellas, y comprar y mantener un
+    índice puede acercarse a la cota de su único activo en un año tranquilo y alcista.
+    Un episodio arruinado o fallido no se compara.
+    """
+    costs = policies["evaluation_costs_bps"]
+    _require(
+        BOUND_COST_BPS in costs,
+        "Las políticas no declaran el coste cero con el que se compara la cota",
+    )
+    position = costs.index(BOUND_COST_BPS)
+    root = Path(output["path"])
+    loaded, flagged, unchecked, checked = {}, [], [], 0
+    for receipt in output["receipts"].values():
+        reference = receipt.get("future_information_bound", False)
+        job = receipt["job"]
+        _require(reference is not False, f"El recibo de {job['id']} no enlaza su cota")
+        if reference is None:
+            _require(
+                receipt["identity"]["tapes"]["evaluation"] is None,
+                f"El recibo de {job['id']} tiene cinta de evaluación y no enlaza su cota",
+            )
+            continue
+        if reference["path"] not in loaded:
+            loaded[reference["path"]] = _bound(root, reference, receipt)
+        record = receipt["evaluation"][position]
+        if record["status"] != "completed":
+            continue
+        where = dict(
+            scope=job["scope"],
+            market=job["market"],
+            window=job["window"],
+            predictor=job["predictor"],
+            arm=job["arm"],
+            seed=job["seed"],
+        )
+        checked += 1
+        _against_bounds(
+            where,
+            math.log1p(record["net_return"]),
+            loaded[reference["path"]],
+            reference["path"],
+            fraction=reads_scores(job),
+            flagged=flagged,
+            unchecked=unchecked,
+        )
+    return dict(
+        rule=oracle_bound.RULE,
+        exact_rule=oracle_bound.EXACT_RULE,
+        cost_bps=BOUND_COST_BPS,
+        suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+        status="review_required" if flagged else "no_flagged_episodes",
+        checked=checked,
+        flagged=flagged,
+        unchecked=unchecked,
+    )
+
+
+def validation_information(policies, output):
+    """Mejores estados de validación que superan la cota exacta o alcanzan la fracción sospechosa.
+
+    Cada ajuste elige el estado con el crecimiento logarítmico medio de validación de su
+    criterio, que paga el coste del entorno. Ninguna política con costes puede superar la cota
+    exacta sin costes de la misma cinta, y todas las aprendidas reparten con las puntuaciones,
+    así que la fracción sospechosa se aplica a todas. Un mejor estado con alguna ruina no se
+    compara.
+    """
+    root = Path(output["path"])
+    loaded, flagged, unchecked, checked = {}, [], [], 0
+    for receipt in output["receipts"].values():
+        job = receipt["job"]
+        reference = receipt.get("validation_future_information_bound", False)
+        _require(
+            reference is not False, f"El recibo de {job['id']} no enlaza la cota de su validación"
+        )
+        chosen = job["kind"] == FIT and receipt["selection"] is not None
+        _require(
+            (reference is not None) == chosen,
+            f"Solo el recibo de un ajuste con selección enlaza la cota de su validación "
+            f"({job['id']})",
+        )
+        if reference is None:
+            continue
+        if reference["path"] not in loaded:
+            loaded[reference["path"]] = _bound(root, reference, receipt, "validation")
+        state = best_state(receipt["selection"]["best"], policies["selection"]["metric"])
+        _require(
+            state is not None,
+            f"El mejor estado de {job['id']} no publica sus ruinas y su crecimiento de validación",
+        )
+        ruins, growth = state
+        where = dict(
+            scope=job["scope"],
+            market=job["market"],
+            window=job["window"],
+            predictor=job["predictor"],
+            arm=job["arm"],
+            seed=job["seed"],
+        )
+        if ruins:
+            continue
+        checked += 1
+        _against_bounds(
+            where,
+            growth,
+            loaded[reference["path"]],
+            reference["path"],
+            fraction=True,
+            flagged=flagged,
+            unchecked=unchecked,
+        )
+    return dict(
+        rule=oracle_bound.RULE,
+        exact_rule=oracle_bound.EXACT_RULE,
+        metric=policies["selection"]["metric"],
+        cost_bps=policies["environment"]["cost_bps"],
+        bound_cost_bps=BOUND_COST_BPS,
+        suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+        status="review_required" if flagged else "no_flagged_states",
+        checked=checked,
+        flagged=flagged,
+        unchecked=unchecked,
+    )
+
+
+def _resample(returns, report, market, base):
+    return block_bootstrap(
+        returns,
+        market=market,
+        base=base,
+        block_length=report["block_length"],
+        replicates=report["replicates"],
+        seed=report["seed"],
+        confidence=report["confidence"],
+        sensitivity=tuple(report["block_length_sensitivity"]),
+    )
+
+
+def _bootstrap(family, report, contrasts):
     returns = family.pop("returns", None)
+    family["components"] = {}
     if returns is None or len(returns) < 2:
         family["bootstrap"] = dict(reason="Una familia necesita KLPO y algún control con datos")
         return family
@@ -373,18 +613,18 @@ def _bootstrap(family, report, primary):
     if sessions <= report["block_length"]:
         family["bootstrap"] = dict(reason="Se necesitan más sesiones que la longitud del bloque")
         return family
-    family["bootstrap"] = _flip(
-        block_bootstrap(
-            returns,
-            market=family["market"],
-            base=primary,
-            block_length=report["block_length"],
-            replicates=report["replicates"],
-            seed=report["seed"],
-            confidence=report["confidence"],
-            sensitivity=tuple(report["block_length_sensitivity"]),
-        )
-    )
+    market = family["market"]
+    family["bootstrap"] = _flip(_resample(returns, report, market, contrasts["primary"]))
+    # Cada control de componente forma con sus variantes otra familia sobre las mismas
+    # sesiones y réplicas. La diferencia del bootstrap ya es variante menos control.
+    components = contrasts.get("components", {})
+    for control in dict.fromkeys(components.values()):
+        variants = [arm for arm, base in components.items() if base == control and arm in returns]
+        if control in returns and variants:
+            arms = {arm: returns[arm] for arm in (control, *variants)}
+            family["components"][control] = dict(
+                _resample(arms, report, market, control), difference=DIFFERENCE
+            )
     return family
 
 
@@ -452,29 +692,74 @@ def _tables(sections):
             for metric in RESAMPLED:
                 for arm, row in bootstrap["differences"][metric].items():
                     contrasts.append(
-                        dict(key, metric=metric, primary=bootstrap["base"], control=arm)
-                        | dict(
-                            estimate=row["estimate"],
-                            lower=None if row["interval"] is None else row["interval"][0],
-                            upper=None if row["interval"] is None else row["interval"][1],
-                            simultaneous_lower=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][0],
-                            simultaneous_upper=None
-                            if row["simultaneous_interval"] is None
-                            else row["simultaneous_interval"][1],
-                            simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
-                        )
+                        dict(key, family=PRIMARY_FAMILY, metric=metric)
+                        | dict(primary=bootstrap["base"], control=arm, **_interval(row))
                     )
+            for control, component in family["components"].items():
+                for metric in RESAMPLED:
+                    for arm, row in component["differences"][metric].items():
+                        contrasts.append(
+                            dict(key, family=COMPONENT_FAMILY, metric=metric)
+                            | dict(primary=arm, control=control, **_interval(row))
+                        )
     return metrics, contrasts, equity
 
 
-def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivity=False):
+def _interval(row):
+    marginal, joint = row["interval"] or (None, None), row["simultaneous_interval"] or (None, None)
+    return dict(
+        estimate=row["estimate"],
+        lower=marginal[0],
+        upper=marginal[1],
+        simultaneous_lower=joint[0],
+        simultaneous_upper=joint[1],
+        simultaneous_excludes_zero=row["simultaneous_excludes_zero"],
+    )
+
+
+def report_status(sections):
+    """Un episodio o un estado señalados por la cota se revisan antes que la supervivencia."""
+    if any(
+        section["future_information"]["flagged"] or section["validation_information"]["flagged"]
+        for section in sections
+    ):
+        return "environment_review_required"
+    if any(section["survival"]["affected"] for section in sections):
+        return "pending_survival_sensitivity"
+    return "complete"
+
+
+def receipts_platform(records, unrecorded_platform=None):
+    """Plataforma común de los recibos de las salidas, o None si ninguna confirmó trabajos.
+
+    Los recibos anteriores a su registro solo se admiten si `unrecorded_platform` nombra el
+    perfil al que se atribuyen.
+    """
+    if not records:
+        return None
+    return hardware_profiles.same_platform(
+        records, unrecorded=hardware_profiles.attributed_profile(unrecorded_platform)
+    )
+
+
+def build_report(
+    stage_path,
+    outputs,
+    destination,
+    *,
+    benchmarks=None,
+    sensitivity=False,
+    unrecorded_platform=None,
+):
     """Leer las salidas, calcular familias y escribir el informe, sus tablas y el patrimonio.
 
     `benchmarks` asigna a un mercado la ruta y la huella de los niveles de su índice. Con
     `sensitivity` el informe lee salidas de la sensibilidad de ventanas, y nunca mezcla
     salidas de esa sensibilidad con las de la etapa principal.
+
+    Todos los recibos de las salidas deben venir de una sola plataforma, que el informe
+    registra. Los anteriores a ese registro solo se admiten si `unrecorded_platform` nombra el
+    perfil al que se atribuyen. La coincidencia con la base se comprobó al ejecutar la etapa.
     """
     stage = load_stage(stage_path)
     if sensitivity:
@@ -492,22 +777,38 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         for market, (path, digest) in benchmarks.items()
     }
     destination = Path(destination)
-    sections = []
+    sections, platforms = [], {}
     for path in outputs:
         output = read_output(stage, path)
+        platforms.update(
+            {
+                f"{output['path']}/{key}": receipt.get("platform")
+                for key, receipt in output["receipts"].items()
+            }
+        )
         found = [
-            _bootstrap(family, report, policies["contrasts"]["primary"])
+            _bootstrap(family, report, policies["contrasts"])
             for family in families(stage, output, levels)
         ]
         exits = survival(policies, output)
+        bounded = future_information(policies, output)
+        chosen = validation_information(policies, output)
         output.pop("receipts")
-        sections.append(dict(output=output, families=found, survival=exits))
+        sections.append(
+            dict(
+                output=output,
+                families=found,
+                survival=exits,
+                future_information=bounded,
+                validation_information=chosen,
+            )
+        )
+    platform = receipts_platform(platforms, unrecorded_platform)
     metrics, contrasts, equity = _tables(sections)
-    pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
         schema_version=1,
         kind=REPORT_KIND,
-        status="pending_survival_sensitivity" if pending else "complete",
+        status=report_status(sections),
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
         sensitivity=stage.get("sensitivity"),
@@ -523,6 +824,7 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivi
         },
         missing_benchmarks=sorted(set(declared) - set(levels)),
         sections=sections,
+        platform=platform,
         final_test_opened=False,
     )
     atomic_json(destination / "report.json", result)
@@ -559,6 +861,10 @@ def main(argv=None):
     parser.add_argument(
         "--sensitivity", action="store_true", help="Informe de la sensibilidad de ventanas"
     )
+    parser.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     result = build_report(
         args.stage,
@@ -566,6 +872,7 @@ def main(argv=None):
         args.report,
         benchmarks=_benchmark_argument(args.benchmark),
         sensitivity=args.sensitivity,
+        unrecorded_platform=args.unrecorded_platform,
     )
     families = [family for section in result["sections"] for family in section["families"]]
     print(
@@ -575,6 +882,14 @@ def main(argv=None):
                 status=result["status"],
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
+                flagged_by_bound=sum(
+                    len(section["future_information"]["flagged"]) for section in result["sections"]
+                ),
+                flagged_by_validation_bound=sum(
+                    len(section["validation_information"]["flagged"])
+                    for section in result["sections"]
+                ),
+                component_bootstraps=sum(len(f["components"]) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],
             ),
             ensure_ascii=False,

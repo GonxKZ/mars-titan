@@ -7,7 +7,7 @@ vigente y la reserva de 2024 sigue cerrada.
 
 La [cartera del protocolo](protocol.md#métricas-e-interpretación) traduce las
 predicciones residuales a un rendimiento porcentual. Es un análisis financiero
-secundario. Sirve para describir y contrastar brazos, pero no para elegir modelos,
+secundario. Sirve para describir y contrastar configuraciones, pero no para elegir modelos,
 que se eligen con el MAE residual de validación. La declaración está en la sección
 `long_short` de la [comparación](../../configs/evaluation/historical-masked-2000-comparison.json)
 (versión 4) y la calculan `evaluation/long_short.py` y
@@ -78,7 +78,7 @@ está definido con volatilidad nula. Estas convenciones están en
 `evaluation/financial_conventions.py`, que comparte el informe de las políticas
 financieras, y la declaración debe usar sus sesiones por año.
 
-Las semillas de un brazo se promedian sesión a sesión antes de calcular
+Las semillas de un modelo se promedian sesión a sesión antes de calcular
 estadísticos, lo que equivale a repartir el capital entre las tres. Cada semilla
 conserva además su resumen. La incertidumbre usa el bootstrap circular por bloques
 de sesiones del mercado con la longitud de bloque, réplicas y semilla de la
@@ -110,7 +110,7 @@ filas por motivo de ejecución en cada ventana (ejecutable, sin fila, sin verifi
 sin volumen, fuera de rejilla, evento ambiguo, tablero sin reglas o sin cierre de
 referencia), las filas seleccionadas que no se llenaron, los estadísticos por
 semilla y de la media con su intervalo y los contrastes por coste. `sessions.parquet`
-conserva por sesión, brazo y semilla el rendimiento bruto, el nocional, el timbre,
+conserva por sesión, modelo y semilla el rendimiento bruto, el nocional, el timbre,
 la exposición real, las filas seleccionadas y llenadas, las salidas en banda y el
 rendimiento neto con cada coste.
 
@@ -131,7 +131,7 @@ y primera semilla en lugar de la media).
 ## Coste
 
 Con datos sintéticos de las formas del ámbito US de la campaña A (19 ventanas,
-12.826.460 filas de evaluación, 23 brazos, 64 series y una edición sintética de
+12.826.460 filas de evaluación, 23 modelos, 64 series y una edición sintética de
 4.126 activos), la cartera tardó 860 s con un pico de 1,96 GiB en un proceso con dos
 hilos y la CPU compartida. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
 detalla las condiciones.

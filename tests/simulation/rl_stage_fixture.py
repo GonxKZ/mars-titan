@@ -1,17 +1,19 @@
 """Campaña base reducida y edición sintética para recorrer la etapa de políticas sin aprender.
 
 El protocolo US se recorta a cuatro ventanas, que evalúan de 2020 a 2023, y la comparación
-a un brazo GRU con la semilla 42, como en `tests.posttraining.campaign_fixture`. Sus
+a un modelo GRU con la semilla 42, como en `tests.posttraining.campaign_fixture`. Sus
 ejecutores sustitutos escriben predicciones reales de un padre con pesos iniciales y la
 campaña no aplica ningún paso de optimizador. La edición sintética, identificada como
 fixture, cubre desde septiembre de 2019. Los ejecutores aprendidos se sustituyen por
-`ScriptedLearner`, que no ajusta ninguna red y evalúa una política guionizada.
+`ScriptedLearner`, que no ajusta ninguna red y evalúa una política de reglas fijas.
 """
 
 import hashlib
 import json
+import math
 import shutil
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +26,7 @@ from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
@@ -54,7 +57,7 @@ def policies(**changes):
     expansión, que en la configuración real es la sensibilidad, y la sensibilidad de la
     prueba es la regla fija de una evaluación.
 
-    La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
+    La campaña reducida produce los modelos GRU y LSTM. Los dos entran en el nivel completo
     y solo la GRU en el de algoritmos, que también fija el universo.
     """
     value = json.loads((CONFIGS / "simulation/historical-masked-rl-policies.json").read_text())
@@ -87,7 +90,7 @@ def policies(**changes):
 
 
 def write_configs(folder, variant):
-    """Campaña base de cuatro ventanas y dos brazos, políticas reducidas y etapa."""
+    """Campaña base de cuatro ventanas y dos modelos, políticas reducidas y etapa."""
     campaign, _ = campaign_fixture.write_configs(folder, variant)
     protocol = json.loads((folder / "us-protocol.json").read_text())
     protocol["first_validation_start"] = "2019-04-01"
@@ -134,8 +137,7 @@ def base_campaign(root, variant, *, ending=None):
     """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))
@@ -262,9 +264,9 @@ def scripted_action(observation, step):
 
 
 class ScriptedLearner:
-    """Ejecutor sustituto de un brazo aprendido, sin redes ni pasos de optimizador.
+    """Ejecutor sustituto de una política aprendida, sin redes ni pasos de optimizador.
 
-    Un ajuste guarda una política guionizada como estado elegido y la evalúa con el
+    Un ajuste guarda una política de reglas fijas como estado elegido y la evalúa con el
     criterio y el presupuesto declarados. Un traslado evalúa la política del ancla.
     `pause` pide una pausa en la primera llamada de esos trabajos y `mutate` altera el
     informe para comprobar que la etapa lo rechaza.
@@ -273,7 +275,7 @@ class ScriptedLearner:
     def __init__(self, *, pause=(), mutate=None, action=scripted_action):
         self.calls, self.pause, self.mutate, self.action = [], set(pause), mutate, action
 
-    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
+    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
         self.calls.append(dict(id=job["id"], resume=resume, tapes=tapes, anchor=anchor))
         extra = {}
         if job["id"] in self.pause and not resume:
@@ -286,12 +288,15 @@ class ScriptedLearner:
             atomic_json(state, dict(job=job["id"], seed=job["seed"], rule="observation_sha256"))
             policy = dict(id=job["id"], sha256=sha256(state))
             selection = dict(
-                metric=stage["policies"]["selection"]["metric"], partition="validation"
+                metric=stage["policies"]["selection"]["metric"],
+                partition="validation",
+                best=validation_best(tapes, stage, job["market"], self.action),
             )
             budget = stage["policies"]["budget"]
             transitions = budget["transitions"]
-            if job["engine"] == "native_klpo":
-                # KLPO declara las oleadas completas que caben en el presupuesto.
+            if job["engine"] in native_policy_runs.WAVE_ENGINES:
+                # KLPO y los objetivos de grupo declaran las oleadas completas que caben en el
+                # presupuesto.
                 waves, wave = native_policy_runs.klpo_waves(
                     tapes.train, budget["environments"], transitions
                 )
@@ -312,13 +317,36 @@ class ScriptedLearner:
         return self.mutate(job, report) if self.mutate else report
 
 
+def validation_best(tapes, stage, market, action):
+    """Mejor estado de validación de la política de reglas fijas: su episodio con coste.
+
+    La política no aprende, así que su único estado es el elegido. Se publica con los campos
+    del motor nativo para que la etapa reducida lo compare con la cota de la validación.
+    """
+    policies = stage["policies"]
+    cost = dict(
+        stage, policies=dict(policies, evaluation_costs_bps=[policies["environment"]["cost_bps"]])
+    )
+    validation = replace(tapes, evaluation=tapes.validation)
+    (record,) = campaign_stage.evaluate_policy(validation, action, cost, market, backend="python")
+    growth = math.log1p(record["net_return"])
+    liquidated = math.log1p(record["liquidated_net_return"])
+    return dict(
+        ruin_count=int(record["status"] == "ruined"),
+        episodes=1,
+        mean_log_growth=growth,
+        mean_liquidated_log_growth=liquidated,
+    )
+
+
 def executors(learner, backend="python"):
-    """Referencias con la contabilidad indicada y brazos aprendidos sustituidos."""
+    """Referencias con la contabilidad indicada y políticas aprendidas sustituidas."""
     reference = campaign_stage.reference_executor(backend)
     return {
         "reference": dict(run=reference, requires=(), native=False),
         "native_klpo": dict(run=learner, requires=(), native=False),
         "native_ppo": dict(run=learner, requires=(), native=False),
+        "native_group_relative": dict(run=learner, requires=(), native=False),
     }
 
 
@@ -331,6 +359,7 @@ def run(base, output, learner, *, stop=None, backend="python", chain_output=None
         base.edition,
         output,
         executors=executors(learner, backend),
+        bound_backend=backend,
         capabilities={},
         stop=stop or SimpleNamespace(requested=False),
         chain_output=chain_output,

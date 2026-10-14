@@ -97,7 +97,7 @@ constantes. Ese recuento no permite presentar el Rank IC como una evaluación
 amplia de panel. Los desgloses por activo y mes son descriptivos.
 
 Siguen pendientes la curación global, la procedencia necesaria en China y los
-brazos chino y conjunto. No se han sustituido por repetir un experimento de
+modelos chino y conjunto. No se han sustituido por repetir un experimento de
 Estados Unidos. Tampoco se afirma rentabilidad, calibración probabilística o
 superioridad de una arquitectura a partir de esta edición.
 

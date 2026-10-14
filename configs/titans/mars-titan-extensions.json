@@ -192,8 +192,8 @@
   },
   "outside_variant": {
     "cm_v1": "Variante independiente de #293 con su propia B",
-    "quantile_head": "Cabeza común a todos los brazos, no es una ampliación",
-    "distillation": "Propuesta de #57 con profesor y alumno identificados",
+    "quantile_head": "Cabeza común a todos los modelos, no es una ampliación",
+    "distillation": "Contraste de #57 declarado en configs/evaluation/temporal-distillation.json, con profesor mars_titan_m1 y alumno titans_mac_online, sin activar",
     "auxiliary_events": "No incorporada: faltan etiquetas de eventos con observación acreditada",
     "self_supervised_adaptation": "No incorporada: requiere un protocolo propio de ajuste",
     "representation_probes": "No incorporada: análisis posterior a un entrenamiento"

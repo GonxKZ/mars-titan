@@ -22,7 +22,7 @@ Las fases del calentamiento salen de `walk_forward_phases.window_phases` con los
 calibración y evaluación observan antes las entradas de esos meses, sin etiquetas ni
 predicciones emitidas. La GRU no conserva estado entre instantes y el banco solo admite
 etiquetas maduras de predicciones emitidas, así que el calentamiento no cambia el estado
-de la candidata. Iguala la ventana de información observada por todos los brazos con
+de la candidata. Iguala la ventana de información observada por todos los modelos con
 memoria y queda registrado en la identidad de cada fase.
 """
 
@@ -45,6 +45,7 @@ from mars_titan.environments.walk_forward_receipt import (
     read_window_receipt,
 )
 from mars_titan.evaluation.splits import PARTITIONS
+from mars_titan.learning_traces.trainers import attach as attach_traces
 from mars_titan.memory.financial_observations import (
     FinancialObservationSource,
     prepare_observation_index,
@@ -146,7 +147,7 @@ def _bounds(dataset):
 
 
 def _phases(dataset, warmup_months):
-    """Construye las fases de la ventana con el calentamiento común de los brazos con memoria.
+    """Construye las fases de la ventana con el calentamiento común de los modelos con memoria.
 
     Exige que los tramos de decisión coincidan con los límites de la vista, de modo que
     el calentamiento solo añade entradas anteriores y nunca posteriores al tramo.
@@ -320,6 +321,7 @@ def fit_window(
     optimizer_factory=None,
     audit=False,
     joint_epoch=None,
+    traces=None,
 ):
     """Ajustar una semilla en una ventana, predecir sus tramos y escribir sus recibos.
 
@@ -327,7 +329,8 @@ def fit_window(
     calentamiento de entradas de la receta. Reanuda la ejecución y los índices confirmados
     si la salida ya existe. Devuelve el informe de la ventana, un estado `paused` si se
     pidió parar en una barrera o `awaiting_joint_stop` si la meseta conjunta espera la
-    época común del grupo (`joint_epoch`).
+    época común del grupo (`joint_epoch`). `traces` declara las trazas de #448, que se
+    escriben en `output/traces`.
     """
     require_learning_allowed("la ventana walk-forward de la GRU candidata")
     if type(recipe) is not CandidateRecipe:
@@ -360,6 +363,7 @@ def fit_window(
         optimizer_factory=optimizer_factory,
         audit=audit,
     )
+    attach_traces(trainer, output / "traces", traces, "episodic_gru")
     report = trainer.run(resume=(folder / "run.json").is_file(), stop=stop, joint_epoch=joint_epoch)
     if report["status"] == AWAIT:
         return dict(
@@ -455,10 +459,12 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
     window, window_sha256, report, folder = _anchor(Path(anchor), Path(anchor_view))
     identity = report["identity"]
     declared = identity["recipe"]
-    # La precisión solo aparece en la identidad cuando la receta la declara.
+    # La precisión y el ancla del decaimiento solo aparecen en la identidad cuando la receta
+    # los declara.
+    optional = ("precision", "weight_decay_anchor")
     recipe = CandidateRecipe(
         **{
-            item.name: declared.get(item.name) if item.name == "precision" else declared[item.name]
+            item.name: declared.get(item.name) if item.name in optional else declared[item.name]
             for item in fields(CandidateRecipe)
         }
     )
@@ -547,7 +553,7 @@ def carry_window(
         return dict(status="paused", final_test_opened=False)
     checkpoint = window["checkpoint"]
     parent = dict(id=parent_id, sha256=checkpoint["sha256"])
-    # Una predicción ablacionada o regenerada no es una predicción walk-forward del brazo.
+    # Una predicción ablacionada o regenerada no es una predicción walk-forward del modelo.
     published = not (modality_ablation or regenerate)
     receipts = {}
     if published:
@@ -656,6 +662,7 @@ def run_job(run, *, device="cuda:0", optimizer_factory=None, regenerate=False):
             stop=run.stop,
             optimizer_factory=optimizer_factory,
             joint_epoch=run.joint_epoch,
+            traces=run.traces,
         )
         view = report.get("view", {}).get("sha256")
     if report["status"] in ("completed", AWAIT) and view != run.view_sha256:

@@ -1,6 +1,6 @@
 # Núcleos y caudal del ajuste neuronal de la campaña (9 y 10 de octubre de 2026)
 
-Este informe recoge los cambios de cálculo de la rama `perf/campaign-kernels` (#363). Su objetivo es acelerar el ajuste en la RTX 4070 Max-Q de 8 GB sin cambiar la aritmética declarada ni los hiperparámetros, y por igual en todos los brazos que comparten un camino. Cubre las referencias neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto), los cuatro controles de Titans-MAC, los núcleos B y C de CM-v1, los lectores de MARS-TITAN y de CM-v1 y la GRU candidata nativa. RL y las referencias tabulares quedan fuera porque las miden otras ramas.
+Este informe recoge los cambios de cálculo de la rama `perf/campaign-kernels` (#363). Su objetivo es acelerar el ajuste en la RTX 4070 Max-Q de 8 GB sin cambiar la aritmética declarada ni los hiperparámetros, y por igual en todos los modelos que comparten un camino. Cubre las referencias neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto), los cuatro controles de Titans-MAC, los núcleos B y C de CM-v1, los lectores de MARS-TITAN y de CM-v1 y la GRU candidata nativa. RL y las referencias tabulares quedan fuera porque las miden otras ramas.
 
 Ninguna medida aplica pasos de optimizador. Los entrenadores recorren su bucle real hasta el paso con un optimizador que solo cuenta llamadas y guarda gradientes. El gancho de PyTorch que prohíbe `Optimizer.step` sigue instalado y cada medida comprueba al final que ningún parámetro ha cambiado. El bloqueo de aprendizaje sigue vigente y estas cifras no dicen nada de la calidad predictiva.
 
@@ -39,7 +39,7 @@ Solo se conservan cambios que dejan igual la aritmética de cada operación. Los
 | 5d34eb46, 2bac933f | GRU candidata | La receta declara FP32 estricto y acumulación de 128 filas. El ancla trasladada admite identidades anteriores sin precisión | Solo cambia el orden de las sumas del bloque |
 | ed15e255, ecb5021c, 52cefce5 | Transformer compacto en el posentrenamiento y en las predicciones trasladadas | El padre y el ancla trasladada se reconstruyen con el lote de su identidad, como en `reference_run`. Una identidad sin lote conserva el contrato por defecto | Sin cambio |
 | 895494ad, 9a104e85 | Lector cronológico y adaptadores de los lectores | El lector por bloques transforma las ventanas de precios de la v3 por tramos de 256 filas, y la repetición del núcleo en los adaptadores admite el límite común de bloque. Así los bloques de 512 y 1.024 de las recetas funcionan también con el lector real | Idéntica bit a bit |
-| d429bf15 | Ejecución de la campaña | La declaración de #469 recoge la VRAM medida por brazo de Titans-MAC y por modelo de las demás familias cronológicas | Sin cambio |
+| d429bf15 | Ejecución de la campaña | La declaración de #469 recoge la VRAM medida por configuración de Titans-MAC y por modelo de las demás familias cronológicas | Sin cambio |
 
 «Idéntica bit a bit» se refiere a las pruebas de cada cambio y a una bisección de la rama sobre las huellas FP32 que #474 fija para las cuatro variantes financieras de Titans-MAC. En CPU y en CUDA, 90db4ef7 es el único commit que cambia sus bits: los anteriores coinciden con develop y los posteriores con 90db4ef7. Las huellas financieras de PT1 (#477) se comportan igual: su commit anterior coincide con develop y 90db4ef7 con la punta de la rama. El predictor financiero usa el Transformer compacto como codificador de precios, así que el cambio de la última capa llega también a Titans-MAC, a CM-v1 y a los lectores (ver «Validación numérica»).
 
@@ -55,7 +55,7 @@ Con el lector cronológico de develop, el tramo medido de US+CN pasaba entre el 
 
 Antes es `develop` en 14c6b1dd con el enlace nativo de la candidata de develop. Después es esta rama en 7aedbae5, con el enlace nativo empaquetado. Ese árbol contiene los cambios de cálculo de la rama hasta 2a110fe8 y es anterior a los dos rebases sobre develop. Develop trae desde entonces cambios de #431, #435, #445, #446, #460, #469, #473, #474, #476, #477 y #481 en los mismos entrenadores, en la memoria y en las entradas (ganchos de bloque, comprobaciones de precisión, el lector, la convolución causal de la sección 4.4 y PT1, estas dos desactivadas por defecto, y las ventanas de precios de la v3.1 con su bit de presencia), que no se han vuelto a medir. La puerta de presencia de la v3.1 se aplica antes del codificador de precios en las referencias y en Titans-MAC, y el codificador de último token admite el sexto canal. Los dos árboles se miden con FP32 estricto. La receta de develop no cabe en la GPU con US+CN sin acumulación (mac_online y la candidata fallan por memoria con la fracción de 6 GiB), así que «antes» usa `accumulation_rows` 128, el valor que la receta preveía para este caso. Los bloques de «después» se pasan como opciones de receta, las mismas que ahora declaran las recetas.
 
-| Familia y brazo | Opciones antes | Opciones después | Antes (filas/s) | Después (filas/s) | Aceleración | Pico asignado MiB | Pico reservado MiB | Proceso MiB | Horas por época de fold-012 |
+| Familia y modelo | Opciones antes | Opciones después | Antes (filas/s) | Después (filas/s) | Aceleración | Pico asignado MiB | Pico reservado MiB | Proceso MiB | Horas por época de fold-012 |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
 | Titans-MAC transformer_direct | bloque 128, acumulación 128 | bloque 1.024, acumulación 1.024 | 4.320 | 9.225 | 2,14 | 818 | 890 | 1.056 | 0,44 |
 | Titans-MAC mac_disabled | bloque 128, acumulación 128 | bloque 1.024, acumulación 1.024 | 3.519 | 18.526 | 5,26 | 4.715 | 5.086 | 5.252 | 0,22 |
@@ -162,9 +162,9 @@ La concurrencia se midió con las recetas recomendadas sobre 40 eventos completo
 - La GRU candidata va sola. Dos trabajos suman menos que uno (3.049 sin MPS y 1.934 con MPS frente a 3.968) y tres agotan la VRAM.
 - Las referencias neuronales se midieron sin MPS y con lotes residentes ([references.md](references.md)). RNN, LSTM y GRU ganan como mucho con dos trabajos, y DLinear y el Transformer con tres.
 
-MPS solo mejoró el agregado en transformer_direct y en mac_online con bloques menores. En M1 y en la GRU candidata rindió menos que los mismos procesos sin MPS. El resto de brazos (mac_disabled, mac_frozen, núcleos de CM-v1, M0, M3, K=4 y BCM) no se midió en paralelo y queda en un trabajo.
+MPS solo mejoró el agregado en transformer_direct y en mac_online con bloques menores. En M1 y en la GRU candidata rindió menos que los mismos procesos sin MPS. El resto de modelos (mac_disabled, mac_frozen, núcleos de CM-v1, M0, M3, K=4 y BCM) no se midió en paralelo y queda en un trabajo.
 
-El archivo [vram-throughput.json](vram-throughput.json) recoge para el planificador, por familia y brazo, el caudal de un trabajo, los picos de PyTorch, la memoria del proceso, el contexto CUDA (proceso menos reservado) y los agregados con 2 y 3 trabajos, con y sin MPS cuando se midieron. Todas las memorias están en MiB enteros.
+El archivo [vram-throughput.json](vram-throughput.json) recoge para el planificador, por familia y modelo, el caudal de un trabajo, los picos de PyTorch, la memoria del proceso, el contexto CUDA (proceso menos reservado) y los agregados con 2 y 3 trabajos, con y sin MPS cuando se midieron. Todas las memorias están en MiB enteros.
 
 ## Perfil tras los cambios
 
@@ -183,9 +183,9 @@ Ambos se corrigen en la rama `perf/campaign-pipeline` (#469), que conviene fusio
 
 ## Proyección de horas
 
-Con el cálculo como único límite, una época sobre las 14.639.357 filas de ajuste de US+CN fold-012 y una pasada por las 113.180.071 filas de ajuste de los 13 cortes costarían estas horas por brazo, con un trabajo en la GPU:
+Con el cálculo como único límite, una época sobre las 14.639.357 filas de ajuste de US+CN fold-012 y una pasada por las 113.180.071 filas de ajuste de los 13 cortes costarían estas horas por modelo, con un trabajo en la GPU:
 
-| Familia y brazo | Antes, fold-012 (h) | Después, fold-012 (h) | Antes, 13 cortes (h) | Después, 13 cortes (h) |
+| Familia y modelo | Antes, fold-012 (h) | Después, fold-012 (h) | Antes, 13 cortes (h) | Después, 13 cortes (h) |
 |---|---:|---:|---:|---:|
 | Titans-MAC transformer_direct | 0,9 | 0,4 | 7,3 | 3,4 |
 | Titans-MAC mac_disabled | 1,2 | 0,2 | 8,9 | 1,7 |
@@ -232,9 +232,11 @@ Son cotas inferiores. Con el lector de develop, a entre 170 y 230 filas por segu
 | `configs/candidate/chronological-training.json` | `precision: fp32_strict`, `accumulation_rows: 128` (bloque de 128 por defecto) |
 | Casos de las referencias neuronales | `precision: fp32_strict` y `cuda_graphs: true` |
 
-Las opciones entran en la identidad de cada trabajo y son comunes a todos los brazos que comparten receta. Los lotes y épocas declarados no cambian. Las tres recetas ya las declaran en esta rama. Los casos de las referencias las admiten, pero la sección neuronal de `campaign_plan` todavía no las propaga (ver «Pendiente»).
+Las opciones entran en la identidad de cada trabajo y son comunes a todos los modelos que comparten receta. Los lotes y épocas declarados no cambian. Las tres recetas ya las declaran en esta rama. Los casos de las referencias las admiten, pero la sección neuronal de `campaign_plan` todavía no las propaga (ver «Pendiente»).
 
 ## Pendiente e impedimentos
+
+Actualización del 10 de octubre. El [informe de la rama `perf/campaign-kernels-wiring`](../campaign-kernels-wiring-20261010/README.md) resuelve los puntos primero, segundo, cuarto y sexto de esta lista. La sección neuronal admite `precision`, `cuda_graphs` y lotes de hasta 4.096, y una prueba de extremo a extremo comprueba que llegan al ajuste. El padre del posentrenamiento aplica la precisión de su caso. Los módulos con huellas que dependen de los hilos fijan dos hilos durante cada prueba. Las distancias de los medoids se reducen sin cambiar sus bits (de unos 150 s a menos de 10 s por recorrido de los lectores), y CUDA Graphs en Titans-MAC, pendiente en «Decisiones», se midió en la emisión de bloques completos y no se adopta en esa rama (entre 0,98 y 1,22 veces frente al mismo cálculo sin grafo). La medida sobre la v3.1 sigue pendiente. Los puntos siguientes describen el estado del 9 de octubre.
 
 - La sección neuronal de `campaign_plan` todavía no admite `precision` ni `cuda_graphs`, y limita el lote a 256. Hasta que el plan los acepte, las referencias de la campaña se ajustan sin ellos.
 - El posentrenamiento de #446 registra las banderas de TF32 de cada ejecución, pero no fija la política que declara el caso del padre. Con esta rama el padre conserva su lote. Falta aplicarle la precisión al cargarlo, como ya hacen el ajuste y las predicciones trasladadas.

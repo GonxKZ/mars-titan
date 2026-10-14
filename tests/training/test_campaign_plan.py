@@ -27,7 +27,7 @@ TITANS_ARMS = (
     "titans_mac_frozen",
     "titans_mac_online",
 )
-# Recuentos derivados a mano: por ventana reentrenada, cada brazo neuronal y cada control
+# Recuentos derivados a mano: por ventana reentrenada, cada modelo neuronal y cada control
 # de Titans-MAC ajustan dos candidatos con la semilla 42 y dos finalistas, Ridge tres
 # alfas y XGBoost doce configuraciones con la semilla 42 y dos finalistas. Cada traslado
 # es uno por semilla.
@@ -321,7 +321,7 @@ def test_later_stage_of_each_variant_starts_from_that_campaign_and_matrix(varian
     matrix = declared["config"] if variant == "A" else "configs/posttraining/adapter-matrix-v2.json"
     assert stage["matrix_path"] == str(Path(matrix).resolve())
     counts = campaign_stage.count_stage(stage)
-    expected = dict(A=(10332, 1302), B=(1479, 2436))[variant]
+    expected = dict(A=(10962, 1302), B=(1479, 2436))[variant]
     assert (counts["training_jobs"], counts["prediction_jobs"]) == expected
 
 

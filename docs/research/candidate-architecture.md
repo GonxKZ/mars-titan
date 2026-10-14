@@ -26,7 +26,7 @@ La flecha de escritura solo afecta a decisiones posteriores. El gráfico no auto
 
 ## Estado de implementación a 9 de octubre
 
-La referencia GRU con banco episódico es el brazo `gru_episodic` de la [campaña desde 2000](training-campaign-2000.md). Las piezas siguientes están integradas en `develop` y se han comprobado sin pasos de optimizador. No se ha entrenado ningún estado con ellas.
+La referencia GRU con banco episódico es el modelo `gru_episodic` de la [campaña desde 2000](training-campaign-2000.md). Las piezas siguientes están integradas en `develop` y se han comprobado sin pasos de optimizador. No se ha entrenado ningún estado con ellas.
 
 | Parte de la especificación | Implementación | Comprobación y límite |
 | --- | --- | --- |
@@ -107,7 +107,7 @@ El núcleo mantiene codificador, normalizadores y parámetros congelados dentro 
 
 Se estudiará un replay sencillo antes de EWC, SI, GEM o replay generativo. Mantener generadores, matrices de importancia y proyecciones puede costar más que la mejora que aporten. Los ejemplos retenidos se estratifican con información conocida, no según el régimen que el futuro termine revelando.
 
-Una variante de destilación podrá aprender de un modelo maestro con K = 4 y responder con K = 1. El modelo maestro se ajusta solo en el tramo autorizado y su coste se incluye. Sus salidas de entrenamiento no se presentan como predicciones históricas fuera de muestra. Las señales usadas para aprender la puerta o para reconstruir errores de escritura necesitan una generación histórica válida. Se recalibra el modelo estudiante y se compara con K = 1 entrenado directamente.
+Una variante de destilación podrá aprender de un modelo maestro con K = 4 y responder con K = 1. El modelo maestro se ajusta solo en el tramo autorizado y su coste se incluye. Sus salidas de entrenamiento no se presentan como predicciones históricas fuera de muestra. Las señales usadas para aprender la puerta o para reconstruir errores de escritura necesitan una generación histórica válida. Se recalibra el modelo estudiante y se compara con K = 1 entrenado directamente. Las medidas de coste del 10 y del 13 de octubre de 2026 mostraron que el lector con K = 4 apenas encarece la inferencia frente a K = 1, así que el contraste que se ha declarado usa como profesor el lector MARS-TITAN completo y como alumno el núcleo Titans-MAC ([destilación temporalmente válida](../engineering/temporal-distillation.md)).
 
 ## Instantánea coherente y concurrencia
 

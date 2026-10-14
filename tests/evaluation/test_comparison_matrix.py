@@ -21,6 +21,8 @@ from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation.forecast_scores import score_sessions
+from tests.evaluation.liquidity_fixture import section as liquidity_section
+from tests.evaluation.liquidity_fixture import study_edition
 from tests.evaluation.test_forecast_scores import random_panel
 from tests.evaluation.test_walk_forward_comparison import Study
 
@@ -66,7 +68,7 @@ def test_the_declared_matrix_compiles_every_question_and_lineage(declared):
     for entry in families.values():
         assert 1 <= len(entry["contrasts"]) <= 64
         for contrast in entry["contrasts"].values():
-            # Toda la matriz compara brazos entre sí, así que los coeficientes de cada
+            # Toda la matriz compara modelos entre sí, así que los coeficientes de cada
             # contraste suman cero.
             assert sum(contrast["coefficients"].values()) == pytest.approx(0.0, abs=1e-12)
             assert contrast["unnamed"] == []
@@ -180,9 +182,9 @@ def test_the_missing_arms_report_is_reproducible_and_ranks_the_candidates(declar
         in (pair["contrasts"])
     )
     # El control en línea ya está declarado en la comparación, así que sus contrastes solo
-    # esperan a otro brazo cuando también usan uno condicionado o derivado.
+    # esperan a otro modelo cuando también usan uno condicionado o derivado.
     assert "transformer_compact_online" not in report["conditional_arms"]
-    # Los tres brazos de integración de MARS-TITAN también están declarados ya. Solo queda
+    # Los tres modelos de integración de MARS-TITAN también están declarados ya. Solo queda
     # condicionada la referencia pública de Titans-MAC.
     assert set(report["conditional_arms"]) == {"titans_reference_mac"}
     assert (totals["declared"], totals["planned_elsewhere"]) == (225, 112)
@@ -403,9 +405,14 @@ def published(tmp_path_factory):
     root = tmp_path_factory.mktemp("matrix")
     study = Study(root / "study")
     study.config["comparison"]["metrics"] = ALL_METRICS
+    # El MSE de la matriz solo se contrasta si el informe publica sus estratos de liquidez.
+    study.config[walk.LIQUIDITY_FIELD] = liquidity_section(min_rows=1, min_sessions=1)
     study.publish()
     output = root / "walk"
-    report = walk.write_walk_forward(study.config_path, study.sources_path, "US+CN", output)
+    edition = study_edition(root / "edition")
+    report = walk.write_walk_forward(
+        study.config_path, study.sources_path, "US+CN", output, edition=edition
+    )
     return root, study, report, output / "comparison.json"
 
 
@@ -459,7 +466,7 @@ def test_missing_arms_leave_their_contrasts_pending(evaluated):
     chain = report["families"]["chain__titans"]["pending"][0]
     assert chain["missing"] == ["titans__chain"]
     assert report["families"]["core__ladder"]["estimable"] == ["+memory", "total"]
-    # Un conjunto sin brazo con nombre deja el contraste pendiente aunque haya coeficientes.
+    # Un conjunto sin modelo con nombre deja el contraste pendiente aunque haya coeficientes.
     assert report["families"]["core__interactions"] == dict(
         question="¿Cuánto aporta la memoria?",
         origin="lineage:core/interactions",
@@ -524,6 +531,7 @@ def test_an_arm_must_match_across_reports_and_a_copy_changes_nothing(tmp_path, p
     assert twice["views"] == once["views"]
     other = Study(tmp_path / "other")
     other.config["comparison"]["metrics"] = ALL_METRICS
+    other.config[walk.LIQUIDITY_FIELD] = liquidity_section(min_rows=1, min_sessions=1)
 
     def shift(arm, seed, fold, partition, values):
         if arm == "titans":
@@ -531,7 +539,13 @@ def test_an_arm_must_match_across_reports_and_a_copy_changes_nothing(tmp_path, p
 
     other.changes.append(shift)
     other.publish()
-    walk.write_walk_forward(other.config_path, other.sources_path, "US+CN", tmp_path / "w2")
+    walk.write_walk_forward(
+        other.config_path,
+        other.sources_path,
+        "US+CN",
+        tmp_path / "w2",
+        edition=study_edition(tmp_path / "edition"),
+    )
     mixed = sources(
         tmp_path,
         [
@@ -739,7 +753,7 @@ def test_cost_adjustment_needs_an_effect_more_hours_and_a_direction():
     same = tables.cost_adjusted(row, -1.0, dict(hours, cumulative=dict(a=2.0, b=2.0)))
     assert same["gpu_hours_difference"] == 0.0 and same["improvement_per_gpu_hour"] is None
     level = tables.cost_adjusted(dict(row, coefficients=dict(a=1.0)), -1.0, hours)
-    assert level["reason"] == "Es un nivel, no un efecto entre brazos"
+    assert level["reason"] == "Es un nivel, no un efecto entre modelos"
     assert tables.cost_adjusted(row, None, hours)["reason"].startswith("La métrica no tiene")
 
 

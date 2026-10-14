@@ -23,6 +23,27 @@ def require_identity(actual: object, expected: dict) -> None:
         raise ValueError("La configuración no coincide con el contrato del módulo")
 
 
+class FingerprintOnce:
+    """Huella SHA-256 de la identidad de una configuración inmutable, calculada una vez.
+
+    Solo vale para dataclasses congeladas cuyos campos son inmutables, porque su identidad
+    no puede cambiar después de crearlas. La huella guardada no se serializa ni se copia:
+    una copia o un objeto recuperado la vuelven a calcular con su propio código.
+    """
+
+    def fingerprint(self) -> str:
+        cached = self.__dict__.get("_fingerprint")
+        if cached is None:
+            cached = hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
+            object.__setattr__(self, "_fingerprint", cached)
+        return cached
+
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        state.pop("_fingerprint", None)
+        return state
+
+
 def _finite_number(value: object, name: str) -> float:
     if type(value) not in (int, float) or not math.isfinite(value):
         raise ValueError(f"{name} debe ser un número finito")
@@ -170,8 +191,113 @@ class MemoryStability:
         }
 
 
+# Formas de PT5. La cascada acopla tres copias de los pesos rápidos en cadena y el banco
+# las deja independientes, cada una con su propio olvido.
+MULTISCALE_FORMS = ("cascade", "ema_bank")
+# Capacidades C_k = 2^(k−1) de la cascada de Benna y Fusi (2016) con tres niveles.
+MULTISCALE_CAPACITIES = (1.0, 2.0, 4.0)
+
+
 @dataclass(frozen=True)
-class MemoryConfig:
+class MemoryMultiscale:
+    """Memoria multiescala sobre los pesos rápidos (PT5), apagada por defecto.
+
+    `cascade` integra con Euler y paso 1 la cadena de Benna y Fusi (2016), como Kaplanis et
+    al. (2018): capacidades C = (1, 2, 4) y conductancias g_{k,k+1} = g · 2^(−(k−1)), con fuga
+    del último nivel hacia cero. El primer nivel son los pesos que lee la memoria y conserva
+    además el olvido α de Titans. `ema_bank` es la alternativa trivial: tres integradores
+    independientes que reciben la misma escritura, el primero con α y los otros dos con las
+    escalas C_k/g_{k,k+1} de los niveles ocultos de la cascada, y la memoria lee su media.
+    Las ecuaciones, la condición de estabilidad y sus límites están en
+    docs/engineering/multiscale-memory.md.
+    """
+
+    form: str = "cascade"
+    coupling: float = 1 / 16
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.form, str) or self.form not in MULTISCALE_FORMS:
+            raise ValueError("form debe ser cascade o ema_bank")
+        coupling = _finite_number(self.coupling, "coupling")
+        # Con g ≤ 1/4 las diagonales de la transición son no negativas y la primera fila
+        # admite la norma ponderada de `contraction` para cualquier α en [α_lo, 1].
+        if not 0 < coupling <= 0.25:
+            raise ValueError("coupling debe pertenecer a (0, 1/4]")
+        object.__setattr__(self, "coupling", coupling)
+
+    @property
+    def conductances(self) -> tuple[float, float, float]:
+        """g_{1,2}, g_{2,3} y la fuga g_{3,4} del último nivel."""
+        g = self.coupling
+        return g, g / 2, g / 4
+
+    @property
+    def timescales(self) -> tuple[float, float, float]:
+        """C_k / g_{k,k+1}, en observaciones del flujo."""
+        return tuple(
+            capacity / conductance
+            for capacity, conductance in zip(MULTISCALE_CAPACITIES, self.conductances, strict=True)
+        )
+
+    @property
+    def bank_decays(self) -> tuple[float, float]:
+        """Olvido fijo de los niveles 2 y 3 del banco, con las escalas ocultas de la cascada."""
+        return 1 / self.timescales[1], 1 / self.timescales[2]
+
+    def transition(self, alpha: float) -> tuple[tuple[float, ...], ...]:
+        """Matriz 3 × 3 de la parte homogénea de un elemento de los pesos, con olvido α."""
+        g12, g23, g34 = self.conductances
+        c1, c2, c3 = MULTISCALE_CAPACITIES
+        if self.form == "ema_bank":
+            d2, d3 = self.bank_decays
+            return ((1 - alpha, 0.0, 0.0), (0.0, 1 - d2, 0.0), (0.0, 0.0, 1 - d3))
+        return (
+            (1 - alpha - g12 / c1, g12 / c1, 0.0),
+            (g12 / c2, 1 - (g12 + g23) / c2, g23 / c2),
+            (0.0, g23 / c3, 1 - (g23 + g34) / c3),
+        )
+
+    def contraction(self, alpha_floor: float) -> tuple[float, tuple[float, float, float]]:
+        """Factor ρ y pesos d de una norma ∞ ponderada en la que la transición contrae.
+
+        Para cualquier α ∈ [α_lo, 1], ‖D A(α) D⁻¹‖_∞ ≤ ρ con D = diag(d). Solo la primera
+        fila depende de α, como |1 − α − g_{1,2}| más una constante, que es convexa en α. Su
+        máximo está en un extremo, así que basta evaluar α_lo y 1. La derivación está en el
+        documento de PT5.
+        """
+        floor = _finite_number(alpha_floor, "alpha_floor")
+        if not 0 < floor < 1:
+            raise ValueError("alpha_floor debe pertenecer a (0, 1)")
+        if self.form == "ema_bank":
+            weights = (1.0, 1.0, 1.0)
+        else:
+            g12, g23, g34 = self.conductances
+            weights = (1 + floor * MULTISCALE_CAPACITIES[0] / (2 * g12), 1.0, 1 + g34 / (2 * g23))
+        rho = 0.0
+        for alpha in (floor, 1.0):
+            matrix = self.transition(alpha)
+            for i, row in enumerate(matrix):
+                total = sum(weights[i] * abs(value) / weights[j] for j, value in enumerate(row))
+                rho = max(rho, total)
+        return rho, weights
+
+    def identity(self) -> dict:
+        return {
+            "form": self.form,
+            "coupling": self.coupling,
+            "levels": len(MULTISCALE_CAPACITIES),
+            "capacities": list(MULTISCALE_CAPACITIES),
+            "conductances": list(self.conductances),
+            "integration": "explicit_euler_unit_step_after_momentum",
+            "first_level_forgetting": "titans_alpha",
+            "hidden_initial": "copy_of_initial_weights",
+            "read": "first_level" if self.form == "cascade" else "mean_of_levels",
+            "source": "post_titans_pt5_v1",
+        }
+
+
+@dataclass(frozen=True)
+class MemoryConfig(FingerprintOnce):
     dim: int
     depth: int = 2
     normalize_qk: bool = True
@@ -190,6 +316,8 @@ class MemoryConfig:
     qkv_convolution: int = 0
     # Sin PT1 (None) la identidad y el cálculo son los de la versión anterior, bit a bit.
     stability: MemoryStability | None = None
+    # PT5, con la misma regla: sin declararla nada cambia.
+    multiscale: MemoryMultiscale | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -219,10 +347,17 @@ class MemoryConfig:
         object.__setattr__(self, "theta_max", float(self.theta_max))
         if self.stability is not None and not isinstance(self.stability, MemoryStability):
             raise ValueError("stability debe ser MemoryStability o None")
+        if self.multiscale is not None and not isinstance(self.multiscale, MemoryMultiscale):
+            raise ValueError("multiscale debe ser MemoryMultiscale o None")
         if self.gate_bias is not None:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias o None")
             self.gate_bias.logits(self.theta_max, self.stability)
+
+    @property
+    def hidden_levels(self) -> int:
+        """Copias adicionales de cada matriz de pesos que guarda PT5, o 0 sin ella."""
+        return 0 if self.multiscale is None else len(MULTISCALE_CAPACITIES) - 1
 
     @property
     def window(self) -> int:
@@ -236,6 +371,7 @@ class MemoryConfig:
         silu = fields.pop("qkv_silu")
         kernel = fields.pop("qkv_convolution")
         fields.pop("stability")
+        fields.pop("multiscale")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -275,6 +411,8 @@ class MemoryConfig:
             extension["projections"] = PAPER_PROJECTIONS
         if self.stability is not None:
             extension["stability"] = self.stability.identity()
+        if self.multiscale is not None:
+            extension["multiscale"] = self.multiscale.identity()
         return {
             **fields,
             **extension,
@@ -293,12 +431,9 @@ class MemoryConfig:
             "gradient_policy": "explicit_differentiable_or_detached",
         }
 
-    def fingerprint(self) -> str:
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
-
 
 @dataclass(frozen=True)
-class MACConfig:
+class MACConfig(FingerprintOnce):
     memory: MemoryConfig
     heads: int = 1
     persistent_tokens: int = 4
@@ -334,6 +469,3 @@ class MACConfig:
             "dropout": 0.0,
             "disabled_policy": "attention_only_without_prefix_or_gate",
         }
-
-    def fingerprint(self) -> str:
-        return hashlib.sha256(canonical(self.identity()).encode()).hexdigest()
