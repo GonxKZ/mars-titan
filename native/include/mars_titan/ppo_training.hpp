@@ -70,6 +70,8 @@ public:
     [[nodiscard]] std::size_t invalid_transitions() const noexcept;
     [[nodiscard]] std::size_t partial_ticks() const noexcept;
     [[nodiscard]] const PpoUpdateStats& last_update() const noexcept;
+    // Última actualización Double DQN o QR-DQN del último avance, para las trazas.
+    [[nodiscard]] const DqnUpdateStats& last_dqn_update() const noexcept;
     [[nodiscard]] std::size_t observed_transitions() const noexcept;
     [[nodiscard]] std::size_t auxiliary_samples() const noexcept;
 
@@ -91,6 +93,7 @@ private:
     std::size_t episodes_ = 0;
     bool failed_ = false;
     PpoUpdateStats last_update_;
+    DqnUpdateStats last_dqn_update_;
     PpoLearningOptions learning_;
     std::vector<simulation::BatchInput> active_inputs_;
     std::vector<std::size_t> source_indices_;
@@ -137,6 +140,19 @@ struct PpoEvaluation {
                                             const PpoLearningOptions& learning = {},
                                             const PpoDecisionObserver& observer = {},
                                             bool memory_sensitivity = false);
+// Anchura de observación de una política sobre estas fuentes y este contexto. Depende de los
+// activos y de los campos, no del número de carriles, y es la que calculan PpoTrainer y
+// evaluate_policy.
+[[nodiscard]] std::size_t policy_observation_width(const std::vector<simulation::BatchInput>& inputs,
+                                                   const PpoLearningOptions& learning,
+                                                   uint64_t seed, std::size_t workers);
+// Política inicial de un ajuste PPO con esa anchura, la misma que crea PpoTrainer antes de su
+// primer paso. La evaluación de solo lectura la construye sin entrenador.
+[[nodiscard]] PpoPolicy initial_ppo_policy(std::size_t width,
+                                           const PpoHyperparameters& hyperparameters,
+                                           uint64_t seed, const std::string& device,
+                                           const PpoLearningOptions& learning,
+                                           const PpoObjectiveConfig& objective);
 [[nodiscard]] std::string serialize_rollout(const PpoRollout& rollout);
 [[nodiscard]] PpoRollout deserialize_rollout(std::string_view bytes);
 [[nodiscard]] std::string serialize_training_buffer(const PpoTrainingState& state);

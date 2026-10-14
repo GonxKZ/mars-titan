@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "edition_subset_definition",
+  "markets": [
+    "CN",
+    "US"
+  ],
+  "years": {
+    "first": 2000,
+    "last": 2023
+  },
+  "labels": "usable",
+  "name": "liquid-usable-2000-2023",
+  "liquidity": {
+    "declared_at": "2026-10-13",
+    "source": "unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1",
+    "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+    "cut": "calendar_year_start_utc_v1",
+    "price_below": 1.0,
+    "volume_below": 1000,
+    "volume_sessions": 20,
+    "keep": [
+      "liquid"
+    ]
+  },
+  "notes": "Filas usables de los activos líquidos en el corte de su año, con los umbrales de la evaluación por estratos (1 de precio, 1.000 títulos de mediana en 20 sesiones). El año 2000 no tiene sesiones anteriores en la edición sin ajustar y queda fuera."
+}

@@ -1,0 +1,77 @@
+{
+ "issue": 547,
+ "commit": "3cc97794",
+ "script": "39a3b6d14c168c693bb44413d32ba8b3e7ad8c9b8f65a772bf54bf633af73f95",
+ "mutations": [
+  {
+   "name": "fork_without_generator",
+   "file": "src/mars_titan/memory/retention_bank.py",
+   "tests": [
+    "tests/memory/test_retention_bank.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/memory/test_retention_bank.py::test_proposals_match_the_snapshot_copy_and_full_key_conversion_bit_for_bit[uniform]"
+   ],
+   "summary": [
+    "1 failed, 75 passed in 2.23s"
+   ]
+  },
+  {
+   "name": "fork_without_memory",
+   "file": "src/mars_titan/memory/retention_bank.py",
+   "tests": [
+    "tests/memory/test_retention_bank.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/memory/test_retention_bank.py::test_proposals_keep_original_records_and_leave_previous_snapshot_unchanged[reservoir]"
+   ],
+   "summary": [
+    "1 failed in 0.76s"
+   ]
+  },
+  {
+   "name": "proposal_without_key_cache",
+   "file": "src/mars_titan/memory/retention_bank.py",
+   "tests": [
+    "tests/memory/test_retention_bank.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/memory/test_retention_bank.py::test_proposals_convert_each_retained_key_once[reservoir]"
+   ],
+   "summary": [
+    "1 failed, 70 passed in 2.44s"
+   ]
+  },
+  {
+   "name": "cache_keeps_every_client",
+   "file": "src/mars_titan/memory/retention_bank.py",
+   "tests": [
+    "tests/memory/test_retention_bank.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/memory/test_retention_bank.py::test_proposals_convert_each_retained_key_once[reservoir]"
+   ],
+   "summary": [
+    "1 failed, 70 passed in 1.98s"
+   ]
+  },
+  {
+   "name": "writable_cached_rows",
+   "file": "src/mars_titan/memory/retention_bank.py",
+   "tests": [
+    "tests/memory/test_retention_bank.py"
+   ],
+   "status": "detectada",
+   "failed": [
+    "FAILED tests/memory/test_retention_bank.py::test_proposals_convert_each_retained_key_once[reservoir]"
+   ],
+   "summary": [
+    "1 failed, 70 passed in 1.64s"
+   ]
+  }
+ ]
+}

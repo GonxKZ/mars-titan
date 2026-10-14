@@ -24,6 +24,7 @@ from mars_titan.posttraining.adapter_matrix import read_matrix
 from mars_titan.training import candidate_walk_forward as walk
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.walk_forward_phases import window_phases
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.training.test_candidate_walk_forward import WARMUP, fit
 from tests.training.test_candidate_walk_forward import allowed as allowed
 from tests.training.test_candidate_walk_forward import views as views
@@ -341,3 +342,33 @@ def test_adapters_and_the_frozen_parent_never_use_another_warmup(
             parent_id=f"{SCOPE}/{FIRST}/gru_episodic",
             device="cpu",
         )
+
+
+def test_traces_reach_the_adapted_head_without_changing_the_window(
+    views, parent, matrix, arms, tmp_path
+):
+    """Trazas de #448 en el postentrenamiento de la candidata, con la actualización de la cabeza."""
+    document, digest = matrix
+    name = next(key for key in cases(matrix) if key != "full_continuation")
+    output = tmp_path / "traced"
+    report = ca.run_candidate_posttraining(
+        parent,
+        views.windows[SCOPE][FIRST],
+        output,
+        case=cases(matrix)[name],
+        matrix=document,
+        digest=digest,
+        device="cpu",
+        optimizer_factory=RecordingOptimizer,
+        traces=EVERY_STEP,
+    )
+    folder, reference, _ = arms[name]
+    assert report["status"] == "completed"
+    for partition, record in reference["predictions"].items():
+        assert rows(output, report["predictions"][partition]).equals(rows(folder, record))
+    manifest, found = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "posttraining_episodic_gru"
+    deltas = [row for row in found if row["metric"] == "adapter.delta_l2"]
+    # Sin pasos que cambien pesos, la actualización efectiva de la cabeza es exactamente cero.
+    assert deltas and all(row["value"] == 0.0 for row in deltas)
+    assert {"loss", "grad_l2"} <= metrics(found, "train")

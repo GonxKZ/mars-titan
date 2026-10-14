@@ -32,8 +32,11 @@ def prepare_joint_temporal_corpus(
     recover_annual_boundaries=False,
     input_policy=STRICT_INPUTS,
     eligibility=None,
+    subset=None,
 ):
     """Preparar cada calendario y publicar su unión sin intersectar decisiones.
+
+    `subset` pasa a cada mercado el mismo subconjunto declarado del catálogo de la edición.
 
     `eligibility` asigna a un mercado el protocolo propio que fija en qué ventanas cuenta
     en las métricas (`splits.eligible_folds`). En las demás ventanas ese mercado puede
@@ -119,6 +122,7 @@ def prepare_joint_temporal_corpus(
                 stage / "markets" / market,
                 recover_annual_boundaries=recover_annual_boundaries,
                 input_policy=input_policy,
+                subset=subset,
                 empty_folds=[
                     fold["id"]
                     for fold in build_folds(protocols[market])
@@ -164,6 +168,8 @@ def prepare_joint_temporal_corpus(
                 joined["recovered_annual_labels"] = sum(
                     view["recovered_annual_labels"] for view in views.values()
                 )
+            if subset is not None:
+                joined["data_subset"] = views["US"]["data_subset"]
             temporal_contracts(joined, input_policy=input_policy)
             destination = stage / fold["id"] / "manifest.json"
             atomic_json(destination, joined)
@@ -218,6 +224,8 @@ def prepare_joint_temporal_corpus(
             scientific_training_started=False,
             final_test_opened=False,
         )
+        if subset is not None:
+            report["data_subset"] = local_reports["US"]["data_subset"]
         if eligibility:
             report["market_eligibility"] = {
                 market: dict(protocol_sha256=signatures[path], folds=eligible[market])
@@ -253,6 +261,7 @@ def main(argv=None):
     parser.add_argument("--recover-annual-boundaries", action="store_true")
     for market in ("us", "cn"):
         parser.add_argument(f"--{market}-eligibility", type=Path)
+    parser.add_argument("--subset", type=Path, help="Manifiesto de un subconjunto declarado")
     args = parser.parse_args(argv)
     fields = (
         ("protocol",) if args.input_policy != STRICT_INPUTS else ("protocol", "macro", "admission")
@@ -280,6 +289,7 @@ def main(argv=None):
             for market in ("us", "cn")
             if getattr(args, f"{market}_eligibility") is not None
         },
+        subset=args.subset,
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0
