@@ -1641,9 +1641,7 @@ def write_sources(
         state.receipts[job["id"]] = receipt
     platform = hardware_profiles.same_platform(
         {job["id"]: state.receipts[job["id"]].get("platform") for job in jobs},
-        unrecorded=None
-        if unrecorded_platform is None
-        else hardware_profiles.load_profile(unrecorded_platform),
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
     )
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"

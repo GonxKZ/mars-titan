@@ -24,6 +24,7 @@ from mars_titan.posttraining import adapter_matrix, campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from mars_titan.training import campaign_chain
 from tests.evaluation.test_comparison_sources import masked_view, save
+from tests.hardware.platform_doubles import desktop, laptop
 from tests.posttraining.campaign_fixture import write_configs
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -132,12 +133,18 @@ class Stage:
         save(
             self.base_sources,
             dict(
-                schema_version=1,
+                schema_version=2,
                 kind="walk_forward_prediction_sources",
                 scope="US",
                 input_policy=HISTORICAL_MASKED,
                 windows={w: dict(view=view) for w, view in self.views.items()},
                 arms=arms,
+                platform=dict(
+                    platform_sha256=laptop()["platform_sha256"],
+                    recorded=2,
+                    unrecorded=0,
+                    unrecorded_profile=None,
+                ),
             ),
         )
 
@@ -166,6 +173,7 @@ class Stage:
                 ),
                 predictions={part: entry[part] for part in ("calibration", "evaluation")},
                 final_test_opened=False,
+                platform=laptop(),
             )
             save(folder / "receipt.json", receipt)
 
@@ -238,13 +246,14 @@ class Stage:
         )
         return selected
 
-    def sources(self):
+    def sources(self, **options):
         return compare.write_sources(
             self.declaration,
             "US",
             "gru",
             base_sources=self.base_sources,
             stage_output=self.output,
+            **options,
         )
 
 
@@ -398,6 +407,60 @@ def test_sources_point_to_the_campaign_parent_and_the_stage_receipts(study):
     assert (sources.parent / head).resolve() == (
         stage.output / "jobs" / "US/fold-001/gru__head/fit-s42" / "calibration-predictions.parquet"
     ).resolve()
+
+
+def test_sources_keep_one_platform_shared_with_the_base(tmp_path):
+    stage = Stage(tmp_path)
+    published = stage.sources()
+    manifest = json.loads(published.read_text())
+    assert manifest["schema_version"] == 2
+    jobs = stage.loaded["groups"]["gru"]["jobs"]["US"]
+    assert manifest["platform"] == dict(
+        platform_sha256=laptop()["platform_sha256"],
+        recorded=len(jobs),
+        unrecorded=0,
+        unrecorded_profile=None,
+    )
+    path = stage.output / "jobs" / jobs[0]["id"] / "receipt.json"
+    receipt = json.loads(path.read_text())
+    # Un recibo de otra máquina mezcla plataformas en la etapa.
+    save(path, dict(receipt, platform=desktop()))
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        stage.sources()
+    # Toda la etapa en otra máquina que la base que hereda.
+    for job in jobs:
+        other = stage.output / "jobs" / job["id"] / "receipt.json"
+        save(other, dict(json.loads(other.read_text()), platform=desktop()))
+    with pytest.raises(ValueError, match="otra plataforma que la base"):
+        stage.sources()
+    # Los rechazos no sustituyen las fuentes ya publicadas.
+    assert json.loads(published.read_text()) == manifest
+
+
+def test_receipts_before_the_platform_record_need_a_declared_profile(tmp_path):
+    stage = Stage(tmp_path)
+    jobs = stage.loaded["groups"]["gru"]["jobs"]["US"]
+    for job in jobs:
+        path = stage.output / "jobs" / job["id"] / "receipt.json"
+        receipt = json.loads(path.read_text())
+        receipt.pop("platform")
+        save(path, receipt)
+    # La base registra su huella y la etapa no: no se puede comprobar que coincidan.
+    with pytest.raises(ValueError, match="los recibos de la etapa no"):
+        stage.sources(unrecorded_platform="rtx4070-laptop")
+    # Con unas fuentes de la base anteriores al registro, solo el perfil declarado las admite.
+    base = json.loads(stage.base_sources.read_text())
+    base.pop("platform")
+    save(stage.base_sources, dict(base, schema_version=1))
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        stage.sources()
+    manifest = json.loads(stage.sources(unrecorded_platform="rtx4070-laptop").read_text())
+    assert manifest["platform"] == dict(
+        platform_sha256=None,
+        recorded=0,
+        unrecorded=len(jobs),
+        unrecorded_profile="rtx4070-laptop",
+    )
 
 
 def test_a_stage_with_other_identity_or_views_is_rejected(tmp_path):
