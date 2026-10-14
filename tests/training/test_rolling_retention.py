@@ -539,6 +539,53 @@ def test_the_v3_declaration_is_fixed_before_results(tmp_path, edit, message):
         rolling.load_retention(tmp_path / "retention.json")
 
 
+def test_the_chain_keeps_each_chosen_job_until_its_last_reading_window(tmp_path, monkeypatch):
+    """`chain_keep` sobre lecturas y selecciones sustituidas: ventanas hasta `index`, el
+    trabajo elegido de cada una, su última ventana lectora y el filtro de un bloque."""
+    from mars_titan.training import campaign_chain
+
+    def reader(scope, window, name):
+        return dict(id=name, scope=scope, window=window)
+
+    readers = {
+        ("US", "w1", "gru", 42): [reader("US", "w1", "p1"), reader("US", "w3", "p3")],
+        ("US", "w2", "gru", 42): [reader("US", "w2", "p2")],
+        ("CN", "w1", "gru", 42): [reader("CN", "w2", "p4")],
+        ("US", "w3", "gru", 42): [reader("US", "w3", "p5")],
+    }
+    # La cadena de w2 conserva el predictor elegido en w1 si ningún caso lo mejora.
+    chosen = {("US", "w1"): "a", ("US", "w2"): "a", ("CN", "w1"): "c", ("US", "w3"): "d"}
+    read = []
+
+    def selection(root, scope, window, arm, seed):
+        read.append((scope, window))
+        job = chosen.get((scope, window))
+        return None if job is None else dict(selected=dict(job=job))
+
+    monkeypatch.setattr(rolling_storage, "chain_readers", lambda stage, jobs: readers)
+    monkeypatch.setattr(campaign_chain, "read_selection", selection)
+    positions = {("US", "w1"): 0, ("CN", "w1"): 0, ("US", "w2"): 1, ("CN", "w2"): 1}
+    state = SimpleNamespace(
+        rl={},
+        adapters=dict(output=tmp_path),
+        positions=positions | {("US", "w3"): 2},
+        policy_stage=lambda: (None, None),
+    )
+    keep = rolling.Rolling.chain_keep(state, 1)
+    # w3 aún no tiene selección y no se lee. La de w1 la lee p3 en w3, la última ventana.
+    assert ("US", "w3") not in read
+    assert {job: (last, [r["id"] for r in found]) for job, (last, found) in keep.items()} == {
+        "a": (2, ["p1", "p3", "p2"]),
+        "c": (1, ["p4"]),
+    }
+    block = rolling.Rolling.chain_keep(state, 1, only=("US", "w2", "gru"))
+    assert {job: last for job, (last, _) in block.items()} == {"a": 1}
+    assert rolling.Rolling.chain_keep(SimpleNamespace(**vars(state) | dict(rl=None)), 1) == {}
+    del chosen["US", "w2"]
+    with pytest.raises(ValueError, match="Falta la selección de la cadena de US/w2/gru"):
+        rolling.Rolling.chain_keep(state, 1)
+
+
 def test_the_policy_stage_comes_with_the_retention_that_declares_it(
     base,  # noqa: F811
     unconsumed,
