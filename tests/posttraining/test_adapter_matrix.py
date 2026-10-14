@@ -344,17 +344,29 @@ THIRD = Path("configs/posttraining/adapter-matrix-v3.json")
 
 def test_third_version_only_adds_the_chronological_designs_and_the_variety():
     from mars_titan.posttraining import chronological_matrix as cm
+    from mars_titan.posttraining import predictive_objectives as predictive
+    from mars_titan.posttraining import replay_continuation as replay
 
     second, _ = adapter_matrix.read_matrix(SECOND)
     third, digest = adapter_matrix.read_matrix(THIRD)
-    ignored = {"schema_version", "architectures", "variety"}
+    ignored = {
+        "schema_version",
+        "architectures",
+        "variety",
+        "anchored_continuation",
+        replay.SECTION_NAME,
+        predictive.SECTION_NAME,
+    }
     assert {k: v for k, v in second.items() if k not in ignored} == {
         k: v for k, v in third.items() if k not in ignored
     }
     assert third["architectures"]["executable"] == second["architectures"]["executable"]
     assert third["architectures"]["pending"] == {}
-    # Sin los adaptadores de la variedad (#444), los casos de las referencias son los de la v2.
+    # Sin los adaptadores de la variedad, la continuación anclada (#444), los controles de
+    # repaso (#55) ni los objetivos lineales (#128), los casos de las referencias son los de
+    # la v2.
     variety = {arm["id"] for arm in third["variety"]["arms"]}
+    variety |= {"anchored_continuation", *replay.CONTROLS, *predictive.CONTROLS}
     for family in adapter_matrix.FAMILIES:
         assert [
             item

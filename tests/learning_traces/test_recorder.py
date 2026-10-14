@@ -12,13 +12,13 @@ import pytest
 import torch
 
 from mars_titan.learning_traces.parameters import (
-    OTHER,
     UpdateProbe,
-    group_parameters,
+    parameter_groups,
     record_gradients,
 )
 from mars_titan.learning_traces.recorder import (
     STATS,
+    STEP_UNITS,
     TraceConfig,
     TraceRecorder,
     read_traces,
@@ -67,6 +67,21 @@ def test_flushes_write_numbered_parts_with_the_declared_schema(tmp_path):
     assert loss == [0.25, 0.125]
     mean = [r for r in rows if r["metric"] == "activation" and r["stat"] == "mean"]
     assert mean[0]["value"] == 1.5 and mean[0]["group"] == "memory"
+
+
+def test_the_manifest_declares_a_known_step_unit(tmp_path):
+    assert read_traces(recorder(tmp_path).folder)[0]["step_unit"] == "optimizer_step"
+    for unit in STEP_UNITS:
+        traces = TraceRecorder(tmp_path / unit, TraceConfig(1, 1 << 20), IDENTITY, step_unit=unit)
+        assert read_traces(traces.folder)[0]["step_unit"] == unit
+    with pytest.raises(ValueError, match="Unidad"):
+        TraceRecorder(tmp_path / "epoch", TraceConfig(1, 1 << 20), IDENTITY, step_unit="epoch")
+    path = tmp_path / "wave" / "manifest.json"
+    manifest = json.loads(path.read_text())
+    del manifest["step_unit"]
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="unidad de paso"):
+        read_traces(tmp_path / "wave")
 
 
 def test_invalid_names_are_rejected(tmp_path):
@@ -150,9 +165,7 @@ def gradients_and_rng(traces):
     loss = model(x, traces).square().mean()
     loss.backward()
     if traces is not None:
-        record_gradients(
-            traces, group_parameters(model.named_parameters(), {"memory": ["memory."]})
-        )
+        record_gradients(traces, parameter_groups(dict(model=model)))
         traces.scalar("loss", loss)
         traces.flush(0, "train")
     grads = [p.grad.clone() for p in model.parameters()]
@@ -167,22 +180,25 @@ def test_traces_do_not_change_gradients_or_the_random_state(tmp_path):
     assert torch.equal(plain_rng, traced_rng)
     _, table = read_traces(tmp_path / "traces")
     groups = {(r["metric"], r["group"]) for r in table.to_pylist()}
-    assert {("grad_l2", "memory"), ("grad_l2", OTHER), ("weight_l2", "memory")} <= groups
+    assert {("grad_l2", "model.memory"), ("grad_l2", "model.head")} <= groups
+    assert ("weight_l2", "model.memory") in groups
 
 
 def test_parameter_groups_are_disjoint_and_complete():
-    model = Tiny()
-    grouped = group_parameters(model.named_parameters(), {"memory": ["memory."]})
-    assert {name for name, _ in grouped["memory"]} == {"memory.weight", "memory.bias"}
-    assert {name for name, _ in grouped[OTHER]} == {"head.weight", "head.bias"}
-    with pytest.raises(ValueError, match="varios grupos"):
-        group_parameters(model.named_parameters(), {"a": ["memory."], "b": ["memory.w"]})
+    model, other = Tiny(), Tiny()
+    other.head.weight.requires_grad_(False)
+    grouped = parameter_groups(dict(model=model, Readout=other))
+    assert {name for name, _ in grouped["model.memory"]} == {"memory.weight", "memory.bias"}
+    assert {name for name, _ in grouped["model.head"]} == {"head.weight", "head.bias"}
+    # Los congelados no forman parte de ningún grupo y los nombres siguen la regla común.
+    assert {name for name, _ in grouped["readout.head"]} == {"head.bias"}
+    assert sum(len(values) for values in grouped.values()) == 7
 
 
 def test_the_update_ratio_follows_its_formula(tmp_path):
     model = Tiny()
-    grouped = group_parameters(model.named_parameters(), {"head": ["head."]})
-    old = [p.detach().clone() for _, p in grouped["head"]]
+    grouped = parameter_groups(dict(model=model))
+    old = [p.detach().clone() for _, p in grouped["model.head"]]
     probe, traces = UpdateProbe(), recorder(tmp_path, every=1)
     probe.before(grouped)
     with torch.no_grad():
@@ -193,9 +209,9 @@ def test_the_update_ratio_follows_its_formula(tmp_path):
     _, table = read_traces(tmp_path / "traces")
     ratio = {r["group"]: r["value"] for r in table.to_pylist() if r["metric"] == "update_ratio"}
     delta = torch.cat(
-        [(p.detach() - o).reshape(-1) for (_, p), o in zip(grouped["head"], old, strict=True)]
+        [(p.detach() - o).reshape(-1) for (_, p), o in zip(grouped["model.head"], old, strict=True)]
     )
     base = torch.cat([o.reshape(-1) for o in old])
     expected = (delta.double().norm() / base.double().norm()).item()
-    assert ratio["head"] == pytest.approx(expected, rel=1e-12)
-    assert ratio[OTHER] == 0.0
+    assert ratio["model.head"] == pytest.approx(expected, rel=1e-12)
+    assert ratio["model.memory"] == 0.0

@@ -7,6 +7,7 @@ pruebas admiten la etapa con la protección temporal permitida de `learning_doub
 """
 
 import json
+import math
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,9 +25,12 @@ from mars_titan.simulation import campaign_stage, native_policy_runs, policy_pla
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import desktop, laptop
+from tests.learning_hold_lowering import lowers_learning_hold
 from tests.simulation import rl_stage_fixture as fixture
 from tests.suite_support import missing_native
 
+THIS = "tests/simulation/test_campaign_stage.py"
 REPOSITORY = {
     v: Path(f"configs/simulation/historical-masked-rl-stage-{v.lower()}.json") for v in "AB"
 }
@@ -83,9 +87,14 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
         universes.setdefault(identity["window"], set()).add(identity["tapes"]["universe_sha256"])
         assert len(receipt["evaluation"]) == 4 and receipt["final_test_opened"] is False
         if identity["kind"] == "fit":
-            assert receipt["selection"] == dict(
+            selection = dict(receipt["selection"])
+            best = selection.pop("best")
+            assert selection == dict(
                 metric="ruin_count_then_mean_liquidated_log_growth", partition="validation"
             )
+            # El mejor estado publica sus ruinas y su crecimiento liquidado de validación.
+            assert best["ruin_count"] == 0 and math.isfinite(best["mean_liquidated_log_growth"])
+            assert receipt["validation_future_information_bound"] is not None
             assert receipt["policy"]["id"] == identity["id"]
             if identity["arm"] == "klpo_terminal":
                 # Dos oleadas completas de dos episodios anuales, sin superar el presupuesto.
@@ -306,13 +315,17 @@ def test_a_stop_request_pauses_between_jobs(base_a, tmp_path, learning_doubles):
     assert len(rest.calls) == 16 and not any(call["resume"] for call in rest.calls)
 
 
-def test_the_learning_hold_stops_the_stage_before_outputs_and_between_jobs(
-    base_a, tmp_path, learning_hold
-):
-    blocked = learning_hold(False)
+def test_the_learning_hold_stops_the_stage_before_outputs(base_a, tmp_path, learning_hold):
+    learning_hold(False)
     with pytest.raises(LearningHoldError, match="etapa de políticas"):
         fixture.run(base_a, tmp_path / "stage", fixture.ScriptedLearner())
     assert not (tmp_path / "stage").exists()
+
+
+@lowers_learning_hold(f"{THIS}::test_the_learning_hold_is_read_again_between_jobs")
+def test_the_learning_hold_is_read_again_between_jobs(base_a, tmp_path, learning_hold):
+    blocked = tmp_path / "blocked.json"
+    blocked.write_text(json.dumps({"training_allowed": False}), encoding="utf-8")
     allowed = learning_hold(True)
 
     class Reinstating(fixture.ScriptedLearner):
@@ -536,6 +549,8 @@ INVALID = {
     "drops_an_episode": (_pop, "cada coste"),
     "predictor_mae": (_selection(metric="session_mae"), "criterio de cartera"),
     "selects_on_evaluation": (_selection(partition="evaluation"), "criterio de cartera"),
+    "selection_without_best": (_selection(best=None), "mejor estado de validación"),
+    "best_without_growth": (_selection(best=dict(ruin_count=0)), "mejor estado de validación"),
     "fewer_transitions": (_fewer, "presupuesto"),
     "klpo_beyond_its_waves": (_beyond_waves, "presupuesto"),
     "policy_of_another_job": (
@@ -587,6 +602,9 @@ def test_a_reference_that_learns_is_rejected(base_a, tmp_path, learning_doubles)
             tmp_path / "stage",
             listing_status=base_a.listing_status,
             executors=executors,
+            # Las cotas de los trabajos confirmados antes se calculan con la contabilidad de
+            # Python, como en el resto de la etapa reducida. La paridad nativa tiene su prueba.
+            bound_backend="python",
             capabilities={},
             stop=SimpleNamespace(requested=False),
         )
@@ -1129,3 +1147,21 @@ def test_a_staged_campaign_reads_only_selections_checked_by_the_report(
     )
     assert summary["status"] == "paused" and learner.calls == []
     assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
+
+
+def test_the_stage_runs_on_the_platform_of_the_base_receipts_it_reads():
+    receipts = {
+        "US/fold-000/gru": dict(platform=laptop()),
+        "US/fold-001/gru": dict(platform=laptop()),
+    }
+    found = campaign_stage.base_platform(receipts, laptop())
+    assert found["platform_sha256"] == laptop()["platform_sha256"] and found["recorded"] == 3
+    with pytest.raises(ValueError, match="mezcla plataformas"):
+        campaign_stage.base_platform(receipts, desktop())
+    # Recibos de la base anteriores al registro: solo con el perfil al que se atribuyen.
+    legacy = {"US/fold-000/gru": {}}
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        campaign_stage.base_platform(legacy, laptop())
+    assert campaign_stage.base_platform(legacy, laptop(), "rtx4070-laptop")["unrecorded"] == 1
+    with pytest.raises(ValueError, match="no corresponde al perfil"):
+        campaign_stage.base_platform(legacy, desktop(), "rtx4070-laptop")

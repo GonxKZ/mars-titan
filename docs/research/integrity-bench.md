@@ -113,27 +113,38 @@ Tres mutaciones dirigidas hacen fallar las pruebas: ordenar el objetivo también
 
 ## Cota con información futura en el entorno financiero
 
-`integrity/oracle_bound.py` pone en escala los resultados de las políticas y detecta trampas por el resultado. El entorno decide al cierre de t, ejecuta en la apertura de t+1 y valora al cierre de t+1. La política con información futura usa como puntuación el rendimiento de esa sesión, `close[t+1] / open[t+1] - 1`, con la misma regla de asignación, costes y liquidez del entorno, y exposición completa.
+`integrity/oracle_bound.py` pone en escala los resultados de las políticas y detecta trampas por el resultado. El entorno decide al cierre de t y ejecuta en la apertura de t+1. La posición se mantiene hasta la apertura de t+2, donde la decisión siguiente puede cambiarla, y la última se valora al cierre final. El rendimiento de esa tenencia es `open[t+2] / open[t+1] - 1` (en la última decisión, `close[T-1] / open[T-1] - 1`), con los desdoblamientos, dividendos y bajas que la cartera aplica dentro de ella. Una baja con precio de salida cambia las acciones por su cobro, una baja sin recuperación lo pierde todo y una baja sin precio de salida deja la tenencia sin rendimiento, porque el episodio que la mantenga termina sin patrimonio. Una apertura ausente no se negocia y la posición pasa a la sesión siguiente: esa tenencia se reparte entre las dos decisiones valorándola al cierre de su misma sesión, y el producto de los dos tramos es el rendimiento real.
+
+Con ese rendimiento hay dos cotas:
+- **Cota exacta.** Suma en cada decisión `log1p(max(0, max_i r_i))`. Sin apalancamiento, cortos ni costes, el patrimonio de una tenencia crece como mucho lo que su mejor activo, y la caja no rinde. Relaja lotes, límites de precio, liquidez, impuestos y el tamaño de las órdenes, así que ningún episodio sin costes puede superarla salvo por redondeo (1e-9 en logaritmo). El entorno no la alcanza.
+- **Política con información futura.** Usa el rendimiento como puntuación con la asignación, los costes y la liquidez del entorno y exposición completa. Reparte por igual entre el cuartil superior de los rendimientos positivos, así que no es el máximo de la regla: una política que concentra en uno o dos activos puede superarla sin ninguna fuga.
 
 `bound` evalúa con el evaluador de políticas fijas que ya usa la simulación:
 - la política de la cinta con exposición completa;
 - la caja;
 - la política con información futura.
 
-Después informa de la fracción del crecimiento logarítmico de la política con información futura que alcanza la cinta. Una fracción de 0,5 o más se marca como sospechosa, porque casi con seguridad indica información futura en las puntuaciones.
+Después informa de la fracción del crecimiento logarítmico de la política con información futura que alcanza la cinta y de la cota exacta. Una fracción de 0,5 o más se marca como sospechosa, porque casi con seguridad indica información futura en las puntuaciones, aunque no lo demuestra.
 
 **Por qué hace falta.** La cinta comprueba las marcas de tiempo de las predicciones, no su contenido. Una cinta con puntuaciones del futuro y marcas correctas pasa su contrato. La cota ataca ese hueco por el resultado.
 
 **Límites declarados.**
-- Es una política miope de un paso con información futura: ignora el hueco nocturno hasta la siguiente apertura y no optimiza la rotación. No es el máximo global.
+- La política con información futura es miope, de un paso, y reparte con la regla del entorno. Hasta el 14 de octubre el texto la presentaba como el máximo sin costes. La revisión de #584 lo refutó con el paseo de 60 sesiones y 8 activos de las pruebas: sin costes, la regla crece 1,901 en logaritmo y unas puntuaciones que solo dejan positivo el mejor activo de cada decisión llegan a 2,079. La cota exacta de esa cinta es 2,156. Desde entonces `exceeds_bound` se compara con la cota exacta y la política con información futura solo sirve de escala para la fracción sospechosa. Con costes rota en cada sesión y no optimiza la rotación: comprar y mantener puede superarla.
+- La cota exacta suelta todas las restricciones del entorno. Es un máximo seguro, pero holgado, y por eso no sirve de escala: una política honesta queda muy lejos de ella.
+- Hasta el 13 de octubre puntuaba con `close[t+1] / open[t+1] - 1`, que ignoraba el hueco nocturno que la posición sigue soportando. Se cambió al conectarla con la etapa de políticas (#365).
 - Es un diagnóstico. Su cinta lleva un padre propio (`oracle_one_step_future_returns_diagnostic`) y el informe declara `excluded_from_comparisons`.
-- Sobre cintas reales solo se ejecuta en tramos de ajuste y validación, como el resto de la etapa, y nunca sobre el test de 2024.
+- Nunca se ejecuta sobre el test de 2024. La etapa de políticas calcula las dos cotas sobre la cinta de evaluación walk-forward de cada trabajo, enlaza su archivo en cada recibo y el informe bloquea cualquier episodio que supere la exacta o alcance la fracción sospechosa ([octava fase de la integridad de los entornos](../engineering/rl-environment-integrity.md#octava-fase-cota-con-información-futura-en-cada-recibo)).
 
 **Pruebas.** Con cintas escritas en la prueba:
-- la puntuación es el rendimiento de la sesión siguiente y solo depende de ella;
+- la puntuación es el rendimiento de la tenencia que abre cada decisión y solo cambia con las aperturas que cruza;
+- un desdoblamiento y un dividendo dentro de la tenencia entran en su rendimiento, una baja sin recuperación lo pierde todo, una baja con precio de salida paga su cobro y una baja sin él deja la tenencia sin rendimiento;
+- una apertura ausente se valora en el cierre de su sesión, el producto de los dos tramos es el rendimiento real y no se puede comprar en ella;
+- la cota exacta suma el mejor activo o la caja de cada decisión y vale cero en un mercado plano;
+- ninguna política sin costes la supera en cuatro paseos aleatorios, con puntuaciones que concentran en uno o dos activos, la información futura completa o ruido, y con participación del 1 % o completa. Tampoco la superan una tenencia que cobra una baja con prima ni otra que cruza una apertura ausente, que sin esos dos tratamientos la superarían;
+- el caso de la revisión de #584, con el mejor activo de cada decisión, supera a la política con información futura y queda por debajo de la cota exacta;
 - la cinta de la política con información futura tiene identidad propia y marcada;
 - en un mercado plano la política con información futura no gana nada y una política de compra constante pierde los costes;
-- con 60 sesiones y 8 activos en paseo aleatorio, la política con información futura crece 0,865 en logaritmo, mientras que puntuaciones de ruido alcanzan 0,039, un 4,6 % de la cota, sin marcarse;
+- con 60 sesiones y 8 activos en paseo aleatorio y el coste por defecto del entorno, la política con información futura crece 1,798 en logaritmo, mientras que puntuaciones de ruido alcanzan 0,039, un 2,2 % de la cota, sin marcarse;
 - unas puntuaciones con la información futura alcanzan el 100 % y se marcan.
 
 ## Registro previo y desviaciones
@@ -235,6 +246,6 @@ Siguen en #442, en este orden:
    - aplicar el escáner de fugas a la matriz tabular real de cada ventana, sobre validación;
    - ninguna fila de 2024 en las predicciones de validación y en los demás artefactos de selección;
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
-   - cota con información futura sobre las cintas reales de ajuste y validación de cada ventana.
+   - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
 3. Comprobación contra atajos que entra en el mismo informe: el registro previo de definición, agregación, huecos y unidades de cada métrica.

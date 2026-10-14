@@ -130,6 +130,11 @@ def check_budgets(profile, *, vram_bytes, host_bytes, threads):
     )
 
 
+def attributed_profile(name):
+    """Perfil al que se atribuyen las ejecuciones sin plataforma, o None si no se declara."""
+    return None if name is None else load_profile(name)
+
+
 def same_platform(records, *, unrecorded=None):
     """Plataforma común de las ejecuciones que entran en una comparación.
 
@@ -153,16 +158,63 @@ def same_platform(records, *, unrecorded=None):
             f"{len(missing)} ejecuciones no registran su plataforma, la primera {missing[0]}. "
             "Declara el perfil de hardware al que se atribuyen para admitirlas",
         )
-        for label, record in recorded.items():
-            found = hardware_mismatches(unrecorded, record)
-            _require(
-                not found,
-                f"{label} no corresponde al perfil {unrecorded['name']} atribuido a las "
-                f"ejecuciones sin plataforma: {', '.join(found)}",
-            )
+        _match_profile(recorded, unrecorded, "las ejecuciones sin plataforma")
     return dict(
         platform_sha256=next(iter(digests), None),
         recorded=len(recorded),
         unrecorded=len(missing),
         unrecorded_profile=unrecorded["name"] if missing else None,
     )
+
+
+def inherited_platform(records, base, *, unrecorded=None):
+    """Plataforma común de una etapa y de las fuentes de la base que hereda.
+
+    `records` son las identidades de los recibos de la etapa, como en `same_platform`, y
+    `base` el registro `platform` del manifiesto de fuentes de la base, o None si es anterior
+    a ese registro. El manifiesto solo guarda la huella, así que, si la base la registra, la
+    etapa debe registrar la misma. Si no la registra, la comparación solo se admite con el
+    perfil declarado (`unrecorded`), y cada identidad registrada de la etapa debe
+    corresponderle. Los dos lados deben atribuir sus recibos sin plataforma al mismo perfil.
+    """
+    stage = same_platform(records, unrecorded=unrecorded)
+    digest = None if base is None else base["platform_sha256"]
+    declared = None if base is None else base["unrecorded_profile"]
+    if digest is None:
+        _require(
+            unrecorded is not None,
+            "Las fuentes de la base no registran su plataforma. Declara el perfil de hardware "
+            "al que se atribuyen para compararlas con la etapa",
+        )
+        recorded = {label: read_identity(r) for label, r in records.items() if r is not None}
+        _match_profile(recorded, unrecorded, "las fuentes de la base")
+        attributed = unrecorded["name"]
+    else:
+        _require(
+            stage["platform_sha256"] is not None,
+            "Las fuentes de la base registran su plataforma y los recibos de la etapa no, así "
+            "que no se puede comprobar que coincidan",
+        )
+        _require(
+            stage["platform_sha256"] == digest,
+            "La etapa se ejecutó en otra plataforma que la base que hereda: "
+            f"{stage['platform_sha256'][:12]} frente a {digest[:12]}",
+        )
+        attributed = stage["unrecorded_profile"]
+    _require(
+        attributed is None or declared is None or attributed == declared,
+        "La etapa y la base atribuyen sus recibos sin plataforma a perfiles distintos: "
+        f"{attributed} y {declared}",
+    )
+    return stage
+
+
+def _match_profile(recorded, profile, attributed_to):
+    """Cada identidad registrada debe corresponder al perfil atribuido a lo que no la tiene."""
+    for label, record in recorded.items():
+        found = hardware_mismatches(profile, record)
+        _require(
+            not found,
+            f"{label} no corresponde al perfil {profile['name']} atribuido a "
+            f"{attributed_to}: {', '.join(found)}",
+        )

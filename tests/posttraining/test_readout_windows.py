@@ -21,6 +21,7 @@ from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining import chronological_windows as cw
 from mars_titan.posttraining.adapter_matrix import read_matrix
 from mars_titan.training.titans_walk_forward import unfused_attention
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.training.test_mars_titan_campaign import ARM
 from tests.training.test_mars_titan_campaign import campaign_run as campaign_run
 from tests.training.test_mars_titan_campaign import explicit_fastpath as explicit_fastpath
@@ -54,7 +55,12 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
     prepared = campaign_run.prepared["US"]["windows"]
     root = tmp_path_factory.mktemp("readout-windows")
     result = {}
-    for item in cm.cases(matrix, digest, "mars_titan", bank=True):
+    # La continuación anclada (#444) queda de reserva en los lectores. Se recorre igual para
+    # comprobar que llega al entrenador con su ancla y el presupuesto de la completa.
+    reserve = cm.cases(matrix, digest, "mars_titan", bank=True, reserve=True)
+    items = cm.cases(matrix, digest, "mars_titan", bank=True)
+    items += [item for item in reserve if item["control"] == cm.ANCHORED]
+    for item in items:
         if item["case"]["seed"] != 42:
             continue
         name = item["id"].split("/", 1)[1]
@@ -104,6 +110,7 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
 def test_matrix_declares_the_core_the_reader_and_both_with_a_bank(windows):
     assert set(windows["runs"]) == {
         "full_continuation",
+        "anchored_continuation",
         "core",
         "episodic_readout",
         "core+episodic_readout",
@@ -162,14 +169,59 @@ def test_cases_share_updates_and_train_only_their_declared_parameters(windows):
         updates.add(sum(i.calls for i in factory.instances))
         roles[name] = {group["role"] for i in factory.instances for group in i.param_groups}
         report = json.loads((run["root"] / "fit" / "fit" / "run.json").read_text())
-        adapter = report["identity"]["posttraining"]["adapter"]
-        if name == "full_continuation":
+        identity = report["identity"]
+        adapter = identity["posttraining"]["adapter"]
+        anchored = name == cm.ANCHORED
+        if name in ("full_continuation", cm.ANCHORED):
             assert adapter is None
         else:
             assert set(adapter) == set(name.split("+")), name
+        # Solo la continuación anclada declara el ancla del decaimiento y su código.
+        assert identity["recipe"].get("weight_decay_anchor") == (
+            "initial_parameters" if anchored else None
+        ), name
+        assert ("anchored_decay" in identity) is anchored, name
     assert len(updates) == 1
     assert roles["full_continuation"] != roles["core"]
+    assert roles["full_continuation"] == roles[cm.ANCHORED]
     staged = {
         sum(i.calls for i in run["staged_factory"].instances) for run in windows["runs"].values()
     }
     assert len(staged) == 1 and min(staged) > 0
+
+
+def test_traces_reach_the_reader_case_without_changing_its_rows(windows, campaign_run, tmp_path):  # noqa: F811
+    """Trazas de #448 del núcleo y la lectura adaptados, con las mismas filas que sin ellas."""
+    matrix, digest = read_matrix(MATRIX)
+    matrix["budget"].update(epochs=1)
+    fitted = campaign_run.windows[0]
+    item = next(
+        item
+        for item in cm.cases(matrix, digest, "mars_titan", bank=True)
+        if item["case"]["seed"] == 42 and item["id"].endswith("/core+episodic_readout")
+    )
+    run = windows["runs"]["core+episodic_readout"]
+    arm = windows["base"]["arm"]
+    prepared = campaign_run.prepared["US"]["windows"]
+    output = tmp_path / "traced"
+    with unfused_attention():
+        traced = cw.run_readout_posttraining(
+            arm,
+            Path(prepared[fitted]["path"]),
+            output,
+            case=item["case"],
+            matrix=matrix,
+            digest=digest,
+            device="cpu",
+            optimizer_factory=Factory(),
+            traces=EVERY_STEP,
+        )
+    for partition in ("validation", "calibration", "evaluation"):
+        mine = rows(output / traced["predictions"][partition]["path"])
+        theirs = rows(run["root"] / "fit" / run["fit"]["predictions"][partition]["path"])
+        assert mine == theirs, partition
+    manifest, found = trace_rows(output / "traces")
+    assert manifest["identity"]["family"] == "posttraining_readout"
+    deltas = [row for row in found if row["metric"].startswith("adapter.delta")]
+    assert deltas and all(row["value"] == 0.0 for row in deltas)
+    assert "memory.alpha.mean" in metrics(found, "train")
