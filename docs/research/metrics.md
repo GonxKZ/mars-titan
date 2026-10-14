@@ -879,14 +879,18 @@ de A, el padre congelado es el trabajo `frozen` de la etapa, que aplica a la
 ventana k el estado elegido por la base en k-1, y el modelo base reentrenado en k
 queda como nivel fuera de las familias. Como la primera ventana de cada ámbito
 no tiene postentrenamiento, la comparación empieza en la segunda. Las familias
-declaradas son `versus_frozen_parent` (adaptados y continuación menos el padre
-congelado) y `versus_full_continuation` (adaptados menos la continuación), más el
-nivel de cada modelo. Todo lo demás se hereda de la comparación de la campaña:
+declaradas son `versus_frozen_parent` (adaptados y continuaciones menos el padre
+congelado), `versus_full_continuation` (adaptados menos la continuación) y
+`versus_anchored_continuation` (adaptados y continuación completa menos la
+[continuación anclada](../engineering/adapter-variety.md#asimetría-del-decaimiento-y-continuación-anclada)),
+más el nivel de cada modelo. La última solo existe en los padres que tienen esa
+continuación. Todo lo demás se hereda de la comparación de la campaña:
 protocolos, métricas, calibración común, remuestreo y secciones secundarias. Hoy
-salen nueve padres: las tres redes recurrentes y DLinear con once modelos, el
-Transformer con diecisiete porque la matriz le da puntos de lectura, y los cuatro
-modelos de Titans-MAC con entre siete y catorce. La validación de los recibos por
-etapas elige el predictor de la cadena y no entra en esta comparación.
+salen nueve padres: las tres redes recurrentes y DLinear con doce modelos, el
+Transformer con dieciocho porque la matriz le da puntos de lectura, y los cuatro
+modelos de Titans-MAC con entre siete y catorce, sin continuación anclada. La
+validación de los recibos por etapas elige el predictor de la cadena y no entra en
+esta comparación.
 
 La [declaración de A v2](../../configs/posttraining/historical-masked-adapter-comparison-a-v2.json),
 fijada el 10 de octubre antes de cualquier resultado, añade dos papeles. `chain` es
@@ -895,10 +899,12 @@ semilla son las del trabajo que eligió su `selection.json`, y `base_retrain` es
 modelo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 `versus_full_continuation` incluyen la cadena como variante, y `versus_base_retrain`
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
-informa aparte. Si la campaña declara `walk_forward_stages`, la declaración debe
-contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto, los 29
-modelos de la etapa salvo Ridge, XGBoost y los seis B6, que solo trasladan el padre
-congelado. Cada comparación conserva la
+informa aparte. Como en A, la continuación anclada de las cinco referencias entra
+en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
+los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`,
+la declaración debe contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto,
+los 29 modelos de la etapa salvo Ridge, XGBoost y los seis B6, que solo trasladan el
+padre congelado. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
@@ -1366,6 +1372,49 @@ edición real.
 - Las filas con noticias o fundamentales no son una muestra al azar. Las
   diferencias entre variantes describen poblaciones distintas, igual que los
   estratos.
+
+## Perturbaciones de entradas para la robustez
+
+Es un análisis secundario y descriptivo de #37, declarado el 13 de octubre de 2026 antes de evaluar ninguna variante. Como la ablación, compara cada fila consigo misma: el estado elegido de cada modelo, semilla y ventana volverá a predecir la evaluación con una entrada perturbada, sin reentrenar ni recalibrar. No se usa para seleccionar modelos, configuraciones ni épocas.
+
+### Declaración
+
+La [declaración](../../configs/evaluation/historical-masked-2000-robustness.json) vive fuera de la configuración de la comparación para no cambiar su huella ni la identidad de la campaña. Cita las sensibilidades que ya tienen consumidor:
+
+- costes de 0, 5, 10 y 20 pb en la etapa de políticas y en la cartera larga y corta;
+- ausencia de modalidades, con la ablación y los estratos de la comparación;
+- periodos, con las ventanas walk-forward de cada ámbito;
+- abstención, pendiente de la cobertura y la curva riesgo-cobertura en revisión en #560.
+
+`evaluation/robustness_protocol.py` comprueba que esos archivos y campos existen y que los costes coinciden, que las perturbaciones, la semilla y el generador son los del código y que cada guarda cita una prueba que existe. Un cambio en un lado sin el otro invalida la declaración.
+
+### Perturbaciones
+
+`data/input_perturbations.py` aplica cada variante en la lectura, en el mismo punto que la ablación, y la tabla resultante vuelve a pasar todas las comprobaciones. Viaja por el mismo parámetro del lector y de los traslados, así que todas las familias la reciben sin código propio, y el recibo la identifica con su tipo, intensidad, semilla y generador.
+
+| Variante | Qué hace |
+| --- | --- |
+| `burst_absence_21d_10pct` | Noticias y fundamentales ausentes en ráfagas de 21 días naturales, en un 10 % de los bloques de cada activo |
+| `burst_absence_63d_25pct` | Lo mismo con bloques de 63 días y un 25 % |
+| `noise_10pct` | Cada valor observado de noticias, gráficos, fundamentales y macro se multiplica por `1 + 0,1·z` |
+| `noise_50pct` | Lo mismo con `1 + 0,5·z` |
+
+- **Ráfagas.** Escriben el contrato de una ausencia real (presencia falsa, relleno, disponibilidad nula y causa `input_perturbation`) solo en las filas de los bloques elegidos. Los días desde el 1 de enero de 2000 se agrupan en bloques y cada bloque de cada activo queda ausente con la probabilidad declarada. Las ráfagas de una proporción menor están contenidas en las de una mayor con la misma duración.
+- **Ruido.** Es multiplicativo para no necesitar ninguna escala ajustada con datos. Solo cambia los valores observados: máscaras por concepto, edades y bloques ausentes quedan intactos, y un cero sigue siendo cero. El ruido del macro depende del mercado y de la fecha, no del activo, para que todos los activos de una sesión lean el mismo macro.
+- **Determinismo.** Cada número aleatorio sale de la semilla, el activo o el mercado, la fecha y la posición en el vector (SplitMix64 y Box-Muller). No depende del orden ni del agrupamiento de las filas.
+- **Fuera del alcance.** Los precios llegan por la lectura de la serie y su contrato de ventanas no admite valores alterados, así que no se perturban.
+
+Las intensidades se fijaron en desarrollo sin mirar resultados: un mes y un trimestre de sesiones para las ráfagas, y un 10 % y un 50 % de ruido relativo.
+
+### Guardas del lector
+
+Dos errores de datos no son perturbaciones que un modelo pueda recibir, porque el lector los rechaza. Una sesión repetida se rechaza en la lectura supervisada, en las observaciones y en los eventos con calentamiento de los modelos con memoria, cada una con su guarda. Una disponibilidad posterior a la decisión se rechaza en toda lectura que usa esa fila, y una fila que una lectura no usa no llega al modelo por ella. En cambio, una fecha de disponibilidad falsificada hacia atrás es indistinguible en la lectura. La controlan la procedencia de cada fuente y el escáner de fugas por sesión del [banco de integridad](integrity-bench.md).
+
+### Pruebas y pendientes
+
+`tests/training/test_input_perturbations.py` comprueba sin modelos que una ráfaga se lee exactamente como un corpus técnico con esas filas ausentes de verdad (lotes supervisados, observaciones y eventos con calentamiento, con y sin bloques), que una intensidad nula lee la entrada original, que el ruido es el factor declarado, que fila a fila da lo mismo que la tabla entera y que se rechazan las especificaciones inválidas y las guardas anteriores. Las pruebas de la ablación siguen pasando con la escritura de ausencias generalizada a un subconjunto de filas. `tests/evaluation/test_robustness_protocol.py` comprueba la declaración.
+
+Falta la etapa que repite cada trabajo con cada variante y mide la degradación, la deriva del estado y la recuperación tras una ráfaga. Se añadirá a la etapa de ablación cuando se integren las PR que la modifican (#575 y #579). Ninguna perturbación se ha evaluado, porque la evaluación queda retenida por el bloqueo de aprendizaje.
 
 ## Retención e interferencia en las revisitas de régimen
 

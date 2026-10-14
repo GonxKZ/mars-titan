@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "kind": "replay_continuation_cost",
+  "recorded_at_utc": "2026-10-13T04:29:28.921730+00:00",
+  "commit": "a35730916c46c8721ab8264fb1871adb0945d361",
+  "scope": "Preparaci\u00f3n y lectura en CPU de una \u00e9poca con un padre nulo, sin modelos, optimizadores, p\u00e9rdidas ni errores.",
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3"
+  },
+  "parent_view": {
+    "path": "/home/gonzalo/.cache/mars-titan-tmp/seed-control-rate-20261013/views/fold-011/manifest.json",
+    "sha256": "724ebf1a0f2f41deddfe46709d0a93cda3731edf70303a44082f39723f425a60"
+  },
+  "view": {
+    "path": "/home/gonzalo/.cache/mars-titan-tmp/seed-control-rate-20261013/views/fold-012/manifest.json",
+    "sha256": "1641bd70d84a3ecdf07ab1c555d7f68f94f9e2801b6597a771ea9f60078e01b2"
+  },
+  "windows": [
+    "fold-011",
+    "fold-012"
+  ],
+  "since": "2016-01-01",
+  "batch_size": 256,
+  "max_block_bytes": 3221225472,
+  "ratio": 0.5,
+  "seed": 42,
+  "new_rows": 3840,
+  "earlier": {
+    "admitted": 3708,
+    "rows": 237312,
+    "not_fitted": 192,
+    "late": 0,
+    "routes": {
+      "1": 1521,
+      "2": 538,
+      "3": 834,
+      "4": 815
+    }
+  },
+  "seconds": {
+    "window": 12.906910514000629,
+    "earlier_sessions_and_routes": 1.1182773800010182
+  },
+  "controls": {
+    "full_continuation": {
+      "epoch": {
+        "seconds": 0.34807804800038866,
+        "batches": 60,
+        "rows": {
+          "real": 3840
+        }
+      },
+      "source": {
+        "passes": 1,
+        "cohorts": 120,
+        "evicted": 0,
+        "peak_block_bytes": 17709216
+      }
+    },
+    "replay_uniform": {
+      "plan_seconds": 0.03576209799939534,
+      "budget": {
+        "real_rows": 3840,
+        "extra_rows": 1920,
+        "rows": 5760,
+        "updates": 90
+      },
+      "planned_sessions": 30,
+      "first_epoch": {
+        "seconds": 5.699220480000804,
+        "batches": 90,
+        "rows": {
+          "replay": 1920,
+          "real": 3840
+        }
+      },
+      "second_epoch": {
+        "seconds": 0.5039027269995131,
+        "batches": 90,
+        "rows": {
+          "replay": 1920,
+          "real": 3840
+        }
+      },
+      "earlier_source": {
+        "passes": 1,
+        "cohorts": 60,
+        "evicted": 0,
+        "peak_block_bytes": 7526352
+      },
+      "resident": true
+    },
+    "replay_regime_balanced": {
+      "plan_seconds": 0.03742354499991052,
+      "budget": {
+        "real_rows": 3840,
+        "extra_rows": 1920,
+        "rows": 5760,
+        "updates": 90
+      },
+      "planned_sessions": 30,
+      "first_epoch": {
+        "seconds": 7.334947315001045,
+        "batches": 90,
+        "rows": {
+          "replay": 1920,
+          "real": 3840
+        }
+      },
+      "second_epoch": {
+        "seconds": 0.6102654199985409,
+        "batches": 90,
+        "rows": {
+          "replay": 1920,
+          "real": 3840
+        }
+      },
+      "earlier_source": {
+        "passes": 1,
+        "cohorts": 60,
+        "evicted": 0,
+        "peak_block_bytes": 7515504
+      },
+      "resident": true
+    },
+    "repeat_new_rows": {
+      "plan_seconds": 0.00033655100014584605,
+      "budget": {
+        "real_rows": 3840,
+        "extra_rows": 1920,
+        "rows": 5760,
+        "updates": 90
+      },
+      "planned_sessions": 30,
+      "first_epoch": {
+        "seconds": 0.6420488089988794,
+        "batches": 90,
+        "rows": {
+          "repeat": 1920,
+          "real": 3840
+        }
+      },
+      "second_epoch": {
+        "seconds": 0.6498698979994515,
+        "batches": 90,
+        "rows": {
+          "repeat": 1920,
+          "real": 3840
+        }
+      },
+      "earlier_source": null,
+      "resident": null
+    }
+  },
+  "optimizer_steps": 0,
+  "final_test_opened": false
+}

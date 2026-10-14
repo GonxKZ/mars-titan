@@ -73,12 +73,15 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
         add_executable(adapter_control_tests tests/adapter_control_tests.cpp)
         target_link_libraries(adapter_control_tests PRIVATE mars_titan_adapter_control)
         mars_titan_configure_target(adapter_control_tests)
-        add_test(NAME adapter_control COMMAND adapter_control_tests cpu)
-        set_tests_properties(adapter_control PROPERTIES TIMEOUT 120 LABELS "unit;integration;controls")
+        # Las pruebas que dan pasos SGD pasan por el lanzador que lee la protección.
+        mars_titan_add_optimizer_step_test(adapter_control COMMAND adapter_control_tests cpu)
+        set_tests_properties(adapter_control PROPERTIES TIMEOUT 120)
+        set_property(TEST adapter_control APPEND PROPERTY LABELS unit integration controls)
         mars_titan_sanitizer_test_environment(adapter_control)
         set_property(TEST adapter_control APPEND PROPERTY ENVIRONMENT
             "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
-        add_test(NAME adapter_control_cli COMMAND mars-titan-adapter-control cpu 8 4 3 2 4 2)
+        mars_titan_add_optimizer_step_test(adapter_control_cli
+            COMMAND mars-titan-adapter-control cpu 8 4 3 2 4 2)
         add_test(NAME adapter_control_cli_invalid COMMAND mars-titan-adapter-control cuda:1)
         # El control ejecuta pasos SGD. Con la protección vigente se omite con su motivo.
         add_test(NAME adapter_control_cli_hold COMMAND mars-titan-adapter-control cpu 8 4 3 2 4 2)
@@ -88,7 +91,9 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
         set_tests_properties(adapter_control_cli_hold PROPERTIES
             PASS_REGULAR_EXPRESSION "Bloqueo de aprendizaje vigente: el control de adaptadores")
         set_tests_properties(adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold
-            PROPERTIES TIMEOUT 120 LABELS "integration;controls")
+            PROPERTIES TIMEOUT 120)
+        set_property(TEST adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold
+            APPEND PROPERTY LABELS integration controls)
         mars_titan_sanitizer_test_environment(
             adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold)
         set_property(TEST adapter_control_cli adapter_control_cli_invalid adapter_control_cli_hold
@@ -96,10 +101,13 @@ if(MARS_TITAN_BUILD_ADAPTER_CONTROLS)
         set_property(TEST adapter_control_cli_hold APPEND PROPERTY ENVIRONMENT
             "MARS_TITAN_TRAINING_HOLD=${MARS_TITAN_BLOCKED_HOLD}")
         if(MARS_TITAN_TEST_ADAPTER_CUDA)
-            add_test(NAME adapter_control_cuda COMMAND adapter_control_tests cuda:0)
-            add_test(NAME adapter_control_cli_cuda COMMAND mars-titan-adapter-control cuda:0 8 4 3 2 4 2)
+            mars_titan_add_optimizer_step_test(adapter_control_cuda COMMAND adapter_control_tests cuda:0)
+            mars_titan_add_optimizer_step_test(adapter_control_cli_cuda
+                COMMAND mars-titan-adapter-control cuda:0 8 4 3 2 4 2)
             set_tests_properties(adapter_control_cuda adapter_control_cli_cuda PROPERTIES
-                TIMEOUT 120 LABELS "integration;controls;cuda" RUN_SERIAL TRUE)
+                TIMEOUT 120 RUN_SERIAL TRUE)
+            set_property(TEST adapter_control_cuda adapter_control_cli_cuda
+                APPEND PROPERTY LABELS integration controls cuda)
             set_tests_properties(adapter_control_cli_cuda PROPERTIES
                 SKIP_REGULAR_EXPRESSION "Bloqueo de aprendizaje vigente")
             mars_titan_sanitizer_test_environment(adapter_control_cuda adapter_control_cli_cuda)

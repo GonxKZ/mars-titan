@@ -28,6 +28,7 @@ from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.financial_run import ChronologicalInference, ChronologicalRecipe
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.selection import FIXED_BUDGET
+from tests.learning_hold_lowering import allowed_hold
 from tests.suite_support import missing_native
 from tests.training.chronological_fixture import decision
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus, entries
@@ -173,6 +174,7 @@ def test_recipe_declarations_that_break_the_contract_are_rejected(tmp_path, chan
         dict(temperature=0.0),
         dict(max_grad_norm=-1.0),
         dict(checkpoint_seconds=0.0),
+        dict(weight_decay_anchor="parent"),
     ],
 )
 def test_recipe_rejects_invalid_values(options):
@@ -314,8 +316,7 @@ def runs(shared, tmp_path_factory, native):
 
     _, streams = shared
     root = tmp_path_factory.mktemp("mars-titan-runs")
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}))
+    hold = allowed_hold(root / "hold.json")
     result = {}
     # Enlaces que reciben las codificaciones del banco, para comprobar que el lector entrega
     # el suyo y el codec puede proyectar con el núcleo nativo.
@@ -591,6 +592,29 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path, native):
+    from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
+
+    _, streams = shared
+    plan = recipe(weight_decay=0.01, weight_decay_anchor=INITIAL)
+    engine = build(streams, tmp_path / "anchored", native, plan=plan, factory=None)
+    assert type(engine.optimizer) is AnchoredAdamW
+    pairs = [
+        (value, anchor)
+        for group in engine.optimizer.param_groups
+        for value, anchor in zip(group["params"], group["anchors"], strict=True)
+    ]
+    assert len(pairs) == len(engine.trainable) and all(
+        torch.equal(value, anchor) and value.data_ptr() != anchor.data_ptr()
+        for value, anchor in pairs
+    )
+    assert engine.identity["recipe"]["weight_decay_anchor"] == INITIAL
+    assert engine.identity["anchored_decay"]["anchor"] == INITIAL
+    plain = build(streams, tmp_path / "plain", native, factory=None)
+    assert type(plain.optimizer) is torch.optim.AdamW and "anchored_decay" not in plain.identity
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_readout_fit_is_refused_while_the_learning_hold_blocks(
     shared, tmp_path, native, learning_hold, monkeypatch
 ):
@@ -676,3 +700,40 @@ def test_a_non_finite_segment_loss_stops_before_the_step(
     with pytest.raises(ValueError, match="^La pérdida del tramo no es finita$"):
         engine.run()
     assert engine.optimizer.calls == 0 and engine.global_step == 0
+
+
+def test_each_event_resolves_core_and_reader_checks_together(shared, tmp_path, native, monkeypatch):
+    """El núcleo y el lector de todos los bloques de un evento comparten un tramo diferido.
+
+    En CUDA sus comprobaciones se resuelven al final del evento. Solo se emite, sin pasos.
+    """
+    from mars_titan.models.titans import state as checks
+
+    _, streams = shared
+    engine = build(streams, tmp_path / "scope", native)
+    scopes, prepare, apply = [], engine.predictor.prepare, mt.apply_episodic_readout
+
+    def recorded(function):
+        def call(*args, **kwargs):
+            scopes[-1].append(checks._PENDING.get())
+            return function(*args, **kwargs)
+
+        return call
+
+    monkeypatch.setattr(engine.predictor, "prepare", recorded(prepare))
+    monkeypatch.setattr(mt, "apply_episodic_readout", recorded(apply))
+    source = streams["train"]
+    phase = source.phase
+    run = engine._new_pass(phase.partition)
+    for event in source.batched_events(block_rows=2):
+        if event.inputs and event.at >= phase.decision_start:
+            scopes.append([])
+            engine._observe(run, phase, event, train=False)
+            assert checks._PENDING.get() is None
+        if len(scopes) == 4:
+            break
+    assert max(len(scope) for scope in scopes) > 2
+    for scope in scopes:
+        assert scope[0] is not None
+        assert all(pending is scope[0] for pending in scope)
+    assert len({id(scope[0]) for scope in scopes}) == len(scopes)

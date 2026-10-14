@@ -16,6 +16,7 @@ import torch
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.learning_traces.hooks import open_traces, trace_identity, traced_update
 from mars_titan.models.klpo import MODES as KLPO
 from mars_titan.models.klpo import behavior_log_probabilities, token_loss
 from mars_titan.models.predictive_adaptation import (
@@ -25,6 +26,7 @@ from mars_titan.models.predictive_adaptation import (
     trainable_parameters,
 )
 from mars_titan.models.quantile_head import LEVELS, PINBALL, QUANTILE_HEAD, median, pinball_loss
+from mars_titan.training import anchored_decay
 from mars_titan.training.checkpoints import (
     StopRequest,
     capture_rng,
@@ -37,6 +39,9 @@ from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
+from . import replay_continuation as replay
+from .adapter_traces import AdapterObserver
+from .anchored_continuation import ANCHOR
 from .evaluation import centers, evaluate
 from .inputs import CONDITIONS
 from .parents import require_device
@@ -48,8 +53,9 @@ MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 PINBALL_MODE = "neural_pinball"
 
 
-def code_identity(*, masked=False, adapters=False, quantiles=False):
-    """Huellas del código. Máscaras, adaptadores y pinball añaden solo sus propios módulos."""
+def code_identity(*, masked=False, adapters=False, quantiles=False, anchored=False, replayed=False):
+    """Huellas del código. Máscaras, adaptadores, pinball, el decaimiento anclado y el
+    repaso añaden solo sus propios módulos."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -94,6 +100,17 @@ def code_identity(*, masked=False, adapters=False, quantiles=False):
     names += ("data/input_policy.py",) if masked else ()
     names += ("posttraining/adapter_matrix.py",) if adapters else ()
     names += ("models/quantile_head.py",) if quantiles else ()
+    names += ("training/anchored_decay.py",) if anchored else ()
+    names += (
+        (
+            "posttraining/replay_continuation.py",
+            "posttraining/replay_inputs.py",
+            "environments/view_cohorts.py",
+            "memory/regimes.py",
+        )
+        if replayed
+        else ()
+    )
     return {name: sha256(root / name) for name in names}
 
 
@@ -103,6 +120,8 @@ def case_code(case, dataset=None, *, masked=None):
         masked=getattr(dataset, "masked", False) if masked is None else masked,
         adapters="adapter" in case,
         quantiles=case["mode"] == PINBALL_MODE,
+        anchored=ANCHOR in case,
+        replayed=replay.KEY in case,
     )
 
 
@@ -121,7 +140,7 @@ def validate_case(case):
     }
     if (
         not isinstance(case, dict)
-        or not required <= set(case) <= required | {"selection", "adapter"}
+        or not required <= set(case) <= required | {"selection", "adapter", ANCHOR, replay.KEY}
         or case["mode"] not in (*MODES, PINBALL_MODE)
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
@@ -150,6 +169,30 @@ def validate_case(case):
         if not case["mode"].startswith("neural_") or case["condition"] != "real":
             raise ValueError("Los adaptadores son continuaciones supervisadas con datos reales")
         adapter_matrix.validate_adapter(case["adapter"])
+    if ANCHOR in case:
+        # El ancla solo existe en la continuación completa supervisada: un adaptador ya
+        # decae hacia el padre y la corrección lineal no parte de sus pesos.
+        if (
+            "adapter" in case
+            or not case["mode"].startswith("neural_")
+            or case["condition"] != "real"
+            or case[ANCHOR] != anchored_decay.INITIAL
+            or case["weight_decay"] == 0
+        ):
+            raise ValueError(
+                "El decaimiento anclado pertenece a una continuación completa con datos reales "
+                "y λ positivo"
+            )
+    if replay.KEY in case:
+        # El repaso es otra continuación completa supervisada, sin ancla ni adaptador.
+        replay.check_spec(case[replay.KEY])
+        if (
+            "adapter" in case
+            or ANCHOR in case
+            or not case["mode"].startswith("neural_")
+            or case["condition"] != "real"
+        ):
+            raise ValueError("El repaso pertenece a una continuación completa con datos reales")
 
 
 def _statistics():
@@ -266,6 +309,10 @@ def _validate_run(
         or parent.identity.get("counts") != dataset.population_counts
     ):
         raise ValueError("El padre no acredita la misma población completa")
+    if case.get(replay.KEY) != getattr(dataset, "spec", None) or (
+        replay.KEY in case and dataset.seed != case["seed"]
+    ):
+        raise ValueError("Las cohortes no llevan el repaso que declara el caso")
     budget = dataset.budget(case["condition"], batch_size)
     if diagnostic and budget["rows"] > 5000:
         raise ValueError("El diagnóstico supera el presupuesto de filas aumentadas")
@@ -389,12 +436,15 @@ def run_case(
     checkpoint_seconds=60,
     max_updates=None,
     trace=None,
+    traces=None,
 ):
     """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas.
 
     `trace(event, modules)` se llama tras cada validación completa, también la de la época
     cero, para las trazas de #448 (`posttraining/adapter_traces.py`). No entra en la
-    identidad, no debe cambiar el modelo ni el RNG y sin él no se llama a nada.
+    identidad, no debe cambiar el modelo ni el RNG y sin él no se llama a nada. `traces`
+    declara las trazas comunes (cadencia y presupuesto) en `output/traces`, con los pasos,
+    las validaciones y la actualización de los adaptadores, y su cursor viaja con el estado.
     """
     require_learning_allowed("el postentrenamiento")
     started = time.perf_counter()
@@ -485,13 +535,23 @@ def run_case(
             if "adapter" in case
             else model.parameters()
         )
-        optimizer = torch.optim.AdamW(
-            parameters, lr=case["learning_rate"], weight_decay=case["weight_decay"]
+        optimizer = anchored_decay.adamw(
+            parameters,
+            learning_rate=case["learning_rate"],
+            weight_decay=case["weight_decay"],
+            anchor=case.get(ANCHOR),
         )
         generators = {
             name: torch.Generator(device=device).manual_seed(case["seed"] + i + 1)
             for i, name in enumerate(("actions", "auxiliaries"))
         }
+        hooks = open_traces(
+            output / "traces",
+            traces,
+            trace_identity("posttraining", identity),
+            dict(model=model),
+            observers=[AdapterObserver()],
+        )
         state = dict(
             global_step=0,
             epoch=0,
@@ -512,6 +572,8 @@ def run_case(
             restore_rng(state["rng"], device)
             for key, generator in generators.items():
                 generator.set_state(state["generators"][key])
+        if hooks is not None:
+            hooks.restore(state.get("traces"))
         stop = stop or StopRequest()
         last_saved, updates = time.perf_counter(), 0
         evaluating_selected = False
@@ -536,6 +598,8 @@ def run_case(
                 rng=capture_rng(device),
                 generators={key: g.get_state() for key, g in generators.items()},
             )
+            if hooks is not None:
+                state["traces"] = hooks.checkpoint()
             path = save_training_state(output / "checkpoints", state, identity=identity, best=best)
             report.update(
                 global_step=state["global_step"],
@@ -564,6 +628,8 @@ def run_case(
                 )
                 if trace is not None:
                     trace(_trace_event(0, state, baseline), dict(model=model))
+                if hooks is not None:
+                    hooks.validation(_trace_event(0, state, baseline))
                 state["selection"] = select_epoch(
                     None, baseline["session_mae"], 0, policy, case["epochs"]
                 )
@@ -589,10 +655,12 @@ def run_case(
                     prediction = centers(model, batch, neural=neural, device=device)
                     loss = _loss(prediction, batch, grid, case, generators, device)
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), case["clip_norm"], error_if_nonfinite=True
-                    )
-                    optimizer.step()
+                    with traced_update(hooks, state["global_step"] + 1, optimizer, loss) as probe:
+                        norm = torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), case["clip_norm"], error_if_nonfinite=True
+                        )
+                        probe.clip(norm, case["clip_norm"])
+                        optimizer.step()
                     # Con cuantiles, las estadísticas del ajuste usan la mediana.
                     point = median(prediction) if prediction.ndim == 2 else prediction
                     error = point.detach().cpu().numpy() - batch["target"]
@@ -629,6 +697,8 @@ def run_case(
                 )
                 if trace is not None:
                     trace(_trace_event(state["epoch"] + 1, state, validation), dict(model=model))
+                if hooks is not None:
+                    hooks.validation(_trace_event(state["epoch"] + 1, state, validation))
                 state["history"].append(
                     dict(epoch=state["epoch"] + 1, train=dict(stats), validation=validation)
                 )

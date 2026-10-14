@@ -19,6 +19,7 @@ import pytest
 from mars_titan.data import prediction_files
 from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import long_short_comparison as portfolio
+from mars_titan.evaluation import selection_effect
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.simulation import policy_plan
 from mars_titan.training import campaign_plan as plan
@@ -212,13 +213,30 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
         k: v for k, v in expected_portfolio.items() if k not in volatile
     }
     assert books.equals(expected_books)
-    ledger = walked["state"].ledger()["windows"]
+    state = walked["state"]
+    ledger = state.ledger()["windows"]
+    jobs = plan.plan_campaign(state.campaign)
     for row in walked["windows"]:
         written = ledger[row["id"]]["phases"]["aggregates"]["written"]["US"]
-        assert set(written) == {"walk_forward", "integrity", "long_short"}
+        assert set(written) == {"walk_forward", "integrity", "long_short", "selection_effect"}
         # La integridad de la ventana, con la ablación, quedó superada antes de liberar.
         record = json.loads((walked["state"].folder / written["integrity"]["path"]).read_text())
         assert record["passed"] and record["identity"]["ablation"]
+        # El efecto de la elección se guardó con todos los casos de búsqueda de la ventana,
+        # aunque la liberación ya haya borrado la evaluación de los no elegidos.
+        window = row["scopes"]["US"]
+        saved = selection_effect.read_window(
+            state.folder / "aggregates", state.comparison_config(), "US", window
+        )
+        searches = {}
+        for job in jobs:
+            if (job["scope"], job["window"], job["stage"]) == ("US", window, "search"):
+                if job.get("phase") != plan.PLATEAU:
+                    searches[job["arm"]] = searches.get(job["arm"], 0) + 1
+        assert saved["excluded"] == {}
+        saved = saved["arms"]
+        assert searches and {arm: e["cases"] for arm, e in saved.items()} == searches
+        assert all(e["applicable"] == (e["cases"] > 1) for e in saved.values())
 
 
 @lowers_learning_hold(
@@ -423,6 +441,46 @@ def test_a_policy_input_is_compacted_and_released_only_after_its_last_reader(
     ledger = state.ledger()["windows"]
     assert ledger[first]["phases"]["release"]["kept_for_policies"] == 1
     assert ledger[windows[-1]["id"]]["phases"]["release"]["kept_for_policies"] == 0
+
+
+@lowers_learning_hold(
+    "tests/training/test_rolling_retention.py::"
+    "test_aggregates_of_receipts_without_platform_need_the_declared_profile"
+)
+def test_aggregates_of_receipts_without_platform_need_the_declared_profile(
+    base,  # noqa: F811
+    edition,
+    tmp_path,
+    monkeypatch,
+    unconsumed,
+):
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    # Recibos como los de una campaña anterior al registro de la plataforma.
+    for path in (output / "jobs").rglob("receipt.json"):
+        receipt = json.loads(path.read_text())
+        receipt.pop("platform", None)
+        atomic_json(path, receipt)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+
+    def walk(**options):
+        state = rolling.Rolling(
+            rolling.load_retention(unconsumed),
+            base.campaign,
+            base.views,
+            output,
+            windows,
+            edition=edition,
+            **options,
+        )
+        return rolling.run_rolling(state, Calls().runners())
+
+    with pytest.raises(ValueError, match="no registran su plataforma"):
+        walk()
+    assert walk(unrecorded_platform="rtx4070-laptop")["status"] == "completed"
 
 
 @pytest.mark.parametrize(

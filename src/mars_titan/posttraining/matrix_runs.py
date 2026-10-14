@@ -26,11 +26,14 @@ from mars_titan.environments.view_cohorts import ViewCohortSource, prepare_cohor
 from mars_titan.training.corpus_inputs import CorpusDataset
 
 from . import adapter_matrix
+from . import replay_continuation as replay
 from .heldout import PARTITIONS, _adjustment, evaluate_partition
 from .inputs import PairedInputs, fit_normalization
 from .parent_cache import ParentCache
 from .parents import load_parent
+from .replay_inputs import ReplayInputs
 from .run import run_case
+from .staged_rows import partition_rows
 
 
 def _require(condition, message):
@@ -53,6 +56,7 @@ class MatrixWindow:
     Con `since` (microsegundos, solo por bloques) el ajuste usa las sesiones de `train`
     desde ese instante y la rejilla se ajusta con sus objetivos. El índice sigue
     describiendo la población completa, que es la que identifica a un padre de la vista.
+    `earlier` resume, solo si un caso de repaso lo pide, las sesiones anteriores admitidas.
     """
 
     def __init__(
@@ -73,7 +77,8 @@ class MatrixWindow:
             since is None or max_block_bytes is not None,
             "El ajuste desde un instante solo se lee por bloques",
         )
-        self.since = since
+        self.since, self.stop, self.max_block_bytes = since, stop, max_block_bytes
+        self.dataset, self._earlier = None, None
         if max_block_bytes is None:
             ordered = self.folder / "ordered"
             prepared = prepare_causal_corpus(
@@ -92,7 +97,7 @@ class MatrixWindow:
                 return ParquetCohortSource(self.manifest, partition=name, input_policy=input_policy)
 
         else:
-            dataset = CorpusDataset(self.view, input_policy=input_policy)
+            dataset = self.dataset = CorpusDataset(self.view, input_policy=input_policy)
             self.manifest = index_manifest(self.folder)
             prepared = prepare_cohort_index(
                 dataset, self.manifest.parent, input_policy=input_policy, stop=stop
@@ -123,6 +128,40 @@ class MatrixWindow:
                     targets, source_sha256=self.source_sha256, partition="train"
                 )
             self.sources = sources.pop_all()
+
+    def earlier(self, parent_view):
+        """Sesiones anteriores que admite el repaso, con sus filas y su régimen observable.
+
+        Solo entran las sesiones que el padre, ajustado con la vista `parent_view`, usó
+        completas en su tramo de ajuste. Se calcula una vez por vista del padre. Cada caso de
+        repaso abre después con `open_sessions` solo las sesiones que planifica.
+        """
+        _require(
+            self.since is not None and self.dataset is not None,
+            "El repaso solo existe en el ajuste por bloques desde las filas nuevas",
+        )
+        key = str(Path(parent_view))
+        if self._earlier is None or self._earlier[0] != key:
+            parent = CorpusDataset(Path(parent_view), input_policy=self.input_policy)
+            fitted, samples = partition_rows(parent, ("train",))
+            sessions = replay.earlier_sessions(self.dataset, self.since, fitted["train"], samples)
+            sessions["routes"] = replay.factor_routes(self.dataset.manifest, sessions)
+            sessions["parent_view"] = parent.identity
+            self._earlier = (key, sessions)
+        return self._earlier[1]
+
+    def open_sessions(self, moments):
+        """Fuente de ajuste con las sesiones enumeradas, que cierra quien la abre."""
+        _require(self.dataset is not None, "Las sesiones enumeradas solo se leen por bloques")
+        return ViewCohortSource(
+            self.manifest,
+            self.dataset,
+            partition="train",
+            max_block_bytes=self.max_block_bytes,
+            input_policy=self.input_policy,
+            stop=self.stop,
+            sessions=moments,
+        )
 
     def close(self):
         self.sources.close()
@@ -204,8 +243,11 @@ class MatrixParent:
         lease,
         stop,
         population=None,
+        parent_view=None,
     ):
         self.window, self.device, self.lease = window, device, lease
+        # Vista que ajustó al padre. Solo la necesita el repaso de sesiones anteriores.
+        self.parent_view = parent_view
         self.diagnostic = device == "cpu"
         # Un padre de otra ventana se identifica con la población de la vista que lo ajustó.
         self.parent = load_parent(
@@ -271,24 +313,50 @@ class MatrixParent:
             self.cache.close()
             raise
 
-    def run(self, row, destination, *, checkpoint_seconds, stop):
-        """Ajustar o recuperar un caso y exigir exactamente las actualizaciones del plan."""
-        destination = Path(destination)
-        report = run_case(
-            self.data,
-            destination,
-            row["case"],
-            self.window.grid,
-            self.normalization,
-            parent=self.parent,
-            batch_size=self.window.batch_size,
-            device=self.device,
-            diagnostic=self.diagnostic,
-            lease=self.lease,
-            resume=destination.exists(),
-            stop=stop,
-            checkpoint_seconds=checkpoint_seconds,
+    def inputs(self, case):
+        """Cohortes de un caso: las de la ventana o, con repaso, las suyas propias."""
+        spec = case.get(replay.KEY)
+        if spec is None:
+            return contextlib.nullcontext(self.data)
+        earlier = replay.SOURCES[spec["policy"]] == replay.EARLIER
+        _require(
+            not earlier or self.parent_view is not None,
+            "El repaso de sesiones anteriores necesita la vista que ajustó al padre",
         )
+        return ReplayInputs(
+            self.window.train,
+            self.window.validation,
+            self.cache,
+            spec=spec,
+            batch_size=self.window.batch_size,
+            seed=case["seed"],
+            candidates=self.window.earlier(self.parent_view) if earlier else None,
+            open_earlier=self.window.open_sessions if earlier else None,
+        )
+
+    def run(self, row, destination, *, checkpoint_seconds, stop, traces=None):
+        """Ajustar o recuperar un caso y exigir exactamente las actualizaciones del plan.
+
+        `traces` es la declaración de las trazas de #448, que no entra en la identidad.
+        """
+        destination = Path(destination)
+        with self.inputs(row["case"]) as data:
+            report = run_case(
+                data,
+                destination,
+                row["case"],
+                self.window.grid,
+                self.normalization,
+                parent=self.parent,
+                batch_size=self.window.batch_size,
+                device=self.device,
+                diagnostic=self.diagnostic,
+                lease=self.lease,
+                resume=destination.exists(),
+                stop=stop,
+                checkpoint_seconds=checkpoint_seconds,
+                traces=traces,
+            )
         _require(
             report["status"] != "completed" or report["global_step"] == row["updates"],
             "El caso no aplicó las actualizaciones fijadas en el plan de la matriz",

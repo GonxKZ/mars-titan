@@ -931,14 +931,31 @@ def _ablation_sources(path, config, sources):
     """
     path = Path(path)
     document, digest = read_manifest(path, 16 * 1024**2)
+    # La versión 2 añade la plataforma común de sus recibos y de los de la base.
+    version = document.get("schema_version") if isinstance(document, dict) else None
     fields = {"schema_version", "kind", "scope", "input_policy", "comparison_sha256", "windows"}
     _require(
         isinstance(document, dict)
-        and set(document) == fields | {"variants"}
-        and document["schema_version"] == 1
+        and version in (1, 2)
+        and set(document) == fields | {"variants"} | ({"platform"} if version == 2 else set())
         and document["kind"] == modality_ablation.SOURCES_KIND
         and document["scope"] == sources["scope"],
         "Las fuentes de la ablación no cumplen su contrato",
+    )
+    platform = document.get("platform")
+    _require(
+        version == 1 or _platform_record(platform),
+        "La plataforma de las fuentes de la ablación no es válida",
+    )
+    # Las predicciones enmascaradas se comparan con las principales: una sola plataforma.
+    digests = {
+        record["platform_sha256"]
+        for record in (platform, sources.get("platform"))
+        if record is not None and record["platform_sha256"] is not None
+    }
+    _require(
+        len(digests) <= 1,
+        "La ablación se ejecutó en otra plataforma que las fuentes principales",
     )
     _require(
         document["input_policy"] == config["input_policy"]

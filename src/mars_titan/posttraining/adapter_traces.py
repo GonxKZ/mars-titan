@@ -17,11 +17,17 @@ de los adaptadores:
 Leen pesos y predicciones sin gradiente y no consumen números aleatorios. Con el gancho
 desactivado los entrenadores no llaman a nada, así que el cálculo es el mismo bit a bit.
 Las pruebas lo comprueban con el gancho activado. Ninguna traza interviene en la selección.
+
+`AdapterObserver` lleva `update_statistics` al contrato común de trazas: en cada
+validación completa guarda, por tensor adaptado, la norma de ΔW, su norma relativa, su
+máximo absoluto y sus mayores valores singulares, y la norma de los adaptadores por módulo.
 """
 
 import torch
 from torch.nn.utils import parametrize
 
+from mars_titan.learning_traces.hooks import TraceObserver
+from mars_titan.learning_traces.recorder import trace_name
 from mars_titan.models.predictive_adaptation import MODULE_ROOT
 from mars_titan.models.quantile_head import LEVELS, MEDIAN_INDEX
 
@@ -97,3 +103,26 @@ def prediction_change(adapted, parent):
         max_abs_change=float(change.max()),
         median_sign_flips=float(flips.double().mean()),
     )
+
+
+class AdapterObserver(TraceObserver):
+    """Actualización efectiva de cada adaptador en las validaciones completas (#448)."""
+
+    def validation(self, recorder, modules):
+        for key, module in modules.items():
+            # La GRU candidata nativa no es un módulo de PyTorch: sus adaptadores están en la
+            # cabeza, que sí lo es.
+            if not isinstance(module, torch.nn.Module):
+                continue
+            for row in update_statistics(module):
+                group = trace_name(f"{key}.{row['module']}.{row['tensor']}")
+                if "relative" not in row:
+                    # Adaptador por módulo: sus pesos son la propia corrección.
+                    recorder.scalar("adapter.module_l2", row["frobenius"], group=group)
+                    continue
+                recorder.scalar("adapter.delta_l2", row["frobenius"], group=group)
+                recorder.scalar("adapter.delta_max_abs", row["max_abs"], group=group)
+                if row["relative"] is not None:
+                    recorder.scalar("adapter.delta_relative", row["relative"], group=group)
+                for index, value in enumerate(row.get("singular_values", ())):
+                    recorder.scalar(f"adapter.singular_value.{index}", value, group=group)

@@ -10,8 +10,10 @@ fixture, cubre desde septiembre de 2019. Los ejecutores aprendidos se sustituyen
 
 import hashlib
 import json
+import math
 import shutil
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +26,7 @@ from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.learning_hold_lowering import allowed_hold
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
@@ -134,8 +137,7 @@ def base_campaign(root, variant, *, ending=None):
     """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
-    hold = root / "hold.json"
-    hold.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    hold = allowed_hold(root / "hold.json")
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))
@@ -273,7 +275,7 @@ class ScriptedLearner:
     def __init__(self, *, pause=(), mutate=None, action=scripted_action):
         self.calls, self.pause, self.mutate, self.action = [], set(pause), mutate, action
 
-    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
+    def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor, traces=None):
         self.calls.append(dict(id=job["id"], resume=resume, tapes=tapes, anchor=anchor))
         extra = {}
         if job["id"] in self.pause and not resume:
@@ -286,7 +288,9 @@ class ScriptedLearner:
             atomic_json(state, dict(job=job["id"], seed=job["seed"], rule="observation_sha256"))
             policy = dict(id=job["id"], sha256=sha256(state))
             selection = dict(
-                metric=stage["policies"]["selection"]["metric"], partition="validation"
+                metric=stage["policies"]["selection"]["metric"],
+                partition="validation",
+                best=validation_best(tapes, stage, job["market"], self.action),
             )
             budget = stage["policies"]["budget"]
             transitions = budget["transitions"]
@@ -313,6 +317,28 @@ class ScriptedLearner:
         return self.mutate(job, report) if self.mutate else report
 
 
+def validation_best(tapes, stage, market, action):
+    """Mejor estado de validación de la política de reglas fijas: su episodio con coste.
+
+    La política no aprende, así que su único estado es el elegido. Se publica con los campos
+    del motor nativo para que la etapa reducida lo compare con la cota de la validación.
+    """
+    policies = stage["policies"]
+    cost = dict(
+        stage, policies=dict(policies, evaluation_costs_bps=[policies["environment"]["cost_bps"]])
+    )
+    validation = replace(tapes, evaluation=tapes.validation)
+    (record,) = campaign_stage.evaluate_policy(validation, action, cost, market, backend="python")
+    growth = math.log1p(record["net_return"])
+    liquidated = math.log1p(record["liquidated_net_return"])
+    return dict(
+        ruin_count=int(record["status"] == "ruined"),
+        episodes=1,
+        mean_log_growth=growth,
+        mean_liquidated_log_growth=liquidated,
+    )
+
+
 def executors(learner, backend="python"):
     """Referencias con la contabilidad indicada y políticas aprendidas sustituidas."""
     reference = campaign_stage.reference_executor(backend)
@@ -333,6 +359,7 @@ def run(base, output, learner, *, stop=None, backend="python", chain_output=None
         base.edition,
         output,
         executors=executors(learner, backend),
+        bound_backend=backend,
         capabilities={},
         stop=stop or SimpleNamespace(requested=False),
         chain_output=chain_output,

@@ -67,7 +67,8 @@ class ReferenceStepGraph:
         prediction, loss = self.loss(output, self.target, self.weights)
         flags = nonfinite_flags([*checks, (loss, LOSS_MESSAGE)])
         loss.backward()
-        return prediction, flags, [message for _, message in checks] + [LOSS_MESSAGE]
+        messages = [message for _, message in checks] + [LOSS_MESSAGE]
+        return prediction, flags, messages, loss.detach()
 
     def _capture(self, batch, target, weights):
         device = target.device
@@ -88,7 +89,7 @@ class ReferenceStepGraph:
         # Solo este hilo captura. Los lectores de datos de otros hilos pueden seguir usando
         # CUDA (memoria fijada, copias) sin invalidar la captura.
         with torch.cuda.graph(graph, capture_error_mode="thread_local"):
-            self.prediction, self.flags, self.messages = self._compute()
+            self.prediction, self.flags, self.messages, self.loss_value = self._compute()
         # La captura no fija la semilla ni el desplazamiento, que el grafo lee al repetirse.
         # Basta con devolver el generador al estado anterior al calentamiento.
         torch.cuda.set_rng_state(state, device)
@@ -99,6 +100,7 @@ class ReferenceStepGraph:
         """Repetir el paso con el lote y devolver la predicción puntual del grafo.
 
         La predicción es un búfer del grafo: debe usarse antes de la siguiente repetición.
+        `loss_value` es la pérdida media del paso, otro búfer con la misma condición.
         """
         if not self.admits(batch):
             raise ValueError("El lote no tiene la forma capturada")
