@@ -200,6 +200,41 @@ definidas en todos los modelos que intervienen, con el número de sesiones exclu
 en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
 llamando siempre el mismo signo.
 
+### Abstención con su cobertura
+
+La precisión solo cuenta las llamadas, así que un modelo que casi siempre se
+abstiene puede mostrar una precisión muy alta con muy pocas filas. Para que la
+abstención no gane ninguna métrica publicada, cada informe la presenta con su
+cobertura (`evaluation/abstention_coverage.py`, reglas fijadas el 13 de octubre de
+2026, antes de evaluar ninguna campaña).
+
+Curva riesgo-cobertura de dirección. En la sesión $s$, con las filas de $E_s$
+ordenadas por $|\hat y_i|$ de mayor a menor y los empates por la identidad de fila
+(`mercado/activo/instante`), $R_s(c)$ son las primeras
+$\lceil c\,|E_s|\rceil$ y
+
+$$
+\operatorname{DA}_s(c)=\frac{|H_s\cap R_s(c)|}{|R_s(c)|},
+\qquad c\in\{0{,}1,\,0{,}2,\ldots,1\}.
+$$
+
+Una predicción nula queda al final del orden y nunca acierta, de modo que
+abstenerse no mejora $\operatorname{DA}_s(c)$ a ninguna cobertura, y
+$\operatorname{DA}_s(1)=\operatorname{DA}_s$. Una sesión sin objetivos no nulos no
+tiene valor. El resumen de cada semilla publica la curva con las filas retenidas,
+los aciertos y la media por sesión, y su valor a la cobertura fija $c=0{,}5$
+(`direction_accuracy@0.5`). La tabla de sesiones conserva los aciertos de cada
+cobertura (`selective_hits`).
+
+Cobertura de llamadas. Para cada modelo y vista, $|C|/|E|$ sumando llamadas y filas
+juzgables de todas sus sesiones y semillas. En `up_precision` y `down_precision`, un
+contraste con algún modelo de cobertura inferior a 0,5 se publica con su cobertura y
+`eligible: false`, en la comparación y en la matriz, y no puede presentarse como
+ganado. El control cero tiene cobertura cero. El MAE y el MSE puntúan todas las filas,
+así que abstenerse en todas equivale al control cero, que ya se compara de forma
+explícita. El informe de integridad recalcula coberturas, marcas y curvas desde la
+tabla de sesiones publicada.
+
 ## Correlación de rangos por sesión
 
 El Rank IC de una sesión es la correlación de Pearson entre los rangos medios

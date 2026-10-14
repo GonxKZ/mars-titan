@@ -14,7 +14,7 @@ Si las dos implementaciones coinciden, un error de agregación o de convención 
 
 Cubre:
 - MAE y MSE por sesión;
-- dirección con la convención de abstención;
+- dirección con la convención de abstención, y sus aciertos a cada cobertura de la curva riesgo-cobertura cuando el panel trae `asset_id`;
 - precisión y exhaustividad de cada signo;
 - Rank IC con sus motivos de indefinición;
 - pinball y frecuencia por nivel;
@@ -209,6 +209,14 @@ Con el walk-forward por etapas, o con una etapa de adaptadores por etapas public
 
 La etapa de adaptadores ya rechaza en su ejecutor un número de actualizaciones distinto del de su diseño. El informe todavía no repite esa comprobación.
 
+**Abstención.** Una predicción cero es una abstención. La exactitud de dirección ya la cuenta como fallo, pero las precisiones de subida y de bajada solo juzgan las llamadas, así que un modelo que casi nunca llama puede mostrar una precisión alta con muy pocas filas. Las reglas están fijadas antes de evaluar en `evaluation/abstention_coverage.py` y cada comparación walk-forward y cada matriz las publican (detalle en [métricas](metrics.md#abstención-con-su-cobertura)):
+- la curva riesgo-cobertura de dirección de cada semilla y vista, con la exactitud entre las ceil(c · n) filas con objetivo no nulo y mayor |predicción| de cada sesión para c de 0,1 a 1, empates por la identidad de fila y la abstención contada como fallo;
+- el valor a la cobertura fija 0,5 (`direction_accuracy@0.5`), declarado junto a la curva;
+- la cobertura de llamadas de cada modelo en cada vista, sumada sobre sus semillas;
+- en las precisiones de subida y de bajada, cada contraste con su cobertura y marcado no elegible si algún modelo llama en menos de la mitad de sus filas juzgables. Se publica, pero no puede presentarse como ganado.
+
+`integrity/abstention_marks.py` lo repite desde la tabla de sesiones publicada, sin el código de la comparación. Recalcula la cobertura de llamadas y exige las reglas declaradas, la marca y la cobertura de cada contraste condicionado a las llamadas, en la comparación y en cada vista de la matriz, y las filas retenidas y los aciertos de cada punto de la curva. La segunda implementación de las métricas recalcula los aciertos de cada cobertura con su propia ordenación por identidad de fila, y el recálculo los coteja sesión a sesión.
+
 **Pruebas.** Cada mutación dirigida rompe el código principal o un artefacto y debe hacer fallar el informe:
 - una fila de 2024 en las predicciones con la comprobación de tramos desactivada en la comparación;
 - una media por sesión sesgada en el código principal, al publicar desde filas y al guardar los agregados de una ventana, que entonces no se libera;
@@ -219,6 +227,7 @@ La etapa de adaptadores ya rechaza en su ejecutor un número de actualizaciones 
 - un trabajo sin recibo, un recibo sin declarar y una comparación sin una semilla, sin una ventana o con un modelo de más;
 - una puntuación de búsqueda que no es la de su validación, una última etiqueta que alcanza la evaluación, un recibo de ventana que no nombra el estado elegido y tramos fuera de orden;
 - un fallo del verificador de disjunción;
+- en un estudio de juguete donde un modelo solo llama una vez por sesión y acierta siempre, con precisión al alza perfecta, sus contrastes de precisión salen no elegibles en la comparación y en la matriz, su exactitud de dirección y su exactitud a la cobertura fija quedan por debajo de las de los modelos que llaman y el control cero no acierta a ninguna cobertura. Una marca, una cobertura, una regla o un punto de la curva cambiados hacen fallar el informe, y también una marca cambiada en la matriz;
 - una diferencia de presupuesto sin declarar o declarada sin existir, un ajuste truncado, otro que sigue tras su meseta o su época común, una época entregada distinta de la que elige la regla, un estado inicial entregado sin padre, actualizaciones distintas entre ajustes del mismo entrenador y los límites de XGBoost y del control en línea. Una prueba con las cuatro variantes reales de Titans-MAC y un optimizador que no cambia pesos espera que el informe las marque sin ajustar, porque ninguna época mejora la validación inicial. Esa prueba y la de la referencia neuronal real ejecutan los entrenadores, así que se omiten mientras rige el bloqueo y todavía no se han ejecutado. El resto de `tests/integrity/test_fit_budget.py` usa el plan real de A v2 con recibos e historiales escritos en la prueba.
 
 Las pruebas que recorren la campaña reducida con su etapa de adaptadores necesitan rebajar la protección de aprendizaje y se omiten mientras rige el bloqueo (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)). `tests/integrity/test_declared_runs.py`, `tests/integrity/test_window_selection.py` y `tests/integrity/test_publication_gate.py` repiten las mismas comprobaciones y la conexión del informe con la publicación, el recorrido y la etapa sobre recibos escritos en la prueba, sin ejecutar ninguna campaña.
@@ -232,4 +241,4 @@ Siguen en #442, en este orden:
    - invariantes de caja, posiciones, costes y acciones imposibles en las cintas reales con políticas fijas;
    - cota con información futura sobre las cintas reales de cada ventana. La etapa de políticas ya la aplica a la evaluación y al estado elegido en validación. Falta ejecutarla sobre las cintas reales, que la etapa calcula al confirmar cada trabajo.
 2. Falsaciones que ajustan modelos, solo declaradas mientras dure el bloqueo de aprendizaje: placebo con etiquetas permutadas dentro de cada sesión, desplazamiento temporal de las entradas, predicción constante y aleatoria y estabilidad entre semillas. Cada una con su coste y su criterio de éxito o fracaso escritos de antemano.
-3. Comprobaciones contra atajos que entran en el mismo informe: abstención acompañada de su cobertura y pruebas con ajustes deliberados con el futuro en el preprocesado.
+3. Comprobaciones contra atajos que entran en el mismo informe: pruebas con ajustes deliberados con el futuro en el preprocesado y el registro previo de definición, agregación, huecos y unidades de cada métrica.

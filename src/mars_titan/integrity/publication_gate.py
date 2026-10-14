@@ -6,9 +6,10 @@ nombre del destino. Si alguna comprobación falla, el informe se queda en la car
 para revisarlo y la publicación termina con un error. Así ninguna cifra se publica sin un
 informe superado. Reúne:
 
-- `comparisons`: mismas filas en todos los modelos, filas quitadas por el diseño y métricas
-  recalculadas por otro camino en cada comparación walk-forward y en cada comparación
-  postentrenada (`comparison_integrity`);
+- `comparisons`: mismas filas en todos los modelos, filas quitadas por el diseño, métricas
+  recalculadas por otro camino y abstención con su cobertura en cada comparación
+  walk-forward y en cada comparación postentrenada (`comparison_integrity`), y las marcas de
+  abstención de la matriz que lee cada comparación walk-forward (`abstention_marks`);
 - `runs`: todos los trabajos declarados de la campaña y de su etapa de adaptadores con sus
   intentos, sin recibos de más, y las semillas y ventanas de cada comparación publicada
   (`declared_runs`);
@@ -27,7 +28,13 @@ from pathlib import Path
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import walk_forward_comparison as walk
 
-from . import comparison_integrity, declared_runs, fit_budget, window_selection
+from . import (
+    abstention_marks,
+    comparison_integrity,
+    declared_runs,
+    fit_budget,
+    window_selection,
+)
 
 KIND = "campaign_publication_integrity"
 REPORT = "integrity.json"
@@ -54,7 +61,14 @@ def _comparison(entry):
     config = walk.resolve_config(entry["config"])
     sources = walk.load_sources(entry["sources"], config, entry["scope"])
     seeds = declared_runs.check_published(report, sources)
-    return dict(checked, declared=seeds, passed=checked["passed"] and seeds["passed"])
+    passed = checked["passed"] and seeds["passed"]
+    if entry.get("matrix") is not None:
+        # La matriz lee las mismas sesiones, así que hereda la cobertura recalculada.
+        matrix = json.loads(Path(entry["matrix"]).read_text(encoding="utf-8"))
+        marks = abstention_marks.check_matrix(matrix, checked["abstention"]["coverage"])
+        checked = dict(checked, matrix=marks)
+        passed = passed and marks["passed"]
+    return dict(checked, declared=seeds, passed=passed)
 
 
 def _staged(posttraining):

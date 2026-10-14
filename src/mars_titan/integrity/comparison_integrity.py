@@ -16,7 +16,8 @@ predicciones por fila hay dos caminos:
   desde ellas.
 
 En los dos caminos se cotejan con el recuento propio las filas que la comparación dice haber
-quitado de cada ventana. Nada de este módulo ajusta modelos ni abre la reserva de 2024.
+quitado de cada ventana, y la abstención publicada con su cobertura (`abstention_marks`).
+Nada de este módulo ajusta modelos ni abre la reserva de 2024.
 """
 
 import json
@@ -28,7 +29,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation import window_aggregates
 
-from . import row_identity, score_recheck
+from . import abstention_marks, row_identity, score_recheck
 
 KIND = "comparison_integrity"
 WINDOW_KIND = "comparison_window_integrity"
@@ -265,10 +266,12 @@ def published(
         passed = not missing and failures == 0
     excluded = _exclusions(counted, _report_exclusions(report, sources))
     aggregates_check, wrong = score_recheck.check_summaries(scoped, sources, raw, report)
+    abstention = abstention_marks.check_report(report, raw)
     result.update(
         excluded_rows=excluded,
         summaries=dict(views=aggregates_check, failures=wrong, passed=wrong == 0),
-        passed=passed and excluded["passed"] and wrong == 0,
+        abstention=abstention,
+        passed=passed and excluded["passed"] and wrong == 0 and abstention["passed"],
         training_executed=False,
         final_test_opened=False,
     )

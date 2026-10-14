@@ -7,6 +7,10 @@ una tabla larga con una métrica por fila. Este módulo reconstruye a partir de 
 las mismas series por sesión que usa ``compare_series``, sin volver a puntuar predicciones,
 y estima familias de contrastes lineales con el remuestreo por bloques de la comparación.
 
+En las precisiones de subida y de bajada, cada contraste lleva la cobertura de llamadas de
+sus modelos y queda marcado no elegible si alguno no llega a la mínima declarada
+(``abstention_coverage``), igual que en la comparación walk-forward.
+
 Cada modelo se lee una vez. Si aparece en dos informes, sus sesiones y valores deben
 coincidir. Las horas GPU por modelo, medidas o proyectadas, permiten expresar cada efecto
 como mejora por hora. Nada de este módulo ajusta modelos ni lee la edición.
@@ -28,7 +32,7 @@ import pyarrow.parquet as pq
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
 
-from . import liquidity_strata, long_short
+from . import abstention_coverage, liquidity_strata, long_short
 from . import walk_forward_comparison as walk
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 from .forecast_scores import INTERVAL_SCORE, SIGN_BINS, expected_calibration_error
@@ -541,6 +545,16 @@ def _series(seeds, metric, loss, view_label, code, markets, values_of):
     return SessionSeries.average(items)
 
 
+def _call_coverage(seeds, code):
+    """Cobertura de llamadas de un modelo en una vista, sumada sobre sus semillas."""
+    calls = eligible = 0
+    for seed in seeds:
+        mask = _selection(seed, code)
+        calls += int(seed["table"].column("direction_calls").to_numpy()[mask].sum())
+        eligible += int(seed["table"].column("direction_eligible").to_numpy()[mask].sum())
+    return abstention_coverage.call_coverage(calls, eligible)
+
+
 def _keep(store, arm, seeds, label):
     """Guarda las semillas de un modelo o exige que coincidan con las ya leídas.
 
@@ -839,6 +853,8 @@ def forecast_view(config, families, seeds_by_arm, metrics, markets, hours):
                     entry = ece_contrasts(arms, contrasts, comparison)
                 else:
                     entry = compare_series(arms, contrasts, market_weighting=weighting, **options)
+                    coverage = {arm: _call_coverage(seeds_by_arm[arm], code) for arm in arms}
+                    abstention_coverage.mark(entry, metric, coverage)
                 entry["not_applicable"] = skipped
                 rows[family] = _with_cost(entry, sign, hours)
             result[label][metric] = rows
