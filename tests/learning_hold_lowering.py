@@ -134,6 +134,23 @@ INVENTORY = {
         "sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y "
         "su ejecución se detiene con la protección"
     ),
+    "tests/training/test_titans_walk_forward.py::"
+    "test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them": (
+        "ajusta una ventana Titans-MAC con PT1 y el optimizador que no modifica pesos para "
+        "comprobar que los cambios del predictor entran en su identidad y que la regeneración los "
+        "repite, y el ajuste se detiene con la protección"
+    ),
+    "tests/training/test_titans_campaign.py::"
+    "test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them": (
+        "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
+        "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
+    ),
+    "tests/training/test_mars_titan_correction.py::"
+    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it": (
+        "ejecuta la ventana B6 con la regla kalman y su traslado sobre el padre que ajusta la "
+        "fixture del módulo con el optimizador que no modifica pesos, y los dos ejecutores se "
+        "detienen con la protección"
+    ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
         "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
@@ -391,7 +408,7 @@ REDIRECTIONS = {
         _REUSES + ". La prueba inventariada prepara además la corrección B6, que no ajusta",
     ),
     "tests/training/test_modality_ablation_native.py": (3, _REUSES),
-    "tests/training/test_modality_ablation_stage.py": (8, _REUSES),
+    "tests/training/test_modality_ablation_stage.py": (9, _REUSES),
     "tests/training/test_prediction_regeneration.py": (4, _REUSES),
     "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),

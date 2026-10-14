@@ -177,6 +177,12 @@ def _parent(folder, view, seed, control=None):
         request.get("local_control") == control,
         "El control C del padre no es el que declara la familia del lector",
     )
+    # El lector y B6 reconstruyen el padre con la receta común. Un Titans-MAC con cambios del
+    # predictor, como PT1, tendría otra arquitectura y no puede ser su padre.
+    _require(
+        request.get("predictor_changes") is None,
+        "El padre de MARS-TITAN es el Titans-MAC de la receta, sin cambios del predictor",
+    )
     _verify(folder, report)
     return report, digest
 

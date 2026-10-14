@@ -68,7 +68,7 @@ La sección `walk_forward.search_cases` declara los mismos dos casos de búsqued
 
 La receta se identifica con el modelo `gru_episodic` de la [comparación walk-forward declarada](../../configs/evaluation/historical-masked-2000-comparison.json), que corresponde a la variante principal `m1_k1`. Las variantes `m0_k1`, `m1_k2`, `m1_k4` y `m1_k1_l1_median` son controles propios de este modelo y esa comparación todavía no las declara.
 
-La receta de Titans-MAC declara hoy `min_delta` 0, distinto del protocolo v2. No se ha cambiado aquí, pero la comparación emparejada exige igualarlo antes de entrenar ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
+Las recetas de Titans-MAC declaran también `min_delta` 1e-5, igual que el protocolo v2, así que la comparación emparejada usa la misma mejora mínima en las dos familias ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
 
 ## Checkpoints y reanudación
 
@@ -132,7 +132,7 @@ Cada entrada escribe en `receipts/<mercado>.json` el recibo walk-forward de cada
 
 El planificador la valida sin importar PyTorch (nombre de la receta, política, cabeza, variante, semillas, regla de parada del protocolo y tantos casos de búsqueda como índices ajusta cada referencia neuronal). Cada ventana reentrenada tiene dos búsquedas con la semilla de búsqueda, una por caso, y un finalista por cada semilla restante con el caso elegido por validación. Cada ventana trasladada tiene una predicción por semilla. El caso guarda la ruta y la huella de la receta, la variante, la semilla y el caso de búsqueda, y `campaign_case` la vuelve a leer con `load_recipe` antes de ajustar. Devuelve la receta, las opciones del modelo y los meses de calentamiento. Si la campaña declara una [parada temprana](../research/walk-forward-2000.md#parada-temprana-opcional), el caso lleva además `stopping_rule` y la receta la aplica con la misma métrica.
 
-Las configuraciones A y B aún no incluyen la sección. La de A v2 sí la declara. La campaña elegida, la A, la incorpora en su [declaración ampliada](../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 180 ajustes con sus dos casos de búsqueda. En B añadiría 68 ajustes y 84 traslados. El tramo completo no cabe en 8 GB con el universo completo, así que la receta de la campaña fija `accumulation_rows=128` con bloques de 128 flujos y sin `recompute` desde [#482](https://github.com/GonxKZ/mars-titan/pull/482), con la medida en `cuda:0` sobre US+CN fold-012. La [orden de medición](../research/training-campaign-2000.md#medición-de-caudal) de la campaña puede comparar además las cuatro combinaciones con su caudal. La campaña A v2 fija ese mismo valor en `memory_options` y cita el [recibo](../../reports/engineering/campaign-kernels-20261009/README.md#opciones-recomendadas-en-las-recetas) de la medida, así que su comprobación ya no da este modelo por pendiente a causa de sus opciones de memoria. La medida usó la edición v3 y se repetirá sobre la vista v3.1.
+Las configuraciones A y B no incluyen la sección. La campaña elegida, [A v2](../research/training-campaign-2000.md#campaña-a-v2-con-modelo-conjunto), la declara en el ámbito conjunto con sus dos casos de búsqueda. La [declaración ampliada](../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes) de A la incorpora con 180 ajustes, y en B añadiría 68 ajustes y 84 traslados. El tramo completo no cabe en 8 GB con el universo completo, así que la receta de la campaña fija `accumulation_rows=128` con bloques de 128 flujos y sin `recompute` desde [#482](https://github.com/GonxKZ/mars-titan/pull/482), con la medida en `cuda:0` sobre US+CN fold-012. La [orden de medición](../research/training-campaign-2000.md#medición-de-caudal) de la campaña puede comparar además las cuatro combinaciones con su caudal. La campaña A v2 fija ese mismo valor en `memory_options` y cita el [recibo](../../reports/engineering/campaign-kernels-20261009/README.md#opciones-recomendadas-en-las-recetas) de la medida, así que su comprobación ya no da este modelo por pendiente a causa de sus opciones de memoria. La medida usó la edición v3 y se repetirá sobre la vista v3.1.
 
 ## Coste y memoria medidos
 
@@ -250,10 +250,9 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
   El mismo archivo compara también el ajuste de una ventana v2 y su traslado a la siguiente en CPU y en `cuda:0`, y el traslado en `cuda:0` del estado elegido en CPU, con la misma inicialización de la semilla en ambos dispositivos.
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
 - Ventanas sobre la edición real. Las entradas por ventana solo se han comprobado con vistas v2 del corpus técnico, con un activo por mercado.
-- Copiar la sección `episodic_gru` a la configuración de A, con la opción de memoria elegida y los límites ampliados.
 - Índices de observaciones compartidos. Cada ajuste y cada traslado preparan los suyos aunque solo dependen de la vista y del tramo, así que las semillas repiten ese trabajo. Conviene medir antes su coste con la edición real.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
-- Elegir la opción de memoria con la [medida en `cuda:0`](#medida-en-cuda0). La medida se repite con el enlace CUDA compilado como arriba, desde la raíz:
+- Repetir sobre la v3.1 la [medida en `cuda:0`](#medida-en-cuda0) que fija la opción de memoria de A v2 (`accumulation_rows=128` sin `recompute`). La medida se repite con el enlace CUDA compilado como arriba, desde la raíz:
 
   ```bash
   CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 \

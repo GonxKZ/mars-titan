@@ -266,7 +266,7 @@ def test_variant_b_cannot_declare_the_trivial_chain_of_b6(tmp_path):
         arms=["gru", "mars_titan_m1", "mars_titan_b6"],
     )
     atomic_json(tmp_path / "stage.json", value)
-    with pytest.raises(ValueError, match="cadena trivial de Ridge, XGBoost y B6"):
+    with pytest.raises(ValueError, match="B6 y las extensiones del núcleo solo existe"):
         campaign_stage.load_stage(tmp_path / "stage.json")
     # Sin B6 la misma etapa se acepta: el lector M1 sí tiene casos que ajustar en B.
     value["arms"] = ["gru", "mars_titan_m1"]
@@ -702,6 +702,8 @@ B6_ARMS = (
     "mars_titan_b6_calendar",
     "mars_titan_b6_regime_banks",
     "mars_titan_b6_calendar_banks",
+    "mars_titan_b6_kalman",
+    "mars_titan_b6_kalman_rho0",
 )
 
 

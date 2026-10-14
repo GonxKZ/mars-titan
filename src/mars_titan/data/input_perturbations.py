@@ -149,6 +149,34 @@ def burst_rows(asset, moments, length_days, share):
     return _uniform(_key(BURST, asset, length_days), blocks, 1)[:, 0] < share
 
 
+def days_since_burst(asset, moments, length_days, share, horizon_days):
+    """Días desde el final de la última ráfaga anterior de cada fila de un activo.
+
+    Una ráfaga ocupa los días `[b · length_days, (b + 1) · length_days)` desde 2000 y el
+    primer día limpio cuenta como 0. Las filas dentro de una ráfaga, sin ninguna ráfaga
+    anterior desde 2000 o a `horizon_days` días o más de la última reciben NaN. Usa el mismo
+    generador que `burst_rows`, así que no hace falta leer las entradas perturbadas.
+    """
+    moments = np.asarray(moments, dtype=np.int64)
+    _require(type(horizon_days) is int and horizon_days >= 1, "El horizonte debe ser positivo")
+    if not len(moments):
+        return np.zeros(0)
+    _require(moments.min() >= _ORIGIN_US, "La muestra es anterior a 2000")
+    days = (moments - _ORIGIN_US) // _DAY_US
+    blocks = days // length_days
+    # Bloques desde el que puede contener la última ráfaga dentro del horizonte.
+    first = max(0, int(blocks.min()) - horizon_days // length_days - 1)
+    grid = np.arange(first, int(blocks.max()) + 1)
+    flags = _uniform(_key(BURST, asset, length_days), grid, 1)[:, 0] < share
+    last = np.maximum.accumulate(np.where(flags, grid, -1))
+    position = blocks - first
+    # Fuera de una ráfaga, la última hasta el bloque actual es la última anterior a él.
+    previous = last[position]
+    since = (days - (previous + 1) * length_days).astype(np.float64)
+    clean = ~flags[position] & (previous >= 0) & (since < horizon_days)
+    return np.where(clean, since, np.nan)
+
+
 def _noisy(table, spec, asset):
     count = len(table)
     moments = _moments(table)
