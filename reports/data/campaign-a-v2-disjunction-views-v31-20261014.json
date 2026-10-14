@@ -1,0 +1,2406 @@
+{
+  "schema_version": 1,
+  "kind": "campaign_chain_disjunction",
+  "campaign_sha256": "cb8ce969532b46ac9beb0bd466a6283e36b9dadc9199e4cd1de5e2d6da3e0873",
+  "scopes": {
+    "US+CN": {
+      "fold-000": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 0,
+              "validation": 0,
+              "calibration": 0,
+              "evaluation": 0
+            },
+            "evaluation": {
+              "rows": 0,
+              "sha256": "f89288927fc0631a0887d87ecc896ba68083ff5d956502e6e50ff457847a382c"
+            },
+            "evaluation_first_decision": null,
+            "max_maturity": {
+              "train": null,
+              "validation": null,
+              "calibration": null
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 1313128,
+              "validation": 194655,
+              "calibration": 100689,
+              "evaluation": 414341
+            },
+            "evaluation": {
+              "rows": 414341,
+              "sha256": "c6ddb53b4876e4eddfc6d6f7687ad56acc5820314c2ed9f9e4e1f5c154e99d10"
+            },
+            "evaluation_first_decision": 1104786300000000,
+            "max_maturity": {
+              "train": 1080767100000000,
+              "validation": 1096574700000000,
+              "calibration": 1104527100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "manifest_sha256": "7915de2aaec19540b68d2a0cfe44f21b212c914a0d3848b96305053f241e4da8"
+      },
+      "fold-001": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 0,
+              "validation": 0,
+              "calibration": 0,
+              "evaluation": 50844
+            },
+            "evaluation": {
+              "rows": 50844,
+              "sha256": "01a5de8c87ade37f8909f46a266987528cfcf721da8ccbebb65d7ed1a51f2e45"
+            },
+            "evaluation_first_decision": 1152860700000000,
+            "max_maturity": {
+              "train": null,
+              "validation": null,
+              "calibration": null
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 1710065,
+              "validation": 209451,
+              "calibration": 104708,
+              "evaluation": 437645
+            },
+            "evaluation": {
+              "rows": 437645,
+              "sha256": "e0ab700da5f7dc3008b124c45131cca45b48b5e4aded7749591447e56b11826a"
+            },
+            "evaluation_first_decision": 1136322300000000,
+            "max_maturity": {
+              "train": 1112303100000000,
+              "validation": 1128110700000000,
+              "calibration": 1135976700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2005-01-01",
+            "2005-04-01"
+          ],
+          "new_rows": {
+            "rows": 96876,
+            "sha256": "9bbbea96b914e4b088578bb3c3203bf7608cba027fe2cbcbe572aaf012453bba"
+          },
+          "parent_rows": 1608472,
+          "overlap": 0,
+          "new_min_decision": 1104786300000000,
+          "new_max_decision": 1112216700000000,
+          "new_max_maturity": 1112303100000000,
+          "parent_max_maturity": 1104527100000000
+        },
+        "manifest_sha256": "5589d47da130c9eb7f13b41b87ae66a6350beb537acb23f62f05e7645b25eb75"
+      },
+      "fold-002": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 0,
+              "validation": 24310,
+              "calibration": 26092,
+              "evaluation": 111824
+            },
+            "evaluation": {
+              "rows": 111824,
+              "sha256": "969d2f2758416a68b0a4f02b0115c83489b294228c2f37a00f570e7b6ae4ef29"
+            },
+            "evaluation_first_decision": 1167894300000000,
+            "max_maturity": {
+              "train": null,
+              "validation": 1159513500000000,
+              "calibration": 1167375900000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 2133660,
+              "validation": 218863,
+              "calibration": 110863,
+              "evaluation": 475623
+            },
+            "evaluation": {
+              "rows": 475623,
+              "sha256": "dd929c9973943a157d5810390268afc3cee43dcd74233f01d3f85b4e3124a34b"
+            },
+            "evaluation_first_decision": 1167858300000000,
+            "max_maturity": {
+              "train": 1143839100000000,
+              "validation": 1159560300000000,
+              "calibration": 1167426300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2006-01-01",
+            "2006-04-01"
+          ],
+          "new_rows": {
+            "rows": 104425,
+            "sha256": "cb2046f89f6f9fb828ffdc7f19de6074314ebdc83d2981450c7d5f261a06a3b6"
+          },
+          "parent_rows": 2024224,
+          "overlap": 0,
+          "new_min_decision": 1136322300000000,
+          "new_max_decision": 1143752700000000,
+          "new_max_maturity": 1143839100000000,
+          "parent_max_maturity": 1135976700000000
+        },
+        "manifest_sha256": "521c5ab15ccc39b268be2d2dc3931654883390d978e7db2db8d0ae66a86ac95e"
+      },
+      "fold-003": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 76337,
+              "validation": 57558,
+              "calibration": 28291,
+              "evaluation": 123125
+            },
+            "evaluation": {
+              "rows": 123125,
+              "sha256": "5df2585ebd3c62c2d511af75c21fa965f8dfe96595c22b230bc666b41eb539a8"
+            },
+            "evaluation_first_decision": 1199257500000000,
+            "max_maturity": {
+              "train": 1175238300000000,
+              "validation": 1190963100000000,
+              "calibration": 1198825500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 2578424,
+              "validation": 236733,
+              "calibration": 125375,
+              "evaluation": 525350
+            },
+            "evaluation": {
+              "rows": 525350,
+              "sha256": "8bf70fa835a37cb7dbf970bbb00093588f1723de90eb958a3ecf4fb1a77bf7eb"
+            },
+            "evaluation_first_decision": 1199307900000000,
+            "max_maturity": {
+              "train": 1175285100000000,
+              "validation": 1191009900000000,
+              "calibration": 1199135100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2007-01-01",
+            "2007-04-01"
+          ],
+          "new_rows": {
+            "rows": 134775,
+            "sha256": "69f5f1f828c04ad7879b8724463799abd915dafaa554c7bc6426180c58a49c67"
+          },
+          "parent_rows": 2513788,
+          "overlap": 0,
+          "new_min_decision": 1167858300000000,
+          "new_max_decision": 1175198700000000,
+          "new_max_maturity": 1175285100000000,
+          "parent_max_maturity": 1167426300000000
+        },
+        "manifest_sha256": "0b07e2764fcf43485d968d704c6dc5ebec6bd4ad0a6d4295752a023d8201b64c"
+      },
+      "fold-004": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 191861,
+              "validation": 61953,
+              "calibration": 31903,
+              "evaluation": 126496
+            },
+            "evaluation": {
+              "rows": 126496,
+              "sha256": "8289ebe774952735df8f1c651b8e51be81a0d6b752f987da0c4d226624c1492d"
+            },
+            "evaluation_first_decision": 1231139100000000,
+            "max_maturity": {
+              "train": 1206947100000000,
+              "validation": 1222412700000000,
+              "calibration": 1230707100000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 3068237,
+              "validation": 265024,
+              "calibration": 134265,
+              "evaluation": 546868
+            },
+            "evaluation": {
+              "rows": 546868,
+              "sha256": "b47e26c7f74a5b8bdfde0e8f650ddd5d837ecc1b285c976661290e977df7b7cd"
+            },
+            "evaluation_first_decision": 1230930300000000,
+            "max_maturity": {
+              "train": 1206993900000000,
+              "validation": 1222805100000000,
+              "calibration": 1230757500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2008-01-01",
+            "2008-04-01"
+          ],
+          "new_rows": {
+            "rows": 150161,
+            "sha256": "ec12c1f432e53211a8c3da9a8a71b3f9c75672c245c76709a65765f9d691a81c"
+          },
+          "parent_rows": 3102718,
+          "overlap": 0,
+          "new_min_decision": 1199257500000000,
+          "new_max_decision": 1206734700000000,
+          "new_max_maturity": 1206993900000000,
+          "parent_max_maturity": 1199135100000000
+        },
+        "manifest_sha256": "d9cdeff054a32314194f3ec95ea4509122fd02264834d8b5f88ba75fdf4da871"
+      },
+      "fold-005": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 316306,
+              "validation": 65646,
+              "calibration": 30739,
+              "evaluation": 130758
+            },
+            "evaluation": {
+              "rows": 130758,
+              "sha256": "dc929a5a7324f4893a61dfe6a7e5b39e253235612b4c24f19afededd9d3ca1cd"
+            },
+            "evaluation_first_decision": 1262588700000000,
+            "max_maturity": {
+              "train": 1238483100000000,
+              "validation": 1254294300000000,
+              "calibration": 1262243100000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 3602637,
+              "validation": 274686,
+              "calibration": 139027,
+              "evaluation": 570313
+            },
+            "evaluation": {
+              "rows": 570313,
+              "sha256": "2cf07d3d8dec3b129d66a15ae63cebacad6a491be759d7de24c68cd70829fa66"
+            },
+            "evaluation_first_decision": 1262639100000000,
+            "max_maturity": {
+              "train": 1238529900000000,
+              "validation": 1254341100000000,
+              "calibration": 1262293500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2009-01-01",
+            "2009-04-01"
+          ],
+          "new_rows": {
+            "rows": 157873,
+            "sha256": "cb6411f3f734c68058f01828fd2747da59134734c302584b402e1ea5b2a3bb17"
+          },
+          "parent_rows": 3753243,
+          "overlap": 0,
+          "new_min_decision": 1230930300000000,
+          "new_max_decision": 1238443500000000,
+          "new_max_maturity": 1238529900000000,
+          "parent_max_maturity": 1230757500000000
+        },
+        "manifest_sha256": "1de9f55782c6a2e5fd6d7005f4362644b0a4c46c180153e3f536c43135c3b3f1"
+      },
+      "fold-006": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 444067,
+              "validation": 66080,
+              "calibration": 33783,
+              "evaluation": 144991
+            },
+            "evaluation": {
+              "rows": 144991,
+              "sha256": "ccf4cc1aa51ca9b5a2432696fdf9c02b1fe848c51f1cc930665dd3ee490065cb"
+            },
+            "evaluation_first_decision": 1294124700000000,
+            "max_maturity": {
+              "train": 1270019100000000,
+              "validation": 1285830300000000,
+              "calibration": 1293779100000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 4156708,
+              "validation": 285537,
+              "calibration": 146451,
+              "evaluation": 604238
+            },
+            "evaluation": {
+              "rows": 604238,
+              "sha256": "4030f9788f2cc099ccb33848bd61b28e025a22f2288b90566dc542172e5921e9"
+            },
+            "evaluation_first_decision": 1294088700000000,
+            "max_maturity": {
+              "train": 1270065900000000,
+              "validation": 1285877100000000,
+              "calibration": 1293829500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2010-01-01",
+            "2010-04-01"
+          ],
+          "new_rows": {
+            "rows": 163601,
+            "sha256": "f16b14658f213f9bf1d65d6ee6b20894dfb1e206f258c8715d009c1231870b7e"
+          },
+          "parent_rows": 4429041,
+          "overlap": 0,
+          "new_min_decision": 1262588700000000,
+          "new_max_decision": 1269979500000000,
+          "new_max_maturity": 1270065900000000,
+          "parent_max_maturity": 1262293500000000
+        },
+        "manifest_sha256": "5cd7dfdcf92a786a22db4dbda431f39aca26a57fbc24616a8edabb0605fca6f5"
+      },
+      "fold-007": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 578446,
+              "validation": 74738,
+              "calibration": 36195,
+              "evaluation": 153533
+            },
+            "evaluation": {
+              "rows": 153533,
+              "sha256": "8611d34d106f991fe301d45563064fe4d6ac2a7ae217fce3d0645428ccde1502"
+            },
+            "evaluation_first_decision": 1325660700000000,
+            "max_maturity": {
+              "train": 1301555100000000,
+              "validation": 1317366300000000,
+              "calibration": 1325228700000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 4739006,
+              "validation": 303335,
+              "calibration": 152663,
+              "evaluation": 629911
+            },
+            "evaluation": {
+              "rows": 629911,
+              "sha256": "d79f59013d0069433e485874b21e0f9dd9e1c17a5d0baabaa3528187d1612b78"
+            },
+            "evaluation_first_decision": 1325624700000000,
+            "max_maturity": {
+              "train": 1301601900000000,
+              "validation": 1317413100000000,
+              "calibration": 1325279100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2011-01-01",
+            "2011-04-01"
+          ],
+          "new_rows": {
+            "rows": 176297,
+            "sha256": "78de1fe07082df11ea2d95fb6358cda57eac8aab3c9bcc6f194df83d21dd8034"
+          },
+          "parent_rows": 5132626,
+          "overlap": 0,
+          "new_min_decision": 1294088700000000,
+          "new_max_decision": 1301515500000000,
+          "new_max_maturity": 1301601900000000,
+          "parent_max_maturity": 1293829500000000
+        },
+        "manifest_sha256": "cff9e3e1f0b3ad7cbc85cee94fb8ec67494a84ddb9a10f82f582d8eca56b8522"
+      },
+      "fold-008": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 726562,
+              "validation": 78046,
+              "calibration": 38845,
+              "evaluation": 154189
+            },
+            "evaluation": {
+              "rows": 154189,
+              "sha256": "67aef0e9f3e61fc0601887c52bd4e000659d550e226a07a47fad0ad75cc3622c"
+            },
+            "evaluation_first_decision": 1357283100000000,
+            "max_maturity": {
+              "train": 1333091100000000,
+              "validation": 1348815900000000,
+              "calibration": 1356937500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 5353824,
+              "validation": 315473,
+              "calibration": 157840,
+              "evaluation": 666320
+            },
+            "evaluation": {
+              "rows": 666320,
+              "sha256": "2ef9c009ae8328ddba5260f2532a6b8f4d16b7b9fa3663fd97f74c978f4614c0"
+            },
+            "evaluation_first_decision": 1357160700000000,
+            "max_maturity": {
+              "train": 1333137900000000,
+              "validation": 1348862700000000,
+              "calibration": 1356987900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2012-01-01",
+            "2012-04-01"
+          ],
+          "new_rows": {
+            "rows": 186911,
+            "sha256": "31325c05c5823bc237c82a78da0ee1b5067c1dec2e300426dbb880b230980903"
+          },
+          "parent_rows": 5884383,
+          "overlap": 0,
+          "new_min_decision": 1325624700000000,
+          "new_max_decision": 1333051500000000,
+          "new_max_maturity": 1333137900000000,
+          "parent_max_maturity": 1325279100000000
+        },
+        "manifest_sha256": "4429006f47ecff464957d6d3052cec1959c57536f6468454ee02de6d28f25542"
+      },
+      "fold-009": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 881087,
+              "validation": 78111,
+              "calibration": 39060,
+              "evaluation": 159782
+            },
+            "evaluation": {
+              "rows": 159782,
+              "sha256": "54b685110441bb4c1af6098f66d470810d36db90de30a4a307fba4046c7dc3d1"
+            },
+            "evaluation_first_decision": 1388646300000000,
+            "max_maturity": {
+              "train": 1364540700000000,
+              "validation": 1380524700000000,
+              "calibration": 1388473500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 5988592,
+              "validation": 337016,
+              "calibration": 170209,
+              "evaluation": 706326
+            },
+            "evaluation": {
+              "rows": 706326,
+              "sha256": "ffca34951e161fd1241bf19d42f67d8db292a74b94f73bf10b25f79c01f2afa1"
+            },
+            "evaluation_first_decision": 1388696700000000,
+            "max_maturity": {
+              "train": 1364501100000000,
+              "validation": 1380571500000000,
+              "calibration": 1388523900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2013-01-01",
+            "2013-04-01"
+          ],
+          "new_rows": {
+            "rows": 189513,
+            "sha256": "4ed434ac62e0aa4045541768051099c054dc391d49d7fa93ac5ca58309831350"
+          },
+          "parent_rows": 6670590,
+          "overlap": 0,
+          "new_min_decision": 1357160700000000,
+          "new_max_decision": 1364454300000000,
+          "new_max_maturity": 1364540700000000,
+          "parent_max_maturity": 1356987900000000
+        },
+        "manifest_sha256": "c0e5512a9aeb5c8a41912c5ea6657f5217ca4a8ba7c48d22d721782f50616135"
+      },
+      "fold-010": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1037317,
+              "validation": 81824,
+              "calibration": 39540,
+              "evaluation": 161944
+            },
+            "evaluation": {
+              "rows": 161944,
+              "sha256": "ce1ae2df9f379289f23760413999668ff86761ab9c0347e0921aa61b61d28a7a"
+            },
+            "evaluation_first_decision": 1420441500000000,
+            "max_maturity": {
+              "train": 1396249500000000,
+              "validation": 1412060700000000,
+              "calibration": 1420009500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 6667897,
+              "validation": 354810,
+              "calibration": 181845,
+              "evaluation": 754028
+            },
+            "evaluation": {
+              "rows": 754028,
+              "sha256": "80d9133f8623c56b077ce64db5fb9ea01293a948205bf8f53214216f057c5253"
+            },
+            "evaluation_first_decision": 1420232700000000,
+            "max_maturity": {
+              "train": 1396296300000000,
+              "validation": 1412107500000000,
+              "calibration": 1420059900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2014-01-01",
+            "2014-04-01"
+          ],
+          "new_rows": {
+            "rows": 201167,
+            "sha256": "9f3494cda71e8d1ed4bebfd69dbf0a928db2350b74d5955d30ab833d312e6070"
+          },
+          "parent_rows": 7494075,
+          "overlap": 0,
+          "new_min_decision": 1388646300000000,
+          "new_max_decision": 1396037100000000,
+          "new_max_maturity": 1396296300000000,
+          "parent_max_maturity": 1388523900000000
+        },
+        "manifest_sha256": "0dbbffbea60750f6d5a7321b7d1153df9c4d2a72f9cbab152bf15d4cfd8cc6b8"
+      },
+      "fold-011": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1197610,
+              "validation": 83312,
+              "calibration": 40343,
+              "evaluation": 166704
+            },
+            "evaluation": {
+              "rows": 166704,
+              "sha256": "f0e3e97826c5f1879c769338461859fe679331bee5883046a8e46763ee3c8186"
+            },
+            "evaluation_first_decision": 1451891100000000,
+            "max_maturity": {
+              "train": 1427785500000000,
+              "validation": 1443596700000000,
+              "calibration": 1451545500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 7389019,
+              "validation": 378420,
+              "calibration": 193676,
+              "evaluation": 800803
+            },
+            "evaluation": {
+              "rows": 800803,
+              "sha256": "e21bda1449b9e06831045ba65c2b197bd94d0a723f2b24512016dd99d0e969fa"
+            },
+            "evaluation_first_decision": 1451941500000000,
+            "max_maturity": {
+              "train": 1427832300000000,
+              "validation": 1443643500000000,
+              "calibration": 1451595900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2015-01-01",
+            "2015-04-01"
+          ],
+          "new_rows": {
+            "rows": 212899,
+            "sha256": "9af591fc2db4f482197a974a1c0aa2fbbfd534ca1539b42b2b9ddc7059e1b267"
+          },
+          "parent_rows": 8363233,
+          "overlap": 0,
+          "new_min_decision": 1420232700000000,
+          "new_max_decision": 1427745900000000,
+          "new_max_maturity": 1427832300000000,
+          "parent_max_maturity": 1420059900000000
+        },
+        "manifest_sha256": "2e4a8d60344394946f2e42869e8f18f354ac853040a0adad034f2828b93ae1c2"
+      },
+      "fold-012": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1362886,
+              "validation": 85072,
+              "calibration": 40647,
+              "evaluation": 171812
+            },
+            "evaluation": {
+              "rows": 171812,
+              "sha256": "91e8a7e3a9dd41759489b8345ddc5281d1dd2520d056cf4627bbb0f7539bd960"
+            },
+            "evaluation_first_decision": 1483427100000000,
+            "max_maturity": {
+              "train": 1459407900000000,
+              "validation": 1475219100000000,
+              "calibration": 1483081500000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 8158260,
+              "validation": 405737,
+              "calibration": 200640,
+              "evaluation": 833969
+            },
+            "evaluation": {
+              "rows": 833969,
+              "sha256": "55c358399e8f2b1f9c76c0475cc690869a0e7548da674f00b743fb4ff345a4a7"
+            },
+            "evaluation_first_decision": 1483477500000000,
+            "max_maturity": {
+              "train": 1459454700000000,
+              "validation": 1475265900000000,
+              "calibration": 1483131900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2016-01-01",
+            "2016-04-01"
+          ],
+          "new_rows": {
+            "rows": 227659,
+            "sha256": "a9c6180441b0ecae5731d2c8ddfd0835bde8da3d1218e4c09b9231ccb184dbb0"
+          },
+          "parent_rows": 9282380,
+          "overlap": 0,
+          "new_min_decision": 1451891100000000,
+          "new_max_decision": 1459368300000000,
+          "new_max_maturity": 1459454700000000,
+          "parent_max_maturity": 1451595900000000
+        },
+        "manifest_sha256": "ada5207b8545dd5be19d5385bcebe981e910113de92cfb81505d56e1731e1bdb"
+      },
+      "fold-013": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1530933,
+              "validation": 87724,
+              "calibration": 42405,
+              "evaluation": 176466
+            },
+            "evaluation": {
+              "rows": 176466,
+              "sha256": "e4892239b320a93ce6c8610548395bdc24468278c003269b79d6e1ae0e2edc36"
+            },
+            "evaluation_first_decision": 1514876700000000,
+            "max_maturity": {
+              "train": 1490943900000000,
+              "validation": 1506668700000000,
+              "calibration": 1514531100000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 8974007,
+              "validation": 417082,
+              "calibration": 210488,
+              "evaluation": 885298
+            },
+            "evaluation": {
+              "rows": 885298,
+              "sha256": "53819bfc3279586a0b8f3c2d0c242dd91fa47bd83ab9a99b7328c57bd1ad95ee"
+            },
+            "evaluation_first_decision": 1514927100000000,
+            "max_maturity": {
+              "train": 1490990700000000,
+              "validation": 1506715500000000,
+              "calibration": 1514581500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2017-01-01",
+            "2017-04-01"
+          ],
+          "new_rows": {
+            "rows": 239996,
+            "sha256": "e2ff040934598d35c0d2e3c33c493c42888a2dd4d28522fd433d0a373f94bf4f"
+          },
+          "parent_rows": 10253242,
+          "overlap": 0,
+          "new_min_decision": 1483427100000000,
+          "new_max_decision": 1490904300000000,
+          "new_max_maturity": 1490990700000000,
+          "parent_max_maturity": 1483131900000000
+        },
+        "manifest_sha256": "2d7798bf8f5541ddfc126244a7f47982a5cdb3e68329a4a79391b53cd3e30f03"
+      },
+      "fold-014": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1705071,
+              "validation": 89717,
+              "calibration": 43419,
+              "evaluation": 164442
+            },
+            "evaluation": {
+              "rows": 164442,
+              "sha256": "7d0db3195a7ebd5e22d4674b7aa624d497c4614994504304b3d27c0c8d45f938"
+            },
+            "evaluation_first_decision": 1546412700000000,
+            "max_maturity": {
+              "train": 1522393500000000,
+              "validation": 1538118300000000,
+              "calibration": 1545980700000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 9818574,
+              "validation": 446475,
+              "calibration": 224847,
+              "evaluation": 950243
+            },
+            "evaluation": {
+              "rows": 950243,
+              "sha256": "52cf7000c40cda800dd0a3f9f6b405eb9125ff21b730875fd2742607b106b6f7"
+            },
+            "evaluation_first_decision": 1546463100000000,
+            "max_maturity": {
+              "train": 1522353900000000,
+              "validation": 1538165100000000,
+              "calibration": 1546290300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2018-01-01",
+            "2018-04-01"
+          ],
+          "new_rows": {
+            "rows": 248772,
+            "sha256": "4d69cc77109683747537e97176d9874793b130edbf84b4b5d4ebb37561f98ffc"
+          },
+          "parent_rows": 11262639,
+          "overlap": 0,
+          "new_min_decision": 1514876700000000,
+          "new_max_decision": 1522307100000000,
+          "new_max_maturity": 1522393500000000,
+          "parent_max_maturity": 1514581500000000
+        },
+        "manifest_sha256": "7d2f97349841f3707378895000da3e2a6c85508135b1351855903d97495695a4"
+      },
+      "fold-015": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1869608,
+              "validation": 88471,
+              "calibration": 45508,
+              "evaluation": 184313
+            },
+            "evaluation": {
+              "rows": 184313,
+              "sha256": "172ac9dc03b4e707d1b5c1b648f116572f541da0d9a31cb341813d7ce28c7900"
+            },
+            "evaluation_first_decision": 1577948700000000,
+            "max_maturity": {
+              "train": 1553843100000000,
+              "validation": 1569827100000000,
+              "calibration": 1577775900000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 10722076,
+              "validation": 476924,
+              "calibration": 244312,
+              "evaluation": 1015804
+            },
+            "evaluation": {
+              "rows": 1015804,
+              "sha256": "3bbfbdabc315891a026b240c279e43e254746ce14aeb085575e188432853b77f"
+            },
+            "evaluation_first_decision": 1577999100000000,
+            "max_maturity": {
+              "train": 1553889900000000,
+              "validation": 1569873900000000,
+              "calibration": 1577826300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2019-01-01",
+            "2019-04-01"
+          ],
+          "new_rows": {
+            "rows": 250646,
+            "sha256": "7f8365292128cda0b35addee6f743ca42ff20b6385fd4ba3dcb5d8a3527bca55"
+          },
+          "parent_rows": 12328103,
+          "overlap": 0,
+          "new_min_decision": 1546412700000000,
+          "new_max_decision": 1553803500000000,
+          "new_max_maturity": 1553889900000000,
+          "parent_max_maturity": 1546290300000000
+        },
+        "manifest_sha256": "5aae226bf0960b7018244c6aa15dfc067e2a80f67dd14157df905cfe26c476c7"
+      },
+      "fold-016": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2049266,
+              "validation": 93348,
+              "calibration": 45765,
+              "evaluation": 191576
+            },
+            "evaluation": {
+              "rows": 191576,
+              "sha256": "fbe470e1c9b85b4bef263ca866d330a766a6e256b700a90eca1d41456c4bcd23"
+            },
+            "evaluation_first_decision": 1609743900000000,
+            "max_maturity": {
+              "train": 1585638300000000,
+              "validation": 1601449500000000,
+              "calibration": 1609398300000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 11694982,
+              "validation": 508446,
+              "calibration": 259102,
+              "evaluation": 1042405
+            },
+            "evaluation": {
+              "rows": 1042405,
+              "sha256": "0a6523467d1a5fb33fb7da27e29bc34c2817f5a2ccdeccd843009e1bc62d4269"
+            },
+            "evaluation_first_decision": 1609794300000000,
+            "max_maturity": {
+              "train": 1585685100000000,
+              "validation": 1601496300000000,
+              "calibration": 1609448700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2020-01-01",
+            "2020-04-01"
+          ],
+          "new_rows": {
+            "rows": 283851,
+            "sha256": "dda1f4aa63483b0b2c52557008d1d807d62edb6871274439793aeb39909d719d"
+          },
+          "parent_rows": 13446899,
+          "overlap": 0,
+          "new_min_decision": 1577948700000000,
+          "new_max_decision": 1585598700000000,
+          "new_max_maturity": 1585685100000000,
+          "parent_max_maturity": 1577826300000000
+        },
+        "manifest_sha256": "a5882ac54bf4f3972758fd000caf491de2cc39fda17afe904081149637bca79b"
+      },
+      "fold-017": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2235180,
+              "validation": 97621,
+              "calibration": 47886,
+              "evaluation": 193967
+            },
+            "evaluation": {
+              "rows": 193967,
+              "sha256": "b407cb446716d65316cf7e7bcecfe2c22a563345b30fc0efa76329b186987f87"
+            },
+            "evaluation_first_decision": 1641279900000000,
+            "max_maturity": {
+              "train": 1617174300000000,
+              "validation": 1632985500000000,
+              "calibration": 1640934300000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 12724225,
+              "validation": 522266,
+              "calibration": 262341,
+              "evaluation": 1043826
+            },
+            "evaluation": {
+              "rows": 1043826,
+              "sha256": "2714b0da5c521eb5b5ef7d9d0a594ea9f019e36f9b7d0290d32dd9bc0552d2b0"
+            },
+            "evaluation_first_decision": 1641243900000000,
+            "max_maturity": {
+              "train": 1617221100000000,
+              "validation": 1633032300000000,
+              "calibration": 1640984700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2021-01-01",
+            "2021-04-01"
+          ],
+          "new_rows": {
+            "rows": 293960,
+            "sha256": "b2864c0cee8d36821a9aafc2edfe32110919064115a2f8179c5f68159fecb9ed"
+          },
+          "parent_rows": 14650909,
+          "overlap": 0,
+          "new_min_decision": 1609743900000000,
+          "new_max_decision": 1617134700000000,
+          "new_max_maturity": 1617221100000000,
+          "parent_max_maturity": 1609448700000000
+        },
+        "manifest_sha256": "1ff60d285d7cce886c0056efdec0055eab44d60926862e22260e7968e2adff2a"
+      },
+      "fold-018": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2428745,
+              "validation": 99026,
+              "calibration": 47659,
+              "evaluation": 195144
+            },
+            "evaluation": {
+              "rows": 195144,
+              "sha256": "7451fd242c9b7bf8c90bd745e1e9422cc7635c8e8ca6ca4d5a88ac8373446e09"
+            },
+            "evaluation_first_decision": 1672729500000000,
+            "max_maturity": {
+              "train": 1648710300000000,
+              "validation": 1664521500000000,
+              "calibration": 1672383900000000
+            }
+          },
+          "US": {
+            "counts": {
+              "train": 13775654,
+              "validation": 521928,
+              "calibration": 259215,
+              "evaluation": 1040641
+            },
+            "evaluation": {
+              "rows": 1040641,
+              "sha256": "a488b312625f883f5a2ab5ef0a0ade316d36752fa15854c23490a17afe8ac1ac"
+            },
+            "evaluation_first_decision": 1672779900000000,
+            "max_maturity": {
+              "train": 1648757100000000,
+              "validation": 1664568300000000,
+              "calibration": 1672434300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2022-01-01",
+            "2022-04-01"
+          ],
+          "new_rows": {
+            "rows": 300005,
+            "sha256": "6e0afd556652d6c02f1d86b0e1cd27dc9f3428c4ded1d159e1c1a29f0539d65a"
+          },
+          "parent_rows": 15889519,
+          "overlap": 0,
+          "new_min_decision": 1641243900000000,
+          "new_max_decision": 1648670700000000,
+          "new_max_maturity": 1648757100000000,
+          "parent_max_maturity": 1640984700000000
+        },
+        "manifest_sha256": "c9b10cbb1590e74fc9c26b89d2fb6f54f58864186f4f272cea683215ea37c3e0"
+      }
+    },
+    "US": {
+      "fold-000": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 1313128,
+              "validation": 194655,
+              "calibration": 100689,
+              "evaluation": 414341
+            },
+            "evaluation": {
+              "rows": 414341,
+              "sha256": "c6ddb53b4876e4eddfc6d6f7687ad56acc5820314c2ed9f9e4e1f5c154e99d10"
+            },
+            "evaluation_first_decision": 1104786300000000,
+            "max_maturity": {
+              "train": 1080767100000000,
+              "validation": 1096574700000000,
+              "calibration": 1104527100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "manifest_sha256": "bf1a5786d8b0c55e2234911cb53157b8119e6210596183a1c026443f33b027cd"
+      },
+      "fold-001": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 1710065,
+              "validation": 209451,
+              "calibration": 104708,
+              "evaluation": 437645
+            },
+            "evaluation": {
+              "rows": 437645,
+              "sha256": "e0ab700da5f7dc3008b124c45131cca45b48b5e4aded7749591447e56b11826a"
+            },
+            "evaluation_first_decision": 1136322300000000,
+            "max_maturity": {
+              "train": 1112303100000000,
+              "validation": 1128110700000000,
+              "calibration": 1135976700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2005-01-01",
+            "2005-04-01"
+          ],
+          "new_rows": {
+            "rows": 96876,
+            "sha256": "9bbbea96b914e4b088578bb3c3203bf7608cba027fe2cbcbe572aaf012453bba"
+          },
+          "parent_rows": 1608472,
+          "overlap": 0,
+          "new_min_decision": 1104786300000000,
+          "new_max_decision": 1112216700000000,
+          "new_max_maturity": 1112303100000000,
+          "parent_max_maturity": 1104527100000000
+        },
+        "manifest_sha256": "f692c05ce3bcf0a8ba34ebad7042e41aef3fbdf088584e6f97729f18ed4e8373"
+      },
+      "fold-002": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 2133660,
+              "validation": 218863,
+              "calibration": 110863,
+              "evaluation": 475623
+            },
+            "evaluation": {
+              "rows": 475623,
+              "sha256": "dd929c9973943a157d5810390268afc3cee43dcd74233f01d3f85b4e3124a34b"
+            },
+            "evaluation_first_decision": 1167858300000000,
+            "max_maturity": {
+              "train": 1143839100000000,
+              "validation": 1159560300000000,
+              "calibration": 1167426300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2006-01-01",
+            "2006-04-01"
+          ],
+          "new_rows": {
+            "rows": 104425,
+            "sha256": "cb2046f89f6f9fb828ffdc7f19de6074314ebdc83d2981450c7d5f261a06a3b6"
+          },
+          "parent_rows": 2024224,
+          "overlap": 0,
+          "new_min_decision": 1136322300000000,
+          "new_max_decision": 1143752700000000,
+          "new_max_maturity": 1143839100000000,
+          "parent_max_maturity": 1135976700000000
+        },
+        "manifest_sha256": "18adbc1a1f7d74532074ebc2ca45b3bea8f36a3291d1b3c3825e247db31c2182"
+      },
+      "fold-003": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 2578424,
+              "validation": 236733,
+              "calibration": 125375,
+              "evaluation": 525350
+            },
+            "evaluation": {
+              "rows": 525350,
+              "sha256": "8bf70fa835a37cb7dbf970bbb00093588f1723de90eb958a3ecf4fb1a77bf7eb"
+            },
+            "evaluation_first_decision": 1199307900000000,
+            "max_maturity": {
+              "train": 1175285100000000,
+              "validation": 1191009900000000,
+              "calibration": 1199135100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2007-01-01",
+            "2007-04-01"
+          ],
+          "new_rows": {
+            "rows": 109726,
+            "sha256": "bbab25ba557c6f248b63d3567ac00395c35a355053c82f83987f9440a881a456"
+          },
+          "parent_rows": 2463386,
+          "overlap": 0,
+          "new_min_decision": 1167858300000000,
+          "new_max_decision": 1175198700000000,
+          "new_max_maturity": 1175285100000000,
+          "parent_max_maturity": 1167426300000000
+        },
+        "manifest_sha256": "16356a51a4fdecdc057d06e726190960979bbe7b775771a909b598f141b2a2ff"
+      },
+      "fold-004": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 3068237,
+              "validation": 265024,
+              "calibration": 134265,
+              "evaluation": 546868
+            },
+            "evaluation": {
+              "rows": 546868,
+              "sha256": "b47e26c7f74a5b8bdfde0e8f650ddd5d837ecc1b285c976661290e977df7b7cd"
+            },
+            "evaluation_first_decision": 1230930300000000,
+            "max_maturity": {
+              "train": 1206993900000000,
+              "validation": 1222805100000000,
+              "calibration": 1230757500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2008-01-01",
+            "2008-04-01"
+          ],
+          "new_rows": {
+            "rows": 121894,
+            "sha256": "1cf6a7533903418a1a4d3a97e69343f1b536055e86eec9583050a2d06579953b"
+          },
+          "parent_rows": 2940532,
+          "overlap": 0,
+          "new_min_decision": 1199307900000000,
+          "new_max_decision": 1206734700000000,
+          "new_max_maturity": 1206993900000000,
+          "parent_max_maturity": 1199135100000000
+        },
+        "manifest_sha256": "4f4aceb9aa1e88afaaf3a60f198aa63a9bf4a869aeeb5647d3799e41fd3cb0f5"
+      },
+      "fold-005": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 3602637,
+              "validation": 274686,
+              "calibration": 139027,
+              "evaluation": 570313
+            },
+            "evaluation": {
+              "rows": 570313,
+              "sha256": "2cf07d3d8dec3b129d66a15ae63cebacad6a491be759d7de24c68cd70829fa66"
+            },
+            "evaluation_first_decision": 1262639100000000,
+            "max_maturity": {
+              "train": 1238529900000000,
+              "validation": 1254341100000000,
+              "calibration": 1262293500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2009-01-01",
+            "2009-04-01"
+          ],
+          "new_rows": {
+            "rows": 128804,
+            "sha256": "b46ef0d648ccad31e3bce217a888e53a091deb6a4db9c0c4674e9f3fed94aa96"
+          },
+          "parent_rows": 3467526,
+          "overlap": 0,
+          "new_min_decision": 1230930300000000,
+          "new_max_decision": 1238443500000000,
+          "new_max_maturity": 1238529900000000,
+          "parent_max_maturity": 1230757500000000
+        },
+        "manifest_sha256": "44038fcec5cb006c616cc44cfc7dac5fe871f68e17f3e0d9cf495e50cde5e3d0"
+      },
+      "fold-006": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 4156708,
+              "validation": 285537,
+              "calibration": 146451,
+              "evaluation": 604238
+            },
+            "evaluation": {
+              "rows": 604238,
+              "sha256": "4030f9788f2cc099ccb33848bd61b28e025a22f2288b90566dc542172e5921e9"
+            },
+            "evaluation_first_decision": 1294088700000000,
+            "max_maturity": {
+              "train": 1270065900000000,
+              "validation": 1285877100000000,
+              "calibration": 1293829500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2010-01-01",
+            "2010-04-01"
+          ],
+          "new_rows": {
+            "rows": 133788,
+            "sha256": "473758f7820a0c796c20ec301809cf1de64ce7650918e777f5f31e495609107c"
+          },
+          "parent_rows": 4016350,
+          "overlap": 0,
+          "new_min_decision": 1262639100000000,
+          "new_max_decision": 1269979500000000,
+          "new_max_maturity": 1270065900000000,
+          "parent_max_maturity": 1262293500000000
+        },
+        "manifest_sha256": "2ec2002f7032aa9bedfc8c306713846407d0ffe54a94de88aca1cc111bdc748c"
+      },
+      "fold-007": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 4739006,
+              "validation": 303335,
+              "calibration": 152663,
+              "evaluation": 629911
+            },
+            "evaluation": {
+              "rows": 629911,
+              "sha256": "d79f59013d0069433e485874b21e0f9dd9e1c17a5d0baabaa3528187d1612b78"
+            },
+            "evaluation_first_decision": 1325624700000000,
+            "max_maturity": {
+              "train": 1301601900000000,
+              "validation": 1317413100000000,
+              "calibration": 1325279100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2011-01-01",
+            "2011-04-01"
+          ],
+          "new_rows": {
+            "rows": 143433,
+            "sha256": "8cd35cecf466a3a1c95b2f6bc1dad3def0d07890045ecf4a296ae699c63d9cbd"
+          },
+          "parent_rows": 4588696,
+          "overlap": 0,
+          "new_min_decision": 1294088700000000,
+          "new_max_decision": 1301515500000000,
+          "new_max_maturity": 1301601900000000,
+          "parent_max_maturity": 1293829500000000
+        },
+        "manifest_sha256": "449e2585d81836b44bb3bc60706cfea0d4b0dc99d55f2ef3d50d3ff97e4971a2"
+      },
+      "fold-008": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 5353824,
+              "validation": 315473,
+              "calibration": 157840,
+              "evaluation": 666320
+            },
+            "evaluation": {
+              "rows": 666320,
+              "sha256": "2ef9c009ae8328ddba5260f2532a6b8f4d16b7b9fa3663fd97f74c978f4614c0"
+            },
+            "evaluation_first_decision": 1357160700000000,
+            "max_maturity": {
+              "train": 1333137900000000,
+              "validation": 1348862700000000,
+              "calibration": 1356987900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2012-01-01",
+            "2012-04-01"
+          ],
+          "new_rows": {
+            "rows": 151537,
+            "sha256": "f536a0716f8033389b4980a0b2dcf4713a83c93cdcd0c277e756ee4f25fb9c6d"
+          },
+          "parent_rows": 5195004,
+          "overlap": 0,
+          "new_min_decision": 1325624700000000,
+          "new_max_decision": 1333051500000000,
+          "new_max_maturity": 1333137900000000,
+          "parent_max_maturity": 1325279100000000
+        },
+        "manifest_sha256": "ab18f946cd0f230a87ab795b17be326112fba4c73b2581e3a6b7e3fb56a838bf"
+      },
+      "fold-009": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 5988592,
+              "validation": 337016,
+              "calibration": 170209,
+              "evaluation": 706326
+            },
+            "evaluation": {
+              "rows": 706326,
+              "sha256": "ffca34951e161fd1241bf19d42f67d8db292a74b94f73bf10b25f79c01f2afa1"
+            },
+            "evaluation_first_decision": 1388696700000000,
+            "max_maturity": {
+              "train": 1364501100000000,
+              "validation": 1380571500000000,
+              "calibration": 1388523900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2013-01-01",
+            "2013-04-01"
+          ],
+          "new_rows": {
+            "rows": 153796,
+            "sha256": "6dc4b88068d18b9c38d4cf367981d4fb87de87e15585579d8169c96027100a64"
+          },
+          "parent_rows": 5827137,
+          "overlap": 0,
+          "new_min_decision": 1357160700000000,
+          "new_max_decision": 1364414700000000,
+          "new_max_maturity": 1364501100000000,
+          "parent_max_maturity": 1356987900000000
+        },
+        "manifest_sha256": "2e7955f22d08b35db2e8245987b446872e276275554b74ad37f8cf14a2187f2c"
+      },
+      "fold-010": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 6667897,
+              "validation": 354810,
+              "calibration": 181845,
+              "evaluation": 754028
+            },
+            "evaluation": {
+              "rows": 754028,
+              "sha256": "80d9133f8623c56b077ce64db5fb9ea01293a948205bf8f53214216f057c5253"
+            },
+            "evaluation_first_decision": 1420232700000000,
+            "max_maturity": {
+              "train": 1396296300000000,
+              "validation": 1412107500000000,
+              "calibration": 1420059900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2014-01-01",
+            "2014-04-01"
+          ],
+          "new_rows": {
+            "rows": 164060,
+            "sha256": "5d92b1acd2138ef5e5669cf64baa38eca540b418cd431a05641149caa75d675b"
+          },
+          "parent_rows": 6495817,
+          "overlap": 0,
+          "new_min_decision": 1388696700000000,
+          "new_max_decision": 1396037100000000,
+          "new_max_maturity": 1396296300000000,
+          "parent_max_maturity": 1388523900000000
+        },
+        "manifest_sha256": "04f4ab878ef00be62bf0ecbc335c1ce4a7f091504b721214a08436dec4289479"
+      },
+      "fold-011": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 7389019,
+              "validation": 378420,
+              "calibration": 193676,
+              "evaluation": 800803
+            },
+            "evaluation": {
+              "rows": 800803,
+              "sha256": "e21bda1449b9e06831045ba65c2b197bd94d0a723f2b24512016dd99d0e969fa"
+            },
+            "evaluation_first_decision": 1451941500000000,
+            "max_maturity": {
+              "train": 1427832300000000,
+              "validation": 1443643500000000,
+              "calibration": 1451595900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2015-01-01",
+            "2015-04-01"
+          ],
+          "new_rows": {
+            "rows": 175940,
+            "sha256": "8e9f9c78e16a796f264f2418de37443a02df463f42b42666d1e35a0b7c021e62"
+          },
+          "parent_rows": 7204552,
+          "overlap": 0,
+          "new_min_decision": 1420232700000000,
+          "new_max_decision": 1427745900000000,
+          "new_max_maturity": 1427832300000000,
+          "parent_max_maturity": 1420059900000000
+        },
+        "manifest_sha256": "a742c6241e41b2c39d0bacc292db883d8b2741a3ff2fea33641bcdc7b5110dd2"
+      },
+      "fold-012": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 8158260,
+              "validation": 405737,
+              "calibration": 200640,
+              "evaluation": 833969
+            },
+            "evaluation": {
+              "rows": 833969,
+              "sha256": "55c358399e8f2b1f9c76c0475cc690869a0e7548da674f00b743fb4ff345a4a7"
+            },
+            "evaluation_first_decision": 1483477500000000,
+            "max_maturity": {
+              "train": 1459454700000000,
+              "validation": 1475265900000000,
+              "calibration": 1483131900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2016-01-01",
+            "2016-04-01"
+          ],
+          "new_rows": {
+            "rows": 188045,
+            "sha256": "83e5f2d433b54ec831e59db01d5ebf41d677e23f77fb93eea069cbffca2df7e1"
+          },
+          "parent_rows": 7961115,
+          "overlap": 0,
+          "new_min_decision": 1451941500000000,
+          "new_max_decision": 1459368300000000,
+          "new_max_maturity": 1459454700000000,
+          "parent_max_maturity": 1451595900000000
+        },
+        "manifest_sha256": "7ac5830423bea1258ec734269adb87069f272ba150389b64259dd3b78d7558a4"
+      },
+      "fold-013": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 8974007,
+              "validation": 417082,
+              "calibration": 210488,
+              "evaluation": 885298
+            },
+            "evaluation": {
+              "rows": 885298,
+              "sha256": "53819bfc3279586a0b8f3c2d0c242dd91fa47bd83ab9a99b7328c57bd1ad95ee"
+            },
+            "evaluation_first_decision": 1514927100000000,
+            "max_maturity": {
+              "train": 1490990700000000,
+              "validation": 1506715500000000,
+              "calibration": 1514581500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2017-01-01",
+            "2017-04-01"
+          ],
+          "new_rows": {
+            "rows": 199730,
+            "sha256": "026a73448ca73e4e116f8e95cb591befbafb094b9f99bdb3c1c1dc91efef272b"
+          },
+          "parent_rows": 8764637,
+          "overlap": 0,
+          "new_min_decision": 1483477500000000,
+          "new_max_decision": 1490904300000000,
+          "new_max_maturity": 1490990700000000,
+          "parent_max_maturity": 1483131900000000
+        },
+        "manifest_sha256": "524bcff40883d91965016fb3e84ee901d142981777e076dde691d74d6dea67c5"
+      },
+      "fold-014": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 9818574,
+              "validation": 446475,
+              "calibration": 224847,
+              "evaluation": 950243
+            },
+            "evaluation": {
+              "rows": 950243,
+              "sha256": "52cf7000c40cda800dd0a3f9f6b405eb9125ff21b730875fd2742607b106b6f7"
+            },
+            "evaluation_first_decision": 1546463100000000,
+            "max_maturity": {
+              "train": 1522353900000000,
+              "validation": 1538165100000000,
+              "calibration": 1546290300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2018-01-01",
+            "2018-04-01"
+          ],
+          "new_rows": {
+            "rows": 206900,
+            "sha256": "0d0fa97f79c54ed66c1fed1ae4adf0dffafb6d9c9829e741b3a0ec90def788a4"
+          },
+          "parent_rows": 9601577,
+          "overlap": 0,
+          "new_min_decision": 1514927100000000,
+          "new_max_decision": 1522267500000000,
+          "new_max_maturity": 1522353900000000,
+          "parent_max_maturity": 1514581500000000
+        },
+        "manifest_sha256": "d0a6faec08d20c7db80359f2846e863bc989d43a22dd8b8050e290ac5b143a29"
+      },
+      "fold-015": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 10722076,
+              "validation": 476924,
+              "calibration": 244312,
+              "evaluation": 1015804
+            },
+            "evaluation": {
+              "rows": 1015804,
+              "sha256": "3bbfbdabc315891a026b240c279e43e254746ce14aeb085575e188432853b77f"
+            },
+            "evaluation_first_decision": 1577999100000000,
+            "max_maturity": {
+              "train": 1553889900000000,
+              "validation": 1569873900000000,
+              "calibration": 1577826300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2019-01-01",
+            "2019-04-01"
+          ],
+          "new_rows": {
+            "rows": 221444,
+            "sha256": "d435bed49fe1cb39d13568bf7a2d98a77da35cecf1a4e5804ed56f14713fa6aa"
+          },
+          "parent_rows": 10489896,
+          "overlap": 0,
+          "new_min_decision": 1546463100000000,
+          "new_max_decision": 1553803500000000,
+          "new_max_maturity": 1553889900000000,
+          "parent_max_maturity": 1546290300000000
+        },
+        "manifest_sha256": "a7d176425d2e8115fa23b3fb202a42d9645d77d5981827cb25769af7616522b6"
+      },
+      "fold-016": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 11694982,
+              "validation": 508446,
+              "calibration": 259102,
+              "evaluation": 1042405
+            },
+            "evaluation": {
+              "rows": 1042405,
+              "sha256": "0a6523467d1a5fb33fb7da27e29bc34c2817f5a2ccdeccd843009e1bc62d4269"
+            },
+            "evaluation_first_decision": 1609794300000000,
+            "max_maturity": {
+              "train": 1585685100000000,
+              "validation": 1601496300000000,
+              "calibration": 1609448700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2020-01-01",
+            "2020-04-01"
+          ],
+          "new_rows": {
+            "rows": 240195,
+            "sha256": "c4a0f7652013ebc38ce879dcec2d0e1ba6d564139c78c16a9feca862ec5a6388"
+          },
+          "parent_rows": 11443312,
+          "overlap": 0,
+          "new_min_decision": 1577999100000000,
+          "new_max_decision": 1585598700000000,
+          "new_max_maturity": 1585685100000000,
+          "parent_max_maturity": 1577826300000000
+        },
+        "manifest_sha256": "5d3ad62595c4ad4e127827b01f3bd36d803ecda5c18a306b05be7e2e2fa09ef7"
+      },
+      "fold-017": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 12724225,
+              "validation": 522266,
+              "calibration": 262341,
+              "evaluation": 1043826
+            },
+            "evaluation": {
+              "rows": 1043826,
+              "sha256": "2714b0da5c521eb5b5ef7d9d0a594ea9f019e36f9b7d0290d32dd9bc0552d2b0"
+            },
+            "evaluation_first_decision": 1641243900000000,
+            "max_maturity": {
+              "train": 1617221100000000,
+              "validation": 1633032300000000,
+              "calibration": 1640984700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2021-01-01",
+            "2021-04-01"
+          ],
+          "new_rows": {
+            "rows": 249477,
+            "sha256": "a6794b5e2c76ff5b9a6ab83ee4acd00831a07c34eca3694953f2ed64a22e1094"
+          },
+          "parent_rows": 12462530,
+          "overlap": 0,
+          "new_min_decision": 1609794300000000,
+          "new_max_decision": 1617134700000000,
+          "new_max_maturity": 1617221100000000,
+          "parent_max_maturity": 1609448700000000
+        },
+        "manifest_sha256": "c00079184cbef69b65154efbbf6038d5ae37b3e15e251dc99e2628a32873a9dd"
+      },
+      "fold-018": {
+        "markets": {
+          "US": {
+            "counts": {
+              "train": 13775654,
+              "validation": 521928,
+              "calibration": 259215,
+              "evaluation": 1040641
+            },
+            "evaluation": {
+              "rows": 1040641,
+              "sha256": "a488b312625f883f5a2ab5ef0a0ade316d36752fa15854c23490a17afe8ac1ac"
+            },
+            "evaluation_first_decision": 1672779900000000,
+            "max_maturity": {
+              "train": 1648757100000000,
+              "validation": 1664568300000000,
+              "calibration": 1672434300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2022-01-01",
+            "2022-04-01"
+          ],
+          "new_rows": {
+            "rows": 254333,
+            "sha256": "75eff04a287b529d2e6fcb6af6665daf576b06a37bba602d6dd7b8c33b18147a"
+          },
+          "parent_rows": 13508832,
+          "overlap": 0,
+          "new_min_decision": 1641243900000000,
+          "new_max_decision": 1648670700000000,
+          "new_max_maturity": 1648757100000000,
+          "parent_max_maturity": 1640984700000000
+        },
+        "manifest_sha256": "6c398f5a06f80fea4f3a8a263d5054cc9e7e121676eac7d671910aa6be40f904"
+      }
+    },
+    "CN": {
+      "fold-000": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 444067,
+              "validation": 66080,
+              "calibration": 33783,
+              "evaluation": 144991
+            },
+            "evaluation": {
+              "rows": 144991,
+              "sha256": "ccf4cc1aa51ca9b5a2432696fdf9c02b1fe848c51f1cc930665dd3ee490065cb"
+            },
+            "evaluation_first_decision": 1294124700000000,
+            "max_maturity": {
+              "train": 1270019100000000,
+              "validation": 1285830300000000,
+              "calibration": 1293779100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "manifest_sha256": "ca9df948fb8fa8631d49e654c2ff754c782dff8ca3ab62090569560714c5decf"
+      },
+      "fold-001": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 578446,
+              "validation": 74738,
+              "calibration": 36195,
+              "evaluation": 153533
+            },
+            "evaluation": {
+              "rows": 153533,
+              "sha256": "8611d34d106f991fe301d45563064fe4d6ac2a7ae217fce3d0645428ccde1502"
+            },
+            "evaluation_first_decision": 1325660700000000,
+            "max_maturity": {
+              "train": 1301555100000000,
+              "validation": 1317366300000000,
+              "calibration": 1325228700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2011-01-01",
+            "2011-04-01"
+          ],
+          "new_rows": {
+            "rows": 32864,
+            "sha256": "a2abb2be7c2cf8b966885bf71ce76838c95ab915f0e25eebc8ef2384733e800c"
+          },
+          "parent_rows": 543930,
+          "overlap": 0,
+          "new_min_decision": 1294124700000000,
+          "new_max_decision": 1301468700000000,
+          "new_max_maturity": 1301555100000000,
+          "parent_max_maturity": 1293779100000000
+        },
+        "manifest_sha256": "931c6be8e875bf303ea5fb29734d226eec3971cfd198c8389f3b0bde219bb08e"
+      },
+      "fold-002": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 726562,
+              "validation": 78046,
+              "calibration": 38845,
+              "evaluation": 154189
+            },
+            "evaluation": {
+              "rows": 154189,
+              "sha256": "67aef0e9f3e61fc0601887c52bd4e000659d550e226a07a47fad0ad75cc3622c"
+            },
+            "evaluation_first_decision": 1357283100000000,
+            "max_maturity": {
+              "train": 1333091100000000,
+              "validation": 1348815900000000,
+              "calibration": 1356937500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2012-01-01",
+            "2012-04-01"
+          ],
+          "new_rows": {
+            "rows": 35374,
+            "sha256": "b68e9518252035b50e6650999f2cd444a8d0a7870e0e16d81ba2cb66ae1f4db0"
+          },
+          "parent_rows": 689379,
+          "overlap": 0,
+          "new_min_decision": 1325660700000000,
+          "new_max_decision": 1333004700000000,
+          "new_max_maturity": 1333091100000000,
+          "parent_max_maturity": 1325228700000000
+        },
+        "manifest_sha256": "1bb867affe8c8f13faea6ce0f9e3b0c26e73e05bf5c022a636f276653c9b770e"
+      },
+      "fold-003": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 881087,
+              "validation": 78111,
+              "calibration": 39060,
+              "evaluation": 159782
+            },
+            "evaluation": {
+              "rows": 159782,
+              "sha256": "54b685110441bb4c1af6098f66d470810d36db90de30a4a307fba4046c7dc3d1"
+            },
+            "evaluation_first_decision": 1388646300000000,
+            "max_maturity": {
+              "train": 1364540700000000,
+              "validation": 1380524700000000,
+              "calibration": 1388473500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2013-01-01",
+            "2013-04-01"
+          ],
+          "new_rows": {
+            "rows": 35717,
+            "sha256": "b5541e47020f811bc57f57d6be31f6b50ffb3c3f42363aa39b51b0e5e30dc4ab"
+          },
+          "parent_rows": 843453,
+          "overlap": 0,
+          "new_min_decision": 1357283100000000,
+          "new_max_decision": 1364454300000000,
+          "new_max_maturity": 1364540700000000,
+          "parent_max_maturity": 1356937500000000
+        },
+        "manifest_sha256": "445abf61f4ed35c74bf0fb4970c746cee7d84d1515a8a0da2d31f53fb8852428"
+      },
+      "fold-004": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1037317,
+              "validation": 81824,
+              "calibration": 39540,
+              "evaluation": 161944
+            },
+            "evaluation": {
+              "rows": 161944,
+              "sha256": "ce1ae2df9f379289f23760413999668ff86761ab9c0347e0921aa61b61d28a7a"
+            },
+            "evaluation_first_decision": 1420441500000000,
+            "max_maturity": {
+              "train": 1396249500000000,
+              "validation": 1412060700000000,
+              "calibration": 1420009500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2014-01-01",
+            "2014-04-01"
+          ],
+          "new_rows": {
+            "rows": 37107,
+            "sha256": "fc40b2cfc1a7ddf766e19c731b01a48559b87c686ee35b1ac2127c92f70ed340"
+          },
+          "parent_rows": 998258,
+          "overlap": 0,
+          "new_min_decision": 1388646300000000,
+          "new_max_decision": 1395990300000000,
+          "new_max_maturity": 1396249500000000,
+          "parent_max_maturity": 1388473500000000
+        },
+        "manifest_sha256": "d6266a2c5c6ea981102c0f22d4953ebe60288087360b3f8d3f9dd0d48c7c8839"
+      },
+      "fold-005": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1197610,
+              "validation": 83312,
+              "calibration": 40343,
+              "evaluation": 166704
+            },
+            "evaluation": {
+              "rows": 166704,
+              "sha256": "f0e3e97826c5f1879c769338461859fe679331bee5883046a8e46763ee3c8186"
+            },
+            "evaluation_first_decision": 1451891100000000,
+            "max_maturity": {
+              "train": 1427785500000000,
+              "validation": 1443596700000000,
+              "calibration": 1451545500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2015-01-01",
+            "2015-04-01"
+          ],
+          "new_rows": {
+            "rows": 36959,
+            "sha256": "838ca49e2cfa97a2a51af5728364cdfcdb08f6396b023c0962fcd2f12307474b"
+          },
+          "parent_rows": 1158681,
+          "overlap": 0,
+          "new_min_decision": 1420441500000000,
+          "new_max_decision": 1427699100000000,
+          "new_max_maturity": 1427785500000000,
+          "parent_max_maturity": 1420009500000000
+        },
+        "manifest_sha256": "9755d128e3198a868f3eaa6c37d5bc49b2af32de57f2840e569d7368b1bab8a9"
+      },
+      "fold-006": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1362886,
+              "validation": 85072,
+              "calibration": 40647,
+              "evaluation": 171812
+            },
+            "evaluation": {
+              "rows": 171812,
+              "sha256": "91e8a7e3a9dd41759489b8345ddc5281d1dd2520d056cf4627bbb0f7539bd960"
+            },
+            "evaluation_first_decision": 1483427100000000,
+            "max_maturity": {
+              "train": 1459407900000000,
+              "validation": 1475219100000000,
+              "calibration": 1483081500000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2016-01-01",
+            "2016-04-01"
+          ],
+          "new_rows": {
+            "rows": 39614,
+            "sha256": "8b45d37d8519fa80f08482e37a67930d4128a23f02b73b32a2c9565c1315379f"
+          },
+          "parent_rows": 1321265,
+          "overlap": 0,
+          "new_min_decision": 1451891100000000,
+          "new_max_decision": 1459321500000000,
+          "new_max_maturity": 1459407900000000,
+          "parent_max_maturity": 1451545500000000
+        },
+        "manifest_sha256": "d5b3f584d94bbdacecfd8c3ed12f14d7e79efc4a2bc583506512882943295573"
+      },
+      "fold-007": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1530933,
+              "validation": 87724,
+              "calibration": 42405,
+              "evaluation": 176466
+            },
+            "evaluation": {
+              "rows": 176466,
+              "sha256": "e4892239b320a93ce6c8610548395bdc24468278c003269b79d6e1ae0e2edc36"
+            },
+            "evaluation_first_decision": 1514876700000000,
+            "max_maturity": {
+              "train": 1490943900000000,
+              "validation": 1506668700000000,
+              "calibration": 1514531100000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2017-01-01",
+            "2017-04-01"
+          ],
+          "new_rows": {
+            "rows": 40266,
+            "sha256": "a04dce59334aa12be4ade2accf0dbd30cb6fbaa68ccd2028e1bb43aacb028ebd"
+          },
+          "parent_rows": 1488605,
+          "overlap": 0,
+          "new_min_decision": 1483427100000000,
+          "new_max_decision": 1490857500000000,
+          "new_max_maturity": 1490943900000000,
+          "parent_max_maturity": 1483081500000000
+        },
+        "manifest_sha256": "d83fb51c6cde6109189dd615648462861d0da47338d6d92d1fb377052df4f7ae"
+      },
+      "fold-008": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1705071,
+              "validation": 89717,
+              "calibration": 43419,
+              "evaluation": 164442
+            },
+            "evaluation": {
+              "rows": 164442,
+              "sha256": "7d0db3195a7ebd5e22d4674b7aa624d497c4614994504304b3d27c0c8d45f938"
+            },
+            "evaluation_first_decision": 1546412700000000,
+            "max_maturity": {
+              "train": 1522393500000000,
+              "validation": 1538118300000000,
+              "calibration": 1545980700000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2018-01-01",
+            "2018-04-01"
+          ],
+          "new_rows": {
+            "rows": 41872,
+            "sha256": "6e40d90851bf288b3bd8119af4e71c508b047368420ee63a42e66402bc7d24f0"
+          },
+          "parent_rows": 1661062,
+          "overlap": 0,
+          "new_min_decision": 1514876700000000,
+          "new_max_decision": 1522307100000000,
+          "new_max_maturity": 1522393500000000,
+          "parent_max_maturity": 1514531100000000
+        },
+        "manifest_sha256": "8b22cce7bd6fd6a04d7379c70e1b997599916df02328df85e83db96a79251808"
+      },
+      "fold-009": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 1869608,
+              "validation": 88471,
+              "calibration": 45508,
+              "evaluation": 184313
+            },
+            "evaluation": {
+              "rows": 184313,
+              "sha256": "172ac9dc03b4e707d1b5c1b648f116572f541da0d9a31cb341813d7ce28c7900"
+            },
+            "evaluation_first_decision": 1577948700000000,
+            "max_maturity": {
+              "train": 1553843100000000,
+              "validation": 1569827100000000,
+              "calibration": 1577775900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2019-01-01",
+            "2019-04-01"
+          ],
+          "new_rows": {
+            "rows": 29202,
+            "sha256": "dfa6fe91b8332e95b3ad86193d18715ba86bbc232b3bd57d6dfbd5b24bdf8af1"
+          },
+          "parent_rows": 1838207,
+          "overlap": 0,
+          "new_min_decision": 1546412700000000,
+          "new_max_decision": 1553756700000000,
+          "new_max_maturity": 1553843100000000,
+          "parent_max_maturity": 1545980700000000
+        },
+        "manifest_sha256": "2cc4d871fed49a2690068f8f03ee54b0acf80e574bc667f21f39efe958cab8ea"
+      },
+      "fold-010": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2049266,
+              "validation": 93348,
+              "calibration": 45765,
+              "evaluation": 191576
+            },
+            "evaluation": {
+              "rows": 191576,
+              "sha256": "fbe470e1c9b85b4bef263ca866d330a766a6e256b700a90eca1d41456c4bcd23"
+            },
+            "evaluation_first_decision": 1609743900000000,
+            "max_maturity": {
+              "train": 1585638300000000,
+              "validation": 1601449500000000,
+              "calibration": 1609398300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2020-01-01",
+            "2020-04-01"
+          ],
+          "new_rows": {
+            "rows": 43656,
+            "sha256": "3ab04bb87636ba7cfd5ba47c6c253b737eabb6e9b1852ae2f881da8b9963ecb0"
+          },
+          "parent_rows": 2003587,
+          "overlap": 0,
+          "new_min_decision": 1577948700000000,
+          "new_max_decision": 1585551900000000,
+          "new_max_maturity": 1585638300000000,
+          "parent_max_maturity": 1577775900000000
+        },
+        "manifest_sha256": "49c2e2c4b9be661c413d3703812eae03220b2238fa27c1f1f947e9075e062716"
+      },
+      "fold-011": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2235180,
+              "validation": 97621,
+              "calibration": 47886,
+              "evaluation": 193967
+            },
+            "evaluation": {
+              "rows": 193967,
+              "sha256": "b407cb446716d65316cf7e7bcecfe2c22a563345b30fc0efa76329b186987f87"
+            },
+            "evaluation_first_decision": 1641279900000000,
+            "max_maturity": {
+              "train": 1617174300000000,
+              "validation": 1632985500000000,
+              "calibration": 1640934300000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2021-01-01",
+            "2021-04-01"
+          ],
+          "new_rows": {
+            "rows": 44483,
+            "sha256": "6b8bff8b81b52f1b7eba5e0ca578ab402469e85eadac9f9ae9a89063891252d0"
+          },
+          "parent_rows": 2188379,
+          "overlap": 0,
+          "new_min_decision": 1609743900000000,
+          "new_max_decision": 1617087900000000,
+          "new_max_maturity": 1617174300000000,
+          "parent_max_maturity": 1609398300000000
+        },
+        "manifest_sha256": "1b5c013f881c03533846c8a357f1550fbc40ba964f4c69fc2d9c1853ba1e1427"
+      },
+      "fold-012": {
+        "markets": {
+          "CN": {
+            "counts": {
+              "train": 2428745,
+              "validation": 99026,
+              "calibration": 47659,
+              "evaluation": 195144
+            },
+            "evaluation": {
+              "rows": 195144,
+              "sha256": "7451fd242c9b7bf8c90bd745e1e9422cc7635c8e8ca6ca4d5a88ac8373446e09"
+            },
+            "evaluation_first_decision": 1672729500000000,
+            "max_maturity": {
+              "train": 1648710300000000,
+              "validation": 1664521500000000,
+              "calibration": 1672383900000000
+            }
+          }
+        },
+        "misplaced": 0,
+        "after_cutoff": 0,
+        "posttraining": {
+          "fit": [
+            "2022-01-01",
+            "2022-04-01"
+          ],
+          "new_rows": {
+            "rows": 45672,
+            "sha256": "c3ff6a5eefef937bf69ebb4b88711c26db4594df4a6e754911d5ee7c758c4117"
+          },
+          "parent_rows": 2380687,
+          "overlap": 0,
+          "new_min_decision": 1641279900000000,
+          "new_max_decision": 1648623900000000,
+          "new_max_maturity": 1648710300000000,
+          "parent_max_maturity": 1640934300000000
+        },
+        "manifest_sha256": "36e4ed6e7ebb4d7f57993117377ae1b061c011547c723cb80c872431efdf9e03"
+      }
+    }
+  },
+  "base_receipts": {},
+  "selections": {},
+  "failures": [],
+  "training_executed": false,
+  "final_test_opened": false,
+  "checked_at_utc": "2026-10-14T13:32:56.643480+00:00",
+  "elapsed_seconds": 269.3393746840011,
+  "peak_rss_bytes": 970162176
+}

@@ -116,6 +116,8 @@ uv run python -m mars_titan.training.campaign_budget \
 - `tests/training/test_edition_subset_views.py`: recuentos del catálogo iguales a los de las vistas publicadas con y sin subconjunto, filas nuevas iguales a las que cuenta `campaign_budget` desde los objetivos, observaciones iguales con y sin subconjunto, campaña y vistas con el mismo subconjunto, comparación con el diseño completo y rechazo de los recuentos de otro diseño.
 - [Mutación dirigida](../../reports/data/edition-catalog-20261013/mutations.json) sobre la selección, el corte de liquidez, el catálogo, las vistas, la observación, la campaña y el dimensionado: las 38 mutaciones hacen fallar alguna prueba.
 
+El 14 de octubre, después de liberar espacio en disco, se repitieron `edition_catalog verify` y `edition_subsets verify` sobre los artefactos de disco. Las tres verificaciones de subconjuntos y la del catálogo terminaron con `verified`, con las mismas huellas y recuentos ([recibo](../../reports/data/campaign-a-v2-data-review-20261014.json)).
+
 ## Límites
 
 - El estado de verificación de la edición sin ajustar usó acciones corporativas posteriores para deshacer el ajuste del proveedor, como se explica en los estratos de liquidez. El valor de cada cierre ya era público en su sesión, pero qué activos quedan sin clasificar depende de esa reconstrucción. Todos los modelos usan las mismas filas, así que esa selección no favorece a ninguno.
