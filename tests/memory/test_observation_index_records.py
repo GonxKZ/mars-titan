@@ -167,7 +167,13 @@ def test_records_stop_at_the_record_limit(tmp_path, monkeypatch, kind):
     rows = pa.concat_tables(api._records(reader, phase)).to_pydict()
     first = [k for a, k in zip(rows["asset_id"], rows["kind"], strict=True) if a == 0]
     assert first.count(0) and first.count(1)
-    # El límite cae justo en las muestras o en las maduraciones del primer activo.
+    # El límite cae justo en las muestras o en las maduraciones del primer activo, y la
+    # lectura se detiene ahí: sin leer sus etiquetas o sin pasar al segundo activo.
     monkeypatch.setattr(api, "_MAX_ROWS", first.count(0) + kind)
+    read, labels = [], reader._labels
+    samples = api._asset_samples
+    monkeypatch.setattr(api, "_asset_samples", lambda *a: read.append(a[2]) or samples(*a))
+    monkeypatch.setattr(reader, "_labels", lambda *a: read.append("etiquetas") or labels(*a))
     with pytest.raises(ValueError, match="número máximo de registros"):
         list(api._records(reader, phase))
+    assert read == ([0] if kind == 0 else [0, "etiquetas"])
