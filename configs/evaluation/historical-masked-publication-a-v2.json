@@ -53,6 +53,12 @@
     },
     "mars_titan_b6_calendar_banks": {
       "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con el η de su caso de la receta B6 sobre el padre congelado, sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#437, #523 y #525)"
+    },
+    "mars_titan_b6_kalman": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con la regla de Kalman de la receta B6 sobre el padre congelado, con la correlación de cohorte estimada y sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#455)"
+    },
+    "mars_titan_b6_kalman_rho0": {
+      "iterations": "No ajusta parámetros: cada trabajo predice los tramos medidos con la regla de Kalman de la receta B6 sobre el padre congelado, con correlación de cohorte nula y sin épocas ni regla de parada, y por eso queda fuera de los grupos de la parada conjunta (#455)"
     }
   },
   "final_test_opened": false
