@@ -1,0 +1,68 @@
+{
+ "commit": "06e69db6",
+ "machine": "RTX 4070 Laptop, 16 hilos, 32 GB, perfil power-saver",
+ "views": [
+  {
+   "view": "CN/fold-012/manifest.json",
+   "index_seconds": {
+    "train": 63.57813297602115,
+    "validation": 26.69237352500204,
+    "calibration": 26.056909628008725,
+    "evaluation": 27.186704621009994
+   },
+   "index_rows": {
+    "train": 4908804,
+    "validation": 393330,
+    "calibration": 291789,
+    "evaluation": 586406
+   },
+   "build_seconds": 143.5141207500419,
+   "load": "sin anotar"
+  },
+  {
+   "view": "US+CN/fold-000/manifest.json",
+   "index_seconds": {
+    "train": 235.77894777501933,
+    "validation": 184.9604550639924,
+    "calibration": 174.67726417598897,
+    "evaluation": 159.6541853179806
+   },
+   "index_rows": {
+    "train": 2723441,
+    "validation": 774613,
+    "calibration": 595893,
+    "evaluation": 1235099
+   },
+   "build_seconds": 755.0708523329813,
+   "load": {
+    "before": [
+     4.1103515625,
+     5.07275390625,
+     6.8505859375
+    ],
+    "after": [
+     7.47802734375,
+     7.9072265625,
+     7.64404296875
+    ]
+   }
+  },
+  {
+   "view": "US+CN/fold-018/manifest.json",
+   "index_seconds": {
+    "train": 367.9253665189899,
+    "validation": 387.0812785390008,
+    "calibration": 666.1008846999903,
+    "evaluation": 759.6842981259979
+   },
+   "index_rows": {
+    "train": 32723183,
+    "validation": 2494136,
+    "calibration": 1866623,
+    "evaluation": 3721361
+   },
+   "build_seconds": 2180.791827883979,
+   "load": "entre 8 y 10, con la batería de pruebas en marcha"
+  }
+ ]
+}

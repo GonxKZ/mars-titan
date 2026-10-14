@@ -90,6 +90,7 @@ from mars_titan.training.titans_walk_forward import (
 )
 from mars_titan.training.titans_walk_forward import KIND as TITANS_KIND
 from mars_titan.training.walk_forward_phases import micros, months_before
+from mars_titan.training.window_indices import index_root
 
 from . import chronological_matrix as cm
 from .adapter_traces import AdapterObserver
@@ -333,7 +334,7 @@ def _open_view(view, identity, output, protected, indices, names=PREDICTED + ("t
     for source in (*dataset.roots.values(), view.parent, *protected):
         outside_source(source, output)
     phases = _phases(identity, [name for name in ("train", *PREDICTED) if name in names])
-    sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
+    sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     return dataset, sources
 
 
@@ -743,7 +744,9 @@ def _later_view(parent_view, view, output, protected, titans):
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, *protected))
     phases = window_phases(fold, walk_forward_options(titans)["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in PREDICTED}, output / "indices")
+    sources = _sources(
+        dataset, {name: phases[name] for name in PREDICTED}, index_root(dataset, output)
+    )
     extra = dict(
         view_sha256=sha256(view),
         fold=fold,

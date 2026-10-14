@@ -27,6 +27,7 @@ from mars_titan.posttraining import campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import rolling_retention as rolling
+from mars_titan.training import window_indices
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.posttraining.test_publication_from_aggregates import (
@@ -60,6 +61,28 @@ def retention(tmp_path):
     path = tmp_path / "retention.json"
     path.write_text(json.dumps(document))
     return path
+
+
+def view_indices(base, output, window):
+    """Carpeta compartida de los índices de la vista US de `window` en la campaña `output`."""
+    folds = json.loads((base.views["US"] / "report.json").read_text())["folds"]
+    view = SimpleNamespace(identity=next(r["manifest_sha256"] for r in folds if r["id"] == window))
+    with engine.scoped_environment(engine.shared_files(output)):
+        return window_indices.index_root(view, None)
+
+
+def reading(regenerators, folder, windows):
+    """Regeneraciones que exigen encontrar todavía los índices de su vista y anotan su ventana."""
+
+    def check(regenerate):
+        def run(job_run):
+            assert folder.is_dir()
+            windows.append(job_run.job["window"])
+            return regenerate(job_run)
+
+        return run
+
+    return {key: check(value) for key, value in regenerators.items()}
 
 
 def stage(base, campaign, adapters, **options):
@@ -116,6 +139,11 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
     output, walked_adapters = tmp_path / "campaign", tmp_path / "adapters"
     shutil.copytree(base.output, output, symlinks=True)
     shutil.copytree(adapters, walked_adapters, symlinks=True)
+    # Índice que los trabajos de la ventana dejarían en la raíz compartida (#618). Los dobles
+    # de la base no leen observaciones, así que se coloca aquí con un tamaño conocido.
+    indices, regenerated = view_indices(base, output, WINDOW), []
+    (indices / "evaluation-0123456789abcdef").mkdir(parents=True)
+    (indices / "evaluation-0123456789abcdef" / "events.bin").write_bytes(bytes(4096))
     path, campaign = schedule(base, tmp_path)
     state = rolling.Rolling(
         rolling.load_retention(retention),
@@ -124,7 +152,7 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
         output,
         rolling.load_schedule(path, campaign),
         adapters=dict(stage=base.stage, output=walked_adapters),
-        regenerators=REGENERATORS,
+        regenerators=reading(REGENERATORS, indices, regenerated),
         publication=declared.publication,
         adapter_device="cpu",
         adapter_lease=CpuLease,
@@ -162,6 +190,10 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
     written = ledger[WINDOW]["phases"]["aggregates"]["written"]["US"]["posttraining"]["gru"]
     assert written == block["aggregates"]
     assert set(base_tables(state, WINDOW).values()) == {prediction_files.RELEASED}
+    # Las regeneraciones de la ventana encontraron su índice y la liberación lo borró después.
+    assert WINDOW in regenerated
+    assert ledger[WINDOW]["phases"]["release"]["index_bytes"] == 4096
+    assert not indices.exists()
     destination = tmp_path / "published"
     receipt = publish(reports, state, destination)
     assert_published_from_aggregates(reports, state, destination, receipt)

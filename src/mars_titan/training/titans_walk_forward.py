@@ -49,10 +49,6 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 from mars_titan.learning_traces.trainers import attach as attach_traces
-from mars_titan.memory.financial_observations import (
-    FinancialObservationSource,
-    prepare_observation_index,
-)
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import (
@@ -73,6 +69,7 @@ from .search_cases import case_options, checked_predictor_changes, checked_searc
 from .selection import AWAIT, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import PREDICTED, checked_warmup, window_phases
+from .window_indices import index_root, phase_sources
 
 KIND = "titans_walk_forward_window"
 MEMORY_POLICY = "reset_each_pass_then_input_warmup_v1"
@@ -197,14 +194,8 @@ def _check_view(dataset, protocol, fold):
 
 
 def _sources(dataset, phases, root):
-    """Preparar o reutilizar un índice por fase. El nombre incluye vista y fase."""
-    sources = {}
-    for name, phase in phases.items():
-        key = canonical(dict(view=dataset.identity, phase=asdict(phase)))
-        folder = root / f"{name}-{hashlib.sha256(key.encode()).hexdigest()[:16]}"
-        manifest = prepare_observation_index(dataset, folder, phase=phase, resume=folder.exists())
-        sources[name] = FinancialObservationSource(dataset, manifest)
-    return sources
+    """Preparar o reutilizar un índice por fase (`window_indices.phase_sources`)."""
+    return phase_sources(dataset, phases, root)
 
 
 # Cambios del predictor de un modelo sobre la receta, en la petición y en el caso de la campaña.
@@ -452,7 +443,7 @@ def run_titans_window(
     for protected in (*dataset.roots.values(), view.parent):
         outside_source(protected, output)
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
+    sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
     predictor, pairing = _predictor(
         document,
@@ -701,7 +692,9 @@ def carry_titans(
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
+    sources = _sources(
+        dataset, {name: phases[name] for name in partitions}, index_root(dataset, output)
+    )
     options_predictor = predictor_options(document, request)
     predictor = FinancialPredictor(
         FinancialConfig(

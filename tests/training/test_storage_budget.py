@@ -113,6 +113,21 @@ def test_scenarios_keep_less_and_account_shared_tables_once(estimate):
     assert needed == expected
 
 
+def test_shared_indices_of_the_view_stay_in_the_peak_until_its_last_indexed_job(monkeypatch):
+    # #618: la vista se abre con el primer trabajo y el núcleo de CM-v1, el último, la cierra.
+    value = storage.load_storage(DECLARATION)
+    reports = {"US": {"fold-000": dict(counts=COUNTS)}}
+    extras = dict(aggregate_bytes_per_row=AGGREGATE)
+    indexed = budget.base_estimate(CAMPAIGN, JOBS, reports, measured(), value, extras)["totals"]
+    monkeypatch.setattr(budget, "shared_index_bytes", lambda *_: 0)
+    plain = budget.base_estimate(CAMPAIGN, JOBS, reports, measured(), value, extras)["totals"]
+    shared = storage.shared_index_bytes(COUNTS, value)
+    assert shared > 0
+    for name in budget.SCENARIOS:
+        assert indexed[name]["peak_bytes"] == plain[name]["peak_bytes"] + shared
+        assert indexed[name]["retained_bytes"] == plain[name]["retained_bytes"]
+
+
 def test_compaction_after_writing_keeps_the_original_in_the_peak(estimate):
     result, value = estimate
     totals = result["totals"]

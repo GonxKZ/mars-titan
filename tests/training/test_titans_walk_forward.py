@@ -29,6 +29,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from mars_titan.training.window_indices import SHARED_INDICES_ENV
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.training.chronological_fixture import chronological_corpus, decision
@@ -764,6 +765,41 @@ def test_window_refuses_an_output_with_files_from_another_run(base, tmp_path, mo
     with pytest.raises(ValueError, match="otra ejecución"):
         window(base["view"], base["protocol"], base["recipe"], output)
     assert sorted(path.name for path in output.iterdir()) == ["other.json"]
+
+
+def test_shared_indices_keep_the_window_bit_for_bit(base, tmp_path, monkeypatch):
+    """Índices compartidos por vista (#618): mismos gradientes, filas e índices que los propios."""
+    reference, recorded = base["runs"]["mac_online"]
+    shared = tmp_path / "shared"
+    monkeypatch.setenv(SHARED_INDICES_ENV, str(shared))
+    output, factory = tmp_path / "shared-run", Factory()
+    with unfused_attention():
+        report = wf.run_titans_window(
+            base["view"],
+            base["protocol"],
+            "fold-000",
+            base["recipe"],
+            variant="mac_online",
+            seed=42,
+            output=output,
+            device="cpu",
+            optimizer_factory=factory,
+        )
+    assert report["status"] == "completed"
+    assert report["identity"]["indices"] == reference["identity"]["indices"]
+    assert report["fit"]["best_score"] == reference["fit"]["best_score"]
+    assert len(factory.records) == len(recorded.records) > 0
+    for one, two in zip(factory.records, recorded.records, strict=True):
+        for a, b in zip(one, two, strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    for partition in wf.PREDICTED:
+        assert _compare(base["root"] / "runs" / "mac_online", output, partition)
+    view = shared / sha256(base["view"])[:16]
+    assert not (output / "indices").exists()
+    assert {path.name.split("-")[0] for path in view.iterdir() if path.is_dir()} == {
+        "train",
+        *wf.PREDICTED,
+    }
 
 
 def test_traces_keep_the_window_bit_for_bit_and_resume_without_duplicates(base, tmp_path):

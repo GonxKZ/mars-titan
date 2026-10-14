@@ -157,6 +157,14 @@ def test_titans_jobs_follow_the_plan_with_the_same_rows_as_the_other_arms(campai
             assert table["prediction_at"].cast("int64").to_numpy().max() < wf.FINAL_TEST_US
 
 
+def test_jobs_share_the_indices_of_each_view_and_the_campaign_releases_them(campaign_run):
+    # Sin espacio declarado nadie borra los índices de un intento: si los hubiera, serían propios.
+    output = campaign_run.output
+    assert not list((output / "jobs").rglob("indices"))
+    shared = output / "shared-indices"
+    assert shared.is_dir() and not [path for path in shared.iterdir() if path.is_dir()]
+
+
 def test_carried_windows_use_the_anchor_state_and_declare_their_memory_policy(campaign_run):
     output = campaign_run.output
     for job in campaign_run.jobs:

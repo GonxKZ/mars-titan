@@ -48,6 +48,7 @@ from .carried_predictions import _destination, reference_model, selected_referen
 from .learning_hold import require_learning_allowed
 from .reference_run import _forward, _point, row_loss
 from .titans_walk_forward import PredictionRows, _sources, checked_tables
+from .window_indices import index_root
 
 KIND = "reference_online_predictions"
 # La validación elige la tasa de aprendizaje. Calibración y evaluación son las comparadas.
@@ -390,7 +391,7 @@ def run_online_reference(
     phases = {
         name: FinancialPhase(**bank_report["identity"]["phases"][name]) for name in PARTITIONS
     }
-    sources = _sources(dataset, phases, output / "indices")
+    sources = _sources(dataset, phases, index_root(dataset, output))
     for name, source in sources.items():
         _require(
             source.identity == bank_report["identity"]["indices"][name],

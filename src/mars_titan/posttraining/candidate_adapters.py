@@ -32,10 +32,6 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.learning_traces.trainers import attach as attach_traces
-from mars_titan.memory.financial_observations import (
-    FinancialObservationSource,
-    prepare_observation_index,
-)
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.predictive_adaptation import adapter_names, attach_adapters
 from mars_titan.models.quantile_head import ordered_quantiles
@@ -62,6 +58,7 @@ from mars_titan.training.carried_predictions import _destination, carried_window
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import require_learning_allowed
+from mars_titan.training.window_indices import index_root, phase_sources
 
 from . import chronological_matrix as cm
 from .adapter_traces import AdapterObserver
@@ -200,14 +197,7 @@ def load_head(head, saved):
 
 def _sources(dataset, folder, phases):
     """Índices de los tramos con las fases del padre, calentamiento incluido."""
-    sources = {}
-    for name, phase in phases.items():
-        directory = Path(folder) / name
-        manifest = prepare_observation_index(
-            dataset, directory, phase=phase, resume=directory.exists()
-        )
-        sources[name] = FinancialObservationSource(dataset, manifest)
-    return sources
+    return phase_sources(dataset, phases, folder)
 
 
 def _parent_phases(report, names):
@@ -350,7 +340,7 @@ def run_candidate_posttraining(
         if previous.get("status") == "completed":
             return previous
     output.mkdir(parents=True, exist_ok=True)
-    sources = _sources(dataset, output / "indices", phases)
+    sources = _sources(dataset, index_root(dataset, output), phases)
     adapter, parent_recipe, _, _ = anchor_adapter(
         parent, origin, sources["train"].specification(), device=device
     )
@@ -470,7 +460,7 @@ def frozen_candidate(parent, parent_view, view, output, *, device="cuda:0", stop
     output.mkdir(parents=True)
     # El padre congelado lee cada tramo con el mismo calentamiento que su ventana.
     warmup_months = anchor_warmup(window)
-    sources = window_sources(dataset, output / "indices", PREDICTED, warmup_months)
+    sources = window_sources(dataset, index_root(dataset, output), PREDICTED, warmup_months)
     adapter, recipe, _, _ = anchor_adapter(
         parent, parent_view, sources["validation"].specification(), device=device
     )

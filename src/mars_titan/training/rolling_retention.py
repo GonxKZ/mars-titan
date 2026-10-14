@@ -55,6 +55,7 @@ from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.integrity import comparison_integrity
 
 from . import prediction_regeneration as regeneration
+from . import window_indices
 from .campaign_plan import ONLINE, PLATEAU
 
 DECLARATION_KIND = "historical_masked_prediction_retention"
@@ -837,7 +838,10 @@ class Rolling:
         elif self.adapters is not None:
             freed += self._compact_adapters(index)
         pruned = self._prune_rows()
-        return dict(totals, freed_bytes=freed, pruned_rows_bytes=pruned, **extra)
+        indices = self._release_indices(base, index)
+        return dict(
+            totals, freed_bytes=freed, pruned_rows_bytes=pruned, index_bytes=indices, **extra
+        )
 
     def after_phase(self, index, row, phase):
         """Retención v3: compactar sin pérdida las tablas de la fase que acaba de terminar.
@@ -1059,6 +1063,19 @@ class Rolling:
                     path.unlink()
         return freed
 
+    def _release_indices(self, base, index):
+        """Borrar los índices compartidos de las vistas de las ventanas hasta `index`.
+
+        Va después de todas las regeneraciones de la liberación, que los reutilizan. Ningún
+        trabajo posterior lee la vista de una ventana cerrada: los adaptadores y las políticas
+        de la ventana siguiente leen la suya.
+        """
+        return sum(
+            window_indices.release_view_indices(base.views[scope]["windows"][window]["sha256"])
+            for (scope, window), position in self.positions.items()
+            if position <= index
+        )
+
     def _prune_rows(self):
         """Borrar las tablas comunes a las que ya no apunta ningún archivo compactado."""
         root = self.folder / "rows"
@@ -1209,7 +1226,17 @@ def default_runners(
 
 
 def run_rolling(rolling, runners, *, stop=None):
-    """Recorrer las ventanas en orden, con cada fase una sola vez y reanudable."""
+    """Recorrer las ventanas en orden, con cada fase una sola vez y reanudable.
+
+    Todas las fases y la liberación comparten las huellas y los índices de la campaña.
+    """
+    from . import masked_campaign as engine
+
+    with engine.scoped_environment(engine.shared_files(rolling.output)):
+        return _run_windows(rolling, runners, stop)
+
+
+def _run_windows(rolling, runners, stop):
     summary = {}
     for index, row in enumerate(rolling.windows):
         started = any(rolling.done(row["id"], phase) for phase in PHASES)

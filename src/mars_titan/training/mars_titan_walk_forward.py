@@ -43,6 +43,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.learning_traces.recorder import trace_name
 from mars_titan.learning_traces.trainers import attach as attach_traces
+from mars_titan.memory import write_scores
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.mars_titan_variant import (
     check_components,
@@ -50,7 +51,13 @@ from mars_titan.memory.mars_titan_variant import (
     load_declaration,
     select_variant,
 )
-from mars_titan.memory.write_scores import WriteScalers, fit_write_scalers
+from mars_titan.memory.write_scores import (
+    SAMPLE_CAPACITY,
+    SCALER_SEED,
+    WriteScalers,
+    fit_write_scalers,
+)
+from mars_titan.models.titans import financial_inputs
 from mars_titan.models.titans.config import canonical, require_identity
 from mars_titan.models.titans.episodic_readout import EpisodicReadout
 from mars_titan.models.titans.financial import (
@@ -59,6 +66,7 @@ from mars_titan.models.titans.financial import (
     copy_paired_parameters,
 )
 
+from . import window_indices
 from .checkpoints import StopRequest, load_training_state
 from .corpus_inputs import CorpusDataset
 from .financial_run import Paused
@@ -88,6 +96,7 @@ from .titans_walk_forward import (
 from .titans_walk_forward import (
     KIND as TITANS_KIND,
 )
+from .window_indices import index_root
 
 KIND = "mars_titan_walk_forward_window"
 CARRY_KIND = "mars_titan_carried_predictions"
@@ -292,12 +301,59 @@ def _mars_family(components):
     )
 
 
+def _scaler_code():
+    """Huellas del código que estima las escalas M3: `fit_write_scalers` y la vista CPU."""
+    return {
+        module.__name__: sha256(Path(module.__file__))
+        for module in (write_scores, financial_inputs)
+    }
+
+
+def _scalers_file(train, block_rows):
+    """Archivo compartido de las escalas M3 de un tramo, o None sin índices compartidos.
+
+    El nombre lleva la huella del índice del tramo, del reservorio, de los bloques y del código
+    que las estima, así que tras un cambio de código nunca se reutilizan unas escalas antiguas.
+    """
+    if window_indices.shared_root() is None:
+        return None
+    key = canonical(
+        dict(
+            source=train.identity,
+            block_rows=block_rows,
+            sample_capacity=SAMPLE_CAPACITY,
+            seed=SCALER_SEED,
+            code=_scaler_code(),
+        )
+    )
+    name = f"m3-scalers-{hashlib.sha256(key.encode()).hexdigest()[:16]}.json"
+    return window_indices.shared_file(train.dataset, name)
+
+
 def window_scalers(train, recipe):
     """Escalas M3 de una ventana: su tramo de entrenamiento, con el reservorio y la semilla de M3.
 
-    Es la regla única que comparten el ajuste de la campaña y la medida de caudal.
+    Es la regla única que comparten el ajuste de la campaña y la medida de caudal. Solo
+    dependen del índice del tramo y del código que las estima, así que con índices compartidos
+    (`window_indices`) se calculan una vez por ventana y los demás ajustes las leen.
     """
-    return fit_write_scalers(train, block_rows=recipe.block_rows)
+    path = _scalers_file(train, recipe.block_rows)
+    if path is None:
+        return fit_write_scalers(train, block_rows=recipe.block_rows)
+    with window_indices.locked(path):
+        if path.exists():
+            values, _ = read_manifest(path, 1024**2)
+            scalers = WriteScalers.from_fields(values)
+            _require(
+                scalers.source_sha256 == train.identity
+                and scalers.dataset_sha256 == train.dataset.identity
+                and (scalers.sample_capacity, scalers.seed) == (SAMPLE_CAPACITY, SCALER_SEED),
+                "Las escalas M3 compartidas no proceden del tramo de entrenamiento de la ventana",
+            )
+            return scalers
+        scalers = fit_write_scalers(train, block_rows=recipe.block_rows)
+        atomic_json(path, asdict(scalers))
+        return scalers
 
 
 def _training_scalers(fit, train, recipe):
@@ -449,7 +505,7 @@ def run_readout_window(
         {name: asdict(phase) for name, phase in phases.items()} == parent_identity["phases"],
         "Las fases de la ventana no coinciden con las del padre",
     )
-    sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
+    sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
     predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
     variant = family.variant(predictor, parent_report)
@@ -714,7 +770,9 @@ def carry_readout(
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
+    sources = _sources(
+        dataset, {name: phases[name] for name in partitions}, index_root(dataset, output)
+    )
     specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
