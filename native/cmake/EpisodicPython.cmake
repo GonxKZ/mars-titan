@@ -32,7 +32,8 @@ target_include_directories(mars_titan_episode_storage PUBLIC "${CMAKE_CURRENT_SO
 target_link_libraries(mars_titan_episode_storage PUBLIC mars_titan::torch)
 mars_titan_configure_target(mars_titan_episode_storage)
 Python3_add_library(_episodic_native MODULE WITH_SOABI src/episodic_python.cpp)
-target_link_libraries(_episodic_native PRIVATE mars_titan_episode_storage mars_titan_cohort_execution)
+target_link_libraries(_episodic_native PRIVATE mars_titan_episode_storage mars_titan_cohort_execution
+    mars_titan_episodic_projection)
 target_compile_definitions(_episodic_native PRIVATE
     "MARS_TITAN_EPISODIC_TORCH_VERSION=\"${MARS_TITAN_TORCH_VERSION}\"")
 set_target_properties(_episodic_native PROPERTIES CXX_VISIBILITY_PRESET hidden)

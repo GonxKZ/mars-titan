@@ -1,14 +1,18 @@
 #include "mars_titan/cohort_execution.hpp"
 #include "mars_titan/episodic_memory.hpp"
+#include "mars_titan/episodic_projection.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <c10/util/ScopeExit.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <memory>
+#include <span>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace py = pybind11;
@@ -171,6 +175,38 @@ void bind_memory(py::module_& module) {
              })
         .def_property_readonly("size", &memory::EpisodicMemory::size)
         .def_property_readonly("seen", &memory::EpisodicMemory::seen);
+}
+
+using Matrix = py::array_t<double, py::array::c_style>;
+
+// Proyección del codec episódico. Solo acepta float64 contiguo, sin conversiones implícitas,
+// y calcula sin el GIL porque la salida es nueva y las entradas son inmutables en el codec.
+void bind_projection(py::module_& module) {
+    module.def(
+        "project_codec_block",
+        [](const Matrix& block, const Matrix& transposed) {
+            if (block.ndim() != 2 || transposed.ndim() != 2 ||
+                block.shape(1) != transposed.shape(0)) {
+                throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
+            }
+            const auto rows = static_cast<std::size_t>(block.shape(0));
+            const auto width = static_cast<std::size_t>(block.shape(1));
+            const auto outputs = static_cast<std::size_t>(transposed.shape(1));
+            Matrix out({block.shape(0), transposed.shape(1)});
+            const std::span<const double> source(block.data(), rows * width);
+            const std::span<const double> weights(transposed.data(), width * outputs);
+            const std::span<double> target(out.mutable_data(), rows * outputs);
+            {
+                const py::gil_scoped_release released;
+                mars_titan::episodic::project_block(source, rows, width, weights, outputs, target);
+            }
+            return out;
+        },
+        py::arg("block").noconvert(), py::arg("transposed").noconvert());
+    // Versión del núcleo que usa project_codec_block en este procesador, para registrarla en las
+    // medidas. Todas dan los mismos bits.
+    module.attr("codec_projection_isa") = std::string(
+        mars_titan::episodic::projection_isa_name(mars_titan::episodic::default_projection_isa()));
 }
 
 void bind_cohorts(py::module_& module) {
@@ -366,5 +402,6 @@ PYBIND11_MODULE(_episodic_native, module) {
         return py::bytes(mars_titan::simulation::read_bounded_file(path, maximum));
     });
     bind_memory(module);
+    bind_projection(module);
     bind_cohorts(module);
 }

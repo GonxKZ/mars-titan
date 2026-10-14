@@ -50,21 +50,29 @@
   },
   "decision_rule": {
     "keep_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence < 0",
-      "upper_bound_of_relative_mae_difference_against_control_on_all_rows <= 0.002"
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence < -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control_on_all_rows <= 0.002",
+      "minimum_interpretable_difference_between_control_seeds_on_all_rows < 0.002"
     ],
     "abandon_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence >= 0"
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative_on_rows_with_absence >= -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control_on_all_rows > 0.005"
     ],
+    "abandon_by_margin_requires": "minimum_interpretable_difference_between_control_seeds_on_all_rows < 0.005",
     "trivial_alternative": "Si la rama ancha con el mismo número aproximado de parámetros iguala a FiLM en las filas con ausencias, la mejora no procede de condicionar la fusión a la presencia sino de añadir capacidad.",
-    "complete_rows": "En las filas con las cinco modalidades FiLM es la identidad exacta, así que cualquier diferencia en ellas solo puede venir del ajuste compartido."
+    "complete_rows": "En las filas con las cinco modalidades FiLM es la identidad exacta, así que cualquier diferencia en ellas solo puede venir del ajuste compartido.",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt6", "pt6_control"]
+    }
   },
   "pilot": {
-    "assets": "hasta 64 de EE. UU. con al menos una modalidad ausente en una parte de sus filas de validación",
+    "assets": "los 64 activos de EE. UU. del piloto que comparte el control de PT7, con al menos una modalidad ausente en una parte de sus filas de validación",
     "validation_windows": [2018, 2019, 2020],
     "training": "expansivo desde 2000",
-    "seeds": {"titans_mac_online": 1, "titans_mac_online_pt6_film": 1, "titans_mac_online_pt6_wide": 1},
-    "gpu_hours_max": 6
+    "seeds": {"titans_mac_online": 3, "titans_mac_online_pt6_film": 1, "titans_mac_online_pt6_wide": 1},
+    "gpu_hours_max": 6,
+    "seed_control_gpu_hours": 27
   },
   "budget": {
     "declared": {

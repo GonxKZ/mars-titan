@@ -1,0 +1,129 @@
+{
+  "profile": "bm-pyspy.collapsed",
+  "samples": 4955,
+  "root": "_train_pass@training/mars_titan_run.py",
+  "root_samples": 4147,
+  "inclusive": {
+    "select_anchored_medoids@cm/anchored_medoids.py": {
+      "samples": 1049,
+      "share": 0.253
+    },
+    "_admit@training/mars_titan_run.py": {
+      "samples": 1739,
+      "share": 0.4193
+    },
+    "_observe@training/mars_titan_run.py": {
+      "samples": 2164,
+      "share": 0.5218
+    },
+    "_labels@training/mars_titan_run.py": {
+      "samples": 31,
+      "share": 0.0075
+    },
+    "_update@training/mars_titan_run.py": {
+      "samples": 179,
+      "share": 0.0432
+    },
+    "encode@memory/episodic_codec.py": {
+      "samples": 601,
+      "share": 0.1449
+    },
+    "prepare@models/titans/financial.py": {
+      "samples": 389,
+      "share": 0.0938
+    },
+    "_digest@models/titans/financial_inputs.py": {
+      "samples": 290,
+      "share": 0.0699
+    },
+    "check_finite@models/titans/state.py": {
+      "samples": 270,
+      "share": 0.0651
+    },
+    "bank_snapshot@memory/financial_consumers.py": {
+      "samples": 279,
+      "share": 0.0673
+    },
+    "verify@models/titans/financial_inputs.py": {
+      "samples": 218,
+      "share": 0.0526
+    }
+  },
+  "top_self": [
+    {
+      "frame": "encode (mars_titan/memory/episodic_codec.py)",
+      "samples": 462,
+      "share": 0.1114
+    },
+    {
+      "frame": "_bounded_minimum (mars_titan/cm/anchored_medoids.py)",
+      "samples": 353,
+      "share": 0.0851
+    },
+    {
+      "frame": "propose (mars_titan/memory/retention_bank.py)",
+      "samples": 338,
+      "share": 0.0815
+    },
+    {
+      "frame": "device_tensor (mars_titan/models/titans/financial_inputs.py)",
+      "samples": 299,
+      "share": 0.0721
+    },
+    {
+      "frame": "check_finite (mars_titan/models/titans/state.py)",
+      "samples": 264,
+      "share": 0.0637
+    },
+    {
+      "frame": "_digest (mars_titan/models/titans/financial_inputs.py)",
+      "samples": 263,
+      "share": 0.0634
+    },
+    {
+      "frame": "_compute (mars_titan/cm/medoids.py)",
+      "samples": 250,
+      "share": 0.0603
+    },
+    {
+      "frame": "_sum (mars_titan/cm/medoids.py)",
+      "samples": 160,
+      "share": 0.0386
+    },
+    {
+      "frame": "bank_snapshot (mars_titan/memory/financial_consumers.py)",
+      "samples": 160,
+      "share": 0.0386
+    },
+    {
+      "frame": "_reference_chain (mars_titan/cm/anchored_medoids.py)",
+      "samples": 122,
+      "share": 0.0294
+    },
+    {
+      "frame": "_engine_run_backward (torch/autograd/graph.py)",
+      "samples": 97,
+      "share": 0.0234
+    },
+    {
+      "frame": "mature_record (mars_titan/memory/financial_consumers.py)",
+      "samples": 81,
+      "share": 0.0195
+    },
+    {
+      "frame": "_observe (mars_titan/training/mars_titan_run.py)",
+      "samples": 76,
+      "share": 0.0183
+    },
+    {
+      "frame": "_wrapfunc (numpy/_core/fromnumeric.py)",
+      "samples": 76,
+      "share": 0.0183
+    },
+    {
+      "frame": "snapshot (mars_titan/memory/retention_bank.py)",
+      "samples": 72,
+      "share": 0.0174
+    }
+  ]
+}

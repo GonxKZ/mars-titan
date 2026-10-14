@@ -60,6 +60,11 @@ FAMILY_MODELS = (
     ("cm_v1", "cm_v1"),
     ("klpo", "klpo"),
     ("ppo", "ppo"),
+    # Objetivos de grupo de la etapa de políticas: `grpo_outcome`, `dr_grpo_outcome` y
+    # `gspo_outcome`.
+    ("grpo", "grpo"),
+    ("dr_grpo", "dr_grpo"),
+    ("gspo", "gspo"),
 )
 
 

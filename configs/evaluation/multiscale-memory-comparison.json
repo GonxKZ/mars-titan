@@ -60,13 +60,17 @@
   },
   "decision_rule": {
     "keep_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative < 0"
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative < -minimum_interpretable_difference"
     ],
     "abandon_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= 0"
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= -minimum_interpretable_difference"
     ],
     "trivial_alternative": "El banco tiene las mismas escalas ocultas (64 y 256 observaciones con g = 1/16), el mismo olvido α en el primer nivel y el mismo número de matrices por flujo. Si iguala a la cascada, el acoplamiento en cadena no aporta.",
-    "control": "El control sin niveles solo indica si cualquiera de las dos formas mejora a Titans-MAC. No decide entre ellas."
+    "control": "El control sin niveles solo indica si cualquiera de las dos formas mejora a Titans-MAC. No decide entre ellas.",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt5"]
+    }
   },
   "pilot": {
     "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles",
@@ -77,11 +81,12 @@
     ],
     "training": "expansivo desde 2000",
     "seeds": {
-      "titans_mac_online": 1,
+      "titans_mac_online": 3,
       "titans_mac_online_pt5_cascade": 1,
       "titans_mac_online_pt5_ema_bank": 1
     },
-    "gpu_hours_max": 9
+    "gpu_hours_max": 9,
+    "seed_control_gpu_hours": 27
   },
   "budget": {
     "declared": {

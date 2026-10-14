@@ -1,7 +1,9 @@
 """Integración matemática con lotes técnicos, sin objetivos ni optimizadores."""
 
+import hashlib
 import importlib
 import io
+import types
 import warnings
 from dataclasses import replace
 
@@ -452,6 +454,70 @@ def test_cpu_snapshot_cannot_reenable_writes_and_change_absent_inputs():
             values.setflags(write=True)
 
 
+def test_cpu_digest_is_the_sha256_of_the_identity_and_every_input_byte():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    raw, spec = raw_batch(), specification()
+    verified = module.validated_cpu_batch(raw, spec)
+    # Referencia independiente: la misma receta que antes de sellar la vista.
+    identity = dict(
+        flow_ids=verified.flow_ids,
+        sample_ids=verified.sample_ids,
+        prediction_at=verified.prediction_at,
+        input_available_at=verified.input_available_at,
+        input_contract_id=spec.fingerprint(),
+    )
+    expected = hashlib.sha256(module.canonical(identity).encode())
+    for name in ("prices", "news", "charts", "fundamentals", "macro"):
+        expected.update(raw["inputs"][name].tobytes())
+    expected.update(raw["presence"].tobytes())
+    assert verified.input_digest == expected.hexdigest()
+
+
+@pytest.mark.parametrize("field", ["prices", "news", "presence"])
+def test_cpu_view_with_a_replaced_array_is_rejected_even_with_the_same_values(field):
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    verified.verify()
+    original = verified.presence if field == "presence" else verified.inputs[field]
+    same = np.frombuffer(original.tobytes(), dtype=original.dtype).reshape(original.shape)
+    if field == "presence":
+        object.__setattr__(verified, "presence", same)
+    else:
+        object.__setattr__(
+            verified, "inputs", types.MappingProxyType({**verified.inputs, field: same})
+        )
+    with pytest.raises(ValueError, match="huella"):
+        verified.verify()
+    with pytest.raises(ValueError, match="huella"):
+        api().DecisionBatch.from_validated(verified)
+
+
+def test_cpu_view_rejects_a_writable_copy_and_a_changed_digest():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    writable = verified.inputs["macro"].copy()
+    changed = types.MappingProxyType({**verified.inputs, "macro": writable})
+    object.__setattr__(verified, "inputs", changed)
+    with pytest.raises(ValueError, match="contrato"):
+        verified.verify()
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    object.__setattr__(verified, "input_digest", "f" * 64)
+    with pytest.raises(ValueError, match="huella"):
+        verified.verify()
+
+
+def test_cpu_view_validates_the_bytes_it_keeps():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    raw = raw_batch()
+    verified = module.validated_cpu_batch(raw, specification())
+    for value in (*verified.inputs.values(), verified.presence):
+        assert isinstance(module._buffer(value), bytes)
+        assert not value.flags.writeable
+    # Las comprobaciones de la frontera leen la copia sellada, no el lote del llamante.
+    raw["inputs"]["news"][0, 0] = np.nan
+    np.testing.assert_array_equal(np.isfinite(verified.inputs["news"]), True)
+
+
 def test_tensor_conversion_rejects_changed_interpretation_of_verified_cpu_bytes():
     module = importlib.import_module("mars_titan.models.titans.financial_inputs")
     verified = module.validated_cpu_batch(raw_batch(), specification())
@@ -479,3 +545,152 @@ def test_list_and_tuple_select_the_same_rows_and_preserve_state_parity():
         left.next_state.mac.memory.weights, right.next_state.mac.memory.weights, strict=True
     ):
         torch.testing.assert_close(first, second, rtol=0, atol=0)
+
+
+cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="requiere cuda:0")
+
+
+def on_device(device, dtype=torch.float64, variant="mac_online"):
+    spec = specification()
+    config = api().FinancialConfig(spec, variant=variant, hidden_size=32, layers=1, seed=42)
+    model = api().FinancialPredictor(config, dtype=dtype).to(device)
+    batch = api().DecisionBatch.from_corpus(raw_batch(), spec, device=device, dtype=dtype)
+    return model, batch
+
+
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=cuda)])
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("prices", "^Los precios contienen valores no finitos$"),
+        ("representation", "^La representación Transformer contiene valores no finitos$"),
+    ],
+)
+def test_price_encoder_checks_keep_their_message_inside_prepare(
+    monkeypatch, device, fault, message
+):
+    from mars_titan.models.baselines.transformer import CompactPriceTransformer
+
+    model, batch = on_device(device)
+    state = model.initial_state(batch.flow_ids)
+    if fault == "prices":
+        monkeypatch.setattr(
+            api(), "gate_price_window", lambda prices: torch.full_like(prices, float("nan"))
+        )
+    else:
+        layer = CompactPriceTransformer._layer
+
+        def broken(self, block, encoded, *, last_only):
+            return layer(self, block, encoded, last_only=last_only) * float("inf")
+
+        monkeypatch.setattr(CompactPriceTransformer, "_layer", broken)
+    # En CUDA las dos comprobaciones se resuelven al final de prepare, con el mismo mensaje.
+    with pytest.raises(ValueError, match=message):
+        model.prepare(batch, state)
+
+
+def synchronizations(function):
+    torch.cuda.synchronize()
+    previous = torch.cuda.get_sync_debug_mode()
+    try:
+        torch.cuda.set_sync_debug_mode(1)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            function()
+    finally:
+        torch.cuda.set_sync_debug_mode(previous)
+    return sum("synchroniz" in str(item.message) for item in caught)
+
+
+@cuda
+@pytest.mark.parametrize("differentiable", [False, True])
+def test_cuda_prepare_waits_for_the_device_once(differentiable):
+    model, batch = on_device("cuda:0", torch.float32)
+    state = model.initial_state(batch.flow_ids, differentiable=differentiable)
+    with torch.set_grad_enabled(differentiable):
+        model.prepare(batch, state, differentiable=differentiable)
+        count = synchronizations(lambda: model.prepare(batch, state, differentiable=differentiable))
+    assert count == 1
+
+
+def test_configuration_fingerprints_are_computed_once_and_not_serialized():
+    import pickle
+    from copy import deepcopy
+
+    from mars_titan.models.titans.config import MACConfig, MemoryConfig, canonical
+
+    memory = MemoryConfig(dim=32, max_batch=8, max_tokens=1)
+    for config in (memory, MACConfig(memory=memory, heads=4, max_segment=1), specification()):
+        expected = hashlib.sha256(canonical(config.identity()).encode()).hexdigest()
+        assert config.fingerprint() == expected
+        assert config.__dict__["_fingerprint"] == expected
+        for copied in (deepcopy(config), pickle.loads(pickle.dumps(config))):
+            assert "_fingerprint" not in copied.__dict__
+            assert copied == config and copied.fingerprint() == expected
+
+
+def test_predictor_identity_follows_mode_dtype_and_loads():
+    from mars_titan.models.titans.config import canonical
+
+    def expected(model):
+        return hashlib.sha256(canonical(model.get_extra_state()).encode()).hexdigest()
+
+    model, _ = on_device("cpu", torch.float32)
+    model.train()
+    training = model._config_id()
+    assert training == expected(model)
+    model.eval()
+    assert model._config_id() == expected(model) != training
+    model.double()
+    assert model._config_id() == expected(model)
+    model.train()
+    assert model._config_id() == expected(model) != training
+    model.float().train()
+    assert model._config_id() == training
+
+
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("other_cut", "^La muestra no identifica flujo y corte$"),
+        ("cut_prefix", "^La muestra no identifica flujo y corte$"),
+        ("extra_slash", "^La muestra no identifica flujo y corte$"),
+        ("lowercase", "^La muestra no identifica flujo y corte$"),
+        ("only_cut", "^La muestra no identifica flujo y corte$"),
+        ("too_long", "^El ID de muestra no está admitido$"),
+        ("not_text", "^El ID de muestra no está admitido$"),
+        ("negative_availability", "^La entrada procede del futuro"),
+        ("availability_after_cut", "^La entrada procede del futuro"),
+        ("two_cuts", "^El lote necesita un único corte"),
+        ("reserved_year", "^El lote necesita un único corte"),
+    ],
+)
+def test_cpu_boundary_names_each_identity_fault(fault, message):
+    raw, at = raw_batch(), 1_609_459_200_000_000
+    ids = raw["sample_ids"]
+    if fault == "other_cut":
+        ids[1] = f"US/BBB/{at + 1}"
+    elif fault == "cut_prefix":
+        ids[1] = f"US/BBB/{at}0"
+    elif fault == "extra_slash":
+        ids[1] = f"US/BB/B/{at}"
+    elif fault == "lowercase":
+        ids[1] = f"US/bbb/{at}"
+    elif fault == "only_cut":
+        ids[1] = f"/{at}"
+    elif fault == "too_long":
+        ids[1] = f"US/{'B' * 120}/{at}"
+    elif fault == "not_text":
+        ids[1] = 7
+    elif fault == "negative_availability":
+        raw["input_available_at"][1] = np.datetime64(-1, "us")
+    elif fault == "availability_after_cut":
+        raw["input_available_at"][1] = np.datetime64(at + 1, "us")
+    elif fault == "two_cuts":
+        raw["prediction_at"][1] = np.datetime64(at + 1, "us")
+    else:
+        late = 1_704_067_200_000_000
+        raw["prediction_at"][:] = np.datetime64(late, "us")
+        raw["sample_ids"] = [f"US/AAA/{late}", f"US/BBB/{late}"]
+    with pytest.raises(ValueError, match=message):
+        api().DecisionBatch.from_corpus(raw, specification())

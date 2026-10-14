@@ -477,7 +477,10 @@ def test_comparison_is_declared_with_both_controls_and_its_budget_but_not_execut
     assert budget["consumed"] == dict(gpu_hours=0, executions=0, optimizer_updates=0)
     assert declaration["pilot"]["gpu_hours_max"] == budget["declared"]["gpu_hours_max"] == 8
     rule = declaration["decision_rule"]
-    assert len(rule["keep_if"]) == 2 and all(term.endswith("< 0") for term in rule["keep_if"])
+    # Las dos mejoras deben superar la banda entre semillas del control de PT7.
+    mid = "< -minimum_interpretable_difference"
+    assert len(rule["keep_if"]) == 2 and all(term.endswith(mid) for term in rule["keep_if"])
+    assert declaration["pilot"]["seeds"]["titans_mac_online"] == 3
 
 
 @pytest.fixture(scope="module")
