@@ -24,7 +24,10 @@ de épocas de su entrenador:
 3. con presupuesto fijo, los ajustes del mismo entrenador en el mismo ámbito y ventana aplican
    las mismas actualizaciones, y los de un grupo de parada conjunta terminan en la misma época;
 4. XGBoost no supera sus rondas y elige una ronda ajustada, y el control en línea no usa más
-   etiquetas que las escrituras del banco que lo limita.
+   etiquetas que las escrituras del banco que lo limita;
+5. la corrección B6 no tiene épocas ni parámetros: cada trabajo predice todos los tramos medidos
+   sobre el padre congelado y escribe su memoria con etiquetas maduras en cada uno. La elección
+   entre sus casos la hace la campaña con la validación, como en los demás modelos.
 
 Solo lee declaraciones, recibos e informes. No ajusta nada ni abre la reserva de 2024.
 """
@@ -50,6 +53,8 @@ OWN = (plan.MARS, plan.TITANS, plan.CM)
 FIELDS = ("search_cases", "seeds", "iterations")
 CHRONOLOGICAL = (plan.EPISODIC, plan.TITANS, plan.MARS, plan.CM)
 CONFIRMED = ("completed",)
+# B6 itera por escrituras maduras de su memoria en cada tramo medido, sin regla de parada.
+MATURE_WRITES = dict(unit="mature_writes", trainer="mature_correction")
 
 
 def _require(condition, message):
@@ -88,7 +93,9 @@ def declared(campaign):
             continue
         arm, family = spec["arm"], spec["family"]
         rule = rules(arm) or campaign["protocol_rule"]
-        if family == plan.NEURAL:
+        if family == plan.MARS and plan._correction_arm(spec["candidates"][0][1]["components"]):
+            iterations = dict(MATURE_WRITES)
+        elif family == plan.NEURAL:
             iterations = _epochs(rule, "row_batches")
             iterations["batch_rows"] = campaign["neural"]["batch_size"]
         elif family in CHRONOLOGICAL:
@@ -298,6 +305,23 @@ def _online_fit(report):
     return dict(labels_used=used, failures=failures)
 
 
+def _correction_fit(report):
+    """Cada tramo medido de B6 está predicho y su memoria escribió etiquetas maduras."""
+    expected = report.get("identity", {}).get("expected_rows")
+    if not isinstance(expected, dict) or not expected:
+        return dict(writes={}, failures=["el informe no declara sus tramos medidos"])
+    failures, writes = [], {}
+    for name in expected:
+        record = report.get("predictions", {}).get(name)
+        count = (record or {}).get("metrics", {}).get("associative_writes")
+        writes[name] = count
+        if record is None:
+            failures.append(f"{name}: tramo sin predecir")
+        elif type(count) is not int or count < 1:
+            failures.append(f"{name}: la memoria no escribe ninguna etiqueta madura")
+    return dict(writes=writes, fitted=not failures, failures=failures)
+
+
 def read_receipt(output, job_id):
     path = Path(output) / "jobs" / job_id / "receipt.json"
     return read_manifest(path, 8 * 1024**2)[0] if path.is_file() else None
@@ -319,6 +343,8 @@ def _consumed(campaign, budget, job, output, receipt):
         return check_epochs(job, _rule(campaign, job["arm"]), run, report)
     if unit == "round":
         return _xgboost_fit(budget["iterations"], report)
+    if unit == MATURE_WRITES["unit"]:
+        return _correction_fit(report)
     # Ridge tiene solución cerrada: su recibo confirmado basta.
     return dict(failures=[])
 
