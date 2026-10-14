@@ -54,6 +54,10 @@ También es opcional la retención e interferencia en las revisitas de un régim
 calculado solo con precios hasta cada decisión (``regime_calendar``), que llega aparte. Sin
 calendario la sección queda pendiente y el resto del informe no cambia.
 
+Con ``declared_events`` el informe da además la media y el percentil declarado del MAE por
+sesión de cada modelo en los eventos de D2, y el cambio relativo de ese percentil en cada
+contraste de dos modelos (``declared_events``). Usa las mismas series por sesión.
+
 Todas las versiones publican la abstención con su cobertura (``abstention_coverage``): la
 curva riesgo-cobertura de dirección de cada semilla, la cobertura de llamadas de cada modelo
 en cada vista y, en las precisiones de subida y de bajada, qué contrastes no son elegibles
@@ -82,6 +86,7 @@ from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import (
     abstention_coverage,
+    declared_events,
     liquidity_strata,
     long_short,
     modality_ablation,
@@ -171,6 +176,7 @@ PREDICTIVE_FIELD = "predictive_ability"
 ONLINE_FIELD = online_calibration.FIELD
 LIQUIDITY_FIELD = "liquidity_strata"
 RETENTION_FIELD = "retention_interference"
+EVENTS_FIELD = declared_events.FIELD
 # Secciones secundarias que exige cada versión de la configuración.
 SECTIONS = {
     1: set(),
@@ -180,7 +186,13 @@ SECTIONS = {
     5: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD, JOINT_FIELD},
 }
 # Secciones secundarias que cualquier versión admite sin exigirlas.
-OPTIONAL_SECTIONS = {PREDICTIVE_FIELD, ONLINE_FIELD, LIQUIDITY_FIELD, RETENTION_FIELD}
+OPTIONAL_SECTIONS = {
+    PREDICTIVE_FIELD,
+    ONLINE_FIELD,
+    LIQUIDITY_FIELD,
+    RETENTION_FIELD,
+    EVENTS_FIELD,
+}
 _JOINT_FIELDS = {
     "declared_at",
     "joint_scope",
@@ -568,6 +580,8 @@ def validate_config(config, digest, folder):
         liquidity_strata.declaration(config[LIQUIDITY_FIELD], SERIES_METRICS, comparison["metrics"])
     if RETENTION_FIELD in config:
         retention_interference.declaration(config[RETENTION_FIELD], arms)
+    if EVENTS_FIELD in config:
+        declared_events.declaration(config[EVENTS_FIELD])
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     if JOINT_FIELD in config:
         _joint_design(config[JOINT_FIELD], resolved, arms, families, folder)
@@ -1402,6 +1416,30 @@ def _retention(config, overall, sources, markets, regimes):
     return dict(result, calendar=dict(sha256=digest, rule=rule))
 
 
+def _declared_events(config, overall, views):
+    """Media y percentil del MAE por sesión en los eventos declarados, con las mismas series."""
+
+    def series_of(arm, view):
+        averaged = _seed_series(overall, arm, view, "mae")
+        scores = overall[arm][0][view]
+        return (
+            averaged.values,
+            averaged.defined,
+            scores.session_time,
+            scores.session_market,
+            scores.markets,
+        )
+
+    return declared_events.report(
+        config[EVENTS_FIELD],
+        config["comparison"],
+        config["resolved_families"],
+        overall,
+        views,
+        series_of,
+    )
+
+
 def _status(row):
     joint = row["simultaneous_interval"]
     if joint is None:
@@ -1996,6 +2034,11 @@ def evaluate_walk_forward(
         if regimes is not None:
             for name in ("evaluation/retention_interference.py", "evaluation/regime_calendar.py"):
                 report["analysis_source_sha256"][name] = sha256(Path(__file__).parents[1] / name)
+    if EVENTS_FIELD in config:
+        report[EVENTS_FIELD] = _declared_events(config, overall, names)
+        report["analysis_source_sha256"]["evaluation/declared_events.py"] = sha256(
+            Path(__file__).parents[1] / "evaluation/declared_events.py"
+        )
     if strata is not None:
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):

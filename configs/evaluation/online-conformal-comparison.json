@@ -90,6 +90,7 @@
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones que el modelo necesita.",
     "La propuesta escribía γ ∈ {0,005, 0,02} sin unidad. La implementación fija γ = κ · B̂ con B̂ la mayor puntuación absoluta de calibración, de modo que esos valores son fracciones de la escala de cada mercado e intervalo.",
     "La propuesta usaba como alternativa trivial una recalibración anual, pero la CQR estática de la comparación ya se ajusta en cada ventana anual. La alternativa pasa a ser una recalibración mensual con filas maduras.",
-    "El panel de predicciones no lleva target_available_at. Desde el 10 de octubre walk_forward_comparison lo lee de las etiquetas de la vista de cada ventana y la sección online_calibration de la comparación conjunta aplica las tres variantes."
+    "El panel de predicciones no lleva target_available_at. Desde el 10 de octubre walk_forward_comparison lo lee de las etiquetas de la vista de cada ventana y la sección online_calibration de la comparación conjunta aplica las tres variantes.",
+    "Desde el 14 de octubre de 2026 la sección declared_events de la comparación conjunta fija las sesiones de cada evento (±60 sesiones de EE. UU. y junio a agosto de 2015 en China, según D2) y la calibración en línea da en ellas la cobertura de cada variante y el tramo de años en que caen. El evento de 2008 cae en los años de selección de κ y solo describe."
   ]
 }

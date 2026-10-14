@@ -101,6 +101,9 @@ SECTIONS = {
     "retention_interference": ("regimes", {"observable_volatility_trend_v1_market_calendar"}),
     # Umbrales fijos de precio y volumen sobre la edición sin ajustar hasta la última sesión
     # publicada al emitir (``tests/evaluation/test_liquidity_strata.py`` altera las posteriores).
+    # Sesiones fijadas por fechas declaradas antes de ver resultados y percentiles de las
+    # mismas series por sesión que los contrastes, sin estadísticas ajustadas con datos.
+    "declared_events": None,
     "liquidity_strata": (
         "source",
         {"unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1"},

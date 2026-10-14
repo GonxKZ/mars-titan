@@ -190,7 +190,7 @@ La comprobación CUDA ([recibo](../../reports/engineering/titans-memory-stabilit
 ## Pendiente sin medir
 
 - El efecto predictivo, la regla de decisión y el piloto, bloqueados por el aprendizaje.
-- El percentil 95 del MAE en los eventos declarados, que la regla exige y la comparación de la campaña todavía no calcula.
+- El percentil 95 del MAE en los eventos declarados que exige la regla. La sección `declared_events` de la comparación conjunta lo calcula desde el 14 de octubre de 2026 con su intervalo por bloques, pero no hay predicciones de la campaña.
 - La fracción de pasos que las puertas aprendidas pasarían fuera de la caja sin PT1 (D2) y el exponente de Lyapunov de la memoria de dos capas (D5).
 - La fracción de filas recortadas durante el ajuste. Solo se registra la del primer recorrido con los pesos iniciales.
 - El coste en la escala completa de la campaña, con `accumulation_rows` y miles de flujos por evento. La medida usa 128 flujos y ocho eventos.
