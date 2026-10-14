@@ -16,6 +16,7 @@ import torch
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.learning_traces.hooks import open_traces, trace_identity, traced_update
 from mars_titan.models.klpo import MODES as KLPO
 from mars_titan.models.klpo import behavior_log_probabilities, token_loss
 from mars_titan.models.predictive_adaptation import (
@@ -37,6 +38,7 @@ from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
+from .adapter_traces import AdapterObserver
 from .evaluation import centers, evaluate
 from .inputs import CONDITIONS
 from .parents import require_device
@@ -389,12 +391,15 @@ def run_case(
     checkpoint_seconds=60,
     max_updates=None,
     trace=None,
+    traces=None,
 ):
     """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas.
 
     `trace(event, modules)` se llama tras cada validación completa, también la de la época
     cero, para las trazas de #448 (`posttraining/adapter_traces.py`). No entra en la
-    identidad, no debe cambiar el modelo ni el RNG y sin él no se llama a nada.
+    identidad, no debe cambiar el modelo ni el RNG y sin él no se llama a nada. `traces`
+    declara las trazas comunes (cadencia y presupuesto) en `output/traces`, con los pasos,
+    las validaciones y la actualización de los adaptadores, y su cursor viaja con el estado.
     """
     require_learning_allowed("el postentrenamiento")
     started = time.perf_counter()
@@ -492,6 +497,13 @@ def run_case(
             name: torch.Generator(device=device).manual_seed(case["seed"] + i + 1)
             for i, name in enumerate(("actions", "auxiliaries"))
         }
+        hooks = open_traces(
+            output / "traces",
+            traces,
+            trace_identity("posttraining", identity),
+            dict(model=model),
+            observers=[AdapterObserver()],
+        )
         state = dict(
             global_step=0,
             epoch=0,
@@ -512,6 +524,8 @@ def run_case(
             restore_rng(state["rng"], device)
             for key, generator in generators.items():
                 generator.set_state(state["generators"][key])
+        if hooks is not None:
+            hooks.restore(state.get("traces"))
         stop = stop or StopRequest()
         last_saved, updates = time.perf_counter(), 0
         evaluating_selected = False
@@ -536,6 +550,8 @@ def run_case(
                 rng=capture_rng(device),
                 generators={key: g.get_state() for key, g in generators.items()},
             )
+            if hooks is not None:
+                state["traces"] = hooks.checkpoint()
             path = save_training_state(output / "checkpoints", state, identity=identity, best=best)
             report.update(
                 global_step=state["global_step"],
@@ -564,6 +580,8 @@ def run_case(
                 )
                 if trace is not None:
                     trace(_trace_event(0, state, baseline), dict(model=model))
+                if hooks is not None:
+                    hooks.validation(_trace_event(0, state, baseline))
                 state["selection"] = select_epoch(
                     None, baseline["session_mae"], 0, policy, case["epochs"]
                 )
@@ -589,10 +607,12 @@ def run_case(
                     prediction = centers(model, batch, neural=neural, device=device)
                     loss = _loss(prediction, batch, grid, case, generators, device)
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), case["clip_norm"], error_if_nonfinite=True
-                    )
-                    optimizer.step()
+                    with traced_update(hooks, state["global_step"] + 1, optimizer, loss) as probe:
+                        norm = torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), case["clip_norm"], error_if_nonfinite=True
+                        )
+                        probe.clip(norm, case["clip_norm"])
+                        optimizer.step()
                     # Con cuantiles, las estadísticas del ajuste usan la mediana.
                     point = median(prediction) if prediction.ndim == 2 else prediction
                     error = point.detach().cpu().numpy() - batch["target"]
@@ -629,6 +649,8 @@ def run_case(
                 )
                 if trace is not None:
                     trace(_trace_event(state["epoch"] + 1, state, validation), dict(model=model))
+                if hooks is not None:
+                    hooks.validation(_trace_event(state["epoch"] + 1, state, validation))
                 state["history"].append(
                     dict(epoch=state["epoch"] + 1, train=dict(stats), validation=validation)
                 )

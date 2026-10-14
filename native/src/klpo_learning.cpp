@@ -440,8 +440,9 @@ void KlpoLearningController::start_next_wave(
 }
 
 KlpoGradientSummary
-KlpoLearningController::update_ready(PpoCheckpointStore& store,
-                                     const std::function<void(KlpoLearningBoundary)>& failure) {
+KlpoLearningController::update_ready(
+    PpoCheckpointStore& store, const std::function<void(KlpoLearningBoundary)>& failure,
+    const std::function<void(const KlpoGradientSummary&)>& computed) {
     require(phase() == KlpoLearningPhase::ready && decisions(impl_->collector->records()) > 0,
             "La actualización necesita una oleada completa con decisiones");
     const auto next = klpo_after_consumption(impl_->counters,
@@ -449,6 +450,9 @@ KlpoLearningController::update_ready(PpoCheckpointStore& store,
     impl_->check_store(store);
     static_cast<void>(save(store));
     auto summary = backward_ready();
+    if (computed) {
+        computed(summary);
+    }
     impl_->busy = true;
     try {
         if (failure) {

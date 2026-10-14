@@ -27,6 +27,7 @@ from mars_titan import nvtx_ranges
 from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
@@ -677,6 +678,13 @@ class ChronologicalTrainer(ChronologicalInference):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
+    # None, `traced_update` y `observing` son bloques vacíos.
+    traces = None
+
+    def _trace_modules(self):
+        """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
+        return dict(predictor=self.predictor)
 
     def __init__(
         self,
@@ -930,17 +938,20 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
                 ) + len(run.penalties)
-            with nvtx_ranges.phase("titans.clip"):
-                torch.nn.utils.clip_grad_norm_(
-                    self.predictor.parameters(),
-                    self.recipe.max_grad_norm or math.inf,
-                    error_if_nonfinite=True,
-                )
-            with nvtx_ranges.phase("titans.optimizer"):
-                self.optimizer.step()
-                self.optimizer.zero_grad(set_to_none=True)
-                # El paso es la única modificación admitida de los parámetros. Se sella de nuevo.
-                self.predictor._seal_parameters()
+            with traced_update(self.traces, self.global_step + 1, self.optimizer, loss) as probe:
+                with nvtx_ranges.phase("titans.clip"):
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        self.predictor.parameters(),
+                        self.recipe.max_grad_norm or math.inf,
+                        error_if_nonfinite=True,
+                    )
+                    probe.clip(norm, self.recipe.max_grad_norm)
+                with nvtx_ranges.phase("titans.optimizer"):
+                    self.optimizer.step()
+                    self.optimizer.zero_grad(set_to_none=True)
+                    # El paso es la única modificación admitida de los parámetros. Se sella
+                    # de nuevo.
+                    self.predictor._seal_parameters()
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += len(run.predictions)
@@ -1010,7 +1021,10 @@ class ChronologicalTrainer(ChronologicalInference):
                         if stop.requested:
                             raise Paused
             if event.inputs:
-                with nvtx_ranges.phase("titans.observe"):
+                with (
+                    nvtx_ranges.phase("titans.observe"),
+                    observing(self.traces, self.global_step + 1),
+                ):
                     self._observe(run, source, event, differentiable=True)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
@@ -1098,6 +1112,8 @@ class ChronologicalTrainer(ChronologicalInference):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if self.traces is not None:
+                self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 self.predictor.train()
                 run = self._restore(state["run"])
@@ -1108,6 +1124,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 return report
         else:
             output.mkdir(parents=True)
+            if self.traces is not None:
+                self.traces.restore(None)
             report = dict(
                 schema_version=1,
                 kind="titans_financial_chronological_run",
@@ -1133,6 +1151,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
             )
+            if self.traces is not None:
+                state["traces"] = self.traces.checkpoint()
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
@@ -1163,14 +1183,17 @@ class ChronologicalTrainer(ChronologicalInference):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    if self.trace is not None:
+                    if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
                             score=metrics["session_mae"],
                         )
-                        self.trace(event, dict(predictor=self.predictor))
+                        if self.traces is not None:
+                            self.traces.validation(event)
+                        if self.trace is not None:
+                            self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

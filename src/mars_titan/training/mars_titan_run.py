@@ -32,6 +32,7 @@ import torch
 from mars_titan import nvtx_ranges
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory import write_scores
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_consumers import (
@@ -715,6 +716,13 @@ class ReadoutTrainer(MarsTitanInference):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
+    # None, `traced_update` y `observing` son bloques vacíos.
+    traces = None
+
+    def _trace_modules(self):
+        """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
+        return dict(predictor=self.predictor, readout=self.readout)
 
     def __init__(
         self,
@@ -921,13 +929,19 @@ class ReadoutTrainer(MarsTitanInference):
                 loss_sum = 0.0
                 for value in torch.stack(losses).tolist():
                     loss_sum += value
-            with nvtx_ranges.phase("readout.clip"):
-                torch.nn.utils.clip_grad_norm_(
-                    self.trainable, self.recipe.max_grad_norm or math.inf, error_if_nonfinite=True
-                )
-            with nvtx_ranges.phase("readout.optimizer"):
-                self.optimizer.step()
-                self.optimizer.zero_grad(set_to_none=True)
+            with traced_update(
+                self.traces, self.global_step + 1, self.optimizer, loss_sum
+            ) as probe:
+                with nvtx_ranges.phase("readout.clip"):
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        self.trainable,
+                        self.recipe.max_grad_norm or math.inf,
+                        error_if_nonfinite=True,
+                    )
+                    probe.clip(norm, self.recipe.max_grad_norm)
+                with nvtx_ranges.phase("readout.optimizer"):
+                    self.optimizer.step()
+                    self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             run.counters["updates"] += 1
             run.counters["labels_in_loss"] += total
@@ -978,7 +992,10 @@ class ReadoutTrainer(MarsTitanInference):
                         if stop.requested:
                             raise Paused
             if event.inputs:
-                with nvtx_ranges.phase("readout.observe"):
+                with (
+                    nvtx_ranges.phase("readout.observe"),
+                    observing(self.traces, self.global_step + 1),
+                ):
                     self._observe(run, phase, event, train=True)
             with nvtx_ranges.phase("readout.admit"):
                 self._admit(run, phase, event.at)
@@ -1147,6 +1164,8 @@ class ReadoutTrainer(MarsTitanInference):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if self.traces is not None:
+                self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 run = self._restore(state["run"])
             # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
@@ -1156,6 +1175,8 @@ class ReadoutTrainer(MarsTitanInference):
                 return report
         else:
             output.mkdir(parents=True)
+            if self.traces is not None:
+                self.traces.restore(None)
             report = dict(
                 schema_version=1,
                 kind="mars_titan_readout_chronological_run",
@@ -1183,6 +1204,8 @@ class ReadoutTrainer(MarsTitanInference):
                 run=None if current is None else self._export(current),
                 **self._extra_state(),
             )
+            if self.traces is not None:
+                state["traces"] = self.traces.checkpoint()
             path = save_training_state(checkpoints, state, identity=self.identity, best=best)
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
@@ -1213,14 +1236,17 @@ class ReadoutTrainer(MarsTitanInference):
                         continue
                 if cursor["phase"] == "validation":
                     metrics = self.evaluate(self.validation, stop=stop)
-                    if self.trace is not None:
+                    if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
                             score=metrics["session_mae"],
                         )
-                        self.trace(event, dict(predictor=self.predictor, readout=self.readout))
+                        if self.traces is not None:
+                            self.traces.validation(event)
+                        if self.trace is not None:
+                            self.trace(event, self._trace_modules())
                     self.selection = (
                         initial_selection(metrics["session_mae"], options)
                         if epoch == 0

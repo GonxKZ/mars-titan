@@ -85,9 +85,12 @@ class KlpoLearningController {
     void start_next_wave(PpoCheckpointStore& store,
                          const std::function<void(KlpoLearningBoundary)>& failure = {});
     // Ruta real de Adam. Su ejecución permanece pendiente bajo el bloqueo de aprendizaje.
+    // `computed` recibe el resumen del gradiente antes del paso de Adam, de modo que quien lo
+    // registre lo hace antes de que la actualización se confirme en el almacén.
     [[nodiscard]] KlpoGradientSummary
     update_ready(PpoCheckpointStore& store,
-                 const std::function<void(KlpoLearningBoundary)>& failure = {});
+                 const std::function<void(KlpoLearningBoundary)>& failure = {},
+                 const std::function<void(const KlpoGradientSummary&)>& computed = {});
 
   private:
     struct Impl;

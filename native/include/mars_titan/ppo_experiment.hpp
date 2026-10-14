@@ -1,6 +1,8 @@
 #ifndef MARS_TITAN_PPO_EXPERIMENT_HPP
 #define MARS_TITAN_PPO_EXPERIMENT_HPP
 
+#include "mars_titan/learning_traces.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <cstddef>
@@ -38,6 +40,9 @@ struct PpoExperimentOptions {
     std::optional<std::size_t> vram_budget_bytes;
     std::optional<std::size_t> vram_total_bytes;
     std::optional<int> gpu_lease_fd;
+    // Trazas de aprendizaje de #448 en `output/traces`. Solo observan y no entran en la
+    // identidad de la ejecución.
+    LearningTraceOptions learning_traces;
 };
 
 [[nodiscard]] nlohmann::json run_ppo_experiment(const PpoExperimentOptions& options,

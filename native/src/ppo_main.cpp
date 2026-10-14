@@ -18,11 +18,12 @@ int main(int argc, char** argv) {
         "evalúa la política inicial de la configuración y --check-sources con las cintas de "
         "ajuste y validación las comprueba como el ajuste. Ninguno crea entrenador ni Adam.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
+        "  Trazas de aprendizaje: --learning-trace-every N --learning-trace-max-bytes B.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "Entrena y valida PPO en escenarios sintéticos o cintas reconstruidas, sin abrir el "
         "test.\n",
         {"native_policy_reconstructed_tapes", "native_policy_equity_and_costs",
-         "native_ppo_quantile_value_heads",
+         "native_policy_learning_traces", "native_ppo_quantile_value_heads",
          "native_policy_evaluation_only", "native_policy_decision_logits"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_ppo_experiment(options, stop);

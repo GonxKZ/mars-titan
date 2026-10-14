@@ -1,5 +1,6 @@
 #include "mars_titan/ppo_experiment.hpp"
 #include "mars_titan/decision_trace.hpp"
+#include "mars_titan/learning_traces.hpp"
 #include "mars_titan/learning_hold.hpp"
 #include "mars_titan/policy_evaluation.hpp"
 #include "mars_titan/policy_tapes.hpp"
@@ -1327,10 +1328,13 @@ class ExperimentRun {
             }
             progress_.status = "running";
             progress_.pause_reason = "requested_pause";
+            open_learning_traces();
         } else {
             initialize_trace(0);
             setup_seconds_ = elapsed_seconds(started_);
             save(false);
+            // Después del primer estado: hasta entonces la salida solo admite su identidad.
+            open_learning_traces();
         }
         try {
             if (!evaluate_pending()) {
@@ -1348,6 +1352,8 @@ class ExperimentRun {
                 if (stop_requested()) {
                     return pause();
                 }
+                const auto previous_transitions = trainer_.transitions();
+                const auto previous_steps = trainer_.optimizer_steps();
                 {
                     const InvocationTimer measured(training_seconds_);
                     static_cast<void>(
@@ -1357,6 +1363,7 @@ class ExperimentRun {
                             }
                         }));
                 }
+                record_update(previous_transitions, previous_steps);
                 if (!evaluate_pending()) {
                     return pause();
                 }
@@ -1409,6 +1416,71 @@ class ExperimentRun {
         trace_ = std::make_unique<TraceWriter>(directory, content_sha256(identity_.dump()), resume,
                                                static_cast<uint64_t>(confirmed));
         confirmed_trace_cursor_ = static_cast<uint64_t>(confirmed);
+    }
+
+    // Trazas de aprendizaje de #448. El paso es la transición confirmada y la marca de cada
+    // parte son las transiciones y evaluaciones que guarda el checkpoint siguiente, de modo
+    // que al reanudar se borran las partes escritas después del estado recuperado.
+    TraceCommit trace_commit() const {
+        return {static_cast<uint64_t>(trainer_.transitions()),
+                static_cast<uint64_t>(progress_.evaluations)};
+    }
+
+    void open_learning_traces() {
+        if (!options_.learning_traces.enabled()) {
+            return;
+        }
+        // La familia es el objetivo publicado si existe (por ejemplo ppo_clip_full_kl_v1) y si
+        // no la variante del agente, para no mezclar objetivos al alinear curvas.
+        const auto& document = config_.document;
+        const auto family = document.contains("policy_objective")
+                                ? document.at("policy_objective").at("id").get<std::string>()
+                            : config_.learning.enabled ? config_.learning.variant
+                                                       : std::string("ppo");
+        const Json identity{{"family", family},
+                            {"run_identity_sha256", content_sha256(identity_.dump())}};
+        learning_traces_ = std::make_unique<LearningTraceWriter>(
+            options_.output / "traces", options_.learning_traces, identity, "transition",
+            trace_commit());
+    }
+
+    void trace(std::string_view phase, std::string_view metric, double value) {
+        learning_traces_->scalar(trainer_.transitions(), phase, metric, value);
+    }
+
+    // Estadísticas de la última actualización si el avance cruzó un múltiplo de la cadencia.
+    void record_update(std::size_t previous_transitions, std::size_t previous_steps) {
+        if (!learning_traces_ || trainer_.optimizer_steps() == previous_steps ||
+            !learning_traces_->due(previous_transitions, trainer_.transitions())) {
+            return;
+        }
+        if (trainer_.policy().architecture().double_dqn) {
+            const auto& update = trainer_.last_dqn_update();
+            trace("train", "critic.loss", update.loss);
+            trace("train", "rl.grad_l2_total", update.gradient_norm);
+            trace("train", "rl.valid_transitions", static_cast<double>(update.valid_transitions));
+            trace("train", "rl.target_synchronized", update.target_synchronized ? 1. : 0.);
+        } else {
+            const auto& update = trainer_.last_update();
+            trace("train", "policy.loss", update.policy_loss);
+            trace("train", "critic.loss", update.value_loss);
+            trace("train", "policy.entropy", update.entropy);
+            trace("train", "policy.approximate_kl", update.approximate_kl);
+            trace("train", "policy.clip_fraction", update.clip_fraction);
+            trace("train", "rl.grad_l2_total", update.gradient_norm);
+            if (update.full_kl) {
+                trace("train", "policy.full_kl", *update.full_kl);
+            }
+            trace("train", "rl.valid_transitions", static_cast<double>(update.valid_transitions));
+            trace("train", "rl.minibatches", static_cast<double>(update.minibatches));
+            trace("train", "rl.completed_epochs", static_cast<double>(update.completed_epochs));
+            trace("train", "rl.skipped_epochs", static_cast<double>(update.skipped_epochs));
+            trace("train", "rl.threshold_exceeded", update.threshold_exceeded ? 1. : 0.);
+        }
+        trace("train", "rl.optimizer_steps", static_cast<double>(trainer_.optimizer_steps()));
+        if (learning_traces_->pending() >= maximum_pending_trace_rows) {
+            learning_traces_->flush(trace_commit());
+        }
     }
 
     bool has_recent_checkpoint() const {
@@ -1528,6 +1600,23 @@ class ExperimentRun {
         } else {
             progress_.stale_evaluations = 0;
         }
+        if (learning_traces_) {
+            // Cada validación completa se registra, con la misma marca que su checkpoint.
+            trace("validation", "rl.selection_score", score);
+            trace("validation", "rl.mean_log_growth", evaluation.mean_log_growth);
+            if (config_.liquidated_selection) {
+                trace("validation", "rl.mean_liquidated_log_growth",
+                      evaluation.mean_liquidated_log_growth);
+            }
+            trace("validation", "rl.ruin_count", static_cast<double>(evaluation.ruined));
+            trace("validation", "rl.episodes", static_cast<double>(evaluation.episodes));
+            if (config_.learning.enabled) {
+                trace("validation", "rl.mean_max_drawdown", mean_drawdown);
+            }
+            trace("validation", "rl.improved", improved ? 1. : 0.);
+            trace("validation", "rl.stale_evaluations",
+                  static_cast<double>(progress_.stale_evaluations));
+        }
         save(improved);
         return true;
     }
@@ -1542,6 +1631,9 @@ class ExperimentRun {
                 require(trace_->cursor() == state.observed_transitions,
                         "La traza no coincide con las decisiones observadas del checkpoint");
                 trace_->flush();
+            }
+            if (learning_traces_) {
+                learning_traces_->flush(trace_commit());
             }
             receipt_ = store_.save(state_json(state, config_, progress_), state.policy_archive,
                                    config_.learning.enabled ? serialize_training_buffer(state)
@@ -1667,6 +1759,7 @@ class ExperimentRun {
     Json receipt_ = nullptr;
     std::unique_ptr<TraceWriter> trace_;
     uint64_t confirmed_trace_cursor_ = 0;
+    std::unique_ptr<LearningTraceWriter> learning_traces_;
     double setup_seconds_ = 0;
     double training_seconds_ = 0;
     double evaluation_seconds_ = 0;

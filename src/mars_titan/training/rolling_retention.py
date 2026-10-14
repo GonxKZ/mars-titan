@@ -690,6 +690,7 @@ def default_runners(
     stages=None,
     stop=None,
     unrecorded_platform=None,
+    execution=None,
 ):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
@@ -697,6 +698,8 @@ def default_runners(
     campaña A v2. Sin él se rechaza el recorrido antes de ejecutar nada. Si la campaña
     declara `walk_forward_stages`, los adaptadores y las políticas reciben un informe de
     disjunción recién calculado y las políticas leen la cadena de la salida de los adaptadores.
+    `execution` es la declaración de ejecución de la campaña base. Sus trazas de #448 llegan
+    también a los adaptadores y a las políticas.
     Las políticas contrastan su plataforma con los recibos de la base, y `unrecorded_platform`
     nombra el perfil de los anteriores a ese registro.
     """
@@ -706,10 +709,14 @@ def default_runners(
     from . import masked_campaign as engine
     from . import modality_ablation_stage as ablation_stage
     from .campaign_plan import load_campaign
+    from .campaign_resources import Execution, load_execution
 
     stages = stages or {}
     campaign = load_campaign(campaign_path)
     chain_output = stages.get("adapters", {}).get("output")
+    if execution is not None and not isinstance(execution, Execution):
+        execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
+    traces = None if execution is None else execution.traces
 
     def checked(window, phase):
         if not campaign.get("walk_forward_stages"):
@@ -723,7 +730,13 @@ def default_runners(
         )
     runners = dict(
         base=lambda window: engine.run_campaign(
-            campaign_path, views, output, storage=storage, stop=stop, window=window
+            campaign_path,
+            views,
+            output,
+            storage=storage,
+            stop=stop,
+            window=window,
+            execution=execution,
         )
     )
     if "adapters" in stages:
@@ -736,6 +749,7 @@ def default_runners(
             stop=stop,
             window=window,
             disjunction=checked(window, "adapters"),
+            traces=traces,
         )
     if "ablation" in stages:
         entry = stages["ablation"]
@@ -756,6 +770,7 @@ def default_runners(
             window=window,
             chain_output=chain_output,
             disjunction=checked(window, "rl"),
+            traces=traces,
             unrecorded_platform=unrecorded_platform,
         )
     return runners
@@ -815,6 +830,9 @@ def main(argv=None):
         help="Tabla del estado de cotización que declaran las políticas",
     )
     parser.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución (recursos y trazas de #448)"
+    )
+    parser.add_argument(
         "--unrecorded-platform",
         help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
     )
@@ -838,6 +856,7 @@ def main(argv=None):
         args.output,
         storage=args.storage,
         stages=stages,
+        execution=args.execution,
         unrecorded_platform=args.unrecorded_platform,
     )
     rolling = Rolling(
