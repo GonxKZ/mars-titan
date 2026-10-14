@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Cota con información futura en la etapa de políticas y su informe (#365)",
+  "measured_at": "2026-10-13",
+  "baseline": {
+    "tests/simulation/test_future_information_bound.py": {
+      "pytest": "31 passed in 6.19s",
+      "seconds": 20.18
+    },
+    "tests/simulation/test_stage_report.py::test_every_family_pairs_klpo_with_its_controls_on_the_same_sessions": {
+      "pytest": "1 passed in 105.18s (0:01:45)",
+      "seconds": 119.15
+    },
+    "tests/integrity/test_oracle_bound.py tests/simulation/test_future_information_bound.py": {
+      "pytest": "38 passed in 7.05s",
+      "seconds": 21.73
+    }
+  },
+  "mutations": [
+    {
+      "id": "B01",
+      "description": "La cota se evalúa en la cinta original",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 5.11s",
+      "seconds": 18.51
+    },
+    {
+      "id": "B02",
+      "description": "La cota no usa exposición completa",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 4.93s",
+      "seconds": 18.14
+    },
+    {
+      "id": "B07",
+      "description": "La cota se calcula con costes",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 4.52s",
+      "seconds": 18.12
+    },
+    {
+      "id": "O01",
+      "description": "Puntuación de apertura a cierre de la sesión siguiente",
+      "file": "src/mars_titan/integrity/oracle_bound.py",
+      "tests": [
+        "tests/integrity/test_oracle_bound.py",
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 4.67s",
+      "seconds": 18.21
+    },
+    {
+      "id": "O02",
+      "description": "Desdoblamiento ignorado",
+      "file": "src/mars_titan/integrity/oracle_bound.py",
+      "tests": [
+        "tests/integrity/test_oracle_bound.py",
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 5.11s",
+      "seconds": 18.61
+    },
+    {
+      "id": "O03",
+      "description": "Dividendo ignorado",
+      "file": "src/mars_titan/integrity/oracle_bound.py",
+      "tests": [
+        "tests/integrity/test_oracle_bound.py",
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 4.82s",
+      "seconds": 19.63
+    },
+    {
+      "id": "O04",
+      "description": "Una baja deja puntuación",
+      "file": "src/mars_titan/integrity/oracle_bound.py",
+      "tests": [
+        "tests/integrity/test_oracle_bound.py",
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 4.21s",
+      "seconds": 17.65
+    },
+    {
+      "id": "O05",
+      "description": "Acciones en la tenencia anterior",
+      "file": "src/mars_titan/integrity/oracle_bound.py",
+      "tests": [
+        "tests/integrity/test_oracle_bound.py",
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 2 passed in 5.03s",
+      "seconds": 19.35
+    },
+    {
+      "id": "B03",
+      "description": "La cota guarda el patrimonio por sesión",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 4.21s",
+      "seconds": 18.33
+    },
+    {
+      "id": "B04",
+      "description": "La cota se recalcula en cada trabajo",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 7 passed in 7.50s",
+      "seconds": 21.86
+    },
+    {
+      "id": "B05",
+      "description": "Una cota guardada no se contrasta con su cinta",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 8 passed in 6.72s",
+      "seconds": 20.88
+    },
+    {
+      "id": "B06",
+      "description": "Un recibo no enlaza su cota",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_stage_report.py::test_every_family_pairs_klpo_with_its_controls_on_the_same_sessions"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 122.42s (0:02:02)",
+      "seconds": 138.23
+    },
+    {
+      "id": "R01",
+      "description": "Igualar la cota cuenta como superarla",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 11 passed in 7.33s",
+      "seconds": 22.49
+    },
+    {
+      "id": "R02",
+      "description": "Fracción sospechosa sin cota creciente",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 17 passed in 7.66s",
+      "seconds": 23.03
+    },
+    {
+      "id": "R03",
+      "description": "El umbral de la mitad queda fuera",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 11 passed in 7.61s",
+      "seconds": 22.08
+    },
+    {
+      "id": "R04",
+      "description": "Los episodios arruinados se comparan",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 18 passed in 7.76s",
+      "seconds": 22.63
+    },
+    {
+      "id": "R05",
+      "description": "Una cota sin terminar se compara",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 18 passed in 7.00s",
+      "seconds": 22.44
+    },
+    {
+      "id": "R06",
+      "description": "Sin comprobar la huella de la cota",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 28 passed in 7.37s",
+      "seconds": 21.58
+    },
+    {
+      "id": "R07",
+      "description": "Sin comprobar la cinta de la cota",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 21 passed in 7.70s",
+      "seconds": 23.26
+    },
+    {
+      "id": "R08",
+      "description": "Sin comprobar la acción de la cota",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 22 passed in 8.56s",
+      "seconds": 24.31
+    },
+    {
+      "id": "R09",
+      "description": "Sin comprobar la fracción declarada",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 23 passed in 7.84s",
+      "seconds": 23.4
+    },
+    {
+      "id": "R10",
+      "description": "Una cota incluida en comparaciones se acepta",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 24 passed in 7.54s",
+      "seconds": 23.04
+    },
+    {
+      "id": "R11",
+      "description": "Sin comprobar el coste de la cota",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 26 passed in 7.82s",
+      "seconds": 22.8
+    },
+    {
+      "id": "R18",
+      "description": "Todas las referencias leen las puntuaciones",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 15 passed in 7.36s",
+      "seconds": 22.91
+    },
+    {
+      "id": "R19",
+      "description": "El tipo de trabajo no cuenta",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 9 passed in 7.18s",
+      "seconds": 21.86
+    },
+    {
+      "id": "R20",
+      "description": "Se compara el primer coste declarado",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 11 passed in 7.77s",
+      "seconds": 22.93
+    },
+    {
+      "id": "R12",
+      "description": "Una cota fuera de la salida se acepta",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 29 passed in 7.94s",
+      "seconds": 23.55
+    },
+    {
+      "id": "R13",
+      "description": "Un recibo sin campo de cota se acepta",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 29 passed in 7.77s",
+      "seconds": 23.2
+    },
+    {
+      "id": "R14",
+      "description": "Un recibo con cinta y sin cota se acepta",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 29 passed in 8.07s",
+      "seconds": 23.4
+    },
+    {
+      "id": "R15",
+      "description": "La supervivencia prevalece sobre la revisión",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 30 passed in 8.44s",
+      "seconds": 23.76
+    },
+    {
+      "id": "R16",
+      "description": "Los episodios sin cota terminada no se publican",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_future_information_bound.py"
+      ],
+      "killed": true,
+      "pytest": "1 failed, 18 passed in 7.63s",
+      "seconds": 22.36
+    },
+    {
+      "id": "R17",
+      "description": "El informe no lleva la comprobación de la cota",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_stage_report.py::test_every_family_pairs_klpo_with_its_controls_on_the_same_sessions"
+      ],
+      "killed": true,
+      "pytest": "1 failed in 121.53s (0:02:01)",
+      "seconds": 138.27
+    }
+  ],
+  "killed": 32,
+  "survived": 0,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después.",
+    "Las pruebas usan la biblioteca nativa de MARS_TITAN_NATIVE_LIBRARY para la paridad."
+  ]
+}

@@ -8,7 +8,8 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    por etapas, los adaptadores y las políticas reciben un informe de disjunción calculado
    justo antes, y las políticas leen la cadena de la salida de los adaptadores.
 3. `aggregates`: agregados por sesión de la comparación de cada ámbito de la ventana
-   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana. Con la
+   (`evaluation.window_aggregates`), con sus fuentes limitadas a esa ventana, y el efecto
+   de elegir entre los casos de búsqueda (`evaluation.selection_effect`). Con la
    publicación declarada (`training.campaign_publication`), también los de la comparación
    postentrenada de cada padre con trabajos de la etapa en la ventana, porque esa
    comparación lee la calibración y la evaluación del modelo base, que se liberan después.
@@ -37,8 +38,8 @@ from pathlib import Path
 from mars_titan.data import prediction_files
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.evaluation import selection_effect, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.evaluation import window_aggregates
 
 from . import prediction_regeneration as regeneration
 from .campaign_plan import ONLINE, PLATEAU
@@ -47,7 +48,7 @@ DECLARATION_KIND = "historical_masked_prediction_retention"
 LEDGER_KIND = "historical_masked_retention_ledger"
 PHASES = ("base", "adapters", "ablation", "rl", "aggregates", "release")
 STAGE_PHASES = ("base", "adapters", "ablation", "rl")
-AGGREGATES = ("walk_forward", "long_short")
+AGGREGATES = ("walk_forward", "long_short", "selection_effect")
 _FIELDS = {
     "schema_version",
     "kind",
@@ -93,7 +94,8 @@ def load_retention(path):
     )
     _require(
         tuple(document["aggregates"]) == AGGREGATES,
-        "La retención solo libera filas con agregados de la comparación y de la cartera",
+        "La retención solo libera filas con agregados de la comparación, de la cartera y del "
+        "efecto de la selección",
     )
     release = document["release"]
     _require(
@@ -179,6 +181,7 @@ class Rolling:
         disk=None,
         edition=None,
         publication=None,
+        unrecorded_platform=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
@@ -187,6 +190,8 @@ class Rolling:
         la comparación los declara. `publication` es la declaración del paso final. Con la
         etapa de adaptadores es obligatoria y su comparación postentrenada debe ser la de esa
         etapa, porque sus agregados por ventana se guardan antes de liberar.
+        `unrecorded_platform` nombra el perfil al que se atribuyen los recibos anteriores al
+        registro de la plataforma al publicar los agregados.
         """
         from . import masked_campaign as engine
         from .campaign_publication import load_publication
@@ -199,6 +204,7 @@ class Rolling:
         self.ablation_executors = ablation_executors
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
+        self.unrecorded_platform = unrecorded_platform
         # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
         # cada activo de la edición una vez por proceso y no una por ventana.
         self._liquidity = None
@@ -460,7 +466,12 @@ class Rolling:
         for scope, window in row["scopes"].items():
             restricted = comparison.restrict_windows(config, scope, [window])
             path = engine.write_sources(
-                self.campaign_path, self.views, self.output, scope, window=window
+                self.campaign_path,
+                self.views,
+                self.output,
+                scope,
+                window=window,
+                unrecorded_platform=self.unrecorded_platform,
             )
             sources = comparison.load_sources(path, restricted, scope)
             # Los agregados se puntúan con los modelos y familias del ámbito, como la
@@ -475,6 +486,7 @@ class Rolling:
                     self.ablation["output"],
                     scope,
                     window=window,
+                    unrecorded_platform=self.unrecorded_platform,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
             if self._liquidity is None:
@@ -488,6 +500,14 @@ class Rolling:
                 records["long_short"] = window_aggregates.write_long_short(
                     folder, restricted, sources, window, self.edition
                 )
+            # Medir la elección entre búsquedas exige la evaluación de todos los casos, también
+            # la de los no elegidos, y la liberación la borra después.
+            _, searches = engine.search_records(
+                self.campaign_path, self.views, self.output, scope, window=window
+            )
+            records["selection_effect"] = selection_effect.write_window(
+                folder, config, scope, window, searches.get(window, {})
+            )
             written[scope] = {name: self._record(record) for name, record in records.items()}
             parents = self.posttraining_aggregates(scope, window, path, folder)
             if parents:
@@ -526,6 +546,7 @@ class Rolling:
                     root=folder,
                     loaded=stage,
                     liquidity=self._liquidity,
+                    unrecorded_platform=self.unrecorded_platform,
                 )
             )
             for base_arm in stage["configs"]
@@ -732,13 +753,27 @@ def disjunction_report(campaign, views, output, posttraining, window, phase):
     return path
 
 
-def default_runners(campaign_path, views, output, *, storage=None, stages=None, stop=None):
+def default_runners(
+    campaign_path,
+    views,
+    output,
+    *,
+    storage=None,
+    stages=None,
+    stop=None,
+    unrecorded_platform=None,
+    execution=None,
+):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
     Necesitan el filtro `window` de las etapas, que define el orden por ventanas de la
     campaña A v2. Sin él se rechaza el recorrido antes de ejecutar nada. Si la campaña
     declara `walk_forward_stages`, los adaptadores y las políticas reciben un informe de
     disjunción recién calculado y las políticas leen la cadena de la salida de los adaptadores.
+    `execution` es la declaración de ejecución de la campaña base. Sus trazas de #448 llegan
+    también a los adaptadores y a las políticas.
+    Las políticas contrastan su plataforma con los recibos de la base, y `unrecorded_platform`
+    nombra el perfil de los anteriores a ese registro.
     """
     from mars_titan.posttraining import campaign_stage as adapter_stage
     from mars_titan.simulation import campaign_stage as rl_stage
@@ -746,10 +781,14 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
     from . import masked_campaign as engine
     from . import modality_ablation_stage as ablation_stage
     from .campaign_plan import load_campaign
+    from .campaign_resources import Execution, load_execution
 
     stages = stages or {}
     campaign = load_campaign(campaign_path)
     chain_output = stages.get("adapters", {}).get("output")
+    if execution is not None and not isinstance(execution, Execution):
+        execution = load_execution(execution, scopes=tuple(campaign["scopes"]))
+    traces = None if execution is None else execution.traces
 
     def checked(window, phase):
         if not campaign.get("walk_forward_stages"):
@@ -763,7 +802,13 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
         )
     runners = dict(
         base=lambda window: engine.run_campaign(
-            campaign_path, views, output, storage=storage, stop=stop, window=window
+            campaign_path,
+            views,
+            output,
+            storage=storage,
+            stop=stop,
+            window=window,
+            execution=execution,
         )
     )
     if "adapters" in stages:
@@ -776,6 +821,7 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             stop=stop,
             window=window,
             disjunction=checked(window, "adapters"),
+            traces=traces,
         )
     if "ablation" in stages:
         entry = stages["ablation"]
@@ -796,6 +842,8 @@ def default_runners(campaign_path, views, output, *, storage=None, stages=None, 
             window=window,
             chain_output=chain_output,
             disjunction=checked(window, "rl"),
+            traces=traces,
+            unrecorded_platform=unrecorded_platform,
         )
     return runners
 
@@ -854,6 +902,13 @@ def main(argv=None):
         help="Tabla del estado de cotización que declaran las políticas",
     )
     parser.add_argument("--publication", type=Path, help="Declaración del paso final de la campaña")
+    parser.add_argument(
+        "--execution", type=Path, help="Declaración de ejecución (recursos y trazas de #448)"
+    )
+    parser.add_argument(
+        "--unrecorded-platform",
+        help="Perfil de hardware al que se atribuyen los recibos sin plataforma",
+    )
     args = parser.parse_args(argv)
     views = engine._views_argument(args.views)
     retention = load_retention(args.retention)
@@ -869,7 +924,13 @@ def main(argv=None):
         _require(args.listing_status is not None, "Las políticas necesitan --listing-status")
         stages["rl"].update(edition=args.edition, listing_status=args.listing_status)
     runners = default_runners(
-        args.campaign, views, args.output, storage=args.storage, stages=stages
+        args.campaign,
+        views,
+        args.output,
+        storage=args.storage,
+        stages=stages,
+        execution=args.execution,
+        unrecorded_platform=args.unrecorded_platform,
     )
     rolling = Rolling(
         retention,
@@ -882,6 +943,7 @@ def main(argv=None):
         rl=stages.get("rl"),
         edition=args.edition,
         publication=args.publication,
+        unrecorded_platform=args.unrecorded_platform,
         disk=dict(
             storage=args.storage,
             extras=json.loads(args.extras.read_text()),

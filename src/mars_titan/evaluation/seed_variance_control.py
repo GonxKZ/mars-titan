@@ -196,7 +196,9 @@ def proposal_models(declaration, name, root=ROOT):
     """Modelos de cada papel de una regla, leídos de la declaración de su propuesta.
 
     El control de la propuesta debe ser el del control de varianza, con la misma receta y
-    variante, para que la banda mida la dispersión del mismo modelo.
+    variante, para que la banda mida la dispersión del mismo modelo. La propuesta debe
+    enlazar la regla en su ``decision_rule``. Si cambia la receta común, la regla no puede
+    compartir las semillas del piloto común.
     """
     rule = declaration["rules"][name]
     _require(rule["declaration"] is not None, f"La propuesta de {name} aún no está declarada")
@@ -204,6 +206,12 @@ def proposal_models(declaration, name, root=ROOT):
     _require(
         proposal.get("kind") == PROPOSAL_KIND and proposal.get("final_test_opened") is False,
         f"La declaración de {name} no es una propuesta cerrada antes de ver la reserva",
+    )
+    # El enlace va en los dos sentidos: la propuesta nombra las reglas que la deciden.
+    link = proposal.get("decision_rule", {}).get("seed_variance_control", {})
+    _require(
+        name in link.get("rules", ()),
+        f"La propuesta de {name} no enlaza la regla del control de varianza",
     )
     roles = {}
     for model, arm in proposal["arms"].items():
@@ -219,6 +227,14 @@ def proposal_models(declaration, name, root=ROOT):
     _require(
         rule["base"] in roles and "innovation" in roles,
         f"La propuesta de {name} no declara los papeles de su regla",
+    )
+    # Un control con otra receta, como el de PT4 sin acumulación por bloques, no repite el
+    # cálculo del control común, así que su piloto ajusta sus propias semillas.
+    changes = proposal.get("common_recipe_changes")
+    _require(
+        not changes or name not in declaration["pilot"]["shared_by"],
+        f"El control de {name} cambia la receta ({', '.join(sorted(changes or {}))}) y no "
+        "puede compartir las semillas del piloto común",
     )
     return dict(variant=roles["innovation"], base=roles[rule["base"]], control=control["model"])
 

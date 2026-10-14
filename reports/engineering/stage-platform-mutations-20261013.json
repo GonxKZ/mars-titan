@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "kind": "targeted_mutation_testing",
+  "scope": "Plataforma registrada y comprobada en las etapas de adaptadores, ablación y políticas y en rolling (#543)",
+  "measured_at": "2026-10-13",
+  "worktree_imports": "PYTHONPATH apunta al src de la propia copia de trabajo",
+  "tests": [
+    "tests/evaluation/test_modality_ablation.py",
+    "tests/hardware/test_hardware_profiles.py",
+    "tests/posttraining/test_adapter_campaign_stage.py::test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_chain",
+    "tests/posttraining/test_stage_comparison.py",
+    "tests/simulation/test_campaign_stage.py",
+    "tests/simulation/test_stage_report.py",
+    "tests/training/test_modality_ablation_stage.py",
+    "tests/training/test_rolling_retention.py"
+  ],
+  "baseline": {
+    "tests/evaluation/test_modality_ablation.py": {
+      "pytest_tail": "57 passed in 3.94s",
+      "seconds": 5.81
+    },
+    "tests/hardware/test_hardware_profiles.py": {
+      "pytest_tail": "33 passed in 0.20s",
+      "seconds": 2.03
+    },
+    "tests/simulation/test_campaign_stage.py": {
+      "pytest_tail": "59 passed, 2 skipped in 127.83s (0:02:07)",
+      "seconds": 130.05
+    },
+    "tests/simulation/test_stage_report.py": {
+      "pytest_tail": "15 passed, 1 skipped in 102.89s (0:01:42)",
+      "seconds": 105.45
+    },
+    "tests/posttraining/test_adapter_campaign_stage.py::test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_chain": {
+      "pytest_tail": "1 passed in 7.71s",
+      "seconds": 10.73
+    },
+    "tests/training/test_modality_ablation_stage.py": {
+      "pytest_tail": "26 passed, 1 skipped in 17.22s",
+      "seconds": 20.43
+    },
+    "tests/posttraining/test_stage_comparison.py": {
+      "pytest_tail": "25 passed in 4.32s",
+      "seconds": 6.94
+    },
+    "tests/training/test_rolling_retention.py": {
+      "pytest_tail": "33 passed, 1 skipped in 84.25s (0:01:24)",
+      "seconds": 86.76
+    }
+  },
+  "mutations": [
+    {
+      "id": "P01",
+      "description": "La etapa puede registrar otra huella que la base",
+      "file": "src/mars_titan/hardware/hardware_profiles.py",
+      "tests": [
+        "tests/hardware/test_hardware_profiles.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 29 passed in 0.22s",
+      "seconds": 2.19
+    },
+    {
+      "id": "P02",
+      "description": "La etapa sin plataforma se acepta frente a una base que la registra",
+      "file": "src/mars_titan/hardware/hardware_profiles.py",
+      "tests": [
+        "tests/hardware/test_hardware_profiles.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 29 passed in 0.22s",
+      "seconds": 2.16
+    },
+    {
+      "id": "P03",
+      "description": "Con la base sin plataforma, la etapa no se contrasta con el perfil",
+      "file": "src/mars_titan/hardware/hardware_profiles.py",
+      "tests": [
+        "tests/hardware/test_hardware_profiles.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 30 passed in 0.23s",
+      "seconds": 2.17
+    },
+    {
+      "id": "P04",
+      "description": "La etapa y la base pueden atribuir sus recibos a perfiles distintos",
+      "file": "src/mars_titan/hardware/hardware_profiles.py",
+      "tests": [
+        "tests/hardware/test_hardware_profiles.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 30 passed in 0.23s",
+      "seconds": 2.26
+    },
+    {
+      "id": "P05",
+      "description": "El perfil declarado no se carga",
+      "file": "src/mars_titan/hardware/hardware_profiles.py",
+      "tests": [
+        "tests/hardware/test_hardware_profiles.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 31 passed in 0.23s",
+      "seconds": 2.34
+    },
+    {
+      "id": "P06",
+      "description": "Las fuentes de un padre no se comparan con la plataforma de la base",
+      "file": "src/mars_titan/posttraining/stage_comparison.py",
+      "tests": [
+        "tests/posttraining/test_stage_comparison.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 passed, 1 error in 1.97s",
+      "seconds": 4.44
+    },
+    {
+      "id": "P07",
+      "description": "Las fuentes de un padre ignoran la plataforma de los recibos de la etapa",
+      "file": "src/mars_titan/posttraining/stage_comparison.py",
+      "tests": [
+        "tests/posttraining/test_stage_comparison.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 passed, 1 error in 2.12s",
+      "seconds": 4.53
+    },
+    {
+      "id": "P08",
+      "description": "Los recibos de la etapa de adaptadores no guardan la plataforma",
+      "file": "src/mars_titan/posttraining/campaign_stage.py",
+      "tests": [
+        "tests/posttraining/test_adapter_campaign_stage.py::test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_chain"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed in 7.14s",
+      "seconds": 9.82
+    },
+    {
+      "id": "P09",
+      "description": "La ablación no se compara con la plataforma de las fuentes principales",
+      "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+      "tests": [
+        "tests/evaluation/test_modality_ablation.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 55 passed in 4.67s",
+      "seconds": 6.89
+    },
+    {
+      "id": "P10",
+      "description": "Las fuentes de la ablación admiten un registro de plataforma inválido",
+      "file": "src/mars_titan/evaluation/walk_forward_comparison.py",
+      "tests": [
+        "tests/evaluation/test_modality_ablation.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 55 passed in 236.34s (0:03:56)",
+      "seconds": 238.88
+    },
+    {
+      "id": "P11",
+      "description": "La etapa de políticas no se compara con los recibos de la base",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_campaign_stage.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 58 passed, 2 skipped in 837.69s (0:13:57)",
+      "seconds": 841.17
+    },
+    {
+      "id": "P12",
+      "description": "El informe de políticas no exige una sola plataforma",
+      "file": "src/mars_titan/simulation/stage_report.py",
+      "tests": [
+        "tests/simulation/test_stage_report.py"
+      ],
+      "killed": true,
+      "pytest_tail": "1 failed, 7 passed in 198.50s (0:03:18)",
+      "seconds": 201.59
+    },
+    {
+      "id": "P13",
+      "description": "La ablación publica sin contrastar los recibos de la base",
+      "file": "src/mars_titan/training/modality_ablation_stage.py",
+      "tests": [
+        "tests/training/test_modality_ablation_stage.py"
+      ],
+      "killed": false,
+      "pytest_tail": "26 passed, 1 skipped in 114.05s (0:01:54)",
+      "seconds": 117.65,
+      "survivor_reason": "Solo lo detecta test_masked_sources_keep_the_platform_of_the_base_they_compare_with, del inventario de #546, que lee la salida que el fixture staged ejecuta con la protección rebajada y se omite mientras rige el bloqueo."
+    },
+    {
+      "id": "P14",
+      "description": "La etapa de políticas no llama a la comprobación de la base",
+      "file": "src/mars_titan/simulation/campaign_stage.py",
+      "tests": [
+        "tests/simulation/test_campaign_stage.py"
+      ],
+      "killed": false,
+      "pytest_tail": "59 passed, 2 skipped in 502.41s (0:08:22)",
+      "seconds": 508.97,
+      "survivor_reason": "La regla está en base_platform, que comprueba test_the_stage_runs_on_the_platform_of_the_base_receipts_it_reads. La llamada desde run_stage solo se recorre ejecutando la etapa de políticas, que exige la protección rebajada."
+    },
+    {
+      "id": "P15",
+      "description": "rolling no lleva el perfil declarado a los agregados",
+      "file": "src/mars_titan/training/rolling_retention.py",
+      "tests": [
+        "tests/training/test_rolling_retention.py"
+      ],
+      "killed": false,
+      "pytest_tail": "33 passed, 1 skipped in 201.05s (0:03:21)",
+      "seconds": 218.45,
+      "survivor_reason": "Solo lo detecta test_aggregates_of_receipts_without_platform_need_the_declared_profile, del inventario de #546, que recorre la campaña del fixture base y se omite mientras rige el bloqueo."
+    }
+  ],
+  "killed": 12,
+  "survived": 3,
+  "notes": [
+    "Cada defecto se aplica de uno en uno y el archivo se restaura después.",
+    "Las pruebas que leen salidas ejecutadas por fixtures con la protección rebajada figuran en tests/learning_hold_lowering.py y se omiten mientras rige el bloqueo.",
+    "Los tres supervivientes solo los recorren pruebas del inventario de #546. Deben morir al ejecutar esas pruebas cuando se levante el bloqueo."
+  ]
+}

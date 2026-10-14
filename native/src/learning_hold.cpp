@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
@@ -11,6 +12,10 @@
 namespace mars_titan::learning {
 namespace {
 constexpr std::uintmax_t maximum_hold_bytes = std::uintmax_t{1} << 20U;
+// Una vez activado no vuelve a falso. Solo se escribe al entrar en el modo de solo evaluación.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+std::atomic<bool> evaluation_only_latch{false};
+static_assert(std::atomic<bool>::is_always_lock_free);
 } // namespace
 
 std::filesystem::path learning_hold_path() {
@@ -55,6 +60,17 @@ void require_learning_allowed(std::string_view action) {
         throw std::runtime_error("Bloqueo de aprendizaje vigente: " + std::string(action) +
                                  " no se ejecuta mientras " + path.string() +
                                  " no declare training_allowed verdadero");
+    }
+}
+
+void enter_evaluation_only() noexcept { evaluation_only_latch.store(true); }
+
+bool evaluation_only() noexcept { return evaluation_only_latch.load(); }
+
+void require_optimizer_steps_allowed(std::string_view action) {
+    if (evaluation_only()) {
+        throw std::logic_error("Modo de solo evaluación: " + std::string(action) +
+                               " no se admite porque crea un entrenador o da un paso de optimizador");
     }
 }
 } // namespace mars_titan::learning
