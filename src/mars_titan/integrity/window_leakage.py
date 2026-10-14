@@ -9,6 +9,9 @@ Con entradas con máscara, las columnas de un bloque ausente valen 0 en la matri
 tratan como ausentes, porque ese relleno empata a muchos activos de una sesión y diluiría una
 fuga presente en las demás filas. Los bits de presencia se escanean como columnas, así que
 una fuga que estuviera en la ausencia de un bloque también se vería.
+
+Una ventana marcada se revisa por modalidad con `review_window`, que aporta evidencia para
+decidir sobre la marca sin cambiar los umbrales ni el resultado del escaneo.
 """
 
 import argparse
@@ -30,6 +33,9 @@ from mars_titan.training.tabular_corpus import _matrix
 
 KIND = "window_input_leakage_scan"
 SUMMARY = "window_input_leakage_summary"
+REVIEW = "window_input_leakage_review"
+# Semilla de las permutaciones de la revisión, fijada al escribirla (14 de octubre de 2026).
+REVIEW_SEED = 20261014
 PARTITION = "validation"
 CODE = (
     "integrity/window_leakage.py",
@@ -143,6 +149,116 @@ def scan_window(manifest, destination, *, input_policy, lag, chunk=32, batch_siz
     return report
 
 
+def review_window(
+    manifest,
+    report_path,
+    modality,
+    destination,
+    *,
+    input_policy,
+    permutations,
+    seed=REVIEW_SEED,
+    batch_size=1024,
+):
+    """Revisar las columnas marcadas de una modalidad en la validación de una vista.
+
+    Solo cuentan para la regla las sesiones con al menos `min_assets` filas con la modalidad
+    presente. La revisión reúne esas filas y describe cada sesión: activos y vectores distintos
+    de la modalidad, porque muchos activos con el mismo vector reducen la muestra efectiva. Con
+    `leakage_scan.permutation_null` repite la puntuación del escáner, que debe marcar las mismas
+    columnas que el informe, y mide cuántas marcaría la regla por azar con esas mismas sesiones.
+    No cambia ningún umbral ni el resultado del escaneo.
+    """
+    started, clock = time.perf_counter(), time.process_time()
+    report_path = Path(report_path)
+    report = json.loads(report_path.read_text())
+    dataset = CorpusDataset(Path(manifest), input_policy=input_policy)
+    _require(
+        report.get("kind") == KIND and report.get("view_sha256") == dataset.identity,
+        "El informe no es el escaneo de esta vista",
+    )
+    _require(dataset.masked and modality in MODALITIES, "La revisión necesita una modalidad")
+    marked = [name for name in report["flagged"] if name.startswith(f"{modality}.")]
+    _require(marked, f"El informe no marca ninguna columna de {modality}")
+    index = MODALITIES.index(modality)
+    keys = dict(market=[], asset_id=[], prediction_at=[], target=[])
+    values, names = [], None
+    for batch in dataset.batches(partition=PARTITION, batch_size=batch_size, epoch=0, seed=0):
+        if names is None:
+            names, spans = column_layout(batch, True)
+            start, stop = spans[modality]
+            names = names[start:stop]
+        present = batch["presence"][:, index]
+        if not present.any():
+            continue
+        values.append(_matrix(batch, np.float32, presence=True)[present, start:stop])
+        keys["market"] += list(np.asarray(batch["market"])[present])
+        keys["asset_id"] += [
+            "/".join(s.split("/")[:2]) for s in np.asarray(batch["sample_ids"])[present]
+        ]
+        keys["prediction_at"].append(batch["prediction_at"][present])
+        keys["target"].append(batch["target"][present])
+    _require(values, f"Ninguna fila de validación tiene {modality}")
+    frame = pd.DataFrame(
+        dict(
+            market=keys["market"],
+            asset_id=keys["asset_id"],
+            prediction_at=np.concatenate(keys["prediction_at"]),
+            target=np.concatenate(keys["target"]),
+        )
+    )
+    values = np.concatenate(values)
+    thresholds = report["thresholds"]
+    sizes = frame.groupby(list(leakage_scan.KEYS))["target"].transform("size").to_numpy()
+    kept = sizes >= thresholds["min_assets"]
+    _require(kept.any(), f"Ninguna sesión tiene {thresholds['min_assets']} filas con {modality}")
+    frame, values = frame[kept].reset_index(drop=True), values[kept]
+    result = leakage_scan.permutation_null(
+        frame, values, names, permutations=permutations, seed=seed, **thresholds
+    )
+    _require(
+        result["observed"]["flagged"] == marked,
+        "La revisión no reproduce las columnas que marca el informe",
+    )
+    scanned = {entry["column"]: entry["mean_abs_ic"] for entry in report["columns"]}
+    differences = [
+        abs(entry["mean_abs_ic"] - scanned[entry["column"]])
+        for entry in result["observed"]["columns"]
+        if entry["mean_abs_ic"] is not None
+    ]
+    sessions = [
+        dict(
+            market=market,
+            prediction_at=str(moment),
+            assets=len(rows),
+            distinct_vectors=len(np.unique(values[rows], axis=0)),
+        )
+        for (market, moment), rows in frame.groupby(list(leakage_scan.KEYS)).indices.items()
+    ]
+    root = Path(__file__).parents[1]
+    review = dict(
+        schema_version=1,
+        kind=REVIEW,
+        created_at_utc=datetime.now(UTC).isoformat(),
+        partition=PARTITION,
+        modality=modality,
+        view_sha256=dataset.identity,
+        report_sha256=sha256(report_path),
+        input_policy=input_policy,
+        session_detail=sessions,
+        max_difference_from_report=max(differences),
+        **result,
+        code={name: sha256(root / name) for name in CODE},
+        seconds=time.perf_counter() - started,
+        cpu_seconds=time.process_time() - clock,
+        max_rss_gib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024**2,
+        final_test_opened=False,
+    )
+    Path(destination).parent.mkdir(parents=True, exist_ok=True)
+    atomic_json(destination, review)
+    return review
+
+
 def _strongest(report, count=5):
     defined = [entry for entry in report["columns"] if entry["mean_abs_ic"] is not None]
     defined.sort(key=lambda entry: entry["mean_abs_ic"], reverse=True)
@@ -219,7 +335,36 @@ def main(argv=None):
     parser.add_argument("--lag", type=int, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--window", action="append", help="Por defecto, todas las del ámbito")
+    parser.add_argument("--review", help="Ventana escaneada cuya marca se revisa")
+    parser.add_argument("--modality", choices=MODALITIES, help="Modalidad que se revisa")
+    parser.add_argument("--permutations", type=int, default=1000)
+    parser.add_argument("--seed", type=int, default=REVIEW_SEED)
     args = parser.parse_args(argv)
+    if args.review is not None:
+        from mars_titan.training.masked_campaign import load_campaign, scope_views
+
+        _require(args.modality is not None, "La revisión necesita --modality")
+        campaign = load_campaign(args.campaign)
+        record = scope_views(args.views, args.scope, campaign)["windows"][args.review]
+        folder = Path(args.output) / args.scope
+        review = review_window(
+            record["path"],
+            folder / f"{args.review}.json",
+            args.modality,
+            folder / f"{args.review}.review-{args.modality}.json",
+            input_policy=campaign["input_policy"],
+            permutations=args.permutations,
+            seed=args.seed,
+        )
+        print(
+            json.dumps(
+                dict(
+                    observed=len(review["observed"]["flagged"]),
+                    null=review["null"]["flagged_quantiles"],
+                )
+            )
+        )
+        return 0
     summary = scan_scope(
         args.campaign, args.scope, args.views, args.output, lag=args.lag, windows=args.window
     )

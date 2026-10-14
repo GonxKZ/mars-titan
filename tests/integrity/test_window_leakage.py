@@ -249,3 +249,45 @@ def test_the_scope_runs_the_real_scan_on_each_window(manifest, tmp_path, monkeyp
     summary = window_leakage.scan_scope(campaign, "US", tmp_path, tmp_path / "scan", lag=2)
     assert summary["flagged"] == {"fold-000": [LEAK]} and summary["complete"]
     assert summary["windows"]["fold-000"]["strongest"][0]["column"] == LEAK
+
+
+def test_a_flagged_modality_is_reviewed_against_its_permutation_null(manifest, scanned, tmp_path):
+    destination, report = scanned
+    review = window_leakage.review_window(
+        manifest,
+        destination,
+        "charts",
+        tmp_path / "review.json",
+        input_policy=HISTORICAL_MASKED,
+        permutations=20,
+    )
+    assert review["kind"] == window_leakage.REVIEW and review["modality"] == "charts"
+    assert review["observed"]["flagged"] == [LEAK]
+    assert review["max_difference_from_report"] < 1e-12
+    assert review["report_sha256"] == sha256(destination)
+    assert review["sessions"] == report["sessions"] == len(review["session_detail"])
+    assert all(row["assets"] == ASSETS for row in review["session_detail"])
+    assert all(row["distinct_vectors"] == ASSETS for row in review["session_detail"])
+    assert review["null"]["share_max_at_least_observed"] == 0
+    assert review["null"]["seed"] == window_leakage.REVIEW_SEED
+    assert json.loads((tmp_path / "review.json").read_text()) == review
+    with pytest.raises(ValueError, match="ninguna columna de news"):
+        window_leakage.review_window(
+            manifest,
+            destination,
+            "news",
+            tmp_path / "x.json",
+            input_policy=HISTORICAL_MASKED,
+            permutations=1,
+        )
+    other = tmp_path / "other.json"
+    other.write_text(json.dumps(dict(json.loads(destination.read_text()), view_sha256="0" * 64)))
+    with pytest.raises(ValueError, match="no es el escaneo de esta vista"):
+        window_leakage.review_window(
+            manifest,
+            other,
+            "charts",
+            tmp_path / "x.json",
+            input_policy=HISTORICAL_MASKED,
+            permutations=1,
+        )

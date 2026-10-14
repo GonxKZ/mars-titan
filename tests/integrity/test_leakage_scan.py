@@ -202,3 +202,64 @@ def test_the_numpy_session_ranks_match_an_independent_pandas_reference():
         assert entry["past_mean_abs_ic"] == pytest.approx(
             float(np.mean(np.abs(placebo[valid]))), rel=1e-12
         )
+
+
+def small_sessions(seed=7, sessions=6, assets=25):
+    """Sesiones de 25 activos, como las que hacen grande un |IC| por azar."""
+    rng = np.random.default_rng(seed)
+    frame = pd.DataFrame(
+        dict(
+            market="US",
+            asset_id=[f"US/{a:02d}" for _ in range(sessions) for a in range(assets)],
+            prediction_at=np.repeat(np.arange(sessions) * 86_400_000_000, assets),
+            target=rng.normal(0, 0.02, sessions * assets),
+        )
+    )
+    values = np.column_stack(
+        [frame["target"], rng.normal(size=len(frame)), rng.integers(0, 3, len(frame))]
+    )
+    return frame, values, ["copy", "noise", "groups"]
+
+
+def test_the_permutation_stays_inside_each_session():
+    codes = np.repeat([0, 1, 2], [5, 9, 4])
+    sessions = leakage_scan._Sessions(codes)
+    rng = np.random.default_rng(1)
+    orders = [leakage_scan._within_sessions(sessions, rng) for _ in range(50)]
+    for order in orders:
+        assert sorted(order) == list(range(len(codes)))
+        np.testing.assert_array_equal(sessions.codes[order], sessions.codes)
+    assert len({tuple(order) for order in orders}) > 1
+
+
+def test_the_null_scores_like_the_scanner_and_is_reproducible():
+    frame, values, names = small_sessions()
+    result = leakage_scan.permutation_null(frame, values, names, permutations=200, seed=3)
+    scanned = by_column(
+        leakage_scan.scan(frame.assign(**dict(zip(names, values.T, strict=True))), names, lag=1)
+    )
+    observed = {entry["column"]: entry for entry in result["observed"]["columns"]}
+    for name in names:
+        assert observed[name]["mean_abs_ic"] == pytest.approx(scanned[name]["mean_abs_ic"])
+        assert observed[name]["flagged"] == scanned[name]["flagged"]
+    assert "copy" in result["observed"]["flagged"]
+    assert observed["copy"]["positive_sessions"] == 1 and result["observed"]["max_mean_abs_ic"] == 1
+    null = result["null"]
+    assert len(null["flagged_counts"]) == 200 and null["seed"] == 3
+    # Ninguna permutación de 25 activos ordena seis sesiones igual que el objetivo.
+    assert null["share_max_at_least_observed"] == 0
+    assert 0 < null["max_mean_abs_ic_quantiles"]["0.5"] < 0.5
+    again = leakage_scan.permutation_null(frame, values, names, permutations=200, seed=3)
+    assert again == result
+    other = leakage_scan.permutation_null(frame, values, names, permutations=200, seed=4)
+    assert other["null"]["flagged_counts"] != null["flagged_counts"]
+
+
+def test_the_null_rejects_bad_inputs():
+    frame, values, names = small_sessions()
+    with pytest.raises(ValueError, match="al menos una permutación"):
+        leakage_scan.permutation_null(frame, values, names, permutations=0, seed=1)
+    with pytest.raises(ValueError, match="filas de las claves"):
+        leakage_scan.permutation_null(frame, values[:-1], names, permutations=1, seed=1)
+    with pytest.raises(ValueError, match="correlación definida"):
+        leakage_scan.permutation_null(frame, np.ones_like(values), names, permutations=1, seed=1)
