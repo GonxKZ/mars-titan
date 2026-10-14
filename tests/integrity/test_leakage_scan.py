@@ -255,6 +255,39 @@ def test_the_null_scores_like_the_scanner_and_is_reproducible():
     assert other["null"]["flagged_counts"] != null["flagged_counts"]
 
 
+def test_the_null_by_blocks_scores_every_column_with_the_same_orders():
+    frame, values, names = small_sessions()
+    # Una columna con huecos tiene otras filas presentes y otros rangos del objetivo.
+    gaps = np.where(np.arange(len(frame)) % 10 == 0, np.nan, values[:, 1])
+    values, names = np.column_stack([values, gaps]), [*names, "gaps"]
+    settings = leakage_scan._settings({})
+    sessions = leakage_scan._Sessions(
+        frame.groupby(list(leakage_scan.KEYS), sort=True).ngroup().to_numpy()
+    )
+    target = frame["target"].to_numpy()[sessions.order]
+    ordered = values[sessions.order]
+    unused = np.full(len(sessions.starts), np.nan)
+    rng = np.random.default_rng(11)
+    counts, maxima = [], []
+    for _ in range(60):
+        order = leakage_scan._within_sessions(sessions, rng)
+        ic, present = leakage_scan._session_ic(sessions, ordered, target[order], 20, {})
+        found = [
+            leakage_scan._finding(name, ic[:, j], present[:, j], unused, settings)
+            for j, name in enumerate(names)
+        ]
+        counts.append(sum(entry["flagged"] for entry in found))
+        maxima.append(max(entry["mean_abs_ic"] for entry in found))
+    for chunk in (1, 2, 4):
+        null = leakage_scan.permutation_null(
+            frame, values, names, permutations=60, seed=11, chunk=chunk
+        )["null"]
+        assert null["flagged_counts"] == counts
+        assert null["max_mean_abs_ic_quantiles"] == {
+            str(q): float(np.quantile(maxima, q)) for q in (0.05, 0.5, 0.95)
+        }
+
+
 def test_the_null_rejects_bad_inputs():
     frame, values, names = small_sessions()
     with pytest.raises(ValueError, match="al menos una permutación"):
