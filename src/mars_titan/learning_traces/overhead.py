@@ -224,6 +224,7 @@ def measure_posttraining(stage, view, work, declared, settings, device, arms=Non
 
     from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD
     from mars_titan.posttraining import adapter_matrix
+    from mars_titan.posttraining import predictive_objectives as predictive
     from mars_titan.posttraining.adapter_traces import AdapterObserver
     from mars_titan.posttraining.parents import FrozenParent
     from mars_titan.posttraining.run import build_model
@@ -247,7 +248,9 @@ def measure_posttraining(stage, view, work, declared, settings, device, arms=Non
         for item in adapter_matrix.cases(
             matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
         ):
-            if item["case"]["seed"] != seed:
+            # Los objetivos lineales de #128 necesitan el normalizador del padre y no tienen
+            # adaptador que observar, como en `campaign_throughput.measure_posttraining`.
+            if item["case"]["seed"] != seed or item.get("control") in predictive.CONTROLS:
                 continue
             adapted = build_model(parent, item["case"], None, None).to(device)
             label = item["id"].split("/", 1)[1]

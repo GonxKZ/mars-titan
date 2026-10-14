@@ -576,7 +576,7 @@ def test_detached_mode_does_not_keep_the_incoming_autograd_history():
     assert not tuple(model.buffers())
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="requiere cuda:0")
+@pytest.mark.cuda
 @pytest.mark.parametrize("refinements", [1, 4])
 def test_cuda_readout_waits_for_the_device_once(refinements):
     """Las comprobaciones de todos los refinamientos se resuelven con una sola espera."""

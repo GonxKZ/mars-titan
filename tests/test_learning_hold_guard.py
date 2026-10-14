@@ -169,6 +169,9 @@ def scan(root=ROOT):
     for part in NATIVE:
         folder = root / part
         for path in [folder] if folder.is_file() else sorted(folder.rglob("*")):
+            # Los módulos de Python de `native/tests` que importa la suite dejan bytecode.
+            if "__pycache__" in path.parts:
+                continue
             if path.is_file() and ALLOWED_JSON.search(path.read_text(encoding="utf-8")):
                 written.append(path.relative_to(root).as_posix())
     return opened, written, dynamic, +doubles, +redirections

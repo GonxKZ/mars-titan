@@ -547,7 +547,7 @@ def test_list_and_tuple_select_the_same_rows_and_preserve_state_parity():
         torch.testing.assert_close(first, second, rtol=0, atol=0)
 
 
-cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="requiere cuda:0")
+cuda = pytest.mark.cuda
 
 
 def on_device(device, dtype=torch.float64, variant="mac_online"):
