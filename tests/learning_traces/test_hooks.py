@@ -361,3 +361,17 @@ def test_memory_observer_only_listens_on_traced_steps(tmp_path):
     memory_pass(module, traces, step=2)
     assert observer.layers["core"].tokens == 8
     assert not MemoryObserver(dict(model=Tiny()))
+
+
+def test_a_checkpoint_discards_what_the_observers_accumulated(tmp_path):
+    # Lo acumulado no viaja con el estado guardado. Si se conservara, el proceso que sigue
+    # registraría más tokens que uno reanudado desde ese mismo punto de control.
+    module = memory_module()
+    observer = MemoryObserver(dict(core=module))
+    traces = TrainingTraces(recorder(tmp_path), dict(core=module), observers=[observer])
+    memory_pass(module, traces, step=1)
+    assert observer.layers["core"].tokens == 8
+    traces.checkpoint()
+    assert observer.layers == {}
+    memory_pass(module, traces, step=2)
+    assert observer.layers["core"].tokens == 8
