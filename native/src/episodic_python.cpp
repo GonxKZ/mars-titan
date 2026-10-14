@@ -1,6 +1,7 @@
 #include "mars_titan/cohort_execution.hpp"
 #include "mars_titan/episodic_memory.hpp"
 #include "mars_titan/episodic_projection.hpp"
+#include "mars_titan/medoid_kernels.hpp"
 #include "mars_titan/simulation_files.hpp"
 
 #include <c10/util/ScopeExit.h>
@@ -9,11 +10,15 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <span>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace py = pybind11;
 namespace cohorts = mars_titan::cohorts;
@@ -117,6 +122,20 @@ void bind_memory(py::module_& module) {
         .def_readonly("record", &memory::MemoryNeighbor::record)
         .def_readonly("similarity", &memory::MemoryNeighbor::similarity);
     module.def("normalize_key", &memory::normalize_memory_key);
+    // Claves FP32 de varios registros en una matriz [R, 64], con los mismos bits que convertir
+    // cada `record.key` con NumPy y sin una lista de Python por registro.
+    module.def(
+        "record_keys",
+        [](const std::vector<memory::MemoryRecord>& records) {
+            constexpr auto width = static_cast<py::ssize_t>(memory::episodic_memory_width);
+            py::array_t<float> keys({static_cast<py::ssize_t>(records.size()), width});
+            float* target = keys.mutable_data();
+            for (const auto& record : records) {
+                target = std::copy(record.key.begin(), record.key.end(), target);
+            }
+            return keys;
+        },
+        py::arg("records"));
     module.def("causal_reservoir_state", &memory::causal_reservoir_state, py::arg("seed"));
     module.def(
         "causal_reservoir_draws",
@@ -141,6 +160,43 @@ void bind_memory(py::module_& module) {
                 const std::vector<uint64_t>& retained,
                 int64_t confirmed_at) { bank.retain_batch(incoming, retained, confirmed_at); })
         .def("retained_records", &memory::EpisodicMemory::retained_records)
+        // Columnas de los registros retenidos ordenadas por ID, como las listas que arma
+        // `bank_snapshot` registro a registro y con los mismos bits.
+        .def("retained_arrays",
+             [](const memory::EpisodicMemory& bank) {
+                 auto records = bank.retained_records();
+                 std::ranges::sort(records, {}, &memory::MemoryRecord::id);
+                 const auto rows = static_cast<py::ssize_t>(records.size());
+                 constexpr auto width = static_cast<py::ssize_t>(memory::episodic_memory_width);
+                 py::array_t<float> keys({rows, width});
+                 py::array_t<float> values({rows, width});
+                 py::array_t<double> labels(rows);
+                 py::array_t<std::int64_t> ids(rows);
+                 py::array_t<std::int64_t> decision(rows);
+                 py::array_t<std::int64_t> available(rows);
+                 py::array_t<std::int64_t> maturity(rows);
+                 float* key = keys.mutable_data();
+                 float* value = values.mutable_data();
+                 for (py::ssize_t row = 0; row < rows; ++row) {
+                     const auto& record = records[static_cast<std::size_t>(row)];
+                     if (record.id > static_cast<std::uint64_t>(
+                                         std::numeric_limits<std::int64_t>::max())) {
+                         throw std::overflow_error("Un ID episódico no cabe en int64");
+                     }
+                     key = std::ranges::copy(record.key, key).out;
+                     value = std::ranges::copy(record.value, value).out;
+                     labels.mutable_at(row) = record.label;
+                     ids.mutable_at(row) = static_cast<std::int64_t>(record.id);
+                     decision.mutable_at(row) = record.decision_at;
+                     available.mutable_at(row) = record.available_at;
+                     maturity.mutable_at(row) = record.maturity_at;
+                 }
+                 return py::dict(py::arg("keys") = keys, py::arg("values") = values,
+                                 py::arg("labels") = labels, py::arg("ids") = ids,
+                                 py::arg("decision_at") = decision,
+                                 py::arg("available_at") = available,
+                                 py::arg("maturity_at") = maturity);
+             })
         .def("validate_batch",
              [](const memory::EpisodicMemory& bank,
                 const std::vector<memory::MemoryRecord>& incoming,
@@ -173,6 +229,14 @@ void bind_memory(py::module_& module) {
                  const auto archive = bytes.cast<std::string>();
                  bank.restore(memory::deserialize_memory(archive));
              })
+        // El mismo estado que restore_bytes(source.snapshot_bytes()), sin pasar por el archivo:
+        // el instantáneo de un banco ya es canónico y el archivo lo conserva bit a bit.
+        .def(
+            "restore_from",
+            [](memory::EpisodicMemory& bank, const memory::EpisodicMemory& source) {
+                bank.restore(source.snapshot());
+            },
+            py::arg("source"))
         .def_property_readonly("size", &memory::EpisodicMemory::size)
         .def_property_readonly("seen", &memory::EpisodicMemory::seen);
 }
@@ -207,6 +271,67 @@ void bind_projection(py::module_& module) {
     // medidas. Todas dan los mismos bits.
     module.attr("codec_projection_isa") = std::string(
         mars_titan::episodic::projection_isa_name(mars_titan::episodic::default_projection_isa()));
+}
+
+// Fondo de los medoids anclados tras el producto de NumPy. Solo acepta float64 contiguo, sin
+// conversiones implícitas, y escribe los cuadrados en `products` y el mínimo en `nearest`, que
+// son vistas de buffers de `_native_bounded_minimum`. Calcula sin el GIL.
+void bind_medoid_kernels(py::module_& module) {
+    module.def(
+        "nearest_reference_block",
+        [](Matrix& products, const Matrix& client_norms, const Matrix& center_norms,
+           const Matrix& clients, const Matrix& fixed, Matrix& nearest) {
+            if (products.ndim() != 2 || client_norms.ndim() != 1 || center_norms.ndim() != 1 ||
+                clients.ndim() != 2 || fixed.ndim() != 2 || nearest.ndim() != 1 ||
+                clients.shape(1) != fixed.shape(1)) {
+                throw std::invalid_argument("Las formas del fondo de medoids no coinciden");
+            }
+            const auto size = [](const Matrix& array) {
+                return static_cast<std::size_t>(array.size());
+            };
+            const std::span<double> squares(products.mutable_data(), size(products));
+            const std::span<double> target(nearest.mutable_data(), size(nearest));
+            const std::span<const double> rows(client_norms.data(), size(client_norms));
+            const std::span<const double> columns(center_norms.data(), size(center_norms));
+            const std::span<const double> left(clients.data(), size(clients));
+            const std::span<const double> right(fixed.data(), size(fixed));
+            const auto dimensions = static_cast<std::size_t>(clients.shape(1));
+            const py::gil_scoped_release released;
+            mars_titan::medoids::nearest_reference_block(squares, rows, columns, left, right,
+                                                         dimensions, target);
+        },
+        py::arg("products").noconvert(), py::arg("client_norms").noconvert(),
+        py::arg("center_norms").noconvert(), py::arg("clients").noconvert(),
+        py::arg("fixed").noconvert(), py::arg("nearest").noconvert());
+    // Sumas exactas de las propuestas de `_Costs`. `distance` puede ser una vista con pasos del
+    // búfer de distancias. Devuelve None si la referencia debe repetir la suma.
+    module.def(
+        "min_column_sums",
+        [](const py::array_t<double>& distance, const Matrix& base) -> py::object {
+            if (distance.ndim() != 2 || base.ndim() != 1) {
+                throw std::invalid_argument("Las formas de las sumas de los medoids no coinciden");
+            }
+            const auto step = [](py::ssize_t stride) {
+                if (stride < 0 || stride % static_cast<py::ssize_t>(sizeof(double)) != 0) {
+                    throw std::invalid_argument("Las distancias necesitan pasos positivos");
+                }
+                return static_cast<std::size_t>(stride) / sizeof(double);
+            };
+            const mars_titan::medoids::StridedMatrix view{
+                distance.data(), static_cast<std::size_t>(distance.shape(0)),
+                static_cast<std::size_t>(distance.shape(1)), step(distance.strides(0)),
+                step(distance.strides(1))};
+            const std::span<const double> limits(base.data(),
+                                                 static_cast<std::size_t>(base.size()));
+            std::vector<double> totals(view.columns);
+            bool exact = false;
+            {
+                const py::gil_scoped_release released;
+                exact = mars_titan::medoids::min_column_sums(view, limits, totals);
+            }
+            return exact ? py::cast(totals) : py::none();
+        },
+        py::arg("distance").noconvert(), py::arg("base").noconvert());
 }
 
 void bind_cohorts(py::module_& module) {
@@ -403,5 +528,6 @@ PYBIND11_MODULE(_episodic_native, module) {
     });
     bind_memory(module);
     bind_projection(module);
+    bind_medoid_kernels(module);
     bind_cohorts(module);
 }

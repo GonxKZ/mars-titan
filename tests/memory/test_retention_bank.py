@@ -259,7 +259,14 @@ def test_anchored_bank_reuses_distances_and_bounds_the_background_with_the_refer
 
     def spied(*args, **kwargs):
         result = select(*args, **kwargs)
-        applied.append((result.reused_distances, result.bounded_background))
+        applied.append(
+            (
+                result.reused_distances,
+                result.bounded_background,
+                result.native_background,
+                result.native_sums,
+            )
+        )
         return result
 
     def reference(*args, **kwargs):
@@ -287,8 +294,10 @@ def test_anchored_bank_reuses_distances_and_bounds_the_background_with_the_refer
     fast, fast_state = stream(spied)
     slow, slow_state = stream(reference)
     # La primera propuesta cabe entera y no tiene clientes fuera de los fijos, así que no
-    # hay fondo que acotar. Las demás seleccionan entre 128 episodios con las dos opciones.
-    assert applied == [(True, False)] + [(True, True)] * 3
+    # hay fondo que acotar. Las demás seleccionan entre 128 episodios con las dos opciones,
+    # y con el fondo nativo si el enlace lo tiene.
+    kernels = hasattr(native, "nearest_reference_block"), hasattr(native, "min_column_sums")
+    assert applied == [(True, False, False, kernels[1])] + [(True, True, *kernels)] * 3
     for step, (got, expected) in enumerate(zip(fast, slow, strict=True)):
         assert repr(got["objective"]) == repr(expected["objective"])
         # Solo cambia la memoria declarada, que suma la cota y la tabla reutilizada.
@@ -313,6 +322,16 @@ class _CountedKey:
 def _counting(bank, reads, monkeypatch):
     records = bank.records
     monkeypatch.setattr(bank, "records", lambda: [_CountedKey(r, reads) for r in records()])
+    # La exportación del enlace también lee claves: anota las de registros ya retenidos.
+    export = getattr(bank._native, "record_keys", None)
+    if export is not None and not hasattr(export, "counted"):
+
+        def counted(values):
+            reads.extend(value._record.id for value in values if isinstance(value, _CountedKey))
+            return export([getattr(value, "_record", value) for value in values])
+
+        counted.counted = True
+        monkeypatch.setattr(bank._native, "record_keys", counted)
     return bank
 
 
@@ -327,6 +346,8 @@ def test_proposals_convert_each_retained_key_once(native, policy, monkeypatch):
         for value in retained:
             row = bank._keys[value.id]
             assert row.dtype == np.float32 and not row.flags.writeable
+            # Cada fila es suya y no mantiene viva la matriz de puntos de la propuesta.
+            assert row.base is None
             assert np.array_equal(row, np.asarray(value.key, dtype=np.float32))
     # Las claves de los registros que ya estaban retenidos no se vuelven a leer del enlace.
     assert reads == []
@@ -362,11 +383,105 @@ def test_proposals_match_the_snapshot_copy_and_full_key_conversion_bit_for_bit(
         return states
 
     fast = stream()
+    # Un enlace anterior a la copia directa, la exportación de claves y el fondo nativo.
+    with monkeypatch.context() as previous:
+        for owner, name in (
+            (native.EpisodicMemory, "restore_from"),
+            (native, "record_keys"),
+            (native, "nearest_reference_block"),
+            (native, "min_column_sums"),
+        ):
+            if hasattr(owner, name):
+                previous.delattr(owner, name)
+        older = stream()
 
     def reference_points(self, eligible, old_ids):
-        points = np.asarray([r.key for r in eligible], dtype=np.float32)
-        return points, {r.id: points[index] for index, r in enumerate(eligible)}
+        return np.asarray([r.key for r in eligible], dtype=np.float32)
 
     monkeypatch.setattr(RetentionBank, "_fork", lambda self: self.restore(self.snapshot()))
     monkeypatch.setattr(RetentionBank, "_points", reference_points)
-    assert fast == stream()
+    assert fast == older == stream()
+
+
+def test_direct_copy_matches_the_archive_copy(native):
+    if not hasattr(native.EpisodicMemory, "restore_from"):
+        pytest.skip("El enlace nativo es anterior a la copia directa del banco")
+    rng = np.random.default_rng(9)
+    for policy, contract in (("reservoir", "legacy_v1"), ("reservoir", "causal_v2")):
+        config = RetentionConfig(policy=policy, capacity=4, frontier=2, new_candidates=2)
+        bank = RetentionBank(
+            native,
+            config,
+            codec_id="c" * 64,
+            world="fixture",
+            partition="train",
+            fold="0",
+            memory_contract=contract,
+        )
+        # Más episodios vistos que plazas: el reservorio ya ha sorteado sustituciones.
+        for step in range(3):
+            incoming = []
+            for offset in range(5):
+                value = record(native, 1 + 5 * step + offset)
+                value.key = [float(x) for x in rng.standard_normal(64)]
+                incoming.append(value)
+            bank = bank.propose(incoming, confirmed_at=100 * (step + 1))
+        archived, direct = bank._new(), bank._new()
+        archived._memory.restore_bytes(bank._memory.snapshot_bytes())
+        direct._memory.restore_from(bank._memory)
+        assert direct._memory.snapshot_bytes() == archived._memory.snapshot_bytes()
+        assert direct._memory.snapshot_bytes() == bank._memory.snapshot_bytes()
+        # Copiar un banco sobre sí mismo no lo cambia.
+        before = bank._memory.snapshot_bytes()
+        bank._memory.restore_from(bank._memory)
+        assert bank._memory.snapshot_bytes() == before
+        with pytest.raises(ValueError, match="otro ámbito"):
+            make_bank(native, policy)._memory.restore_from(bank._memory)
+
+
+def test_record_keys_export_the_numpy_bits(native):
+    if not hasattr(native, "record_keys"):
+        pytest.skip("El enlace nativo es anterior a la exportación de claves")
+    rng = np.random.default_rng(10)
+    values = []
+    for identity in range(1, 40):
+        value = record(native, identity)
+        value.key = [float(x) for x in rng.standard_normal(64).astype(np.float32)]
+        values.append(value)
+    keys = native.record_keys(values)
+    expected = np.stack([np.asarray(value.key, dtype=np.float32) for value in values])
+    assert keys.dtype == np.float32 and keys.shape == (39, 64) and keys.flags.c_contiguous
+    assert keys.tobytes() == expected.tobytes()
+    assert native.record_keys([]).shape == (0, 64)
+    with pytest.raises(TypeError):
+        native.record_keys([object()])
+
+
+def test_bank_columns_export_the_bits_of_the_record_lists(native, monkeypatch):
+    from mars_titan.memory import financial_consumers
+
+    if not hasattr(native.EpisodicMemory, "retained_arrays"):
+        pytest.skip("El enlace nativo es anterior a la exportación de columnas")
+    rng = np.random.default_rng(12)
+    bank = make_bank(native, "reservoir")
+    banks = [bank]
+    for step in range(3):
+        incoming = []
+        for offset in range(5):
+            value = record(native, 1 + 5 * step + offset)
+            value.key = [float(x) for x in rng.standard_normal(64)]
+            value.value = [float(x) for x in rng.standard_normal(64)]
+            value.label = float(rng.standard_normal())
+            incoming.append(value)
+        bank = bank.propose(incoming, confirmed_at=100 * (step + 1))
+        banks.append(bank)
+    for bank in banks:
+        exported = financial_consumers._bank_columns(bank)
+        with monkeypatch.context() as previous:
+            previous.setattr(bank, "retained_arrays", lambda: None)
+            listed = financial_consumers._bank_columns(bank)
+        assert exported.keys() == listed.keys()
+        for name, tensor in listed.items():
+            assert exported[name].dtype == tensor.dtype and exported[name].device == tensor.device
+            assert exported[name].shape == tensor.shape, name
+            assert exported[name].numpy().tobytes() == tensor.numpy().tobytes(), name

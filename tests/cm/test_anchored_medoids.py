@@ -3,12 +3,30 @@
 import dataclasses
 import itertools
 import math
+import os
 
 import numpy as np
 import pytest
 
 from mars_titan.cm.anchored_medoids import select_anchored_medoids
 from mars_titan.cm.medoids import MedoidBudgetExceeded, select_medoids
+from tests.suite_support import missing_native
+
+NATIVE = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+
+
+@pytest.fixture
+def kernel():
+    """Enlace episódico compilado con los núcleos de los medoids."""
+    path = os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
+    if not path:
+        pytest.skip(missing_native("MARS_TITAN_EPISODIC_NATIVE"))
+    from mars_titan.memory.native_backend import load_native
+
+    module = load_native(path)
+    if not hasattr(module, "nearest_reference_block") or not hasattr(module, "min_column_sums"):
+        pytest.skip("El enlace nativo es anterior a los núcleos de los medoids")
+    return module
 
 
 def objective(points, centers, metric):
@@ -558,6 +576,17 @@ def traced_problem(shape):
 @pytest.mark.parametrize("reuse", [False, True], ids=["bound", "bound_and_reuse"])
 @pytest.mark.parametrize("shape", ["bank", "minimal", "one_fixed", "dense", "wide"])
 def test_traced_peak_with_the_options_stays_within_the_estimate(shape, reuse):
+    assert_traced_peak(shape, reuse, None)
+
+
+@NATIVE
+@pytest.mark.parametrize("shape", ["bank", "minimal", "one_fixed", "dense", "wide"])
+def test_traced_peak_with_the_native_background_stays_within_the_estimate(shape, kernel):
+    # tracemalloc ve los buffers de NumPy. El núcleo nativo solo reserva 8 bytes por centro.
+    assert_traced_peak(shape, True, kernel)
+
+
+def assert_traced_peak(shape, reuse, kernel):
     import tracemalloc
 
     points, ids, fixed, candidates, capacity, options = traced_problem(shape)
@@ -571,12 +600,14 @@ def test_traced_peak_with_the_options_stays_within_the_estimate(shape, reuse):
             capacity,
             reuse_distances=reuse,
             bounded_background=True,
+            native=kernel,
             **options,
         )
         _, peak = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
     assert (result.reused_distances, result.bounded_background) == (reuse, True)
+    assert result.native_background is (kernel is not None)
     assert peak <= result.estimated_peak_bytes
 
 
@@ -624,7 +655,7 @@ def test_bounded_background_keeps_the_reference_bits_beyond_255_dimensions(kind)
     assert_reference_bits(adversarial_points(kind, count=400, dimensions=300), True, fixed=200)
 
 
-def assert_reference_bits(points, reuse, fixed=500):
+def assert_reference_bits(points, reuse, fixed=500, kernel=None):
     ids, fixed, candidates, capacity = retention(points, fixed=fixed)
     options = dict(client_block_size=64, fixed_block_size=128, max_swaps=8)
     reference = select_anchored_medoids(points, ids, fixed, candidates, capacity, **options)
@@ -636,15 +667,101 @@ def assert_reference_bits(points, reuse, fixed=500):
         capacity,
         bounded_background=True,
         reuse_distances=reuse,
+        native=kernel,
         **options,
     )
     assert bounded.bounded_background and not reference.bounded_background
     assert bounded.reused_distances is reuse
+    assert bounded.native_background is bounded.native_sums is (kernel is not None)
     assert repr(bounded.objective) == repr(reference.objective)
-    changed = {"bounded_background", "reused_distances", "estimated_peak_bytes"}
+    changed = {
+        "bounded_background",
+        "reused_distances",
+        "estimated_peak_bytes",
+        "native_background",
+        "native_sums",
+    }
     for field in dataclasses.fields(reference):
         if field.name not in changed:
             assert getattr(bounded, field.name) == getattr(reference, field.name), field.name
+    return bounded
+
+
+@NATIVE
+@pytest.mark.parametrize("kind", KINDS)
+def test_native_background_gives_the_reference_bits(kind, kernel):
+    points = adversarial_points(kind)
+    native = assert_reference_bits(points, True, kernel=kernel)
+    # La memoria declarada es la de la cota de NumPy, que acota también la del núcleo.
+    assert native == dataclasses.replace(
+        assert_reference_bits(points, True), native_background=True, native_sums=True
+    )
+
+
+@NATIVE
+@pytest.mark.parametrize("kind", ["normal", "duplicates", "mixed_scales"])
+def test_native_background_keeps_the_reference_bits_beyond_255_dimensions(kind, kernel):
+    points = adversarial_points(kind, count=400, dimensions=300)
+    assert_reference_bits(points, True, fixed=200, kernel=kernel)
+
+
+@NATIVE
+def test_native_background_needs_a_whole_row_of_centers_per_block(kernel):
+    points = adversarial_points("normal")
+    ids, fixed, candidates, capacity = retention(points)
+    options = dict(fixed_block_size=128, bounded_background=True)
+    # 3 · 128 productos no llegan a una fila de 500 centros: se usa la cota de NumPy.
+    narrow, reference = (
+        select_anchored_medoids(
+            points, ids, fixed, candidates, capacity, client_block_size=3, **options, **extra
+        )
+        for extra in (dict(native=kernel), {})
+    )
+    assert narrow == dataclasses.replace(reference, native_sums=True)
+    assert not narrow.native_background
+    wide = select_anchored_medoids(
+        points,
+        ids,
+        fixed,
+        candidates,
+        capacity,
+        client_block_size=4,
+        native=kernel,
+        **options,
+    )
+    assert wide.native_background and wide.objective == reference.objective
+
+
+@NATIVE
+def test_native_background_rejects_inputs_outside_its_contract(kernel):
+    kernel = kernel.nearest_reference_block
+    rng = np.random.default_rng(8)
+    clients = rng.standard_normal((5, 4)).astype(np.float32).astype(np.float64)
+    fixed = rng.standard_normal((3, 4)).astype(np.float32).astype(np.float64)
+    products = clients @ fixed.T
+    q, p = np.einsum("ij,ij->i", clients, clients), np.einsum("ij,ij->i", fixed, fixed)
+    nearest = np.full(5, -1.0)
+    arguments = dict(
+        products=products, client_norms=q, center_norms=p, clients=clients, fixed=fixed
+    )
+    for name, value, error in (
+        ("products", products.astype(np.float32), TypeError),
+        ("clients", np.asfortranarray(clients), TypeError),
+        ("products", products[:, :2].copy(), ValueError),
+        ("client_norms", q[:4].copy(), ValueError),
+        ("fixed", fixed[:, :3].copy(), ValueError),
+        ("clients", clients + 0.1, ValueError),
+        ("fixed", np.where(fixed == fixed[0, 0], np.inf, fixed), ValueError),
+        ("center_norms", np.where(p == p[0], np.nan, p), ValueError),
+    ):
+        with pytest.raises(error):
+            kernel(**dict(arguments, **{name: value}), nearest=nearest)
+        assert (nearest == -1.0).all()
+    with pytest.raises(ValueError):
+        kernel(**arguments, nearest=np.empty(5)[::-1].copy()[:4])
+    kernel(**arguments, nearest=nearest)
+    expected = [min(math.dist(row, column) for column in fixed) for row in clients]
+    np.testing.assert_allclose(nearest, expected, rtol=1e-14)
 
 
 def test_bounded_background_computes_few_reference_distances_and_falls_back_on_dense_blocks(
@@ -714,3 +831,52 @@ def test_bounded_background_only_applies_to_euclidean_fp32_and_fits_its_memory()
     finally:
         tracemalloc.stop()
     assert result.bounded_background and peak <= result.estimated_peak_bytes
+
+
+@NATIVE
+def test_native_column_sums_match_math_fsum(kernel):
+    rng = np.random.default_rng(11)
+    buffer = np.empty((40, 24))
+    for case in range(300):
+        rows, columns = int(rng.integers(0, 40)), int(rng.integers(1, 24))
+        scale = 10.0 ** rng.integers(-300, 300, (rows, 1))
+        values = np.abs(rng.standard_normal((rows, columns))) * scale
+        if case % 3 == 0:
+            # Cancelaciones y empates de redondeo, como en math.fsum.
+            values *= rng.choice([-1.0, 1.0], values.shape)
+            values[rng.random(values.shape) < 0.2] = 2.0**-53
+        distance = buffer[:rows, :columns]
+        distance[:] = values
+        base = np.abs(rng.standard_normal(rows)) * scale[:, 0]
+        base[rng.random(rows) < 0.5] = np.inf
+        expected = [math.fsum(np.minimum(distance[:, c], base).tolist()) for c in range(columns)]
+        got = kernel.min_column_sums(distance, base)
+        assert [repr(value) for value in got] == [repr(value) for value in expected], case
+    # Con un valor no finito o un desbordamiento, el núcleo deja la suma a la referencia.
+    for values, base in (
+        ([[np.nan]], [np.inf]),
+        ([[1.0]], [np.nan]),
+        ([[np.inf]], [np.inf]),
+        ([[np.finfo(float).max], [np.finfo(float).max]], [np.inf, np.inf]),
+    ):
+        assert kernel.min_column_sums(np.array(values), np.array(base)) is None
+    with pytest.raises(TypeError):
+        kernel.min_column_sums(np.ones((2, 2), dtype=np.float32), np.ones(2))
+    with pytest.raises(ValueError):
+        kernel.min_column_sums(np.ones((2, 2)), np.ones(3))
+    with pytest.raises(ValueError):
+        kernel.min_column_sums(np.ones((2, 2))[::-1], np.ones(2))
+
+
+@NATIVE
+def test_native_sums_leave_integer_costs_to_python(kernel):
+    points = adversarial_points("grid").astype(np.int64)
+    ids, fixed, candidates, capacity = retention(points)
+    options = dict(metric="l1", bounded_background=True, reuse_distances=True)
+    native = select_anchored_medoids(
+        points, ids, fixed, candidates, capacity, native=kernel, **options
+    )
+    reference = select_anchored_medoids(points, ids, fixed, candidates, capacity, **options)
+    # Las sumas enteras son exactas en Python y la cota solo se aplica a FP32 euclídeo.
+    assert not native.native_sums and not native.native_background
+    assert native == reference
