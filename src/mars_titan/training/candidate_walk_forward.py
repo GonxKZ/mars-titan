@@ -46,10 +46,6 @@ from mars_titan.environments.walk_forward_receipt import (
 )
 from mars_titan.evaluation.splits import PARTITIONS
 from mars_titan.learning_traces.trainers import attach as attach_traces
-from mars_titan.memory.financial_observations import (
-    FinancialObservationSource,
-    prepare_observation_index,
-)
 from mars_titan.models.candidate.input_adapter import CandidateInputAdapter
 
 from .candidate_run import (
@@ -76,6 +72,7 @@ from .learning_hold import require_learning_allowed
 from .selection import AWAIT, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import checked_warmup, window_phases
+from .window_indices import index_root, phase_sources
 
 MODEL = "candidate_gru_episodic"
 WINDOW_KIND = "candidate_walk_forward_window"
@@ -174,14 +171,7 @@ def _window(dataset):
 def window_sources(dataset, folder, partitions, warmup_months):
     """Preparar o reutilizar el índice de observaciones de cada tramo pedido."""
     phases = _phases(dataset, warmup_months)
-    sources = {}
-    for name in partitions:
-        directory = Path(folder) / name
-        manifest = prepare_observation_index(
-            dataset, directory, phase=phases[name], resume=directory.exists()
-        )
-        sources[name] = FinancialObservationSource(dataset, manifest)
-    return sources
+    return phase_sources(dataset, {name: phases[name] for name in partitions}, folder)
 
 
 def view_rows(dataset, partition):
@@ -341,7 +331,7 @@ def fit_window(
     fold = next(iter(contracts.values()))["fold"]
     _prepare_output(view, output, dataset)
     output.mkdir(parents=True, exist_ok=True)
-    sources = window_sources(dataset, output / "indices", PARTITIONS, warmup_months)
+    sources = window_sources(dataset, index_root(dataset, output), PARTITIONS, warmup_months)
     adapter = CandidateInputAdapter(
         sources["train"].specification(),
         dtype=_dtype(model["dtype"]),
@@ -528,7 +518,7 @@ def carry_window(
     # Cada tramo trasladado repite el calentamiento declarado en el ancla.
     anchor_window, _ = read_manifest(anchor / WINDOW_REPORT, 8 * 1024**2)
     warmup_months = anchor_warmup(anchor_window)
-    sources = window_sources(dataset, output / "indices", partitions, warmup_months)
+    sources = window_sources(dataset, index_root(dataset, output), partitions, warmup_months)
     adapter, recipe, window, window_sha256 = anchor_adapter(
         anchor, anchor_view, sources[partitions[0]].specification(), device=device
     )

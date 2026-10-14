@@ -24,7 +24,16 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 
 from .campaign_plan import PLATEAU
-from .campaign_storage import HELD_OUT, INDEXED, WRITERS, index_rows, job_footprint, load_storage
+from .campaign_storage import (
+    HELD_OUT,
+    INDEXED,
+    WRITERS,
+    index_holders,
+    index_rows,
+    job_footprint,
+    load_storage,
+    shared_index_bytes,
+)
 
 # Escenarios de retención de las predicciones del ajuste base. `rows` decide qué tablas se
 # guardan por fila, `layout` su disposición y `compacted` si la disposición se aplica
@@ -184,13 +193,20 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
     }
     groups = defaultdict(lambda: defaultdict(int))
     totals = {}
+    holders = index_holders(jobs)
     for name, scenario in SCENARIOS.items():
         cumulative, peak, worst, shared_seen = 0, 0, None, set()
-        parts, provisional = defaultdict(int), defaultdict(int)
+        parts, provisional, opened = defaultdict(int), defaultdict(int), set()
         for index, job in enumerate(jobs):
             window = measured[f"{job['scope']}/{job['window']}"]
             counts = reports[job["scope"]][job["window"]]["counts"]
             writer = WRITERS[job["model"]]
+            view = job["scope"], job["window"]
+            # Los índices compartidos de la vista ocupan desde su primer trabajo hasta su
+            # último trabajo indexado (`campaign_storage.plan_peak`).
+            if view in holders and view not in opened:
+                opened.add(view)
+                cumulative += shared_index_bytes(counts, storage)
 
             def written(_, partition, window=window, writer=writer):
                 return window[partition]["writers"][writer]["current"]
@@ -224,6 +240,8 @@ def base_estimate(campaign, jobs, reports, measured, storage, extras):
             if moment > peak:
                 peak, worst = moment, job["id"]
             cumulative += retained
+            if holders.get(view) == index:
+                cumulative -= shared_index_bytes(counts, storage)
             if scenario["rows"] == "needed" and job["stage"] == "search" and not plateau:
                 key, winner = _search(job), needed_partitions(job, campaign, {job["id"]})
                 for partition in set(winner) - set(needed):

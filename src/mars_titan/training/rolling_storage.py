@@ -43,6 +43,7 @@ from mars_titan.training.campaign_storage import (
     WRITERS,
     index_rows,
     job_footprint,
+    shared_index_bytes,
 )
 
 SCENARIOS = ("all_regenerated", "none_regenerated")
@@ -187,6 +188,15 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
 
 def _in(row, job):
     return row["scopes"].get(job["scope"]) == job["window"]
+
+
+def staged_index_bytes(counts, storage):
+    """Índice del tramo de ajuste de los adaptadores de una vista: solo las filas nuevas.
+
+    Los ajustes de adaptadores parten de la primera fila nueva sin calentamiento, así que su
+    tramo de ajuste es otro índice de la vista. Se acota con el tramo de ajuste completo.
+    """
+    return int(2 * counts["train"] * storage["index"]["bytes_per_row"])
 
 
 def _partitions(job):
@@ -439,7 +449,30 @@ class _Walk:
         # Con la v3 las tablas se compactan al terminar la fase sobre las filas de la base.
         return moment + written_all - compactable, kept, regeneration
 
+    def _indices(self, row):
+        """Índices compartidos de las vistas de la ventana que algún trabajo lee.
+
+        La campaña y las fases de la ventana los reutilizan y el recorrido los borra al final
+        de su liberación (`window_indices`), así que ocupan durante todas sus fases. Los
+        adaptadores leen índices si su familia es cronológica, que son las familias indexadas,
+        y los que ajustan añaden el índice de su tramo de ajuste (`staged_index_bytes`).
+        """
+        counts, storage = self.inputs["counts"], self.inputs["storage"]
+        base = (*self.inputs["jobs"], *self.inputs["ablation_jobs"])
+        adapters = [
+            j for j in self.inputs["adapter_jobs"] if _in(row, j) and j["family"] in INDEXED
+        ]
+        views = {(j["scope"], j["window"]) for j in base if _in(row, j) and j["model"] in INDEXED}
+        views |= {(j["scope"], j["window"]) for j in adapters}
+        # `"frozen"` es `posttraining.campaign_stage.FROZEN`: el padre congelado no ajusta.
+        staged = {(j["scope"], j["window"]) for j in adapters if j["kind"] != "frozen"}
+        return sum(shared_index_bytes(counts[s][w], storage) for s, w in views) + sum(
+            staged_index_bytes(counts[s][w], storage) for s, w in staged
+        )
+
     def window(self, row, index):
+        indices = self._indices(row)
+        self.retained += indices
         phases = dict.fromkeys(PHASES, self.retained)
         moment, base_kept, base_regeneration = self.base(row, index, phases)
         moment, adapters_kept, adapter_regeneration = self.adapters(row, index, moment, phases)
@@ -453,7 +486,7 @@ class _Walk:
         for phase, value in phases.items():
             self.reach(value, f"{row['id']}/{phase}")
         freed = sum(self.pending.pop(k) for k in [k for k in self.pending if k <= index])
-        self.retained += base_kept + adapters_kept + masked_kept + tapes - freed
+        self.retained += base_kept + adapters_kept + masked_kept + tapes - freed - indices
         return dict(window=row["id"], retained_bytes=self.retained, **phases)
 
 

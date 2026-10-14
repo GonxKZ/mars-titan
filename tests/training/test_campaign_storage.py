@@ -176,6 +176,36 @@ def test_plan_peak_follows_the_plan_order_and_skips_confirmed_jobs():
     assert done["retained_bytes"] == cumulative - 2 * each[0]["retained_bytes"]
 
 
+def test_shared_indices_count_once_per_view_from_its_first_job_to_its_last_indexed_job():
+    value = declared()
+    counts = {"US": {"fold-000": COUNTS, "fold-001": COUNTS}}
+    first, second = ("US", "fold-000"), ("US", "fold-001")
+    jobs = [
+        job("titans_mac", id="US/fold-000/t/1"),
+        job("titans_mac", id="US/fold-001/t/1", window="fold-001"),
+        job("titans_mac", id="US/fold-000/t/2"),
+        job("neural", id="US/fold-000/n/1"),
+        job("titans_mac", id="US/fold-001/t/2", window="fold-001"),
+    ]
+    assert storage.index_holders(jobs) == {first: 2, second: 4}
+    assert storage.index_holders(jobs, done={jobs[4]["id"]}) == {first: 2, second: 1}
+    shared = storage.shared_index_bytes(COUNTS, value)
+    index = value["index"]
+    assert shared == int(storage.index_rows(COUNTS, "evaluation") * index["bytes_per_row"]) > 0
+    # Las dos vistas están abiertas desde el segundo trabajo. La primera se cierra tras el
+    # tercero, aunque el cuarto sea de su ventana, porque ese modelo no lee índices.
+    opened = [shared, 2 * shared, 2 * shared, shared, shared]
+    moments, cumulative = [], 0
+    for position, item in enumerate(jobs):
+        footprint = storage.job_footprint(item, COUNTS, value)
+        moments.append(opened[position] + cumulative + footprint["retained_bytes"])
+        moments[-1] += footprint["transient_bytes"]
+        cumulative += footprint["retained_bytes"]
+    result = storage.plan_peak(jobs, counts, value)
+    assert result["peak_bytes"] == max(moments)
+    assert result["retained_bytes"] == cumulative
+
+
 class Disk:
     def __init__(self, *values):
         self.values, self.calls = list(values), 0

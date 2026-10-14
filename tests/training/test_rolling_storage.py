@@ -194,7 +194,16 @@ def test_the_stage_comparison_keeps_the_aggregates_of_every_compared_series():
 
 
 def test_adapters_ablation_and_tapes_add_to_their_window(declared):
-    adapters = [dict(scope="US", window="fold-001", base_arm="neural", seed=42)]
+    adapters = [
+        dict(
+            scope="US",
+            window="fold-001",
+            base_arm="neural",
+            seed=42,
+            family="neural_reference",
+            kind="fit",
+        )
+    ]
     masked = [job("fold-000", model="titans_mac", kind="carry")]
     tapes = {"fold-001": 1000}
     result = estimate(declared, adapter_jobs=adapters, ablation_jobs=masked, tapes=tapes)
@@ -344,7 +353,14 @@ def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
 
 def stage_jobs(*arms):
     return [
-        dict(scope="US", window="fold-001", base_arm=arm, seed=seed, kind="fit")
+        dict(
+            scope="US",
+            window="fold-001",
+            base_arm=arm,
+            seed=seed,
+            kind="fit",
+            family="neural_reference",
+        )
         for arm in arms
         for seed in (42, 43)
     ]
@@ -407,3 +423,44 @@ def test_v3_keeps_the_chain_evaluation_until_its_last_reading_window(declared):
     # se conserva después, con las filas comunes de la ventana.
     assert second["adapters"] == alone["windows"][1]["adapters"] + 2 * window["table"]
     assert second["retained_bytes"] == alone["retained_bytes"] + window["table"] + 3 * SHARED
+
+
+def test_shared_indices_occupy_every_phase_of_their_window_and_leave_with_it(declared, monkeypatch):
+    # #618: los índices de la vista existen de la fase base a la liberación de su ventana. Un
+    # adaptador cronológico que ajusta añade el índice de su tramo de ajuste sin calentamiento.
+    jobs = [job("fold-000", "titans_mac"), job("fold-001")]
+    adapters = [
+        dict(scope="US", window="fold-001", base_arm="t", seed=42, family=fam, kind=kind)
+        for fam, kind in (("titans_mac", "fit"), ("titans_mac", "frozen"), ("neural", "fit"))
+    ]
+    counts = {"US": {row["id"]: COUNTS for row in WINDOWS}}
+
+    def run(chosen):
+        return rolling.rolling_estimate(
+            jobs, WINDOWS, counts, measured(), declared, EXTRAS, adapter_jobs=chosen
+        )
+
+    shared = storage.shared_index_bytes(COUNTS, declared)
+    staged = rolling.staged_index_bytes(COUNTS, declared)
+    assert staged == int(2 * COUNTS["train"] * declared["index"]["bytes_per_row"])
+    expected = {
+        "fit": (shared, shared + staged),
+        "frozen": (shared, shared),
+        "none": (shared, 0),
+    }
+    for case, chosen in (("fit", adapters), ("frozen", adapters[1:]), ("none", adapters[2:])):
+        indexed = run(chosen)
+        with monkeypatch.context() as patch:
+            patch.setattr(rolling, "shared_index_bytes", lambda *_: 0)
+            patch.setattr(rolling, "staged_index_bytes", lambda *_: 0)
+            plain = run(chosen)
+        assert shared > 0 and staged > 0
+        for scenario in rolling.SCENARIOS:
+            for row, base, extra in zip(
+                indexed[scenario]["windows"],
+                plain[scenario]["windows"],
+                expected[case],
+                strict=True,
+            ):
+                assert all(row[phase] == base[phase] + extra for phase in rolling.PHASES)
+                assert row["retained_bytes"] == base["retained_bytes"]

@@ -802,8 +802,9 @@ class Walk:
     windows = [dict(id="w0", scopes={}), dict(id="w1", scopes={})]
     disk = None
 
-    def __init__(self):
-        self.marked = []
+    def __init__(self, output):
+        # Salida de la campaña: el recorrido fija ahí las huellas y los índices compartidos.
+        self.output, self.marked = output, []
 
     def done(self, window, phase):
         return (window, phase) in self.marked
@@ -821,8 +822,8 @@ class Walk:
         raise AssertionError("Una fase pausada no libera nada")
 
 
-def test_a_paused_phase_stops_the_walk_before_aggregates_and_release():
-    walk = Walk()
+def test_a_paused_phase_stops_the_walk_before_aggregates_and_release(tmp_path):
+    walk = Walk(tmp_path)
     runners = dict(
         base=lambda window: dict(status="completed"),
         ablation=lambda window: dict(status="paused"),
@@ -830,7 +831,7 @@ def test_a_paused_phase_stops_the_walk_before_aggregates_and_release():
     result = rolling.run_rolling(walk, runners)
     assert result == dict(status="paused", window="w0", windows={})
     assert walk.marked == [("w0", "base")]
-    stopped = Walk()
+    stopped = Walk(tmp_path)
     result = rolling.run_rolling(stopped, runners, stop=SimpleNamespace(requested=True))
     assert result["status"] == "paused" and stopped.marked == []
 
