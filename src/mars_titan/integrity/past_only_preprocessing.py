@@ -103,6 +103,10 @@ SECTIONS = {
         "source",
         {"unadjusted_reconstructed_verified_rows_up_to_the_last_published_session_v1"},
     ),
+    # Calibración en línea y su reajuste periódico: una etiqueta solo interviene en una emisión
+    # posterior a su `target_available_at` de la vista (`tests/calibration/test_online_conformal.py`
+    # y `test_periodic_conformal.py` alteran las etiquetas futuras e inmaduras).
+    "online_calibration": ("maturity_source", {"view_labels_target_available_at_v1"}),
 }
 # Cortes y alteración de los precios posteriores de la auditoría del código.
 AUDIT_CUTS = (0.45, 0.7, 0.9)
