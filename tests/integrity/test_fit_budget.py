@@ -68,6 +68,7 @@ def test_the_a_v2_publication_declares_every_budget_difference(loaded):
     assert budgets["ridge"]["iterations"] == dict(unit="closed_form")
     assert budgets["gru"]["iterations"]["trainer"] == "row_batches"
     assert budgets["gru"]["iterations"]["batch_rows"] == 256
+    assert all(budgets[arm]["iterations"] == budget.MATURE_WRITES for arm in carried)
 
 
 @pytest.mark.parametrize("defect", ["undeclared", "stale"])
@@ -408,3 +409,42 @@ def test_the_report_needs_both_the_declared_and_the_consumed_budget(loaded, own_
     stale = dict(declarations, titans_mac_online=dict(seeds="Otra semilla"))
     result = budget.check(campaign, jobs, tmp_path, stale)
     assert result["consumed"]["passed"] and not result["passed"]
+
+
+@pytest.mark.parametrize(
+    ("defect", "failure"),
+    [
+        (None, None),
+        ("missing", "evaluation: tramo sin predecir"),
+        ("silent", "calibration: la memoria no escribe ninguna etiqueta madura"),
+    ],
+)
+def test_a_b6_fit_is_read_by_its_mature_writes_and_not_by_epochs(loaded, tmp_path, defect, failure):
+    # Un trabajo real de B6 kalman del plan de A v2 con un informe con la forma de la ventana
+    # B6: tramos predichos con sus escrituras, sin historial de épocas.
+    campaign = loaded["campaign_config"]
+    job = next(
+        job
+        for job in plan.plan_campaign(campaign)
+        if job["kind"] == plan.FIT and job["arm"] == "mars_titan_b6_kalman"
+    )
+    segments = ("validation", "calibration", "evaluation")
+    report = dict(
+        identity=dict(expected_rows=dict.fromkeys(segments, 100)),
+        predictions={
+            name: dict(rows=100, metrics=dict(associative_writes=90)) for name in segments
+        },
+    )
+    if defect == "missing":
+        del report["predictions"]["evaluation"]
+    elif defect == "silent":
+        report["predictions"]["calibration"]["metrics"]["associative_writes"] = 0
+    _confirm(tmp_path, job, report)
+    result = budget.check_consumed(campaign, [job], tmp_path)
+    assert result["fits"] == 1 and result["passed"] == (failure is None)
+    entry = result["jobs"][0]
+    assert "evaluated_epochs" not in entry
+    if failure is None:
+        assert entry["failures"] == [] and entry["writes"] == dict.fromkeys(segments, 90)
+    else:
+        assert entry["failures"] == [failure] and result["unfitted"] == [job["id"]]
