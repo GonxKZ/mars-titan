@@ -150,11 +150,14 @@ def test_the_campaign_script_checks_the_declaration_without_reading_predictions(
     assert result["campaign"] == dict(name=campaign["name"], sha256=campaign["sha256"])
     assert result["matrix"]["families"] == 47
     assert result["posttraining"]["scopes"] == ["US+CN"]
-    # Desde #525 entra mars_titan_m1_k4_first_read. Los seis B6 solo trasladan el padre
-    # congelado, sin adaptadores, así que no tienen comparación postentrenada.
+    # Desde #525 entra mars_titan_m1_k4_first_read. Los ocho B6 y las dos extensiones PT1
+    # solo trasladan el padre congelado, sin adaptadores, así que no tienen comparación
+    # postentrenada.
     parents = result["posttraining"]["parents"]
     assert len(parents) == 21 and "mars_titan_m1_k4_first_read" in parents
-    assert not {arm for arm in parents if arm.startswith("mars_titan_b6")}
+    assert not {
+        arm for arm in parents if arm.startswith(("mars_titan_b6", "titans_mac_online_pt1"))
+    }
 
 
 def test_the_campaign_plan_registers_the_publication_as_its_last_stage():
