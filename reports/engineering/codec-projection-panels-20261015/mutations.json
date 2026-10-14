@@ -1,0 +1,57 @@
+{
+ "pairs_ascending": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "single_accumulator": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "remainder_without_odd": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "final_without_odd": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "writes_every_lane": {
+  "compiled": true,
+  "detected": true,
+  "tail": "2371 (sysmalloc): assertion failed: (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)"
+ },
+ "panel_from_next_column": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "helper_skips_a_group": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "caller_skips_first_range": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "zero_threads_accepted": {
+  "compiled": true,
+  "detected": true,
+  "tail": ""
+ },
+ "default_is_narrowest": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nLa versión por defecto debe ser la más ancha disponible"
+ },
+ "fp_contract_fast": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nLa proyección nativa no conserva el orden declarado de las sumas (avx512f)"
+ }
+}
