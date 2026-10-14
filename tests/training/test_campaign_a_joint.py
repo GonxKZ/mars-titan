@@ -1459,6 +1459,72 @@ def test_window_aggregates_score_each_scope_with_its_joint_design(joint_campaign
             assert {arm for arm, _ in stored[0]} == {"zero", "gru", "gru_joint"}
 
 
+def _published_scopes(joint_campaign, folder):
+    """Comparación publicada de cada ámbito del diseño conjunto, con sus fuentes."""
+    found = {}
+    for scope in ("US+CN", "US", "CN"):
+        path = engine.write_sources(
+            joint_campaign.campaign, joint_campaign.views, joint_campaign.output, scope
+        )
+        output = folder / scope.replace("+", "-")
+        comparison.write_walk_forward(joint_campaign.comparison, path, scope, output)
+        found[scope] = path, output
+    return found
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::test_integrity_recounts_the_rows_the_joint_design_drops"
+)
+def test_integrity_recounts_the_rows_the_joint_design_drops(joint_campaign, tmp_path):
+    from mars_titan.integrity import comparison_integrity as integrity
+
+    for scope, (path, output) in _published_scopes(joint_campaign, tmp_path).items():
+        result = integrity.published(joint_campaign.comparison, path, scope, output)
+        assert result["passed"], (scope, json.dumps(result, indent=1)[:3000])
+        # China antes de su primera ventana y, en un mercado, el otro mercado del conjunto.
+        assert result["excluded_rows"]["files"] > 0
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::test_integrity_catches_a_comparison_that_drops_other_rows"
+)
+@pytest.mark.parametrize("defect", ["miscounted", "eligible_dropped"])
+def test_integrity_catches_a_comparison_that_drops_other_rows(
+    joint_campaign, tmp_path, monkeypatch, defect
+):
+    from mars_titan.integrity import comparison_integrity as integrity
+
+    original = comparison._excluded
+
+    def miscounted(table, sources, window_id, arm=None):
+        mask, counts = original(table, sources, window_id, arm)
+        return mask, {market: count + 1 for market, count in counts.items()}
+
+    def eligible_dropped(table, sources, window_id, arm=None):
+        # Todos los modelos pierden China en una ventana en la que ya cuenta.
+        if window_id != "fold-012":
+            return original(table, sources, window_id, arm)
+        market = table["market"].to_numpy(zero_copy_only=False)
+        mask = market == "CN"
+        return mask, {"CN": int(mask.sum())}
+
+    defects = dict(miscounted=miscounted, eligible_dropped=eligible_dropped)
+    monkeypatch.setattr(comparison, "_excluded", defects[defect])
+    path = engine.write_sources(
+        joint_campaign.campaign, joint_campaign.views, joint_campaign.output, "US+CN"
+    )
+    output = tmp_path / "published"
+    comparison.write_walk_forward(joint_campaign.comparison, path, "US+CN", output)
+    monkeypatch.setattr(comparison, "_excluded", original)
+    result = integrity.published(joint_campaign.comparison, path, "US+CN", output)
+    assert not result["passed"] and not result["excluded_rows"]["passed"]
+    if defect == "eligible_dropped":
+        # El recálculo independiente sí cuenta las sesiones chinas de esa ventana.
+        failing = [entry for entry in result["scores"]["files"] if not entry["passed"]]
+        assert failing and all(entry["window"] == "fold-012" for entry in failing)
+        assert all(entry["sessions_only_recomputed"] > 0 for entry in failing)
+
+
 def pa_equal(column, value):
     import pyarrow.compute as pc
 

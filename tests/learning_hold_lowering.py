@@ -39,6 +39,16 @@ _ADAPTER = (
 )
 
 INVENTORY = {
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_recounts_the_rows_the_joint_design_drops": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
+    "tests/training/test_campaign_a_joint.py::"
+    "test_integrity_catches_a_comparison_that_drops_other_rows": (
+        "publica la comparación conjunta desde la campaña A v2 reducida del fixture "
+        "`joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada"
+    ),
     _POLICY_TAPES + "test_ppo_pauses_on_real_tapes_before_its_first_update": (
         "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del "
         "primer recorrido para comprobar la pausa, la reanudación y que una selección abierta "
@@ -367,7 +377,7 @@ REDIRECTIONS = {
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
     "tests/posttraining/test_learning_hold_entrypoints.py": (2, _READER),
     "tests/posttraining/test_publication_from_aggregates.py": (
-        3,
+        4,
         "reutiliza la protección permitida de la campaña base del fixture para completar la "
         "etapa de adaptadores con el optimizador registrador y recorrer la retención v2",
     ),

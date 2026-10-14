@@ -1696,10 +1696,12 @@ comparación postentrenada derive de una etapa de esa misma campaña, así que u
 declarada para otra campaña no llega a evaluarse. El paso final publica, por ámbito, las
 fuentes de la campaña, la comparación walk-forward, la cartera si se declara, el
 manifiesto de la matriz y la matriz, y después las fuentes y la comparación de cada padre
-de la etapa. Con los agregados de la retención v2 no abre ninguna fila. Todo se escribe en
-una carpeta provisional que solo toma el nombre del destino al terminar, con un recibo que
-guarda la huella de cada archivo. Un fallo deja la carpeta provisional marcada y la
-siguiente ejecución la descarta y repite.
+de la etapa. Con los agregados de la retención v2 no abre ninguna fila. Antes de terminar
+calcula el [informe de integridad](integrity-bench.md#informe-de-integridad-de-la-publicación),
+que vuelve a comprobar por otro camino filas, métricas, ejecuciones declaradas y selección,
+y si falla no publica nada. Todo se escribe en una carpeta provisional que solo toma el
+nombre del destino al terminar, con un recibo que guarda la huella de cada archivo. Un fallo
+deja la carpeta provisional marcada y la siguiente ejecución la descarta y repite.
 
 ### Coste por hora GPU
 

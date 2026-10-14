@@ -18,12 +18,16 @@ recorrido ventana a ventana si lo hubo:
    declara la cartera o los estratos de liquidez;
 3. publica el manifiesto de fuentes de la matriz con esos informes y evalúa la matriz;
 4. publica las fuentes de cada padre de la etapa de adaptadores y su comparación, también
-   desde los agregados por ventana que guardó el recorrido.
+   desde los agregados por ventana que guardó el recorrido;
+5. calcula el informe de integridad (`integrity.publication_gate`), que vuelve a comprobar
+   filas, métricas, trabajos declarados y selección por otro camino. Si falla, la
+   publicación se detiene.
 
 Todo se escribe en una carpeta provisional junto al destino, que solo toma el nombre del
-destino cuando cada paso ha terminado y el recibo guarda la huella de cada archivo. Un fallo
-deja la carpeta provisional con su marca, y la siguiente ejecución la descarta y repite.
-Nada de este módulo ajusta modelos ni abre la reserva de 2024.
+destino cuando cada paso ha terminado, el informe de integridad está superado y el recibo
+guarda la huella de cada archivo. Un fallo deja la carpeta provisional con su marca, y la
+siguiente ejecución la descarta y repite. Nada de este módulo ajusta modelos ni abre la
+reserva de 2024.
 """
 
 import argparse
@@ -38,6 +42,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import comparison_matrix, long_short_comparison
 from mars_titan.evaluation import session_table_contrasts as tables
 from mars_titan.evaluation import walk_forward_comparison as walk
+from mars_titan.integrity import publication_gate
 from mars_titan.posttraining import stage_comparison
 
 from .campaign_plan import load_campaign
@@ -213,6 +218,8 @@ def run_publication(
     matrix = loaded["matrix"]
     published = {}
     base_sources = {}
+    # Comparaciones publicadas que el informe de integridad vuelve a comprobar.
+    checked = []
     for scope in campaign["scopes"]:
         sources = engine.write_sources(campaign["path"], views, output, scope)
         base_sources[scope] = sources
@@ -231,6 +238,18 @@ def run_publication(
             aggregates=aggregates,
             edition=edition,
             regimes=regimes,
+        )
+        checked.append(
+            dict(
+                label=f"walk-forward/{scope}",
+                config=campaign["comparison_path"],
+                sources=sources,
+                scope=scope,
+                folder=folder,
+                aggregates=aggregates,
+                ablation=masked,
+                edition=edition,
+            )
         )
         reports = [dict(kind=tables.WALK_SOURCE, path=folder / "comparison.json")]
         if walk.LONG_SHORT_FIELD in config:
@@ -266,17 +285,35 @@ def run_publication(
                     stage_output=adapter_output,
                     loaded=posttraining,
                 )
+                folder = partial / "posttraining" / scope / base_arm
                 report = stage_comparison.write(
                     loaded["posttraining_path"],
                     sources,
                     scope,
                     base_arm,
-                    partial / "posttraining" / scope / base_arm,
+                    folder,
                     edition=edition,
                     aggregates=aggregates,
                     loaded=posttraining,
                 )
                 parents[f"{scope}/{base_arm}"] = len(report["windows"])
+                checked.append(
+                    dict(
+                        label=f"posttraining/{scope}/{base_arm}",
+                        config=posttraining["configs"][base_arm],
+                        sources=sources,
+                        scope=scope,
+                        folder=folder,
+                        aggregates=None
+                        if aggregates is None
+                        else stage_comparison.aggregates_folder(aggregates, base_arm),
+                        edition=edition,
+                    )
+                )
+    integrity = publication_gate.write(
+        partial,
+        publication_gate.build(loaded, views, output, checked, adapter_output=adapter_output),
+    )
     receipt = dict(
         schema_version=1,
         kind=RECEIPT_KIND,
@@ -290,6 +327,7 @@ def run_publication(
         else dict(name=posttraining["name"], sha256=posttraining["sha256"], parents=parents),
         from_aggregates=aggregates is not None,
         regimes=None if regimes is None else dict(sha256=sha256(regimes)),
+        integrity=dict(path=publication_gate.REPORT, sha256=integrity["sha256"], passed=True),
         scopes=published,
         artifacts={
             str(file.relative_to(partial)): sha256(file)

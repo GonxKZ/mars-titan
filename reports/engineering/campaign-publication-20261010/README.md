@@ -66,7 +66,7 @@ Es una cota superior también por otra razón: antes de `fold-006` China no entr
 - Los estratos de la comparación postentrenada se heredan de la comparación de la campaña y explican unos 9,2 GB de los 11,6 GB. Quitarlos de la declaración postentrenada antes de ver resultados dejaría unos 2,44 GB. Es una decisión de diseño que no se ha tomado aquí.
 - Los agregados de la comparación de la campaña base siguen proyectados con 0,59 bytes por fila de la medida del 9 de octubre. Con el formato real y los cuatro estratos, la medida de hoy da unos 0,77 bytes por fila de calibración y evaluación en `fold-018`, sin la ablación, así que esa partida también puede quedarse corta. No se ha medido.
 - Las tablas de los adaptadores siguen compactándose porque no tienen regeneración propia.
-- El banco de integridad todavía no forma parte del paso final. Lo hará en [#442](https://github.com/GonxKZ/mars-titan/issues/442), antes de liberar cada ventana, porque `row_identity` y `score_recheck` necesitan las filas.
+- El banco de integridad no formaba parte del paso final cuando se escribió este informe. Desde [#442](https://github.com/GonxKZ/mars-titan/issues/442) cada ventana se comprueba antes de liberar sus filas, porque `row_identity` y `score_recheck` las necesitan, y la publicación exige su informe ([medida y pruebas](../publication-integrity-20261010/README.md)).
 - La campaña no se ha ejecutado. No hay ninguna cifra de resultados.
 
 ## Reproducir

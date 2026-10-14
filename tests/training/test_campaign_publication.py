@@ -262,10 +262,12 @@ def test_the_publication_from_aggregates_carries_the_complete_retention_section(
     La campaña reducida solo se recorre rebajando la protección de aprendizaje. Aquí la
     publicación conserva su orden y sus argumentos, y cada comparación walk-forward se
     calcula de verdad, desde los agregados y con el calendario que recibe, sobre el estudio.
-    Las demás piezas (fuentes, cartera, matriz y etapa) se sustituyen por archivos vacíos.
+    Las demás piezas (fuentes, cartera, matriz y etapa) se sustituyen por archivos vacíos, y
+    el informe de integridad por uno superado (sus pruebas están en `tests/integrity`).
     """
     from mars_titan.evaluation import long_short_comparison
     from mars_titan.evaluation import session_table_contrasts as tables
+    from mars_titan.integrity import publication_gate
     from mars_titan.posttraining import stage_comparison
     from mars_titan.training import masked_campaign as engine
 
@@ -290,6 +292,7 @@ def test_the_publication_from_aggregates_carries_the_complete_retention_section(
         return dict(windows=[])
 
     monkeypatch.setattr(stage_comparison, "write", parent)
+    monkeypatch.setattr(publication_gate, "build", lambda *a, **k: dict(passed=True, failing=[]))
     destination = tmp_path / "published"
     receipt = publication.run_publication(
         DECLARATIONS["A_V2"],

@@ -13,6 +13,10 @@ Los estratos de presencia necesitan las muestras de la vista. Con `--strata` cad
 reparte sus filas entre los cuatro estratos, el caso con más series por estrato, así que la
 medida es una cota superior. Sin `--strata` los agregados no llevan estratos.
 
+Con `--integrity` mide además, tras cada agregado, el registro de integridad de la ventana
+(`comparison_integrity.write_window`, #442), que vuelve a leer las filas y recalcula sus
+puntuaciones por otro camino.
+
     PYTHONPATH=src uv run --no-sync python \
         reports/engineering/campaign-publication-20261010/measure_stage_aggregates.py \
         --root <carpeta nueva> --window fold-018 --strata --output <medida.json>
@@ -38,6 +42,7 @@ from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.evaluation import window_aggregates
+from mars_titan.integrity import comparison_integrity
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import stage_comparison
 
@@ -190,7 +195,7 @@ def manifest(folder, view, tables, config, window):
     )
 
 
-def measure(root, window, strata, limit=None):
+def measure(root, window, strata, limit=None, integrity=False):
     loaded = stage_comparison.load_declaration(DECLARATION)
     counts = market_counts(json.loads(COUNTS.read_text()), window)
     first = next(iter(loaded["configs"].values()))
@@ -212,12 +217,8 @@ def measure(root, window, strata, limit=None):
         atomic_json(path, manifest(folder, view, tables, config, window))
         sources = walk.load_sources(path, config, SCOPE)
         began = time.perf_counter()
-        record = window_aggregates.write(
-            stage_comparison.aggregates_folder(root / "aggregates", base_arm),
-            scoped,
-            sources,
-            window,
-        )
+        aggregates = stage_comparison.aggregates_folder(root / "aggregates", base_arm)
+        record = window_aggregates.write(aggregates, scoped, sources, window)
         elapsed = time.perf_counter() - began
         series = sum(len(arm["seeds"]) for arm in sources["arms"].values())
         parents[base_arm] = dict(
@@ -226,6 +227,13 @@ def measure(root, window, strata, limit=None):
             sources_bytes=path.stat().st_size,
             seconds=round(elapsed, 2),
         )
+        if integrity:
+            began = time.perf_counter()
+            checked = comparison_integrity.write_window(aggregates, scoped, sources, window)
+            parents[base_arm].update(
+                integrity_bytes=checked["path"].stat().st_size,
+                integrity_seconds=round(time.perf_counter() - began, 2),
+            )
         print(base_arm, json.dumps(parents[base_arm]), flush=True)
     return dict(counts=counts, widths=widths, parents=parents)
 
@@ -238,11 +246,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--keep", action="store_true", help="Conservar tablas y agregados")
     parser.add_argument("--parents", type=int, help="Medir solo los primeros padres (ensayo)")
+    parser.add_argument("--integrity", action="store_true", help="Medir también la integridad")
     args = parser.parse_args()
     if args.root.exists():
         parser.error("La raíz debe ser nueva")
     began = time.perf_counter()
-    result = measure(args.root, args.window, args.strata, args.parents)
+    result = measure(args.root, args.window, args.strata, args.parents, args.integrity)
     parents = result["parents"]
     per_series = {
         name: (item["aggregate_bytes"] + item["sources_bytes"]) / item["series"]
@@ -266,6 +275,7 @@ def main():
         bytes_per_series_max=max(per_series.values()),
         bytes_per_series_min=min(per_series.values()),
         seconds=round(time.perf_counter() - began, 1),
+        integrity=args.integrity,
         peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
         host=dict(
             platform=platform.platform(),

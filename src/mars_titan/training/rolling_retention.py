@@ -13,6 +13,9 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
    publicación declarada (`training.campaign_publication`), también los de la comparación
    postentrenada de cada padre con trabajos de la etapa en la ventana, porque esa
    comparación lee la calibración y la evaluación del modelo base, que se liberan después.
+   Cada agregado se guarda con su registro de integridad
+   (`integrity.comparison_integrity`): mismas filas en todos los modelos y métricas por
+   sesión recalculadas desde las filas. Si falla, el recorrido se detiene antes de liberar.
 4. `release`: cada tabla por fila de la base y de la ablación que ya no lee ninguna fase
    posterior se regenera por inferencia desde el estado elegido y, solo si sale idéntica
    bit a bit, se libera conservando sus huellas. Si no sale idéntica, se compacta sin
@@ -40,6 +43,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import selection_effect, window_aggregates
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.integrity import comparison_integrity
 
 from . import prediction_regeneration as regeneration
 from .campaign_plan import ONLINE, PLATEAU
@@ -491,11 +495,11 @@ class Rolling:
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
             if self._liquidity is None:
                 self._liquidity = comparison.liquidity_source(config, self.edition)
-            records = dict(
-                walk_forward=window_aggregates.write(
-                    folder, restricted, sources, window, masked, liquidity=self._liquidity
-                )
+            # La integridad de la ventana se comprueba antes de liberar ninguna de sus filas.
+            walked, checked = comparison_integrity.write_checked(
+                folder, restricted, sources, window, masked, liquidity=self._liquidity
             )
+            records = dict(walk_forward=walked, integrity=checked)
             if comparison.LONG_SHORT_FIELD in config:
                 records["long_short"] = window_aggregates.write_long_short(
                     folder, restricted, sources, window, self.edition
@@ -515,10 +519,11 @@ class Rolling:
         return written
 
     def _record(self, record):
+        path = Path(record["path"])
         return dict(
-            path=str(Path(record["path"]).relative_to(self.folder)),
+            path=str(path.relative_to(self.folder)),
             sha256=record["sha256"],
-            bytes=record["bytes"],
+            bytes=record.get("bytes", path.stat().st_size),
         )
 
     def posttraining_aggregates(self, scope, window, base_sources, folder):
@@ -534,24 +539,26 @@ class Rolling:
         stage = self.publication and self.publication["posttraining"]
         if stage is None or scope not in stage["stage"]["scopes"]:
             return {}
-        return {
-            base_arm: self._record(
-                stage_comparison.write_window_aggregates(
-                    self.publication["posttraining_path"],
-                    scope,
-                    base_arm,
-                    window,
-                    base_sources=base_sources,
-                    stage_output=self.adapters["output"],
-                    root=folder,
-                    loaded=stage,
-                    liquidity=self._liquidity,
-                    unrecorded_platform=self.unrecorded_platform,
-                )
+        written = {}
+        for base_arm in stage["configs"]:
+            if window not in stage_comparison.compared_windows(stage, scope, base_arm):
+                continue
+            record = stage_comparison.write_window_aggregates(
+                self.publication["posttraining_path"],
+                scope,
+                base_arm,
+                window,
+                base_sources=base_sources,
+                stage_output=self.adapters["output"],
+                root=folder,
+                loaded=stage,
+                liquidity=self._liquidity,
+                unrecorded_platform=self.unrecorded_platform,
             )
-            for base_arm in stage["configs"]
-            if window in stage_comparison.compared_windows(stage, scope, base_arm)
-        }
+            written[base_arm] = dict(
+                self._record(record), integrity=self._record(record["integrity"])
+            )
+        return written
 
     def release(self, index):
         """Liberar o compactar las tablas de las ventanas hasta `index` que nadie leerá."""
