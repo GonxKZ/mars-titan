@@ -266,7 +266,7 @@ def load_stage(path):
         "Los ámbitos siguen el orden de la campaña",
     )
     neural, tabular = campaign["neural"]["arms"], campaign["tabular"]["arms"]
-    trivial = set(tabular) | correction_arms(campaign)
+    trivial = set(tabular) | correction_arms(campaign) | extension_arms(campaign)
     declared = campaign["comparison_config"]["arms"]
     # Modelos cronológicos de la comparación, con o sin sección en la campaña.
     known = {name for name, arm in declared.items() if arm["family"] in cm.CAMPAIGN_DESIGNS}
@@ -281,7 +281,8 @@ def load_stage(path):
     )
     _require(
         staged or not set(arms) & trivial,
-        "La cadena trivial de Ridge, XGBoost y B6 solo existe en el walk-forward por etapas",
+        "La cadena trivial de Ridge, XGBoost, B6 y las extensiones del núcleo solo existe en "
+        "el walk-forward por etapas",
     )
     # Las cadenas triviales no tienen casos de la matriz: siguen las semillas de su modelo.
     _require(
@@ -353,6 +354,13 @@ def chronological_arms(campaign):
     return result
 
 
+def extension_arms(campaign):
+    """Modelos de Titans-MAC con extensiones del núcleo (`core_extensions`), como PT1."""
+    from mars_titan.training import campaign_plan as plan
+
+    return set((campaign.get(plan.TITANS) or {}).get(plan.TITANS_EXTENSIONS, {}))
+
+
 def correction_arms(campaign):
     """Modelos B6 de la sección de MARS-TITAN: solo declaran la memoria asociativa."""
     from mars_titan.training import campaign_plan as plan
@@ -368,6 +376,7 @@ def stage_arms(stage):
     campaign = stage["campaign"]
     neural, chronological = campaign["neural"]["arms"], chronological_arms(campaign)
     tabular, corrections = campaign["tabular"]["arms"], correction_arms(campaign)
+    extensions = extension_arms(campaign)
     active, awaiting = {}, {}
     for arm in stage["arms"]:
         if arm in neural:
@@ -378,6 +387,11 @@ def stage_arms(stage):
             # B6 no ajusta parámetros: su único candidato es el padre congelado de k-1, que
             # traslada el Titans-MAC y el η elegidos en esa ventana.
             active[arm] = dict(family=plan.MARS, design=FROZEN_ONLY)
+        elif arm in extensions:
+            # Una extensión del núcleo se contrasta con su modelo base en la campaña. Repetir
+            # con ella la matriz de adaptadores no responde a ninguna pregunta declarada, así
+            # que su cadena es la trivial del padre congelado, como la de B6.
+            active[arm] = dict(family=plan.TITANS, design=FROZEN_ONLY)
         elif arm in chronological:
             active[arm] = dict(
                 chronological[arm], design=cm.CAMPAIGN_DESIGNS[chronological[arm]["family"]]

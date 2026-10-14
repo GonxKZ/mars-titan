@@ -2,9 +2,15 @@
 
 B6 suma a la predicción del Titans-MAC `mac_online` elegido en la ventana la lectura kᵀA de
 una memoria asociativa lineal escrita solo con resultados maduros
-(`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Los casos de
-búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
-sesión de validación, igual que en los demás modelos.
+(`memory.associative_memory.MatureCorrection`). No tiene parámetros que ajustar. Con las reglas
+delta y proximal, los casos de búsqueda de su receta fijan η, la receta fija λ y la campaña
+elige el caso con el MAE por sesión de validación, igual que en los demás modelos.
+
+La regla kalman (PT3, #455) tiene su propia receta. Sus casos fijan κ = q/σ² y la receta p0/σ²,
+el tope de ϱ y los meses del tramo de estimación. σ² y ϱ se estiman en cada ventana con los
+residuos etiqueta menos núcleo de los últimos meses del tramo de ajuste del padre
+(`memory.cohort_noise`), antes de validación, calibración y evaluación. Como p0 y q escalan
+con σ² y la ventana no usa Huber, la media de la corrección no depende de σ².
 
 Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
 la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
@@ -29,6 +35,7 @@ memoria rápida se reinician en cada recorrido, y los tramos confirmados conserv
 
 import hashlib
 import importlib
+import math
 import time
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -48,8 +55,10 @@ from mars_titan.learning_traces.hooks import (
     trace_identity,
 )
 from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
+from mars_titan.memory.cohort_noise import estimate_cohort_noise
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.memory.mars_titan_variant import (
     check_components,
     core_identity,
@@ -87,20 +96,32 @@ from .titans_walk_forward import (
     walk_forward_options,
     window_phases,
 )
+from .walk_forward_phases import micros, months_before
 
 KIND = "mars_titan_correction_window"
 CARRY_KIND = "mars_titan_correction_carried_predictions"
 SELECTED_KIND = "mars_titan_correction_selected_state"
 RECIPE = "mars_titan_mature_correction_v1"
-# La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
-# los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
+KALMAN_RECIPE = "mars_titan_kalman_correction_v1"
+# Las reglas delta y proximal solo dependen de η y λ. Cada valor se declara una sola vez, en la
+# receta o en los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
+# La regla kalman busca κ = q/σ² y fija en la receta p0/σ², el tope de ϱ y los meses del tramo
+# de estimación. σ² y ϱ no se declaran: se estiman en cada ventana.
+KALMAN_SEARCHED = ("process_ratio",)
+KALMAN_FIXED = ("prior_ratio", "correlation_cap", "estimation_months")
+_RECIPES = {RECIPE: (SEARCHED, ()), KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED)}
 # Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
-# campaña los busca y no forman parte de la definición del modelo.
+# campaña los busca y no forman parte de la definición del modelo. Un modelo kalman declara
+# además si usa la ϱ estimada o la anula, que es la alternativa con la que se descarta.
 ARM_FIELDS = ("rule", "key")
-# Reglas que admite la ventana. La regla kalman (PT3) no usa η ni λ sino sus varianzas, que
-# esta receta no declara ni busca, así que todavía no tiene ventana.
-RULES = ("delta", "proximal")
+KALMAN_ARM_FIELDS = (*ARM_FIELDS, "cohort_correlation")
+COHORT_CORRELATIONS = ("estimated", "zero")
+RULES = ("delta", "proximal", "kalman")
+# σ² y ϱ con los que se comprueba una combinación kalman antes de abrir fuentes y se mide su
+# caudal. La media de la corrección no depende de σ² y el coste no depende de ninguno.
+UNIT_NOISE = dict(observation_noise=1.0, cohort_correlation=0.0)
+MAX_ESTIMATION_MONTHS = 12
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
 _CODE = (
     "mars_titan.training.mars_titan_correction",
@@ -109,6 +130,7 @@ _CODE = (
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.memory.mars_titan_variant",
     "mars_titan.memory.associative_memory",
+    "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
     "mars_titan.data.batches",
 )
@@ -119,10 +141,11 @@ def _code():
 
 
 def load_correction_recipe(path):
-    """Leer la receta de B6 y comprobar cómo reparte η y λ entre la base y sus casos.
+    """Leer la receta de B6 y comprobar cómo reparte sus valores entre la base y sus casos.
 
-    Todos los casos sustituyen los mismos valores de `SEARCHED`, que por eso no pueden
-    aparecer también en `recipe`, y entre ambos deben declararse los dos. La receta no tiene
+    La receta de las reglas delta y proximal declara η y λ. La de la regla kalman declara κ en
+    sus casos y los valores de `KALMAN_FIXED` en su base. Todos los casos sustituyen los mismos
+    valores buscados, que por eso no pueden aparecer también en `recipe`. La receta no tiene
     épocas ni optimizador porque B6 no ajusta parámetros.
     """
     path = Path(path)
@@ -133,11 +156,13 @@ def load_correction_recipe(path):
     document, _ = read_manifest(path, 64 * 1024)
     cases = (document.get("walk_forward") or {}).get("search_cases") if document else None
     base = document.get("recipe") if isinstance(document, dict) else None
+    name = document.get("recipe_name") if isinstance(document, dict) else None
+    searched, fixed = _RECIPES.get(name, ((), ()))
     valid = (
         isinstance(document, dict)
         and set(document) == _RECIPE_FIELDS
         and document["schema_version"] == 1
-        and document["recipe_name"] == RECIPE
+        and name in _RECIPES
         and isinstance(base, dict)
         and set(document["walk_forward"]) == {"search_cases"}
         and isinstance(cases, dict)
@@ -150,16 +175,38 @@ def load_correction_recipe(path):
         valid
         and len(keys) == 1
         and not next(iter(keys)) & set(base)
-        and next(iter(keys)) | set(base) == set(SEARCHED)
+        and next(iter(keys)) <= set(searched)
+        and next(iter(keys)) | set(base) == {*searched, *fixed}
         and len({canonical(case) for case in cases.values()}) == len(cases),
-        "La receta de la corrección declara η y λ entre su base y de uno a tres casos "
-        "distintos con nombre válido que sustituyen los mismos valores",
+        "La receta de la corrección declara η y λ, o κ y los valores fijos de kalman, entre su "
+        "base y de uno a tres casos distintos con nombre válido que sustituyen los mismos valores",
     )
+    if name == KALMAN_RECIPE:
+        for case in cases.values():
+            _kalman_values(dict(base, **case))
     return document
 
 
+def _kalman_values(values):
+    """Comprobar κ, p0/σ², el tope de ϱ y los meses de estimación antes de abrir fuentes."""
+    process, prior, cap = (
+        values[name] for name in ("process_ratio", "prior_ratio", "correlation_cap")
+    )
+    months = values["estimation_months"]
+    _require(
+        all(type(value) is float and math.isfinite(value) for value in (process, prior, cap))
+        and process >= 0.0
+        and prior > 0.0
+        and 0.0 < cap < 1.0
+        and type(months) is int
+        and 1 <= months <= MAX_ESTIMATION_MONTHS,
+        "La receta kalman necesita κ ≥ 0, p0/σ² > 0, un tope de ϱ en (0, 1) y de 1 a "
+        f"{MAX_ESTIMATION_MONTHS} meses de estimación",
+    )
+
+
 def case_values(document, search_case):
-    """Devolver η y λ del caso elegido y rechazar un caso que la receta no declare."""
+    """Devolver los valores del caso elegido y rechazar un caso que la receta no declare."""
     cases = document["walk_forward"]["search_cases"]
     _require(
         isinstance(search_case, str) and search_case in cases,
@@ -168,26 +215,59 @@ def case_values(document, search_case):
     return dict(document["recipe"], **cases[search_case])
 
 
-def arm_components(components, values):
-    """Completar la combinación de un modelo B6 con el η y el λ del caso.
+def arm_components(components, values, noise=None):
+    """Completar la combinación de un modelo B6 con los valores del caso.
 
     El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
-    mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
+    mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección. Las reglas
+    delta y proximal reciben η y λ. La regla kalman recibe además `noise`, con la σ² y la ϱ
+    estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
+    rule = memory.get("rule") if isinstance(memory, dict) else None
+    fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
-        and set(memory) == set(ARM_FIELDS),
-        "Un modelo B6 declara solo associative_memory con su regla y su clave",
+        and set(memory) == set(fields),
+        "Un modelo B6 declara solo associative_memory con su regla y su clave, y con la regla "
+        "kalman también su correlación de cohorte",
     )
+    _require(rule in RULES, "La ventana B6 solo admite las reglas delta y proximal, o kalman")
+    if rule != "kalman":
+        _require(
+            set(values) == set(SEARCHED) and noise is None,
+            "Las reglas delta y proximal usan la receta de η y λ, sin varianzas estimadas",
+        )
+        return dict(associative_memory=dict(memory, **values))
     _require(
-        memory["rule"] in RULES,
-        "La ventana B6 solo admite las reglas delta y proximal. La regla kalman no usa η ni λ "
-        "y todavía no tiene ventana",
+        set(values) == {*KALMAN_SEARCHED, *KALMAN_FIXED}
+        and memory["cohort_correlation"] in COHORT_CORRELATIONS
+        and isinstance(noise, dict)
+        and set(UNIT_NOISE) <= set(noise),
+        "La regla kalman usa la receta de sus varianzas, declara su correlación de cohorte "
+        "estimada o nula y necesita la σ² y la ϱ de la ventana",
     )
-    return dict(associative_memory=dict(memory, **values))
+    variance = noise["observation_noise"]
+    estimated = memory["cohort_correlation"] == "estimated"
+    return dict(
+        associative_memory=dict(
+            rule="kalman",
+            key=memory["key"],
+            process_noise=values["process_ratio"] * variance,
+            observation_noise=variance,
+            cohort_correlation=noise["cohort_correlation"] if estimated else 0.0,
+            prior_variance=values["prior_ratio"] * variance,
+            huber_threshold=None,
+        )
+    )
+
+
+def kalman_arm(components):
+    """Indicar si el modelo B6 usa la regla kalman, que estima sus varianzas en la ventana."""
+    memory = components.get("associative_memory") if isinstance(components, dict) else None
+    return isinstance(memory, dict) and memory.get("rule") == "kalman"
 
 
 class CorrectionInference(ChronologicalInference):
@@ -410,19 +490,108 @@ class _RoutingLog:
         )
 
 
-def correction_memory_policy(warmup_months):
+def correction_memory_policy(warmup_months, *, kalman=False):
     """Describir la política de memoria del padre ampliada con A.
 
     A también se reinicia en cada recorrido, y el informe lo deja escrito para que se vea
-    que calibración y evaluación no heredan el estado de validación.
+    que calibración y evaluación no heredan el estado de validación. Con la regla kalman A y
+    P vuelven a su previa en cada recorrido y σ² y ϱ proceden del tramo de estimación.
     """
-    return dict(
+    policy = dict(
         memory_policy(warmup_months),
         associative="zero_at_each_pass_then_mature_labels_after_the_event_predictions",
         associative_value="mature_label_minus_core_prediction",
         quantiles="all_levels_shifted_by_the_scalar_correction",
         fit="none_rate_and_forgetting_fixed_by_recipe_and_search_case",
     )
+    if kalman:
+        policy.update(
+            associative="prior_mean_and_covariance_at_each_pass_then_mature_labels_after_the_"
+            "event_predictions",
+            fit="none_variances_estimated_on_the_train_tail_and_process_ratio_by_search_case",
+        )
+    return policy
+
+
+def estimation_phase(fold, months, warmup_months):
+    """Tramo de estimación de σ² y ϱ: los últimos `months` meses del ajuste del padre.
+
+    Empieza el primer día del mes situado `months` meses antes del final del ajuste y termina
+    con él, que es también el corte de maduración de sus etiquetas, así que precede a
+    validación, calibración y evaluación. Antes observa su calentamiento sin etiquetas, como
+    los tramos medidos, sin empezar antes del origen de la ventana.
+    """
+    _require(
+        type(months) is int and 1 <= months <= MAX_ESTIMATION_MONTHS,
+        "Los meses de estimación no son válidos",
+    )
+    origin, end = (micros(day) for day in fold["train"])
+    first = months_before(fold["train"][1], months)
+    start = micros(first)
+    _require(origin < start < end, "El tramo de estimación no cabe dentro del ajuste")
+    warmup = max(origin, micros(months_before(first, warmup_months)))
+    return FinancialPhase("train", warmup, start, end, end)
+
+
+class _Residuals:
+    """Destino de filas del tramo de estimación: residuo, mercado y sesión de cada etiqueta."""
+
+    def __init__(self):
+        self.values, self.markets, self.sessions = [], [], []
+
+    def append(self, row):
+        flow, decision_at, issued, value, _ = row
+        self.values.append(value - issued)
+        self.markets.append(flow.split("/", 1)[0])
+        self.sessions.append(decision_at)
+
+
+def window_cohort_noise(predictor, chronological, source, correlation_cap):
+    """Estimar σ² y ϱ con los residuos etiqueta menos núcleo del tramo de estimación.
+
+    El núcleo es el padre congelado con su receta cronológica y sin corrección, igual que en
+    los tramos medidos, y cada residuo procede de una predicción emitida antes de conocer su
+    etiqueta. La memoria rápida empieza en su estado inicial y observa el calentamiento.
+    """
+    _require(
+        type(source) is FinancialObservationSource
+        and source.phase.partition == "train"
+        and _compatible(predictor.config.inputs, source.specification()),
+        "El tramo de estimación no es un tramo de ajuste de la entrada del padre",
+    )
+    rows = _Residuals()
+    metrics = ChronologicalInference(predictor, chronological).evaluate(source, rows=rows)
+    estimate = estimate_cohort_noise(
+        rows.values,
+        rows.markets,
+        np.asarray(rows.sessions, dtype=np.int64),
+        correlation_cap=correlation_cap,
+    )
+    return dict(estimate, core_session_mae=metrics["session_mae"])
+
+
+def window_noise(fold, values, warmup_months, dataset, root, core, stored=None):
+    """σ² y ϱ de una ventana kalman, con su tramo de estimación y la huella de su índice.
+
+    `core` es el padre congelado con su receta cronológica. Una ventana reanudada pasa en
+    `stored` la estimación de su identidad, que se reutiliza si procede del mismo tramo y del
+    mismo índice, porque repetirla en GPU podría no dar los mismos bits. Con otro tramo, otro
+    índice o un registro incompleto se vuelve a estimar, la identidad deja de coincidir con la
+    guardada y la reanudación se rechaza. La estimación no atiende la parada: recorre un tramo
+    acotado y la parada pedida se atiende al empezar la validación, con la estimación ya en la
+    identidad.
+    """
+    phase = estimation_phase(fold, values["estimation_months"], warmup_months)
+    source = _sources(dataset, {"estimation": phase}, root)["estimation"]
+    noise = dict(phase=asdict(phase), index=source.identity)
+    if (
+        isinstance(stored, dict)
+        and set(stored) == {*noise, "estimate"}
+        and all(stored[key] == value for key, value in noise.items())
+    ):
+        return stored
+    estimate = window_cohort_noise(*core, source, values["correlation_cap"])
+    return dict(noise, estimate=estimate)
 
 
 def _parent_recipe(parent_report):
@@ -504,17 +673,22 @@ def run_correction_window(
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente, porque la
-    validación selecciona η entre los casos de la campaña. `traces` declara las trazas de
-    #448: las escrituras de A de cada tramo, con la fase `b6_<tramo>`, en `output/traces`.
-    Su cursor se guarda en `run.json` al confirmar cada tramo, porque B6 no tiene puntos de
-    control y un tramo interrumpido se repite desde el principio.
+    validación selecciona η, o κ con la regla kalman, entre los casos de la campaña. Con la
+    regla kalman, σ² y ϱ se estiman antes de validar con `window_noise`. `traces` declara las
+    trazas de #448: las escrituras de A de cada tramo, con la fase `b6_<tramo>`, en
+    `output/traces`. Su cursor se guarda en `run.json` al confirmar cada tramo, porque B6 no
+    tiene puntos de control y un tramo interrumpido se repite desde el principio.
     """
     from .mars_titan_walk_forward import _cuda, _frozen_parent, _parent
 
     require_learning_allowed("run_correction_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     document = load_correction_recipe(recipe)
-    combination = arm_components(components, case_values(document, search_case))
+    values = case_values(document, search_case)
+    kalman = kalman_arm(components)
+    # Una combinación kalman se comprueba con σ² y ϱ de referencia antes de abrir fuentes. Las
+    # estimadas solo cambian sus varianzas.
+    combination = arm_components(components, values, UNIT_NOISE if kalman else None)
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
@@ -569,9 +743,23 @@ def run_correction_window(
         "Las fases de la ventana no coinciden con las del padre",
     )
     measured = {name: phases[name] for name in PREDICTED}
-    sources = _sources(dataset, measured, Path(indices) if indices else output / "indices")
+    root = Path(indices) if indices else output / "indices"
+    sources = _sources(dataset, measured, root)
     specification = _parent_specification(sources["validation"], parent_report)
     predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
+    noise = None
+    if kalman:
+        stored = report["identity"].get("cohort_noise") if report_path.exists() else None
+        noise = window_noise(
+            fold,
+            values,
+            options["warmup_months"],
+            dataset,
+            root,
+            (predictor, chronological),
+            stored,
+        )
+        combination = arm_components(components, values, noise["estimate"])
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
     inference = CorrectionInference(predictor, chronological, variant.correction, codec)
@@ -587,12 +775,15 @@ def run_correction_window(
         variant_sha256=variant.fingerprint(),
         correction=variant.correction.identity(),
         codec=codec.identity(),
-        memory_policy=correction_memory_policy(options["warmup_months"]),
+        memory_policy=correction_memory_policy(options["warmup_months"], kalman=kalman),
         phases={name: asdict(phase) for name, phase in measured.items()},
         indices={name: source.identity for name, source in sources.items()},
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
+    if noise is not None:
+        # Solo kalman la lleva, así que las demás reglas conservan su identidad.
+        identity["cohort_noise"] = noise
     if inference.kernel_policy is not None:
         # Como en los lectores, la política de precisión de la receta del padre, que aplica
         # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
@@ -685,7 +876,7 @@ def carry_correction(
     regenerate=False,
     frozen_parent=False,
 ):
-    """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
+    """Predecir una ventana posterior con el padre y el caso elegidos en el ancla.
 
     Es la pieza de la variante B, así que no selecciona nada y usa el caso que eligió la
     validación del ancla. Cada tramo trasladado empieza con A en cero, la memoria rápida
@@ -749,8 +940,12 @@ def carry_correction(
         "La política de precisión no coincide con la del ancla",
     )
     options = walk_forward_options(titans)
+    # La regla kalman usa la σ² y la ϱ estimadas en el ancla, sin volver a estimarlas.
+    noise = identity.get("cohort_noise")
     combination = arm_components(
-        request["components"], case_values(identity["recipe"], request["search_case"])
+        request["components"],
+        case_values(identity["recipe"], request["search_case"]),
+        None if noise is None else noise["estimate"],
     )
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     partitions = predicted_partitions(modality_ablation, regenerate, frozen_parent)
@@ -804,7 +999,7 @@ def carry_correction(
         fold=fold,
         months_since_anchor_information=age,
         memory_policy=dict(
-            correction_memory_policy(options["warmup_months"]),
+            correction_memory_policy(options["warmup_months"], kalman=noise is not None),
             parameters="anchor_selected_parent_and_correction_without_further_selection",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
         ),

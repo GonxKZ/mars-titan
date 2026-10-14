@@ -785,10 +785,18 @@ def test_v2_declaration_adds_the_chain_and_the_base_retrain_on_the_joint_scope()
     loaded = compare.load_declaration(DECLARATION_V2)
     stage = loaded["stage"]
     assert stage["scopes"] == ["US+CN"]
-    # Los 29 modelos de la etapa menos la cadena trivial de Ridge, XGBoost y los seis B6.
+    # Los 33 modelos de la etapa menos los doce de cadena trivial: Ridge, XGBoost, los ocho B6
+    # (dos de ellos los kalman de PT3) y las dos extensiones PT1 del núcleo.
     assert len(loaded["groups"]) == 21
-    trivial = {"ridge", "xgboost", *campaign_stage.correction_arms(stage["campaign"])}
-    assert len(trivial) == 8 and not trivial & set(loaded["groups"])
+    campaign = stage["campaign"]
+    trivial = {
+        "ridge",
+        "xgboost",
+        *campaign_stage.correction_arms(campaign),
+        *campaign_stage.extension_arms(campaign),
+    }
+    assert len(stage["arms"]) == 33 and len(trivial) == 12
+    assert not trivial & set(loaded["groups"])
     assert "mars_titan_m1_k4_first_read" in loaded["groups"]
     joint = stage["campaign"]["comparison_config"]["joint_design"]
     for base_arm, config in loaded["configs"].items():

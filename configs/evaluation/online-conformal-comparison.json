@@ -9,7 +9,7 @@
   "issue": 454,
   "proposal": "docs/research/post-titans-proposals.md",
   "specification": "docs/engineering/online-conformal-calibration.md",
-  "base_comparison": "configs/evaluation/historical-masked-2000-comparison.json",
+  "base_comparison": "configs/evaluation/historical-masked-2000-joint-comparison.json",
   "predictions": "Cuantiles ya emitidos por los modelos con quantile_head_v1 en las particiones de calibración y evaluación de cada ventana anterior a 2024. No se reentrena ningún predictor.",
   "arms": {
     "cqr_static": {
@@ -28,6 +28,7 @@
       "rate_scale": "max_abs_calibration_score",
       "rate_fraction_candidates": [0.005, 0.02],
       "rate_selection": "La fracción κ se elige en las ventanas con evaluación entre 2005 y 2013 por la métrica primaria y se mantiene fija en 2014 a 2023",
+      "selection_years": [2005, 2013],
       "cohort": "filas de un mercado con el mismo prediction_at",
       "maturity": "mayor target_available_at de la cohorte, aplicada antes de emitir en ese mismo instante",
       "max_pending": 64,
@@ -37,8 +38,9 @@
       "role": "trivial_alternative",
       "method": "cqr_symmetric_score_v1",
       "refit_every_sessions": 21,
-      "window": "filas maduras de los últimos tres meses antes de cada recálculo",
-      "implementation": "pendiente, reutiliza fit_conformal_quantiles sobre filas maduras"
+      "window": "filas maduras de los últimos 91 días antes de cada recálculo, unos tres meses",
+      "window_days": 91,
+      "implementation": "calibration/periodic_conformal.py, que reutiliza fit_conformal_quantiles sobre filas maduras"
     }
   },
   "equal": [
@@ -88,6 +90,6 @@
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide emitir las predicciones que el modelo necesita.",
     "La propuesta escribía γ ∈ {0,005, 0,02} sin unidad. La implementación fija γ = κ · B̂ con B̂ la mayor puntuación absoluta de calibración, de modo que esos valores son fracciones de la escala de cada mercado e intervalo.",
     "La propuesta usaba como alternativa trivial una recalibración anual, pero la CQR estática de la comparación ya se ajusta en cada ventana anual. La alternativa pasa a ser una recalibración mensual con filas maduras.",
-    "El panel de predicciones no lleva target_available_at. La integración en walk_forward_comparison debe leerlo de la vista de cada ventana."
+    "El panel de predicciones no lleva target_available_at. Desde el 10 de octubre walk_forward_comparison lo lee de las etiquetas de la vista de cada ventana y la sección online_calibration de la comparación conjunta aplica las tres variantes."
   ]
 }
