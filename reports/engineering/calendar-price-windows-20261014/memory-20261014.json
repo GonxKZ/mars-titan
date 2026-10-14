@@ -1,0 +1,72 @@
+{
+ "reference": "develop 06e69db6",
+ "view": "US+CN/fold-018",
+ "phase": "evaluation",
+ "cursor": 0,
+ "events": 200,
+ "pipeline": {
+  "decode_workers": 2,
+  "prefetch_batches": 2,
+  "group_cache_mib": 4096,
+  "block_rows": 1024
+ },
+ "note": "El consumidor calcula la huella de las entradas de cada instante. Desglose al terminar: caché de grupos, precios y posiciones del lector, caché del corpus y mallinfo2.",
+ "rounds": [
+  {
+   "round": 1,
+   "tree": "A",
+   "peak_rss_mib": 5818,
+   "rss_mib": 5769,
+   "group_cache_mib": 3411,
+   "groups_cached": 4985,
+   "prices_mib": 871,
+   "prices_assets": 4985,
+   "positions_mib": 0.0,
+   "dataset_cache_mib": 871,
+   "malloc_arena_mib": 971,
+   "malloc_in_use_mib": 898
+  },
+  {
+   "round": 2,
+   "tree": "B",
+   "peak_rss_mib": 5777,
+   "rss_mib": 5760,
+   "group_cache_mib": 3411,
+   "groups_cached": 4985,
+   "prices_mib": 871,
+   "prices_assets": 4985,
+   "positions_mib": 145.2,
+   "dataset_cache_mib": 871,
+   "malloc_arena_mib": 1126,
+   "malloc_in_use_mib": 1044
+  },
+  {
+   "round": 3,
+   "tree": "B",
+   "peak_rss_mib": 5673,
+   "rss_mib": 5656,
+   "group_cache_mib": 3411,
+   "groups_cached": 4985,
+   "prices_mib": 871,
+   "prices_assets": 4985,
+   "positions_mib": 145.2,
+   "dataset_cache_mib": 871,
+   "malloc_arena_mib": 1122,
+   "malloc_in_use_mib": 1043
+  },
+  {
+   "round": 4,
+   "tree": "A",
+   "peak_rss_mib": 5675,
+   "rss_mib": 5633,
+   "group_cache_mib": 3411,
+   "groups_cached": 4985,
+   "prices_mib": 871,
+   "prices_assets": 4985,
+   "positions_mib": 0.0,
+   "dataset_cache_mib": 871,
+   "malloc_arena_mib": 982,
+   "malloc_in_use_mib": 898
+  }
+ ]
+}
