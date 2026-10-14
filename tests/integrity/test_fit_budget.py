@@ -278,13 +278,18 @@ def test_an_online_report_without_labels_per_partition_fails():
 
 @pytest.fixture(scope="module")
 def own_searches(loaded):
-    """Las dos búsquedas de Titans-MAC en línea en la primera ventana conjunta de A v2."""
+    """Las dos búsquedas de Titans-MAC en línea en la primera ventana conjunta de A v2.
+
+    Las mesetas de un ajuste conjunto también son búsquedas, pero no son ajustes con
+    presupuesto propio y la comprobación no las lee como tales.
+    """
     campaign = loaded["campaign_config"]
     jobs = [
         job
         for job in plan.plan_campaign(campaign)
         if (job["kind"], job["arm"], job["scope"], job["window"], job["stage"])
         == (plan.FIT, "titans_mac_online", "US+CN", "fold-000", "search")
+        and job.get("phase") != plan.PLATEAU
     ]
     assert len(jobs) == 2 and all(job.get("parent") is None for job in jobs)
     return campaign, jobs
@@ -316,11 +321,13 @@ def _full(rule, *, steps=10, scores=None):
     ],
 )
 def test_confirmed_fits_spend_their_rule_and_the_same_updates(
-    own_searches, tmp_path, defect, failing, unequal
+    own_searches, tmp_path, monkeypatch, defect, failing, unequal
 ):
     campaign, jobs = own_searches
-    rule = budget._rule(campaign, "titans_mac_online")
-    assert rule["stopping"] == "fixed_budget" and rule["max_epochs"] == 30
+    # En A v2 estas búsquedas paran con la meseta conjunta. Aquí la regla se sustituye por la
+    # de presupuesto fijo para comprobar que dos ajustes del mismo modelo gastan lo mismo.
+    rule = epochs(FIXED, 30)
+    monkeypatch.setattr(budget, "_rule", lambda campaign, arm: rule)
     _confirm(tmp_path, jobs[0], _full(rule))
     second = _full(rule)
     if defect == "steps":
@@ -389,8 +396,12 @@ def test_a_reference_initialized_from_its_parent_may_keep_its_initial_state():
 def test_the_report_needs_both_the_declared_and_the_consumed_budget(loaded, own_searches, tmp_path):
     campaign, jobs = own_searches
     rule = budget._rule(campaign, "titans_mac_online")
+    assert rule["stopping"] == "joint_plateau" and rule["max_epochs"] == 30
+    # Cada búsqueda mejora hasta la época 3, llega a su meseta en la 8 y termina en la 10, en
+    # la que paró su grupo conjunto. La época común solo cuenta desde la meseta propia.
+    scores = [1.0, 0.9, 0.8, 0.7] + [0.8] * 7
     for job in jobs:
-        _confirm(tmp_path, job, _full(rule))
+        _confirm(tmp_path, job, run_document(scores, rule, first=0, joint=10))
     declarations = loaded["budget_differences"]
     assert budget.check(campaign, jobs, tmp_path, declarations)["passed"]
     stale = dict(declarations, titans_mac_online=dict(seeds="Otra semilla"))
