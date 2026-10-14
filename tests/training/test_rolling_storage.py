@@ -99,22 +99,32 @@ def test_released_rows_leave_states_reports_and_aggregates(declared):
 
 
 @pytest.mark.parametrize("model", ["neural", "titans_mac"])
-def test_a_plateau_keeps_its_states_without_tables_aggregates_or_regeneration(declared, model):
-    # Titans-MAC además indexa observaciones, así que su regeneración tendría índice.
+def test_a_plateau_is_released_by_its_continuation_and_only_its_report_stays(declared, model):
+    # Titans-MAC además indexa observaciones, que la meseta conserva hasta su continuación.
     fits = [job(row["id"], model=model) for row in WINDOWS]
     plateaus = [dict(item, id=item["id"] + "-plateau", phase="plateau") for item in fits]
+    finals = [
+        dict(item, phase="joint", plateau=plateau["id"])
+        for item, plateau in zip(fits, plateaus, strict=True)
+    ]
     counts = {"US": {row["id"]: COUNTS for row in WINDOWS}}
-    joint = [value for pair in zip(plateaus, fits, strict=True) for value in pair]
+    joint = [value for pair in zip(plateaus, finals, strict=True) for value in pair]
     plain = rolling.rolling_estimate(fits, WINDOWS, counts, measured(), declared, EXTRAS)
     grouped = rolling.rolling_estimate(joint, WINDOWS, counts, measured(), declared, EXTRAS)
     footprint = storage.job_footprint(plateaus[0], COUNTS, declared, release=True)
     assert footprint["retained"]["predictions"] == 0
+    if model == "titans_mac":
+        assert footprint["retained"]["indices"] > 0
     for name in rolling.SCENARIOS:
         pairs = zip(plain[name]["windows"], grouped[name]["windows"], strict=True)
         for index, (before, after) in enumerate(pairs):
-            # Lo conservado crece en cada ventana con los estados de una meseta más.
-            extra = (index + 1) * footprint["retained_bytes"]
-            assert after["retained_bytes"] == before["retained_bytes"] + extra
+            # Tras cada ventana solo queda la copia del informe de una meseta más.
+            reports = (index + 1) * footprint["retained"]["reports"]
+            assert after["retained_bytes"] == before["retained_bytes"] + reports
+            assert after["rl"] == before["rl"] + reports
+            # Mientras espera, la meseta ocupa su carpeta y su informe junto a la continuación.
+            previous = index * footprint["retained"]["reports"]
+            assert after["base"] == before["base"] + previous + footprint["retained_bytes"]
             # La regeneración de la liberación es la de la continuación, no la de la meseta.
             assert after["release"] - after["rl"] == before["release"] - before["rl"]
 
@@ -321,5 +331,12 @@ def test_tapes_are_only_estimated_with_a_measure_that_covers_the_stage_layout():
     folder = Path("reports/engineering/campaign-storage-20261009")
     published = json.loads((folder / "extras-layout-640.json").read_text())
     assert rolling.policy_tape_bytes(stage, published) == 1_697_830
+    previous = json.loads((folder / "extras.json").read_text())
     with pytest.raises(ValueError, match="no cubre"):
-        rolling.policy_tape_bytes(stage, json.loads((folder / "extras.json").read_text()))
+        rolling.policy_tape_bytes(stage, previous)
+    # Las órdenes de la campaña leen la medida de 640 columnas, así que debe llevar las demás
+    # medidas de la anterior sin cambios, también la de los agregados de los adaptadores.
+    tapes = {"tape_bytes", "tape_shape", "tape_without_layout_bytes"}
+    assert {k: v for k, v in published.items() if k not in tapes} == {
+        k: v for k, v in previous.items() if k not in tapes
+    }

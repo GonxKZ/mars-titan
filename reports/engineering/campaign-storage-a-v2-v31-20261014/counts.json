@@ -1,0 +1,365 @@
+{
+ "US+CN": {
+  "fold-000": {
+   "train": 1313128,
+   "validation": 194655,
+   "calibration": 100689,
+   "evaluation": 414341,
+   "flows": 5008
+  },
+  "fold-001": {
+   "train": 1710065,
+   "validation": 209451,
+   "calibration": 104708,
+   "evaluation": 488489,
+   "flows": 5008
+  },
+  "fold-002": {
+   "train": 2133660,
+   "validation": 243173,
+   "calibration": 136955,
+   "evaluation": 587447,
+   "flows": 5008
+  },
+  "fold-003": {
+   "train": 2654761,
+   "validation": 294291,
+   "calibration": 153666,
+   "evaluation": 648475,
+   "flows": 5008
+  },
+  "fold-004": {
+   "train": 3260098,
+   "validation": 326977,
+   "calibration": 166168,
+   "evaluation": 673364,
+   "flows": 5008
+  },
+  "fold-005": {
+   "train": 3918943,
+   "validation": 340332,
+   "calibration": 169766,
+   "evaluation": 701071,
+   "flows": 5008
+  },
+  "fold-006": {
+   "train": 4600775,
+   "validation": 351617,
+   "calibration": 180234,
+   "evaluation": 749229,
+   "flows": 5008
+  },
+  "fold-007": {
+   "train": 5317452,
+   "validation": 378073,
+   "calibration": 188858,
+   "evaluation": 783444,
+   "flows": 5008
+  },
+  "fold-008": {
+   "train": 6080386,
+   "validation": 393519,
+   "calibration": 196685,
+   "evaluation": 820509,
+   "flows": 5008
+  },
+  "fold-009": {
+   "train": 6869679,
+   "validation": 415127,
+   "calibration": 209269,
+   "evaluation": 866108,
+   "flows": 5008
+  },
+  "fold-010": {
+   "train": 7705214,
+   "validation": 436634,
+   "calibration": 221385,
+   "evaluation": 915972,
+   "flows": 5008
+  },
+  "fold-011": {
+   "train": 8586629,
+   "validation": 461732,
+   "calibration": 234019,
+   "evaluation": 967507,
+   "flows": 5008
+  },
+  "fold-012": {
+   "train": 9521146,
+   "validation": 490809,
+   "calibration": 241287,
+   "evaluation": 1005781,
+   "flows": 5008
+  },
+  "fold-013": {
+   "train": 10504940,
+   "validation": 504806,
+   "calibration": 252893,
+   "evaluation": 1061764,
+   "flows": 5008
+  },
+  "fold-014": {
+   "train": 11523645,
+   "validation": 536192,
+   "calibration": 268266,
+   "evaluation": 1114685,
+   "flows": 5008
+  },
+  "fold-015": {
+   "train": 12591684,
+   "validation": 565395,
+   "calibration": 289820,
+   "evaluation": 1200117,
+   "flows": 5008
+  },
+  "fold-016": {
+   "train": 13744248,
+   "validation": 601794,
+   "calibration": 304867,
+   "evaluation": 1233981,
+   "flows": 5008
+  },
+  "fold-017": {
+   "train": 14959405,
+   "validation": 619887,
+   "calibration": 310227,
+   "evaluation": 1237793,
+   "flows": 5008
+  },
+  "fold-018": {
+   "train": 16204399,
+   "validation": 620954,
+   "calibration": 306874,
+   "evaluation": 1235785,
+   "flows": 5008
+  }
+ },
+ "US": {
+  "fold-000": {
+   "train": 1313128,
+   "validation": 194655,
+   "calibration": 100689,
+   "evaluation": 414341,
+   "flows": 4198
+  },
+  "fold-001": {
+   "train": 1710065,
+   "validation": 209451,
+   "calibration": 104708,
+   "evaluation": 437645,
+   "flows": 4198
+  },
+  "fold-002": {
+   "train": 2133660,
+   "validation": 218863,
+   "calibration": 110863,
+   "evaluation": 475623,
+   "flows": 4198
+  },
+  "fold-003": {
+   "train": 2578424,
+   "validation": 236733,
+   "calibration": 125375,
+   "evaluation": 525350,
+   "flows": 4198
+  },
+  "fold-004": {
+   "train": 3068237,
+   "validation": 265024,
+   "calibration": 134265,
+   "evaluation": 546868,
+   "flows": 4198
+  },
+  "fold-005": {
+   "train": 3602637,
+   "validation": 274686,
+   "calibration": 139027,
+   "evaluation": 570313,
+   "flows": 4198
+  },
+  "fold-006": {
+   "train": 4156708,
+   "validation": 285537,
+   "calibration": 146451,
+   "evaluation": 604238,
+   "flows": 4198
+  },
+  "fold-007": {
+   "train": 4739006,
+   "validation": 303335,
+   "calibration": 152663,
+   "evaluation": 629911,
+   "flows": 4198
+  },
+  "fold-008": {
+   "train": 5353824,
+   "validation": 315473,
+   "calibration": 157840,
+   "evaluation": 666320,
+   "flows": 4198
+  },
+  "fold-009": {
+   "train": 5988592,
+   "validation": 337016,
+   "calibration": 170209,
+   "evaluation": 706326,
+   "flows": 4198
+  },
+  "fold-010": {
+   "train": 6667897,
+   "validation": 354810,
+   "calibration": 181845,
+   "evaluation": 754028,
+   "flows": 4198
+  },
+  "fold-011": {
+   "train": 7389019,
+   "validation": 378420,
+   "calibration": 193676,
+   "evaluation": 800803,
+   "flows": 4198
+  },
+  "fold-012": {
+   "train": 8158260,
+   "validation": 405737,
+   "calibration": 200640,
+   "evaluation": 833969,
+   "flows": 4198
+  },
+  "fold-013": {
+   "train": 8974007,
+   "validation": 417082,
+   "calibration": 210488,
+   "evaluation": 885298,
+   "flows": 4198
+  },
+  "fold-014": {
+   "train": 9818574,
+   "validation": 446475,
+   "calibration": 224847,
+   "evaluation": 950243,
+   "flows": 4198
+  },
+  "fold-015": {
+   "train": 10722076,
+   "validation": 476924,
+   "calibration": 244312,
+   "evaluation": 1015804,
+   "flows": 4198
+  },
+  "fold-016": {
+   "train": 11694982,
+   "validation": 508446,
+   "calibration": 259102,
+   "evaluation": 1042405,
+   "flows": 4198
+  },
+  "fold-017": {
+   "train": 12724225,
+   "validation": 522266,
+   "calibration": 262341,
+   "evaluation": 1043826,
+   "flows": 4198
+  },
+  "fold-018": {
+   "train": 13775654,
+   "validation": 521928,
+   "calibration": 259215,
+   "evaluation": 1040641,
+   "flows": 4198
+  }
+ },
+ "CN": {
+  "fold-000": {
+   "train": 444067,
+   "validation": 66080,
+   "calibration": 33783,
+   "evaluation": 144991,
+   "flows": 810
+  },
+  "fold-001": {
+   "train": 578446,
+   "validation": 74738,
+   "calibration": 36195,
+   "evaluation": 153533,
+   "flows": 810
+  },
+  "fold-002": {
+   "train": 726562,
+   "validation": 78046,
+   "calibration": 38845,
+   "evaluation": 154189,
+   "flows": 810
+  },
+  "fold-003": {
+   "train": 881087,
+   "validation": 78111,
+   "calibration": 39060,
+   "evaluation": 159782,
+   "flows": 810
+  },
+  "fold-004": {
+   "train": 1037317,
+   "validation": 81824,
+   "calibration": 39540,
+   "evaluation": 161944,
+   "flows": 810
+  },
+  "fold-005": {
+   "train": 1197610,
+   "validation": 83312,
+   "calibration": 40343,
+   "evaluation": 166704,
+   "flows": 810
+  },
+  "fold-006": {
+   "train": 1362886,
+   "validation": 85072,
+   "calibration": 40647,
+   "evaluation": 171812,
+   "flows": 810
+  },
+  "fold-007": {
+   "train": 1530933,
+   "validation": 87724,
+   "calibration": 42405,
+   "evaluation": 176466,
+   "flows": 810
+  },
+  "fold-008": {
+   "train": 1705071,
+   "validation": 89717,
+   "calibration": 43419,
+   "evaluation": 164442,
+   "flows": 810
+  },
+  "fold-009": {
+   "train": 1869608,
+   "validation": 88471,
+   "calibration": 45508,
+   "evaluation": 184313,
+   "flows": 810
+  },
+  "fold-010": {
+   "train": 2049266,
+   "validation": 93348,
+   "calibration": 45765,
+   "evaluation": 191576,
+   "flows": 810
+  },
+  "fold-011": {
+   "train": 2235180,
+   "validation": 97621,
+   "calibration": 47886,
+   "evaluation": 193967,
+   "flows": 810
+  },
+  "fold-012": {
+   "train": 2428745,
+   "validation": 99026,
+   "calibration": 47659,
+   "evaluation": 195144,
+   "flows": 810
+  }
+ }
+}

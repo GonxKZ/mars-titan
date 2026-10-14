@@ -14,6 +14,8 @@ declaración de almacenamiento y los bytes por fila medidos:
 - Se conservan siempre el estado elegido de cada ajuste, los informes y recibos, los
   agregados por sesión (también los de la comparación postentrenada de cada ventana) y las
   cintas de las políticas.
+- La meseta de un ajuste conjunto ocupa su carpeta hasta que se confirma su continuación,
+  que reanuda en ella y la libera. De la meseta solo queda después la copia de su informe.
 
 `all_regenerated` supone que todas las regeneraciones salen idénticas y `none_regenerated`
 que ninguna lo hace, de modo que todo queda compactado. La realidad está entre los dos. Las
@@ -243,6 +245,7 @@ class _Walk:
         counts, measured, storage = (self.inputs[k] for k in ("counts", "measured", "storage"))
         moment, kept, regeneration = self.retained, 0, 0
         aggregate = self.inputs["extras"]["aggregate_bytes_per_row"]
+        waiting = {}
         for job in (j for j in self.inputs["jobs"] if _in(row, j)):
             window = counts[job["scope"]][job["window"]]
             partitions = _partitions(job)
@@ -260,6 +263,13 @@ class _Walk:
                 moment + footprint["retained_bytes"] + footprint["transient_bytes"],
             )
             moment += footprint["retained_bytes"]
+            if job.get("phase") == PLATEAU:
+                # La continuación reanuda en la carpeta de la meseta y la libera al confirmarse
+                # (`release_confirmed`). De la meseta solo queda la copia de su informe.
+                waiting[job["id"]] = footprint["retained_bytes"] - footprint["retained"]["reports"]
+                kept += footprint["retained"]["reports"]
+                continue
+            moment -= waiting.pop(job.get("plateau"), 0)
             kept += footprint["retained_bytes"] - footprint["retained"]["predictions"]
             kept += int(aggregate * sum(window[p] for p in partitions)) + RECORD_BYTES * len(
                 partitions
