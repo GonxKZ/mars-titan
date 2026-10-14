@@ -334,8 +334,11 @@ class MatrixParent:
             open_earlier=self.window.open_sessions if earlier else None,
         )
 
-    def run(self, row, destination, *, checkpoint_seconds, stop):
-        """Ajustar o recuperar un caso y exigir exactamente las actualizaciones del plan."""
+    def run(self, row, destination, *, checkpoint_seconds, stop, traces=None):
+        """Ajustar o recuperar un caso y exigir exactamente las actualizaciones del plan.
+
+        `traces` es la declaración de las trazas de #448, que no entra en la identidad.
+        """
         destination = Path(destination)
         with self.inputs(row["case"]) as data:
             report = run_case(
@@ -352,6 +355,7 @@ class MatrixParent:
                 resume=destination.exists(),
                 stop=stop,
                 checkpoint_seconds=checkpoint_seconds,
+                traces=traces,
             )
         _require(
             report["status"] != "completed" or report["global_step"] == row["updates"],

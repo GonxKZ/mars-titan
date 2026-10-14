@@ -60,16 +60,20 @@
   },
   "decision_rule": {
     "keep_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative < 0",
-      "upper_bound_of_relative_mae_difference_against_control < 0"
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative < -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control < -minimum_interpretable_difference"
     ],
     "abandon_if": [
-      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= 0",
-      "upper_bound_of_relative_mae_difference_against_control >= 0",
+      "upper_bound_of_relative_mae_difference_against_trivial_alternative >= -minimum_interpretable_difference",
+      "upper_bound_of_relative_mae_difference_against_control >= -minimum_interpretable_difference",
       "a_prediction_depends_on_another_row_of_its_own_session"
     ],
     "trivial_alternative": "El control sectorial da a cada flujo la media de los tokens de su sector en la sesión anterior, con la misma ganancia de salida en cero y la misma posición en el token. No tiene memoria ni olvido aprendido. Si iguala a la memoria de mercado, lo que aporta es el factor sectorial y no la memoria compartida.",
-    "control": "El control sin contexto mide si alguna de las dos formas mejora a Titans-MAC. Para conservar PT4 debe mejorar a los dos."
+    "control": "El control sin contexto mide si alguna de las dos formas mejora a Titans-MAC. Para conservar PT4 debe mejorar a los dos.",
+    "seed_variance_control": {
+      "declaration": "configs/evaluation/memory-pilot-seed-control.json",
+      "rules": ["pt4", "pt4_trivial_alternative"]
+    }
   },
   "pilot": {
     "assets": "hasta 64 de EE. UU. con todas las modalidades disponibles, todos en el mismo bloque de cada instante",
@@ -80,11 +84,12 @@
     ],
     "training": "expansivo desde 2000",
     "seeds": {
-      "titans_mac_online": 1,
+      "titans_mac_online": 3,
       "titans_mac_online_pt4_market_memory": 1,
       "titans_mac_online_pt4_sector_mean": 1
     },
-    "gpu_hours_max": 8
+    "gpu_hours_max": 8,
+    "seed_control_gpu_hours": 27
   },
   "budget": {
     "declared": {
@@ -104,6 +109,7 @@
     "Nada se ha ejecutado. El bloqueo de aprendizaje impide el piloto y la comparación.",
     "Los tres modelos se ajustan sin acumulación por bloques porque su repetición no reconstruye el contexto entre bloques. Con 64 activos el instante completo cabe en un bloque. La receta base solo la necesita para US y CN completos, así que la comparación a esa escala exige antes implementar la repetición del contexto.",
     "El reparto sectorial sale de las fichas actuales de FinMultiTime, no de una serie histórica. Una empresa reclasificada después aparece con su sector posterior en todos los años. Los activos sin sector van al grupo desconocido de su mercado.",
-    "Con 64 activos cada sector tiene pocos miembros y la media sectorial es ruidosa. Si el piloto se amplía a 128 activos, los tres modelos se repiten con el mismo universo."
+    "Con 64 activos cada sector tiene pocos miembros y la media sectorial es ruidosa. Si el piloto se amplía a 128 activos, los tres modelos se repiten con el mismo universo.",
+    "El control sin acumulación no repite el cálculo del control común de PT7, así que PT4 ajusta sus propias semillas 43 y 44 del control con la misma búsqueda, selección y presupuesto que la 42. Las 27 h que se le reservan salen de la medida del control común con acumulación de 1.024 filas. La receta sin acumulación no se ha medido y se medirá antes del piloto."
   ]
 }

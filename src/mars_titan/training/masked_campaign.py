@@ -132,6 +132,11 @@ def _views_report(directory, scope, policy):
     return report, digest
 
 
+def _subset_key(record):
+    """Identidad de un subconjunto sin la ruta de su manifiesto."""
+    return None if record is None else {k: v for k, v in record.items() if k != "manifest"}
+
+
 def scope_views(directory, scope, campaign):
     """Validar las vistas de un ámbito frente a la comparación y devolver sus huellas."""
     directory = Path(directory)
@@ -141,6 +146,10 @@ def scope_views(directory, scope, campaign):
     _require(
         [row.get("id") for row in report["folds"]] == list(resolved["windows"]),
         f"Las vistas de {scope} no contienen exactamente las ventanas del protocolo",
+    )
+    _require(
+        _subset_key(report.get("data_subset")) == _subset_key(campaign.get("data_subset")),
+        f"Las vistas de {scope} no usan el subconjunto que declara la campaña",
     )
     windows, edition = {}, None
     for row in report["folds"]:
@@ -182,7 +191,8 @@ def prepare_views(path, parent, output, *, scopes=None):
     """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada.
 
     `scopes` limita la preparación a algunos ámbitos de la campaña. Un ámbito con
-    elegibilidad por mercado en la comparación la aplica al preparar la unión.
+    elegibilidad por mercado en la comparación la aplica al preparar la unión. Si la campaña
+    declara un subconjunto de la edición, todas sus vistas se eligen con él.
     """
     from .joint_temporal_corpus import prepare_joint_temporal_corpus
     from .reference_campaign import campaign_views
@@ -198,6 +208,7 @@ def prepare_views(path, parent, output, *, scopes=None):
         scopes and len(set(scopes)) == len(scopes) and set(scopes) <= set(campaign["scopes"]),
         "Los ámbitos que se preparan deben ser de la campaña",
     )
+    subset = (campaign.get("data_subset") or {}).get("manifest")
     prepared = {}
     for scope in scopes:
         destination = output / scope
@@ -214,6 +225,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     input_policy=policy,
                     recover_annual_boundaries=True,
                     eligibility=_eligibility(campaign, scope),
+                    subset=subset,
                 )
             else:
                 market = next(iter(protocols))
@@ -234,6 +246,7 @@ def prepare_views(path, parent, output, *, scopes=None):
                     destination,
                     input_policy=policy,
                     recover_annual_boundaries=True,
+                    subset=subset,
                 )
         prepared[scope] = scope_views(destination, scope, campaign)
     return prepared
@@ -283,7 +296,9 @@ class JobRun:
     ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o una variante de CM-v1
     sobre su núcleo. `joint_epoch` solo existe en la continuación de un ajuste con parada
     conjunta y es la época común de su grupo. `bank` solo existe en un control en línea y es
-    el intento elegido del modelo cuyo banco fija las etiquetas y el tope.
+    el intento elegido del modelo cuyo banco fija las etiquetas y el tope. `traces` es la
+    cadencia y el presupuesto de las trazas de #448 que declara la ejecución, o None sin
+    trazas, y no entra en la identidad del trabajo.
     """
 
     job: dict
@@ -299,6 +314,7 @@ class JobRun:
     parent: dict | None = None
     joint_epoch: int | None = None
     bank: dict | None = None
+    traces: dict | None = None
 
 
 def _neural_fit(run):
@@ -315,6 +331,7 @@ def _neural_fit(run):
         input_policy=run.policy,
         prediction_retention=HELDOUT_RETENTION,
         joint_epoch=run.joint_epoch,
+        traces=run.traces,
     )
     if report["status"] == "paused":
         raise Paused
@@ -331,7 +348,12 @@ def _ridge_fit(run):
     from .tabular_corpus import run_tabular_reference
 
     return run_tabular_reference(
-        run.view, run.folder, kind="ridge", **run.case, prediction_retention=HELDOUT_RETENTION
+        run.view,
+        run.folder,
+        kind="ridge",
+        **run.case,
+        prediction_retention=HELDOUT_RETENTION,
+        traces=run.traces,
     )
 
 
@@ -348,6 +370,7 @@ def _xgboost_fit(run):
         stop=run.stop,
         prediction_retention=HELDOUT_RETENTION,
         shared_directory=jobs / ".shared-matrix",
+        traces=run.traces,
         **run.case,
     )
     if report["status"] == "paused":
@@ -387,6 +410,7 @@ def _online(run):
             rule=run.case["rule"],
             input_policy=run.policy,
             stop=run.stop,
+            traces=run.traces,
         )
     except OnlinePaused as error:
         raise Paused from error
@@ -601,6 +625,8 @@ class _Campaign:
         # Plataforma en la que confirma este proceso. Queda en cada recibo nuevo, fuera de la
         # identidad, para que los recibos anteriores a este registro sigan siendo válidos.
         self.platform = None
+        # Trazas de aprendizaje que declara la ejecución, o None. No entran en la identidad.
+        self.traces = None
         # Picos de memoria de los trabajos que corrieron en su propio proceso.
         self.usage = {}
         # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los modelos.
@@ -828,6 +854,7 @@ class _Campaign:
             parent=self.parent_of(job),
             joint_epoch=joint["epoch"] if joint else None,
             bank=self.bank_of(job),
+            traces=self.traces,
         )
         return (run, identity), None
 
@@ -1149,8 +1176,9 @@ def run_campaign(
         declared = load_storage(storage)
         guard = DiskGuard(output, declared["margin_bytes"], check_seconds=declared["check_seconds"])
         counts = view_counts(checked)
+        done = confirmed_ids(output, jobs)
         launch = guard.require_launch(
-            projection_report(jobs, counts, declared, confirmed_ids(output, jobs))
+            _with_traces(projection_report(jobs, counts, declared, done), jobs, done, execution)
         )
         disk = (guard, counts, declared)
     output.mkdir(parents=True, exist_ok=True)
@@ -1171,6 +1199,7 @@ def run_campaign(
             atomic_json(marker, identity)
         state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         state.platform = platform
+        state.traces = execution.traces
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         default_lease = _slot_lease(execution) if execution.isolated else _gpu_lease
         reservation = (lease or default_lease)() if uses_gpu else nullcontext()
@@ -1269,6 +1298,23 @@ class _environment:
                 os.environ.pop(name, None)
             else:
                 os.environ[name] = value
+
+
+def _with_traces(projection, jobs, done, execution):
+    """Sumar al pico la cota de las trazas de #448 de los ajustes pendientes.
+
+    Las trazas no se liberan con la retención, así que la cota es el presupuesto declarado
+    por trabajo multiplicado por los ajustes y controles en línea que faltan.
+    """
+    if execution.traces is None:
+        return projection
+    traced = sum(job["kind"] in (FIT, ONLINE) and job["id"] not in done for job in jobs)
+    extra = traced * execution.traces["max_bytes"]
+    return dict(
+        projection,
+        peak_bytes=projection["peak_bytes"] + extra,
+        learning_traces=dict(jobs=traced, bound_bytes=extra),
+    )
 
 
 def _slot_lease(execution):
@@ -1628,9 +1674,7 @@ def write_sources(
         state.receipts[job["id"]] = receipt
     platform = hardware_profiles.same_platform(
         {job["id"]: state.receipts[job["id"]].get("platform") for job in jobs},
-        unrecorded=None
-        if unrecorded_platform is None
-        else hardware_profiles.load_profile(unrecorded_platform),
+        unrecorded=hardware_profiles.attributed_profile(unrecorded_platform),
     )
     windows = state.views[scope]["windows"]
     folder = Path(output) / "sources"

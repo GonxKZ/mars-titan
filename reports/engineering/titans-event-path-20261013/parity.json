@@ -1,0 +1,668 @@
+{
+ "issue": 549,
+ "date": "2026-10-13",
+ "commits": {
+  "develop": "7a82b055",
+  "branch": "6a013588"
+ },
+ "environment": {
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.3",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "driver": "595.91.07",
+  "threads": {
+   "OMP_NUM_THREADS": 2,
+   "MKL_NUM_THREADS": 2
+  },
+  "cublas_workspace": ":4096:8",
+  "tf32": false,
+  "matmul_precision": "highest",
+  "mha_fastpath": false
+ },
+ "fixture": {
+  "corpus": "tests/training/chronological_fixture.py",
+  "hidden_size": 32,
+  "block_rows": 2,
+  "truncation": 3,
+  "epochs": 1,
+  "titans": "ChronologicalTrainer.run() de cada variante con RecordingOptimizer",
+  "readers": "ReadoutTrainer._train_pass de M0, M1 y M3 sobre mac_online con cabeza de cuantiles, receta tmt.recipe()"
+ },
+ "optimizer_steps": 0,
+ "scripts": {
+  "parity_capture.py": "1d9b8a1471d9a328b075a9c7386cc8af0675ae945637549d3057f46d049b21a5",
+  "parity_compare.py": "db190c587500f28c2dda87805010e0447c99ce1ca86d1760dd3ca47b42cf545d"
+ },
+ "all_equal": true,
+ "cases": {
+  "cpu-float64": {
+   "device": "cpu",
+   "dtype": "float64",
+   "same_keys": true,
+   "captures": {
+    "titans/transformer_direct": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_disabled": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_frozen": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_online": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "readout/m0": {
+     "audit_entries": 183,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m1": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m3": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cpu-float32": {
+   "device": "cpu",
+   "dtype": "float32",
+   "same_keys": true,
+   "captures": {
+    "titans/transformer_direct": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_disabled": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_frozen": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_online": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "readout/m0": {
+     "audit_entries": 183,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m1": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m3": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cuda-float32": {
+   "device": "cuda:0",
+   "dtype": "float32",
+   "same_keys": true,
+   "captures": {
+    "titans/transformer_direct": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_disabled": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_frozen": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_online": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "readout/m0": {
+     "audit_entries": 183,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m1": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m3": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    }
+   }
+  },
+  "cuda-float64": {
+   "device": "cuda:0",
+   "dtype": "float64",
+   "same_keys": true,
+   "captures": {
+    "titans/transformer_direct": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_disabled": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_frozen": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "titans/mac_online": {
+     "audit_entries": 605,
+     "predictions": 302,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 3,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run"
+     ],
+     "same_report": true
+    },
+    "readout/m0": {
+     "audit_entries": 183,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m1": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    },
+    "readout/m3": {
+     "audit_entries": 214,
+     "predictions": 88,
+     "optimizer_calls": 11,
+     "same_audit": true,
+     "same_gradients": true,
+     "same_calls": true,
+     "same_metrics": true,
+     "closed_passes": 1,
+     "same_states": true,
+     "same_identity": true,
+     "changed_modules": [
+      "mars_titan.models.titans.config",
+      "mars_titan.models.titans.episodic_readout",
+      "mars_titan.models.titans.financial",
+      "mars_titan.models.titans.financial_inputs",
+      "mars_titan.models.titans.state",
+      "mars_titan.training.financial_run",
+      "mars_titan.training.mars_titan_run"
+     ],
+     "same_report": true
+    }
+   }
+  }
+ }
+}

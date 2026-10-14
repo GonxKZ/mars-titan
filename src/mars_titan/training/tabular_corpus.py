@@ -26,6 +26,7 @@ from mars_titan.data.input_policy import (
 from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, gate_price_window
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.learning_traces.hooks import open_recorder, trace_identity
 from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.models.baselines.ridge import RidgeModel, ridge_statistics, solve_ridge
@@ -200,11 +201,14 @@ def run_tabular_reference(
     max_matrix_bytes: int = 256 * 1024**2,
     input_policy: str = STRICT_INPUTS,
     prediction_retention: str = FULL_TRAIN_VALIDATION,
+    traces: dict | None = None,
 ) -> dict:
     """Ajustar todas las filas o declarar falta de presupuesto, nunca reducir la población.
 
     La retención reservada escribe validación, calibración y evaluación por fila y
     resume el ajuste sin tabla. La retención anterior conserva ajuste y validación.
+    `traces` declara las trazas de #448. Ridge se resuelve de una vez, así que solo deja
+    un evento con la puntuación de validación y las estadísticas de sus coeficientes.
     """
     require_learning_allowed("el ajuste de la referencia tabular")
     partitions = retained_partitions(prediction_retention)
@@ -363,6 +367,8 @@ def run_tabular_reference(
             )
         if any(sha256(root / name) != digest for name, digest in code.items()):
             raise ValueError("El código ha cambiado durante el ajuste")
+        if kind == "ridge":
+            _trace_ridge(output, traces, report, model, predictions)
         report.update(
             status="completed",
             predictions=predictions,
@@ -383,6 +389,22 @@ def run_tabular_reference(
             else None,
         )
         atomic_json(output / "run.json", report)
+
+
+def _trace_ridge(output, traces, report, model, predictions):
+    """Evento único de trazas de Ridge, con su cursor en `report`."""
+    identity = {key: report[key] for key in ("model", "alpha", "manifest_sha256", "code")}
+    recorder = open_recorder(
+        output / "traces", traces, trace_identity("ridge", identity), step_unit="fit"
+    )
+    if recorder is None:
+        return
+    with recorder.at(0, "validation"):
+        recorder.scalar("validation.score", predictions["validation"]["metrics"]["session_mae"])
+        recorder.tensor("ridge.coefficient", torch.as_tensor(model.coefficient))
+        recorder.scalar("ridge.intercept", model.intercept)
+    recorder.flush()
+    report["traces"] = recorder.state_dict()
 
 
 def main():

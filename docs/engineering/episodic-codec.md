@@ -67,6 +67,12 @@ estimación de 5.615.789 bytes. El tramo incluye verificación, proyección y
 diagnósticos. La creación de la vista, el banco, la persistencia y el predictor
 quedaron fuera de esa medición.
 
+Con el enlace episódico nativo, `encode(batch, native=...)` proyecta cada bloque con `project_codec_block` (`native/src/episodic_projection.cpp`). El núcleo reproduce el orden de sumas de `einsum("bi,oi->bo", optimize=False)` de NumPy 2.5.3 en la línea base x86-64: dos acumuladores por salida, bloques de ocho entradas recorridos del par 6-7 al 0-1, el resto por pares y al final la suma de los dos acumuladores, con multiplicación y suma separadas. Vectoriza sobre las salidas y no sobre la reducción, así que el ancho de la instrucción no cambia el resultado. Se compila con `-ffp-contract=off`, que impide fusionar la multiplicación y la suma. En x86-64 hay versiones portable, AVX2 y AVX-512 que dan los mismos bits, y el enlace usa la más ancha disponible e informa de ella en `codec_projection_isa`. En el Ryzen 9 8945HS de las medidas, AVX-512 fue la más rápida con las seis formas del codec y todas las filas probadas. El [informe](../../reports/engineering/cm-v1-episodic-path-20261010/README.md) recoge los tiempos.
+
+`projection_backend` solo elige el núcleo si el enlace lo incluye y el einsum instalado coincide bit a bit con `_declared_order`, la misma suma escrita con operaciones de NumPy, con unos datos fijos que se comprueban una vez por proceso. Si NumPy sumara de otra forma, por ejemplo fusionando multiplicación y suma, el codec seguiría con einsum en todas sus llamadas. Como el resultado es el mismo, la identidad del codec no cambia. Las llamadas sin el enlace, como la corrección de MARS-TITAN, siguen con einsum.
+
+El codec guarda también la proyección transpuesta, que el núcleo recorre fila a fila. Ocupa lo mismo que la proyección y la estimación de memoria cuenta las dos. Liberar los signos antes de copiarla mantiene el pico de la construcción en tres matrices, dentro del presupuesto existente. La huella SHA-256 de la proyección se calcula una vez al construir el codec y queda en su identidad. En cada llamada se exige la misma memoria de solo lectura de las dos matrices: son vistas de objetos bytes, NumPy no permite volver a escribir en ellas y sustituir un atributo cambia su base.
+
 La integración inicial prevista conserva el contrato nativo de claves y valores
 de 64 coordenadas y capacidad máxima de 1.024 episodios. Tiene identidad propia
 y no sustituye al candidato de claves 128 y rasgos 256. Siguen pendientes la

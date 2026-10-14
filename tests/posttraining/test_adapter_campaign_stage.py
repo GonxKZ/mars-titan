@@ -29,6 +29,9 @@ from mars_titan.training import campaign_chain, chain_disjunction
 from mars_titan.training.campaign_plan import load_campaign, plan_campaign
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import LearningHoldError
+from tests.hardware.platform_doubles import laptop
+from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_traces.parity import EVERY_STEP, metrics, trace_rows
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 
@@ -322,7 +325,7 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     base_a, tmp_path, recorder
 ):
     output = tmp_path / "stage"
-    summary = run(base_a, output)
+    summary = run(base_a, output, platform=laptop())
     assert summary["status"] == "completed"
     assert summary["planned"] == summary["completed"]
     assert summary["planned"] == dict(training_jobs=6, prediction_jobs=1, selection_jobs=2)
@@ -331,6 +334,9 @@ def test_variant_a_adapts_the_previous_parent_with_new_rows_and_publishes_the_ch
     assert set(found) == {FROZEN} | {
         f"US/fold-001/gru__{point}/fit-s42" for point in (*points, "fusion_full_rank")
     }
+    # Cada recibo guarda la plataforma fuera de su identidad, como los de la campaña base.
+    assert all(receipt["platform"] == laptop() for receipt in found.values())
+    assert all("platform" not in receipt["identity"] for receipt in found.values())
     proof = json.loads((output / "windows-data/US/fold-001/fit-rows.json").read_text())
     assert proof["parent_window"] == "fold-000" and proof["window"] == "fold-001"
     assert (proof["start"], proof["end"]) == ("2022-01-01", "2022-04-01")
@@ -564,13 +570,18 @@ def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_
     assert len(recorder.optimizers) == 7
 
 
-def test_the_hold_blocks_before_reading_and_before_each_pending_job(
-    base_a, tmp_path, recorder, learning_hold
-):
+def test_the_hold_blocks_before_reading(base_a, tmp_path, learning_hold):
     learning_hold(False)
     with pytest.raises(LearningHoldError):
         run(base_a, tmp_path / "never")
     assert not (tmp_path / "never").exists()
+
+
+@lowers_learning_hold(
+    "tests/posttraining/test_adapter_campaign_stage.py::"
+    "test_the_hold_is_read_again_before_each_pending_job"
+)
+def test_the_hold_is_read_again_before_each_pending_job(base_a, tmp_path, recorder, learning_hold):
     allowed = learning_hold(True)
 
     def block(optimizer):
@@ -860,3 +871,36 @@ def test_a_staged_campaign_needs_the_disjunction_report_of_its_views(
     assert summary["status"] == "paused" and summary["completed"]["training_jobs"] == 0
     assert summary["disjunction_sha256"] == sha256(tmp_path / "report.json")
     assert recorder.optimizers == []
+
+
+def test_traces_reach_every_fitted_case_and_resume_without_duplicates(base_a, tmp_path, recorder):
+    """Trazas de #448 en la etapa: mismos recibos y cada caso con sus pasos una sola vez."""
+    plain = tmp_path / "plain"
+    assert run(base_a, plain)["status"] == "completed"
+    created = len(recorder.optimizers)
+    stop = SimpleNamespace(requested=False)
+
+    def pause(optimizer):
+        if len(recorder.optimizers) == created + 2 and len(optimizer.calls) == 1:
+            stop.requested = True
+
+    recorder.on_step = pause
+    traced = tmp_path / "traced"
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "paused"
+    recorder.on_step, stop.requested = None, False
+    assert run(base_a, traced, stop, traces=EVERY_STEP)["status"] == "completed"
+    expected, found = receipts(plain), receipts(traced)
+    assert set(found) == set(expected)
+    for name, receipt in found.items():
+        for key in ("score", "updates", "selection", "identity"):
+            assert receipt.get(key) == expected[name].get(key), (name, key)
+        for partition, record in receipt.get("predictions", {}).items():
+            assert record["sha256"] == expected[name]["predictions"][partition]["sha256"]
+        if name == FROZEN:
+            assert not (traced / "jobs" / name / "run" / "traces").exists()
+            continue
+        manifest, rows = trace_rows(traced / "jobs" / name / "run" / "traces")
+        assert manifest["identity"]["family"] == "posttraining"
+        steps = {row["step"] for row in rows if row["phase"] == "train"}
+        assert steps == set(range(1, receipt["updates"] + 1))
+        assert "validation.score" in metrics(rows, "validation")

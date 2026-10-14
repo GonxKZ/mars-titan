@@ -19,6 +19,9 @@ ventana de las variantes A y B, por familia y por opción, incluida la etapa de 
 de adaptadores. Con una declaración preparada (`campaign_extensions`), las familias que A
 y B todavía no declaran se miden y se estiman como si lo estuvieran.
 
+Las mediciones cronológicas admiten `traces`, que engancha las trazas de #448 a cada
+entrenador (y a la corrección B6) para medir su coste con `learning_traces.overhead`.
+
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
 variante una estimación orientativa de esa etapa por nivel, ámbito, modelo y predictor,
@@ -937,21 +940,40 @@ def _inference(trainer, inputs, paused, settings):
     )
 
 
-def _chronological(build, fresh, paused, options, inputs, settings, counters=()):
+def _trace_volume(trainer):
+    """Volumen de las trazas del recorrido medido, tras volcar lo pendiente."""
+    recorder = trainer.traces.recorder
+    trainer.traces.checkpoint()
+    return dict(
+        every=recorder.config.every,
+        step_calls=trainer.optimizer.calls,
+        parts=recorder.sequence,
+        bytes=recorder.bytes,
+        exhausted_at=recorder.exhausted_at,
+    )
+
+
+def _chronological(build, fresh, paused, options, inputs, settings, counters=(), traces=None):
     """Medir el ajuste con cada opción y la inferencia de un control cronológico.
 
     `build(opción)` construye el entrenador con `_NoStepOptimizer` y `fresh(entrenador)` el
     estado vacío de su recorrido de ajuste. La inferencia no depende de la opción de
     memoria y se mide una vez, con la de la receta y sobre los mismos eventos de ajuste.
     Una opción que no cabe en la memoria reservada se registra y la medición sigue.
+    `traces(entrenador)`, si se indica, le engancha las trazas de #448 antes de medir, y el
+    registro de la opción añade su volumen (`learning_traces`).
     """
     import torch
 
     record = dict(declared_option=option_name(options[0]), options={})
     for index, option in enumerate(options):
         trainer = build(option)
+        if traces is not None:
+            traces(trainer)
         torch.cuda.reset_peak_memory_stats(0)
         result = _train_option(trainer, fresh(trainer), paused, settings, counters)
+        if getattr(trainer, "traces", None) is not None and result.get("status") != OUT_OF_MEMORY:
+            result["learning_traces"] = _trace_volume(trainer)
         gc.collect()
         result.update(
             option,
@@ -1030,7 +1052,7 @@ def _shared(candidates, inputs):
 
 
 def measure_titans(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir cada control de Titans-MAC con la receta de la campaña y sus opciones de memoria.
 
@@ -1075,6 +1097,7 @@ def measure_titans(
                     _options(recipe, TITANS_OPTIONS),
                     inputs,
                     settings,
+                    traces=traces,
                 )
                 rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:
@@ -1083,7 +1106,16 @@ def measure_titans(
 
 
 def _readout_record(
-    family, parent, document, case, window, work, device, settings, counters=BANK_COUNTERS
+    family,
+    parent,
+    document,
+    case,
+    window,
+    work,
+    device,
+    settings,
+    counters=BANK_COUNTERS,
+    traces=None,
 ):
     """Medir el lector de una familia sobre un padre `mac_online` con pesos iniciales.
 
@@ -1168,6 +1200,7 @@ def _readout_record(
         inputs,
         settings,
         counters,
+        traces=traces,
     )
     if scalers:
         value = scalers["value"]
@@ -1181,12 +1214,13 @@ def _readout_record(
     return dict(record, bank_capacity=recipe.bank_capacity)
 
 
-def _correction_record(parent, case, window, device, settings):
+def _correction_record(parent, case, window, device, settings, traces=None):
     """Medir la corrección B6 sobre un padre `mac_online` con pesos iniciales.
 
     B6 no tiene ajuste. Se mide la inferencia cronológica del padre con la lectura y la
     escritura de A sobre los eventos del tramo de ajuste, que no tienen calentamiento, así
     que todos los eventos medidos corrigen. El caso solo cambia η y comparte la medida.
+    `traces(inferencia)`, si se indica, le da el registrador de las trazas de #448.
     """
     import torch
 
@@ -1215,6 +1249,8 @@ def _correction_record(parent, case, window, device, settings):
     inference = correction.CorrectionInference(
         predictor, chronological, mature, FrozenEpisodeCodec(specification)
     )
+    if traces is not None:
+        traces(inference)
     prefix = [0]
     for count in inputs:
         prefix.append(prefix[-1] + count)
@@ -1231,7 +1267,7 @@ def _correction_record(parent, case, window, device, settings):
         torch.equal(a, b.detach()) for a, b in zip(initial, predictor.parameters(), strict=True)
     ):
         raise RuntimeError("La medición de caudal ha modificado parámetros")
-    return dict(
+    record = dict(
         declared_option="recipe",
         options={"recipe": dict(train=None, peak_vram_allocated_bytes=peak)},
         inference=rate,
@@ -1240,10 +1276,21 @@ def _correction_record(parent, case, window, device, settings):
         associative_writes=inference.memory.writes,
         window=fold["id"],
     )
+    recorder = inference.trace_recorder
+    if recorder is not None:
+        recorder.flush()
+        record["learning_traces"] = dict(
+            every=recorder.config.every,
+            write_events=inference._trace_events,
+            parts=recorder.sequence,
+            bytes=recorder.bytes,
+            exhausted_at=recorder.exhausted_at,
+        )
+    return record
 
 
 def measure_mars_titan(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir el lector de cada modelo de MARS-TITAN sobre su padre `titans_mac_online`.
 
@@ -1283,7 +1330,7 @@ def measure_mars_titan(
             for arm, candidates in section["candidates"].items():
                 _, case = candidates[0]
                 if "associative_memory" in case["components"]:
-                    record = _correction_record(parent, case, window, device, settings)
+                    record = _correction_record(parent, case, window, device, settings, traces)
                     rates[arm] = dict(
                         record,
                         components=case["components"],
@@ -1296,7 +1343,16 @@ def measure_mars_titan(
                 if case["components"].get("episodic_bank") == "m3":
                     counters += tuple(m3_counters())
                 record = _readout_record(
-                    family, parent, readout, case, window, work, device, settings, counters
+                    family,
+                    parent,
+                    readout,
+                    case,
+                    window,
+                    work,
+                    device,
+                    settings,
+                    counters,
+                    traces=traces,
                 )
                 rates[arm] = dict(
                     record,
@@ -1329,7 +1385,9 @@ def _check_cm_v1(campaign, segments):
     )
 
 
-def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8):
+def measure_cm_v1(
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
+):
     """Medir los dos núcleos de CM-v1 y el lector de cada modelo, sin pasos ni cambios de pesos.
 
     Los núcleos recorren `ChronologicalTrainer._train_pass` con la receta del núcleo:
@@ -1390,6 +1448,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
                     inputs,
                     settings,
                     CONTROL_COUNTERS if contract["mode"] == "penalty" else (),
+                    traces=traces,
                 )
                 rates[core] = dict(
                     record,
@@ -1413,6 +1472,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
                     work,
                     device,
                     settings,
+                    traces=traces,
                 )
                 rates[arm] = dict(
                     record,
@@ -1427,7 +1487,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
 
 
 def measure_candidate(
-    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8, traces=None
 ):
     """Medir la GRU candidata con su receta, su variante y sus opciones de memoria.
 
@@ -1499,6 +1559,7 @@ def measure_candidate(
                 _options(recipe, CANDIDATE_OPTIONS),
                 inputs,
                 settings,
+                traces=traces,
             )
             rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
     finally:

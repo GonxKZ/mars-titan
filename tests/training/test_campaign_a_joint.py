@@ -22,12 +22,13 @@ from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.training import campaign_budget as budget
 from mars_titan.training import campaign_data_policy as data_policy
 from mars_titan.training import campaign_numerics as numerics
+from mars_titan.training import campaign_online_controls
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.joint_temporal_corpus import prepare_joint_temporal_corpus
 from mars_titan.training.selection import JOINT_PLATEAU
-from tests.learning_hold_lowering import lowers_learning_hold
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, run
 from tests.training.test_masked_campaign_joint import COMMON, STOPS, JointRecorder, receipt, slot
 from tests.training.test_walk_forward_v2_views import expected, fixture, observed
@@ -77,6 +78,9 @@ def edited(tmp_path, change, *, comparison_change=None):
         ("cm_v1", "declaration"),
     ):
         value[section][key] = str((CAMPAIGN.parent / value[section][key]).resolve())
+    receipt = value["memory_options"].get("receipt")
+    if receipt is not None:
+        value["memory_options"]["receipt"] = str((CAMPAIGN.parent / receipt).resolve())
     change(value)
     atomic_json(folder / "baselines/campaign.json", value)
     return folder / "baselines/campaign.json"
@@ -176,8 +180,16 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v.pop("early_stop"), "modo de parada"),
         (lambda v: v.update(stopping={"mode": "protocol"}), "modo"),
         (lambda v: v["memory_options"]["titans_mac"].update(accumulation_rows=128), "receta"),
+        (lambda v: v["memory_options"]["episodic_gru"].update(recompute=True), "receta"),
         (lambda v: v["memory_options"].pop("cm_v1"), "opciones de memoria"),
         (lambda v: v["memory_options"]["episodic_gru"].pop("recompute"), "opciones de memoria"),
+        (lambda v: v["memory_options"].pop("receipt"), "recibo de su medida"),
+        (
+            lambda v: v["memory_options"].update(receipt=str(Path("missing.json").resolve())),
+            "no existe",
+        ),
+        (lambda v: pending(v, receipt=True), "recibo de su medida"),
+        (lambda v: v.update(memory_options=["pending"]), "opciones de memoria"),
         (lambda v: v.pop("seed_policy"), "contrato"),
         (lambda v: v.update(execution={"order": "random"}), "orden de ejecución"),
         (lambda v: v.pop("execution"), "contrato"),
@@ -198,8 +210,13 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "early_stop_mode_without_section",
         "early_stop_section_with_protocol_mode",
         "memory_value_differs_from_recipe",
+        "recompute_differs_from_recipe",
         "missing_family_options",
         "missing_option",
+        "fixed_options_without_receipt",
+        "missing_receipt_file",
+        "pending_options_with_receipt",
+        "memory_options_not_a_mapping",
         "v2_without_seed_policy",
         "unknown_execution_order",
         "v2_without_execution_order",
@@ -216,6 +233,115 @@ def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
 ):
     with pytest.raises(ValueError, match=message):
         plan.load_campaign(edited(tmp_path, change))
+
+
+def without_kernels(value):
+    for key in ("precision", "cuda_graphs"):
+        value["neural"].pop(key)
+
+
+def test_v2_neural_cases_carry_strict_precision_and_the_graph_step_into_their_identity(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS, _options
+
+    # _options exige el espacio de trabajo determinista de cuBLAS, como la ranura de la campaña.
+    # Sin fijarlo aquí, la prueba dependería de otro módulo que lo deja en el entorno.
+    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    loaded = campaign()
+    neural = loaded["neural"]
+    plain = plan.load_campaign(edited(tmp_path, without_kernels))["neural"]
+    assert (neural["precision"], neural["cuda_graphs"], neural["batch_size"]) == (
+        "fp32_strict",
+        True,
+        256,
+    )
+    for arm, candidates in neural["candidates"].items():
+        # Solo cambian los dos campos de núcleo frente a los casos sin declararlos.
+        assert [(name, case) for name, case in candidates] == [
+            (name, case | dict(precision="fp32_strict", cuda_graphs=True))
+            for name, case in plain["candidates"][arm]
+        ]
+        for _, case in candidates:
+            _options(
+                case,
+                neural["batch_size"],
+                neural["checkpoint_seconds"],
+                0,
+                input_policy=loaded["input_policy"],
+                prediction_retention=HELDOUT_FULL_TRAIN_SESSIONS,
+            )
+    # Cada búsqueda lleva su caso completo, que la campaña entrega al ejecutor y a la identidad.
+    searches = [
+        job
+        for job in plan.plan_campaign(loaded)
+        if job["family"] == plan.NEURAL and job["stage"] == "search"
+    ]
+    candidates = [job for job in searches if job["kind"] != plan.ONLINE]
+    assert candidates
+    for job in candidates:
+        assert job["case"] in [case for _, case in neural["candidates"][job["arm"]]]
+    # El control en línea no ajusta un caso de la sección neuronal. Su caso es solo la regla de
+    # online_controls, y su FP32 estricto lo fija la ranura y lo vuelve a exigir su ejecutor.
+    online = [job for job in searches if job["kind"] == plan.ONLINE]
+    assert {job["arm"] for job in online} == {campaign_online_controls.ARM}
+    rules = [case for _, case in campaign_online_controls.search_cases(loaded["online_controls"])]
+    assert all(job["case"] in rules and set(job["case"]) == {"rule"} for job in online)
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda n: n.update(precision="tf32"), "precisión neuronal"),
+        (lambda n: n.update(precision=None), "precisión neuronal"),
+        (lambda n: n.update(cuda_graphs="true"), "booleano"),
+        (lambda n: n.update(cuda_graphs=1), "booleano"),
+        (lambda n: n.update(compile=True), "sección neuronal no cumple"),
+        (lambda n: n.update(batch_size=4097), "Lote"),
+        (lambda n: n.update(batch_size=0), "Lote"),
+        (lambda n: n.update(batch_size=512.0), "Lote"),
+    ],
+    ids=[
+        "tf32",
+        "null_precision",
+        "graphs_text",
+        "graphs_integer",
+        "undeclared_option",
+        "batch_over_limit",
+        "empty_batch",
+        "float_batch",
+    ],
+)
+def test_v2_neural_section_rejects_undeclared_kernels_and_batches(tmp_path, change, message):
+    with pytest.raises(ValueError, match=message):
+        plan.load_campaign(edited(tmp_path, lambda value: change(value["neural"])))
+
+
+def test_neural_graphs_require_families_with_checked_parity(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "GRAPH_KINDS", ("rnn", "lstm", "gru", "dlinear"))
+    with pytest.raises(ValueError, match="paridad comprobada"):
+        plan.load_campaign(edited(tmp_path, lambda value: None))
+
+
+@pytest.mark.parametrize("batch", [1024, 4096])
+def test_v2_neural_section_keeps_the_declared_batch_above_256(tmp_path, batch):
+    loaded = plan.load_campaign(
+        edited(tmp_path, lambda value: value["neural"].update(batch_size=batch))
+    )
+    assert loaded["neural"]["batch_size"] == batch
+    assert loaded["neural"]["candidates"] == campaign()["neural"]["candidates"]
+
+
+def test_v2_neural_graphs_false_and_absent_options_leave_the_cases_untouched(tmp_path):
+    plain = plan.load_campaign(edited(tmp_path / "plain", without_kernels))["neural"]
+    graphs_off = plan.load_campaign(
+        edited(tmp_path / "off", lambda value: value["neural"].update(cuda_graphs=False))
+    )["neural"]
+    for arm, candidates in plain["candidates"].items():
+        assert all("precision" not in case and "cuda_graphs" not in case for _, case in candidates)
+        assert graphs_off["candidates"][arm] == [
+            (name, case | dict(precision="fp32_strict")) for name, case in candidates
+        ]
 
 
 def test_v2_declares_the_joint_stop_of_its_groups_before_any_result():
@@ -269,30 +395,57 @@ def test_the_joint_stop_groups_keep_every_paired_contrast_inside_one_scope_and_g
     assert us == {("titans_mac_online", "transformer_compact"), ("mars_titan_m1",)}
 
 
+def pending(value, *, receipt=False):
+    """Devolver las opciones de memoria al estado previo a la medida."""
+    value["memory_options"] = {
+        family: dict.fromkeys(options, "pending")
+        for family, options in value["memory_options"].items()
+        if family != "receipt"
+    } | ({"receipt": value["memory_options"]["receipt"]} if receipt else {})
+
+
 def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
-    blockers = plan.launch_blockers(campaign())
+    # La campaña declarada fija los valores medidos en cuda:0, iguales a los de sus recetas.
+    titans = json.loads(
+        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
+    )["recipe"]
+    candidate = json.loads((CONFIGS / "candidate/chronological-training.json").read_text())[
+        "recipe"
+    ]
+    declared = campaign()
+    assert declared["memory_options"] == dict(
+        titans_mac=dict(accumulation_rows=titans["accumulation_rows"]),
+        episodic_gru=dict(
+            accumulation_rows=candidate["accumulation_rows"], recompute=candidate["recompute"]
+        ),
+        cm_v1=dict(accumulation_rows=titans["accumulation_rows"]),
+    )
+    assert (titans["accumulation_rows"], candidate["accumulation_rows"]) == (1024, 128)
+    assert candidate["recompute"] is False
+    # La regla del control en línea ya tiene sus valores, así que nada bloquea el lanzamiento.
+    assert plan.launch_blockers(declared) == []
+
+    loaded = plan.load_campaign(edited(tmp_path / "pending", pending))
+    blockers = plan.launch_blockers(loaded)
     memory = [reason for reason in blockers if "medida de memoria" in reason]
     assert len(memory) == 4 and all("pendiente" in reason for reason in blockers)
 
-    # Titans-MAC y los núcleos de CM-v1 comparten la receta cronológica, que ya declara la
-    # acumulación medida en cuda:0. Un valor igual al de la receta deja de bloquear.
-    recipe = json.loads(
-        (CONFIGS / "titans/chronological-training-historical-masked.json").read_text()
-    )
-    rows = recipe["recipe"]["accumulation_rows"]
-
+    # Un valor igual al de la receta deja de bloquear aunque los demás sigan pendientes.
     def fixed(value):
-        value["memory_options"]["titans_mac"]["accumulation_rows"] = rows
-        value["memory_options"]["cm_v1"]["accumulation_rows"] = rows
+        receipt = value["memory_options"]["receipt"]
+        pending(value)
+        value["memory_options"]["titans_mac"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["cm_v1"]["accumulation_rows"] = titans["accumulation_rows"]
+        value["memory_options"]["receipt"] = receipt
 
-    loaded = plan.load_campaign(edited(tmp_path, fixed))
-    # La regla del control en línea ya tiene sus valores y no bloquea.
+    loaded = plan.load_campaign(edited(tmp_path / "fixed", fixed))
     assert [reason.split(".")[0] for reason in plan.launch_blockers(loaded)] == [
         "episodic_gru",
         "episodic_gru",
     ]
     report = plan.check_campaign(CAMPAIGN)
-    assert report["launch_blockers"] == blockers
+    assert report["launch_blockers"] == plan.launch_blockers(declared)
+    assert report["memory_options"] == declared["memory_options"]
     assert report["scope_arms"]["US"] == list(CONTROLS)
     assert report["stopping"] == {"mode": plan.EARLY_STOP}
     assert (
@@ -303,9 +456,43 @@ def test_memory_options_block_the_launch_until_they_match_the_recipe(tmp_path):
     )
 
 
+RECEIPT = Path("reports/engineering/campaign-kernels-20261009/vram-throughput.json")
+
+
+@pytest.mark.parametrize(
+    ("model", "change"),
+    [
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=512)),
+        ("titans_mac", lambda entry: entry["recipe_options"].update(accumulation_rows=1024.0)),
+        ("episodic_gru", lambda entry: entry["recipe_options"].update(recompute=True)),
+        ("cm_v1_core", lambda entry: entry.update(measured=False)),
+        ("cm_v1_core", lambda entry: entry.update(model="cm_v1")),
+    ],
+    ids=["other_rows", "rows_as_float", "with_recompute", "not_measured", "other_model"],
+)
+def test_fixed_memory_options_need_a_measure_with_their_values_in_the_receipt(
+    tmp_path, model, change
+):
+    receipt = json.loads(RECEIPT.read_text())
+    for entry in receipt["entries"]:
+        if entry["model"] == model:
+            change(entry)
+    path = tmp_path / "receipt.json"
+    atomic_json(path, receipt)
+    with pytest.raises(ValueError, match="no contiene una medida"):
+        plan.load_campaign(
+            edited(tmp_path, lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+    atomic_json(path, dict(receipt, entries={}))
+    with pytest.raises(ValueError, match="no tiene medidas"):
+        plan.load_campaign(
+            edited(tmp_path / "again", lambda v: v["memory_options"].update(receipt=str(path)))
+        )
+
+
 def test_run_refuses_a_campaign_with_pending_memory_options_before_reading_views(tmp_path):
     with pytest.raises(ValueError, match="no se puede lanzar"):
-        engine.run_campaign(CAMPAIGN, {}, tmp_path / "out")
+        engine.run_campaign(edited(tmp_path, pending), {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()
 
 
@@ -773,8 +960,7 @@ def joint_campaign(tmp_path_factory, learning_doubles_module):
 def learning_doubles_module(tmp_path_factory):
     from mars_titan.training.learning_hold import HOLD_ENV
 
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}), encoding="utf-8")
+    path = allowed_hold(tmp_path_factory.mktemp("hold") / "training-hold.json")
     patch = pytest.MonkeyPatch()
     patch.setenv(HOLD_ENV, str(path))
     yield path
@@ -1042,6 +1228,23 @@ def test_recorded_precision_follows_every_alias_in_nested_reports():
         "informe.cases[1].cudnn_tf32=True",
     ]
     assert numerics.recorded(dict(a=[dict(b=1)]), numerics.STRICT_FP32) == []
+
+
+@lowers_learning_hold(
+    "tests/training/test_campaign_a_joint.py::"
+    "test_neural_receipts_record_the_declared_kernels_in_their_identity"
+)
+def test_neural_receipts_record_the_declared_kernels_in_their_identity(joint_campaign):
+    receipts = [
+        json.loads(path.read_text())
+        for path in (joint_campaign.output / "jobs").rglob("receipt.json")
+    ]
+    neural = [item for item in receipts if item["identity"]["family"] == plan.NEURAL]
+    # Búsquedas y finalistas: el finalista hereda el caso del ganador con su semilla.
+    assert {item["identity"]["stage"] for item in neural} == {"search", "finalist"}
+    for item in neural:
+        case = item["identity"]["case"]
+        assert (case["precision"], case["cuda_graphs"]) == ("fp32_strict", True)
 
 
 def test_comparison_excludes_ineligible_china_rows_and_pairs_joint_with_separate(joint_campaign):

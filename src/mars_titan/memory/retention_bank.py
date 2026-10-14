@@ -231,6 +231,9 @@ class RetentionBank:
         )
         self._rng = np.random.Generator(np.random.PCG64(config.seed))
         self._receipt = None
+        # Clave FP32 de cada registro retenido, por ID. La clave de un registro no cambia
+        # una vez escrito, así que cada una se convierte desde el enlace una sola vez.
+        self._keys = {}
 
     def identity(self):
         return json.loads(self._identity_json)
@@ -265,6 +268,33 @@ class RetentionBank:
             retention_rng=_copy(self._rng.bit_generator.state),
             receipt=self.receipt,
         )
+
+    def _fork(self):
+        """Copia de memoria y generador para proponer, sin el recibo que la propuesta sustituye.
+
+        Da el mismo estado que `restore(snapshot())`, sin pasar el generador y el recibo por
+        JSON ni volver a validar un recibo que este banco ya validó al crearlo o recuperarlo.
+        """
+        candidate = self._new()
+        candidate._memory.restore_bytes(self._memory.snapshot_bytes())
+        candidate._rng.bit_generator.state = self._rng.bit_generator.state
+        return candidate
+
+    def _points(self, eligible, old_ids):
+        """Matriz FP32 de las claves de `eligible` y claves conocidas de los IDs retenidos.
+
+        Solo convierte desde el enlace las claves que este banco todavía no tenía. Cada fila
+        tiene los mismos bits que `np.asarray(record.key, dtype=np.float32)`.
+        """
+        rows = {}
+        for record in eligible:
+            row = self._keys.get(record.id) if record.id in old_ids else None
+            if row is None:
+                # Filas de solo lectura, porque las comparten el banco y sus propuestas.
+                row = np.asarray(record.key, dtype=np.float32)
+                row.flags.writeable = False
+            rows[record.id] = row
+        return np.stack([rows[record.id] for record in eligible]), rows
 
     def restore(self, payload):
         if (
@@ -337,8 +367,8 @@ class RetentionBank:
         eligible = sorted((*old, *normalized), key=lambda row: row.id)
         ids = [r.id for r in eligible]
         names = [f"{identifier:020d}" for identifier in ids]
-        points = np.asarray([r.key for r in eligible], dtype=np.float32)
-        candidate = self.restore(self.snapshot())
+        points, rows = self._points(eligible, {r.id for r in old})
+        candidate = self._fork()
         if self.config.policy == "reservoir":
             for record in incoming:
                 candidate._memory.write(record, confirmed_at)
@@ -368,12 +398,17 @@ class RetentionBank:
             max_working_bytes=remaining,
             max_distance_pairs=self.config.max_distance_pairs,
             max_swaps=self.config.max_swaps,
+            # Las dos dan los mismos bits que la referencia. Si no caben en el presupuesto,
+            # la selección sigue la ruta de referencia.
+            reuse_distances=True,
+            bounded_background=True,
         )
         if selection.status == "swap_limit":
             raise MedoidBudgetExceeded("La retención no completó los intercambios permitidos")
         retained = sorted(int(identifier) for identifier in selection.retained_ids)
         if self.config.policy != "reservoir":
             candidate._memory.retain_batch(incoming, retained, confirmed_at)
+        candidate._keys = {identifier: rows[identifier] for identifier in retained}
         candidate._receipt = dict(
             policy=self.config.policy,
             before_seen=self.seen,
