@@ -49,12 +49,13 @@ def test_the_a_v2_publication_declares_every_budget_difference(loaded):
     assert result["passed"], (result["undeclared"], result["stale"])
     budgets = result["budgets"]
     # Fija la referencia el primer modelo propio, de MARS-TITAN. Entre los propios solo
-    # difieren los seis B6, que trasladan el padre congelado sin ajustar y lo declaran.
+    # difieren los ocho B6 (seis con η y dos con la regla de Kalman), que trasladan el padre
+    # congelado sin ajustar y lo declaran.
     assert budgets[result["reference"]]["family"] == plan.MARS
     own = {arm for arm, item in budgets.items() if item["family"] in budget.OWN}
     differences = result["differences"]
     carried = {arm for arm in own if arm.startswith("mars_titan_b6")}
-    assert len(carried) == 6 and own - carried
+    assert len(carried) == 8 and own - carried
     assert not (own - carried) & set(differences)
     assert all(differences[arm] == ["iterations"] for arm in carried)
     assert differences["ridge"] == ["iterations", "search_cases", "seeds"]
