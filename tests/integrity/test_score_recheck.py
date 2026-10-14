@@ -13,7 +13,7 @@ import pytest
 from mars_titan.data import prediction_files
 from mars_titan.evaluation import forecast_scores
 from mars_titan.evaluation import walk_forward_comparison as walk
-from mars_titan.integrity import score_recheck
+from mars_titan.integrity import metric_registry, score_recheck
 from tests.evaluation.test_walk_forward_comparison import Study
 from tests.integrity.test_row_identity import compact_all
 
@@ -30,11 +30,17 @@ def test_a_faithful_comparison_passes_the_recheck(tmp_path, scope):
     study, output = publish(tmp_path, scope)
     result = score_recheck.recheck(study.config_path, study.sources_path, scope, output)
     assert result["passed"], json.dumps(result, indent=1)[:2000]
-    # Modelos ridge (1 semilla), gru y titans (2 semillas) en 2 ventanas.
-    assert len(result["windows"]) == 2 * (1 + 2 + 2)
+    # Modelos ridge (1 semilla), gru y titans (2 semillas) y el control cero en 2 ventanas.
+    assert len(result["windows"]) == 2 * (1 + 2 + 2 + 1)
     assert all(check["sessions"] > 0 for check in result["windows"])
+    # También el control cero se vuelve a agregar en cada vista.
+    assert {entry["arm"] for entry in result["aggregates"]} == {"zero", "ridge", "gru", "titans"}
     views = {entry["view"] for entry in result["aggregates"]}
     assert views == ({"US"} if scope == "US" else {"US+CN", "US", "CN"})
+    # Cada resumen se reconstruye con el registro de métricas, cuya huella queda en el informe.
+    registry = metric_registry.load_registry()
+    assert result["metric_registry"] == dict(path=registry["path"], sha256=registry["sha256"])
+    assert all(entry["checked"] > 90 for entry in result["aggregates"])
 
 
 def test_a_bug_in_the_primary_mae_is_detected(tmp_path, monkeypatch):
@@ -110,3 +116,15 @@ def test_the_cli_writes_the_recheck_and_signals_failure(tmp_path, monkeypatch):
     written = json.loads(target.read_text())
     assert written["passed"] and written["coverage"]["calibrated_quantiles"] is False
     assert np.isfinite(written["tolerance"]["rtol"])
+
+
+def test_the_recalculation_leaves_out_the_markets_the_design_drops(tmp_path):
+    study = Study(tmp_path / "study", scope="US+CN")
+    config = walk.load_config(study.config_path)
+    sources = walk.load_sources(study.sources_path, config, "US+CN")
+    # Como si China aún no fuera elegible en la segunda ventana.
+    sources["eligible"]["CN"] = [w for w in sources["eligible"]["CN"] if w != "fold-001"]
+    scored, excluded = score_recheck.independent_window(config, sources, "gru", 42, "fold-001")
+    assert set(scored["market"]) == {"US"} and excluded == {"CN": 21}
+    zero = score_recheck.independent_zero(config, sources, "fold-001")
+    assert set(zero["market"]) == {"US"} and (zero["mae"] > 0).all()

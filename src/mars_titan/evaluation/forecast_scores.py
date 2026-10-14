@@ -7,6 +7,12 @@ definido se cuenta con su motivo y nunca se sustituye por cero en el promedio.
 Con cuantiles se añaden la puntuación de cada intervalo central y la probabilidad
 implícita de que el residuo sea positivo, con su Brier por sesión y los recuentos
 por intervalo de probabilidad que permiten la curva de fiabilidad y el ECE.
+
+La abstención se presenta con su cobertura. Además de la cobertura de llamadas, cada sesión
+guarda los aciertos de dirección entre las ceil(c · n) filas con objetivo no nulo y mayor
+|predicción|, para cada cobertura c de ``SELECTIVE_COVERAGES``. Una predicción cero cuenta
+como fallo, así que un modelo que se abstiene no mejora su exactitud a una cobertura fija
+(``direction_accuracy@c``), y con c = 1 la serie es ``direction_accuracy``.
 """
 
 import hashlib
@@ -40,6 +46,10 @@ _SERIES = {
 }
 COVERAGE_ERROR = "coverage_error@"
 INTERVAL_SCORE = "interval_score@"
+# Exactitud de dirección a una cobertura fija: aciertos entre las filas con mayor |predicción|.
+SELECTIVE_ACCURACY = "direction_accuracy@"
+SELECTIVE_COVERAGES = DEFAULT_COVERAGES
+SELECTIVE_RULE = "highest_absolute_point_within_session_ties_by_canonical_row_zero_is_miss_v1"
 # Métricas que solo existen si el modelo emite cuantiles.
 QUANTILE_SERIES = ("pinball", "sign_brier")
 SIGN_PROBABILITY_RULE = "piecewise_linear_cdf_at_zero_flat_beyond_extreme_levels_v1"
@@ -76,6 +86,7 @@ _PER_SESSION = (
     "sign_bin_rows",
     "sign_bin_probability",
     "sign_bin_up",
+    "selective_hits",
 )
 
 
@@ -205,6 +216,22 @@ class SessionScores:
     sign_bin_rows: np.ndarray | None = None
     sign_bin_probability: np.ndarray | None = None
     sign_bin_up: np.ndarray | None = None
+    selective_hits: np.ndarray | None = None
+
+    def selective_rows(self):
+        """Filas retenidas por sesión y cobertura: ceil(c · n) de las n con objetivo no nulo."""
+        return np.column_stack(
+            [_eligible_retained(self.direction_eligible, c) for c in SELECTIVE_COVERAGES]
+        )
+
+    def _selective(self, metric):
+        coverage = self._nominal(metric, SELECTIVE_ACCURACY)
+        index = next(
+            (i for i, c in enumerate(SELECTIVE_COVERAGES) if math.isclose(c, coverage)), None
+        )
+        _require(index is not None, "Cobertura de dirección no calculada")
+        _require(self.selective_hits is not None, "Las sesiones no guardan la exactitud selectiva")
+        return _ratio(self.selective_hits[:, index], self.selective_rows()[:, index])
 
     def _values(self, metric):
         if metric == "mae":
@@ -219,6 +246,8 @@ class SessionScores:
             return _ratio(self.up_hits, self.up_calls)
         if metric == "down_precision":
             return _ratio(self.down_hits, self.down_calls)
+        if isinstance(metric, str) and metric.startswith(SELECTIVE_ACCURACY):
+            return self._selective(metric)
         if metric == "sign_brier":
             _require(self.sign_brier is not None, "El modelo no emite cuantiles para el Brier")
             return self.sign_brier, self.direction_eligible > 0
@@ -270,11 +299,14 @@ class SessionScores:
                 values,
                 np.ones(len(values), dtype=bool),
             )
-        _require(metric in _SERIES, "Métrica por sesión no admitida")
+        _require(
+            metric in _SERIES or metric.startswith(SELECTIVE_ACCURACY),
+            "Métrica por sesión no admitida",
+        )
         values, defined = self._values(metric)
         return SessionSeries(
             metric,
-            _SERIES[metric],
+            _SERIES.get(metric, False),
             self.cohort_sha256,
             self.markets,
             self.session_market,
@@ -467,9 +499,28 @@ class SessionScores:
                     float(np.mean(defined_ic > 0)) if len(defined_ic) else None
                 ),
             ),
+            selective_direction=self._selective_curve(market_weighting),
             quantiles=None if self.levels is None else self._quantiles(market_weighting),
             quantiles_reason=None if self.levels is not None else "El modelo no emite cuantiles",
         )
+
+    def _selective_curve(self, weighting):
+        """Exactitud de dirección a cada cobertura, con las filas que retiene cada una."""
+        if self.selective_hits is None:
+            return None
+        retained = self.selective_rows()
+        curve = []
+        for index, coverage in enumerate(SELECTIVE_COVERAGES):
+            accuracy, defined = _ratio(self.selective_hits[:, index], retained[:, index])
+            curve.append(
+                dict(
+                    coverage=coverage,
+                    retained_rows=int(np.sum(retained[:, index])),
+                    hits=int(np.sum(self.selective_hits[:, index])),
+                    accuracy=self._mean(accuracy, defined, weighting),
+                )
+            )
+        return dict(rule=SELECTIVE_RULE, curve=curve)
 
     def to_table(self):
         """Tabla por sesión para conservar estadísticos suficientes con valores nulos explícitos."""
@@ -500,12 +551,12 @@ class SessionScores:
             columns[f"coverage_{nominal:g}"] = self.coverage[:, index]
             columns[f"width_{nominal:g}"] = self.width[:, index]
             columns[f"interval_score_{nominal:g}"] = self.interval_score[:, index]
+        if self.selective_hits is not None:
+            columns["selective_hits"] = _list_column(self.selective_hits)
         if self.sign_brier is not None:
             columns["sign_brier"] = pa.array(self.sign_brier, mask=self.direction_eligible == 0)
             for name in ("sign_bin_rows", "sign_bin_probability", "sign_bin_up"):
-                values = getattr(self, name)
-                offsets = pa.array(np.arange(0, values.size + 1, SIGN_BINS), pa.int32())
-                columns[name] = pa.ListArray.from_arrays(offsets, values.ravel())
+                columns[name] = _list_column(getattr(self, name))
         return pa.table(columns)
 
     def _take(self, index, cohort_sha256):
@@ -591,6 +642,7 @@ def score_sessions(panel, *, rank_ic_min_assets=3):
     hits = calls & (np.sign(panel.prediction) == np.sign(panel.target))
     up_calls, down_calls = eligible & (panel.prediction > 0), eligible & (panel.prediction < 0)
     rank_ic, status = _rank_ic(panel, rank_ic_min_assets)
+    selective_hits = _selective_hits(panel, eligible, hits)
     quantile_fields = dict(
         pinball=None,
         below=None,
@@ -633,8 +685,39 @@ def score_sessions(panel, *, rank_ic_min_assets=3):
         rank_ic_status=status,
         rank_ic_min_assets=rank_ic_min_assets,
         levels=panel.levels,
+        selective_hits=selective_hits,
         **quantile_fields,
     )
+
+
+def _eligible_retained(eligible, coverage):
+    """ceil(c · n) filas de las n con objetivo no nulo, y ninguna si la sesión no tiene."""
+    return np.where(eligible > 0, _retained(eligible, coverage), 0)
+
+
+def _selective_hits(panel, eligible, hits):
+    """Aciertos de dirección entre las filas con objetivo no nulo y mayor |predicción|.
+
+    Las filas sin objetivo no nulo van al final y nunca se retienen. Los empates se
+    resuelven por la posición canónica, y una predicción cero no acierta nunca, así que
+    abstenerse no mejora la exactitud a ninguna cobertura.
+    """
+    key = np.where(eligible, -np.abs(panel.prediction), np.inf)
+    order, position = _within_session_order(panel, key)
+    ranked = hits[order]
+    counts = _count(panel, eligible)
+    found = np.empty((panel.sessions, len(SELECTIVE_COVERAGES)), dtype=np.int64)
+    for index, coverage in enumerate(SELECTIVE_COVERAGES):
+        keep = position < _eligible_retained(counts, coverage)[panel.session]
+        found[:, index] = _count(panel, keep & ranked)
+    return found
+
+
+def _list_column(values):
+    """Columna de listas de longitud fija con una fila por sesión."""
+    width = values.shape[1]
+    offsets = pa.array(np.arange(0, values.size + 1, width), pa.int32())
+    return pa.ListArray.from_arrays(offsets, values.ravel())
 
 
 def _quantile_scores(panel):

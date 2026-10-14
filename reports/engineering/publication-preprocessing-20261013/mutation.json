@@ -1,0 +1,444 @@
+[
+ {
+  "name": "P1 sin filas comparadas también pasa",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "passed=compared > 0 and not changed",
+  "mutant": "passed=not changed",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 6 passed in 5.35s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P2 parámetros del residualizador sin comparar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "((\"alpha\", \"beta\", \"history_pairs\", \"reason\"), table[\"prediction_at\"] <= decision),",
+  "mutant": "((\"alpha\", \"beta\", \"history_pairs\", \"reason\"), table[\"prediction_at\"] < table[\"prediction_at\"].min()),",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 1 passed in 3.67s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P3 objetivos maduros sin comparar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "((\"target\", \"target_available_at\"), matured.notna() & (matured <= decision)),",
+  "mutant": "((\"target\", \"target_available_at\"), matured.isna() & matured.notna()),",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 2 passed in 4.67s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P4 precios futuros sin alterar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "frame.assign(close=_shocked(frame[\"close\"].to_numpy(), cut)) for frame in data",
+  "mutant": "frame for frame in data",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 1 passed in 3.90s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P5 alteración antes del corte",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "values[..., after + 1 :] *= factors",
+  "mutant": "values[..., after - 4 : -5] *= factors",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 3.90s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P6 rutas sin comparar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "return [((\"route\", \"assets\", \"returns\"), table[\"at\"] <= at[cut])]",
+  "mutant": "return [((\"route\", \"assets\", \"returns\"), table[\"at\"] < at[0])]",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed in 3.90s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P7 auditoría del código siempre superada",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "return dict(result, passed=all(entry[\"passed\"] for entry in result.values()))",
+  "mutant": "return dict(result, passed=True)",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 5 passed in 6.02s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P8 edición distinta de la de sus vistas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if not Path(path).is_file() or sha256(Path(path)) != digest:",
+  "mutant": "if not Path(path).is_file():",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 28 passed in 6.49s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P9 etiquetas de otro código admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "elif declared != expected:",
+  "mutant": "elif False:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 25 passed in 6.03s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P10 código sin declarar admitido con la política real",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "        failures += [f\"{path}: no declara el código con que se calculó\" for path in undeclared]\n",
+  "mutant": "",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 29 passed in 7.15s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P11 sin ediciones con la política real",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "        if not parents:\n",
+  "mutant": "        if False:\n",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 29 passed in 7.02s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P12 calendario de otro código admitido",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "elif code != regime_calendar.code_sha256():",
+  "mutant": "elif False:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 27 passed in 7.23s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P13 calendario sin código sin informar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "            undeclared.append(str(calendar))\n",
+  "mutant": "            pass\n",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 29 passed in 6.95s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P14 filas de ajuste sin cotejar",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if report.get(\"fitted_rows\") != train:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 8 passed in 6.09s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P15 escalas de otro índice admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "phase.get(\"partition\") != \"train\"\n        or scalers.get(\"source_sha256\")",
+  "mutant": "phase.get(\"partition\") != \"train\"\n        and scalers.get(\"source_sha256\")",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 10 passed in 6.15s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P34 escalas de otra edición admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "        or scalers.get(\"dataset_sha256\") != identity.get(\"dataset_sha256\")\n",
+  "mutant": "",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 11 passed in 7.79s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P16 escalas con otras decisiones admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if (scalers.get(\"decision_start\"), scalers.get(\"decision_end\")) != (",
+  "mutant": "if (scalers.get(\"decision_start\"), scalers.get(\"decision_start\")) == (",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 12 passed in 6.07s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P17 etiquetas tardías admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if type(closes) is not int or type(starts) is not int or closes > starts:",
+  "mutant": "if type(closes) is not int or type(starts) is not int:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 13 passed in 6.31s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P18 escalas fuera de M3 admitidas",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "return [] if scalers is None else [\"un banco sin M3 lleva escalas de escritura\"]",
+  "mutant": "return []",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 15 passed in 6.43s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P19 M3 sin escalas admitido",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "return [\"M3 sin escalas de escritura\"]",
+  "mutant": "return []",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 14 passed in 5.98s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P20 familia desconocida admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if family in WITHOUT_FITTED:",
+  "mutant": "if True:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 16 passed in 5.66s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P21 recibos sin confirmar leídos",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if receipt is None or receipt.get(\"status\") not in CONFIRMED:\n            # Los trabajos",
+  "mutant": "if receipt is None:\n            # Los trabajos",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 7 passed in 5.49s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P22 normalización de otro tramo admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if statistics.get(\"fit_partition\") != \"train\":",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 19 passed in 5.74s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P23 normalización con más filas admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if type(samples) is not int or samples < 1 or samples != rows:",
+  "mutant": "if type(samples) is not int or samples < 1:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 20 passed in 6.72s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P24 normalización con etiquetas tardías admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "not isinstance(value, list) or len(value) != 3 or value[2] > validation_start",
+  "mutant": "not isinstance(value, list) or len(value) != 3",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 21 passed in 7.29s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P25 ajustes cronológicos de la etapa leídos",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "or job.get(\"family\") in chronological_matrix.CAMPAIGN_DESIGNS",
+  "mutant": "or False",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 23 passed in 6.49s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P26 padre repetido",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "            or key in seen\n",
+  "mutant": "",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 18 passed in 6.88s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P27 sección sin inventariar admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "            failures.append(f\"la sección {key} no está en el inventario del preprocesado\")\n",
+  "mutant": "",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 33 passed in 6.10s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P28 regla no causal admitida",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "if rules[key] not in allowed:",
+  "mutant": "if False:",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 34 passed in 4.21s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P29 sin sección de la etapa",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "    if posttraining is not None:\n        from mars_titan.posttraining import campaign_stage",
+  "mutant": "    if False:\n        from mars_titan.posttraining import campaign_stage",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 38 passed in 8.90s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P30 política real ignorada",
+  "module": "src/mars_titan/integrity/past_only_preprocessing.py",
+  "original": "strict = campaign.get(\"data_policy\") == REAL_EDITION_ONLY",
+  "mutant": "strict = False",
+  "tests": [
+   "tests/integrity/test_past_only_preprocessing.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 38 passed in 8.42s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P31 informe sin preprocesado",
+  "module": "src/mars_titan/integrity/publication_gate.py",
+  "original": "        preprocessing=preprocessing,\n",
+  "mutant": "",
+  "tests": [
+   "tests/integrity/test_publication_gate.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 5 passed in 2.20s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P32 informe sin calendario",
+  "module": "src/mars_titan/integrity/publication_gate.py",
+  "original": "            regimes=regimes,\n        )\n    )",
+  "mutant": "            regimes=None,\n        )\n    )",
+  "tests": [
+   "tests/integrity/test_publication_gate.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 5 passed in 2.24s",
+  "verdict": "muere"
+ },
+ {
+  "name": "P33 publicación sin calendario para el informe",
+  "module": "src/mars_titan/training/campaign_publication.py",
+  "original": "loaded, views, output, checked, adapter_output=adapter_output, regimes=regimes",
+  "mutant": "loaded, views, output, checked, adapter_output=adapter_output",
+  "tests": [
+   "tests/integrity/test_publication_gate.py"
+  ],
+  "occurrences": 1,
+  "exit": 1,
+  "summary": "1 failed, 7 passed in 3.07s",
+  "verdict": "muere"
+ }
+]

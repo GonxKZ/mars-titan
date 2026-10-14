@@ -37,6 +37,12 @@ leídas del manifiesto de fuentes ya validado de la campaña, con los recibos co
 la etapa. Antes de escribirlo se comprueba que la etapa corresponde a esta declaración y
 usó las mismas vistas. La comparación exige después las mismas filas y objetivos en todos
 los modelos. Nada de este módulo ajusta, carga modelos ni abre la reserva de 2024.
+
+Con la retención v2, las filas de calibración y evaluación del modelo base se liberan al
+terminar cada ventana. Por eso la fase de agregados del recorrido ventana a ventana guarda,
+para cada padre y ventana con trabajos de la etapa, los agregados por sesión de su
+comparación (``write_window_aggregates``) antes de liberar nada. El informe final los lee con
+``aggregates``, igual que la comparación walk-forward de la campaña, sin abrir filas.
 """
 
 import argparse
@@ -51,6 +57,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import long_short_comparison
 from mars_titan.evaluation import walk_forward_comparison as walk
 from mars_titan.hardware import hardware_profiles
+from mars_titan.integrity import comparison_integrity
 from mars_titan.training import campaign_chain
 
 from . import predictive_objectives as predictive
@@ -337,8 +344,12 @@ def _base_sources(path, inherited, scope, base_arm):
     return walk.load_sources(path, dict(inherited, arms=arms), scope)
 
 
-def _stage_marker(stage_output, stage, views, scope):
-    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas."""
+def _stage_marker(stage_output, stage, views, scope, *, window=None):
+    """Identidad de la ejecución de la etapa: esta etapa, la reserva cerrada y las vistas.
+
+    Sin ``window`` la etapa debe haber usado exactamente las vistas de las fuentes de la
+    campaña. Con ella, las fuentes solo traen la vista de esa ventana y se exige esa.
+    """
     marker, _ = read_manifest(stage_output / "stage.json", 8 * 1024**2)
     _require(
         isinstance(marker, dict)
@@ -347,10 +358,10 @@ def _stage_marker(stage_output, stage, views, scope):
         and marker.get("final_test_opened") is False,
         "La salida no pertenece a la etapa declarada",
     )
-    _require(
-        marker.get("views", {}).get(scope) == views,
-        "La etapa usó otras vistas que las fuentes de la campaña",
-    )
+    used = marker.get("views", {}).get(scope)
+    if window is not None and isinstance(used, dict):
+        used = {window: used[window]} if window in used else None
+    _require(used == views, "La etapa usó otras vistas que las fuentes de la campaña")
     return _digest(marker)
 
 
@@ -398,26 +409,53 @@ def _chain_entry(stage_output, stage, scope, window, base_arm, seed, entries):
     return entries[chosen][1]
 
 
+def compared_windows(loaded, scope, base_arm):
+    """Ventanas de la comparación de un padre en un ámbito: las que tienen trabajos de la etapa."""
+    return list(loaded["configs"][base_arm]["resolved_scopes"][scope]["windows"])
+
+
 def write_sources(
-    declaration_path, scope, base_arm, *, base_sources, stage_output, unrecorded_platform=None
+    declaration_path,
+    scope,
+    base_arm,
+    *,
+    base_sources,
+    stage_output,
+    window=None,
+    loaded=None,
+    unrecorded_platform=None,
 ):
     """Publicar el manifiesto de fuentes de un padre y un ámbito y validarlo.
+
+    Con ``window`` el manifiesto solo cubre esa ventana y se valida con las configuraciones
+    de la campaña y del padre limitadas a ella. ``base_sources`` es entonces el manifiesto de
+    la campaña de esa misma ventana, y el resultado queda en
+    ``sources/windows/<ventana>/<ámbito>/`` de la salida de la etapa. ``loaded`` evita volver
+    a cargar una declaración ya validada.
 
     La comparación junta predicciones de la base y de la etapa, así que los recibos de la
     etapa deben venir de una sola plataforma y coincidir con la de las fuentes de la base
     (`hardware_profiles.inherited_platform`). Los recibos o las fuentes anteriores a ese
     registro solo se admiten si `unrecorded_platform` nombra el perfil al que se atribuyen.
     """
-    loaded = load_declaration(declaration_path)
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     stage = loaded["stage"]
     _require(scope in stage["scopes"], "El ámbito no pertenece a la etapa")
     _require(base_arm in loaded["groups"], "El modelo no es un padre de la etapa")
     inherited = stage["campaign"]["comparison_config"]
     config = loaded["configs"][base_arm]
-    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
     stage_output = Path(stage_output)
-    identity = _stage_marker(stage_output, stage, base["views"], scope)
     folder = stage_output / "sources" / scope
+    if window is not None:
+        _require(
+            window in compared_windows(loaded, scope, base_arm),
+            f"La comparación de {base_arm} no tiene la ventana {window} en {scope}",
+        )
+        inherited = walk.restrict_windows(inherited, scope, [window])
+        config = walk.restrict_windows(config, scope, [window])
+        folder = stage_output / "sources" / "windows" / window / scope
+    base = _base_sources(Path(base_sources), inherited, scope, base_arm)
+    identity = _stage_marker(stage_output, stage, base["views"], scope, window=window)
     destination = folder / f"{base_arm}.json"
 
     def relative(path):
@@ -439,6 +477,8 @@ def write_sources(
                 entries[window][part] = dict(path=relative(record["path"]), sha256=record["sha256"])
     entries, platforms = {}, {}
     for job in loaded["groups"][base_arm]["jobs"][scope]:
+        if job["window"] not in views:
+            continue
         view_sha256 = base["views"][job["window"]]
         receipt = _stage_receipt(stage_output, job, identity, view_sha256)
         platforms[job["id"]] = receipt.get("platform")
@@ -489,12 +529,79 @@ def write_sources(
     return destination
 
 
-def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
-    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez."""
-    loaded = load_declaration(declaration_path)
+def aggregates_folder(root, base_arm):
+    """Carpeta de los agregados por ventana de la comparación de un padre."""
+    return Path(root) / "posttraining" / base_arm
+
+
+def write_window_aggregates(
+    declaration_path,
+    scope,
+    base_arm,
+    window,
+    *,
+    base_sources,
+    stage_output,
+    root,
+    loaded=None,
+    liquidity=None,
+    unrecorded_platform=None,
+):
+    """Publicar las fuentes de una ventana y guardar los agregados de su comparación.
+
+    ``base_sources`` es el manifiesto de la campaña limitado a esa ventana. Los agregados se
+    puntúan con la configuración del padre limitada a la ventana, que conserva su huella, y
+    quedan en ``aggregates_folder(root, base_arm)`` con su registro de integridad
+    (``integrity.comparison_integrity``), comprobado antes de que se libere ninguna fila.
+    ``liquidity`` es el asignador de estratos de liquidez de la edición
+    (``liquidity_strata.EditionLiquidity``) si la comparación los declara.
+    ``unrecorded_platform`` se pasa a ``write_sources``. Devuelve el registro de
+    ``window_aggregates.write``, el de la integridad en ``integrity`` y la ruta de las fuentes
+    de la ventana.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
+    path = write_sources(
+        declaration_path,
+        scope,
+        base_arm,
+        base_sources=base_sources,
+        stage_output=stage_output,
+        window=window,
+        loaded=loaded,
+        unrecorded_platform=unrecorded_platform,
+    )
+    config = walk.restrict_windows(loaded["configs"][base_arm], scope, [window])
+    sources = walk.load_sources(path, config, scope)
+    record, checked = comparison_integrity.write_checked(
+        aggregates_folder(root, base_arm),
+        walk.scope_config(config, scope),
+        sources,
+        window,
+        liquidity=liquidity,
+    )
+    return dict(record, sources=path, integrity=checked)
+
+
+def evaluate(
+    declaration_path, sources_path, scope, base_arm, *, edition=None, aggregates=None, loaded=None
+):
+    """Informe walk-forward del padre y, con ``edition``, su cartera y sus estratos de liquidez.
+
+    Con ``aggregates`` (la raíz de ``aggregates_folder``) cada ventana se lee de sus agregados
+    y no se abre ninguna fila. La edición asigna entonces solo los estratos de liquidez, que
+    también guardan los agregados. La cartera necesita las filas, así que con agregados no se
+    calcula.
+    """
+    loaded = load_declaration(declaration_path) if loaded is None else loaded
     _require(base_arm in loaded["configs"], "El modelo no es un padre de la etapa")
     config = loaded["configs"][base_arm]
-    report, sessions = walk.evaluate_walk_forward(config, sources_path, scope, edition=edition)
+    report, sessions = walk.evaluate_walk_forward(
+        config,
+        sources_path,
+        scope,
+        aggregates=None if aggregates is None else aggregates_folder(aggregates, base_arm),
+        edition=edition,
+    )
     report["posttraining"] = dict(
         declaration=dict(name=loaded["name"], sha256=loaded["sha256"]),
         stage_sha256=loaded["stage"]["sha256"],
@@ -520,24 +627,39 @@ def evaluate(declaration_path, sources_path, scope, base_arm, *, edition=None):
         use=USE,
     )
     portfolio = None
-    if edition is not None:
+    if edition is not None and aggregates is None:
         portfolio = long_short_comparison.evaluate_long_short(config, sources_path, scope, edition)
     return config, report, sessions, portfolio
 
 
-def write(declaration_path, sources_path, scope, base_arm, output, *, edition=None):
+def write(
+    declaration_path,
+    sources_path,
+    scope,
+    base_arm,
+    output,
+    *,
+    edition=None,
+    aggregates=None,
+    loaded=None,
+):
     """Publicar configuración derivada, informe y sesiones en un directorio nuevo."""
     output = Path(output)
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
     sources = [Path(declaration_path).parent, Path(sources_path).parent]
-    if edition is not None:
-        sources.append(Path(edition))
+    sources += [Path(path) for path in (edition, aggregates) if path is not None]
     for source in sources:
         outside_source(source, output)
         outside_source(output, source)
     config, report, sessions, portfolio = evaluate(
-        declaration_path, sources_path, scope, base_arm, edition=edition
+        declaration_path,
+        sources_path,
+        scope,
+        base_arm,
+        edition=edition,
+        aggregates=aggregates,
+        loaded=loaded,
     )
     json.dumps(report, allow_nan=False)
     if portfolio is not None:
@@ -580,6 +702,7 @@ def main(argv=None):
     run.add_argument("--sources", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--edition", type=Path)
+    run.add_argument("--aggregates", type=Path, help="Agregados por ventana de la retención v2")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_declaration(args.declaration)
@@ -601,6 +724,7 @@ def main(argv=None):
             args.base_arm,
             args.output,
             edition=args.edition,
+            aggregates=args.aggregates,
         )
         result = dict(arms=len(report["arms"]), windows=len(report["windows"]))
     print(json.dumps(result, ensure_ascii=False, indent=2))

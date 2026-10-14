@@ -7,13 +7,21 @@ una tabla larga con una métrica por fila. Este módulo reconstruye a partir de 
 las mismas series por sesión que usa ``compare_series``, sin volver a puntuar predicciones,
 y estima familias de contrastes lineales con el remuestreo por bloques de la comparación.
 
+En las precisiones de subida y de bajada, cada contraste lleva la cobertura de llamadas de
+sus modelos y queda marcado no elegible si alguno no llega a la mínima declarada
+(``abstention_coverage``), igual que en la comparación walk-forward.
+
 Cada modelo se lee una vez. Si aparece en dos informes, sus sesiones y valores deben
 coincidir. Las horas GPU por modelo, medidas o proyectadas, permiten expresar cada efecto
 como mejora por hora. Nada de este módulo ajusta modelos ni lee la edición.
+
+``write_sources`` publica el manifiesto de fuentes que lee la matriz a partir de los informes
+ya escritos, y ``load_sources`` lo valida antes de dejarlo visible.
 """
 
 import hashlib
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -21,10 +29,10 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-from mars_titan.data.cohort_files import read_manifest
-from mars_titan.data.storage import sha256
+from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.storage import atomic_json, sha256
 
-from . import liquidity_strata, long_short
+from . import abstention_coverage, liquidity_strata, long_short
 from . import walk_forward_comparison as walk
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 from .forecast_scores import INTERVAL_SCORE, SIGN_BINS, expected_calibration_error
@@ -329,6 +337,56 @@ def quadratic_context(views, published):
     return dict(metrics=metrics, section=walk.LIQUIDITY_FIELD, reports=reports)
 
 
+def write_sources(path, scope, reports, *, views, config, hours=None):
+    """Publicar el manifiesto de fuentes de la matriz y validarlo antes de dejarlo visible.
+
+    ``reports`` enumera los informes ya publicados como ``dict(kind=..., path=...)``, con
+    ``view`` en una tabla por sesión. ``views`` y ``config`` son los de la matriz cargada,
+    como en ``load_sources``, y ``hours`` es el documento de horas por modelo, si lo hay. Cada
+    ruta se guarda relativa a la carpeta del manifiesto con la huella del archivo. El
+    manifiesto se escribe primero como candidato en esa carpeta y solo sustituye al destino
+    si ``load_sources`` lo acepta, así que un informe incompleto, alterado o de otras vistas
+    no deja ningún manifiesto publicado.
+    """
+    path = Path(path)
+    safe_destination(path)
+    folder = path.parent
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def record(file, label):
+        file = Path(file)
+        _require(file.is_file() and not file.is_symlink(), f"{label} no es un archivo regular")
+        return dict(path=os.path.relpath(file.resolve(), folder.resolve()), sha256=sha256(file))
+
+    entries = []
+    for index, report in enumerate(reports):
+        _require(
+            isinstance(report, dict)
+            and set(report) in ({"kind", "path"}, {"kind", "path", "view"}),
+            f"La fuente {index} declara su tipo, su ruta y, en una tabla, su vista",
+        )
+        entry = dict(kind=report["kind"], **record(report["path"], f"La fuente {index}"))
+        if "view" in report:
+            entry["view"] = report["view"]
+        entries.append(entry)
+    manifest = dict(
+        schema_version=1,
+        kind=SOURCES_KIND,
+        scope=scope,
+        reports=entries,
+        hours=None if hours is None else record(hours, "El documento de horas"),
+    )
+    candidate = folder / f".{path.name}.candidate"
+    atomic_json(candidate, manifest)
+    try:
+        load_sources(candidate, views, config, scope)
+    except BaseException:
+        candidate.unlink(missing_ok=True)
+        raise
+    os.replace(candidate, path)
+    return path
+
+
 # Series por sesión
 
 
@@ -485,6 +543,16 @@ def _series(seeds, metric, loss, view_label, code, markets, values_of):
             )
         )
     return SessionSeries.average(items)
+
+
+def _call_coverage(seeds, code):
+    """Cobertura de llamadas de un modelo en una vista, sumada sobre sus semillas."""
+    calls = eligible = 0
+    for seed in seeds:
+        mask = _selection(seed, code)
+        calls += int(seed["table"].column("direction_calls").to_numpy()[mask].sum())
+        eligible += int(seed["table"].column("direction_eligible").to_numpy()[mask].sum())
+    return abstention_coverage.call_coverage(calls, eligible)
 
 
 def _keep(store, arm, seeds, label):
@@ -785,6 +853,8 @@ def forecast_view(config, families, seeds_by_arm, metrics, markets, hours):
                     entry = ece_contrasts(arms, contrasts, comparison)
                 else:
                     entry = compare_series(arms, contrasts, market_weighting=weighting, **options)
+                    coverage = {arm: _call_coverage(seeds_by_arm[arm], code) for arm in arms}
+                    abstention_coverage.mark(entry, metric, coverage)
                 entry["not_applicable"] = skipped
                 rows[family] = _with_cost(entry, sign, hours)
             result[label][metric] = rows

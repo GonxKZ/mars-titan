@@ -69,6 +69,12 @@ La [verificación de esta agregación](../../reports/resources/session-evaluatio
 registra ejemplos conocidos, cobertura y mutaciones dirigidas. No presenta esos
 ejemplos como precisión obtenida sobre datos de mercado.
 
+Cada cifra que publica el resumen de una vista de la comparación tiene su
+definición, unidad, sentido y regla de agregación en el
+[registro de métricas](../../configs/evaluation/metric-registry.json), fijado
+antes de evaluar. Al publicar, el resumen se reconstruye desde la tabla de
+sesiones con esas reglas ([banco de integridad](integrity-bench.md#registro-de-métricas)).
+
 ## Contrato de comparación por sesión
 
 `evaluation/forecast_panel.py` define `ForecastPanel`, la entrada común de todas
@@ -199,6 +205,41 @@ de ese signo no tiene precisión, y el contraste emparejado solo usa las sesione
 definidas en todos los modelos que intervienen, con el número de sesiones excluidas
 en el informe. La exhaustividad no se contrasta porque un modelo puede subirla
 llamando siempre el mismo signo.
+
+### Abstención con su cobertura
+
+La precisión solo cuenta las llamadas, así que un modelo que casi siempre se
+abstiene puede mostrar una precisión muy alta con muy pocas filas. Para que la
+abstención no gane ninguna métrica publicada, cada informe la presenta con su
+cobertura (`evaluation/abstention_coverage.py`, reglas fijadas el 13 de octubre de
+2026, antes de evaluar ninguna campaña).
+
+Curva riesgo-cobertura de dirección. En la sesión $s$, con las filas de $E_s$
+ordenadas por $|\hat y_i|$ de mayor a menor y los empates por la identidad de fila
+(`mercado/activo/instante`), $R_s(c)$ son las primeras
+$\lceil c\,|E_s|\rceil$ y
+
+$$
+\operatorname{DA}_s(c)=\frac{|H_s\cap R_s(c)|}{|R_s(c)|},
+\qquad c\in\{0{,}1,\,0{,}2,\ldots,1\}.
+$$
+
+Una predicción nula queda al final del orden y nunca acierta, de modo que
+abstenerse no mejora $\operatorname{DA}_s(c)$ a ninguna cobertura, y
+$\operatorname{DA}_s(1)=\operatorname{DA}_s$. Una sesión sin objetivos no nulos no
+tiene valor. El resumen de cada semilla publica la curva con las filas retenidas,
+los aciertos y la media por sesión, y su valor a la cobertura fija $c=0{,}5$
+(`direction_accuracy@0.5`). La tabla de sesiones conserva los aciertos de cada
+cobertura (`selective_hits`).
+
+Cobertura de llamadas. Para cada modelo y vista, $|C|/|E|$ sumando llamadas y filas
+juzgables de todas sus sesiones y semillas. En `up_precision` y `down_precision`, un
+contraste con algún modelo de cobertura inferior a 0,5 se publica con su cobertura y
+`eligible: false`, en la comparación y en la matriz, y no puede presentarse como
+ganado. El control cero tiene cobertura cero. El MAE y el MSE puntúan todas las filas,
+así que abstenerse en todas equivale al control cero, que ya se compara de forma
+explícita. El informe de integridad recalcula coberturas, marcas y curvas desde la
+tabla de sesiones publicada.
 
 ## Correlación de rangos por sesión
 
@@ -860,9 +901,10 @@ modelo base reentrenado en la ventana. Las familias `versus_frozen_parent` y
 contrasta la cadena con el reentreno, la comparación que el diseño por etapas
 informa aparte. Como en A, la continuación anclada de las cinco referencias entra
 en `versus_frozen_parent` y en `versus_anchored_continuation`, que la contrasta con
-los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`, la declaración debe
-contrastar esos dos papeles. Salen veinte padres en el ámbito conjunto, los 22
-modelos de la etapa salvo Ridge y XGBoost. Cada comparación conserva la
+los adaptados y la continuación completa. Si la campaña declara `walk_forward_stages`,
+la declaración debe contrastar esos dos papeles. Salen 21 padres en el ámbito conjunto,
+los 33 modelos de la etapa salvo Ridge, XGBoost, los ocho B6 y las dos extensiones PT1,
+que solo trasladan el padre congelado con la cadena trivial. Cada comparación conserva la
 elegibilidad por mercado del modelo conjunto, así que China solo entra en
 calibración y métricas desde `fold-006`, y deja fuera los controles separados,
 que solo actúan en los ámbitos de un mercado.
@@ -874,6 +916,20 @@ vista o identidad, y la comparación exige las mismas filas y objetivos en todos
 modelos. Cada padre es un análisis secundario propio, sin corrección entre padres,
 y no sirve para elegir la arquitectura base. Sin ablación de modalidades
 conectada para estos modelos, su sección queda pendiente en el informe.
+
+Con la [retención v2](training-campaign-2000.md#retención-v2-ventana-a-ventana), las
+filas de calibración y evaluación del modelo base reentrenado se liberan al terminar
+cada ventana, y la comparación de cada padre las lee. Por eso la fase de agregados del
+recorrido guarda también, para cada padre con trabajos de la etapa en la ventana, el
+manifiesto de fuentes de esa ventana (`sources/windows/<ventana>/<ámbito>/<padre>.json`
+en la salida de la etapa) y sus agregados por sesión
+(`retention/aggregates/posttraining/<padre>/<ámbito>/<ventana>.npz`), puntuados con la
+configuración del padre limitada a la ventana, que conserva su huella. Con `--aggregates`,
+`stage_comparison evaluate` lee esos agregados y no abre ninguna fila. Las pruebas
+comprueban que el informe y la tabla por sesión salen idénticos a los que leen las
+filas, intervalos del bootstrap por bloques incluidos, con la misma semilla y las
+sesiones de dos ventanas. No hace falta ninguna tolerancia. La cartera de un padre lee
+filas y no se combina con agregados.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -1569,7 +1625,7 @@ frente al reentreno, al padre trasladado y a la continuación, y el Transformer 
 como control de «seguir aprendiendo». Añade la atribución por componentes de dos
 linajes, Titans y CM-v1. La [tabla del protocolo](protocol.md#qué-pregunta-responde-cada-comparación)
 resume en lenguaje llano qué pregunta responde cada bloque.
-`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 356
+`evaluation/comparison_matrix.py` valida la declaración y compila 47 familias con 362
 contrastes. `check` los cuenta sin leer datos y `missing` calcula los modelos que faltan.
 
 ### Declaración
@@ -1656,6 +1712,37 @@ valor nulo es una sesión no definida. Cada métrica se declara en la matriz com
 (no negativa, menor es mejor) o ganancia antes de ver la tabla. Una métrica sin declarar
 se rechaza. Solo admiten medias por sesión. Un estadístico de recorrido, como el Sharpe
 de una política, necesita la vía de la cartera.
+
+### Fuentes y publicación con la campaña
+
+`session_table_contrasts.write_sources` publica el manifiesto de fuentes de la matriz a
+partir de los informes ya escritos, con rutas relativas a su carpeta y la huella de cada
+archivo. Lo escribe primero como candidato y solo lo deja visible si `load_sources` lo
+acepta, así que un informe alterado, incompleto o de otro ámbito no deja manifiesto. La
+[matriz de A v2](../../configs/evaluation/comparison-matrix-a-v2.json) es la de A sobre la
+comparación conjunta de A v2. Esa comparación declara desde
+[#525](https://github.com/GonxKZ/mars-titan/pull/525) los siete modelos de integración
+(`mars_titan_b6`, `mars_titan_b6_bias`, `mars_titan_m1_k4_first_read` y los cuatro del
+régimen observable y su calendario, `mars_titan_b6_regime`, `mars_titan_b6_calendar`,
+`mars_titan_b6_regime_banks` y `mars_titan_b6_calendar_banks`), así que la matriz de A v2
+ya no los condiciona y solo deja condicionada la referencia pública de Titans-MAC. Las dos
+matrices compilan las mismas 47 familias y 362 contrastes.
+
+Cada campaña declara su paso final antes de ver resultados
+([A](../../configs/evaluation/historical-masked-publication-a.json) y
+[A v2](../../configs/evaluation/historical-masked-publication-a-v2.json)): la campaña, su
+matriz y la comparación de su etapa de adaptadores. `training/campaign_publication.py`
+exige que la matriz lea la comparación de la campaña con la misma huella y que la
+comparación postentrenada derive de una etapa de esa misma campaña, así que una matriz
+declarada para otra campaña no llega a evaluarse. El paso final publica, por ámbito, las
+fuentes de la campaña, la comparación walk-forward, la cartera si se declara, el
+manifiesto de la matriz y la matriz, y después las fuentes y la comparación de cada padre
+de la etapa. Con los agregados de la retención v2 no abre ninguna fila. Antes de terminar
+calcula el [informe de integridad](integrity-bench.md#informe-de-integridad-de-la-publicación),
+que vuelve a comprobar por otro camino filas, métricas, ejecuciones declaradas y selección,
+y si falla no publica nada. Todo se escribe en una carpeta provisional que solo toma el
+nombre del destino al terminar, con un recibo que guarda la huella de cada archivo. Un fallo
+deja la carpeta provisional marcada y la siguiente ejecución la descarta y repite.
 
 ### Coste por hora GPU
 

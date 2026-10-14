@@ -155,6 +155,16 @@ escribe de forma atómica al terminar cada fase, así que un corte reanuda en la
 fase pendiente y las fases ya registradas no se repiten. El registro está ligado a la
 huella de la declaración de retención y a la de la campaña.
 
+La fase `aggregates` escribe cada archivo de forma atómica (también los de la comparación
+postentrenada de cada padre) y lo relee igual antes de registrarse, y la liberación solo
+empieza después. Tras cada agregado escribe su registro de integridad, también atómico, y
+un registro que no está superado detiene el recorrido sin registrar la fase. Un corte antes
+del registro repite los agregados y su integridad en los mismos archivos, sin copias, y un
+corte posterior libera al reanudar sin reescribirlos. La publicación final de la campaña
+escribe en una carpeta provisional con una marca que solo toma el nombre del destino al
+terminar, con su informe de integridad superado. La ejecución siguiente descarta una
+carpeta con la marca y no toca una sin ella.
+
 Las operaciones de la liberación son idempotentes. Una regeneración sin decidir se
 repite entera en un destino nuevo. La comparación ya escrita en
 `retention/regeneration-reports/` decide la tabla sin volver a regenerar. Compactar o
