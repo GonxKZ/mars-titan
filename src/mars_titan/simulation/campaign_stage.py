@@ -43,7 +43,7 @@ import re
 import subprocess
 from collections import Counter
 from contextlib import nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -78,6 +78,9 @@ from .reconstructed_tape import NoAdmittedAssets, census
 
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
+BOUND_KIND = "future_information_bound_episode"
+# Solo sin costes la cota elige la mejor tenencia de cada decisión sin perder nada al rotar.
+BOUND_COST_BPS = 0
 STATUSES = ("completed", "ruined", "failed")
 _HEX = re.compile(r"[a-f0-9]{64}")
 
@@ -318,6 +321,34 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocatio
         )
         records.append(episode(cost, evaluate(env, policy, seed=seed)))
     return records
+
+
+def future_information_bound(tapes, stage, market, *, backend):
+    """Episodio sin costes de la cota con información futura en la cinta de evaluación.
+
+    Es la política de exposición completa sobre la cinta puntuada con el rendimiento de cada
+    tenencia (`integrity.oracle_bound`), con las mismas reglas y liquidez que las políticas
+    evaluadas. El informe de la etapa compara con él los episodios sin costes y trata como un
+    fallo del entorno, hasta demostrar lo contrario, el que lo supere o el que alcance la
+    fracción sospechosa de su crecimiento. Queda fuera de toda comparación.
+    """
+    from mars_titan.integrity import oracle_bound
+
+    oracle = replace(tapes, evaluation=oracle_bound.oracle_tape(tapes.evaluation))
+    free = dict(stage, policies=dict(stage["policies"], evaluation_costs_bps=[BOUND_COST_BPS]))
+    (record,) = evaluate_policy(oracle, oracle_bound.full_exposure, free, market, backend=backend)
+    return dict(
+        schema_version=1,
+        kind=BOUND_KIND,
+        rule=oracle_bound.RULE,
+        action=oracle_bound.FULL_EXPOSURE,
+        suspicious_fraction=oracle_bound.SUSPICIOUS_FRACTION,
+        tape_sha256=tapes.evaluation.sha256,
+        oracle_tape_sha256=oracle.evaluation.sha256,
+        episode={key: value for key, value in record.items() if key != "equity"},
+        excluded_from_comparisons=True,
+        final_test_opened=False,
+    )
 
 
 def reference_executor(backend):
@@ -581,6 +612,8 @@ def _code():
         "simulation/environment.py",
         "simulation/evaluation.py",
         "simulation/portfolio.py",
+        # Cota con información futura que enlaza cada recibo.
+        "integrity/oracle_bound.py",
         "environments/walk_forward_receipt.py",
         "training/masked_campaign.py",
         "training/campaign_plan.py",
@@ -1099,6 +1132,8 @@ class _Stage:
         self.executors, self.stop = executors, stop
         self.receipts = {}
         self.platform = None
+        # Contabilidad de la cota con información futura, la misma que la de las referencias.
+        self.bound_backend = "native"
 
     def folder(self, job):
         return self.output / "jobs" / job["id"]
@@ -1130,8 +1165,29 @@ class _Stage:
         _require(receipt.get("identity") == identity, f"{job['id']} cambió de identidad")
         return dict(receipt, sha256=digest)
 
+    def bound(self, job, tapes):
+        """Cota de la cinta de evaluación del trabajo, calculada una sola vez por cinta."""
+        if tapes.evaluation is None:
+            return None
+        path = self.output / "bounds" / f"{tapes.evaluation.sha256}.json"
+        if path.is_file():
+            document, digest = read_manifest(path, 8 * 1024**2)
+            _require(
+                document.get("kind") == BOUND_KIND
+                and document.get("tape_sha256") == tapes.evaluation.sha256,
+                f"La cota guardada en {path.name} no es la de su cinta de evaluación",
+            )
+        else:
+            document = future_information_bound(
+                tapes, self.stage, job["market"], backend=self.bound_backend
+            )
+            atomic_json(path, document)
+            digest = sha256(path)
+        return dict(path=str(path.relative_to(self.output)), sha256=digest)
+
     def confirm(self, job, identity, tapes, report, anchor):
         check_report(self.stage, job, report, tapes, anchor)
+        bound = self.bound(job, tapes)
         receipt = dict(
             schema_version=1,
             kind=RECEIPT_KIND,
@@ -1145,6 +1201,7 @@ class _Stage:
             selection=report["selection"],
             policy=report["policy"],
             evaluation=report["evaluation"],
+            future_information_bound=bound,
             final_test_opened=False,
             confirmed_at_utc=datetime.now(UTC).isoformat(),
         )
@@ -1302,6 +1359,7 @@ def run_stage(
     disjunction=None,
     platform=None,
     unrecorded_platform=None,
+    bound_backend="native",
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
@@ -1320,6 +1378,10 @@ def run_stage(
     a su registro solo se admiten si `unrecorded_platform` nombra el perfil al que se
     atribuyen. Cada recibo nuevo guarda la plataforma. `platform` sustituye la detectada, solo
     en las pruebas.
+
+    Cada recibo con cinta de evaluación enlaza la cota con información futura de esa cinta,
+    guardada en `bounds/`. `bound_backend` es su contabilidad, la nativa de las referencias
+    salvo en las pruebas que sustituyen sus ejecutores.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1436,7 +1498,7 @@ def run_stage(
             table,
         )
         state = _Stage(stage, tapes, output, identity, executors, None)
-        state.platform = platform
+        state.platform, state.bound_backend = platform, bound_backend
         signals = StopRequest() if stop is None else nullcontext(stop)
         _summary(output, identity, jobs, state, "running", **checked)
         try:

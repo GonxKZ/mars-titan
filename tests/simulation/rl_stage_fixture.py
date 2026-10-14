@@ -333,6 +333,7 @@ def run(base, output, learner, *, stop=None, backend="python", chain_output=None
         base.edition,
         output,
         executors=executors(learner, backend),
+        bound_backend=backend,
         capabilities={},
         stop=stop or SimpleNamespace(requested=False),
         chain_output=chain_output,

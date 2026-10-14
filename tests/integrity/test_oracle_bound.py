@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from mars_titan.integrity import oracle_bound
-from tests.simulation.test_financial_adversarial import custom, flat
+from mars_titan.simulation.portfolio import CorporateAction
+from tests.simulation.test_financial_adversarial import DAY, START, custom, flat
 
 
 def walk(sessions=60, assets=8, seed=11):
@@ -17,22 +18,42 @@ def walk(sessions=60, assets=8, seed=11):
     return np.stack([open_, high, low, close, volume], axis=2)
 
 
-def test_scores_are_the_next_session_open_to_close_return():
+def test_scores_are_the_return_of_the_holding_each_decision_opens():
     prices = walk(sessions=5, assets=2)
     scores = oracle_bound.oracle_scores(custom(prices))
-    expected = prices[1:, :, 3] / prices[1:, :, 0] - 1
-    np.testing.assert_array_equal(scores[:-1], expected)
+    # La tenencia va de la apertura siguiente a la posterior y la última, al cierre final.
+    np.testing.assert_array_equal(scores[:-2], prices[2:, :, 0] / prices[1:-1, :, 0] - 1)
+    np.testing.assert_array_equal(scores[-2], prices[-1, :, 3] / prices[-1, :, 0] - 1)
     assert np.isnan(scores[-1]).all()
 
 
-def test_a_later_session_changes_only_the_score_before_it():
+def test_a_later_open_changes_only_the_holdings_that_cross_it():
     prices = walk(sessions=8, assets=3)
     changed = prices.copy()
-    changed[6, :, 3] *= 1.5
+    changed[6, :, 0] *= 1.5
     before = oracle_bound.oracle_scores(custom(prices))
     after = oracle_bound.oracle_scores(custom(changed))
-    np.testing.assert_array_equal(before[:5], after[:5])
-    assert not np.allclose(before[5], after[5])
+    np.testing.assert_array_equal(before[:4], after[:4])
+    assert not np.allclose(before[4], after[4]) and not np.allclose(before[5], after[5])
+    np.testing.assert_array_equal(before[6], after[6])
+
+
+def test_corporate_actions_inside_a_holding_enter_its_return():
+    prices = np.tile([100.0, 100.0, 100.0, 100.0, 1e6], (4, 3, 1))
+    # A0 se desdobla dos por una en la apertura de la sesión 2 y su precio se reduce a la mitad.
+    prices[2:, 0, :4] = 50.0
+    opening = [START + session * DAY - 23_400_000_000 for session in range(4)]
+    actions = [
+        CorporateAction("d", "US/A1", "dividend", opening[2], 1.0, opening[3], verified=True),
+        CorporateAction("s", "US/A0", "split", opening[2], 2.0, verified=True),
+        CorporateAction("w", "US/A2", "writeoff", opening[3], 0, verified=True),
+    ]
+    scores = oracle_bound.oracle_scores(custom(prices, actions=actions))
+    # Decisión 0: tenencia de la apertura 1 a la 2, con el desdoblamiento y el dividendo.
+    np.testing.assert_array_equal(scores[0], [0.0, 101 / 100 - 1, 0.0])
+    # Decisión 1: la baja cae dentro de la tenencia de A2, que queda sin puntuación.
+    np.testing.assert_array_equal(scores[1, :2], [0.0, 0.0])
+    assert np.isnan(scores[1, 2])
 
 
 def test_the_oracle_tape_has_its_own_identity_and_is_marked():

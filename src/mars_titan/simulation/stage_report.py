@@ -37,6 +37,13 @@ Reglas declaradas antes de ver resultados:
   declarada es secundaria. Mientras alguna ventana la necesite, el informe queda como
   `pending_survival_sensitivity` y no se da por cerrado, porque excluir la ventana depende
   de lo que hizo la política evaluada.
+- El episodio sin costes de cada recibo terminado se compara con la cota con información
+  futura de su cinta (`integrity.oracle_bound`), que sin costes elige la mejor tenencia en
+  cada decisión. Un episodio que la supera, o una política que reparte con las puntuaciones
+  y alcanza la fracción sospechosa de un crecimiento logarítmico positivo de la cota, se
+  trata como un fallo del entorno hasta demostrar lo contrario. Se publica en
+  `future_information` y el informe queda como `environment_review_required`, por delante de
+  cualquier otro estado. Los episodios cuya cota no terminó se publican como no comprobados.
 """
 
 import argparse
@@ -62,11 +69,15 @@ from mars_titan.evaluation.financial_metrics import (
     equity_metrics,
 )
 from mars_titan.hardware import hardware_profiles
+from mars_titan.integrity import oracle_bound
 
 from . import index_benchmark
-from .campaign_stage import RUN_KIND, _digest, _record, summarize
+from .campaign_stage import BOUND_COST_BPS, BOUND_KIND, RUN_KIND, _digest, _record, summarize
+from .environment import ALLOCATIONS
+from .evaluation import REFERENCE_ALLOCATIONS
 from .policy_plan import (
     MARKET_INDEX,
+    REFERENCE,
     _require,
     load_stage,
     plan_stage,
@@ -372,6 +383,108 @@ def survival(policies, output):
     )
 
 
+def _bound(root, reference, receipt):
+    """Episodio de la cota que enlaza un recibo, con sus comprobaciones."""
+    job = receipt["job"]["id"]
+    path = (root / reference["path"]).resolve()
+    _require(path.is_relative_to(root), f"La cota de {job} está fuera de su salida")
+    document, digest = read_manifest(path, 1024**2)
+    episode = document.get("episode")
+    _require(
+        digest == reference["sha256"]
+        and document.get("kind") == BOUND_KIND
+        and document.get("tape_sha256") == receipt["identity"]["tapes"]["evaluation"]
+        and document.get("action") == oracle_bound.FULL_EXPOSURE
+        and document.get("suspicious_fraction") == oracle_bound.SUSPICIOUS_FRACTION
+        and document.get("excluded_from_comparisons") is True
+        and document.get("final_test_opened") is False
+        and isinstance(episode, dict)
+        and episode.get("cost_bps") == BOUND_COST_BPS,
+        f"La cota de {job} no es la de su cinta de evaluación",
+    )
+    return episode
+
+
+def reads_scores(job):
+    """La política reparte con las puntuaciones de la cinta, por donde entraría una fuga."""
+    return job["kind"] != REFERENCE or REFERENCE_ALLOCATIONS[job["arm"]] == ALLOCATIONS[0]
+
+
+def future_information(policies, output):
+    """Episodios sin costes que superan la cota con información futura o se acercan a ella.
+
+    Sin costes, la cota elige la mejor tenencia en cada decisión con la regla de asignación del
+    entorno, así que ningún episodio debería superarla. Se compara el crecimiento logarítmico
+    del episodio sin costes de cada recibo con el de la cota de su cinta. La fracción
+    sospechosa solo se aplica a las políticas que reparten con las puntuaciones de la cinta:
+    una referencia que no las lee no puede aprovechar una fuga en ellas, y comprar y mantener
+    un índice puede acercarse a la cota de su único activo en un año tranquilo y alcista.
+    Un episodio arruinado o fallido no se compara.
+    """
+    costs = policies["evaluation_costs_bps"]
+    _require(
+        BOUND_COST_BPS in costs,
+        "Las políticas no declaran el coste cero con el que se compara la cota",
+    )
+    position = costs.index(BOUND_COST_BPS)
+    root = Path(output["path"])
+    fraction = oracle_bound.SUSPICIOUS_FRACTION
+    loaded, flagged, unchecked, checked = {}, [], [], 0
+    for receipt in output["receipts"].values():
+        reference = receipt.get("future_information_bound", False)
+        job = receipt["job"]
+        _require(reference is not False, f"El recibo de {job['id']} no enlaza su cota")
+        if reference is None:
+            _require(
+                receipt["identity"]["tapes"]["evaluation"] is None,
+                f"El recibo de {job['id']} tiene cinta de evaluación y no enlaza su cota",
+            )
+            continue
+        if reference["path"] not in loaded:
+            loaded[reference["path"]] = _bound(root, reference, receipt)
+        bound, record = loaded[reference["path"]], receipt["evaluation"][position]
+        if record["status"] != "completed":
+            continue
+        where = dict(
+            scope=job["scope"],
+            market=job["market"],
+            window=job["window"],
+            predictor=job["predictor"],
+            arm=job["arm"],
+            seed=job["seed"],
+        )
+        if bound["status"] != "completed":
+            unchecked.append(dict(where, bound_status=bound["status"], reason=bound["reason"]))
+            continue
+        checked += 1
+        growth, limit = math.log1p(record["net_return"]), math.log1p(bound["net_return"])
+        if growth > limit:
+            reason = "exceeds_bound"
+        elif reads_scores(job) and limit > 0 and growth >= fraction * limit:
+            reason = "suspicious_fraction"
+        else:
+            continue
+        flagged.append(
+            dict(
+                where,
+                reason=reason,
+                log_growth=growth,
+                bound_log_growth=limit,
+                fraction_of_bound=growth / limit if limit > 0 else None,
+                bound=reference["path"],
+            )
+        )
+    return dict(
+        rule=oracle_bound.RULE,
+        cost_bps=BOUND_COST_BPS,
+        suspicious_fraction=fraction,
+        status="review_required" if flagged else "no_flagged_episodes",
+        checked=checked,
+        flagged=flagged,
+        unchecked=unchecked,
+    )
+
+
 def _resample(returns, report, market, base):
     return block_bootstrap(
         returns,
@@ -499,6 +612,15 @@ def _interval(row):
     )
 
 
+def report_status(sections):
+    """Un episodio señalado por la cota se revisa antes que la sensibilidad de supervivencia."""
+    if any(section["future_information"]["flagged"] for section in sections):
+        return "environment_review_required"
+    if any(section["survival"]["affected"] for section in sections):
+        return "pending_survival_sensitivity"
+    return "complete"
+
+
 def receipts_platform(records, unrecorded_platform=None):
     """Plataforma común de los recibos de las salidas, o None si ninguna confirmó trabajos.
 
@@ -561,15 +683,17 @@ def build_report(
             for family in families(stage, output, levels)
         ]
         exits = survival(policies, output)
+        bounded = future_information(policies, output)
         output.pop("receipts")
-        sections.append(dict(output=output, families=found, survival=exits))
+        sections.append(
+            dict(output=output, families=found, survival=exits, future_information=bounded)
+        )
     platform = receipts_platform(platforms, unrecorded_platform)
     metrics, contrasts, equity = _tables(sections)
-    pending = any(section["survival"]["affected"] for section in sections)
     result = dict(
         schema_version=1,
         kind=REPORT_KIND,
-        status="pending_survival_sensitivity" if pending else "complete",
+        status=report_status(sections),
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
         sensitivity=stage.get("sensitivity"),
@@ -643,6 +767,9 @@ def main(argv=None):
                 status=result["status"],
                 families=len(families),
                 with_bootstrap=sum("differences" in (f["bootstrap"] or {}) for f in families),
+                flagged_by_bound=sum(
+                    len(section["future_information"]["flagged"]) for section in result["sections"]
+                ),
                 component_bootstraps=sum(len(f["components"]) for f in families),
                 missing_benchmarks=result["missing_benchmarks"],
             ),
