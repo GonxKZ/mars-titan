@@ -3,12 +3,12 @@
 Se ejecuta de forma explícita (por ejemplo con `memslot gpu`). El padre es la ventana técnica
 de `test_candidate_adapters.py`, ajustada en CPU con el registrador que no cambia pesos, en
 float64 y con el calentamiento de 12 meses de la receta. En el dispositivo, cada caso de la
-matriz para la GRU candidata (la cabeza con su corrección a cero y la continuación
-completa) se ajusta por etapas con las filas nuevas de la ventana siguiente y debe emitir
-exactamente las filas del padre congelado en ese mismo dispositivo. Las filas del padre
-congelado deben coincidir entre CPU y el dispositivo dentro de las tolerancias de float64, y
-el ajuste de la cabeza debe recorrer los mismos pasos en los dos, con gradiente solo en su
-corrección y valores iguales dentro de esas tolerancias.
+matriz para la GRU candidata (la cabeza con su corrección a cero, la continuación completa y
+la continuación anclada de reserva) se ajusta por etapas con las filas nuevas de la ventana
+siguiente y debe emitir exactamente las filas del padre congelado en ese mismo dispositivo.
+Las filas del padre congelado deben coincidir entre CPU y el dispositivo dentro de las
+tolerancias de float64, y el ajuste de la cabeza debe recorrer los mismos pasos en los dos,
+con gradiente solo en su corrección y valores iguales dentro de esas tolerancias.
 
 `MARS_TITAN_CANDIDATE_ADAPTERS_CHECK_DEVICE=cpu` ensaya la lógica sin GPU y no acredita CUDA.
 `MARS_TITAN_CANDIDATE_ADAPTERS_CHECK_REPORT` guarda las medidas en JSON.
@@ -24,6 +24,7 @@ import pytest
 import torch
 
 from mars_titan.posttraining import candidate_adapters as ca
+from mars_titan.posttraining import chronological_matrix as cm
 from tests.posttraining.test_candidate_adapters import FIRST, NEXT, SCOPE, cases, rows
 from tests.posttraining.test_candidate_adapters import allowed as allowed
 from tests.posttraining.test_candidate_adapters import matrix as matrix
@@ -122,7 +123,7 @@ def test_null_adapters_reproduce_the_frozen_parent_on_the_device(
             theirs = rows(device_folder, device_frozen["predictions"][partition])
             assert mine.equals(theirs), (name, partition)
         arms[name] = dict(updates=optimizer.calls, rows_equal_to_frozen_parent=True)
-    assert set(arms) == {"head", "full_continuation"}
+    assert set(arms) == {"head", "full_continuation", cm.ANCHORED}
     if cuda:
         torch.cuda.synchronize(0)
     destination = os.environ.get("MARS_TITAN_CANDIDATE_ADAPTERS_CHECK_REPORT")
