@@ -1,0 +1,98 @@
+{
+ "schema_version": 1,
+ "kind": "campaign_a_v2_data_review",
+ "issue": 614,
+ "recorded_on": "2026-10-14",
+ "commit": "7306f9ef9d6840c8aa0b21ef3ea9398ac1ce20b3",
+ "scope": "Comprobaciones de solo lectura de los datos de A v2 antes del lanzamiento. Sin modelos ni aprendizaje.",
+ "manifests": {
+  "edition_v3_1": {
+   "sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+   "matches_receipt": "reports/data/edition-v3-1-verification-20261011.json"
+  },
+  "targets_v3_1": {
+   "sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+   "matches_receipt": "reports/data/edition-v3-1-verification-20261011.json"
+  },
+  "catalog_v3_1": {
+   "manifest_sha256": "bcd5f0209be87434b29e8c3a3f438dc5680bd44bba6037d7bdcd02c5edb5ae2c",
+   "catalog_sha256": "6edfddf9841c3754df0936dcda0765cc171f1c234232ab42ba1f44aa715be23b",
+   "matches_receipt": "reports/data/edition-catalog-20261013/real-data.json"
+  },
+  "campaign_a_v2": {
+   "path": "configs/baselines/historical-masked-campaign-a-v2.json",
+   "sha256": "cb8ce969532b46ac9beb0bd466a6283e36b9dadc9199e4cd1de5e2d6da3e0873",
+   "matches_receipt": "reports/data/campaign-a-v2-views-v31-20261014.json"
+  },
+  "subset_definitions": "Las tres definiciones de configs/targets/edition-subsets dan el mismo definition_sha256 que sus manifiestos materializados"
+ },
+ "catalog_verification": {
+  "entry": "python -m mars_titan.training.edition_catalog verify",
+  "status": "verified",
+  "rows": 18698976,
+  "assets": 5008,
+  "target_partitions": {
+   "train": 17142187,
+   "validation": 1235785
+  },
+  "elapsed_seconds": 230.73170208299416,
+  "peak_rss_mib": 653.171875
+ },
+ "subset_verification": {
+  "entry": "python -m mars_titan.training.edition_subsets verify",
+  "subsets": {
+   "usable-2000-2023": {
+    "status": "verified",
+    "subset_manifest_sha256": "17942d359727298177a4c87e3c88ee3443de75602ff02ba944f172427393b489",
+    "definition_sha256": "018b33ae18aab05d36fd02852cc50c8fd7f4b4c50beb348cec6a336133234650",
+    "rows": 18382961,
+    "elapsed_seconds": 36.02,
+    "peak_rss_kib": 2278208
+   },
+   "liquid-usable-2000-2023": {
+    "status": "verified",
+    "subset_manifest_sha256": "8b6945b90829d0248f0045befabe88dbf46a00eef3ac716ae03c0c50e01ff707",
+    "definition_sha256": "fde7b75a00d154fa8ff93627db9c944a9bad1add501a4fb10d8c535b35c96882",
+    "rows": 15724204,
+    "elapsed_seconds": 82.17,
+    "peak_rss_kib": 2168084
+   },
+   "liquid-usable-half-2000-2023": {
+    "status": "verified",
+    "subset_manifest_sha256": "971650a6415db21fd275e0a558c50b6acf7ea02870ed73ce395508fccd4cba8d",
+    "definition_sha256": "87b5200b5104e535c157acf2a7248793170024747a543eba8455be27d1a6ea88",
+    "rows": 7862112,
+    "elapsed_seconds": 89.99,
+    "peak_rss_kib": 1832320
+   }
+  }
+ },
+ "disjunction": {
+  "entry": "scripts/run_masked_campaign.py disjunction con las vistas US+CN, US y CN y sin recibos",
+  "report": "reports/data/campaign-a-v2-disjunction-views-v31-20261014.json",
+  "report_sha256": "6a195eb9a10b33a7069263ed114aa6556fdbe5e16d5483207d8f5f9b398aebf9",
+  "campaign_sha256": "cb8ce969532b46ac9beb0bd466a6283e36b9dadc9199e4cd1de5e2d6da3e0873",
+  "windows": {
+   "US+CN": 19,
+   "US": 19,
+   "CN": 13
+  },
+  "failures": 0,
+  "misplaced_rows": 0,
+  "rows_after_cutoff": 0,
+  "base_receipts": 0,
+  "selections": 0,
+  "elapsed_seconds": 269.3393746840011,
+  "peak_rss_bytes": 970162176,
+  "posttraining_windows": 48,
+  "posttraining_overlap_rows": 0,
+  "parent_labels_mature_before_new_rows": "48 de 48",
+  "posttraining_new_rows": 7126576
+ },
+ "machine": {
+  "threads": "OMP_NUM_THREADS=2 dentro de memslot",
+  "note": "Otras pruebas de CPU en marcha al mismo tiempo. Los tiempos solo ordenan el coste."
+ },
+ "training_executed": false,
+ "final_test_opened": false
+}

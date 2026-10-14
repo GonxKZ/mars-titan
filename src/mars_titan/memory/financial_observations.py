@@ -90,6 +90,14 @@ def _identity(dataset, phase):
     )
 
 
+def index_identity(dataset, phase):
+    """Identidad del índice de una fase: vista, fase, receta, bibliotecas y código.
+
+    Es la que guarda `identity.json` y la que se exige al reutilizar el índice.
+    """
+    return _identity(dataset, phase)
+
+
 def _assets(dataset):
     return sorted(dataset.assets, key=lambda row: (row["market"], row["symbol"]))
 

@@ -104,6 +104,7 @@ from .titans_walk_forward import (
     window_phases,
 )
 from .walk_forward_phases import micros, months_before
+from .window_indices import index_root
 
 KIND = "mars_titan_correction_window"
 CARRY_KIND = "mars_titan_correction_carried_predictions"
@@ -844,7 +845,7 @@ def run_correction_window(
         "Las fases de la ventana no coinciden con las del padre",
     )
     measured = {name: phases[name] for name in PREDICTED}
-    root = Path(indices) if indices else output / "indices"
+    root = Path(indices) if indices else index_root(dataset, output)
     sources = _sources(dataset, measured, root)
     specification = _parent_specification(sources["validation"], parent_report)
     predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
@@ -1064,7 +1065,9 @@ def carry_correction(
     _check_view(dataset, view_protocol(view), fold)
     _new_destination(output, (*dataset.roots.values(), view.parent, anchor, parent))
     phases = window_phases(fold, options["warmup_months"])
-    sources = _sources(dataset, {name: phases[name] for name in partitions}, output / "indices")
+    sources = _sources(
+        dataset, {name: phases[name] for name in partitions}, index_root(dataset, output)
+    )
     # La ablación solo predice la evaluación, así que la entrada se toma del primer tramo.
     specification = sources[partitions[0]].specification()
     seed = request["seed"]

@@ -27,6 +27,7 @@ from mars_titan.posttraining import campaign_stage
 from mars_titan.posttraining import stage_comparison as compare
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import rolling_retention as rolling
+from mars_titan.training import window_indices
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.posttraining.test_publication_from_aggregates import (
@@ -60,6 +61,28 @@ def retention(tmp_path):
     path = tmp_path / "retention.json"
     path.write_text(json.dumps(document))
     return path
+
+
+def view_indices(base, output, window):
+    """Carpeta compartida de los índices de la vista US de `window` en la campaña `output`."""
+    folds = json.loads((base.views["US"] / "report.json").read_text())["folds"]
+    view = SimpleNamespace(identity=next(r["manifest_sha256"] for r in folds if r["id"] == window))
+    with engine.scoped_environment(engine.shared_files(output)):
+        return window_indices.index_root(view, None)
+
+
+def reading(regenerators, folder, windows):
+    """Regeneraciones que exigen encontrar todavía los índices de su vista y anotan su ventana."""
+
+    def check(regenerate):
+        def run(job_run):
+            assert folder.is_dir()
+            windows.append(job_run.job["window"])
+            return regenerate(job_run)
+
+        return run
+
+    return {key: check(value) for key, value in regenerators.items()}
 
 
 def stage(base, campaign, adapters, **options):
@@ -116,6 +139,11 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
     output, walked_adapters = tmp_path / "campaign", tmp_path / "adapters"
     shutil.copytree(base.output, output, symlinks=True)
     shutil.copytree(adapters, walked_adapters, symlinks=True)
+    # Índice que los trabajos de la ventana dejarían en la raíz compartida (#618). Los dobles
+    # de la base no leen observaciones, así que se coloca aquí con un tamaño conocido.
+    indices, regenerated = view_indices(base, output, WINDOW), []
+    (indices / "evaluation-0123456789abcdef").mkdir(parents=True)
+    (indices / "evaluation-0123456789abcdef" / "events.bin").write_bytes(bytes(4096))
     path, campaign = schedule(base, tmp_path)
     state = rolling.Rolling(
         rolling.load_retention(retention),
@@ -124,7 +152,7 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
         output,
         rolling.load_schedule(path, campaign),
         adapters=dict(stage=base.stage, output=walked_adapters),
-        regenerators=REGENERATORS,
+        regenerators=reading(REGENERATORS, indices, regenerated),
         publication=declared.publication,
         adapter_device="cpu",
         adapter_lease=CpuLease,
@@ -162,6 +190,10 @@ def test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_compariso
     written = ledger[WINDOW]["phases"]["aggregates"]["written"]["US"]["posttraining"]["gru"]
     assert written == block["aggregates"]
     assert set(base_tables(state, WINDOW).values()) == {prediction_files.RELEASED}
+    # Las regeneraciones de la ventana encontraron su índice y la liberación lo borró después.
+    assert WINDOW in regenerated
+    assert ledger[WINDOW]["phases"]["release"]["index_bytes"] == 4096
+    assert not indices.exists()
     destination = tmp_path / "published"
     receipt = publish(reports, state, destination)
     assert_published_from_aggregates(reports, state, destination, receipt)
@@ -220,3 +252,70 @@ def test_v3_stops_when_an_adapter_regeneration_differs(base, retention, tmp_path
     # La diferencia comparada es definitiva: reanudar vuelve a detenerse sin regenerar.
     with pytest.raises(ValueError, match="no salen idénticas"):
         rolling.run_rolling(state, runners)
+
+
+@pytest.mark.parametrize("last", [1, 2])
+def test_v3_keeps_a_chain_evaluation_compacted_until_its_last_reader(
+    base, retention, tmp_path, recorder, last
+):
+    """Una evaluación de la cadena que leerá una política sale del bloque compactada. La
+    libera, tras regenerarla, la liberación de la ventana de su último lector: la propia
+    (`last` 1) o una posterior a la campaña reducida (`last` 2), en cuyo caso sigue al final."""
+    adapters = tmp_path / "adapters"
+    assert stage(base, base.output, adapters)["status"] == "completed"
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    declared = publication_fixture.declare(
+        tmp_path / "declared", base.campaign, stage=base.stage, metrics=PLAIN_METRICS
+    )
+    path, campaign = schedule(base, tmp_path)
+    state = rolling.Rolling(
+        rolling.load_retention(retention),
+        base.campaign,
+        base.views,
+        output,
+        rolling.load_schedule(path, campaign),
+        adapters=dict(stage=base.stage, output=adapters),
+        regenerators=REGENERATORS,
+        publication=declared.publication,
+        adapter_device="cpu",
+        adapter_lease=CpuLease,
+    )
+    job = "US/fold-001/gru__head/fit-s42"
+    assert state.positions["US", WINDOW] == 1
+
+    def chain_keep(self, index, only=None):
+        return {job: (last, [])} if only in (None, ("US", WINDOW, "gru")) else {}
+
+    runners = dict(
+        base=lambda window: dict(status="completed"),
+        adapters=lambda window: stage(
+            base,
+            output,
+            adapters,
+            window=window,
+            compact_rows=state.folder / "rows",
+            on_block=state.block,
+        ),
+    )
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(rolling.Rolling, "chain_keep", chain_keep)
+        assert rolling.run_rolling(state, runners)["status"] == "completed"
+    block = json.loads((state.folder / "blocks" / "US" / WINDOW / "gru.json").read_text())
+    assert (block["released"], block["kept_for_policies"], block["not_regenerable"]) == (6, 1, 0)
+    receipt = json.loads((adapters / "jobs" / job / "receipt.json").read_text())
+    found = {
+        prediction_files.verify(adapters / item["path"], item["sha256"])
+        for item in receipt["predictions"].values()
+    }
+    released = state.ledger()["windows"][WINDOW]["phases"]["release"]["adapters"]
+    decisions = sorted((state.folder / "regeneration-reports").glob("adapters_*.json"))
+    if last == 1:
+        assert found == {prediction_files.RELEASED}
+        assert released == dict(released=1, kept_for_policies=0, not_regenerable=0)
+        assert len(decisions) == 7
+    else:
+        assert found == {prediction_files.COMPACTED}
+        assert released == dict(released=0, kept_for_policies=1, not_regenerable=0)
+        assert len(decisions) == 6
+    assert all(json.loads(p.read_text())["identical"] is True for p in decisions)

@@ -7,10 +7,13 @@ y cachés. Este módulo reúne tres piezas que no leen datos ni ajustan modelos:
   solo mientras se ejecuta, a partir de los recuentos de su vista y de una declaración de
   almacenamiento medida (``configs/baselines/historical-masked-campaign-storage.json``).
   ``plan_peak`` recorre el plan en orden y da el máximo de ocupación simultánea.
+  Los índices que comparten los trabajos de una vista (``shared_index_bytes``) cuentan
+  desde su primer trabajo hasta el último.
 - ``release_confirmed`` borra, después de escribir el recibo de un trabajo, lo que ningún
-  consumidor vuelve a leer: los índices de observaciones, que se reconstruyen desde la
-  vista, y los puntos de control de recuperación. Conserva el estado elegido, que es el
-  que leen los hijos, los traslados y las etapas posteriores.
+  consumidor vuelve a leer: los índices de observaciones que construyó en su carpeta, que
+  se reconstruyen desde la vista, y los puntos de control de recuperación. Conserva el
+  estado elegido, que es el que leen los hijos, los traslados y las etapas posteriores.
+  Los índices compartidos los borra la campaña al confirmar el último trabajo de la vista.
 - ``DiskGuard`` rechaza lanzar si el pico proyectado no cabe en el espacio libre menos el
   margen declarado, no admite un trabajo que no quepa y convierte un espacio libre por
   debajo del margen en una parada recuperable en la siguiente barrera de cada ejecutor.
@@ -175,6 +178,27 @@ def index_rows(counts, warmup, *, partitions=HELD_OUT, train=True):
     return rows + (2 * counts["train"] if train else 0)
 
 
+def shared_index_bytes(counts, storage):
+    """Índices que comparten los trabajos de una vista: cada una de sus fases una sola vez.
+
+    Con `MARS_TITAN_SHARED_INDICES` (`window_indices`) existen desde el primer trabajo de la
+    ventana hasta que se confirma el último. Todas las familias calientan con el mismo tramo,
+    así que son los de un ajuste. La huella de cada trabajo sigue contando su índice como si
+    lo construyera, de modo que la suma es una cota de lo que ocupan.
+    """
+    index = storage["index"]
+    return int(index_rows(counts, index["warmup_partition"]) * index["bytes_per_row"])
+
+
+def index_holders(jobs, done=()):
+    """Posición del último trabajo indexado pendiente de cada vista, cuando se borran."""
+    done, last = set(done), {}
+    for position, job in enumerate(jobs):
+        if job["id"] not in done and job["model"] in INDEXED:
+            last[job["scope"], job["window"]] = position
+    return last
+
+
 def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     """Calcula los bytes que un trabajo conserva al confirmarse y los que añade mientras se ejecuta.
 
@@ -249,24 +273,29 @@ def plan_peak(jobs, counts, storage, *, done=(), release=None, prediction_bytes=
     """Recorrer el plan en orden y dar el pico de ocupación nueva de los trabajos pendientes.
 
     Los trabajos confirmados ya ocupan el disco y no suman. Cada trabajo pendiente suma lo
-    que conserva, y en su turno también lo que ocupa mientras se ejecuta.
+    que conserva, y en su turno también lo que ocupa mientras se ejecuta. Los índices
+    compartidos de una vista (`shared_index_bytes`) suman desde su primer trabajo pendiente
+    hasta su último trabajo indexado pendiente.
     """
     done = set(done)
+    last, opened = index_holders(jobs, done), set()
     cumulative, peak, worst = 0, 0, None
-    for job in jobs:
+    for position, job in enumerate(jobs):
         if job["id"] in done:
             continue
+        view, window = (job["scope"], job["window"]), counts[job["scope"]][job["window"]]
+        if view in last and view not in opened:
+            opened.add(view)
+            cumulative += shared_index_bytes(window, storage)
         footprint = job_footprint(
-            job,
-            counts[job["scope"]][job["window"]],
-            storage,
-            release=release,
-            prediction_bytes=prediction_bytes,
+            job, window, storage, release=release, prediction_bytes=prediction_bytes
         )
         moment = cumulative + footprint["retained_bytes"] + footprint["transient_bytes"]
         if moment > peak:
             peak, worst = moment, job["id"]
         cumulative += footprint["retained_bytes"]
+        if last.get(view) == position:
+            cumulative -= shared_index_bytes(window, storage)
     return dict(peak_bytes=peak, retained_bytes=cumulative, peak_job=worst)
 
 

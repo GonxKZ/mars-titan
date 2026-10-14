@@ -1,0 +1,74 @@
+{
+ "key_without_code": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_a_code_change_before_resuming_builds_new_indices_beside_the_old_ones"
+  ],
+  "tail": [
+   "1 failed, 8 passed in 7.98s"
+  ]
+ },
+ "build_without_lock": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_simultaneous_jobs_wait_for_the_first_build_and_reuse_it"
+  ],
+  "tail": [
+   "1 failed, 6 passed in 6.11s"
+  ]
+ },
+ "rename_before_cleaning": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_a_cut_while_releasing_never_leaves_a_half_deleted_index"
+  ],
+  "tail": [
+   "1 failed, 10 passed in 8.92s"
+  ]
+ },
+ "release_without_rename": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_a_cut_while_releasing_never_leaves_a_half_deleted_index"
+  ],
+  "tail": [
+   "1 failed, 10 passed in 9.18s"
+  ]
+ },
+ "scalers_without_code": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_m3_scalers_of_a_window_are_estimated_once_and_read_with_the_same_bits"
+  ],
+  "tail": [
+   "1 failed, 12 passed in 12.92s"
+  ]
+ },
+ "scalers_without_check": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_m3_scalers_of_a_window_are_estimated_once_and_read_with_the_same_bits"
+  ],
+  "tail": [
+   "1 failed, 12 passed in 11.39s"
+  ]
+ },
+ "release_other_views": {
+  "detected": true,
+  "failed": [
+   "tests/training/test_window_indices.py::test_a_code_change_before_resuming_builds_new_indices_beside_the_old_ones"
+  ],
+  "tail": [
+   "1 failed, 8 passed in 8.88s"
+  ]
+ },
+ "release_before_regenerating": {
+  "detected": true,
+  "failed": [
+   "tests/posttraining/test_retention_v3.py::test_v3_releases_the_adapter_rows_by_blocks_and_publishes_the_same_comparison"
+  ],
+  "tail": [
+   "1 failed in 30.61s"
+  ]
+ }
+}

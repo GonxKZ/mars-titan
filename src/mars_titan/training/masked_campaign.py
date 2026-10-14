@@ -93,6 +93,7 @@ from .corpus_inputs import DIGEST_CACHE_ENV
 from .label_maturity import label_maturity, window_labels_until
 from .learning_hold import LearningHoldError, require_learning_allowed
 from .selection import AWAIT
+from .window_indices import SHARED_INDICES_ENV, release_view_indices
 
 RUN_KIND = "historical_masked_campaign_run"
 # Posiciones del plan que una ranura libre puede adelantar a un trabajo que espera.
@@ -101,6 +102,8 @@ BACKFILL_JOBS = 16
 OBSERVED_RESOURCES = "observed-resources.json"
 # Huellas de los archivos de las vistas que comparten los trabajos de la campaña.
 DIGESTS = "file-digests.json"
+# Índices de observaciones que comparten por vista los trabajos de la campaña.
+SHARED_INDICES = "shared-indices"
 RECEIPT_KIND = "masked_campaign_job"
 # El recibo de la meseta de un ajuste conjunto guarda su parada individual, sin predicciones.
 PLATEAU_STATUS = "plateau_confirmed"
@@ -640,6 +643,11 @@ class _Campaign:
         self.groups = {}
         for job in jobs:
             self.groups.setdefault(_group(job), []).append(job["id"])
+        # Trabajos de esta ejecución que leen la vista de cada ventana, y si la raíz de índices
+        # compartidos es de esta ejecución (`shared_files`) y no del recorrido por ventanas.
+        self.window_jobs, self.owns_indices = {}, False
+        for job in jobs:
+            self.window_jobs.setdefault((job["scope"], job["window"]), []).append(job["id"])
 
     def same_rows(self, job, receipt):
         """Exigir que cada trabajo de una ventana evalúe las mismas filas que el primero."""
@@ -1015,11 +1023,23 @@ class _Campaign:
         """Guardar el recibo y, si completa su grupo, publicar los recibos de ventana."""
         self.release(job, receipt)
         self.receipts[job["id"]] = receipt
+        self.release_indices(job)
         group = _group(job)
         # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana.
         compared = job["arm"] in self.campaign["comparison_config"]["arms"]
         if compared and all(key in self.receipts for key in self.groups[group]):
             self.publish(*group)
+
+    def release_indices(self, job):
+        """Borrar los índices compartidos de la vista de `job` si ya no la lee ningún trabajo.
+
+        Cada trabajo lee la vista de su ventana. Solo se borran si la raíz es de esta
+        ejecución: en el recorrido por ventanas la fija el recorrido, que los borra al cerrar
+        la ventana, después de que sus regeneraciones los reutilicen.
+        """
+        key = job["scope"], job["window"]
+        if self.owns_indices and all(i in self.receipts for i in self.window_jobs[key]):
+            release_view_indices(self.views[job["scope"]]["windows"][job["window"]]["sha256"])
 
     def labels_used_until(self, scope, window, receipt):
         """Última etiqueta que pudo fijar el predictor elegido o su calibración común.
@@ -1220,10 +1240,12 @@ def run_campaign(
             return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending), **scope_of_run)
 
         _summary(output, identity, jobs, state.receipts, "running", **record, **disk_report())
+        shared = shared_files(output)
+        state.owns_indices = SHARED_INDICES_ENV in shared
         try:
             with (
                 signals as requested,
-                _environment(execution, output),
+                scoped_environment(environment(execution) | shared),
                 reservation,
                 ThreadPoolExecutor(execution.cpu_workers) as pool,
             ):
@@ -1279,18 +1301,29 @@ def _gpu_lease():
     return GpuLease()
 
 
-class _environment:
-    """Variables de la tubería durante la campaña, restauradas al terminar.
+def shared_files(output):
+    """Huellas e índices que comparten los trabajos de la campaña con salida `output`.
 
-    Las huellas de los archivos de las vistas se comparten en `file-digests.json` de la
-    salida, de modo que cada trabajo, en este proceso o en su ranura, no vuelve a leer
-    completos los archivos que ya comprobó otro con la misma firma de stat.
+    Las huellas de los archivos de las vistas se guardan en `file-digests.json`, de modo que
+    un trabajo no vuelve a leer completos los archivos que ya comprobó otro con la misma
+    firma de stat. Los índices de observaciones se guardan por vista en `shared-indices`
+    (`window_indices`) y cada uno se construye una sola vez. Si un proceso superior ya fijó
+    alguna de las dos variables, se conserva la suya.
+    """
+    output = Path(output).resolve()
+    values = {DIGEST_CACHE_ENV: output / DIGESTS, SHARED_INDICES_ENV: output / SHARED_INDICES}
+    return {name: str(path) for name, path in values.items() if name not in os.environ}
+
+
+class scoped_environment:
+    """Variables de entorno durante la campaña, restauradas al terminar.
+
+    Las heredan los trabajos de este proceso y de sus ranuras: la tubería, los hilos y MPS
+    de la ejecución (`environment`) y las huellas y los índices compartidos (`shared_files`).
     """
 
-    def __init__(self, execution, output):
-        self.values, self.previous = environment(execution), {}
-        if DIGEST_CACHE_ENV not in os.environ:
-            self.values[DIGEST_CACHE_ENV] = str(Path(output).resolve() / DIGESTS)
+    def __init__(self, values):
+        self.values, self.previous = dict(values), {}
 
     def __enter__(self):
         for name, value in self.values.items():
