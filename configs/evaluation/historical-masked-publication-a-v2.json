@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "kind": "campaign_publication",
+  "status": "declared_before_results",
+  "name": "historical-masked-publication-a-v2",
+  "campaign": "../baselines/historical-masked-campaign-a-v2.json",
+  "comparison_matrix": "comparison-matrix-a-v2.json",
+  "posttraining_comparison": "../posttraining/historical-masked-adapter-comparison-a-v2.json",
+  "final_test_opened": false
+}
