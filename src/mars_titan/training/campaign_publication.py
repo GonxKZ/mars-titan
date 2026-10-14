@@ -328,7 +328,9 @@ def run_publication(
                 )
     integrity = publication_gate.write(
         partial,
-        publication_gate.build(loaded, views, output, checked, adapter_output=adapter_output),
+        publication_gate.build(
+            loaded, views, output, checked, adapter_output=adapter_output, regimes=regimes
+        ),
     )
     receipt = dict(
         schema_version=1,

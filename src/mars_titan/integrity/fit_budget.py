@@ -174,7 +174,7 @@ def _document(path):
     return read_manifest(path, 256 * 1024**2)[0]
 
 
-def _fit_documents(output, receipt):
+def fit_documents(output, receipt):
     """Informe confirmado del ajuste y documento con sus épocas.
 
     Las ventanas cronológicas guardan el registro de su entrenador en `fit` (Titans-MAC,
@@ -322,7 +322,7 @@ def _correction_fit(report):
     return dict(writes=writes, fitted=not failures, failures=failures)
 
 
-def _receipt(output, job_id):
+def read_receipt(output, job_id):
     path = Path(output) / "jobs" / job_id / "receipt.json"
     return read_manifest(path, 8 * 1024**2)[0] if path.is_file() else None
 
@@ -334,7 +334,7 @@ def _rule(campaign, arm):
 
 def _consumed(campaign, budget, job, output, receipt):
     """Presupuesto consumido por un ajuste confirmado según la forma en que itera."""
-    report, run = _fit_documents(output, receipt)
+    report, run = fit_documents(output, receipt)
     if job["kind"] == plan.ONLINE:
         return _online_fit(report)
     # Los auxiliares, como los núcleos de CM-v1, iteran por épocas con la regla común.
@@ -356,7 +356,7 @@ def check_consumed(campaign, jobs, output):
     for job in jobs:
         if job["kind"] not in (plan.FIT, plan.ONLINE) or job.get("phase") == plan.PLATEAU:
             continue
-        receipt = _receipt(output, job["id"])
+        receipt = read_receipt(output, job["id"])
         if receipt is None or receipt.get("status") not in CONFIRMED:
             # Los trabajos sin confirmar ya los cuenta `declared_runs`.
             continue

@@ -16,7 +16,11 @@ informe superado. Reúne:
 - `selection`: elección con la validación anterior a cada ventana, recibos de ventana, orden
   de los tramos y, con el diseño por etapas, la disjunción de #437 (`window_selection`);
 - `budget`: presupuesto de cada modelo frente al de los modelos propios, con sus diferencias
-  declaradas, y presupuesto consumido por cada ajuste confirmado (`fit_budget`).
+  declaradas, y presupuesto consumido por cada ajuste confirmado (`fit_budget`);
+- `preprocessing`: código de las etiquetas y del régimen que solo mira al pasado, edición y
+  calendario calculados con ese código, estadísticas de cada ajuste y de cada padre de la
+  etapa solo con su tramo de entrenamiento y reglas causales de cada sección de la
+  comparación (`past_only_preprocessing`).
 
 Nada de este módulo ajusta modelos ni abre la reserva de 2024.
 """
@@ -33,6 +37,7 @@ from . import (
     comparison_integrity,
     declared_runs,
     fit_budget,
+    past_only_preprocessing,
     window_selection,
 )
 
@@ -103,14 +108,15 @@ def _runs(campaign, output, posttraining, adapter_output):
     return jobs, result
 
 
-def build(loaded, views, output, comparisons, *, adapter_output=None):
+def build(loaded, views, output, comparisons, *, adapter_output=None, regimes=None):
     """Calcular el informe de integridad de una publicación sin escribir nada.
 
     `loaded` es la declaración validada de la publicación, `views` y `output` los de la
     campaña confirmada y `comparisons` la lista de comparaciones publicadas, cada una con
     `label`, `config`, `sources`, `scope`, `folder`, `edition` (la de los estratos de
     liquidez, si se declaran) y, si se calcularon desde la retención v2, `aggregates` y
-    `ablation`.
+    `ablation`. `regimes` es el calendario de regímenes que recibió la publicación, si la
+    comparación lo declara.
     """
     campaign, posttraining = loaded["campaign_config"], loaded["posttraining"]
     checked = {entry["label"]: _comparison(entry) for entry in comparisons}
@@ -126,7 +132,24 @@ def build(loaded, views, output, comparisons, *, adapter_output=None):
             campaign, views, output, adapter_output if posttraining is not None else None
         )
     budget = dict(campaign=fit_budget.check(campaign, jobs, output, loaded["budget_differences"]))
-    sections = dict(comparisons=checked, runs=runs, selection=selection, budget=budget)
+    preprocessing = dict(
+        campaign=past_only_preprocessing.check(
+            campaign,
+            jobs,
+            output,
+            comparisons,
+            posttraining=posttraining,
+            adapter_output=adapter_output,
+            regimes=regimes,
+        )
+    )
+    sections = dict(
+        comparisons=checked,
+        runs=runs,
+        selection=selection,
+        budget=budget,
+        preprocessing=preprocessing,
+    )
     failing = sorted(
         f"{name}/{key}"
         for name, entries in sections.items()

@@ -186,7 +186,7 @@ def test_a_chronological_fit_with_unchanged_weights_keeps_its_initial_state(base
         folder = base["root"] / "runs" / variant
         path = folder / "run.json"
         receipt = dict(report=dict(path=path.name, sha256=sha256(path)))
-        report, run = budget._fit_documents(folder, receipt)
+        report, run = budget.fit_documents(folder, receipt)
         assert run is not report and run["history"][0]["epoch"] == 0
         result = budget.check_epochs(SCRATCH, rule, run, report)
         assert result["fitted"] is False and result["best_epoch"] == 0
@@ -204,7 +204,7 @@ def test_a_neural_reference_from_scratch_counts_as_fitted(tmp_path, cpu_runner):
     rule = dict(case["selection"], max_epochs=case["epochs"])
     path = tmp_path / "run" / "run.json"
     receipt = dict(report=dict(path="run.json", sha256=sha256(path)))
-    stored, run = budget._fit_documents(tmp_path / "run", receipt)
+    stored, run = budget.fit_documents(tmp_path / "run", receipt)
     assert stored is run and run["epochs"][0]["epoch"] == 1
     result = budget.check_epochs(SCRATCH, rule, run, stored)
     assert result["failures"] == [] and result["fitted"]
@@ -221,14 +221,14 @@ def test_the_trainer_record_of_a_window_is_read_with_its_digest(tmp_path, key):
     record = dict(path="trainer/run.json", sha256=sha256(folder / "trainer" / "run.json"))
     atomic_json(folder / "window.json", {key: record, "status": "completed"})
     receipt = dict(report=dict(path="attempt/window.json", sha256=sha256(folder / "window.json")))
-    report, found = budget._fit_documents(tmp_path, receipt)
+    report, found = budget.fit_documents(tmp_path, receipt)
     assert found == run and report[key] == record
     result = budget.check_epochs(SCRATCH, epochs(FIXED, 2), found, report)
     assert result["failures"] == [] and result["best_epoch"] == 2
     # Un registro cambiado después de confirmar la ventana no se lee.
     atomic_json(folder / "trainer" / "run.json", dict(run, global_step=1))
     with pytest.raises(ValueError, match="no coincide con su huella"):
-        budget._fit_documents(tmp_path, receipt)
+        budget.fit_documents(tmp_path, receipt)
 
 
 @pytest.mark.parametrize(
