@@ -602,6 +602,9 @@ def test_a_reference_that_learns_is_rejected(base_a, tmp_path, learning_doubles)
             tmp_path / "stage",
             listing_status=base_a.listing_status,
             executors=executors,
+            # Las cotas de los trabajos confirmados antes se calculan con la contabilidad de
+            # Python, como en el resto de la etapa reducida. La paridad nativa tiene su prueba.
+            bound_backend="python",
             capabilities={},
             stop=SimpleNamespace(requested=False),
         )
