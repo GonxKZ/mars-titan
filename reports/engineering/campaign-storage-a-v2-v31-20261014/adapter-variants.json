@@ -1,0 +1,840 @@
+{
+ "schema_version": 1,
+ "kind": "campaign_storage_adapter_variants",
+ "scope": "Campaña A v2 con los recuentos de las vistas v3.1. Solo la primera variante está declarada. Las demás sustituyen en `rolling_storage.adapter_window` lo escrito y lo conservado de cada ventana, con el mismo plan, las mismas medidas y el mismo recorrido.",
+ "decimal_gb": true,
+ "variants": [
+  {
+   "name": "declared",
+   "description": "Retención v2 declarada: tablas de los adaptadores compactadas y conservadas, con 3 estados por ajuste y las cachés de los padres.",
+   "all_regenerated": {
+    "retained_bytes": 841249392270,
+    "peak_bytes": 953307227640,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 925618873,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 30098476640,
+      "peak_bytes": 72106482911
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 63020580471,
+      "peak_bytes": 113571572057
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 98872244081,
+      "peak_bytes": 155868909622
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 136190964234,
+      "peak_bytes": 196977912695
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 174931478508,
+      "peak_bytes": 237655390976
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 215288871725,
+      "peak_bytes": 281912772380
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 257221862893,
+      "peak_bytes": 327350529745
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 300526792222,
+      "peak_bytes": 373821534236
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 345645972746,
+      "peak_bytes": 423073681526
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 392943583979,
+      "peak_bytes": 474729620799
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 442270907041,
+      "peak_bytes": 528689023372
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 493294882826,
+      "peak_bytes": 583509657954
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 546173923737,
+      "peak_bytes": 640761869846
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 601319442705,
+      "peak_bytes": 701006986611
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 659561564595,
+      "peak_bytes": 766422882892
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 719743426067,
+      "peak_bytes": 830789366740
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 780545226417,
+      "peak_bytes": 892818295717
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 841249392270,
+      "peak_bytes": 953307227640
+     }
+    ]
+   },
+   "none_regenerated": {
+    "retained_bytes": 1003160626509,
+    "peak_bytes": 1103122137247,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 4525516635,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 38326001330,
+      "peak_bytes": 75706380673
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 76796901319,
+      "peak_bytes": 121799096747
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 118843556944,
+      "peak_bytes": 169645230470
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 163076386021,
+      "peak_bytes": 216949225558
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 208583811370,
+      "peak_bytes": 264540812763
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 256192010940,
+      "peak_bytes": 315565105242
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 305736057377,
+      "peak_bytes": 368253668960
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 357002514706,
+      "peak_bytes": 422335728720
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 410529485181,
+      "peak_bytes": 479549404010
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 466712673453,
+      "peak_bytes": 539613133234
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 525427421284,
+      "peak_bytes": 602458112846
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 586233918275,
+      "peak_bytes": 666666172197
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 649399067697,
+      "peak_bytes": 733700905295
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 715367730883,
+      "peak_bytes": 804232130571
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 785233137052,
+      "peak_bytes": 880471171070
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 857440165551,
+      "peak_bytes": 956460939197
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 930360136024,
+      "peak_bytes": 1030515035201
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 1003160626509,
+      "peak_bytes": 1103122137247
+     }
+    ]
+   }
+  },
+  {
+   "name": "tables_released",
+   "description": "Tablas de los adaptadores escritas y liberadas al cerrar su ventana. Se conservan 3 estados por ajuste, los informes, las cachés de los padres y los agregados.",
+   "all_regenerated": {
+    "retained_bytes": 206812463660,
+    "peak_bytes": 367862542556,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 925618873,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 11923541768,
+      "peak_bytes": 72106482911
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 22936149843,
+      "peak_bytes": 95396637185
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 33960516475,
+      "peak_bytes": 115784478994
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 44865135442,
+      "peak_bytes": 132066185089
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 56180280308,
+      "peak_bytes": 146329562184
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 67529259221,
+      "peak_bytes": 163161574180
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 78884739485,
+      "peak_bytes": 179590917241
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 90245880932,
+      "peak_bytes": 195484410828
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 101614508576,
+      "peak_bytes": 212792770236
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 113271110999,
+      "peak_bytes": 230698156629
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 124936088735,
+      "peak_bytes": 249016550392
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 136608067400,
+      "peak_bytes": 266174839648
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 148287700655,
+      "peak_bytes": 284075054420
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 159976686131,
+      "peak_bytes": 303120763529
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 171678449165,
+      "peak_bytes": 325080126318
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 183388216247,
+      "peak_bytes": 342906251310
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 195100541333,
+      "peak_bytes": 356463085897
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 206812463660,
+      "peak_bytes": 367862542556
+     }
+    ]
+   },
+   "none_regenerated": {
+    "retained_bytes": 368723697899,
+    "peak_bytes": 517677452163,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 4525516635,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 20151066458,
+      "peak_bytes": 75706380673
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 36712470691,
+      "peak_bytes": 103624161875
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 53931829338,
+      "peak_bytes": 129560799842
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 71750557229,
+      "peak_bytes": 152037497952
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 89832613170,
+      "peak_bytes": 173214983971
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 108432398436,
+      "peak_bytes": 196813907042
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 127398933969,
+      "peak_bytes": 220494056456
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 146721603416,
+      "peak_bytes": 243998605312
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 166498021011,
+      "peak_bytes": 269268492720
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 187040200473,
+      "peak_bytes": 295581669064
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 208092602978,
+      "peak_bytes": 322785639866
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 229547102849,
+      "peak_bytes": 349331353891
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 251512844615,
+      "peak_bytes": 377014089869
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 274024974309,
+      "peak_bytes": 406345907489
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 297350021622,
+      "peak_bytes": 439128414496
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 321084955731,
+      "peak_bytes": 468577823767
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 344915450940,
+      "peak_bytes": 494159825381
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 368723697899,
+      "peak_bytes": 517677452163
+     }
+    ]
+   }
+  },
+  {
+   "name": "tables_and_caches_released",
+   "description": "Como la anterior, con 1 estado por ajuste y las cachés de los padres liberadas al cerrar la ventana.",
+   "all_regenerated": {
+    "retained_bytes": 54426802220,
+    "peak_bytes": 223942751196,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 925618873,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 3457671688,
+      "peak_bytes": 72106482911
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 6004409683,
+      "peak_bytes": 86930767105
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 8562906235,
+      "peak_bytes": 98852738834
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 11001655122,
+      "peak_bytes": 106668574849
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 13850929908,
+      "peak_bytes": 112466081864
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 16734038741,
+      "peak_bytes": 120832223780
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 19623648925,
+      "peak_bytes": 128795696761
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 22518920292,
+      "peak_bytes": 136223320268
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 25421677856,
+      "peak_bytes": 145065809596
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 28612410199,
+      "peak_bytes": 154505325909
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 31811517855,
+      "peak_bytes": 164357849592
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 35017626440,
+      "peak_bytes": 173050268768
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 38231389615,
+      "peak_bytes": 182484613460
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 41454505011,
+      "peak_bytes": 193064452489
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 44690397965,
+      "peak_bytes": 206557945198
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 47934294967,
+      "peak_bytes": 215918200110
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 51180749973,
+      "peak_bytes": 221009164617
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 54426802220,
+      "peak_bytes": 223942751196
+     }
+    ]
+   },
+   "none_regenerated": {
+    "retained_bytes": 216338036459,
+    "peak_bytes": 373757660803,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 4525516635,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 11685196378,
+      "peak_bytes": 75706380673
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 19780730531,
+      "peak_bytes": 95158291795
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 28534219098,
+      "peak_bytes": 112629059682
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 37887076909,
+      "peak_bytes": 126639887712
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 47503262770,
+      "peak_bytes": 139351503651
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 57637177956,
+      "peak_bytes": 154484556642
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 68137843409,
+      "peak_bytes": 169698835976
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 78994642776,
+      "peak_bytes": 184737514752
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 90305190291,
+      "peak_bytes": 201541532080
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 102381499673,
+      "peak_bytes": 219388838344
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 114968032098,
+      "peak_bytes": 238126939066
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 127956661889,
+      "peak_bytes": 256206783011
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 141456533575,
+      "peak_bytes": 275423648909
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 155502793189,
+      "peak_bytes": 296289596449
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 170361970422,
+      "peak_bytes": 320606233376
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 185631034451,
+      "peak_bytes": 341589772567
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 200995659580,
+      "peak_bytes": 358705904101
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 216338036459,
+      "peak_bytes": 373757660803
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_row_tables",
+   "description": "Sin tablas por fila de los adaptadores: los agregados se escriben al vuelo, los 3 estados y las cachés de la ventana son transitorios y se conserva 1 estado por ajuste.",
+   "all_regenerated": {
+    "retained_bytes": 54426802220,
+    "peak_bytes": 100109118076,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 925618873,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 3457671688,
+      "peak_bytes": 26167205907
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 6004409683,
+      "peak_bytes": 31551950727
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 8562906235,
+      "peak_bytes": 36098837242
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 11001655122,
+      "peak_bytes": 39903840511
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 13850929908,
+      "peak_bytes": 43145248300
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 16734038741,
+      "peak_bytes": 47510058634
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 19623648925,
+      "peak_bytes": 51507456299
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 22518920292,
+      "peak_bytes": 55481655232
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 25421677856,
+      "peak_bytes": 59757334770
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 28612410199,
+      "peak_bytes": 64418501963
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 31811517855,
+      "peak_bytes": 69161859960
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 35017626440,
+      "peak_bytes": 73583486844
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 38231389615,
+      "peak_bytes": 78348285136
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 41454505011,
+      "peak_bytes": 83222974587
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 44690397965,
+      "peak_bytes": 88921737320
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 47934294967,
+      "peak_bytes": 93399304286
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 51180749973,
+      "peak_bytes": 96929765897
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 54426802220,
+      "peak_bytes": 100109118076
+     }
+    ]
+   },
+   "none_regenerated": {
+    "retained_bytes": 216338036459,
+    "peak_bytes": 249924027683,
+    "peak_at": "fold-018/release",
+    "windows": [
+     {
+      "window": "fold-000",
+      "retained_bytes": 4525516635,
+      "peak_bytes": 12859011277
+     },
+     {
+      "window": "fold-001",
+      "retained_bytes": 11685196378,
+      "peak_bytes": 29767103669
+     },
+     {
+      "window": "fold-002",
+      "retained_bytes": 19780730531,
+      "peak_bytes": 39779475417
+     },
+     {
+      "window": "fold-003",
+      "retained_bytes": 28534219098,
+      "peak_bytes": 49875158090
+     },
+     {
+      "window": "fold-004",
+      "retained_bytes": 37887076909,
+      "peak_bytes": 59875153374
+     },
+     {
+      "window": "fold-005",
+      "retained_bytes": 47503262770,
+      "peak_bytes": 70030670087
+     },
+     {
+      "window": "fold-006",
+      "retained_bytes": 57637177956,
+      "peak_bytes": 81162391496
+     },
+     {
+      "window": "fold-007",
+      "retained_bytes": 68137843409,
+      "peak_bytes": 92410595514
+     },
+     {
+      "window": "fold-008",
+      "retained_bytes": 78994642776,
+      "peak_bytes": 103995849716
+     },
+     {
+      "window": "fold-009",
+      "retained_bytes": 90305190291,
+      "peak_bytes": 116233057254
+     },
+     {
+      "window": "fold-010",
+      "retained_bytes": 102381499673,
+      "peak_bytes": 129302014398
+     },
+     {
+      "window": "fold-011",
+      "retained_bytes": 114968032098,
+      "peak_bytes": 142930949434
+     },
+     {
+      "window": "fold-012",
+      "retained_bytes": 127956661889,
+      "peak_bytes": 156740001087
+     },
+     {
+      "window": "fold-013",
+      "retained_bytes": 141456533575,
+      "peak_bytes": 171287320585
+     },
+     {
+      "window": "fold-014",
+      "retained_bytes": 155502793189,
+      "peak_bytes": 186448118547
+     },
+     {
+      "window": "fold-015",
+      "retained_bytes": 170361970422,
+      "peak_bytes": 202970025498
+     },
+     {
+      "window": "fold-016",
+      "retained_bytes": 185631034451,
+      "peak_bytes": 219070876743
+     },
+     {
+      "window": "fold-017",
+      "retained_bytes": 200995659580,
+      "peak_bytes": 234626505381
+     },
+     {
+      "window": "fold-018",
+      "retained_bytes": 216338036459,
+      "peak_bytes": 249924027683
+     }
+    ]
+   }
+  }
+ ]
+}
