@@ -39,15 +39,6 @@ _ADAPTER = (
 )
 
 INVENTORY = {
-    "tests/posttraining/test_publication_from_aggregates.py": (
-        "completa la etapa de adaptadores con el optimizador que solo registra gradientes y "
-        "recorre la retención v2, cuya regeneración de predicciones se detiene con la protección"
-    ),
-    "tests/training/test_rolling_retention.py::"
-    "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation": (
-        "parte del recorrido de la retención v2 del fixture `walked`, que regenera predicciones "
-        "y ejecuta la etapa de ablación con la protección rebajada"
-    ),
     _POLICY_TAPES + "test_ppo_pauses_on_real_tapes_before_its_first_update": (
         "lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del "
         "primer recorrido para comprobar la pausa, la reanudación y que una selección abierta "
@@ -192,6 +183,15 @@ INVENTORY = {
     "test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save": _ADAPTER,
     "tests/posttraining/test_masked_run.py::"
     "test_a_final_evaluation_under_tf32_is_not_confirmed": _ADAPTER,
+    "tests/posttraining/test_publication_from_aggregates.py": (
+        "completa la etapa de adaptadores con el optimizador que solo registra gradientes y "
+        "recorre la retención v2, cuya regeneración de predicciones se detiene con la protección"
+    ),
+    "tests/training/test_rolling_retention.py::"
+    "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation": (
+        "parte del recorrido de la retención v2 del fixture `walked`, que regenera predicciones "
+        "y ejecuta la etapa de ablación con la protección rebajada"
+    ),
 }
 
 
@@ -349,6 +349,11 @@ REDIRECTIONS = {
     "tests/native/test_optimizer_steps_hold.py": (1, _CLOSES),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),
     "tests/posttraining/test_learning_hold_entrypoints.py": (2, _READER),
+    "tests/posttraining/test_publication_from_aggregates.py": (
+        3,
+        "reutiliza la protección permitida de la campaña base del fixture para completar la "
+        "etapa de adaptadores con el optimizador registrador y recorrer la retención v2",
+    ),
     "tests/posttraining/test_readout_adapters.py": (1, _RECORDER),
     "tests/simulation/rl_stage_fixture.py": (1, _CAMPAIGN),
     "tests/simulation/test_native_learning_hold.py": (1, _BINARY),
