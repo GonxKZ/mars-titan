@@ -25,6 +25,8 @@ como las reducidas de las pruebas con etiquetas escritas a mano, lo informan sin
 - MARS-TITAN con M3: las escalas de escritura salen del índice de entrenamiento de la ventana,
   con sus mismos límites de decisión, y esas etiquetas maduran antes de la primera decisión
   de validación. Los demás bancos no llevan escalas;
+- B6 con la regla kalman: σ² y ϱ se estiman con los residuos de un tramo de entrenamiento
+  cuyas etiquetas maduran antes de la primera decisión de validación;
 - las demás familias no estiman estadísticas con datos (`WITHOUT_FITTED`, con el motivo), y
   una familia sin inventariar hace fallar la comprobación.
 
@@ -330,6 +332,19 @@ def _write_scalers(identity):
     return failures
 
 
+def _cohort_noise(identity):
+    """B6 kalman: σ² y ϱ del tramo de entrenamiento, con etiquetas maduras antes de validación."""
+    phase = (identity.get("cohort_noise") or {}).get("phase") or {}
+    starts = ((identity.get("phases") or {}).get("validation") or {}).get("decision_start")
+    failures = []
+    if phase.get("partition") != "train":
+        failures.append("σ² y ϱ de B6 kalman no salen del tramo de entrenamiento")
+    closes = phase.get("close_at")
+    if type(closes) is not int or type(starts) is not int or closes > starts:
+        failures.append("las etiquetas que estiman σ² y ϱ maduran después de empezar validación")
+    return failures
+
+
 def _fit(job, output, receipt):
     family = job["family"]
     if family == plan.TABULAR:
@@ -337,7 +352,10 @@ def _fit(job, output, receipt):
         return "train_rows", _train_rows(report)
     if family == plan.MARS:
         _, run = fit_budget.fit_documents(output, receipt)
-        return "write_scalers", _write_scalers(run.get("identity") or {})
+        identity = run.get("identity") or {}
+        if "cohort_noise" in identity:
+            return "cohort_noise", _write_scalers(identity) + _cohort_noise(identity)
+        return "write_scalers", _write_scalers(identity)
     if family in WITHOUT_FITTED:
         return "without_fitted", []
     return None, [f"la familia {family} no está en el inventario del preprocesado"]

@@ -180,10 +180,25 @@ def _mars_run(admission="m3", **changes):
     return dict(identity=identity)
 
 
+def _kalman_run(**changes):
+    """Informe de una ventana B6 kalman con su tramo de estimación de σ² y ϱ."""
+    estimation = dict(
+        partition="train", warmup_start=10, decision_start=40, decision_end=100, close_at=100
+    )
+    identity = dict(
+        phases=dict(validation=dict(partition="validation", decision_start=120)),
+        cohort_noise=dict(phase=estimation, index=dict(sha256="i" * 64), estimate={}),
+    )
+    for change in changes.values():
+        change(identity)
+    return dict(identity=identity)
+
+
 FITS = {
     "ridge": (plan.TABULAR, dict(samples=dict(train=10, validation=5), fitted_rows=10), None),
     "m3": (plan.MARS, {}, _mars_run()),
     "m1": (plan.MARS, {}, _mars_run("m1")),
+    "kalman": (plan.MARS, _kalman_run(), None),
     "titans": (plan.TITANS, {}, None),
     "online": (plan.NEURAL, {}, None),
 }
@@ -214,6 +229,7 @@ def test_fits_with_statistics_of_their_own_training_rows_pass(tmp_path):
         ridge="train_rows",
         m3="write_scalers",
         m1="write_scalers",
+        kalman="cohort_noise",
         titans="without_fitted",
         online="without_fitted",
     )
@@ -276,6 +292,20 @@ def _set(path, value):
             (plan.MARS, {}, _mars_run("m1", extra=_set(("retention", "scalers"), dict(a=1)))),
             "sin M3 lleva escalas",
         ),
+        (
+            "kalman",
+            (plan.MARS, _kalman_run(late=_set(("cohort_noise", "phase", "close_at"), 150)), None),
+            "estiman σ² y ϱ maduran después de empezar validación",
+        ),
+        (
+            "kalman",
+            (
+                plan.MARS,
+                _kalman_run(other=_set(("cohort_noise", "phase", "partition"), "validation")),
+                None,
+            ),
+            "no salen del tramo de entrenamiento",
+        ),
         ("liquidity", ("liquidity_reference", {}, None), "no está en el inventario"),
     ],
     ids=[
@@ -287,6 +317,8 @@ def _set(path, value):
         "m3-late-labels",
         "m3-without-scalers",
         "m1-with-scalers",
+        "kalman-late-labels",
+        "kalman-from-validation",
         "unknown-family",
     ],
 )
