@@ -104,9 +104,9 @@ bool same_bits(std::span<const double> left, std::span<const double> right) {
 
 std::vector<double> projected(const std::vector<double>& block,
                               const std::vector<double>& transposed, Shape shape,
-                              ProjectionIsa isa) {
+                              ProjectionIsa isa, std::size_t threads = 1) {
     std::vector<double> out(shape.rows * shape.outputs, std::numeric_limits<double>::quiet_NaN());
-    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa);
+    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa, threads);
     return out;
 }
 
@@ -150,11 +150,15 @@ void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) 
                     const Shape shape{rows, width, outputs};
                     const auto block = values(generator, rows * width, extreme);
                     const auto transposed = values(generator, width * outputs, extreme);
-                    require(same_bits(projected(block, transposed, shape, isa),
-                                      reference(block, transposed, shape)),
-                            failure("La proyección nativa no conserva el orden declarado de las "
-                                    "sumas",
-                                    isa));
+                    const auto expected = reference(block, transposed, shape);
+                    // Tres hilos reparten los grupos de forma desigual.
+                    for (const std::size_t threads : {1UL, 3UL}) {
+                        require(same_bits(projected(block, transposed, shape, isa, threads),
+                                          expected),
+                                failure("La proyección nativa no conserva el orden declarado "
+                                        "de las sumas",
+                                        isa));
+                    }
                 }
             }
         }
@@ -192,6 +196,8 @@ void inconsistent_shapes_are_rejected_before_writing() {
              "Una anchura nula debe rechazarse");
     rejected([&] { project_block(block, 2, 3, transposed, 0, out); },
              "Una proyección sin salidas debe rechazarse");
+    rejected([&] { project_block(block, 2, 3, transposed, 2, out, default_projection_isa(), 0); },
+             "Una proyección sin hilos debe rechazarse");
     rejected(
         [&] {
             project_block(block, std::numeric_limits<std::size_t>::max() / 2 + 1, 2, transposed, 2,
@@ -208,6 +214,24 @@ void inconsistent_shapes_are_rejected_before_writing() {
     }
     for (const double value : out) {
         require(value == -1.0, "Un rechazo no puede escribir en la salida");
+    }
+}
+
+// Con las formas del codec, el resultado no depende de los hilos, tampoco con más hilos que
+// grupos de salidas.
+void threads_do_not_change_the_bits(ProjectionIsa isa) {
+    std::mt19937_64 generator(order_seed + 1);
+    for (const std::size_t width : {5UL, 78UL, 384UL, 512UL}) {
+        const Shape shape{independent_rows + 2, width, codec_outputs};
+        const auto block = values(generator, shape.rows * shape.width, true);
+        const auto transposed = values(generator, shape.width * shape.outputs, true);
+        const auto single = projected(block, transposed, shape, isa);
+        require(same_bits(single, reference(block, transposed, shape)),
+                failure("Un hilo no conserva el orden declarado", isa));
+        for (const std::size_t threads : {2UL, 16UL, 17UL, 64UL}) {
+            require(same_bits(projected(block, transposed, shape, isa, threads), single),
+                    failure("El número de hilos cambia la proyección", isa));
+        }
     }
 }
 
@@ -234,6 +258,7 @@ int main() {
         for (const ProjectionIsa isa : available_projection_isas()) {
             matches_the_declared_order_for_every_tile_and_remainder(isa);
             every_row_is_independent_of_its_neighbours(isa);
+            threads_do_not_change_the_bits(isa);
             std::cout << "Versión " << projection_isa_name(isa) << " comprobada\n";
         }
         inconsistent_shapes_are_rejected_before_writing();

@@ -42,11 +42,21 @@ std::string_view projection_isa_name(ProjectionIsa isa);
 // block tiene rows × width valores contiguos, transposed width × outputs y out rows × outputs.
 // Lanza std::invalid_argument si las formas no encajan o si la versión pedida no está
 // disponible.
+//
+// El núcleo recorre las salidas en grupos de ocho. Copia los pesos de cada grupo en un panel
+// contiguo de width · 8 dobles y recorre con él todas las filas, en mosaicos de cuatro. Con
+// `threads` > 1 reparte los grupos entre ese número de hilos como mucho, uno por grupo como
+// máximo, y si no puede crear alguno calcula sus grupos en el hilo que llama. Cada salida la
+// calcula un solo hilo con el orden declarado, así que el resultado no depende de los hilos.
+// La memoria adicional es un panel por hilo.
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out);
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out,
                    ProjectionIsa isa);
+void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
+                   std::span<const double> transposed, std::size_t outputs, std::span<double> out,
+                   ProjectionIsa isa, std::size_t threads);
 
 } // namespace mars_titan::episodic
 

@@ -126,10 +126,13 @@ if(MARS_TITAN_BUILD_SIMULATION)
         mars_titan_sanitizer_test_environment(simulation concurrency c_abi)
     endif()
 
-    # Proyección del codec episódico, sin LibTorch, para el enlace de Python y sus pruebas.
+    # Proyección del codec episódico, sin LibTorch, para el enlace de Python y sus pruebas. Puede
+    # repartir los grupos de salidas entre hilos.
+    find_package(Threads REQUIRED)
     add_library(mars_titan_episodic_projection STATIC src/episodic_projection.cpp)
     target_include_directories(mars_titan_episodic_projection PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    target_link_libraries(mars_titan_episodic_projection PUBLIC Threads::Threads)
     set_target_properties(mars_titan_episodic_projection PROPERTIES POSITION_INDEPENDENT_CODE ON)
     mars_titan_configure_target(mars_titan_episodic_projection)
     list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_projection.cpp")
