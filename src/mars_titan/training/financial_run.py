@@ -1123,10 +1123,14 @@ class ChronologicalTrainer(ChronologicalInference):
             run.context = self.predictor.restore_context(payload["context"])
         return run
 
-    def _load_best(self, report):
-        """Dejar el predictor con el estado seleccionado que acredita el informe."""
+    def _load_best(self, report, directory=None):
+        """Dejar el predictor con el estado seleccionado que acredita el informe.
+
+        `directory` lee los estados de otra carpeta con la misma identidad, como la del
+        ajuste confirmado que se regenera desde una salida nueva.
+        """
         state = load_training_state(
-            self.output / "checkpoints",
+            Path(directory or self.output / "checkpoints"),
             expected_identity=self.identity,
             selection="best",
             expected_sha256=report["best_checkpoint"]["sha256"],

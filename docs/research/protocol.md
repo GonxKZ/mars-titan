@@ -127,6 +127,22 @@ Con estas reglas «conservar» significa poder recuperar exactamente. Las predic
 
 El [plan de cómputo](../engineering/compute-plan.md) distingue el cribado, la confirmación y el análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
+### Modificación del 14 de octubre de 2026: retención v3 de las tablas de los adaptadores
+
+Esta modificación también se declara antes de cualquier resultado de la campaña A v2, que no se ha ejecutado. Sustituye, solo para quien recorra la campaña con la [declaración v3](../../configs/baselines/historical-masked-retention-v3.json), la regla de la v2 que conserva compactadas las tablas de los adaptadores. La v2 sigue declarada y sin cambios.
+
+El motivo es otra vez el disco. Con los recuentos reales de las vistas v3.1, los 10.404 ajustes de adaptadores de A v2 conservarían unos 809 GB compactados, y la v2 llegaría a 841,2 GB conservados y 953,3 GB de pico frente a unos 131 GB libres. Reducir la etapa cambiaría la comparación, así que se mantiene entera y se cambia solo lo que se guarda de ella. El cálculo está en el [informe de la retención v3](../../reports/engineering/campaign-storage-a-v2-v31-v3-20261014/README.md).
+
+Reglas que añade:
+
+- Cada ajuste de adaptadores compacta sus tablas sin pérdida al confirmarse y conserva solo su estado elegido, junto con su recibo y su informe.
+- Al cerrar cada modelo base en una ventana, con todas sus semillas y variantes, se escriben desde las filas los agregados de la comparación postentrenada. Después cada tabla se regenera por inferencia desde su estado elegido, con FP32 estricto, y solo se libera si sale idéntica bit a bit a la huella de su recibo. Las evaluaciones del predictor de la cadena que leen políticas posteriores se conservan compactadas hasta su último lector.
+- Si una regeneración de adaptadores no sale idéntica, sus tablas se conservan compactadas y el recorrido se detiene hasta revisarlo.
+- La caché de cada padre congelado se borra al cerrarlo, porque se puede volver a calcular desde su estado.
+- La base y la ablación compactan sus tablas al terminar su fase dentro de la ventana. Las reglas de la v2 para liberarlas no cambian.
+
+El significado de «conservar» es el mismo que en la v2: poder recuperar exactamente. La selección de la cadena y la disyunción leen recibos, selecciones y etiquetas, no tablas. Una métrica que no esté en los agregados exige regenerar las tablas, con el coste de una pasada de inferencia por ajuste.
+
 ## Métricas e interpretación
 
 Para predicción: MAE, MSE, dirección del retorno residual, Rank IC por sesión y su distribución. Los empates y ceros tienen una regla explícita. Sesiones con muy pocos activos válidos o predicciones constantes no generan correlaciones válidas y deben contabilizarse, no convertirse en cero silenciosamente. La agregación principal será por sesión para evitar que días con más activos dominen el resultado. En la edición desde 2000 se informan además, como análisis secundario declarado el 9 de octubre de 2026 antes de cualquier resultado, las mismas métricas por [estratos de presencia de noticias y fundamentales](metrics.md#estratos-por-presencia-de-modalidades). Son descriptivas. Una diferencia entre estratos no mide el efecto de una modalidad, que exigiría enmascararla en las mismas filas.

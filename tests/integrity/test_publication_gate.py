@@ -261,6 +261,7 @@ def test_the_walk_checks_each_window_before_recording_its_aggregates(tmp_path, m
         _record=lambda record: record,
         posttraining_aggregates=lambda *a: {},
     )
+    walker.liquidity = lambda: rolling.Rolling.liquidity(walker)
     row = dict(id="fold-000", scopes={"US": "fold-000"})
     with pytest.raises(ValueError, match="La integridad de US fold-000 falla"):
         rolling.Rolling.aggregates(walker, row)

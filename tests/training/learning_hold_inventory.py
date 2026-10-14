@@ -134,6 +134,8 @@ GUARDS = {
     ),
     "mars_titan.training.prediction_regeneration:regenerate_job": (_REGENERATION,),
     "mars_titan.training.prediction_regeneration:regenerate_ablation": (_REGENERATION,),
+    "mars_titan.training.prediction_regeneration:regenerate_adapter": (_REGENERATION,),
+    "mars_titan.training.prediction_regeneration:_regenerate_adapter": (_REGENERATION,),
     # Posentrenamiento y adaptadores.
     "mars_titan.posttraining.run:run_case": (_POSTTRAINING_ENTRIES,),
     "mars_titan.posttraining.queue:run_queue": (_POSTTRAINING_ENTRIES,),

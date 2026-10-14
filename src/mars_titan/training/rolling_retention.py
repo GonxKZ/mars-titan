@@ -27,6 +27,15 @@ v2, declarada antes de cualquier resultado, recorre cada ventana de campaña en 
 Después empieza la ventana siguiente, así que el pico de disco es el de una ventana más lo
 conservado. El registro `retention/ledger.json` guarda las fases terminadas de cada ventana
 para reanudar tras un corte. Las operaciones de liberación y compactación son idempotentes.
+
+La retención v3 (#611) mantiene la etapa de adaptadores completa y cambia qué se guarda y
+cuándo. Cada trabajo de adaptadores compacta sus tablas al confirmarse y deja solo su estado
+elegido. Las tablas de la base y de la ablación se compactan al terminar su fase. Al liberar,
+las tablas de los adaptadores se regeneran como las de la base y solo se liberan si salen
+idénticas bit a bit, por bloques de modelo base y después de guardar sus agregados. Las
+evaluaciones del predictor que elige la cadena se conservan compactadas hasta la última
+política que las lee, y la caché de cada padre se borra al cerrarlo. Con la declaración v2
+todo se comporta como antes.
 """
 
 import argparse
@@ -76,6 +85,20 @@ POLICY_CONSUMER = dict(reads="evaluation", release_after="confirmed_policy_recei
 STRICT_FP32 = dict(
     float32_matmul_precision="highest", cuda_matmul_allow_tf32=False, cudnn_allow_tf32=False
 )
+RELEASE = dict(
+    stages=["base", "ablation"],
+    partitions=["validation", "calibration", "evaluation"],
+    requires="bit_exact_regeneration",
+    otherwise="compact_lossless",
+)
+# Retención v3: campos añadidos, liberación de los adaptadores y compactación por fase.
+V3_FIELDS = {"adapter_states", "adapter_release", "adapter_mismatch", "parent_caches"}
+V3_RELEASE = dict(RELEASE, stages=["base", "ablation", "adapters"])
+V3_COMPACT = dict(base="after_phase", adapters="on_confirmation", ablation="after_phase")
+V3_STATES = "selected_only_after_confirmation"
+V3_ADAPTER_RELEASE = "by_base_arm_block_after_its_aggregates"
+V3_MISMATCH = "compact_lossless_and_stop"
+V3_CACHES = "released_when_each_parent_closes"
 
 
 def _require(condition, message):
@@ -84,11 +107,11 @@ def _require(condition, message):
 
 
 def load_retention(path):
-    """Validar la declaración de la retención v2 y devolverla con su huella."""
+    """Validar la declaración de la retención v2 o v3 y devolverla con su huella."""
     document, digest = read_manifest(Path(path), 1024**2)
     _require(
         isinstance(document, dict)
-        and set(document) == _FIELDS
+        and set(document) in (_FIELDS, _FIELDS | V3_FIELDS)
         and document["schema_version"] == 1
         and document["kind"] == DECLARATION_KIND
         and document["status"] == "declared_before_results"
@@ -101,23 +124,29 @@ def load_retention(path):
         "La retención solo libera filas con agregados de la comparación, de la cartera y del "
         "efecto de la selección",
     )
-    release = document["release"]
+    v3 = V3_FIELDS <= set(document)
     _require(
-        release
-        == dict(
-            stages=["base", "ablation"],
-            partitions=["validation", "calibration", "evaluation"],
-            requires="bit_exact_regeneration",
-            otherwise="compact_lossless",
-        ),
-        "Solo se liberan filas regeneradas bit a bit de la base y de la ablación",
+        document["release"] == (V3_RELEASE if v3 else RELEASE),
+        "Solo se liberan filas regeneradas bit a bit de la base y de la ablación y, con la "
+        "v3, también de los adaptadores",
     )
     _require(
-        document["compact"] == ["adapters"]
+        document["compact"] == (V3_COMPACT if v3 else ["adapters"])
         and document["policy_inputs"] == "compact_until_the_last_reading_policy_window"
         and document["numerics"] == STRICT_FP32,
         "La retención compacta los adaptadores, guarda las entradas de las políticas y exige "
         "FP32 estricto",
+    )
+    _require(
+        not v3
+        or (
+            document["adapter_states"] == V3_STATES
+            and document["adapter_release"] == V3_ADAPTER_RELEASE
+            and document["adapter_mismatch"] == V3_MISMATCH
+            and document["parent_caches"] == V3_CACHES
+        ),
+        "La v3 deja solo el estado elegido de cada adaptador, libera sus tablas por bloques de "
+        "modelo base, se detiene si una no se repite y borra la caché de cada padre al cerrarlo",
     )
     _require(
         document["consumers"] in ({}, dict(rl=POLICY_CONSUMER)),
@@ -186,6 +215,8 @@ class Rolling:
         edition=None,
         publication=None,
         unrecorded_platform=None,
+        adapter_device="cuda:0",
+        adapter_lease=None,
     ):
         """`disk` activa la guardia por ventana: `storage` (declaración), `extras` (medidas
         de agregados, adaptadores y cintas), `adapter_blocks` (lectura sin copia ordenada) y,
@@ -195,7 +226,9 @@ class Rolling:
         etapa de adaptadores es obligatoria y su comparación postentrenada debe ser la de esa
         etapa, porque sus agregados por ventana se guardan antes de liberar.
         `unrecorded_platform` nombra el perfil al que se atribuyen los recibos anteriores al
-        registro de la plataforma al publicar los agregados.
+        registro de la plataforma al publicar los agregados. `adapter_device` y
+        `adapter_lease` son el dispositivo y la reserva de la GPU con los que la v3 regenera
+        los adaptadores (CPU y un sustituto de la reserva en las pruebas).
         """
         from . import masked_campaign as engine
         from .campaign_publication import load_publication
@@ -209,6 +242,7 @@ class Rolling:
         self.disk = disk
         self.edition = None if edition is None else Path(edition)
         self.unrecorded_platform = unrecorded_platform
+        self.adapter_device, self.adapter_lease = adapter_device, adapter_lease
         # Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido: lee
         # cada activo de la edición una vez por proceso y no una por ventana.
         self._liquidity = None
@@ -256,6 +290,11 @@ class Rolling:
             for index, row in enumerate(windows)
             for scope, window in row["scopes"].items()
         }
+
+    @property
+    def v3(self):
+        """Si la declaración es la retención v3, que también libera los adaptadores."""
+        return "adapters" in self.retention["release"]["stages"]
 
     # Registro de fases por ventana.
 
@@ -367,6 +406,35 @@ class Rolling:
             for key, readers in self.policy_reads(state, index).items()
         }
 
+    def chain_keep(self, index, only=None):
+        """Trabajos de adaptadores que elige la cadena y cuya evaluación leerá una política.
+
+        Devuelve, para cada trabajo elegido en una ventana hasta `index`, la última posición
+        de ventana que lo lee y los trabajos de políticas que lo leen. La primera ventana de
+        cada ámbito elige el estado de la base y la cubre `policy_keep`. `only` limita la
+        búsqueda a un ámbito, una ventana y un modelo base, cuyas selecciones ya existen.
+        """
+        if self.rl is None or self.adapters is None:
+            return {}
+        from .campaign_chain import read_selection
+        from .rolling_storage import chain_readers
+
+        keep = {}
+        for (scope, window, arm, seed), readers in chain_readers(*self.policy_stage()).items():
+            if self.positions.get((scope, window), index + 1) > index:
+                continue
+            if only is not None and (scope, window, arm) != only:
+                continue
+            selection = read_selection(Path(self.adapters["output"]), scope, window, arm, seed)
+            _require(
+                selection is not None,
+                f"Falta la selección de la cadena de {scope}/{window}/{arm} con la semilla {seed}",
+            )
+            last, found = keep.get(selection["selected"]["job"], (-1, []))
+            last = max([last, *(self.positions[job["scope"], job["window"]] for job in readers)])
+            keep[selection["selected"]["job"]] = (last, found + list(readers))
+        return keep
+
     def require_policy_receipts(self, readers):
         """Rechazar la liberación mientras una política que lee esas evaluaciones no confirme.
 
@@ -407,12 +475,19 @@ class Rolling:
         Usa el escenario sin regeneraciones exactas y la medida declarada, que cuentan las
         tablas compactadas y comunes por arriba. Incluye las páginas de XGBoost y los índices
         de cada ajuste, el corpus de los adaptadores sin lectura por bloques, la ablación,
-        las cintas y la regeneración de un trabajo al liberar.
+        las cintas y la regeneración de un trabajo al liberar. Con la v3 los adaptadores se
+        proyectan liberados, porque una regeneración suya que no sale idéntica detiene el
+        recorrido (`_require_identical`).
         """
         from . import masked_campaign as engine
         from .campaign_plan import plan_campaign
         from .campaign_storage import load_storage, view_counts
-        from .rolling_storage import declared_measure, rolling_estimate, window_increment
+        from .rolling_storage import (
+            ADAPTERS_REGENERATED,
+            declared_measure,
+            rolling_estimate,
+            window_increment,
+        )
 
         storage = load_storage(self.disk["storage"])
         extras = self.disk["extras"]
@@ -427,9 +502,11 @@ class Rolling:
             storage,
             extras,
             ordered_copy=not self.disk.get("adapter_blocks", False),
+            v3=self.v3,
             **stages,
         )
-        return window_increment(estimate, "none_regenerated"), storage
+        scenario = ADAPTERS_REGENERATED if self.v3 else "none_regenerated"
+        return window_increment(estimate, scenario), storage
 
     def _stage_jobs(self, extras):
         from .rolling_storage import rolling_inputs
@@ -493,11 +570,9 @@ class Rolling:
                     unrecorded_platform=self.unrecorded_platform,
                 )
                 masked = comparison._ablation_sources(masked_path, restricted, sources)
-            if self._liquidity is None:
-                self._liquidity = comparison.liquidity_source(config, self.edition)
             # La integridad de la ventana se comprueba antes de liberar ninguna de sus filas.
             walked, checked = comparison_integrity.write_checked(
-                folder, restricted, sources, window, masked, liquidity=self._liquidity
+                folder, restricted, sources, window, masked, liquidity=self.liquidity()
             )
             records = dict(walk_forward=walked, integrity=checked)
             if comparison.LONG_SHORT_FIELD in config:
@@ -543,39 +618,169 @@ class Rolling:
         for base_arm in stage["configs"]:
             if window not in stage_comparison.compared_windows(stage, scope, base_arm):
                 continue
-            record = stage_comparison.write_window_aggregates(
-                self.publication["posttraining_path"],
-                scope,
-                base_arm,
-                window,
-                base_sources=base_sources,
-                stage_output=self.adapters["output"],
-                root=folder,
-                loaded=stage,
-                liquidity=self._liquidity,
-                unrecorded_platform=self.unrecorded_platform,
-            )
-            written[base_arm] = dict(
-                self._record(record), integrity=self._record(record["integrity"])
+            block = self._block_record(scope, window, base_arm)
+            if block is not None and block["aggregates"] is not None:
+                # La retención v3 ya los guardó al cerrar el bloque, antes de liberar sus filas.
+                written[base_arm] = block["aggregates"]
+                continue
+            written[base_arm] = self._posttraining_aggregate(
+                scope, window, base_arm, base_sources, folder
             )
         return written
+
+    def _posttraining_aggregate(self, scope, window, base_arm, base_sources, folder):
+        """Agregados de la comparación postentrenada de un padre en una ventana."""
+        from mars_titan.posttraining import stage_comparison
+
+        record = stage_comparison.write_window_aggregates(
+            self.publication["posttraining_path"],
+            scope,
+            base_arm,
+            window,
+            base_sources=base_sources,
+            stage_output=self.adapters["output"],
+            root=folder,
+            loaded=self.publication["posttraining"],
+            liquidity=self.liquidity(),
+            unrecorded_platform=self.unrecorded_platform,
+        )
+        return dict(self._record(record), integrity=self._record(record["integrity"]))
+
+    def liquidity(self):
+        """Asignador de liquidez compartido por todas las ventanas y ámbitos del recorrido."""
+        if self._liquidity is None:
+            self._liquidity = comparison.liquidity_source(self.comparison_config(), self.edition)
+        return self._liquidity
+
+    # Bloques de la retención v3.
+
+    def _block_path(self, scope, window, base_arm):
+        return self.folder / "blocks" / scope / window / f"{base_arm}.json"
+
+    def _block_record(self, scope, window, base_arm):
+        """Registro del bloque cerrado, con sus agregados comprobados, o None."""
+        path = self._block_path(scope, window, base_arm)
+        if not path.is_file():
+            return None
+        record, _ = read_manifest(path, 1024**2)
+        stored = record["aggregates"]
+        for item in () if stored is None else (stored, stored["integrity"]):
+            _require(
+                sha256(self.folder / item["path"]) == item["sha256"],
+                f"Los agregados del bloque {scope}/{window}/{base_arm} han cambiado",
+            )
+        return record
+
+    def block(self, state, scope, window, base_arm):
+        """Retención v3: cerrar en la etapa el bloque de un modelo base en una ventana.
+
+        La etapa lo llama al confirmar la última selección de la cadena del modelo en la
+        ventana, con su reserva de la GPU. Primero se guardan los agregados de su comparación
+        postentrenada, que leen todas sus tablas. Después se regeneran y se liberan sus tablas,
+        salvo la evaluación del predictor elegido que leerá una política de esta ventana o de
+        una posterior: esa se conserva compactada y la libera la ventana de su último lector.
+        Así la fase no acumula las tablas de toda la ventana. Es idempotente.
+        """
+        from mars_titan.posttraining import stage_comparison
+        from mars_titan.posttraining.campaign_stage import plan_stage
+
+        from . import masked_campaign as engine
+
+        jobs = [
+            job
+            for job in plan_stage(state.stage)
+            if (job["scope"], job["window"], job["base_arm"]) == (scope, window, base_arm)
+        ]
+        if not jobs:
+            return None
+        path = self._block_path(scope, window, base_arm)
+        record = self._block_record(scope, window, base_arm)
+        if record is None:
+            aggregates = None
+            stage = self.publication and self.publication["posttraining"]
+            if (
+                stage is not None
+                and scope in stage["stage"]["scopes"]
+                and base_arm in stage["configs"]
+                and window in stage_comparison.compared_windows(stage, scope, base_arm)
+            ):
+                sources = engine.write_sources(
+                    self.campaign_path,
+                    self.views,
+                    self.output,
+                    scope,
+                    window=window,
+                    unrecorded_platform=self.unrecorded_platform,
+                )
+                aggregates = self._posttraining_aggregate(
+                    scope, window, base_arm, sources, self.folder / "aggregates"
+                )
+            record = dict(aggregates=aggregates)
+            atomic_json(path, record)
+        index = self.positions[scope, window]
+        keep = self.chain_keep(index, only=(scope, window, base_arm))
+        totals = dict(released=0, kept_for_policies=0, not_regenerable=0)
+        freed = 0
+        for job in jobs:
+            receipt = state.receipts[job["id"]]
+            tables = {
+                partition: (state.output / item["path"], item["sha256"])
+                for partition, item in receipt["predictions"].items()
+            }
+            if job["id"] in keep:
+                totals["kept_for_policies"] += 1
+                continue
+
+            def regenerate(destination, job=job):
+                return regeneration._regenerate_adapter(state, job, destination)
+
+            freed += self._release_job("adapters", job, tables, regenerate, totals)
+        record = dict(record, **totals, freed_bytes=freed)
+        atomic_json(path, record)
+        self._require_identical("adapters", jobs)
+        return record
+
+    def _require_identical(self, stage, jobs):
+        """Retención v3: detener el recorrido si alguna regeneración de adaptadores no salió
+        idéntica bit a bit o falló.
+
+        Sus tablas ya están compactadas sin pérdida, pero la comparación supone que cada tabla
+        se repite desde su estado, así que hay que revisarlo antes de seguir. Una decisión
+        con error se repite al reanudar. Una diferencia comparada es definitiva y la detención
+        se repite hasta que se revise.
+        """
+        failed = []
+        for job in jobs:
+            path = self.folder / "regeneration-reports" / f"{_name(f'{stage}:{job["id"]}')}.json"
+            if path.is_file() and read_manifest(path, 16 * 1024**2)[0].get("identical") is not True:
+                failed.append(job["id"])
+        _require(
+            not failed,
+            f"{len(failed)} regeneraciones de {stage} no salen idénticas o fallaron, con las "
+            "tablas compactadas: "
+            + ", ".join(failed[:8])
+            + (" y otras" if len(failed) > 8 else ""),
+        )
 
     def release(self, index):
         """Liberar o compactar las tablas de las ventanas hasta `index` que nadie leerá."""
         base, jobs = self.base_state(index)
         keep = self.policy_keep(base, index)
+        chain = self.chain_keep(index) if self.v3 else {}
         if self.rl is not None:
             # Antes de liberar nada: cada evaluación que deja de conservarse ya la ha leído
-            # cada política que la necesita.
+            # cada política que la necesita, también las de la cadena con la v3.
             reads = self.policy_reads(base, index)
-            self.require_policy_receipts(
-                {
-                    reader["id"]
-                    for job in jobs
-                    if keep.get(job["id"], -1) <= index
-                    for reader in reads.get(job["id"], ())
-                }
-            )
+            readers = {
+                reader["id"]
+                for job in jobs
+                if keep.get(job["id"], -1) <= index
+                for reader in reads.get(job["id"], ())
+            }
+            readers |= {
+                reader["id"] for last, found in chain.values() if last <= index for reader in found
+            }
+            self.require_policy_receipts(readers)
         totals = dict(
             released=0, kept_for_policies=0, not_regenerable=0, declared_not_regenerable=0
         )
@@ -623,10 +828,59 @@ class Rolling:
                     return regeneration._regenerate_ablation(state, job, destination)
 
                 freed += self._release_job("ablation", job, tables, regenerate, totals)
-        if self.adapters is not None:
+        extra = {}
+        if self.adapters is not None and self.v3:
+            adapters = dict(released=0, kept_for_policies=0, not_regenerable=0)
+            last = {job_id: position for job_id, (position, _) in chain.items()}
+            freed += self._release_adapters(index, last, adapters)
+            extra = dict(adapters=adapters, parent_cache_bytes=self._release_parent_caches(index))
+        elif self.adapters is not None:
             freed += self._compact_adapters(index)
         pruned = self._prune_rows()
-        return dict(totals, freed_bytes=freed, pruned_rows_bytes=pruned)
+        return dict(totals, freed_bytes=freed, pruned_rows_bytes=pruned, **extra)
+
+    def after_phase(self, index, row, phase):
+        """Retención v3: compactar sin pérdida las tablas de la fase que acaba de terminar.
+
+        Las fases siguientes y los agregados las leen compactadas con `prediction_files.read`.
+        Los adaptadores ya se compactan al confirmar cada trabajo y se liberan por bloques, así
+        que aquí solo se recogen los que se confirmaron antes sin compactar y se resumen sus
+        bloques. Devuelve lo que se añade al registro de la fase. Con la v2 no hace nada.
+        """
+        if not self.v3:
+            return {}
+        freed, record = 0, {}
+        if phase == "base":
+            base, jobs = self.base_state(index)
+            for job in jobs:
+                if (
+                    job.get("phase") == PLATEAU
+                    or self.positions[job["scope"], job["window"]] != index
+                ):
+                    continue
+                report_path = self.output / base.receipts[job["id"]]["report"]["path"]
+                report, _ = read_manifest(report_path, 16 * 1024**2)
+                freed += self._compact(job, regeneration.originals(report_path.parent, report))
+        elif phase == "adapters" and self.adapters is not None:
+            freed = self._compact_adapters(index, window_only=True)
+            blocks = [
+                read_manifest(path, 1024**2)[0]
+                for scope, window in row["scopes"].items()
+                for path in sorted((self.folder / "blocks" / scope / window).glob("*.json"))
+            ]
+            record["blocks"] = {
+                key: sum(block.get(key, 0) for block in blocks)
+                for key in ("released", "kept_for_policies", "not_regenerable", "freed_bytes")
+            }
+            record["blocks"]["count"] = len(blocks)
+        elif phase == "ablation" and self.ablation is not None:
+            state, jobs = self.ablation_state(index)
+            for job in jobs:
+                if self.positions[job["scope"], job["window"]] == index:
+                    item = state.receipts[job["id"]]["prediction"]
+                    tables = {"evaluation": (state.output / item["path"], item["sha256"])}
+                    freed += self._compact(job, tables)
+        return dict(record, compacted_bytes=freed)
 
     def _rows(self, job, partition):
         folder = self.folder / "rows" / job["scope"] / job["window"] / partition
@@ -696,15 +950,23 @@ class Rolling:
             shutil.rmtree(destination)
         return freed
 
-    def _compact_adapters(self, index):
-        """Compactar sin pérdida las tablas confirmadas de los adaptadores de la ventana."""
+    def _compact_adapters(self, index, window_only=False):
+        """Compactar sin pérdida las tablas confirmadas de los adaptadores hasta la ventana
+        `index`, o solo las de esa ventana con `window_only`.
+
+        Con `window_only` (retención v3, al terminar la fase) deja además solo el estado
+        elegido de cada ajuste, como hace la etapa al confirmar cada trabajo.
+        """
+        from .checkpoints import release_recovery_states
+
         freed = 0
         output = Path(self.adapters["output"])
         for receipt_path in sorted((output / "jobs").rglob("receipt.json")):
             receipt, _ = read_manifest(receipt_path, 8 * 1024**2)
             identity = receipt.get("identity", {})
             pair = (identity.get("scope"), identity.get("window"))
-            if self.positions.get(pair, len(self.windows)) > index:
+            position = self.positions.get(pair, len(self.windows))
+            if position > index or (window_only and position != index):
                 continue
             job = dict(id=identity.get("id"), scope=pair[0], window=pair[1])
             tables = {
@@ -712,6 +974,89 @@ class Rolling:
                 for partition, record in receipt.get("predictions", {}).items()
             }
             freed += self._compact(job, tables)
+            if window_only:
+                for marker in sorted(receipt_path.parent.rglob("checkpoints/identity.json")):
+                    freed += release_recovery_states(marker.parent)
+        return freed
+
+    def _release_adapters(self, index, keep, totals):
+        """Retención v3: regenerar y liberar las tablas de los adaptadores hasta `index`.
+
+        Cada trabajo se regenera desde su estado elegido con `_release_job`, como la base, y
+        sus tablas solo se liberan si salen idénticas bit a bit. La evaluación que leerá una
+        política posterior (`keep` da su última ventana) se conserva compactada. Los trabajos
+        ya liberados no se vuelven a abrir.
+        """
+        from mars_titan.posttraining import campaign_stage as adapters
+
+        output = Path(self.adapters["output"])
+        pairs = {pair for pair, position in self.positions.items() if position <= index}
+        state, jobs = adapters.opened_stage(
+            self.adapters["stage"],
+            self.views,
+            self.output,
+            output,
+            pairs,
+            device=self.adapter_device,
+            stop=regeneration._Running(),
+        )
+        pending = [job for job in jobs if not self._released(output, state.folder(job))]
+        freed = 0
+        if not pending:
+            return freed
+        with (self.adapter_lease or adapters._gpu_lease)() as state.lease:
+            try:
+                for job in pending:
+                    receipt = state.confirmed(job, state.job_identity(job))
+                    _require(receipt is not None, f"Falta confirmar {job['id']} antes de liberar")
+                    state.receipts[job["id"]] = receipt
+                    tables = {
+                        partition: (output / record["path"], record["sha256"])
+                        for partition, record in receipt["predictions"].items()
+                    }
+                    if keep.get(job["id"], -1) > index:
+                        totals["kept_for_policies"] += 1
+                        freed += self._compact(job, tables)
+                        continue
+
+                    def regenerate(destination, job=job):
+                        return regeneration._regenerate_adapter(state, job, destination)
+
+                    freed += self._release_job("adapters", job, tables, regenerate, totals)
+            finally:
+                state.close()
+        self._require_identical("adapters", pending)
+        return freed
+
+    @staticmethod
+    def _released(output, folder):
+        """Si todas las tablas de un trabajo confirmado ya están liberadas."""
+        path = folder / "receipt.json"
+        if not path.is_file():
+            return False
+        receipt, _ = read_manifest(path, 8 * 1024**2)
+        return all(
+            prediction_files.verify(output / record["path"], record["sha256"])
+            == prediction_files.RELEASED
+            for record in receipt["predictions"].values()
+        )
+
+    def _release_parent_caches(self, index):
+        """Retención v3: borrar las cachés de predicciones de los padres hasta `index`.
+
+        Solo aceleran los ajustes de su ventana, que ya están confirmados, y se reconstruyen
+        desde el padre si hiciera falta. La regeneración predice con el padre, no con ellas.
+        """
+        freed = 0
+        root = Path(self.adapters["output"]) / "windows-data"
+        for (scope, window), position in self.positions.items():
+            if position > index:
+                continue
+            parents = root / scope / window / "parents"
+            for path in sorted(parents.glob("*/seed-*/predictions.sqlite*")):
+                if path.is_file() and not path.is_symlink():
+                    freed += path.stat().st_size
+                    path.unlink()
         return freed
 
     def _prune_rows(self):
@@ -770,6 +1115,8 @@ def default_runners(
     stop=None,
     unrecorded_platform=None,
     execution=None,
+    retention=None,
+    on_block=None,
 ):
     """Órdenes de cada fase limitadas a una ventana de campaña.
 
@@ -780,7 +1127,9 @@ def default_runners(
     `execution` es la declaración de ejecución de la campaña base. Sus trazas de #448 llegan
     también a los adaptadores y a las políticas.
     Las políticas contrastan su plataforma con los recibos de la base, y `unrecorded_platform`
-    nombra el perfil de los anteriores a ese registro.
+    nombra el perfil de los anteriores a ese registro. Con la retención v3 (`retention`), la
+    etapa de adaptadores compacta cada trabajo al confirmarlo en las filas comunes de la
+    retención y llama a `on_block` (`Rolling.block`) al cerrar cada modelo base en una ventana.
     """
     from mars_titan.posttraining import campaign_stage as adapter_stage
     from mars_titan.simulation import campaign_stage as rl_stage
@@ -820,6 +1169,8 @@ def default_runners(
     )
     if "adapters" in stages:
         entry = stages["adapters"]
+        v3 = retention is not None and "adapters" in retention["release"]["stages"]
+        rows = Path(output) / "retention" / "rows" if v3 else None
         runners["adapters"] = lambda window: adapter_stage.run_stage(
             entry["stage"],
             views,
@@ -829,6 +1180,8 @@ def default_runners(
             window=window,
             disjunction=checked(window, "adapters"),
             traces=traces,
+            compact_rows=rows,
+            on_block=on_block if v3 else None,
         )
     if "ablation" in stages:
         entry = stages["ablation"]
@@ -869,7 +1222,7 @@ def run_rolling(rolling, runners, *, stop=None):
                 status = runners[phase](row["id"])["status"]
                 if status != "completed":
                     return dict(status=status, window=row["id"], windows=summary)
-                rolling.mark(row["id"], phase)
+                rolling.mark(row["id"], phase, **rolling.after_phase(index, row, phase))
         if not rolling.done(row["id"], "aggregates"):
             rolling.mark(row["id"], "aggregates", written=rolling.aggregates(row))
         if not rolling.done(row["id"], "release"):
@@ -930,15 +1283,6 @@ def main(argv=None):
         _require(args.edition is not None, "Las políticas necesitan --edition")
         _require(args.listing_status is not None, "Las políticas necesitan --listing-status")
         stages["rl"].update(edition=args.edition, listing_status=args.listing_status)
-    runners = default_runners(
-        args.campaign,
-        views,
-        args.output,
-        storage=args.storage,
-        stages=stages,
-        execution=args.execution,
-        unrecorded_platform=args.unrecorded_platform,
-    )
     rolling = Rolling(
         retention,
         args.campaign,
@@ -956,6 +1300,17 @@ def main(argv=None):
             extras=json.loads(args.extras.read_text()),
             adapter_blocks=args.adapter_blocks,
         ),
+    )
+    runners = default_runners(
+        args.campaign,
+        views,
+        args.output,
+        storage=args.storage,
+        stages=stages,
+        execution=args.execution,
+        unrecorded_platform=args.unrecorded_platform,
+        retention=retention,
+        on_block=rolling.block,
     )
     result = run_rolling(rolling, runners)
     print(json.dumps(dict(status=result["status"], windows=len(result["windows"]))))

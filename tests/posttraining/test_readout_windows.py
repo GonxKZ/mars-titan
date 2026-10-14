@@ -16,6 +16,7 @@ import numpy as np
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.storage import sha256
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining import chronological_windows as cw
@@ -88,6 +89,7 @@ def windows(campaign_run, tmp_path_factory):  # noqa: F811
             factory=factory,
             staged_factory=staged_factory,
             root=root / name,
+            case=item["case"],
         )
     with unfused_attention():
         frozen = cw.frozen_readout(
@@ -225,3 +227,36 @@ def test_traces_reach_the_reader_case_without_changing_its_rows(windows, campaig
     deltas = [row for row in found if row["metric"].startswith("adapter.delta")]
     assert deltas and all(row["value"] == 0.0 for row in deltas)
     assert "memory.alpha.mean" in metrics(found, "train")
+
+
+def test_every_case_regenerates_its_tables_from_the_selected_state(windows, campaign_run, tmp_path):  # noqa: F811
+    """Retención v3: cada caso se reconstruye, carga su estado elegido y repite sus tablas."""
+    matrix, digest = read_matrix(MATRIX)
+    matrix["budget"].update(epochs=1)
+    fitted, carried = campaign_run.windows[0], campaign_run.windows[1]
+    prepared = campaign_run.prepared["US"]["windows"]
+    placements = dict(
+        fit=(prepared[fitted], {}),
+        staged=(prepared[carried], dict(parent_view=Path(prepared[fitted]["path"]))),
+    )
+    for name, run in windows["runs"].items():
+        for kind, (view, options) in placements.items():
+            factory = Factory()
+            with unfused_attention():
+                again = cw.run_readout_posttraining(
+                    windows["base"]["arm"],
+                    Path(view["path"]),
+                    tmp_path / name / kind,
+                    case=run["case"],
+                    matrix=matrix,
+                    digest=digest,
+                    device="cpu",
+                    optimizer_factory=factory,
+                    regenerate=run["root"] / kind,
+                    **options,
+                )
+            assert again["regenerated"] is True
+            for partition, record in run[kind]["predictions"].items():
+                path = tmp_path / name / kind / again["predictions"][partition]["path"]
+                assert sha256(path) == record["sha256"], (name, kind, partition)
+            assert factory.instances and not factory.records

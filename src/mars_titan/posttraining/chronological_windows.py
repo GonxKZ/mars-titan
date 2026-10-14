@@ -294,6 +294,39 @@ def _fit_and_predict(trainer, predict, sources, dataset, output, report, stop, c
         atomic_json(report_path, report)
 
 
+def _fitted(folder, request, kind, output):
+    """Ajuste completado que se regenera: misma petición y una salida nueva fuera de él."""
+    folder = Path(folder)
+    report, _ = _completed(folder, (kind,))
+    _require(report["request"] == request, "La regeneración no repite la petición del ajuste")
+    _new_destination(output, (folder,))
+    return folder, report
+
+
+def _regenerated(trainer, predict, sources, dataset, output, fitted, check=None):
+    """Repetir los tres tramos desde el estado elegido de un ajuste confirmado, sin ajustar.
+
+    `fitted` es la carpeta y el informe del ajuste. Sus estados solo se leen, con la identidad
+    del entrenador reconstruido, y las tablas se escriben en `output` con los mismos nombres.
+    """
+    folder, report = fitted
+    fit, digest = read_manifest(folder / "fit/run.json", 16 * 1024**2)
+    _require(
+        digest == report["fit"]["sha256"] and fit["run_id"] == trainer.run_id,
+        "El ajuste que se regenera no corresponde al entrenador reconstruido",
+    )
+    trainer._load_best(fit, folder / "fit/checkpoints")
+    if check is not None:
+        check()
+    stop = StopRequest()
+    predictions = {}
+    for name in PREDICTED:
+        rows = PredictionRows(trainer.quantiles)
+        metrics = predict(sources[name], rows, stop)
+        predictions[name] = _write(output, name, rows, metrics, dataset)
+    return dict(report, predictions=predictions, regenerated=True)
+
+
 def _open_view(view, identity, output, protected, indices, names=PREDICTED + ("train",)):
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     _check_view(dataset, view_protocol(view), identity["window"])
@@ -370,6 +403,7 @@ def run_titans_posttraining(
     optimizer_factory=None,
     parent_view=None,
     traces=None,
+    regenerate=None,
 ):
     """Postentrenar el estado elegido de una variante de Titans-MAC.
 
@@ -378,6 +412,8 @@ def run_titans_posttraining(
     La continuación completa ajusta los mismos papeles que el ajuste base. Con
     `parent_view`, el padre se ajustó en esa vista anterior (walk-forward por etapas).
     `traces` declara las trazas de #448, con la actualización de los adaptadores.
+    `regenerate` es la salida de este mismo ajuste ya completado: se reconstruye igual, se
+    carga su estado elegido y se repiten sus tres tramos en `output`, sin ajustar.
     """
     require_learning_allowed("el postentrenamiento de Titans-MAC")
     _cuda(device)
@@ -390,9 +426,12 @@ def run_titans_posttraining(
         original["view_sha256"] == sha256(origin) and original["seed"] == case["seed"],
         "El padre no se ajustó en su vista con la semilla del caso",
     )
-    resumed = _resumed(output, request)
-    if resumed is not None:
-        return resumed
+    if regenerate is None:
+        resumed = _resumed(output, request)
+        if resumed is not None:
+            return resumed
+    else:
+        fitted = _fitted(regenerate, request, TITANS_WINDOW, output)
     identity = parent_report["identity"]
     document = identity["recipe"]
     recipe = replace(case_recipe(document, original.get("search_case")), **cm.recipe_options(case))
@@ -455,7 +494,6 @@ def run_titans_posttraining(
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
-    report = _report(output, request, window, TITANS_WINDOW)
 
     def check():
         if adapter is not None:
@@ -464,19 +502,16 @@ def run_titans_posttraining(
                 "El ajuste cambió parámetros fuera de los adaptadores",
             )
 
+    def predict(source, rows, stop):
+        return trainer.predict_partition(source, rows, stop=stop)
+
+    if regenerate is not None:
+        return _regenerated(trainer, predict, sources, dataset, output, fitted, check)
+    report = _report(output, request, window, TITANS_WINDOW)
     attach_traces(
         trainer, output / "traces", traces, "posttraining_titans_mac", observers=[AdapterObserver()]
     )
-    return _fit_and_predict(
-        trainer,
-        lambda source, rows, stop: trainer.predict_partition(source, rows, stop=stop),
-        sources,
-        dataset,
-        output,
-        report,
-        stop,
-        check,
-    )
+    return _fit_and_predict(trainer, predict, sources, dataset, output, report, stop, check)
 
 
 def readout_family_of(report):
@@ -557,6 +592,7 @@ def run_readout_posttraining(
     optimizer_factory=None,
     parent_view=None,
     traces=None,
+    regenerate=None,
 ):
     """Postentrenar el núcleo, la lectura episódica o ambos de un modelo con lector.
 
@@ -564,7 +600,8 @@ def run_readout_posttraining(
     en el núcleo, el padre se carga congelado como en el ajuste del modelo. Con
     `parent_view`, el modelo se ajustó en esa vista anterior (walk-forward por etapas) y,
     con M3, conserva las escalas congeladas de su propio ajuste. `traces` declara las trazas
-    de #448, con la actualización de los adaptadores.
+    de #448, con la actualización de los adaptadores. `regenerate` repite, como en Titans-MAC,
+    los tramos de este ajuste ya completado desde su estado elegido.
     """
     require_learning_allowed("el postentrenamiento de un modelo con lector episódico")
     _cuda(device)
@@ -573,9 +610,12 @@ def run_readout_posttraining(
     report, digest_arm, family, parent, parent_report = _arm_parts(arm, origin)
     request = _case_request(case, digest, matrix, arm, digest_arm, view, device, parent_view)
     _require(report["request"]["seed"] == case["seed"], "El modelo no tiene la semilla del caso")
-    resumed = _resumed(output, request)
-    if resumed is not None:
-        return resumed
+    if regenerate is None:
+        resumed = _resumed(output, request)
+        if resumed is not None:
+            return resumed
+    else:
+        fitted = _fitted(regenerate, request, READOUT_WINDOW, output)
     identity = report["identity"]
     window, phases, placement = _placement(
         identity, parent_view, view, parent_report["identity"]["recipe"]
@@ -680,19 +720,17 @@ def run_readout_posttraining(
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
+
+    def predict(source, rows, stop):
+        return trainer.evaluate(source, stop=stop, rows=rows)
+
+    if regenerate is not None:
+        return _regenerated(trainer, predict, sources, dataset, output, fitted)
     report_out = _report(output, request, record, READOUT_WINDOW)
     attach_traces(
         trainer, output / "traces", traces, "posttraining_readout", observers=[AdapterObserver()]
     )
-    return _fit_and_predict(
-        trainer,
-        lambda source, rows, stop: trainer.evaluate(source, stop=stop, rows=rows),
-        sources,
-        dataset,
-        output,
-        report_out,
-        stop,
-    )
+    return _fit_and_predict(trainer, predict, sources, dataset, output, report_out, stop)
 
 
 def _later_view(parent_view, view, output, protected, titans):

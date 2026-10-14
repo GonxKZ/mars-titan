@@ -15,6 +15,7 @@ import pytest
 import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.storage import sha256
 from mars_titan.models.predictive_adaptation import adapter_names
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.models.titans.financial_inputs import validated_cpu_batch
@@ -372,3 +373,34 @@ def test_traces_reach_the_adapted_head_without_changing_the_window(
     # Sin pasos que cambien pesos, la actualización efectiva de la cabeza es exactamente cero.
     assert deltas and all(row["value"] == 0.0 for row in deltas)
     assert {"loss", "grad_l2"} <= metrics(found, "train")
+
+
+def test_every_arm_regenerates_its_tables_from_the_selected_state(
+    views, parent, matrix, arms, allowed, tmp_path
+):
+    """Retención v3: cada caso se reconstruye, carga su estado elegido y repite sus tablas."""
+    document, digest = matrix
+    for name, case in cases(matrix).items():
+        output, report, _ = arms[name]
+        made = []
+
+        def factory(groups, made=made):
+            made.append(RecordingOptimizer(groups))
+            return made[-1]
+
+        again = ca.run_candidate_posttraining(
+            parent,
+            views.windows[SCOPE][FIRST],
+            tmp_path / name,
+            case=case,
+            matrix=document,
+            digest=digest,
+            device="cpu",
+            optimizer_factory=factory,
+            regenerate=output,
+        )
+        assert again["regenerated"] is True and made and made[0].calls == 0
+        for partition, record in report["predictions"].items():
+            path = tmp_path / name / again["predictions"][partition]["path"]
+            assert again["predictions"][partition]["path"] == record["path"]
+            assert sha256(path) == record["sha256"], (name, partition)

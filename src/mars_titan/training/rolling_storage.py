@@ -17,15 +17,24 @@ declaración de almacenamiento y los bytes por fila medidos:
 - La meseta de un ajuste conjunto ocupa su carpeta hasta que se confirma su continuación,
   que reanuda en ella y la libera. De la meseta solo queda después la copia de su informe.
 
+Con la retención v3 (`v3=True`) cada trabajo de adaptadores ocupa sus tablas compactadas y
+un solo estado desde que se confirma, las tablas de la base y de la ablación se compactan al
+terminar su fase, las de los adaptadores se liberan como las de la base (salvo la evaluación
+del predictor de la cadena, que se conserva hasta su última política) y las cachés de los
+padres se borran al cerrar la ventana.
+
 `all_regenerated` supone que todas las regeneraciones salen idénticas y `none_regenerated`
-que ninguna lo hace, de modo que todo queda compactado. La realidad está entre los dos. Las
+que ninguna lo hace, de modo que todo queda compactado. Con la v3 se añade
+`adapters_regenerated`, la proyección de la guardia: los adaptadores se liberan, porque una
+regeneración suya que no sale idéntica detiene el recorrido, y la base y la ablación quedan
+compactadas. La realidad está entre los dos. Las
 tablas comunes de filas se cuentan hasta el final aunque `_prune_rows` las borre antes, así
 que el conservado es una cota superior. Solo se importan módulos estables con rutas
 absolutas para poder evaluar el mismo cálculo sobre el plan de otra rama.
 """
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from mars_titan.training.campaign_plan import PLATEAU
 from mars_titan.training.campaign_storage import (
@@ -37,6 +46,10 @@ from mars_titan.training.campaign_storage import (
 )
 
 SCENARIOS = ("all_regenerated", "none_regenerated")
+# Solo con la v3: una regeneración de adaptadores que no sale idéntica detiene el recorrido,
+# así que la guardia de cada ventana supone los adaptadores liberados y la base y la
+# ablación sin ninguna regeneración idéntica.
+ADAPTERS_REGENERATED = "adapters_regenerated"
 PHASES = ("base", "adapters", "ablation", "rl", "release")
 # Registro de retención y huellas que deja cada tabla liberada o compactada.
 RECORD_BYTES = 4096
@@ -64,15 +77,8 @@ def policy_tape_bytes(stage, extras):
     return extras["tape_bytes"]
 
 
-def policy_readers(stage, jobs):
-    """Trabajos de las políticas que leen la evaluación de cada predictor elegido de la base.
-
-    Las claves son ámbito, ventana, predictor y la semilla declarada del predictor. Con el
-    predictor elegido de la base, un trabajo lee las evaluaciones que da
-    `policy_plan.predictor_reads`. Con la cadena, la base solo aporta el predictor de la
-    primera ventana de cada ámbito. En las demás la cadena lee las tablas de los adaptadores,
-    que la retención compacta y nunca libera.
-    """
+def _readers(stage, jobs, *, chained):
+    """Trabajos de las políticas que leen cada evaluación, de la base o de la cadena."""
     from mars_titan.simulation.policy_plan import CHAIN, predictor_reads
 
     from .campaign_chain import scope_windows
@@ -86,10 +92,31 @@ def policy_readers(stage, jobs):
     readers = {}
     for job in jobs:
         for scope, window, predictor in dict.fromkeys(predictor_reads(stage, job)):
-            if chain and window != first[scope]:
+            if chained != (chain and window != first[scope]):
                 continue
             readers.setdefault((scope, window, predictor, seed), []).append(job)
     return readers
+
+
+def policy_readers(stage, jobs):
+    """Trabajos de las políticas que leen la evaluación de cada predictor elegido de la base.
+
+    Las claves son ámbito, ventana, predictor y la semilla declarada del predictor. Con el
+    predictor elegido de la base, un trabajo lee las evaluaciones que da
+    `policy_plan.predictor_reads`. Con la cadena, la base solo aporta el predictor de la
+    primera ventana de cada ámbito. En las demás la cadena lee las tablas de los adaptadores
+    (`chain_readers`), que la retención v2 conserva compactadas y la v3 hasta su último lector.
+    """
+    return _readers(stage, jobs, chained=False)
+
+
+def chain_readers(stage, jobs):
+    """Trabajos de las políticas que leen de la cadena la evaluación del predictor elegido.
+
+    Son las ventanas posteriores a la primera de cada ámbito con `source=chain`, con las
+    mismas claves que `policy_readers`. Sin la cadena no hay ninguna.
+    """
+    return _readers(stage, jobs, chained=True)
 
 
 def policy_needs(stage, jobs, positions):
@@ -117,7 +144,7 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
         for index, row in enumerate(windows)
         for scope, window in row["scopes"].items()
     }
-    inputs = dict(ablation_jobs=(), adapter_jobs=(), policy_reads={}, tapes={})
+    inputs = dict(ablation_jobs=(), adapter_jobs=(), policy_reads={}, chain_reads={}, tapes={})
     if ablation is not None:
         from mars_titan.training.modality_ablation_stage import load_stage, plan_stage
 
@@ -139,6 +166,12 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
         for key, last in policy_needs(stage, planned, positions).items():
             if key in first:
                 reads[first[key]] = max(reads.get(first[key], -1), last)
+        # Con la cadena, cada predictor y semilla de una ventana posterior lee la evaluación
+        # de un trabajo de adaptadores. Se guarda la última ventana que lee cada uno.
+        chained = defaultdict(list)
+        for (scope, window, _, _), readers in chain_readers(stage, planned).items():
+            last = max(positions[job["scope"], job["window"]] for job in readers)
+            chained[scope, window].append(last)
         anchors = {}
         for job in planned:
             anchors[job["scope"], job["market"], job["anchor"], job["predictor"]] = (
@@ -148,7 +181,7 @@ def rolling_inputs(jobs, windows, extras, *, ablation=None, adapters=None, rl=No
         tape = policy_tape_bytes(stage, extras)
         for (scope, _, anchor, _), count in anchors.items():
             tapes[windows[positions[scope, anchor]]["id"]] += count * tape
-        inputs.update(policy_reads=reads, tapes=dict(tapes))
+        inputs.update(policy_reads=reads, chain_reads=dict(chained), tapes=dict(tapes))
     return inputs
 
 
@@ -198,7 +231,7 @@ def comparison_series(jobs):
     return sum((job["base_arm"], job["seed"]) in compared for job in jobs) + 2 * len(compared)
 
 
-def adapter_window(jobs, counts, extras, *, ordered_copy):
+def adapter_window(jobs, counts, extras, *, ordered_copy, v3=False):
     """Adaptadores de una ventana de un ámbito: escrito, compactado y corpus transitorio.
 
     Sin `ordered_copy` (lectura por bloques desde la vista) el corpus no ocupa disco. Las
@@ -206,12 +239,23 @@ def adapter_window(jobs, counts, extras, *, ordered_copy):
     agregados por ventana de la comparación postentrenada y sus fuentes se conservan siempre
     con la medida por serie `comparison_aggregate_bytes_per_series`, tomada en la ventana
     con más sesiones y con los cuatro estratos en cada sesión, una cota superior.
+
+    Con `v3`, cada trabajo confirmado conserva un estado y sus tablas compactadas solo hasta
+    que se cierra su bloque (el modelo base en la ventana), que guarda sus agregados y las
+    regenera y libera. Es transitorio el bloque en curso, con el trabajo que se ajusta (sus
+    tablas sin compactar, los demás estados y la caché de su padre) o la regeneración de uno.
+    `released` es lo que queda si se liberan todas las tablas, `compacted` si no se libera
+    ninguna, `table` las tablas compactadas de un trabajo y `regeneration` el disco de
+    regenerar uno.
     """
     if not jobs:
-        return dict(written=0, compacted=0, transient=0)
+        return dict(written=0, compacted=0, transient=0, released=0, table=0, regeneration=0)
     adapter = extras["adapter"]
     held = sum(counts[p] for p in HELD_OUT)
-    fixed = adapter["state_bytes"] * adapter["retained_states"] + adapter["job_report_bytes"]
+    current = int(held * adapter["row_bytes_current"])
+    table = int(held * adapter["row_bytes_shared_rows"])
+    states = 1 if v3 else adapter["retained_states"]
+    fixed = adapter["state_bytes"] * states + adapter["job_report_bytes"]
     caches = len({(j["base_arm"], j["seed"]) for j in jobs}) * adapter["parent_cache_bytes"]
     aggregates = math.ceil(
         comparison_series(jobs) * adapter["comparison_aggregate_bytes_per_series"]
@@ -220,11 +264,29 @@ def adapter_window(jobs, counts, extras, *, ordered_copy):
     if ordered_copy:
         ordered = (counts["train"] + counts["validation"]) * adapter["ordered_row_bytes"]
         corpus = ordered + counts["train"] * adapter["input_row_bytes"]
+    if v3:
+        block = max(Counter(job["base_arm"] for job in jobs).values()) * table
+        running = (
+            current
+            + adapter["state_bytes"] * (adapter["retained_states"] - 1)
+            + adapter["parent_cache_bytes"]
+        )
+        return dict(
+            written=len(jobs) * fixed + aggregates,
+            compacted=len(jobs) * (table + fixed) + aggregates,
+            transient=corpus + block + max(running, current + table),
+            released=len(jobs) * fixed + aggregates,
+            table=table,
+            regeneration=current + table,
+        )
     kept = caches + aggregates
     return dict(
-        written=len(jobs) * (int(held * adapter["row_bytes_current"]) + fixed) + kept,
-        compacted=len(jobs) * (int(held * adapter["row_bytes_shared_rows"]) + fixed) + kept,
+        written=len(jobs) * (current + fixed) + kept,
+        compacted=len(jobs) * (table + fixed) + kept,
         transient=corpus,
+        released=0,
+        table=table,
+        regeneration=0,
     )
 
 
@@ -233,6 +295,9 @@ class _Walk:
 
     def __init__(self, scenario, inputs):
         self.scenario, self.inputs = scenario, inputs
+        # Si fallan las regeneraciones de la base y la ablación, y las de los adaptadores.
+        self.base_fails = scenario != "all_regenerated"
+        self.adapters_fail = scenario == "none_regenerated"
         self.retained, self.peak, self.worst = 0, 0, None
         self.pending, self.shared = {}, set()
 
@@ -243,9 +308,9 @@ class _Walk:
     def base(self, row, index, phases):
         """Ajustes y traslados de la ventana en el orden del plan."""
         counts, measured, storage = (self.inputs[k] for k in ("counts", "measured", "storage"))
-        moment, kept, regeneration = self.retained, 0, 0
+        moment, kept, regeneration, compactable = self.retained, 0, 0, 0
         aggregate = self.inputs["extras"]["aggregate_bytes_per_row"]
-        waiting = {}
+        waiting, compacted_rows = {}, set()
         for job in (j for j in self.inputs["jobs"] if _in(row, j)):
             window = counts[job["scope"]][job["window"]]
             partitions = _partitions(job)
@@ -278,42 +343,81 @@ class _Walk:
                 regeneration = max(
                     regeneration, regeneration_bytes(job, window, measured, storage, partitions)
                 )
+                compactable += sum(written.values())
+                compactable -= _tables(measured, job, "shared_rows", partitions)
+                compacted_rows |= {(job["scope"], job["window"], p) for p in partitions}
             reader = self.inputs["policy_reads"].get(job["id"], -1)
-            if self.scenario == "none_regenerated" or reader > index:
+            if self.base_fails or reader > index:
                 compacted = _tables(measured, job, "shared_rows", partitions)
                 kept += compacted + self._shared(job, partitions)
-                if self.scenario == "all_regenerated":
+                if not self.base_fails:
                     self.pending[reader] = self.pending.get(reader, 0) + compacted
+        if self.inputs["v3"]:
+            # Al terminar la fase, las tablas de la ventana se compactan sobre sus filas comunes.
+            moment += self._rows_bytes(compacted_rows) - compactable
         return moment, kept, regeneration
+
+    def _rows_bytes(self, keys):
+        measured = self.inputs["measured"]
+        return sum(measured[f"{s}/{w}"][p]["shared_rows_bytes"] for s, w, p in keys)
 
     def _shared(self, job, partitions):
         new = {(job["scope"], job["window"], p) for p in partitions} - self.shared
         self.shared |= new
-        measured = self.inputs["measured"]
-        return sum(measured[f"{s}/{w}"][p]["shared_rows_bytes"] for s, w, p in new)
+        return self._rows_bytes(new)
 
-    def adapters(self, row, moment, phases):
-        written = compacted = transient = 0
+    def adapters(self, row, index, moment, phases):
+        """Escrito durante la fase, conservado tras liberar y regeneración más grande.
+
+        Con la v3 y todas las regeneraciones idénticas solo quedan los estados, los informes,
+        los agregados y la evaluación del predictor de la cadena que leerá una política
+        posterior, hasta esa ventana. Las filas comunes de las tablas compactadas son las de la
+        base: durante la ventana ya las cuenta su fase y después se conservan mientras alguna
+        tabla compactada las lea.
+        """
+        v3 = self.inputs["v3"]
+        written = kept = transient = regeneration = 0
         for scope, window in row["scopes"].items():
+            jobs = [
+                j
+                for j in self.inputs["adapter_jobs"]
+                if (j["scope"], j["window"]) == (scope, window)
+            ]
             part = adapter_window(
-                [
-                    j
-                    for j in self.inputs["adapter_jobs"]
-                    if (j["scope"], j["window"]) == (scope, window)
-                ],
+                jobs,
                 self.inputs["counts"][scope][window],
                 self.inputs["extras"],
                 ordered_copy=self.inputs["ordered_copy"],
+                v3=v3,
             )
-            written += part["written"]
-            compacted += part["compacted"]
             transient = max(transient, part["transient"])
+            regeneration = max(regeneration, part["regeneration"])
+            if not v3 or self.adapters_fail:
+                # Sin regeneraciones idénticas, los bloques conservan sus tablas compactadas.
+                written += part["compacted"] if v3 else part["written"]
+                kept += part["compacted"]
+                if v3 and jobs:
+                    kept += self._shared(jobs[0], HELD_OUT)
+                continue
+            # Las evaluaciones de la cadena que leen las políticas siguen en la ventana.
+            reads = self.inputs["chain_reads"].get((scope, window), ())
+            written += part["written"] + len(reads) * part["table"]
+            kept += part["released"]
+            later = [
+                last for last in self.inputs["chain_reads"].get((scope, window), ()) if last > index
+            ]
+            if later:
+                # Las tablas conservadas siguen leyendo las filas comunes de su ventana.
+                kept += self._shared(jobs[0], HELD_OUT)
+            for last in later:
+                kept += part["table"]
+                self.pending[last] = self.pending.get(last, 0) + part["table"]
         phases["adapters"] = moment + written + transient
-        return moment + written, compacted
+        return moment + written, kept, regeneration
 
     def ablation(self, row, moment, phases):
         counts, measured, storage = (self.inputs[k] for k in ("counts", "measured", "storage"))
-        written_all, kept, regeneration = 0, 0, 0
+        written_all, kept, regeneration, compactable = 0, 0, 0, 0
         for job in (j for j in self.inputs["ablation_jobs"] if _in(row, j)):
             window = counts[job["scope"]][job["window"]]
             written = _tables(measured, job, "current", ("evaluation",))
@@ -323,24 +427,29 @@ class _Walk:
             phases["ablation"] = max(phases["ablation"], moment + written_all + written + build)
             written_all += written + storage["job_report_bytes"]
             kept += storage["job_report_bytes"] + RECORD_BYTES
-            if self.scenario == "none_regenerated":
+            if self.base_fails:
                 kept += _tables(measured, job, "shared_rows", ("evaluation",))
             regeneration = max(
                 regeneration,
                 regeneration_bytes(job, window, measured, storage, ("evaluation",)),
             )
+            if self.inputs["v3"]:
+                compactable += written - _tables(measured, job, "shared_rows", ("evaluation",))
         phases["ablation"] = max(phases["ablation"], moment + written_all)
-        return moment + written_all, kept, regeneration
+        # Con la v3 las tablas se compactan al terminar la fase sobre las filas de la base.
+        return moment + written_all - compactable, kept, regeneration
 
     def window(self, row, index):
         phases = dict.fromkeys(PHASES, self.retained)
         moment, base_kept, base_regeneration = self.base(row, index, phases)
-        moment, adapters_kept = self.adapters(row, moment, phases)
+        moment, adapters_kept, adapter_regeneration = self.adapters(row, index, moment, phases)
         moment, masked_kept, masked_regeneration = self.ablation(row, moment, phases)
         tapes = self.inputs["tapes"].get(row["id"], 0)
         moment += tapes
         phases["rl"] = moment
-        phases["release"] = moment + max(base_regeneration, masked_regeneration)
+        phases["release"] = moment + max(
+            base_regeneration, masked_regeneration, adapter_regeneration
+        )
         for phase, value in phases.items():
             self.reach(value, f"{row['id']}/{phase}")
         freed = sum(self.pending.pop(k) for k in [k for k in self.pending if k <= index])
@@ -359,13 +468,17 @@ def rolling_estimate(
     ablation_jobs=(),
     adapter_jobs=(),
     policy_reads=None,
+    chain_reads=None,
     tapes=None,
     ordered_copy=False,
+    v3=False,
 ):
     """Pico y conservado de cada escenario, ventana a ventana, en el orden del plan.
 
     `policy_reads` da, para cada trabajo base cuya evaluación lee una política, la última
-    posición de ventana que la lee. `tapes` da los bytes de cintas que conserva cada ventana.
+    posición de ventana que la lee, y `chain_reads`, para cada ámbito y ventana, la última
+    posición que lee cada evaluación de la cadena. `tapes` da los bytes de cintas que
+    conserva cada ventana. `v3` aplica la retención v3.
     """
     inputs = dict(
         jobs=jobs,
@@ -376,11 +489,13 @@ def rolling_estimate(
         ablation_jobs=list(ablation_jobs),
         adapter_jobs=list(adapter_jobs),
         policy_reads=policy_reads or {},
+        chain_reads=chain_reads or {},
         tapes=tapes or {},
         ordered_copy=ordered_copy,
+        v3=v3,
     )
     result = {}
-    for scenario in SCENARIOS:
+    for scenario in SCENARIOS + ((ADAPTERS_REGENERATED,) if v3 else ()):
         walk = _Walk(scenario, inputs)
         rows = [walk.window(row, index) for index, row in enumerate(windows)]
         result[scenario] = dict(

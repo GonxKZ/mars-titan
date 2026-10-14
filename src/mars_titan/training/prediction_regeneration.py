@@ -10,6 +10,9 @@ compara el resultado bit a bit con la huella de contenido registrada.
 - Un traslado se regenera repitiendo el mismo traslado desde el mismo ancla.
 - Una predicción de la ablación de modalidades se regenera con el mismo ejecutor de la
   etapa, la misma variante y el mismo estado de partida.
+- Un trabajo de la etapa de adaptadores se regenera con el ejecutor de su familia: el
+  padre congelado repite su traslado desde la base de k-1 y un ajuste se reconstruye igual,
+  carga su estado elegido y repite sus tramos sin ajustar (retención v3).
 
 El proceso fija FP32 estricto, sin TF32 en cuBLAS ni en cuDNN. Los traslados comprueban
 además la identidad numérica que registró el ajuste. Si una tabla no sale idéntica, el
@@ -257,6 +260,70 @@ def _regenerate_ablation(state, job, destination):
     )
 
 
+def regenerate_adapter(
+    path, views, campaign_output, output, job_id, destination, *, device="cuda:0", lease=None
+):
+    """Regenerar las tablas de un trabajo confirmado de la etapa de adaptadores.
+
+    `lease` sustituye la reserva de la GPU, como en las pruebas en CPU.
+    """
+    from mars_titan.posttraining import campaign_stage as adapters
+
+    from .learning_hold import require_learning_allowed
+
+    require_learning_allowed("la regeneración de predicciones de los adaptadores")
+    jobs = {job["id"]: job for job in adapters.plan_stage(adapters.load_stage(path))}
+    _require(job_id in jobs, f"{job_id} no es un trabajo de la etapa")
+    job = jobs[job_id]
+    state, _ = adapters.opened_stage(
+        path,
+        views,
+        campaign_output,
+        output,
+        {(job["scope"], job["window"])},
+        device=device,
+        stop=_Running(),
+    )
+    destination = _destination(destination, Path(campaign_output), Path(output))
+    receipt = state.confirmed(job, state.job_identity(job))
+    _require(receipt is not None, f"Falta confirmar {job_id}")
+    state.receipts[job_id] = receipt
+    with (lease or adapters._gpu_lease)() as state.lease:
+        try:
+            return _regenerate_adapter(state, job, destination)
+        finally:
+            state.close()
+
+
+def _regenerate_adapter(state, job, destination):
+    """Regenerar un trabajo de los adaptadores con su recibo ya confirmado en `state`.
+
+    El padre congelado repite su traslado desde la base de k-1, y un ajuste repite sus
+    tramos desde su estado elegido. Las tablas nuevas se escriben en `destination/run`,
+    que hace de carpeta del trabajo, y se comparan con las del recibo. Como la retención la
+    llama también al cerrar bloques y ventanas, comprueba ella misma la protección.
+    """
+    from .learning_hold import require_learning_allowed
+
+    require_learning_allowed(f"la regeneración de {job['id']}")
+    receipt = state.receipts[job["id"]]
+    require_strict(read_manifest(state.output / receipt["run"]["path"], 16 * 1024**2)[0], job["id"])
+    expected = {
+        partition: (state.output / record["path"], record["sha256"])
+        for partition, record in receipt["predictions"].items()
+    }
+    folder = Path(destination) / "run"
+    numerics = strict_fp32()
+    folder.mkdir(parents=True)
+    produced = state.regenerate(job, folder)
+    return _publish(
+        destination,
+        dict(job=job["id"], stage="adapters", family=job["family"], job_kind=job["kind"]),
+        numerics,
+        compare(expected, folder, produced),
+    )
+
+
 def _publish(destination, job, numerics, comparison):
     from mars_titan.data.storage import atomic_json
 
@@ -289,9 +356,25 @@ def main(argv=None):
     parser.add_argument("--destination", type=Path, required=True)
     parser.add_argument("--ablation-stage", type=Path, help="Etapa de ablación del trabajo")
     parser.add_argument("--ablation-output", type=Path)
+    parser.add_argument("--adapter-stage", type=Path, help="Etapa de adaptadores del trabajo")
+    parser.add_argument("--adapter-output", type=Path)
     args = parser.parse_args(argv)
     views = _views_argument(args.views)
-    if args.ablation_stage is None:
+    _require(
+        args.ablation_stage is None or args.adapter_stage is None,
+        "Un trabajo pertenece a la ablación o a los adaptadores, no a las dos etapas",
+    )
+    if args.adapter_stage is not None:
+        _require(args.adapter_output is not None, "Falta la salida de la etapa de adaptadores")
+        report = regenerate_adapter(
+            args.adapter_stage,
+            views,
+            args.output,
+            args.adapter_output,
+            args.job,
+            args.destination,
+        )
+    elif args.ablation_stage is None:
         report = regenerate_job(args.campaign, views, args.output, args.job, args.destination)
     else:
         _require(args.ablation_output is not None, "Falta la salida de la etapa de ablación")

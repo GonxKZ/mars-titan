@@ -59,6 +59,7 @@ from mars_titan.training.candidate_walk_forward import (
     window_sources,
 )
 from mars_titan.training.carried_predictions import _destination, carried_window
+from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import require_learning_allowed
 
@@ -244,6 +245,48 @@ def staged_phases(parent_view, dataset, warmup_months):
     return phases, placement
 
 
+def _fitted(folder, request, output, dataset):
+    """Ventana completada que se regenera: misma petición y una salida nueva fuera de ella."""
+    folder = Path(folder)
+    document, _ = read_manifest(folder / "window.json", 8 * 1024**2)
+    _require(
+        document.get("kind") == KIND
+        and document.get("status") == "completed"
+        and document.get("final_test_opened") is False
+        and document.get("request") == request,
+        "La regeneración no repite la petición de una ventana completada",
+    )
+    _destination(output, (*dataset.roots.values(), folder))
+    return folder, document
+
+
+def _regenerated(trainer, fitted, dataset, output):
+    """Repetir los tres tramos desde el estado elegido de una ventana completada, sin ajustar.
+
+    El informe y los estados de la ventana solo se leen, con la identidad del entrenador
+    reconstruido. Las tablas se escriben en `output` con las mismas rutas relativas.
+    """
+    folder, document = fitted
+    run_path = folder / document["run"]["path"]
+    report, digest = read_manifest(run_path, 16 * 1024**2)
+    _require(
+        digest == document["run"]["sha256"] and report["run_id"] == trainer.run_id,
+        "La ventana que se regenera no corresponde al entrenador reconstruido",
+    )
+    trainer._load_best(report, run_path.parent / "checkpoints")
+    trainer.output.mkdir(parents=True)
+    predictions = {}
+    for name, record in trainer._predict(StopRequest()).items():
+        path = trainer.output / record["path"]
+        predictions[name] = dict(
+            path=str(path.relative_to(output)),
+            sha256=record["sha256"],
+            rows=check_view_rows(pq.read_table(path), dataset, name),
+            metrics=record["metrics"],
+        )
+    return dict(document, predictions=predictions, regenerated=True)
+
+
 def run_candidate_posttraining(
     parent,
     view,
@@ -257,11 +300,14 @@ def run_candidate_posttraining(
     optimizer_factory=None,
     parent_view=None,
     traces=None,
+    regenerate=None,
 ):
     """Postentrenar el estado elegido de la candidata en su ventana o, con `parent_view`,
     el de la ventana anterior con las filas nuevas de esta.
 
     `traces` declara las trazas de #448, con la actualización de la cabeza adaptada.
+    `regenerate` es la salida de este mismo ajuste ya completado: se reconstruye igual, se
+    carga su estado elegido y se repiten sus tres tramos en `output`, sin ajustar.
     """
     require_learning_allowed("el postentrenamiento de la GRU candidata")
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
@@ -296,7 +342,9 @@ def run_candidate_posttraining(
         request["parent_view_sha256"] = sha256(origin)
         phases, placement = staged_phases(origin, dataset, warmup_months)
     path = output / "window.json"
-    if path.is_file():
+    if regenerate is not None:
+        fitted = _fitted(regenerate, request, output, dataset)
+    elif path.is_file():
         previous, _ = read_manifest(path, 8 * 1024**2)
         _require(previous.get("request") == request, "La petición de la ventana ha cambiado")
         if previous.get("status") == "completed":
@@ -341,6 +389,8 @@ def run_candidate_posttraining(
         fold=fold["id"],
         optimizer_factory=optimizer_factory,
     )
+    if regenerate is not None:
+        return _regenerated(trainer, fitted, dataset, output)
     attach_traces(
         trainer,
         output / "traces",

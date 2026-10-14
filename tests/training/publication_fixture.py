@@ -18,14 +18,18 @@ ROOT = Path(__file__).resolve().parents[2]
 POSTTRAINING = ROOT / "configs/posttraining/historical-masked-adapter-comparison-a.json"
 
 
-def declare(folder, campaign, *, stage=None, portfolio=False):
-    """Matriz, comparación postentrenada (con `stage`) y publicación de la campaña."""
+def declare(folder, campaign, *, stage=None, portfolio=False, metrics=walk.SERIES_METRICS):
+    """Matriz, comparación postentrenada (con `stage`) y publicación de la campaña.
+
+    Una matriz con métricas cuadráticas exige los estratos de liquidez en la comparación, así
+    que una comparación sin ellos se declara con `metrics` sin el MSE.
+    """
     folder, campaign = Path(folder), Path(campaign).resolve()
     views = dict(
         forecast=dict(
             source="walk_forward_comparison_report",
             quantiles="raw",
-            metrics=list(walk.SERIES_METRICS),
+            metrics=list(metrics),
         )
     )
     if portfolio:
