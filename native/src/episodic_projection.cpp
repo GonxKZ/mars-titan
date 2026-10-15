@@ -7,8 +7,6 @@
 #include <limits>
 #include <stdexcept>
 #include <string_view>
-#include <system_error>
-#include <thread>
 #include <vector>
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -23,8 +21,11 @@ namespace {
 constexpr std::size_t pair = 2;
 constexpr std::size_t chunk = 8;
 // Filas por mosaico. Con un vector de ocho salidas y dos carriles por fila, cuatro filas dan
-// ocho cadenas de sumas independientes. Los restos usan mosaicos de dos filas y de una.
+// ocho cadenas de sumas independientes. Los restos de los paneles usan mosaicos de dos filas y
+// de una. Los del recorrido directo usan más vectores de salida para conservar ocho cadenas.
 constexpr std::size_t band_rows = 4;
+constexpr std::size_t pair_vectors = 2;
+constexpr std::size_t single_vectors = 4;
 
 #if defined(__GNUC__) || defined(__clang__)
 // Ocho salidas en un vector del compilador. Cada carril repite las operaciones de una salida,
@@ -52,7 +53,7 @@ struct Lanes {
 };
 #endif
 
-// Formas de una llamada, ya comprobadas por project_block.
+// Formas de una llamada, ya comprobadas por `checked`.
 struct Problem {
     const double* block;
     std::size_t rows;
@@ -66,6 +67,129 @@ struct Problem {
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
 // Los índices del núcleo salen de las formas comprobadas y de los parámetros de las plantillas.
 // El acceso directo evita una comprobación de límites en cada carga del bucle interno.
+
+// Recorre los pares de entradas de un mosaico con el orden de einsum: bloques de ocho entradas,
+// dentro de cada uno del par 6-7 al par 0-1, y el resto por pares en orden creciente. Los dos
+// recorridos de abajo lo comparten, así que suman en el mismo orden.
+template <typename Tiles>
+MARS_TITAN_PROJECTION_INLINE void add_in_einsum_order(Tiles& tile, std::size_t width) {
+    std::size_t index = 0;
+    for (; width - index >= chunk; index += chunk) {
+        for (std::size_t offset = chunk; offset > 0; offset -= pair) {
+            tile.step(index + offset - pair, true);
+        }
+    }
+    for (; index < width; index += pair) {
+        tile.step(index, index + 1 < width);
+    }
+}
+
+// Recorrido directo de la transpuesta, para pocas filas. Es el núcleo de #520.
+
+// Carga `kept` salidas consecutivas. Las que faltan en el último vector de una fila valen cero
+// y su resultado no se escribe.
+MARS_TITAN_PROJECTION_INLINE void load(Lanes& target, const double* source, std::size_t kept) {
+    if (kept == projection_lanes) {
+        std::memcpy(&target, source, sizeof(Lanes));
+        return;
+    }
+    std::array<double, projection_lanes> values{};
+    std::memcpy(values.data(), source, kept * sizeof(double));
+    std::memcpy(&target, values.data(), sizeof(Lanes));
+}
+
+// Un mosaico de Rows filas y Vectors vectores de salida leídos de la transpuesta. lane0 suma
+// las entradas pares de cada par y lane1 las impares, como los dos carriles de einsum.
+template <std::size_t Rows, std::size_t Vectors> struct DirectTile {
+    const double* block{};   // Primera fila del mosaico.
+    std::size_t width{};     // Entradas por fila.
+    const double* columns{}; // Primera salida del mosaico en la fila 0 de la transpuesta.
+    std::size_t outputs{};   // Paso de la transpuesta y de la salida.
+    std::size_t kept{};      // Salidas válidas del último vector.
+    std::array<std::array<Lanes, Vectors>, Rows> lane0{};
+    std::array<std::array<Lanes, Vectors>, Rows> lane1{};
+
+    // Un par de entradas (index, index + 1). Si index + 1 no existe, el carril impar no se toca.
+    MARS_TITAN_PROJECTION_INLINE void step(std::size_t index, bool complete) {
+        std::array<Lanes, Vectors> even{};
+        std::array<Lanes, Vectors> odd{};
+        for (std::size_t vector = 0; vector < Vectors; ++vector) {
+            const std::size_t count = vector + 1 == Vectors ? kept : projection_lanes;
+            const double* first = columns + index * outputs + vector * projection_lanes;
+            load(even[vector], first, count);
+            if (complete) {
+                load(odd[vector], first + outputs, count);
+            }
+        }
+        for (std::size_t row = 0; row < Rows; ++row) {
+            const double first = block[row * width + index];
+            for (std::size_t vector = 0; vector < Vectors; ++vector) {
+                lane0[row][vector] = first * even[vector] + lane0[row][vector];
+            }
+            if (complete) {
+                const double second = block[row * width + index + 1];
+                for (std::size_t vector = 0; vector < Vectors; ++vector) {
+                    lane1[row][vector] = second * odd[vector] + lane1[row][vector];
+                }
+            }
+        }
+    }
+
+    // Suma las entradas con el orden de einsum y escribe el mosaico desde `out`.
+    MARS_TITAN_PROJECTION_INLINE void run(double* out) {
+        add_in_einsum_order(*this, width);
+        for (std::size_t row = 0; row < Rows; ++row) {
+            for (std::size_t vector = 0; vector < Vectors; ++vector) {
+                const Lanes total = lane0[row][vector] + lane1[row][vector];
+                std::array<double, projection_lanes> values{};
+                std::memcpy(values.data(), &total, sizeof(Lanes));
+                const std::size_t count = vector + 1 == Vectors ? kept : projection_lanes;
+                std::memcpy(out + row * outputs + vector * projection_lanes, values.data(),
+                            count * sizeof(double));
+            }
+        }
+    }
+};
+
+// Las salidas [begin, end) de las filas [row, row + Rows): mosaicos completos de Vectors
+// vectores y, al final del tramo, vectores sueltos con el último incompleto.
+template <std::size_t Rows, std::size_t Vectors>
+MARS_TITAN_PROJECTION_INLINE void project_direct_rows(const Problem& problem, std::size_t row,
+                                                      std::size_t begin, std::size_t end) {
+    const double* block = problem.block + row * problem.width;
+    double* out = problem.out + row * problem.outputs;
+    constexpr std::size_t covered = Vectors * projection_lanes;
+    std::size_t column = begin;
+    for (; end - column >= covered; column += covered) {
+        DirectTile<Rows, Vectors> tile{block, problem.width, problem.transposed + column,
+                                       problem.outputs, projection_lanes};
+        tile.run(out + column);
+    }
+    for (; column < end; column += projection_lanes) {
+        DirectTile<Rows, 1> tile{block, problem.width, problem.transposed + column,
+                                 problem.outputs, std::min(end - column, projection_lanes)};
+        tile.run(out + column);
+    }
+}
+
+// Los grupos [first, last) con todas las filas, leyendo la transpuesta directamente.
+MARS_TITAN_PROJECTION_INLINE void project_direct(const Problem& problem, std::size_t first,
+                                                 std::size_t last) {
+    const std::size_t begin = first * projection_lanes;
+    const std::size_t end = std::min(last * projection_lanes, problem.outputs);
+    std::size_t row = 0;
+    for (; problem.rows - row >= band_rows; row += band_rows) {
+        project_direct_rows<band_rows, 1>(problem, row, begin, end);
+    }
+    for (; problem.rows - row >= pair; row += pair) {
+        project_direct_rows<pair, pair_vectors>(problem, row, begin, end);
+    }
+    for (; row < problem.rows; ++row) {
+        project_direct_rows<1, single_vectors>(problem, row, begin, end);
+    }
+}
+
+// Recorrido por paneles.
 
 // Panel de un grupo de ocho salidas: para cada entrada, sus ocho pesos contiguos. En la
 // transpuesta están separados por `outputs` dobles y casi todas las cargas cruzaban dos líneas
@@ -105,17 +229,9 @@ template <std::size_t Rows> struct Tile {
         }
     }
 
-    // Recorre las entradas con el orden de einsum y escribe las `kept` salidas de cada fila.
+    // Suma las entradas con el orden de einsum y escribe las `kept` salidas de cada fila.
     MARS_TITAN_PROJECTION_INLINE void run(double* out, std::size_t outputs, std::size_t kept) {
-        std::size_t index = 0;
-        for (; width - index >= chunk; index += chunk) {
-            for (std::size_t offset = chunk; offset > 0; offset -= pair) {
-                step(index + offset - pair, true);
-            }
-        }
-        for (; index < width; index += pair) {
-            step(index, index + 1 < width);
-        }
+        add_in_einsum_order(*this, width);
         for (std::size_t row = 0; row < Rows; ++row) {
             const Lanes total = lane0[row] + lane1[row];
             std::array<double, projection_lanes> values{};
@@ -159,25 +275,36 @@ MARS_TITAN_PROJECTION_INLINE void project_groups(const Problem& problem, std::si
 // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
 // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
+// Los grupos [first, last): con pocas filas por el recorrido directo, sin panel, y si no por
+// paneles.
+MARS_TITAN_PROJECTION_INLINE void project_work(const Problem& problem, std::size_t first,
+                                               std::size_t last, double* panel) {
+    if (problem.rows < projection_packed_rows) {
+        project_direct(problem, first, last);
+    } else {
+        project_groups(problem, first, last, panel);
+    }
+}
+
 // El mismo cálculo se compila para la línea base y, en x86-64, también para AVX2 y AVX-512.
 // Se elige en tiempo de ejecución, sin ifunc, porque el resolutor de target_clones se ejecuta
 // antes de iniciar ThreadSanitizer y lo hace fallar.
 void project_portable(const Problem& problem, std::size_t first, std::size_t last,
                       double* panel) {
-    project_groups(problem, first, last, panel);
+    project_work(problem, first, last, panel);
 }
 
 #if (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__)
 #define MARS_TITAN_PROJECTION_X86
 __attribute__((target("avx2"))) void project_avx2(const Problem& problem, std::size_t first,
                                                    std::size_t last, double* panel) {
-    project_groups(problem, first, last, panel);
+    project_work(problem, first, last, panel);
 }
 
 __attribute__((target("avx512f"))) void project_avx512f(const Problem& problem,
                                                          std::size_t first, std::size_t last,
                                                          double* panel) {
-    project_groups(problem, first, last, panel);
+    project_work(problem, first, last, panel);
 }
 #endif
 
@@ -224,6 +351,24 @@ bool supported(ProjectionIsa isa) {
 bool shape_matches(std::size_t first, std::size_t second, std::size_t size) {
     return first <= std::numeric_limits<std::size_t>::max() / second && first * second == size;
 }
+
+// Comprueba formas y versión antes de escribir nada en la salida.
+Problem checked(std::span<const double> block, std::size_t rows, std::size_t width,
+                std::span<const double> transposed, std::size_t outputs, std::span<double> out,
+                ProjectionIsa isa) {
+    if (width == 0 || outputs == 0) {
+        throw std::invalid_argument("La proyección del codec necesita anchura y salidas");
+    }
+    if (!shape_matches(rows, width, block.size()) ||
+        !shape_matches(width, outputs, transposed.size()) ||
+        !shape_matches(rows, outputs, out.size())) {
+        throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
+    }
+    if (!supported(isa)) {
+        throw std::invalid_argument("El procesador no admite la versión pedida de la proyección");
+    }
+    return Problem{block.data(), rows, width, transposed.data(), outputs, out.data()};
+}
 } // namespace
 
 std::vector<ProjectionIsa> available_projection_isas() {
@@ -262,57 +407,43 @@ void project_block(std::span<const double> block, std::size_t rows, std::size_t 
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out,
                    ProjectionIsa isa) {
-    project_block(block, rows, width, transposed, outputs, out, isa, 1);
+    project_block_groups(block, rows, width, transposed, outputs, out, isa, 0,
+                         projection_groups(outputs));
 }
 
-void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
-                   std::span<const double> transposed, std::size_t outputs, std::span<double> out,
-                   ProjectionIsa isa, std::size_t threads) {
-    if (width == 0 || outputs == 0) {
-        throw std::invalid_argument("La proyección del codec necesita anchura y salidas");
+void project_block_groups(std::span<const double> block, std::size_t rows, std::size_t width,
+                          std::span<const double> transposed, std::size_t outputs,
+                          std::span<double> out, ProjectionIsa isa, std::size_t first,
+                          std::size_t last) {
+    const Problem problem = checked(block, rows, width, transposed, outputs, out, isa);
+    if (first > last || last > projection_groups(outputs)) {
+        throw std::invalid_argument("Los grupos pedidos no existen en la proyección del codec");
     }
-    if (threads == 0) {
-        throw std::invalid_argument("La proyección del codec necesita al menos un hilo");
-    }
-    if (!shape_matches(rows, width, block.size()) ||
-        !shape_matches(width, outputs, transposed.size()) ||
-        !shape_matches(rows, outputs, out.size())) {
-        throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
-    }
-    if (!supported(isa)) {
-        throw std::invalid_argument("El procesador no admite la versión pedida de la proyección");
-    }
-    if (rows == 0) {
+    if (rows == 0 || first == last) {
         return;
     }
-    const Problem problem{block.data(), rows, width, transposed.data(), outputs, out.data()};
-    // Cada hilo calcula grupos de ocho salidas distintos y cada salida tiene su propio orden de
-    // sumas, así que el número de hilos no cambia el resultado.
-    const std::size_t groups = (outputs + projection_lanes - 1) / projection_lanes;
-    const std::size_t workers = std::min(threads, groups);
-    const std::size_t panel = width * projection_lanes;
-    if (width > std::numeric_limits<std::size_t>::max() / projection_lanes / workers) {
-        throw std::invalid_argument("Los paneles de la proyección no caben en memoria");
+    // Un panel propio por llamada, así que llamadas con grupos distintos pueden ir a la vez.
+    std::vector<double> panel(rows < projection_packed_rows ? 0 : projection_panel_size(width));
+    project_range(problem, isa, first, last, panel.data());
+}
+
+std::size_t projection_groups(std::size_t outputs) {
+    return outputs / projection_lanes + (outputs % projection_lanes == 0 ? 0 : 1);
+}
+
+std::size_t projection_panel_size(std::size_t width) {
+    if (width > std::numeric_limits<std::size_t>::max() / projection_lanes) {
+        throw std::invalid_argument("El panel de la proyección no cabe en memoria");
     }
-    // Un panel por hilo, reservado antes de lanzarlos para que ningún hilo asigne memoria.
-    std::vector<double> panels(workers * panel);
-    const auto first = [&](std::size_t worker) { return groups * worker / workers; };
-    std::vector<std::jthread> helpers;
-    helpers.reserve(workers - 1);
-    std::size_t worker = 1;
-    for (; worker < workers; ++worker) {
-        try {
-            helpers.emplace_back([&, worker] {
-                project_range(problem, isa, first(worker), first(worker + 1),
-                              std::span(panels).subspan(worker * panel, panel).data());
-            });
-        } catch (const std::system_error&) {
-            // Sin más hilos, este calcula los grupos que quedan.
-            break;
-        }
-    }
-    project_range(problem, isa, first(worker), groups, panels.data());
-    project_range(problem, isa, 0, first(1), panels.data());
+    return width * projection_lanes;
+}
+
+std::size_t projection_threads(std::size_t rows, std::size_t width, std::size_t outputs,
+                               std::size_t available) {
+    // rows · width · outputs ≥ projection_parallel_work sin calcular el producto de los tres.
+    const bool parallel =
+        rows > 0 && width * outputs >= (projection_parallel_work + rows - 1) / rows;
+    return parallel ? std::max<std::size_t>(available, 1) : 1;
 }
 
 } // namespace mars_titan::episodic

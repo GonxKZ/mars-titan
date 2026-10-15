@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -19,6 +20,11 @@ namespace {
 using mars_titan::episodic::available_projection_isas;
 using mars_titan::episodic::default_projection_isa;
 using mars_titan::episodic::project_block;
+using mars_titan::episodic::project_block_groups;
+using mars_titan::episodic::projection_groups;
+using mars_titan::episodic::projection_packed_rows;
+using mars_titan::episodic::projection_parallel_work;
+using mars_titan::episodic::projection_threads;
 using mars_titan::episodic::projection_isa_name;
 using mars_titan::episodic::ProjectionIsa;
 
@@ -104,9 +110,24 @@ bool same_bits(std::span<const double> left, std::span<const double> right) {
 
 std::vector<double> projected(const std::vector<double>& block,
                               const std::vector<double>& transposed, Shape shape,
-                              ProjectionIsa isa, std::size_t threads = 1) {
+                              ProjectionIsa isa) {
     std::vector<double> out(shape.rows * shape.outputs, std::numeric_limits<double>::quiet_NaN());
-    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa, threads);
+    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa);
+    return out;
+}
+
+// La misma proyección por tramos de grupos: [0, g/3), [g/3, g/3) vacío y [g/3, g).
+std::vector<double> projected_by_groups(const std::vector<double>& block,
+                                        const std::vector<double>& transposed, Shape shape,
+                                        ProjectionIsa isa) {
+    std::vector<double> out(shape.rows * shape.outputs, std::numeric_limits<double>::quiet_NaN());
+    const std::size_t groups = projection_groups(shape.outputs);
+    for (const auto [first, last] : {std::pair{std::size_t{0}, groups / 3},
+                                     std::pair{groups / 3, groups / 3},
+                                     std::pair{groups / 3, groups}}) {
+        project_block_groups(block, shape.rows, shape.width, transposed, shape.outputs, out, isa,
+                             first, last);
+    }
     return out;
 }
 
@@ -140,7 +161,11 @@ std::vector<double> values(std::mt19937_64& generator, std::size_t count, bool e
 
 void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) {
     std::mt19937_64 generator(order_seed);
-    const std::vector<std::size_t> row_counts{0, 1, 2, 3, 4, 5, 6, 7, 9, 13};
+    // Por debajo de projection_packed_rows, el recorrido directo con sus tres mosaicos. Desde
+    // ahí, los paneles con mosaicos de cuatro, dos y una fila.
+    constexpr std::size_t packed = projection_packed_rows;
+    const std::vector<std::size_t> row_counts{
+        0, 1, 2, 3, 4, 5, 6, 7, 9, 13, packed - 1, packed, packed + 1, packed + 2, packed + 3};
     const std::vector<std::size_t> widths{1, 2, 3, 7, 8, 9, 15, 16, 17, 31, 78, 320, 513};
     const std::vector<std::size_t> output_counts{1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 127};
     for (const bool extreme : {false, true}) {
@@ -151,34 +176,39 @@ void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) 
                     const auto block = values(generator, rows * width, extreme);
                     const auto transposed = values(generator, width * outputs, extreme);
                     const auto expected = reference(block, transposed, shape);
-                    // Tres hilos reparten los grupos de forma desigual.
-                    for (const std::size_t threads : {1UL, 3UL}) {
-                        require(same_bits(projected(block, transposed, shape, isa, threads),
-                                          expected),
-                                failure("La proyección nativa no conserva el orden declarado "
-                                        "de las sumas",
-                                        isa));
-                    }
+                    require(same_bits(projected(block, transposed, shape, isa), expected),
+                            failure("La proyección nativa no conserva el orden declarado de "
+                                    "las sumas",
+                                    isa));
+                    // Los paneles por tramos, también con menos filas que el corte.
+                    require(same_bits(projected_by_groups(block, transposed, shape, isa),
+                                      expected),
+                            failure("Los tramos de grupos no conservan el orden declarado", isa));
                 }
             }
         }
     }
 }
 
+// Una fila sola usa el recorrido directo. Dentro de un bloque usa el directo o los paneles,
+// según sus filas, y debe dar los mismos bits en los dos casos.
 void every_row_is_independent_of_its_neighbours(ProjectionIsa isa) {
     std::mt19937_64 generator(row_seed);
-    const Shape shape{independent_rows, independent_width, codec_outputs};
-    const auto transposed = values(generator, shape.width * shape.outputs, false);
-    const auto block = values(generator, shape.rows * shape.width, true);
-    const auto together = projected(block, transposed, shape, isa);
-    const std::span<const double> rows(block);
-    const std::span<const double> results(together);
-    for (std::size_t row = 0; row < shape.rows; ++row) {
-        const auto single = rows.subspan(row * shape.width, shape.width);
-        const auto alone = projected(std::vector<double>(single.begin(), single.end()), transposed,
-                                     Shape{1, shape.width, shape.outputs}, isa);
-        require(same_bits(alone, results.subspan(row * shape.outputs, shape.outputs)),
-                failure("Una fila depende del mosaico en que se calcula", isa));
+    for (const std::size_t count : {independent_rows, projection_packed_rows + independent_rows}) {
+        const Shape shape{count, independent_width, codec_outputs};
+        const auto transposed = values(generator, shape.width * shape.outputs, false);
+        const auto block = values(generator, shape.rows * shape.width, true);
+        const auto together = projected(block, transposed, shape, isa);
+        const std::span<const double> rows(block);
+        const std::span<const double> results(together);
+        for (std::size_t row = 0; row < shape.rows; ++row) {
+            const auto single = rows.subspan(row * shape.width, shape.width);
+            const auto alone =
+                projected(std::vector<double>(single.begin(), single.end()), transposed,
+                          Shape{1, shape.width, shape.outputs}, isa);
+            require(same_bits(alone, results.subspan(row * shape.outputs, shape.outputs)),
+                    failure("Una fila depende del mosaico en que se calcula", isa));
+        }
     }
 }
 
@@ -196,8 +226,22 @@ void inconsistent_shapes_are_rejected_before_writing() {
              "Una anchura nula debe rechazarse");
     rejected([&] { project_block(block, 2, 3, transposed, 0, out); },
              "Una proyección sin salidas debe rechazarse");
-    rejected([&] { project_block(block, 2, 3, transposed, 2, out, default_projection_isa(), 0); },
-             "Una proyección sin hilos debe rechazarse");
+    rejected(
+        [&] {
+            project_block_groups(block, 2, 3, transposed, 2, out, default_projection_isa(), 1, 0);
+        },
+        "Un tramo de grupos invertido debe rechazarse");
+    rejected(
+        [&] {
+            project_block_groups(block, 2, 3, transposed, 2, out, default_projection_isa(), 0, 2);
+        },
+        "Un tramo con grupos que no existen debe rechazarse");
+    rejected(
+        [&] {
+            project_block_groups(block, 2, 3, transposed, 2, std::span<double>(out).first(3),
+                                 default_projection_isa(), 0, 1);
+        },
+        "Un tramo con formas incoherentes debe rechazarse");
     rejected(
         [&] {
             project_block(block, std::numeric_limits<std::size_t>::max() / 2 + 1, 2, transposed, 2,
@@ -217,22 +261,54 @@ void inconsistent_shapes_are_rejected_before_writing() {
     }
 }
 
-// Con las formas del codec, el resultado no depende de los hilos, tampoco con más hilos que
-// grupos de salidas.
-void threads_do_not_change_the_bits(ProjectionIsa isa) {
+// Con las formas del codec, tramos disjuntos de grupos calculados a la vez desde varios hilos,
+// sobre la misma salida, dan los bits de la proyección entera. Un tramo por grupo es el caso
+// con más hilos escribiendo en las mismas filas.
+void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
     std::mt19937_64 generator(order_seed + 1);
-    for (const std::size_t width : {5UL, 78UL, 384UL, 512UL}) {
-        const Shape shape{independent_rows + 2, width, codec_outputs};
-        const auto block = values(generator, shape.rows * shape.width, true);
-        const auto transposed = values(generator, shape.width * shape.outputs, true);
-        const auto single = projected(block, transposed, shape, isa);
-        require(same_bits(single, reference(block, transposed, shape)),
-                failure("Un hilo no conserva el orden declarado", isa));
-        for (const std::size_t threads : {2UL, 16UL, 17UL, 64UL}) {
-            require(same_bits(projected(block, transposed, shape, isa, threads), single),
-                    failure("El número de hilos cambia la proyección", isa));
+    for (const std::size_t rows : {projection_packed_rows - 1, projection_packed_rows + 5}) {
+        for (const std::size_t width : {5UL, 78UL, 384UL, 512UL}) {
+            const Shape shape{rows, width, codec_outputs};
+            const auto block = values(generator, shape.rows * shape.width, true);
+            const auto transposed = values(generator, shape.width * shape.outputs, true);
+            const auto whole = projected(block, transposed, shape, isa);
+            require(same_bits(whole, reference(block, transposed, shape)),
+                    failure("La proyección entera no conserva el orden declarado", isa));
+            const std::size_t groups = projection_groups(shape.outputs);
+            for (const std::size_t parts : {2UL, 3UL, groups}) {
+                std::vector<double> out(shape.rows * shape.outputs,
+                                        std::numeric_limits<double>::quiet_NaN());
+                {
+                    std::vector<std::jthread> threads;
+                    for (std::size_t part = 0; part < parts; ++part) {
+                        threads.emplace_back([&, part] {
+                            project_block_groups(block, shape.rows, shape.width, transposed,
+                                                 shape.outputs, out, isa, groups * part / parts,
+                                                 groups * (part + 1) / parts);
+                        });
+                    }
+                }
+                require(same_bits(out, whole),
+                        failure("Los tramos calculados a la vez cambian la proyección", isa));
+            }
         }
     }
+}
+
+// El enlace reparte una llamada solo si llega al trabajo mínimo, con pocas o muchas filas.
+void threads_need_enough_work() {
+    constexpr std::size_t available = 4;
+    for (const std::size_t rows : {1UL, 3UL, projection_packed_rows, 1000UL}) {
+        const std::size_t per_row = (projection_parallel_work + rows - 1) / rows;
+        require(projection_threads(rows, per_row, 1, available) == available,
+                "Con el trabajo mínimo se usan los hilos disponibles");
+        require(projection_threads(rows, per_row - 1, 1, available) == 1,
+                "Por debajo del trabajo mínimo no se reparte la proyección");
+        require(projection_threads(rows, per_row, 1, 0) == 1,
+                "Sin hilos disponibles se usa el que llama");
+    }
+    require(projection_threads(0, projection_parallel_work, 1, available) == 1,
+            "Un bloque sin filas no se reparte");
 }
 
 // La versión por defecto es la más ancha disponible y la portable siempre existe.
@@ -258,10 +334,11 @@ int main() {
         for (const ProjectionIsa isa : available_projection_isas()) {
             matches_the_declared_order_for_every_tile_and_remainder(isa);
             every_row_is_independent_of_its_neighbours(isa);
-            threads_do_not_change_the_bits(isa);
+            concurrent_groups_match_the_whole_block(isa);
             std::cout << "Versión " << projection_isa_name(isa) << " comprobada\n";
         }
         inconsistent_shapes_are_rejected_before_writing();
+        threads_need_enough_work();
         default_dispatch_uses_the_widest_available_version();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

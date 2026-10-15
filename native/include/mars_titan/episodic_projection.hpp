@@ -11,6 +11,12 @@ namespace mars_titan::episodic {
 
 // Salidas que calcula cada vector del núcleo.
 inline constexpr std::size_t projection_lanes = 8;
+// Filas a partir de las que el núcleo copia los pesos en paneles. Con menos, la copia cuesta
+// más de lo que ahorra (informe de #628).
+inline constexpr std::size_t projection_packed_rows = 32;
+// Productos (filas · anchura · salidas) a partir de los que compensa repartir una llamada entre
+// los hilos del pool de ATen (informe de #628).
+inline constexpr std::size_t projection_parallel_work = std::size_t{1} << 17;
 
 // Versiones del núcleo por conjunto de instrucciones. Todas hacen las mismas operaciones en el
 // mismo orden, así que dan los mismos bits. Fuera de x86-64 con GCC o Clang solo existe la
@@ -43,20 +49,37 @@ std::string_view projection_isa_name(ProjectionIsa isa);
 // Lanza std::invalid_argument si las formas no encajan o si la versión pedida no está
 // disponible.
 //
-// El núcleo recorre las salidas en grupos de ocho. Copia los pesos de cada grupo en un panel
-// contiguo de width · 8 dobles y recorre con él todas las filas, en mosaicos de cuatro. Con
-// `threads` > 1 reparte los grupos entre ese número de hilos como mucho, uno por grupo como
-// máximo, y si no puede crear alguno calcula sus grupos en el hilo que llama. Cada salida la
-// calcula un solo hilo con el orden declarado, así que el resultado no depende de los hilos.
-// La memoria adicional es un panel por hilo.
+// Con menos de projection_packed_rows filas, el núcleo lee los pesos de la transpuesta en
+// mosaicos de filas y vectores de salida. Con más, recorre las salidas en grupos de ocho, copia
+// los pesos de cada grupo en un panel contiguo de width · 8 dobles y recorre con él todas las
+// filas, en mosaicos de cuatro. Los dos recorridos hacen las mismas operaciones en el mismo
+// orden para cada salida, así que dan los mismos bits.
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out);
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out,
                    ProjectionIsa isa);
-void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
-                   std::span<const double> transposed, std::size_t outputs, std::span<double> out,
-                   ProjectionIsa isa, std::size_t threads);
+
+// Grupos de ocho salidas de una proyección y dobles del panel de un grupo.
+[[nodiscard]] std::size_t projection_groups(std::size_t outputs);
+[[nodiscard]] std::size_t projection_panel_size(std::size_t width);
+
+// Las salidas de los grupos [first, last), con el recorrido que corresponde a las filas y los
+// bits de project_block. Cada llamada usa su propio panel y escribe solo las columnas de sus
+// grupos, así que llamadas con grupos disjuntos pueden ejecutarse a la vez en hilos distintos
+// sobre la misma salida. El enlace de Python reparte así los grupos en el pool de hilos de
+// ATen. Lanza std::invalid_argument con las mismas formas que project_block o si los grupos no
+// existen.
+void project_block_groups(std::span<const double> block, std::size_t rows, std::size_t width,
+                          std::span<const double> transposed, std::size_t outputs,
+                          std::span<double> out, ProjectionIsa isa, std::size_t first,
+                          std::size_t last);
+
+// Hilos para una llamada: `available` (al menos uno) si tiene al menos
+// projection_parallel_work productos, uno si no. width · outputs es el tamaño de una
+// transpuesta que ya existe, así que no desborda. El resultado no cambia los bits.
+[[nodiscard]] std::size_t projection_threads(std::size_t rows, std::size_t width,
+                                             std::size_t outputs, std::size_t available);
 
 } // namespace mars_titan::episodic
 
