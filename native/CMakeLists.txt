@@ -167,7 +167,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_FINANCIAL)
         find_package(Threads REQUIRED)
         add_library(mars_titan_financial STATIC src/financial_session.cpp src/financial_batch.cpp
-            src/markov_filter.cpp)
+            src/markov_filter.cpp src/build_identity.cpp)
         target_include_directories(mars_titan_financial PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_financial PUBLIC mars_titan_simulation Threads::Threads)
         mars_titan_configure_target(mars_titan_financial)
@@ -176,7 +176,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         mars_titan_configure_target(mars-titan-batch-benchmark)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_session.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_batch.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/markov_filter.cpp")
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/markov_filter.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/build_identity.cpp")
         if(BUILD_TESTING)
             add_executable(financial_session_tests tests/financial_session_tests.cpp)
             target_link_libraries(financial_session_tests PRIVATE mars_titan_financial)
@@ -466,6 +467,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_session.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_batch.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/markov_filter.hpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/build_identity.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/accurate_sum.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Diagnostics.cmake"
@@ -533,7 +535,9 @@ if(MARS_TITAN_BUILD_SIMULATION)
             string(APPEND identity_content "${relative_source}:${source_hash}\n")
         endforeach()
         string(SHA256 native_source_hash "${identity_content}")
-        target_compile_definitions(mars_titan_financial PUBLIC
+        # Solo build_identity.cpp recibe la identidad. Como definición de mars_titan_financial,
+        # cada cambio de fuentes o de worktree cambiaba la orden de todas sus unidades.
+        set_property(SOURCE src/build_identity.cpp APPEND PROPERTY COMPILE_DEFINITIONS
             "MARS_TITAN_NATIVE_VERSION=\"${PROJECT_VERSION}\""
             "MARS_TITAN_NATIVE_SOURCE_SHA256=\"${native_source_hash}\"")
     endif()

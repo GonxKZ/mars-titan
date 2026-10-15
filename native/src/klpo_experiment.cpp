@@ -1,4 +1,5 @@
 #include "mars_titan/klpo_experiment.hpp"
+#include "mars_titan/build_identity.hpp"
 #include "mars_titan/learning_hold.hpp"
 #include "mars_titan/learning_traces.hpp"
 #include "mars_titan/policy_evaluation.hpp"
@@ -308,8 +309,8 @@ Json klpo_sources_identity(const PpoExperimentOptions& options, const KlpoExperi
                          {"evaluation_policy", "greedy_argmax"},
                          {"rollout_policy", "categorical_sampling"},
                          {"torch_version", TORCH_VERSION},
-                         {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                         {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                         {"native_source_sha256", build::native_source_sha256()},
+                         {"native_build_sha256", build::native_build_sha256()},
                          {"parent_frozen", true},
                          {"final_test_opened", false}};
     if (config.learning.group) {
@@ -700,8 +701,8 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
                 selected.at("configuration") == config.document &&
                 selected.at("device") == options.device &&
                 selected.at("diagnostic") == options.diagnostic &&
-                selected.at("native_source_sha256") == MARS_TITAN_NATIVE_SOURCE_SHA256 &&
-                selected.at("native_build_sha256") == MARS_TITAN_NATIVE_BUILD_SHA256 &&
+                selected.at("native_source_sha256") == build::native_source_sha256() &&
+                selected.at("native_build_sha256") == build::native_build_sha256() &&
                 selected.at("final_test_opened") == false,
             "La evaluación no conserva la configuración y la compilación de la selección");
     const simulation::OutputLock frozen(run, true);
@@ -745,8 +746,8 @@ Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
                             {"decisions", options.decisions},
-                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"native_source_sha256", build::native_source_sha256()},
+                            {"native_build_sha256", build::native_build_sha256()},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(actor, request, stop);
 }
@@ -789,8 +790,8 @@ Json run_initial_evaluation(const PpoExperimentOptions& options, const KlpoExper
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
                             {"decisions", options.decisions},
-                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"native_source_sha256", build::native_source_sha256()},
+                            {"native_build_sha256", build::native_build_sha256()},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(actor, request, stop);
 }

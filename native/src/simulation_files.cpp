@@ -1,4 +1,5 @@
 #include "mars_titan/simulation_files.hpp"
+#include "mars_titan/build_identity.hpp"
 
 #include <openssl/evp.h>
 
@@ -289,12 +290,12 @@ std::string_view error_type(const std::exception& error) {
 Json run_identity(const MarketTape& tape, const RunOptions& options) {
     Json identity{{"manifest_sha256", tape.source_sha256},
                   {"parent_id", tape.parent_id},
-                  {"native_version", MARS_TITAN_NATIVE_VERSION},
-                  {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                  {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
-                  {"compiler_id", MARS_TITAN_NATIVE_COMPILER_ID},
-                  {"compiler_version", MARS_TITAN_NATIVE_COMPILER_VERSION},
-                  {"build_type", MARS_TITAN_NATIVE_BUILD_TYPE},
+                  {"native_version", build::native_version()},
+                  {"native_source_sha256", build::native_source_sha256()},
+                  {"native_build_sha256", build::native_build_sha256()},
+                  {"compiler_id", build::compiler_id()},
+                  {"compiler_version", build::compiler_version()},
+                  {"build_type", build::build_type()},
                   {"config", parameters_json(options.parameters)},
                   {"policy", policy_name(options.policy)},
                   {"diagnostic", options.diagnostic},

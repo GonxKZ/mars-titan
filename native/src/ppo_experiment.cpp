@@ -1,4 +1,5 @@
 #include "mars_titan/ppo_experiment.hpp"
+#include "mars_titan/build_identity.hpp"
 #include "mars_titan/decision_trace.hpp"
 #include "mars_titan/learning_traces.hpp"
 #include "mars_titan/learning_hold.hpp"
@@ -869,8 +870,8 @@ Json experiment_identity(const PpoExperimentOptions& options, const ExperimentCo
                 {"diagnostic", options.diagnostic},
                 {"architecture", "mlp_64_64_tanh_6_1_v1"},
                 {"torch_version", TORCH_VERSION},
-                {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                {"native_source_sha256", build::native_source_sha256()},
+                {"native_build_sha256", build::native_build_sha256()},
                 {"precision", "weights_fp32_gae_ratio_fp64"},
                 {"deterministic", true},
                 {"evaluation_policy", "greedy_argmax"},
@@ -1855,8 +1856,8 @@ ClosedSelection closed_selection(const PpoExperimentOptions& options,
                 selected_identity.at("markov") == config.markov_identity &&
                 selected_identity.at("device") == options.device &&
                 selected_identity.at("diagnostic") == options.diagnostic &&
-                selected_identity.at("native_source_sha256") == MARS_TITAN_NATIVE_SOURCE_SHA256 &&
-                selected_identity.at("native_build_sha256") == MARS_TITAN_NATIVE_BUILD_SHA256 &&
+                selected_identity.at("native_source_sha256") == build::native_source_sha256() &&
+                selected_identity.at("native_build_sha256") == build::native_build_sha256() &&
                 selected_identity.at("parent_frozen") == true &&
                 selected_identity.at("final_test_opened") == false,
             "La auditoría no conserva la identidad y configuración de la selección");
@@ -1937,8 +1938,8 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
                             {"decisions", options.decisions},
-                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"native_source_sha256", build::native_source_sha256()},
+                            {"native_build_sha256", build::native_build_sha256()},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(policy, request, stop);
 }
@@ -1982,8 +1983,8 @@ Json run_initial_evaluation(const PpoExperimentOptions& options, const Experimen
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},
                             {"decisions", options.decisions},
-                            {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                            {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                            {"native_source_sha256", build::native_source_sha256()},
+                            {"native_build_sha256", build::native_build_sha256()},
                             {"final_test_opened", false}};
     return run_frozen_evaluation(policy, request, stop);
 }
@@ -2048,8 +2049,8 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
                         {"seed", config.training.seed},
                         {"device", options.device},
                         {"diagnostic", options.diagnostic},
-                        {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                        {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                        {"native_source_sha256", build::native_source_sha256()},
+                        {"native_build_sha256", build::native_build_sha256()},
                         {"memory_sensitivity", "frozen_observation_and_hidden"},
                         {"final_test_opened", false}};
     const auto identity_hash = content_sha256(identity.dump());
