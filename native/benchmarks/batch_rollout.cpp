@@ -1,3 +1,4 @@
+#include "mars_titan/build_identity.hpp"
 #include "mars_titan/financial_batch.hpp"
 
 #include <algorithm>
@@ -257,8 +258,8 @@ void run(const Options& options) {
               << ",\"step_p99_ms\":" << quantile(quantile_99) << ",\"peak_rss_bytes\":" << rss_bytes()
               << ",\"reserved_payload_bytes\":" << (batch ? batch->reserved_payload_bytes() : 0)
               << ",\"observation_output_bytes\":" << transitions * width * sizeof(float)
-              << ",\"source_sha256\":\"" << MARS_TITAN_NATIVE_SOURCE_SHA256 << '"'
-              << ",\"build_sha256\":\"" << MARS_TITAN_NATIVE_BUILD_SHA256 << "\"}\n";
+              << ",\"source_sha256\":\"" << mars_titan::build::native_source_sha256() << '"'
+              << ",\"build_sha256\":\"" << mars_titan::build::native_build_sha256() << "\"}\n";
 }
 }
 
