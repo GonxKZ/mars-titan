@@ -54,6 +54,8 @@ class AnchoredMedoidSelection:
     scipy_version: str | None
     reused_distances: bool = False
     bounded_background: bool = False
+    native_background: bool = False
+    native_sums: bool = False
 
 
 def _indices(ids: Sequence[str], ordered_ids: tuple[str, ...]) -> tuple[int, ...]:
@@ -246,11 +248,45 @@ def _bounded_minimum(clients, fixed, rows, columns, engine):
     return nearest
 
 
-def _background(clients, fixed, metric, integer, rows, columns, max_pairs, cdist, bounded=False):
+def _native_bounded_minimum(clients, fixed, rows, columns, kernel):
+    """El mínimo de `_bounded_minimum`, con el descarte y las distancias en código nativo.
+
+    NumPy centra las coordenadas y calcula con su BLAS el producto de cada bloque de clientes
+    con todos los centros. `kernel` (`nearest_reference_block` del enlace episódico) calcula
+    después el cuadrado, la cota de cada par y la distancia de referencia de los pares que
+    pueden ser el mínimo, con las mismas operaciones por par y la misma demostración. El
+    resultado tiene los mismos bits, sin las pasadas de NumPy sobre cada bloque ni los
+    índices de los supervivientes.
+
+    Cada bloque tiene como mucho rows · columns productos, el tamaño de los bloques de
+    `_bounded_minimum`, así que hace falta rows · columns ≥ len(fixed). Las copias centradas
+    y las normas ocupan la mitad de lo que reserva `_bounded_minimum`, de modo que
+    `_bounded_bytes` sigue acotando la memoria.
+    """
+    count = len(clients)
+    center = fixed.mean(axis=0)
+    x, y = clients - center, fixed - center
+    q, p = np.einsum("ij,ij->i", x, x), np.einsum("ij,ij->i", y, y)
+    nearest = np.empty(count)
+    block = min(count, rows * columns // len(fixed))
+    products = np.empty((block, len(fixed)))
+    for start in range(0, count, block):
+        end = min(start + block, count)
+        tile = products[: end - start]
+        np.matmul(x[start:end], y.T, out=tile)
+        kernel(tile, q[start:end], p, clients[start:end], fixed, nearest[start:end])
+    return nearest
+
+
+def _background(
+    clients, fixed, metric, integer, rows, columns, max_pairs, cdist, bounded=False, kernel=None
+):
     """Calcula b por dos ejes, contabilizando todos los pares frente a centros fijos."""
     pairs = len(clients) * len(fixed)
     if pairs > max_pairs:
         raise MedoidBudgetExceeded("El fondo supera el presupuesto de pares de distancia")
+    if kernel is not None:
+        return _native_bounded_minimum(clients, fixed, rows, columns, kernel), pairs
     if bounded:
         engine = _Costs(clients, fixed, metric, integer, rows, columns, max_pairs)
         return _bounded_minimum(clients, fixed, rows, columns, engine), pairs
@@ -297,6 +333,7 @@ def select_anchored_medoids(
     max_swaps: int = 100,
     reuse_distances: bool = False,
     bounded_background: bool = False,
+    native=None,
 ) -> AnchoredMedoidSelection:
     """Selecciona hasta capacity centros, incluidos los fijos, sobre el E completo.
 
@@ -317,6 +354,14 @@ def select_anchored_medoids(
     referencia. Su memoria se suma a la estimada solo si cabe sin cambiar los
     bloques, primero la de la cota y después la de la tabla. La que no cabe se
     descarta y la salida indica cuáles se aplicaron.
+
+    `native` es el enlace episódico. Si tiene `nearest_reference_block` y se
+    aplica la cota, el descarte y las distancias del fondo se hacen en código
+    nativo, con los mismos bits y sin superar la memoria estimada para la cota.
+    Hace falta que una fila de productos con todos los centros fijos quepa en
+    un bloque. Si tiene `min_column_sums`, las propuestas de distancias float64
+    suman en código nativo con el algoritmo de `math.fsum`. La salida indica
+    qué núcleos se usaron.
     """
     for value, name in (
         (capacity, "capacity"),
@@ -405,6 +450,9 @@ def select_anchored_medoids(
         extra = _reuse_bytes(len(clients), len(variable), rows)
         reuse_distances = estimated + extra <= remaining_bytes
         estimated += extra if reuse_distances else 0
+    kernel = getattr(native, "nearest_reference_block", None)
+    if not bounded_background or rows * fixed_columns < len(fixed):
+        kernel = None
     background, background_pairs = (None, 0)
     if len(fixed) and len(clients):
         background, background_pairs = _background(
@@ -417,6 +465,7 @@ def select_anchored_medoids(
             max_distance_pairs,
             cdist,
             bounded_background,
+            kernel,
         )
     costs = _Costs(
         clients,
@@ -428,6 +477,7 @@ def select_anchored_medoids(
         max_distance_pairs - background_pairs,
         background=background,
         reuse=reuse_distances,
+        sums=getattr(native, "min_column_sums", None),
     )
     swaps = 0
     if not n:
@@ -474,4 +524,6 @@ def select_anchored_medoids(
         scipy_version,
         reuse_distances,
         bounded_background,
+        kernel is not None,
+        costs.sums is not None,
     )
