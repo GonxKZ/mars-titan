@@ -457,15 +457,24 @@ def test_native_projection_bits_do_not_depend_on_the_threads(native):
     random = np.random.default_rng(93)
     previous = torch.get_num_threads()
     try:
-        # 64 · 512 · 127 productos superan el umbral, así que la llamada reparte los grupos.
-        for rows, width in ((64, 512), (37, 420), (3, 5)):
+        # Desde 2^17 productos la llamada reparte los grupos en el pool de ATen, por paneles
+        # (32 filas o más) o leyendo la transpuesta. 2 · 512 · 127 y 40 · 5 · 127 no llegan.
+        for rows, width, parallel in (
+            (64, 512, True),
+            (37, 420, True),
+            (31, 512, True),
+            (3, 384, True),
+            (2, 512, False),
+            (40, 5, False),
+            (3, 5, False),
+        ):
             block = random.normal(size=(rows, width)) * np.ldexp(1.0, random.integers(-60, 60))
             transposed = random.normal(size=(width, 127))
             expected = codec_module._declared_order(block, transposed)
             for threads in (1, 2, 4):
                 torch.set_num_threads(threads)
                 used = native.codec_projection_threads(rows, width, 127)
-                assert used == (threads if rows * width * 127 >= 1 << 20 else 1)
+                assert used == (threads if parallel else 1)
                 assert_same_bits(native.project_codec_block(block, transposed), expected)
     finally:
         torch.set_num_threads(previous)

@@ -244,18 +244,34 @@ void bind_memory(py::module_& module) {
 
 using Matrix = py::array_t<double, py::array::c_style>;
 
-// Productos por debajo de los que la proyección usa un solo hilo: crear y esperar un hilo
-// cuesta más que el trabajo que le tocaría.
-constexpr std::size_t projection_parallel_work = std::size_t{1} << 20;
-
-// Hilos de una proyección de rows · width · outputs productos: los de ATen en este proceso,
-// que siguen OMP_NUM_THREADS o torch.set_num_threads, o uno si el trabajo es pequeño. El
-// resultado no depende de los hilos.
+// Hilos de una proyección: los del pool de ATen en este proceso, que siguen OMP_NUM_THREADS o
+// torch.set_num_threads, si la llamada es grande, y uno si no. El resultado no depende de
+// los hilos.
 std::size_t projection_threads(std::size_t rows, std::size_t width, std::size_t outputs) {
-    const std::size_t work = rows * width * outputs;
-    return work < projection_parallel_work
-               ? 1
-               : static_cast<std::size_t>(std::max(at::get_num_threads(), 1));
+    return mars_titan::episodic::projection_threads(
+        rows, width, outputs, static_cast<std::size_t>(std::max(at::get_num_threads(), 1)));
+}
+
+// Con varios hilos, at::parallel_for da a cada hilo del pool un tramo contiguo de grupos de
+// ocho salidas, y cada tramo escribe solo sus columnas. El pool ya existe, así que no se crean
+// hilos en cada llamada.
+void project(std::span<const double> source, std::size_t rows, std::size_t width,
+             std::span<const double> weights, std::size_t outputs, std::span<double> target,
+             std::size_t threads) {
+    const auto isa = mars_titan::episodic::default_projection_isa();
+    if (threads == 1) {
+        mars_titan::episodic::project_block(source, rows, width, weights, outputs, target, isa);
+        return;
+    }
+    const auto groups =
+        static_cast<std::int64_t>(mars_titan::episodic::projection_groups(outputs));
+    const auto parts = static_cast<std::int64_t>(threads);
+    at::parallel_for(0, groups, (groups + parts - 1) / parts,
+                     [&](std::int64_t first, std::int64_t last) {
+                         mars_titan::episodic::project_block_groups(
+                             source, rows, width, weights, outputs, target, isa,
+                             static_cast<std::size_t>(first), static_cast<std::size_t>(last));
+                     });
 }
 
 // Proyección del codec episódico. Solo acepta float64 contiguo, sin conversiones implícitas,
@@ -278,9 +294,7 @@ void bind_projection(py::module_& module) {
             const std::size_t threads = projection_threads(rows, width, outputs);
             {
                 const py::gil_scoped_release released;
-                mars_titan::episodic::project_block(
-                    source, rows, width, weights, outputs, target,
-                    mars_titan::episodic::default_projection_isa(), threads);
+                project(source, rows, width, weights, outputs, target, threads);
             }
             return out;
         },
