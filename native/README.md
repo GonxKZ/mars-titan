@@ -116,6 +116,8 @@ LTO y PGO se midieron el 10 de octubre de 2026 en la etapa RL nativa con un perf
 
 `native-ppo-dev` y `native-candidate-cuda-dev` son los presets de Release de PPO y de la referencia GRU en CUDA con ccache y mold, solo para desarrollo. ccache no cambia los objetos y mold reduce el enlazado a un tercio, pero cambia la disposición de los ejecutables. No deben usarse en la campaña. La identidad compilada registra el lanzador y el enlazador, pero todavía nada rechaza una identidad compilada con ccache o mold en `rl check`, `rl run` ni en los lanzadores. Necesitan `ccache`, `mold` y CMake 3.29 o posterior para `CMAKE_LINKER_TYPE`.
 
+Los presets de desarrollo fijan la caché de ccache en `~/.cache/mars-titan/ccache`, con sus temporales dentro y un límite de 4 GiB (`CCACHE_DIR`, `CCACHE_TEMPDIR` y `CCACHE_MAXSIZE`). Así no ocupa `/tmp`, que es memoria en este equipo, ni entra en el repositorio. `CCACHE_BASEDIR` apunta a la raíz del worktree, de modo que ccache escribe como relativas las rutas de dentro y dos worktrees con las mismas fuentes comparten la caché. Las variables viajan con el preset de configuración y su preset de compilación las hereda, así que se aplican con `cmake --build --preset`. Llamar a `ninja` directamente sobre la carpeta de compilación usa la configuración global de ccache. `ccache --show-stats` con el mismo `CCACHE_DIR` muestra los aciertos y el espacio ocupado.
+
 ```bash
 cmake --preset native-ppo-dev
 cmake --build --preset native-ppo-dev
