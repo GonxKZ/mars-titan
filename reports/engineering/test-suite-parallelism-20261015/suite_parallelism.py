@@ -6,9 +6,14 @@ Las configuraciones son `serie` o `n<trabajadores>-<reparto>`, por ejemplo `n2-l
 Cada ejecución corre en su propio trabajo `memslot suite` con la selección y el entorno de
 `make test-fast` (sin las pruebas lentas, nativas ni de CUDA, con CUDA_VISIBLE_DEVICES=-1 y
 dos hilos), y el orden de las configuraciones rota en cada ronda. Dentro del scope de systemd
-se mide el tiempo de reloj de pytest y, al terminar, el pico de memoria del scope. De cada
-ejecución se guardan también el resultado de cada prueba según JUnit y las entradas de /tmp
-que no existían al empezar. SALIDA es un directorio con un JSON por ejecución y el resumen.
+se mide el tiempo de reloj de pytest y, cada segundo, la memoria anónima del scope. Su máximo es
+lo que ocupan los procesos. `memory.peak` incluye además la caché de página, que el núcleo deja
+crecer hasta el límite de la plaza, así que se guarda solo como referencia. Al terminar se leen
+los contadores de memory.events, que registran si el núcleo mató algún proceso por memoria. De
+cada ejecución se guardan también el resultado de cada prueba según JUnit y las entradas de /tmp
+que no existían al empezar. Otros programas del usuario también escriben allí, y pytest y
+tempfile usan el TMPDIR propio de la plaza. SALIDA es un directorio con un JSON por ejecución y
+el resumen.
 """
 
 import json
@@ -26,15 +31,33 @@ SELECTION = "not slow and not native and not cuda"
 PATHS = os.environ.get("SUITE_PATHS", "tests").split()
 # Plaza de memslot. Las medidas usan una de la suite, con su límite de 6 GiB.
 SLOT = os.environ.get("SUITE_SLOT", "suite --max 6G").split()
-# Mide dentro del scope: el tiempo de pytest sin la espera de plaza y el pico del cgroup.
+# Mide dentro del scope: el tiempo de pytest sin la espera de plaza, el máximo de la memoria
+# anónima del cgroup muestreada cada segundo, su pico con la caché y los avisos de memoria.
+# Si el núcleo mata un proceso por memoria, systemd para el scope entero y no se llega al
+# final, así que el máximo se guarda en MEASURE_FILE.anon cada vez que crece y el nombre del
+# scope en MEASURE_FILE.scope, para leer después en el diario de systemd por qué se paró. El
+# final de pytest se anota en MEASURE_FILE.end para no contar la espera del muestreo.
 INNER = """
+cg=/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)
+basename $cg > "$MEASURE_FILE.scope"
 start=$(date +%s.%N)
-"$@"
+( "$@"; code=$?; date +%s.%N > "$MEASURE_FILE.end"; exit $code ) &
+pid=$!
+anon=0
+while kill -0 $pid 2>/dev/null; do
+  now=$(awk '$1 == "anon" {print $2}' $cg/memory.stat)
+  if ((now > anon)); then anon=$now; echo $anon > "$MEASURE_FILE.anon"; fi
+  sleep 1
+done
+wait $pid
 code=$?
-end=$(date +%s.%N)
-peak=$(cat /sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)/memory.peak)
-printf '{"start": %s, "end": %s, "peak_bytes": %s, "exit": %s}\\n' \\
-  "$start" "$end" "$peak" "$code" > "$MEASURE_FILE"
+end=$(cat "$MEASURE_FILE.end")
+peak=$(cat $cg/memory.peak)
+oom_kill=$(awk '$1 == "oom_kill" {print $2}' $cg/memory.events)
+at_max=$(awk '$1 == "max" {print $2}' $cg/memory.events)
+format='{"start": %s, "end": %s, "anon_peak_bytes": %s, "peak_bytes": %s,'
+format+=' "oom_kill": %s, "max_events": %s, "exit": %s}\\n'
+printf "$format" "$start" "$end" "$anon" "$peak" "$oom_kill" "$at_max" "$code" > "$MEASURE_FILE"
 exit $code
 """
 
@@ -97,18 +120,32 @@ def run(out, config, round_):
         tail=(completed.stdout + completed.stderr).strip().splitlines()[-4:],
         new_tmp_entries=sorted(tmp_entries() - before),
     )
+    partial, scope = (measure.with_name(measure.name + suffix) for suffix in (".anon", ".scope"))
     if measure.exists():
         measured = json.loads(measure.read_text())
         record["seconds"] = measured["end"] - measured["start"]
-        record["peak_bytes"] = measured["peak_bytes"]
-        record["exit"] = measured["exit"]
+        for key in ("anon_peak_bytes", "peak_bytes", "oom_kill", "max_events", "exit"):
+            record[key] = measured[key]
+    elif partial.exists():
+        # El scope se paró antes de terminar: queda el máximo anónimo hasta ese momento.
+        record["anon_peak_bytes"] = int(partial.read_text())
+        record["stopped_before_measure"] = True
+        if scope.exists():
+            journal = subprocess.run(
+                ["journalctl", "--user", "-o", "cat", "-u", scope.read_text().strip()],
+                capture_output=True,
+                text=True,
+            ).stdout
+            record["stop_reason"] = [line for line in journal.splitlines() if "result" in line]
+    for leftover in (partial, scope, measure.with_name(measure.name + ".end")):
+        leftover.unlink(missing_ok=True)
     if junit.exists():
         record["outcomes"] = outcomes(junit)
     (out / f"{name}.json").write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n")
     counts = {}
     for kind in record.get("outcomes", {}).values():
         counts[kind] = counts.get(kind, 0) + 1
-    seconds, peak = record.get("seconds"), record.get("peak_bytes")
+    seconds, peak = record.get("seconds"), record.get("anon_peak_bytes")
     print(name, seconds, peak, record["returncode"], counts, flush=True)
     return record
 
