@@ -52,9 +52,10 @@ def cohort_identity(meta, *, input_policy=STRICT_INPUTS):
 
 
 def validate_cohort_rows(table, cohort):
+    # Basta con los valores distintos de la columna, sin recorrer cada fila en Python.
     if cohort is not None and (
         "cohort_id" not in table.column_names
-        or any(value != cohort for value in table["cohort_id"].to_pylist())
+        or not set(table["cohort_id"].unique().to_pylist()) <= {cohort}
     ):
         raise ValueError("Hay filas ausentes o de otra cohorte")
 

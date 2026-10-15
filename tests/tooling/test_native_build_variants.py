@@ -137,3 +137,14 @@ def test_comparison_refuses_builds_with_different_outputs(tmp_path):
         variants.command_compare(
             Namespace(first=receipts[0], second=receipts[1], output=tmp_path / "salida.json")
         )
+
+
+def test_linked_bytes_report_the_size_of_each_linked_output(tmp_path):
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "mars-titan-ppo").write_bytes(b"x" * 1234)
+    (tmp_path / "libmars_titan_simulation.so").write_bytes(b"y" * 10)
+    linked = {"bin/mars-titan-ppo": "a" * 64, "libmars_titan_simulation.so": "b" * 64}
+    assert variants.linked_bytes(tmp_path, linked) == {
+        "bin/mars-titan-ppo": 1234,
+        "libmars_titan_simulation.so": 10,
+    }

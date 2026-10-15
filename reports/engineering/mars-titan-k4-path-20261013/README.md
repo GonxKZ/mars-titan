@@ -66,14 +66,40 @@ Lo que queda por paso es el cálculo propio del refinamiento. Dos candidatos má
 | `forward_through_public_refine` | `forward` vuelve a pasar por `refine` | la misma |
 | `public_refine_without_zero_fill` | `refine` público sin relleno cero | `test_refinement_rejects_nonzero_absent_read_values` |
 
-## Medidas de tiempo pendientes
+## Medidas de tiempo
 
-El perfil de punta a punta con py-spy y Nsight Systems y la medida del recorrido completo antes y después siguen pendientes, por los mismos motivos que [#549](../titans-event-path-20261013/README.md#medidas-de-tiempo-pendientes). La GPU tenía la carga ajena de un `llama-server` de otro proyecto (unos 5,4 GB y un 84 % de uso a las 14:36, y 5.816 MiB ocupados en total a las 19:31). Además, los eventos guardados de `US+CN/fold-012` de #363 ya no se pueden abrir desde que la v3.1 sustituyó las muestras de la v3. El issue pide también perfilar con el núcleo del codec de [#520](https://github.com/GonxKZ/mars-titan/issues/520), que sigue abierto en [#578](https://github.com/GonxKZ/mars-titan/pull/578). Las cuentas de este informe muestran qué trabajo sale de cada paso, pero no cuánto tiempo ahorra en la campaña.
+Las rondas se tomaron el 14 de octubre de 2026 con los mismos eventos, opciones y condiciones que las de [#549](../titans-event-path-20261013/README.md#medidas-de-tiempo): vista `US+CN/fold-012` de las vistas v3.1 de A v2, 88.028 filas y 11 llamadas a `_NoStepOptimizer` sin ningún paso, FP32 estricto, dos hilos, perfil de energía de ahorro y un trabajo `memslot gpu` por ronda. El recibo es [`abba-20261014.json`](abba-20261014.json). Los árboles son A = 37f4b7a7 (`develop` con #589) y B = bb19f7be, el commit de [#591](https://github.com/GonxKZ/mars-titan/pull/591), sin más cambios entre ellos.
 
-Órdenes para repetirlas desde la raíz de cada árbol (la rama de #549 y esta), con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda, alternando los árboles:
+| Modelo | Filas/s antes | Filas/s después | Cociente de medias | Peor par | Pico asignado |
+| --- | --- | --- | --- | --- | --- |
+| `mars_titan_m1_k4` | 5.930 y 5.785 | 6.282 y 6.201 | 1,07 | 1,05 | 403 MiB en los dos |
 
-- `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family readout --arm mars_titan_m1_k4 --option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`, y lo mismo con `--arm mars_titan_m1` como referencia de K = 1.
-- `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues` para los bits de las rondas.
+El peor par divide la ronda más lenta de después entre la más rápida de antes. La memoria reservada (500 MiB) y la del proceso (714 MiB) tampoco cambian. Las capturas de las cuatro rondas coinciden bit a bit entre árboles y dentro de cada árbol: nombres, gradientes de las 11 llamadas (77 tensores) y las 3.347 predicciones pendientes al terminar.
+
+Con K = 1, en las rondas de [#547](../episodic-consolidation-20261013/README.md#medidas-de-tiempo) sobre el mismo árbol bb19f7be, M1 recorre entre 6.878 y 6.972 filas por segundo, frente a 6.201 y 6.282 con K = 4. Son rondas de sesiones distintas con las mismas condiciones, así que solo sirven como orden de magnitud: los tres refinamientos extra cuestan en torno a un 10 % del caudal en este tramo.
+
+## Perfil del recorrido
+
+Perfil del 14 de octubre de 2026 sobre `develop` 06e69db6, que ya incluye #591, con la misma vista y los mismos eventos que las rondas de tiempo (`US+CN/fold-012`, 6.449 eventos desde el 3.224, como mucho 3.199 entradas por evento). Se tomó con py-spy a 100 Hz ([`profile-pyspy-20261014.json`](profile-pyspy-20261014.json)) y con Nsight Systems y los rangos NVTX del lector, cada uno en su propio trabajo `memslot gpu` y sin ningún paso. El equipo tenía otras cargas (carga media de 4,4 a 5,8 al empezar), así que el perfil sirve para repartir el tiempo y no como medida de caudal.
+
+El recorrido mide su tramo después de preparar los índices y los eventos. En py-spy, `_train_pass` reúne 15.548 de las 121.329 muestras. El resto es esa preparación: la construcción de los índices con el código anterior a #622 (42 %), el montaje de los eventos (18 %) y las huellas SHA-256 de los archivos de la vista al abrirla (20 %, en sus hilos). En la campaña los índices se construyen una vez por vista y las huellas se reutilizan con `MARS_TITAN_DIGEST_CACHE`. Dentro de `_train_pass`, el `forward` del lector ocupa un 21,3 % inclusivo, `propose` del banco de retención un 27,6 % y, como tiempo propio, `encode` del codec episódico un 13,8 %, `bank_snapshot` un 7,5 %, `_bounded_minimum` de los medoids un 7,3 % y `_read` un 6,5 %.
+
+Nsight da la misma imagen con los rangos de primer nivel, sobre una ventana de 153 s:
+
+| Rango | Llamadas | Total | Por llamada | Incluye |
+| --- | ---: | ---: | ---: | --- |
+| `readout.observe` | 88 | 78,9 s | 896 ms | `encode` 19,7 s, `prepare` 18,4 s, `apply` 14,0 s, `snapshot` 9,9 s, `validate` 6,4 s y `emit` 0,4 s, con 317 bloques |
+| `readout.admit` | 88 | 44,7 s | 508 ms | consolidación del banco de retención |
+| `readout.update` | 11 | 28,2 s | 2.560 ms | `replay` 27,4 s y `clip` 0,4 s |
+| `readout.labels` | 89 | 1,2 s | 13 ms | |
+
+Los 344.843 núcleos suman 2,22 s de GPU, así que el recorrido está limitado por el host y la GPU pasa casi todo el tiempo esperando. Los tres refinamientos extra van dentro de `apply` y de `replay`, y no son la parte dominante. Lo que domina es la admisión de episodios, con la selección de medoids anclados, y la codificación y preparación de cada bloque. La primera es el trabajo de [#547](../episodic-consolidation-20261013/README.md). Las órdenes para repetir el perfil siguen abajo.
+
+### Repetir el perfil
+
+Desde la raíz de cada árbol, con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda:
+
+- `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family readout --arm mars_titan_m1_k4 --option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8 --events eventos.pkl --output resultados.jsonl --label ETIQUETA`, y lo mismo con `--arm mars_titan_m1` como referencia de K = 1.
 - `py-spy record --rate 100 --format raw` y `MARS_TITAN_NVTX=1 nsys profile --trace=cuda,nvtx --sample=none --cpuctxsw=none` sobre la misma orden, resumidos con `benchmarks/collapsed_profile_summary.py` (raíz `_train_pass@training/mars_titan_run.py`) y `benchmarks/nsys_range_summary.py`.
 
 ## Reproducción

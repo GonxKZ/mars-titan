@@ -1,4 +1,5 @@
 #include "mars_titan/klpo_collection.hpp"
+#include "mars_titan/build_identity.hpp"
 #include "mars_titan/ppo_objectives.hpp"
 #include "mars_titan/simulation_files.hpp"
 
@@ -415,8 +416,8 @@ struct KlpoTerminalCollector::Impl {
                                                               : Json(nullptr)}}},
             {"precision", precision_identity()},
             {"torch", TORCH_VERSION},
-            {"source_code", MARS_TITAN_NATIVE_SOURCE_SHA256},
-            {"build", MARS_TITAN_NATIVE_BUILD_SHA256}};
+            {"source_code", build::native_source_sha256()},
+            {"build", build::native_build_sha256()}};
         if (supplied_reference) {
             identity_value["reference_origin"] = "provided_parameters_and_rng_v1";
             identity_value["initial_rng_sha256"] = simulation::content_sha256(initial_rng.dump());

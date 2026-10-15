@@ -1,0 +1,102 @@
+{
+ "pairs_ascending": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "remainder_without_odd": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "single_accumulator": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "final_without_odd": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "writes_every_lane": {
+  "compiled": true,
+  "detected": true,
+  "tail": "free(): invalid next size (normal)"
+ },
+ "panel_from_next_column": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_single_accumulator": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_final_without_odd": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_odd_from_even": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_tail_skipped": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_last_row_skipped": {
+  "compiled": true,
+  "detected": true,
+  "tail": "La proyección nativa no conserva el orden declarado de las sumas (portable)"
+ },
+ "direct_range_from_zero": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Un tramo escribe fuera de sus columnas (portable)"
+ },
+ "direct_range_to_the_end": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Un tramo escribe fuera de sus columnas (portable)"
+ },
+ "inverted_range_accepted": {
+  "compiled": true,
+  "detected": true,
+  "tail": ""
+ },
+ "missing_groups_accepted": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nUn tramo con grupos que no existen debe rechazarse"
+ },
+ "threads_below_the_work": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nCon el trabajo mínimo se usan los hilos disponibles"
+ },
+ "threads_without_rows": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nPor debajo del trabajo mínimo no se reparte la proyección"
+ },
+ "threads_may_be_zero": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nSin hilos disponibles se usa el que llama"
+ },
+ "default_is_narrowest": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nVersión avx512f comprobada\nLa versión por defecto debe ser la más ancha disponible"
+ },
+ "fp_contract_fast": {
+  "compiled": true,
+  "detected": true,
+  "tail": "Versión portable comprobada\nVersión avx2 comprobada\nLa proyección nativa no conserva el orden declarado de las sumas (avx512f)"
+ }
+}

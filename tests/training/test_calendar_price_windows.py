@@ -277,3 +277,30 @@ def test_financial_observations_carry_the_same_gapped_windows_as_the_reader(tmp_
                     gapped += int((observed[:, 5] == 0).any())
                     assert observed.view(np.uint32).tolist() == expected.view(np.uint32).tolist()
     assert seen > 0 and gapped > 0
+
+
+def test_block_reader_checks_the_calendar_positions_of_each_asset_once_per_pass(
+    tmp_path, monkeypatch
+):
+    # #619: las posiciones solo dependen del activo. La lectura por bloques las comprueba una
+    # vez por recorrido y la lectura por observación, que es la referencia, en cada fila.
+    from mars_titan.data.input_policy import HISTORICAL_MASKED
+    from mars_titan.memory import financial_observations as api
+    from mars_titan.memory.financial_session import FinancialPhase
+
+    fixture_windows(tmp_path, {"US": ["2022-12-01"]})
+    dataset = CorpusDataset(
+        tmp_path / "source/parent/manifest.json", input_policy=HISTORICAL_MASKED
+    )
+    start, close = 946_684_800_000_000, 1_672_531_200_000_000
+    phase = FinancialPhase("train", start, start, close, close)
+    manifest = api.prepare_observation_index(dataset, tmp_path / "index", phase=phase)
+    source = api.FinancialObservationSource(dataset, manifest)
+    calls, original = [], dataset.calendar_positions
+    monkeypatch.setattr(
+        dataset, "calendar_positions", lambda a, p: calls.append(a["symbol"]) or original(a, p)
+    )
+    rows = sum(len(b["sample_ids"]) for e in source.batched_events(block_rows=4) for b in e.inputs)
+    assert sorted(calls) == sorted(set(calls)) and 0 < len(calls) < rows
+    calls.clear()
+    assert sum(len(b["sample_ids"]) for e in source.events() for b in e.inputs) == len(calls)

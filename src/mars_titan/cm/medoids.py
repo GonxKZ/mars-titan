@@ -177,6 +177,10 @@ class _Costs:
     que se pide, con la misma operación, y se copia en las siguientes. Los pares se siguen
     contando como en la referencia, una vez por evaluación, así que el presupuesto se agota
     en el mismo punto.
+
+    `sums` es `min_column_sums` del enlace episódico. Si se da, las propuestas suman cada
+    columna en código nativo con el algoritmo de `math.fsum`, que da los mismos bits. Cuando
+    el núcleo devuelve None se repite la suma de referencia, con sus errores.
     """
 
     def __init__(
@@ -191,8 +195,11 @@ class _Costs:
         *,
         background=None,
         reuse=False,
+        sums=None,
     ):
         self.clients, self.candidates = clients, candidates
+        # Las sumas enteras son exactas en Python y no pasan por el núcleo de float64.
+        self.sums = None if integer else sums
         self.metric, self.integer = metric, integer
         self.rows, self.columns, self.max_pairs = rows, columns, max_pairs
         self.pairs = self.evaluations = 0
@@ -212,6 +219,10 @@ class _Costs:
             self.known = np.zeros((blocks, len(candidates)), dtype=bool)
 
     def _sum(self, values):
+        # `tolist` da los mismos valores que recorrer el vector, sin un escalar de NumPy por
+        # elemento, así que la suma exacta y sus errores no cambian.
+        if isinstance(values, np.ndarray):
+            values = values.tolist()
         if self.integer:
             return sum(int(value) for value in values)
         try:
@@ -316,10 +327,13 @@ class _Costs:
                     np.equal(self.owner[start:end], outgoing, out=self.mask[: end - start])
                     np.copyto(base, self.second[start:end], where=self.mask[: end - start])
                 distance = self._distance(start, end, indices)
-                temporary = self.scratch[: end - start, : len(indices)]
-                np.minimum(distance, base[:, None], out=temporary)
-                for column in range(len(indices)):
-                    parts[column].append(self._sum(temporary[:, column]))
+                totals = None if self.sums is None else self.sums(distance, base)
+                if totals is None:
+                    temporary = self.scratch[: end - start, : len(indices)]
+                    np.minimum(distance, base[:, None], out=temporary)
+                    totals = [self._sum(values) for values in temporary.T.tolist()]
+                for column, total in enumerate(totals):
+                    parts[column].append(total)
             self.evaluations += len(indices)
             for index, values in zip(indices, parts, strict=True):
                 yield index, self._sum(values)

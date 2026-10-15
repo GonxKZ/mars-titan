@@ -240,6 +240,12 @@
     {
       "name": "native-dev-tools",
       "hidden": true,
+      "environment": {
+        "CCACHE_DIR": "$env{HOME}/.cache/mars-titan/ccache",
+        "CCACHE_TEMPDIR": "$env{HOME}/.cache/mars-titan/ccache/tmp",
+        "CCACHE_MAXSIZE": "4G",
+        "CCACHE_BASEDIR": "${sourceParentDir}"
+      },
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",

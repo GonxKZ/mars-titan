@@ -1,3 +1,4 @@
+#include "mars_titan/build_identity.hpp"
 #include "mars_titan/cohort_execution.hpp"
 #include "mars_titan/simulation_files.hpp"
 
@@ -285,11 +286,11 @@ Json run(const Options& args) {
         {"recovery_p50_seconds", percentile(recovery, median)},
         {"wall_seconds", elapsed(started)},
         {"peak_rss_bytes", mars_titan::simulation::process_memory_high_water()},
-        {"compiler", MARS_TITAN_NATIVE_COMPILER_ID},
-        {"compiler_version", MARS_TITAN_NATIVE_COMPILER_VERSION},
-        {"build_type", MARS_TITAN_NATIVE_BUILD_TYPE},
-        {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-        {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256}};
+        {"compiler", mars_titan::build::compiler_id()},
+        {"compiler_version", mars_titan::build::compiler_version()},
+        {"build_type", mars_titan::build::build_type()},
+        {"native_source_sha256", mars_titan::build::native_source_sha256()},
+        {"native_build_sha256", mars_titan::build::native_build_sha256()}};
 }
 } // namespace
 

@@ -1,0 +1,184 @@
+{
+ "bound_without_relative_margin": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "escalas mezcladas: el cliente 7 no coincide con la fuerza bruta\n"
+ },
+ "bound_without_absolute_margin": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "La cota del núcleo no es la demostrada\n"
+ },
+ "bound_without_shrink": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "La cota del núcleo no es la demostrada\n"
+ },
+ "only_first_candidate": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "escalas mezcladas: el cliente 2 no coincide con la fuerza bruta\n"
+ },
+ "chain_reversed": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "nube gaussiana: el cliente 0 no coincide con la fuerza bruta\n"
+ },
+ "fp32_check_removed": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Se aceptó un cliente que no viene de FP32\n"
+ },
+ "finite_check_removed": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Se aceptó un producto no finito\n"
+ },
+ "shape_check_removed": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Se aceptaron productos con otra forma\n"
+ },
+ "sums_without_base": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Una suma exacta no coincide con math.fsum\n"
+ },
+ "sums_accept_nan": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Una suma no finita se aceptó o escribió\n"
+ },
+ "sums_written_on_failure": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Una suma no finita se aceptó o escribió\n"
+ },
+ "sums_shape_unchecked": {
+  "kind": "c++",
+  "compiled": true,
+  "detected": true,
+  "tail": "Se aceptó una base con otra forma\n"
+ },
+ "native_without_whole_row": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/cm/test_anchored_medoids.py::test_native_background_needs_a_whole_row_of_centers_per_block"
+  ],
+  "tail": [
+   "1 failed, 94 passed in 19.91s"
+  ]
+ },
+ "native_flag_lost": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/cm/test_anchored_medoids.py::test_traced_peak_with_the_native_background_stays_within_the_estimate[bank]"
+  ],
+  "tail": [
+   "1 failed, 62 passed in 6.55s"
+  ]
+ },
+ "sums_flag_lost": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/cm/test_anchored_medoids.py::test_native_background_gives_the_reference_bits[normal]"
+  ],
+  "tail": [
+   "1 failed, 84 passed in 13.84s"
+  ]
+ },
+ "sums_ignore_outgoing": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/cm/test_anchored_medoids.py::test_traced_peak_with_the_native_background_stays_within_the_estimate[bank]"
+  ],
+  "tail": [
+   "1 failed, 62 passed in 9.09s"
+  ]
+ },
+ "sums_for_integers": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/cm/test_anchored_medoids.py::test_native_sums_leave_integer_costs_to_python"
+  ],
+  "tail": [
+   "1 failed, 99 passed in 36.05s"
+  ]
+ },
+ "fork_without_copy": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_proposals_keep_original_records_and_leave_previous_snapshot_unchanged[reservoir]"
+  ],
+  "tail": [
+   "1 failed, 100 passed in 40.30s"
+  ]
+ },
+ "exported_keys_reversed": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_objective_includes_every_client_even_if_it_is_not_a_candidate[reservoir]"
+  ],
+  "tail": [
+   "1 failed, 104 passed in 47.97s"
+  ]
+ },
+ "retained_rows_shared": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_proposals_convert_each_retained_key_once[reservoir]"
+  ],
+  "tail": [
+   "1 failed, 170 passed in 65.81s (0:01:05)"
+  ]
+ },
+ "retained_rows_shifted": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_objective_includes_every_client_even_if_it_is_not_a_candidate[reservoir]"
+  ],
+  "tail": [
+   "1 failed, 104 passed in 72.58s (0:01:12)"
+  ]
+ },
+ "columns_reversed": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_bank_columns_export_the_bits_of_the_record_lists"
+  ],
+  "tail": [
+   "1 failed, 180 passed in 73.79s (0:01:13)"
+  ]
+ },
+ "columns_ignored": {
+  "kind": "python",
+  "detected": true,
+  "failed": [
+   "tests/memory/test_retention_bank.py::test_bank_columns_export_the_bits_of_the_record_lists"
+  ],
+  "tail": [
+   "1 failed, 180 passed in 46.35s"
+  ]
+ }
+}

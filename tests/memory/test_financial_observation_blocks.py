@@ -161,3 +161,51 @@ def test_blocks_above_256_rows_transform_their_price_windows_in_pieces():
     )
     assert observed.shape == (600, 64, 5)
     np.testing.assert_array_equal(observed, expected)
+
+
+def test_calendar_blocks_give_each_row_the_bits_of_its_window_alone():
+    # #619: las ventanas sin huecos de activos distintos se transforman juntas y las demás
+    # fila a fila. Cada fila debe salir como `price_windows` con su activo solo.
+    from mars_titan.data.price_windows import window_rows
+    from mars_titan.training.corpus_inputs import _calendar_price_contexts
+
+    rng = np.random.default_rng(19)
+    absent = np.array([40, 41, 200], dtype=np.int64)
+    tables, calendars, ends = [], [], []
+    for index in range(600):
+        size = 140 + index % 11
+        # Posiciones crecientes que solo saltan las sesiones ausentes de todo el mercado.
+        positions = np.setdiff1d(np.arange(index % 5, index % 5 + size + 3), absent)[:size]
+        dtype = np.float32 if index % 97 == 0 else np.float64
+        tables.append(rng.uniform(1, 100, size=(size, 5)).astype(dtype))
+        calendars.append((positions, absent))
+        ends.append(63 + (index * 7) % (size - 63))
+    ends = np.array(ends)
+    observed = api._block_calendar_contexts(tables, calendars, ends, 64)
+    expected = np.concatenate(
+        [
+            _calendar_price_contexts(table, window_rows(positions, ends[i : i + 1], 64, gaps))
+            for i, (table, (positions, gaps)) in enumerate(zip(tables, calendars, strict=True))
+        ]
+    )
+    present = expected[:, :, 5]
+    assert observed.shape == (600, 64, 6) and observed.dtype == np.float32
+    # Hay ventanas completas y con huecos, también tras más de 256 filas completas.
+    assert present.all(axis=1).sum() > 256 and (~present.all(axis=1)).sum() > 0
+    assert observed.view(np.uint32).tolist() == expected.view(np.uint32).tolist()
+
+
+@pytest.mark.parametrize(
+    ("end", "positions", "message"),
+    [
+        # La ventana termina después del último precio del activo.
+        (25, np.arange(5, 25), "termina fuera"),
+        # Falta la sesión 50 solo en este activo: la ventana no tiene sus 64 posiciones.
+        (70, np.concatenate([np.arange(0, 50), np.arange(51, 80)]), "solo para este activo"),
+    ],
+)
+def test_calendar_blocks_reject_windows_like_window_rows(end, positions, message):
+    tables = [np.ones((len(positions), 5))]
+    absent = np.array([], dtype=np.int64)
+    with pytest.raises(ValueError, match=message):
+        api._block_calendar_contexts(tables, [(positions, absent)], np.array([end]), 64)

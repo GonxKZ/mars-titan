@@ -64,24 +64,38 @@ def episodic_bank(native, retention, admission, **scope):
     return RetentionBank(native, retention, memory_contract="causal_v2", **scope)
 
 
-def bank_snapshot(bank, *, codec_id, context_id, cutoff, dtype, device):
-    """Instantánea por ID de los episodios retenidos, común a todos los bloques del evento."""
+def _bank_columns(bank):
+    """Columnas CPU de los episodios retenidos, ordenadas por ID.
+
+    Un banco con `retained_arrays` las exporta del enlace en una sola llamada. Los demás, y los
+    bancos sobre un enlace anterior, se recorren registro a registro. Las dos rutas dan los
+    mismos tipos y bits.
+    """
+    export = getattr(bank, "retained_arrays", None)
+    columns = None if export is None else export()
+    if columns is not None:
+        return {name: torch.from_numpy(array) for name, array in columns.items()}
     records = sorted(bank.records(), key=lambda r: r.id)
     size = len(records)
+
+    def column(values, dtype):
+        return torch.tensor(values, dtype=dtype, device="cpu")
+
+    return dict(
+        keys=column([r.key for r in records], torch.float32).reshape(size, 64),
+        values=column([r.value for r in records], torch.float32).reshape(size, 64),
+        labels=column([r.label for r in records], torch.float64),
+        ids=column([r.id for r in records], torch.int64),
+        decision_at=column([r.decision_at for r in records], torch.int64),
+        available_at=column([r.available_at for r in records], torch.int64),
+        maturity_at=column([r.maturity_at for r in records], torch.int64),
+    )
+
+
+def bank_snapshot(bank, *, codec_id, context_id, cutoff, dtype, device):
+    """Instantánea por ID de los episodios retenidos, común a todos los bloques del evento."""
     return EpisodeSnapshot.create(
-        keys=torch.tensor([r.key for r in records], dtype=torch.float32, device="cpu").reshape(
-            size, 64
-        ),
-        values=torch.tensor([r.value for r in records], dtype=torch.float32, device="cpu").reshape(
-            size, 64
-        ),
-        labels=torch.tensor([r.label for r in records], dtype=torch.float64, device="cpu"),
-        ids=torch.tensor([r.id for r in records], dtype=torch.int64, device="cpu"),
-        decision_at=torch.tensor([r.decision_at for r in records], dtype=torch.int64, device="cpu"),
-        available_at=torch.tensor(
-            [r.available_at for r in records], dtype=torch.int64, device="cpu"
-        ),
-        maturity_at=torch.tensor([r.maturity_at for r in records], dtype=torch.int64, device="cpu"),
+        **_bank_columns(bank),
         cutoff=cutoff,
         codec_id=codec_id,
         context_id=context_id,

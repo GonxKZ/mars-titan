@@ -2,9 +2,12 @@
 
 import copy
 import os
+import subprocess
+import sys
 
 import numpy as np
 import pytest
+import torch
 
 import mars_titan.memory.episodic_codec as codec_module
 from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
@@ -448,6 +451,109 @@ def test_native_kernel_matches_the_declared_order_on_any_platform(native):
         transposed = random.normal(size=(width, outputs))
         actual = native.project_codec_block(block, transposed)
         assert_same_bits(actual, codec_module._declared_order(block, transposed))
+
+
+def test_native_projection_bits_do_not_depend_on_the_threads(native):
+    if not hasattr(native, "codec_projection_threads"):
+        pytest.skip("El enlace nativo es anterior al reparto de la proyección en hilos")
+    random = np.random.default_rng(93)
+    previous = torch.get_num_threads()
+    try:
+        # Desde 2^21 productos la llamada reparte los grupos en el pool inter-op de ATen, por
+        # paneles (32 filas o más) o leyendo la transpuesta. 32 · 512 · 127 se queda justo debajo.
+        for rows, width, parallel in (
+            (64, 512, True),
+            (33, 512, True),
+            (31, 600, True),
+            (17, 1000, True),
+            (32, 512, False),
+            (2, 512, False),
+            (40, 5, False),
+        ):
+            block = random.normal(size=(rows, width)) * np.ldexp(1.0, random.integers(-60, 60))
+            transposed = random.normal(size=(width, 127))
+            expected = codec_module._declared_order(block, transposed)
+            for threads in (1, 2, 3, 4):
+                torch.set_num_threads(threads)
+                used = native.codec_projection_threads(rows, width, 127)
+                assert used == (threads if parallel else 1)
+                assert_same_bits(native.project_codec_block(block, transposed), expected)
+    finally:
+        torch.set_num_threads(previous)
+
+
+# Proyecta un bloque con dos hilos de ATen en un proceso nuevo y dice si se llegó a usar el
+# pool inter-op: después de usarlo, torch ya no deja fijar sus hilos.
+POOL_PROBE = """
+import sys
+import numpy as np
+import torch
+from mars_titan.memory.native_backend import load_native
+
+native = load_native(sys.argv[1])
+torch.set_num_threads(2)
+rows, width = int(sys.argv[2]), int(sys.argv[3])
+random = np.random.default_rng(5)
+native.project_codec_block(random.normal(size=(rows, width)), random.normal(size=(width, 127)))
+try:
+    torch.set_num_interop_threads(1)
+except RuntimeError:
+    print("pool")
+else:
+    print("sin pool")
+"""
+
+# Usa el pool en el padre y proyecta en un hijo de fork, que hereda el pool sin sus hilos. El
+# hijo debe calcular en un hilo y dar los mismos bits. La alarma evita un hijo colgado.
+FORK_PROBE = """
+import os
+import signal
+import sys
+import warnings
+
+import numpy as np
+import torch
+from mars_titan.memory.native_backend import load_native
+
+warnings.simplefilter("ignore", DeprecationWarning)
+native = load_native(sys.argv[1])
+torch.set_num_threads(2)
+random = np.random.default_rng(7)
+block, weights = random.normal(size=(64, 512)), random.normal(size=(512, 127))
+assert native.codec_projection_threads(64, 512, 127) == 2
+expected = native.project_codec_block(block, weights).view(np.uint64)
+child = os.fork()
+if child == 0:
+    signal.alarm(60)
+    alone = native.codec_projection_threads(64, 512, 127) == 1
+    same = np.array_equal(native.project_codec_block(block, weights).view(np.uint64), expected)
+    os._exit(0 if alone and same else 1)
+_, status = os.waitpid(child, 0)
+print(os.waitstatus_to_exitcode(status))
+"""
+
+
+def run_probe(script, *args):
+    return subprocess.run(
+        [sys.executable, "-c", script, os.environ["MARS_TITAN_EPISODIC_NATIVE"], *args],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=True,
+    ).stdout.strip()
+
+
+@pytest.mark.parametrize("rows,width,expected", [(64, 512, "pool"), (32, 512, "sin pool")])
+def test_native_projection_uses_the_inter_op_pool_from_its_threshold(native, rows, width, expected):
+    if not hasattr(native, "codec_projection_threads"):
+        pytest.skip("El enlace nativo es anterior al reparto de la proyección en hilos")
+    assert run_probe(POOL_PROBE, str(rows), str(width)) == expected
+
+
+def test_native_projection_uses_one_thread_after_fork(native):
+    if not hasattr(native, "codec_projection_threads"):
+        pytest.skip("El enlace nativo es anterior al reparto de la proyección en hilos")
+    assert run_probe(FORK_PROBE) == "0"
 
 
 @pytest.mark.parametrize("size,absent,scale", [(1, True, 1.0), (17, True, 1.0), (5, False, 1e30)])

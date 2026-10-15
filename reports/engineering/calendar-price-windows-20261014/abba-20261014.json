@@ -1,0 +1,195 @@
+{
+ "reference": "develop 06e69db6",
+ "timing_only": true,
+ "cases": {
+  "cn-eval-start": {
+   "view": "CN/fold-012",
+   "phase": "evaluation",
+   "cursor": 0,
+   "events": 400,
+   "rows": 323221,
+   "rounds": [
+    {
+     "round": 1,
+     "tree": "A",
+     "read_seconds": 93.34,
+     "steady_rows_per_s": 3561,
+     "rows_per_s": 3463,
+     "peak_rss_mib": 1908,
+     "loadavg": [
+      2.48,
+      2.82,
+      3.49
+     ]
+    },
+    {
+     "round": 2,
+     "tree": "B",
+     "read_seconds": 24.97,
+     "steady_rows_per_s": 14912,
+     "rows_per_s": 12944,
+     "peak_rss_mib": 1788,
+     "loadavg": [
+      2.55,
+      2.81,
+      3.46
+     ]
+    },
+    {
+     "round": 3,
+     "tree": "B",
+     "read_seconds": 25.1,
+     "steady_rows_per_s": 14306,
+     "rows_per_s": 12878,
+     "peak_rss_mib": 1791,
+     "loadavg": [
+      2.53,
+      2.79,
+      3.43
+     ]
+    },
+    {
+     "round": 4,
+     "tree": "A",
+     "read_seconds": 90.72,
+     "steady_rows_per_s": 3665,
+     "rows_per_s": 3563,
+     "peak_rss_mib": 1894,
+     "loadavg": [
+      2.49,
+      2.72,
+      3.34
+     ]
+    }
+   ],
+   "worst_pair_speedup": 3.9,
+   "best_pair_speedup": 4.19
+  },
+  "cn-train-mid": {
+   "view": "CN/fold-012",
+   "phase": "train",
+   "cursor": 1942,
+   "events": 600,
+   "rows": 403560,
+   "rounds": [
+    {
+     "round": 1,
+     "tree": "A",
+     "read_seconds": 117.02,
+     "steady_rows_per_s": 3829,
+     "rows_per_s": 3449,
+     "peak_rss_mib": 1824,
+     "loadavg": [
+      2.63,
+      2.49,
+      3.63
+     ]
+    },
+    {
+     "round": 2,
+     "tree": "B",
+     "read_seconds": 27.94,
+     "steady_rows_per_s": 21015,
+     "rows_per_s": 14444,
+     "peak_rss_mib": 1692,
+     "loadavg": [
+      3.1,
+      2.63,
+      3.63
+     ]
+    },
+    {
+     "round": 3,
+     "tree": "B",
+     "read_seconds": 27.75,
+     "steady_rows_per_s": 21065,
+     "rows_per_s": 14543,
+     "peak_rss_mib": 1667,
+     "loadavg": [
+      3.4,
+      2.76,
+      3.64
+     ]
+    },
+    {
+     "round": 4,
+     "tree": "A",
+     "read_seconds": 116.13,
+     "steady_rows_per_s": 3797,
+     "rows_per_s": 3475,
+     "peak_rss_mib": 1809,
+     "loadavg": [
+      3.28,
+      2.95,
+      3.6
+     ]
+    }
+   ],
+   "worst_pair_speedup": 5.49,
+   "best_pair_speedup": 5.55
+  },
+  "uscn-train-mid": {
+   "view": "US+CN/fold-018",
+   "phase": "train",
+   "cursor": 4709,
+   "events": 300,
+   "rows": 501810,
+   "rounds": [
+    {
+     "round": 1,
+     "tree": "A",
+     "read_seconds": 205.94,
+     "steady_rows_per_s": 3592,
+     "rows_per_s": 2437,
+     "peak_rss_mib": 5311,
+     "loadavg": [
+      2.44,
+      2.84,
+      3.27
+     ]
+    },
+    {
+     "round": 2,
+     "tree": "B",
+     "read_seconds": 92.04,
+     "steady_rows_per_s": 15671,
+     "rows_per_s": 5452,
+     "peak_rss_mib": 5133,
+     "loadavg": [
+      3.09,
+      3.08,
+      3.31
+     ]
+    },
+    {
+     "round": 3,
+     "tree": "B",
+     "read_seconds": 89.23,
+     "steady_rows_per_s": 15931,
+     "rows_per_s": 5624,
+     "peak_rss_mib": 5120,
+     "loadavg": [
+      2.93,
+      3.13,
+      3.31
+     ]
+    },
+    {
+     "round": 4,
+     "tree": "A",
+     "read_seconds": 206.89,
+     "steady_rows_per_s": 3581,
+     "rows_per_s": 2425,
+     "peak_rss_mib": 5298,
+     "loadavg": [
+      1.85,
+      2.6,
+      3.06
+     ]
+    }
+   ],
+   "worst_pair_speedup": 4.36,
+   "best_pair_speedup": 4.45
+  }
+ }
+}
