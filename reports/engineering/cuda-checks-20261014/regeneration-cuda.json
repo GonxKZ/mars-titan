@@ -1,0 +1,58 @@
+{
+ "device": "cuda:0",
+ "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+ "torch": "2.14.0+cu130",
+ "cuda": "13.0",
+ "cudnn": 92400,
+ "numerics": {
+  "matmul_allow_tf32": false,
+  "cudnn_allow_tf32": false,
+  "float32_matmul_precision": "highest"
+ },
+ "cublas_workspace": ":4096:8",
+ "results": {
+  "titans_mac": {
+   "validation": {
+    "identical": true,
+    "same_file": true
+   },
+   "calibration": {
+    "identical": true,
+    "same_file": true
+   },
+   "evaluation": {
+    "identical": true,
+    "same_file": true
+   }
+  },
+  "mars_titan": {
+   "validation": {
+    "identical": true,
+    "same_file": true
+   },
+   "calibration": {
+    "identical": true,
+    "same_file": true
+   },
+   "evaluation": {
+    "identical": true,
+    "same_file": true
+   }
+  },
+  "episodic_gru": {
+   "validation": {
+    "identical": true,
+    "same_file": true
+   },
+   "calibration": {
+    "identical": true,
+    "same_file": true
+   },
+   "evaluation": {
+    "identical": true,
+    "same_file": true
+   }
+  }
+ },
+ "optimizer_steps": 0
+}
