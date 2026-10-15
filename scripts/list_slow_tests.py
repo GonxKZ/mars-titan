@@ -14,10 +14,16 @@ La salida sustituye a `tests/slow_tests.txt`, que `tests/conftest.py` lee para a
 `slow`. Los tiempos dependen del equipo y de la carga, así que el archivo se regenera con una
 ejecución completa y se revisa el diff antes de publicarlo.
 
+Un informe de `make test-fast` no mide las funciones que ya están en la lista, porque esa
+selección las excluye. Con `--previous` se conservan las de una lista anterior y se añaden las
+nuevas que alcanzan el umbral, sin recorrer la suite completa.
+
 Uso:
     uv run pytest --junitxml=suite.xml ...
     uv run python scripts/list_slow_tests.py --threshold 1 --shared 10 suite.xml \
         > tests/slow_tests.txt
+    uv run python scripts/list_slow_tests.py --previous tests/slow_tests.txt fast.xml \
+        > nueva.txt
 """
 
 from __future__ import annotations
@@ -107,6 +113,12 @@ def slow_functions(seconds: dict[str, float], threshold: float, shared: float, r
     return slow
 
 
+def previous_functions(path: Path) -> set[str]:
+    """Funciones de una lista anterior, sin la cabecera ni las líneas vacías."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return {line.strip() for line in lines if line.strip() and not line.startswith("#")}
+
+
 def render(slow: set[str], threshold: float, shared: float) -> str:
     header = [
         "# Funciones de prueba lentas: la suma de sus casos alcanza "
@@ -128,10 +140,17 @@ def main(argv: list[str] | None = None) -> int:
         help="segundos desde los que una función marca a las que comparten su fixture de módulo",
     )
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="raíz del repositorio")
+    parser.add_argument(
+        "--previous",
+        type=Path,
+        help="lista anterior cuyas funciones se conservan, para informes que no las miden",
+    )
     args = parser.parse_args(argv)
     if args.threshold <= 0 or args.shared < args.threshold:
         parser.error("El umbral debe ser positivo y --shared no puede ser menor que él")
     slow = slow_functions(totals(args.reports), args.threshold, args.shared, args.root)
+    if args.previous is not None:
+        slow |= previous_functions(args.previous)
     sys.stdout.write(render(slow, args.threshold, args.shared))
     return 0
 
