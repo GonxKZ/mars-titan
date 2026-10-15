@@ -124,3 +124,23 @@ def test_threshold_must_be_positive(tmp_path, capsys):
         slow.main(["--threshold", "2", "--shared", "1", str(report)])
     assert slow.main(["--threshold", "2.5", "--root", str(tmp_path), str(report)]) == 0
     assert capsys.readouterr().out.endswith("tests/data/test_a.py::test_x\n")
+
+
+def test_previous_list_keeps_functions_the_fast_report_does_not_measure(tmp_path, capsys):
+    # Un informe de test-fast no incluye las funciones ya marcadas, así que sin --previous
+    # desaparecerían de la lista.
+    report = junit(
+        tmp_path / "fast.xml",
+        [("tests.data.test_a", "test_new", "1.5"), ("tests.data.test_a", "test_quick", "0.2")],
+    )
+    previous = tmp_path / "slow_tests.txt"
+    previous.write_text(
+        "# Cabecera de la lista anterior\n\ntests/data/test_b.py::test_old\n", encoding="utf-8"
+    )
+    arguments = ["--root", str(tmp_path), str(report)]
+    assert slow.main(arguments) == 0
+    alone = [line for line in capsys.readouterr().out.splitlines() if not line.startswith("#")]
+    assert alone == ["tests/data/test_a.py::test_new"]
+    assert slow.main(["--previous", str(previous), *arguments]) == 0
+    kept = [line for line in capsys.readouterr().out.splitlines() if not line.startswith("#")]
+    assert kept == ["tests/data/test_a.py::test_new", "tests/data/test_b.py::test_old"]
