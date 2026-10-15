@@ -32,7 +32,7 @@ En los datos reales, [`label_passes.py`](label_passes.py) guarda una huella SHA-
 
 ## Tiempo y memoria
 
-Todas las medidas se tomaron el 15 de octubre de 2026 en rondas A B B A, con A = `develop` en f164b4fd (ya con #622) y B = la rama en f31ee5ea. Después, la rama se rebasó sobre 0dfc5e2d sin cambiar ningún parche, y f31ee5ea corresponde a 8f9a703e. El commit siguiente, b163b2da, solo añade una prueba. Cada ronda se ejecutó en su propio trabajo `memslot heavy`, con `OMP_NUM_THREADS=2` y sin GPU, en el Ryzen 9 8945HS con el perfil de ahorro. El equipo tenía otras cargas y la carga media de cada ronda queda en [`abba-20261015.json`](abba-20261015.json), junto con todos los tiempos, picos y huellas.
+Todas las medidas se tomaron el 15 de octubre de 2026 en rondas A B B A, con A = `develop` en f164b4fd (ya con #622) y B = la rama en f31ee5ea. Después, la rama se rebasó sobre cd6b2c56 sin cambiar ningún parche, y f31ee5ea corresponde a a6cc4c94. El commit siguiente, 6f2d5286, solo añade una prueba. Cada ronda se ejecutó en su propio trabajo `memslot heavy`, con `OMP_NUM_THREADS=2` y sin GPU, en el Ryzen 9 8945HS con el perfil de ahorro. El equipo tenía otras cargas y la carga media de cada ronda queda en [`abba-20261015.json`](abba-20261015.json), junto con todos los tiempos, picos y huellas.
 
 | Pasada de etiquetas (`label_passes.py`) | A (rondas 1 y 4) | B (rondas 2 y 3) |
 | --- | ---: | ---: |
@@ -76,6 +76,8 @@ Leer cada archivo grupo a grupo con `read_row_group`, en vez de `iter_batches`, 
 | `test_dictionary_codes_rebuild_the_column` | Los códigos reconstruyen la columna, también con fragmentos, texto largo y un diccionario con valores repetidos |
 
 [`mutations.py`](mutations.py) aplica 19 mutaciones dirigidas sobre una copia del árbol ([`mutations.json`](mutations.json)). Las 19 hacen fallar alguna prueba. La tabla de `mutations.json` recoge, para cada una, la primera prueba que falla.
+
+La batería completa pasa en ede86385, el mismo parche que 6f2d5286, por carpetas en trabajos `memslot suite` de 6 GiB, sin GPU y con el enlace episódico de `develop` en df7bb523: 10.829 pruebas aprobadas, 1.053 omitidas y ningún fallo. `tests/memory` (703) se ejecutó aparte en el mismo árbol y `tests/training` (2.534) tardó 2 h 2 min. Las omisiones son las que esperan CUDA (190), los ejecutables y la biblioteca de simulación no declarados en esta batería (328) y el bloqueo de aprendizaje. Tras el último rebase, las 32 pruebas de `tests/training/test_label_validation.py` vuelven a pasar.
 
 ## Reproducción
 
