@@ -51,6 +51,8 @@ Las compilaciones en frío de esta tanda no se comparan entre sí: la de la base
 
 Con la caché compartida, montar un worktree nuevo para una rama pasa de unos dos minutos a unos diez segundos, y editar una fuente nativa deja de relanzar 55 compilaciones.
 
+La rama se midió en 085a01ec. Después se rebasó sobre 0dfc5e2d sin cambiar ningún parche, y 085a01ec corresponde a 80f778d6. En el árbol rebasado, `native-ppo-release` compila sus 138 pasos con la identidad en una sola orden, CTest pasa sus 32 pruebas sin las que aplican pasos de optimizador y pasan las 155 pruebas de Python de `tests/native`, de la herramienta de variantes y de los ejecutores nativos que registran la identidad.
+
 ## Tamaños (#486)
 
 El 10 de octubre se midieron los tiempos y las huellas de base, LTO, PGO y LTO con PGO en el recorrido de la etapa RL ([informe](../native-build-variants-20261010/README.md)), y no se adoptó ninguna variante. Faltaba el tamaño de las salidas. `native_build_variants.py` registra ahora `linked_bytes`, el tamaño de cada ejecutable y biblioteca enlazados. Las cuatro variantes se compilaron en el mismo árbol, 52802c61 con ese registro.
