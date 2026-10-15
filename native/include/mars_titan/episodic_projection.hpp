@@ -15,8 +15,8 @@ inline constexpr std::size_t projection_lanes = 8;
 // más de lo que ahorra (informe de #628).
 inline constexpr std::size_t projection_packed_rows = 32;
 // Productos (filas · anchura · salidas) a partir de los que compensa repartir una llamada entre
-// los hilos del pool de ATen (informe de #628).
-inline constexpr std::size_t projection_parallel_work = std::size_t{1} << 17;
+// hilos del pool inter-op de ATen, que cuesta unos 100 µs por llamada (informe de #628).
+inline constexpr std::size_t projection_parallel_work = std::size_t{1} << 21;
 
 // Versiones del núcleo por conjunto de instrucciones. Todas hacen las mismas operaciones en el
 // mismo orden, así que dan los mismos bits. Fuera de x86-64 con GCC o Clang solo existe la
@@ -67,7 +67,7 @@ void project_block(std::span<const double> block, std::size_t rows, std::size_t 
 // Las salidas de los grupos [first, last), con el recorrido que corresponde a las filas y los
 // bits de project_block. Cada llamada usa su propio panel y escribe solo las columnas de sus
 // grupos, así que llamadas con grupos disjuntos pueden ejecutarse a la vez en hilos distintos
-// sobre la misma salida. El enlace de Python reparte así los grupos en el pool de hilos de
+// sobre la misma salida. El enlace de Python reparte así los grupos en el pool inter-op de
 // ATen. Lanza std::invalid_argument con las mismas formas que project_block o si los grupos no
 // existen.
 void project_block_groups(std::span<const double> block, std::size_t rows, std::size_t width,
