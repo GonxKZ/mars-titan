@@ -26,6 +26,7 @@ using mars_titan::episodic::projection_packed_rows;
 using mars_titan::episodic::projection_parallel_work;
 using mars_titan::episodic::projection_threads;
 using mars_titan::episodic::projection_isa_name;
+using mars_titan::episodic::projection_lanes;
 using mars_titan::episodic::ProjectionIsa;
 
 // Orden de einsum: bloques de ocho entradas recorridos del par 6-7 al par 0-1.
@@ -295,6 +296,37 @@ void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
     }
 }
 
+// Un tramo escribe solo las columnas de sus grupos, con los dos recorridos: el primero, uno
+// intermedio y el último, que tiene siete salidas.
+void groups_write_only_their_columns(ProjectionIsa isa) {
+    std::mt19937_64 generator(order_seed + 2);
+    constexpr double untouched = 12345.0;
+    for (const std::size_t rows : {projection_packed_rows - 1, projection_packed_rows + 5}) {
+        const Shape shape{rows, independent_width, codec_outputs};
+        const auto block = values(generator, shape.rows * shape.width, false);
+        const auto transposed = values(generator, shape.width * shape.outputs, false);
+        const auto whole = projected(block, transposed, shape, isa);
+        const std::size_t groups = projection_groups(shape.outputs);
+        for (const std::size_t group : {std::size_t{0}, groups / 2, groups - 1}) {
+            std::vector<double> out(shape.rows * shape.outputs, untouched);
+            project_block_groups(block, shape.rows, shape.width, transposed, shape.outputs, out,
+                                 isa, group, group + 1);
+            const std::size_t begin = group * projection_lanes;
+            const std::size_t end = std::min(begin + projection_lanes, shape.outputs);
+            for (std::size_t row = 0; row < shape.rows; ++row) {
+                for (std::size_t column = 0; column < shape.outputs; ++column) {
+                    const std::size_t index = row * shape.outputs + column;
+                    const bool inside = column >= begin && column < end;
+                    require(inside ? same_bits(std::span(out).subspan(index, 1),
+                                               std::span(whole).subspan(index, 1))
+                                   : out[index] == untouched,
+                            failure("Un tramo escribe fuera de sus columnas", isa));
+                }
+            }
+        }
+    }
+}
+
 // El enlace reparte una llamada solo si llega al trabajo mínimo, con pocas o muchas filas.
 void threads_need_enough_work() {
     constexpr std::size_t available = 4;
@@ -335,6 +367,7 @@ int main() {
             matches_the_declared_order_for_every_tile_and_remainder(isa);
             every_row_is_independent_of_its_neighbours(isa);
             concurrent_groups_match_the_whole_block(isa);
+            groups_write_only_their_columns(isa);
             std::cout << "Versión " << projection_isa_name(isa) << " comprobada\n";
         }
         inconsistent_shapes_are_rejected_before_writing();
