@@ -1,4 +1,5 @@
 #include "mars_titan/policy_command.hpp"
+#include "mars_titan/build_identity.hpp"
 
 #include <atomic>
 #include <charconv>
@@ -184,8 +185,8 @@ nlohmann::json policy_capabilities(const PolicyCommand& command) {
     return nlohmann::json{{"schema_version", 1},
                           {"binary", command.name},
                           {"capabilities", names},
-                          {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                          {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256}};
+                          {"native_source_sha256", build::native_source_sha256()},
+                          {"native_build_sha256", build::native_build_sha256()}};
 }
 
 int run_policy_command(int argc, char** argv, const PolicyCommand& command) {

@@ -1,4 +1,5 @@
 #include "mars_titan/financial_controls.hpp"
+#include "mars_titan/build_identity.hpp"
 
 #include <algorithm>
 #include <array>
@@ -254,8 +255,8 @@ Json run_financial_controls(const FinancialControlsOptions& options,
     Json report{{"schema_version", 1}, {"kind", "frozen_audit_financial_controls"},
                 {"domain", "synthetic"}, {"analysis_domain", "technical"}, {"split", "audit"},
                 {"final_test_opened", false}, {"learning", false}, {"device", "cpu"},
-                {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                {"native_version", MARS_TITAN_NATIVE_VERSION},
+                {"native_source_sha256", build::native_source_sha256()},
+                {"native_version", build::native_version()},
                 {"campaign_file_sha256", options.campaign_sha256},
                 {"freeze_file_sha256", options.freeze_sha256},
                 {"identity_file_sha256", options.identity_sha256},

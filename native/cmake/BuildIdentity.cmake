@@ -143,7 +143,9 @@ function(mars_titan_build_identity source_hash)
         list(APPEND build_definitions
             "$<$<CONFIG:${active_configuration}>:MARS_TITAN_NATIVE_BUILD_SHA256=\"${build_hash}\">")
     endforeach()
-    target_compile_definitions(mars_titan_financial PUBLIC
+    # Se añaden después de calcular la huella, como antes con la definición del objetivo.
+    set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/build_identity.cpp" APPEND PROPERTY
+        COMPILE_DEFINITIONS
         ${build_definitions}
         "MARS_TITAN_NATIVE_COMPILER_ID=\"${CMAKE_CXX_COMPILER_ID}\""
         "MARS_TITAN_NATIVE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\""
