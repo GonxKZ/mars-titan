@@ -1,0 +1,158 @@
+{
+ "shape": {
+  "retained": 1024,
+  "incoming": 4040,
+  "fixed": 1016,
+  "candidates": 16,
+  "dimensions": 64
+ },
+ "repetitions": 5,
+ "warmup_calls_per_variant": 1,
+ "measurements": [
+  {
+   "geometry": "isotropic",
+   "clients": 4048,
+   "fixed": 1016,
+   "candidates": 16,
+   "same_fields_and_objective_bits": {
+    "bounded_and_reused": true,
+    "bounded_reused_native": true
+   },
+   "applied": {
+    "bounded_and_reused": {
+     "reused_distances": true,
+     "bounded_background": true,
+     "native_background": false,
+     "native_sums": false
+    },
+    "bounded_reused_native": {
+     "reused_distances": true,
+     "bounded_background": true,
+     "native_background": true,
+     "native_sums": true
+    }
+   },
+   "swaps": 0,
+   "distance_pairs": 4922368,
+   "estimated_peak_bytes": {
+    "reference": 9983632,
+    "bounded_and_reused": 18499088,
+    "bounded_reused_native": 18499088
+   },
+   "seconds": {
+    "reference": [
+     8.460730254009832,
+     6.5331095150031615,
+     5.550345601019217,
+     8.182103706989437,
+     8.192660390981473
+    ],
+    "bounded_and_reused": [
+     0.41400011800578795,
+     0.3456347059982363,
+     0.3709558639966417,
+     0.38170646197977476,
+     0.45462516200495884
+    ],
+    "bounded_reused_native": [
+     0.21027256498928182,
+     0.22143818400218152,
+     0.2203110019909218,
+     0.21970670801238157,
+     0.2422595460084267
+    ]
+   },
+   "median_seconds": {
+    "reference": 8.182103706989437,
+    "bounded_and_reused": 0.38170646197977476,
+    "bounded_reused_native": 0.2203110019909218
+   },
+   "speedup": {
+    "bounded_and_reused": 21.435591277527227,
+    "bounded_reused_native": 37.13887927996711
+   }
+  },
+  {
+   "geometry": "clustered",
+   "clients": 4048,
+   "fixed": 1016,
+   "candidates": 16,
+   "same_fields_and_objective_bits": {
+    "bounded_and_reused": true,
+    "bounded_reused_native": true
+   },
+   "applied": {
+    "bounded_and_reused": {
+     "reused_distances": true,
+     "bounded_background": true,
+     "native_background": false,
+     "native_sums": false
+    },
+    "bounded_reused_native": {
+     "reused_distances": true,
+     "bounded_background": true,
+     "native_background": true,
+     "native_sums": true
+    }
+   },
+   "swaps": 0,
+   "distance_pairs": 4922368,
+   "estimated_peak_bytes": {
+    "reference": 9983632,
+    "bounded_and_reused": 18499088,
+    "bounded_reused_native": 18499088
+   },
+   "seconds": {
+    "reference": [
+     7.690595566993579,
+     7.802746772009414,
+     7.90179318599985,
+     7.955678336991696,
+     7.697518359986134
+    ],
+    "bounded_and_reused": [
+     0.35899131701444276,
+     0.433384403004311,
+     0.37090824800543487,
+     0.37175256400951184,
+     0.36121304298285395
+    ],
+    "bounded_reused_native": [
+     0.21696735301520675,
+     0.21549770300043747,
+     0.22369032399728894,
+     0.23467753699515015,
+     0.21857849997468293
+    ]
+   },
+   "median_seconds": {
+    "reference": 7.802746772009414,
+    "bounded_and_reused": 0.37090824800543487,
+    "bounded_reused_native": 0.21857849997468293
+   },
+   "speedup": {
+    "bounded_and_reused": 21.036865084475235,
+    "bounded_reused_native": 35.6976865195487
+   }
+  }
+ ],
+ "versions": {
+  "python": "3.12.14",
+  "numpy": "2.5.3"
+ },
+ "native": "rama d07964e8, 9f83cab6f0dd96baab673156f01548c9d280b1084ad4eb0b6cb564411d256190",
+ "threads": {
+  "OMP_NUM_THREADS": "2",
+  "MKL_NUM_THREADS": "2"
+ },
+ "load_average": [
+  8.62451171875,
+  9.55322265625,
+  11.77734375
+ ],
+ "limits": [
+  "Geometrías sintéticas. La poda de la cota depende de la geometría de las claves.",
+  "No incluye banco nativo, codec, snapshots ni modelo.",
+  "Otras aplicaciones siguieron activas y no se mide energía."
+ ]
+}
