@@ -12,9 +12,11 @@
 #include <vector>
 
 // Tiempo de cada versión del núcleo con las formas del codec episódico: 127 salidas y los seis
-// bloques de la vista de la campaña (precios 5 × 64, noticias, gráficos, fundamentales, macro y
-// presencia). Las versiones se alternan en cada repetición para repartir la deriva de la máquina
-// y la salida es una línea JSON por forma y versión.
+// bloques de la vista v3.1 de la campaña (precios 6 × 64, noticias, gráficos, fundamentales,
+// macro y presencia). Las versiones se alternan en cada repetición para repartir la deriva de
+// la máquina y la salida es una línea JSON por forma y versión. Las filas cubren los dos
+// recorridos del núcleo, directo por debajo de projection_packed_rows y por paneles desde ahí.
+// El reparto entre hilos lo hace el enlace con el pool de ATen y se mide desde Python.
 namespace {
 using mars_titan::episodic::available_projection_isas;
 using mars_titan::episodic::project_block;
@@ -22,9 +24,9 @@ using mars_titan::episodic::projection_isa_name;
 using mars_titan::episodic::ProjectionIsa;
 using Clock = std::chrono::steady_clock;
 
-constexpr std::array<std::size_t, 6> widths{320, 384, 512, 78, 420, 5};
+constexpr std::array<std::size_t, 6> widths{384, 384, 512, 78, 420, 5};
 constexpr std::size_t outputs = 127;
-constexpr std::array<std::size_t, 4> row_counts{1, 16, 128, 512};
+constexpr std::array<std::size_t, 8> row_counts{1, 16, 31, 32, 64, 128, 278, 512};
 constexpr std::size_t repetitions = 41;
 constexpr std::size_t decile = 10;
 constexpr std::size_t target_work = 4096; // Filas por medida, para que las pequeñas no queden

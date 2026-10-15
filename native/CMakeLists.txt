@@ -137,8 +137,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
     target_link_libraries(mars-titan-projection-benchmark PRIVATE mars_titan_episodic_projection)
     mars_titan_configure_target(mars-titan-projection-benchmark)
     if(BUILD_TESTING)
+        # La prueba lanza sus propios hilos para calcular grupos a la vez.
+        find_package(Threads REQUIRED)
         add_executable(episodic_projection_tests tests/episodic_projection_tests.cpp)
-        target_link_libraries(episodic_projection_tests PRIVATE mars_titan_episodic_projection)
+        target_link_libraries(episodic_projection_tests PRIVATE mars_titan_episodic_projection
+            Threads::Threads)
         mars_titan_configure_target(episodic_projection_tests)
         add_test(NAME episodic_projection COMMAND episodic_projection_tests)
         set_tests_properties(episodic_projection PROPERTIES TIMEOUT 120 LABELS "unit;memory")

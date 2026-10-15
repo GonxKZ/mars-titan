@@ -4,16 +4,23 @@
 #include "mars_titan/medoid_kernels.hpp"
 #include "mars_titan/simulation_files.hpp"
 
+#include <ATen/Parallel.h>
 #include <c10/util/ScopeExit.h>
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <pthread.h>
+
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
+#include <exception>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -243,6 +250,90 @@ void bind_memory(py::module_& module) {
 
 using Matrix = py::array_t<double, py::array::c_style>;
 
+// El pool inter-op de ATen solo se usa si se registró el aviso de fork y este proceso no es un
+// hijo de fork. Un hijo hereda el pool sin sus hilos y una tarea lanzada allí no terminaría.
+std::atomic<bool> inter_op_pool_usable{false};
+
+// Hilos de una proyección: los de ATen en este proceso, que siguen OMP_NUM_THREADS o
+// torch.set_num_threads, si la llamada es grande y el pool se puede usar, y uno si no. El
+// resultado no depende de los hilos.
+std::size_t projection_threads(std::size_t rows, std::size_t width, std::size_t outputs) {
+    if (!inter_op_pool_usable.load(std::memory_order_relaxed)) {
+        return 1;
+    }
+    return mars_titan::episodic::projection_threads(
+        rows, width, outputs, static_cast<std::size_t>(std::max(at::get_num_threads(), 1)));
+}
+
+// Tareas de una proyección repartida que siguen en el pool. Vive en el montón y cada tarea guarda
+// una referencia, así que la última puede avisar aunque quien llama ya haya vuelto.
+struct PendingRanges {
+    std::mutex mutex;
+    std::condition_variable done;
+    std::size_t left = 0;
+    std::exception_ptr failure;
+};
+
+// Con varios hilos, quien llama calcula el primer tramo de grupos de ocho salidas y una tarea
+// del pool inter-op de ATen (at::launch) cada uno de los demás. Cada tramo escribe solo sus
+// columnas. at::parallel_for no sirve aquí porque se expande en esta unidad, y sin OpenMP al
+// compilarla calcula todo en un hilo. Clang no genera OpenMP para el libgomp que trae torch. El
+// pool persiste entre llamadas, así que no se crean hilos en cada una.
+void project(std::span<const double> source, std::size_t rows, std::size_t width,
+             std::span<const double> weights, std::size_t outputs, std::span<double> target,
+             std::size_t threads) {
+    namespace episodic = mars_titan::episodic;
+    const auto isa = episodic::default_projection_isa();
+    const std::size_t groups = episodic::projection_groups(outputs);
+    const std::size_t parts = std::min(threads, groups);
+    if (parts <= 1) {
+        episodic::project_block(source, rows, width, weights, outputs, target, isa);
+        return;
+    }
+    const std::size_t chunk = (groups + parts - 1) / parts;
+    const auto range = [&](std::size_t first) noexcept -> std::exception_ptr {
+        try {
+            episodic::project_block_groups(source, rows, width, weights, outputs, target, isa,
+                                           first, std::min(groups, first + chunk));
+            return nullptr;
+        } catch (...) {
+            return std::current_exception();
+        }
+    };
+    auto pending = std::make_shared<PendingRanges>();
+    pending->left = (groups + chunk - 1) / chunk - 1;
+    for (std::size_t first = chunk; first < groups; first += chunk) {
+        // Cada tramo se calcula una sola vez, en el pool o aquí si el pool no lo admite.
+        const auto task = [pending, &range, first] {
+            auto failure = range(first);
+            const std::lock_guard lock(pending->mutex);
+            if (failure && !pending->failure) {
+                pending->failure = std::move(failure);
+            }
+            if (--pending->left == 0) {
+                pending->done.notify_one();
+            }
+        };
+        try {
+            at::launch(task);
+        } catch (...) {
+            task();
+        }
+    }
+    auto failure = range(0);
+    // Las tareas leen las entradas y escriben la salida, así que se espera a todas antes de
+    // volver o de lanzar un error.
+    std::unique_lock lock(pending->mutex);
+    pending->done.wait(lock, [&] { return pending->left == 0; });
+    if (!failure) {
+        failure = pending->failure;
+    }
+    lock.unlock();
+    if (failure) {
+        std::rethrow_exception(failure);
+    }
+}
+
 // Proyección del codec episódico. Solo acepta float64 contiguo, sin conversiones implícitas,
 // y calcula sin el GIL porque la salida es nueva y las entradas son inmutables en el codec.
 void bind_projection(py::module_& module) {
@@ -260,13 +351,17 @@ void bind_projection(py::module_& module) {
             const std::span<const double> source(block.data(), rows * width);
             const std::span<const double> weights(transposed.data(), width * outputs);
             const std::span<double> target(out.mutable_data(), rows * outputs);
+            const std::size_t threads = projection_threads(rows, width, outputs);
             {
                 const py::gil_scoped_release released;
-                mars_titan::episodic::project_block(source, rows, width, weights, outputs, target);
+                project(source, rows, width, weights, outputs, target, threads);
             }
             return out;
         },
         py::arg("block").noconvert(), py::arg("transposed").noconvert());
+    // Hilos que usaría project_codec_block con esas formas, para registrarlos en las medidas.
+    module.def("codec_projection_threads", &projection_threads, py::arg("rows"),
+               py::arg("width"), py::arg("outputs"));
     // Versión del núcleo que usa project_codec_block en este procesador, para registrarla en las
     // medidas. Todas dan los mismos bits.
     module.attr("codec_projection_isa") = std::string(
@@ -489,6 +584,9 @@ void bind_candidate(py::module_& module);
 
 PYBIND11_MODULE(_episodic_native, module) {
     module.doc() = "Banco CPU y ejecución de cohortes con una sola publicación confirmada";
+    // Si no se puede registrar el aviso, la proyección no usa el pool inter-op.
+    inter_op_pool_usable.store(
+        pthread_atfork(nullptr, nullptr, [] { inter_op_pool_usable.store(false); }) == 0);
     module.attr("abi_version") = 1;
     module.attr("torch_version") = MARS_TITAN_EPISODIC_TORCH_VERSION;
 #ifdef MARS_TITAN_CANDIDATE_PYTHON
