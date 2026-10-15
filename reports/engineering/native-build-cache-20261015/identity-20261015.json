@@ -1,0 +1,3650 @@
+{
+ "after-edit": {
+  "kind": "native_build_variant",
+  "label": "after-edit",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 3.652967530011665,
+  "build_seconds": 11.017682482983219,
+  "children_peak_rss_kib": 674488,
+  "edges": 36,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 1,
+   "cache_miss": 1,
+   "files_in_cache": 165,
+   "cache_size_kibibyte": 12424,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "e3a82da003141fb7cbf7efcc65282e6fa4c70d8a22cd1da95a884861d7f55056",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "426bb51c100ade104a72d85a5de6658dc75b640293671a093c7a2888756d19c8",
+   "decision_trace_tests": "47534328e5d2aa82519cee1a006675e7901489085aee3a7c2731239695ae171d",
+   "episodic_memory_tests": "4e48aaaef9696c4ad903b86bc517ed8b09bffb47fcdd84d5d2e5876cadceba30",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "5f24fb1937623b202aface1c50e4b8c798ee4861d8183f9485aa932860df86db",
+   "financial_session_tests": "0df313129dd6cec7234584e337b59d4272ed15db874eb1dee319537e95a16323",
+   "group_waves_tests": "bd5b62b08db418be42c57d5f0a2dff8bcebfaaa8b44681ff8becb498b0755cb6",
+   "klpo_actor_tests": "5e8cd491ac245ad7395bfe17a85a51addb7838158ec133dbfb39e277101b27eb",
+   "klpo_collection_tests": "769ab3a2a7b677cc6b5ec57c2c75ad5da001624aefc45d08b6ac86b283d778cd",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "bd71a50d27891e93c359561bd3050d701df705cceb34f63dd5f823e10165ee9b",
+   "klpo_policy_tests": "c665f44f235c44f50a54d0e13db20917d2312d48011678e2483b070ed0435548",
+   "klpo_reference_tests": "36d740ff83daeded88a27467f6ec489b877f3ef152ce02967d6312aabf4871ca",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "dc971e10404f7cd4fd3eab4c91356701209cc66ee4575a98c15ffb6af7faa5e2",
+   "learning_traces_tests": "a081a94b44f49e04f9c987487939e5c3b2b2ee4599102bcd310c91e593ad1996",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "36bdf94e9295e813f097cef73a98fdb1da879c2d5b1f4ad81bf1abfc633fd845",
+   "mars-titan-batch-benchmark": "a27d2c15c247192881d5f2076a65088eeabc8eb0bf645abe5582aec0f5e4a52d",
+   "mars-titan-klpo": "b0b31bc928899239dcfa2c5da8a9a10b4fa14d961b3ecaeb366ddbbd5361fc76",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "46a27ad582c9a63b1964b65bc84063fba6cc45cdd2198b0867ac8fea5899b55a",
+   "mars-titan-policy-benchmark": "df58ce6ed5da595957b2338b6d6ef41fb45a542830ae29bfe345ce3511a0eb0c",
+   "mars-titan-ppo": "68e90bb2d98ef833901fc78c368c6ca657c9e532b9c224015d8707c61b0c1672",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "c18a2f342dba1e8f0c4dff25c94e81678aa117c00722ea068a1d1f94228c41e3",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "13d31f23cf83c471c3bb0e0ad503550c11afd726dd6958a1132f3994f243f832",
+   "policy_evaluation_only_tests": "adce50915d5dba879d9bc0f386dfccb9e4a231eeef7e11541d62b0a70b5d7e95",
+   "ppo_checkpoint_tests": "dbff06687f2dfa840e3a8ba9d3f894e6414659514481f4ac619e4ea1d8b17ab1",
+   "ppo_collection_tests": "3f01e173c96c7ab930017b50b4763d1ad34d9cedddc409b61b170d0e5d96714c",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "5a11784400b642fc4f09dd0d34bb7504ad1be3e044a3eb7d80ceb72efb793ae3",
+   "ppo_gru_packing_tests": "5e16e8a98d96a0bbecea38174954b09b339ba1bc263649437f8398c0dbee5720",
+   "ppo_inputs_tests": "f9eb7444ef8310741a37f4b570c8498491f78a4309911fb900f67f4681fd5237",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "32c2bfc821362b146d823cc874d4235c1ad6bb0ec8568bfe5a5b9c74444060cf",
+   "ppo_training_tests": "67093fe5d7869ea900e0c2b7d8fe43d7b883fdc966d5840a2b634982532dc31c",
+   "ppo_variant_objective_tests": "5d7deb661e80e9c174aac6742cbd1b7d4b766983e76b4bdec447b6e91ad111fa",
+   "ppo_variant_state_tests": "9366ed3a42eebd0c235016d7682e32934541533655cd57fec73c8b03a792bab5",
+   "qr_dqn_policy_tests": "2eb29bef5517e7db270aaed4f309225955619eff2b7680f3a6744e92ef720238",
+   "rl_variety_tests": "54b46d398d6402e4e811c823ee5506e2f8ce270f2d7a4a4a8230a930aef9958c",
+   "simulation_tests": "97226daaec3bf60cf9a0cc70ad4abd310534fd889dc49471516e4c746393e05f",
+   "threaded_simulation": "eb209d8c626b8ea220e6feaac164e0be42cf3c6ff6da4435bedbf611f75ae126"
+  },
+  "started": {
+   "date": "2026-10-15T15:08:12+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.83447265625,
+    7.9541015625,
+    7.083984375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16818925568
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  },
+  "environment": {
+   "date": "2026-10-15T15:08:27+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.427734375,
+    8.00537109375,
+    7.11572265625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16114880512
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  }
+ },
+ "after-r1-cold": {
+  "kind": "native_build_variant",
+  "label": "after-r1-cold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.308736931998283,
+  "build_seconds": 352.4748792969913,
+  "children_peak_rss_kib": 703140,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 80,
+   "files_in_cache": 160,
+   "cache_size_kibibyte": 12224,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "426bb51c100ade104a72d85a5de6658dc75b640293671a093c7a2888756d19c8",
+   "decision_trace_tests": "8d243b725a2e5bbc69c1fd3637482951a9148905e0e8a4958f2c855d647ac81c",
+   "episodic_memory_tests": "4e48aaaef9696c4ad903b86bc517ed8b09bffb47fcdd84d5d2e5876cadceba30",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "5f24fb1937623b202aface1c50e4b8c798ee4861d8183f9485aa932860df86db",
+   "financial_session_tests": "0df313129dd6cec7234584e337b59d4272ed15db874eb1dee319537e95a16323",
+   "group_waves_tests": "28ac59eee4edb834d98c65bca0f48c19345e63aa5ff4ce93ea3848f8dd954409",
+   "klpo_actor_tests": "717f8df14ff8f439649d546bcf0c07ff6bc196f05e0aec4d0ab97cca586baa2f",
+   "klpo_collection_tests": "2b8ebee81920f9696ff6cdaef384af06cc930b199625c9b34ec506e24f88ec88",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "cc7be56faeceff055125ebe0717c6e40f42429480e14f5d1be749e374cf1516a",
+   "klpo_policy_tests": "d9520d58cb3a611c75ab47ce85b1b2615868c8470db867d5b51fe4bc476e1fca",
+   "klpo_reference_tests": "8e25b2528fbb71b7a4d8c096fc6541e4277350c24be420098da35494f4a01231",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "dc971e10404f7cd4fd3eab4c91356701209cc66ee4575a98c15ffb6af7faa5e2",
+   "learning_traces_tests": "f4029ddab6e91e5f66037afa66a1cbf4f92841d7b71fd10d284d6b93d2697fe1",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "36bdf94e9295e813f097cef73a98fdb1da879c2d5b1f4ad81bf1abfc633fd845",
+   "mars-titan-batch-benchmark": "73509145e8a8a63be6bb04a39fd4314e40429273dd23ac9b318dfaee6d686bb9",
+   "mars-titan-klpo": "2f16a73a6713c51af737aecf7f7b2603e5edd9ab6abcb35cec9d4b0f3a1e5fef",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "46a27ad582c9a63b1964b65bc84063fba6cc45cdd2198b0867ac8fea5899b55a",
+   "mars-titan-policy-benchmark": "dda78966f8aecd1fcf23da3c4ef9a5945588f0afc14ad5b1462cab2d4a07fd25",
+   "mars-titan-ppo": "7b9265c377679c0de0e83380d3c1ca0cd826116dc636e78a9d56a90f1a7f1e42",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "c6a2f1623d61c994faba221b511afcb0ad72b359f40b633973e5b3eeb1b633ad",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "13d31f23cf83c471c3bb0e0ad503550c11afd726dd6958a1132f3994f243f832",
+   "policy_evaluation_only_tests": "65dc9fb60c8b5d624298f92e144f1cd758e479f5ae781ce2df2b8620e72b24b4",
+   "ppo_checkpoint_tests": "cc44662b5321f2361eda5098fab94504014a64ef426cb7dfa16e63c92f1ced6b",
+   "ppo_collection_tests": "5d9ad569779b5f51811a23c144bd2935304d042c225d9da43a00f824592244e3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "8cfaee8a1162afb451d1c7f0daeb88632abff0f0abb75155c1cc79afa4af64ab",
+   "ppo_gru_packing_tests": "9dd1436ec402e7bedaf6fd1ee88ef91e9ead16edf7d1b58b282d447043d54db5",
+   "ppo_inputs_tests": "7d33b4b0f56e406f5c0fa0f84cc4aef299f422106e82ac951ae73465d5129b2f",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "64de5f49992bdc3b35ba81d2180ac4b42a0797e64e2c640b4fe506a35d59f93f",
+   "ppo_training_tests": "ae46d0f8343f7f66e47c2555f9f7ba74e4d86fae64931f5d8bcbe7270be3c828",
+   "ppo_variant_objective_tests": "669843d27f3c0df44865ea6ac3ce5236c0fbbee8a20f2550a68c894c381c3335",
+   "ppo_variant_state_tests": "97cb1751bd7f20d2c2b2a3ad303beff0fba5e4223fc9bbacee2673dda450ef3c",
+   "qr_dqn_policy_tests": "e942a6ebdcd9162a87aadb038cb41d13c062d4f27b34899fd089486834ac18ea",
+   "rl_variety_tests": "33011fa7437f5dcb626632469116c5aa9ad22c5084b7223d88129b9c147f25b7",
+   "simulation_tests": "97226daaec3bf60cf9a0cc70ad4abd310534fd889dc49471516e4c746393e05f",
+   "threaded_simulation": "eb209d8c626b8ea220e6feaac164e0be42cf3c6ff6da4435bedbf611f75ae126"
+  },
+  "started": {
+   "date": "2026-10-15T14:44:34+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 60.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    5.2265625,
+    7.8994140625,
+    7.79541015625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18914054144
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "428 MiB",
+    "temperature.gpu": "57"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  },
+  "environment": {
+   "date": "2026-10-15T14:50:35+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 48.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    4.06298828125,
+    5.4326171875,
+    6.70654296875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18661535744
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "429 MiB",
+    "temperature.gpu": "46"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  }
+ },
+ "after-r1-worktree": {
+  "kind": "native_build_variant",
+  "label": "after-r1-worktree",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.885611751000397,
+  "build_seconds": 8.549191383994184,
+  "children_peak_rss_kib": 671952,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 79,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 1,
+   "files_in_cache": 162,
+   "cache_size_kibibyte": 12232,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "971dfd35601a93585841f5f25051701467b54015f39ac292f95783e1f9b0b5f8",
+   "decision_trace_tests": "e13357aeeb0daf2b555163f57c1fd22cae802b727a79c0a37930592a1b970b59",
+   "episodic_memory_tests": "264ee44bc10260d23389a41a52e1c780907c7ac6bfb5b450369eb6e8bfa4496a",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "6b46144647fc7439128f2bc723b21993b75ed962d5509802e1915808d2af9495",
+   "financial_session_tests": "ba7b174c90eb82e2bfedb6736dc925822a0bcf53f99e96b862f95f1ef7f138d0",
+   "group_waves_tests": "c195b993042fa603ce7cc0fd949118e94cd7c000ef698cf96c7bc5fd8e0ae6a0",
+   "klpo_actor_tests": "267a89243dc804a1abf957a7c67d3a0426f6e10051ae8706dd9fd8f8bac91e4b",
+   "klpo_collection_tests": "cc6acbe23c390794a69610e120fabcc74c0cb2b2dca1f2f64babafb58287e9dc",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "9d69945bf939538cd4700e30724528afa976f87416b75ebe3c33ecfb12b45e10",
+   "klpo_policy_tests": "9e2c2e80392b3eae5799962fbe64c6988e20b496cd66a913e4e756136804a8da",
+   "klpo_reference_tests": "cc74809547fbe6ccb26e7dc17e70d8e009a2a13ba6612c76dc413e989fb3e557",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "c727d2236c526c1c388dbf6eb11582efa7ae80f4fd5ac03c30fb5fd117f1751f",
+   "learning_traces_tests": "511ffacca4c9428f0f89c3236529d9449aa3fff28ae921635fec5e74aa040f87",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "bb46a9e90d8ba5b89135e85014fea267d4573c8490f74ee9f568afa4a37b6830",
+   "mars-titan-batch-benchmark": "e4f2714798da0a476ea87bdb9d42b7a4ffe9f7faf075bfcd7ef2e25a8a5dc3f3",
+   "mars-titan-klpo": "bed6eeded5ef995179eb29feae35b7f509b90dbf90c669a8854a894beb87a14a",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "39c6f753c6ed739e724043549745b2d52f2f15ad8ca1262af966ebcb30e687dd",
+   "mars-titan-policy-benchmark": "26e56de38d2dcd6f1fd7f7e7aa525ab23a3955da79f5e1b17d8c8883062425a9",
+   "mars-titan-ppo": "94e2e6e11155750341043b0a19697467d2303606577fc16255292e6e15e21342",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "a1e63c7175c91cb0c794255292f1dc438c150bc9e63039d1e360acf6a754d5f7",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "01454cc3df2d1b30c7fdbe74c5f76ae2986f4202a248bfa2bf813863ead6960f",
+   "policy_evaluation_only_tests": "aa0798759c0077c631b9b174a83d6ea6598f2e3c341c09617ab574e57272bf06",
+   "ppo_checkpoint_tests": "300a9c44723d6103189fd8db3a0f20abe158451d36b9f2ea836d1f306d68d322",
+   "ppo_collection_tests": "3a80c947fde086e234e316f257b8bd37ef3260e2bf9256bbef9efa18adaba42c",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "43cd7b2a2ce67d30401ab51969996093b33a2f66cd0153a5e57c391d2d6ab84b",
+   "ppo_gru_packing_tests": "6ee27e3d765cae6fb206b6ab05c3ef106b591f7549430f1c6c9cc8aeba1236fc",
+   "ppo_inputs_tests": "2f046633975760e915a150d6a34a60b7a0aeb89e54ed02d1c337e425692a5775",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "316fe137895ee30e4d5adb254e7258860e3c4bc9109a9ad030e7750288463f13",
+   "ppo_training_tests": "360dde52a875b9057c548e6d2cf8c4d65cad6692545c9a501b74aaaaf6ccd2aa",
+   "ppo_variant_objective_tests": "d17d8fc81cd1b3fd46b5d6e95d2b61d02fc664a880eb0ba75e55fbaa0561c96b",
+   "ppo_variant_state_tests": "59220de7a225f790bd1671253f46daec603761569fbf773f78f6f1a824321d24",
+   "qr_dqn_policy_tests": "029a4c111cece90d97052f95cbc6683c69a5d4aa9cdf22646f2f57c4687b7e27",
+   "rl_variety_tests": "9a0f3d3e6e48cbf0e42102e6ae8e4323bc0fbc5160f358a3d2b40ff8f5d7c3d9",
+   "simulation_tests": "8224c49957ded1a7021c769eaf1d0d70fb18bea0d7519dd87d7b019ebd49a8c8",
+   "threaded_simulation": "a8218a7cceed289882cdafa2a056e1bf592208648e239e8ae9b943b991196c86"
+  },
+  "started": {
+   "date": "2026-10-15T14:50:35+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 48.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    4.06298828125,
+    5.4326171875,
+    6.70654296875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18660511744
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "429 MiB",
+    "temperature.gpu": "46"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  },
+  "environment": {
+   "date": "2026-10-15T14:50:50+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 48.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    3.33984375,
+    5.17724609375,
+    6.5947265625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18793443328
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "429 MiB",
+    "temperature.gpu": "46"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  }
+ },
+ "after-r2-cold": {
+  "kind": "native_build_variant",
+  "label": "after-r2-cold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 7.265030733979074,
+  "build_seconds": 455.9459699280269,
+  "children_peak_rss_kib": 702620,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 80,
+   "files_in_cache": 160,
+   "cache_size_kibibyte": 12224,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "426bb51c100ade104a72d85a5de6658dc75b640293671a093c7a2888756d19c8",
+   "decision_trace_tests": "8d243b725a2e5bbc69c1fd3637482951a9148905e0e8a4958f2c855d647ac81c",
+   "episodic_memory_tests": "4e48aaaef9696c4ad903b86bc517ed8b09bffb47fcdd84d5d2e5876cadceba30",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "5f24fb1937623b202aface1c50e4b8c798ee4861d8183f9485aa932860df86db",
+   "financial_session_tests": "0df313129dd6cec7234584e337b59d4272ed15db874eb1dee319537e95a16323",
+   "group_waves_tests": "28ac59eee4edb834d98c65bca0f48c19345e63aa5ff4ce93ea3848f8dd954409",
+   "klpo_actor_tests": "717f8df14ff8f439649d546bcf0c07ff6bc196f05e0aec4d0ab97cca586baa2f",
+   "klpo_collection_tests": "2b8ebee81920f9696ff6cdaef384af06cc930b199625c9b34ec506e24f88ec88",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "cc7be56faeceff055125ebe0717c6e40f42429480e14f5d1be749e374cf1516a",
+   "klpo_policy_tests": "d9520d58cb3a611c75ab47ce85b1b2615868c8470db867d5b51fe4bc476e1fca",
+   "klpo_reference_tests": "8e25b2528fbb71b7a4d8c096fc6541e4277350c24be420098da35494f4a01231",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "dc971e10404f7cd4fd3eab4c91356701209cc66ee4575a98c15ffb6af7faa5e2",
+   "learning_traces_tests": "f4029ddab6e91e5f66037afa66a1cbf4f92841d7b71fd10d284d6b93d2697fe1",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "36bdf94e9295e813f097cef73a98fdb1da879c2d5b1f4ad81bf1abfc633fd845",
+   "mars-titan-batch-benchmark": "73509145e8a8a63be6bb04a39fd4314e40429273dd23ac9b318dfaee6d686bb9",
+   "mars-titan-klpo": "2f16a73a6713c51af737aecf7f7b2603e5edd9ab6abcb35cec9d4b0f3a1e5fef",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "46a27ad582c9a63b1964b65bc84063fba6cc45cdd2198b0867ac8fea5899b55a",
+   "mars-titan-policy-benchmark": "dda78966f8aecd1fcf23da3c4ef9a5945588f0afc14ad5b1462cab2d4a07fd25",
+   "mars-titan-ppo": "7b9265c377679c0de0e83380d3c1ca0cd826116dc636e78a9d56a90f1a7f1e42",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "c6a2f1623d61c994faba221b511afcb0ad72b359f40b633973e5b3eeb1b633ad",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "13d31f23cf83c471c3bb0e0ad503550c11afd726dd6958a1132f3994f243f832",
+   "policy_evaluation_only_tests": "65dc9fb60c8b5d624298f92e144f1cd758e479f5ae781ce2df2b8620e72b24b4",
+   "ppo_checkpoint_tests": "cc44662b5321f2361eda5098fab94504014a64ef426cb7dfa16e63c92f1ced6b",
+   "ppo_collection_tests": "5d9ad569779b5f51811a23c144bd2935304d042c225d9da43a00f824592244e3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "8cfaee8a1162afb451d1c7f0daeb88632abff0f0abb75155c1cc79afa4af64ab",
+   "ppo_gru_packing_tests": "9dd1436ec402e7bedaf6fd1ee88ef91e9ead16edf7d1b58b282d447043d54db5",
+   "ppo_inputs_tests": "7d33b4b0f56e406f5c0fa0f84cc4aef299f422106e82ac951ae73465d5129b2f",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "64de5f49992bdc3b35ba81d2180ac4b42a0797e64e2c640b4fe506a35d59f93f",
+   "ppo_training_tests": "ae46d0f8343f7f66e47c2555f9f7ba74e4d86fae64931f5d8bcbe7270be3c828",
+   "ppo_variant_objective_tests": "669843d27f3c0df44865ea6ac3ce5236c0fbbee8a20f2550a68c894c381c3335",
+   "ppo_variant_state_tests": "97cb1751bd7f20d2c2b2a3ad303beff0fba5e4223fc9bbacee2673dda450ef3c",
+   "qr_dqn_policy_tests": "e942a6ebdcd9162a87aadb038cb41d13c062d4f27b34899fd089486834ac18ea",
+   "rl_variety_tests": "33011fa7437f5dcb626632469116c5aa9ad22c5084b7223d88129b9c147f25b7",
+   "simulation_tests": "97226daaec3bf60cf9a0cc70ad4abd310534fd889dc49471516e4c746393e05f",
+   "threaded_simulation": "eb209d8c626b8ea220e6feaac164e0be42cf3c6ff6da4435bedbf611f75ae126"
+  },
+  "started": {
+   "date": "2026-10-15T14:50:51+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 48.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    3.33984375,
+    5.17724609375,
+    6.5947265625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18884476928
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "429 MiB",
+    "temperature.gpu": "46"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  },
+  "environment": {
+   "date": "2026-10-15T14:58:34+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.36376953125,
+    6.1728515625,
+    6.4521484375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16610365440
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "432 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  }
+ },
+ "after-r2-worktree": {
+  "kind": "native_build_variant",
+  "label": "after-r2-worktree",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 8.184752228000434,
+  "build_seconds": 10.653056290990207,
+  "children_peak_rss_kib": 674168,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 79,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 1,
+   "files_in_cache": 162,
+   "cache_size_kibibyte": 12232,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "971dfd35601a93585841f5f25051701467b54015f39ac292f95783e1f9b0b5f8",
+   "decision_trace_tests": "e13357aeeb0daf2b555163f57c1fd22cae802b727a79c0a37930592a1b970b59",
+   "episodic_memory_tests": "264ee44bc10260d23389a41a52e1c780907c7ac6bfb5b450369eb6e8bfa4496a",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "6b46144647fc7439128f2bc723b21993b75ed962d5509802e1915808d2af9495",
+   "financial_session_tests": "ba7b174c90eb82e2bfedb6736dc925822a0bcf53f99e96b862f95f1ef7f138d0",
+   "group_waves_tests": "c195b993042fa603ce7cc0fd949118e94cd7c000ef698cf96c7bc5fd8e0ae6a0",
+   "klpo_actor_tests": "267a89243dc804a1abf957a7c67d3a0426f6e10051ae8706dd9fd8f8bac91e4b",
+   "klpo_collection_tests": "cc6acbe23c390794a69610e120fabcc74c0cb2b2dca1f2f64babafb58287e9dc",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "9d69945bf939538cd4700e30724528afa976f87416b75ebe3c33ecfb12b45e10",
+   "klpo_policy_tests": "9e2c2e80392b3eae5799962fbe64c6988e20b496cd66a913e4e756136804a8da",
+   "klpo_reference_tests": "cc74809547fbe6ccb26e7dc17e70d8e009a2a13ba6612c76dc413e989fb3e557",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "c727d2236c526c1c388dbf6eb11582efa7ae80f4fd5ac03c30fb5fd117f1751f",
+   "learning_traces_tests": "511ffacca4c9428f0f89c3236529d9449aa3fff28ae921635fec5e74aa040f87",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "bb46a9e90d8ba5b89135e85014fea267d4573c8490f74ee9f568afa4a37b6830",
+   "mars-titan-batch-benchmark": "e4f2714798da0a476ea87bdb9d42b7a4ffe9f7faf075bfcd7ef2e25a8a5dc3f3",
+   "mars-titan-klpo": "bed6eeded5ef995179eb29feae35b7f509b90dbf90c669a8854a894beb87a14a",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "39c6f753c6ed739e724043549745b2d52f2f15ad8ca1262af966ebcb30e687dd",
+   "mars-titan-policy-benchmark": "26e56de38d2dcd6f1fd7f7e7aa525ab23a3955da79f5e1b17d8c8883062425a9",
+   "mars-titan-ppo": "94e2e6e11155750341043b0a19697467d2303606577fc16255292e6e15e21342",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "a1e63c7175c91cb0c794255292f1dc438c150bc9e63039d1e360acf6a754d5f7",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "01454cc3df2d1b30c7fdbe74c5f76ae2986f4202a248bfa2bf813863ead6960f",
+   "policy_evaluation_only_tests": "aa0798759c0077c631b9b174a83d6ea6598f2e3c341c09617ab574e57272bf06",
+   "ppo_checkpoint_tests": "300a9c44723d6103189fd8db3a0f20abe158451d36b9f2ea836d1f306d68d322",
+   "ppo_collection_tests": "3a80c947fde086e234e316f257b8bd37ef3260e2bf9256bbef9efa18adaba42c",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "43cd7b2a2ce67d30401ab51969996093b33a2f66cd0153a5e57c391d2d6ab84b",
+   "ppo_gru_packing_tests": "6ee27e3d765cae6fb206b6ab05c3ef106b591f7549430f1c6c9cc8aeba1236fc",
+   "ppo_inputs_tests": "2f046633975760e915a150d6a34a60b7a0aeb89e54ed02d1c337e425692a5775",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "316fe137895ee30e4d5adb254e7258860e3c4bc9109a9ad030e7750288463f13",
+   "ppo_training_tests": "360dde52a875b9057c548e6d2cf8c4d65cad6692545c9a501b74aaaaf6ccd2aa",
+   "ppo_variant_objective_tests": "d17d8fc81cd1b3fd46b5d6e95d2b61d02fc664a880eb0ba75e55fbaa0561c96b",
+   "ppo_variant_state_tests": "59220de7a225f790bd1671253f46daec603761569fbf773f78f6f1a824321d24",
+   "qr_dqn_policy_tests": "029a4c111cece90d97052f95cbc6683c69a5d4aa9cdf22646f2f57c4687b7e27",
+   "rl_variety_tests": "9a0f3d3e6e48cbf0e42102e6ae8e4323bc0fbc5160f358a3d2b40ff8f5d7c3d9",
+   "simulation_tests": "8224c49957ded1a7021c769eaf1d0d70fb18bea0d7519dd87d7b019ebd49a8c8",
+   "threaded_simulation": "a8218a7cceed289882cdafa2a056e1bf592208648e239e8ae9b943b991196c86"
+  },
+  "started": {
+   "date": "2026-10-15T14:58:35+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.36376953125,
+    6.1728515625,
+    6.4521484375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16615202816
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "432 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  },
+  "environment": {
+   "date": "2026-10-15T14:58:54+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.12353515625,
+    6.12841796875,
+    6.431640625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16371568640
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "432 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  }
+ },
+ "after-r3-cold": {
+  "kind": "native_build_variant",
+  "label": "after-r3-cold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 7.850337607000256,
+  "build_seconds": 523.488534079981,
+  "children_peak_rss_kib": 702932,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 80,
+   "files_in_cache": 160,
+   "cache_size_kibibyte": 12224,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "426bb51c100ade104a72d85a5de6658dc75b640293671a093c7a2888756d19c8",
+   "decision_trace_tests": "8d243b725a2e5bbc69c1fd3637482951a9148905e0e8a4958f2c855d647ac81c",
+   "episodic_memory_tests": "4e48aaaef9696c4ad903b86bc517ed8b09bffb47fcdd84d5d2e5876cadceba30",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "5f24fb1937623b202aface1c50e4b8c798ee4861d8183f9485aa932860df86db",
+   "financial_session_tests": "0df313129dd6cec7234584e337b59d4272ed15db874eb1dee319537e95a16323",
+   "group_waves_tests": "28ac59eee4edb834d98c65bca0f48c19345e63aa5ff4ce93ea3848f8dd954409",
+   "klpo_actor_tests": "717f8df14ff8f439649d546bcf0c07ff6bc196f05e0aec4d0ab97cca586baa2f",
+   "klpo_collection_tests": "2b8ebee81920f9696ff6cdaef384af06cc930b199625c9b34ec506e24f88ec88",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "cc7be56faeceff055125ebe0717c6e40f42429480e14f5d1be749e374cf1516a",
+   "klpo_policy_tests": "d9520d58cb3a611c75ab47ce85b1b2615868c8470db867d5b51fe4bc476e1fca",
+   "klpo_reference_tests": "8e25b2528fbb71b7a4d8c096fc6541e4277350c24be420098da35494f4a01231",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "dc971e10404f7cd4fd3eab4c91356701209cc66ee4575a98c15ffb6af7faa5e2",
+   "learning_traces_tests": "f4029ddab6e91e5f66037afa66a1cbf4f92841d7b71fd10d284d6b93d2697fe1",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "36bdf94e9295e813f097cef73a98fdb1da879c2d5b1f4ad81bf1abfc633fd845",
+   "mars-titan-batch-benchmark": "73509145e8a8a63be6bb04a39fd4314e40429273dd23ac9b318dfaee6d686bb9",
+   "mars-titan-klpo": "2f16a73a6713c51af737aecf7f7b2603e5edd9ab6abcb35cec9d4b0f3a1e5fef",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "46a27ad582c9a63b1964b65bc84063fba6cc45cdd2198b0867ac8fea5899b55a",
+   "mars-titan-policy-benchmark": "dda78966f8aecd1fcf23da3c4ef9a5945588f0afc14ad5b1462cab2d4a07fd25",
+   "mars-titan-ppo": "7b9265c377679c0de0e83380d3c1ca0cd826116dc636e78a9d56a90f1a7f1e42",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "c6a2f1623d61c994faba221b511afcb0ad72b359f40b633973e5b3eeb1b633ad",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "13d31f23cf83c471c3bb0e0ad503550c11afd726dd6958a1132f3994f243f832",
+   "policy_evaluation_only_tests": "65dc9fb60c8b5d624298f92e144f1cd758e479f5ae781ce2df2b8620e72b24b4",
+   "ppo_checkpoint_tests": "cc44662b5321f2361eda5098fab94504014a64ef426cb7dfa16e63c92f1ced6b",
+   "ppo_collection_tests": "5d9ad569779b5f51811a23c144bd2935304d042c225d9da43a00f824592244e3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "8cfaee8a1162afb451d1c7f0daeb88632abff0f0abb75155c1cc79afa4af64ab",
+   "ppo_gru_packing_tests": "9dd1436ec402e7bedaf6fd1ee88ef91e9ead16edf7d1b58b282d447043d54db5",
+   "ppo_inputs_tests": "7d33b4b0f56e406f5c0fa0f84cc4aef299f422106e82ac951ae73465d5129b2f",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "64de5f49992bdc3b35ba81d2180ac4b42a0797e64e2c640b4fe506a35d59f93f",
+   "ppo_training_tests": "ae46d0f8343f7f66e47c2555f9f7ba74e4d86fae64931f5d8bcbe7270be3c828",
+   "ppo_variant_objective_tests": "669843d27f3c0df44865ea6ac3ce5236c0fbbee8a20f2550a68c894c381c3335",
+   "ppo_variant_state_tests": "97cb1751bd7f20d2c2b2a3ad303beff0fba5e4223fc9bbacee2673dda450ef3c",
+   "qr_dqn_policy_tests": "e942a6ebdcd9162a87aadb038cb41d13c062d4f27b34899fd089486834ac18ea",
+   "rl_variety_tests": "33011fa7437f5dcb626632469116c5aa9ad22c5084b7223d88129b9c147f25b7",
+   "simulation_tests": "97226daaec3bf60cf9a0cc70ad4abd310534fd889dc49471516e4c746393e05f",
+   "threaded_simulation": "eb209d8c626b8ea220e6feaac164e0be42cf3c6ff6da4435bedbf611f75ae126"
+  },
+  "started": {
+   "date": "2026-10-15T14:58:54+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.12353515625,
+    6.12841796875,
+    6.431640625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16480571392
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "432 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  },
+  "environment": {
+   "date": "2026-10-15T15:07:46+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.3564453125,
+    7.22509765625,
+    6.83837890625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16659660800
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  }
+ },
+ "after-r3-worktree": {
+  "kind": "native_build_variant",
+  "label": "after-r3-worktree",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 10.460429761005798,
+  "build_seconds": 13.710223506990587,
+  "children_peak_rss_kib": 674556,
+  "edges": 138,
+  "ccache": {
+   "direct_cache_hit": 79,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 1,
+   "files_in_cache": 162,
+   "cache_size_kibibyte": 12232,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "971dfd35601a93585841f5f25051701467b54015f39ac292f95783e1f9b0b5f8",
+   "decision_trace_tests": "e13357aeeb0daf2b555163f57c1fd22cae802b727a79c0a37930592a1b970b59",
+   "episodic_memory_tests": "264ee44bc10260d23389a41a52e1c780907c7ac6bfb5b450369eb6e8bfa4496a",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "6b46144647fc7439128f2bc723b21993b75ed962d5509802e1915808d2af9495",
+   "financial_session_tests": "ba7b174c90eb82e2bfedb6736dc925822a0bcf53f99e96b862f95f1ef7f138d0",
+   "group_waves_tests": "c195b993042fa603ce7cc0fd949118e94cd7c000ef698cf96c7bc5fd8e0ae6a0",
+   "klpo_actor_tests": "267a89243dc804a1abf957a7c67d3a0426f6e10051ae8706dd9fd8f8bac91e4b",
+   "klpo_collection_tests": "cc6acbe23c390794a69610e120fabcc74c0cb2b2dca1f2f64babafb58287e9dc",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "9d69945bf939538cd4700e30724528afa976f87416b75ebe3c33ecfb12b45e10",
+   "klpo_policy_tests": "9e2c2e80392b3eae5799962fbe64c6988e20b496cd66a913e4e756136804a8da",
+   "klpo_reference_tests": "cc74809547fbe6ccb26e7dc17e70d8e009a2a13ba6612c76dc413e989fb3e557",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "c727d2236c526c1c388dbf6eb11582efa7ae80f4fd5ac03c30fb5fd117f1751f",
+   "learning_traces_tests": "511ffacca4c9428f0f89c3236529d9449aa3fff28ae921635fec5e74aa040f87",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "bb46a9e90d8ba5b89135e85014fea267d4573c8490f74ee9f568afa4a37b6830",
+   "mars-titan-batch-benchmark": "e4f2714798da0a476ea87bdb9d42b7a4ffe9f7faf075bfcd7ef2e25a8a5dc3f3",
+   "mars-titan-klpo": "bed6eeded5ef995179eb29feae35b7f509b90dbf90c669a8854a894beb87a14a",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "39c6f753c6ed739e724043549745b2d52f2f15ad8ca1262af966ebcb30e687dd",
+   "mars-titan-policy-benchmark": "26e56de38d2dcd6f1fd7f7e7aa525ab23a3955da79f5e1b17d8c8883062425a9",
+   "mars-titan-ppo": "94e2e6e11155750341043b0a19697467d2303606577fc16255292e6e15e21342",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "a1e63c7175c91cb0c794255292f1dc438c150bc9e63039d1e360acf6a754d5f7",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "01454cc3df2d1b30c7fdbe74c5f76ae2986f4202a248bfa2bf813863ead6960f",
+   "policy_evaluation_only_tests": "aa0798759c0077c631b9b174a83d6ea6598f2e3c341c09617ab574e57272bf06",
+   "ppo_checkpoint_tests": "300a9c44723d6103189fd8db3a0f20abe158451d36b9f2ea836d1f306d68d322",
+   "ppo_collection_tests": "3a80c947fde086e234e316f257b8bd37ef3260e2bf9256bbef9efa18adaba42c",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "43cd7b2a2ce67d30401ab51969996093b33a2f66cd0153a5e57c391d2d6ab84b",
+   "ppo_gru_packing_tests": "6ee27e3d765cae6fb206b6ab05c3ef106b591f7549430f1c6c9cc8aeba1236fc",
+   "ppo_inputs_tests": "2f046633975760e915a150d6a34a60b7a0aeb89e54ed02d1c337e425692a5775",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "316fe137895ee30e4d5adb254e7258860e3c4bc9109a9ad030e7750288463f13",
+   "ppo_training_tests": "360dde52a875b9057c548e6d2cf8c4d65cad6692545c9a501b74aaaaf6ccd2aa",
+   "ppo_variant_objective_tests": "d17d8fc81cd1b3fd46b5d6e95d2b61d02fc664a880eb0ba75e55fbaa0561c96b",
+   "ppo_variant_state_tests": "59220de7a225f790bd1671253f46daec603761569fbf773f78f6f1a824321d24",
+   "qr_dqn_policy_tests": "029a4c111cece90d97052f95cbc6683c69a5d4aa9cdf22646f2f57c4687b7e27",
+   "rl_variety_tests": "9a0f3d3e6e48cbf0e42102e6ae8e4323bc0fbc5160f358a3d2b40ff8f5d7c3d9",
+   "simulation_tests": "8224c49957ded1a7021c769eaf1d0d70fb18bea0d7519dd87d7b019ebd49a8c8",
+   "threaded_simulation": "a8218a7cceed289882cdafa2a056e1bf592208648e239e8ae9b943b991196c86"
+  },
+  "started": {
+   "date": "2026-10-15T15:07:47+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.3564453125,
+    7.22509765625,
+    6.83837890625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16672145408
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  },
+  "environment": {
+   "date": "2026-10-15T15:08:11+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.83447265625,
+    7.9541015625,
+    7.083984375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16387555328
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487b"
+  }
+ },
+ "after-revert": {
+  "kind": "native_build_variant",
+  "label": "after-revert",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 3.6013469800236635,
+  "build_seconds": 10.290753925015451,
+  "children_peak_rss_kib": 674168,
+  "edges": 36,
+  "ccache": {
+   "direct_cache_hit": 2,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 0,
+   "files_in_cache": 165,
+   "cache_size_kibibyte": 12424,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "426bb51c100ade104a72d85a5de6658dc75b640293671a093c7a2888756d19c8",
+   "decision_trace_tests": "8d243b725a2e5bbc69c1fd3637482951a9148905e0e8a4958f2c855d647ac81c",
+   "episodic_memory_tests": "4e48aaaef9696c4ad903b86bc517ed8b09bffb47fcdd84d5d2e5876cadceba30",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "5f24fb1937623b202aface1c50e4b8c798ee4861d8183f9485aa932860df86db",
+   "financial_session_tests": "0df313129dd6cec7234584e337b59d4272ed15db874eb1dee319537e95a16323",
+   "group_waves_tests": "28ac59eee4edb834d98c65bca0f48c19345e63aa5ff4ce93ea3848f8dd954409",
+   "klpo_actor_tests": "717f8df14ff8f439649d546bcf0c07ff6bc196f05e0aec4d0ab97cca586baa2f",
+   "klpo_collection_tests": "2b8ebee81920f9696ff6cdaef384af06cc930b199625c9b34ec506e24f88ec88",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "cc7be56faeceff055125ebe0717c6e40f42429480e14f5d1be749e374cf1516a",
+   "klpo_policy_tests": "d9520d58cb3a611c75ab47ce85b1b2615868c8470db867d5b51fe4bc476e1fca",
+   "klpo_reference_tests": "8e25b2528fbb71b7a4d8c096fc6541e4277350c24be420098da35494f4a01231",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "dc971e10404f7cd4fd3eab4c91356701209cc66ee4575a98c15ffb6af7faa5e2",
+   "learning_traces_tests": "f4029ddab6e91e5f66037afa66a1cbf4f92841d7b71fd10d284d6b93d2697fe1",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "36bdf94e9295e813f097cef73a98fdb1da879c2d5b1f4ad81bf1abfc633fd845",
+   "mars-titan-batch-benchmark": "73509145e8a8a63be6bb04a39fd4314e40429273dd23ac9b318dfaee6d686bb9",
+   "mars-titan-klpo": "2f16a73a6713c51af737aecf7f7b2603e5edd9ab6abcb35cec9d4b0f3a1e5fef",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "46a27ad582c9a63b1964b65bc84063fba6cc45cdd2198b0867ac8fea5899b55a",
+   "mars-titan-policy-benchmark": "dda78966f8aecd1fcf23da3c4ef9a5945588f0afc14ad5b1462cab2d4a07fd25",
+   "mars-titan-ppo": "7b9265c377679c0de0e83380d3c1ca0cd826116dc636e78a9d56a90f1a7f1e42",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "c6a2f1623d61c994faba221b511afcb0ad72b359f40b633973e5b3eeb1b633ad",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "13d31f23cf83c471c3bb0e0ad503550c11afd726dd6958a1132f3994f243f832",
+   "policy_evaluation_only_tests": "65dc9fb60c8b5d624298f92e144f1cd758e479f5ae781ce2df2b8620e72b24b4",
+   "ppo_checkpoint_tests": "cc44662b5321f2361eda5098fab94504014a64ef426cb7dfa16e63c92f1ced6b",
+   "ppo_collection_tests": "5d9ad569779b5f51811a23c144bd2935304d042c225d9da43a00f824592244e3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "8cfaee8a1162afb451d1c7f0daeb88632abff0f0abb75155c1cc79afa4af64ab",
+   "ppo_gru_packing_tests": "9dd1436ec402e7bedaf6fd1ee88ef91e9ead16edf7d1b58b282d447043d54db5",
+   "ppo_inputs_tests": "7d33b4b0f56e406f5c0fa0f84cc4aef299f422106e82ac951ae73465d5129b2f",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "64de5f49992bdc3b35ba81d2180ac4b42a0797e64e2c640b4fe506a35d59f93f",
+   "ppo_training_tests": "ae46d0f8343f7f66e47c2555f9f7ba74e4d86fae64931f5d8bcbe7270be3c828",
+   "ppo_variant_objective_tests": "669843d27f3c0df44865ea6ac3ce5236c0fbbee8a20f2550a68c894c381c3335",
+   "ppo_variant_state_tests": "97cb1751bd7f20d2c2b2a3ad303beff0fba5e4223fc9bbacee2673dda450ef3c",
+   "qr_dqn_policy_tests": "e942a6ebdcd9162a87aadb038cb41d13c062d4f27b34899fd089486834ac18ea",
+   "rl_variety_tests": "33011fa7437f5dcb626632469116c5aa9ad22c5084b7223d88129b9c147f25b7",
+   "simulation_tests": "97226daaec3bf60cf9a0cc70ad4abd310534fd889dc49471516e4c746393e05f",
+   "threaded_simulation": "eb209d8c626b8ea220e6feaac164e0be42cf3c6ff6da4435bedbf611f75ae126"
+  },
+  "started": {
+   "date": "2026-10-15T15:08:27+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.427734375,
+    8.00537109375,
+    7.11572265625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16649826304
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  },
+  "environment": {
+   "date": "2026-10-15T15:08:41+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    9.69189453125,
+    7.95751953125,
+    7.11376953125
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16338599936
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487"
+  }
+ },
+ "base-cold": {
+  "kind": "native_build_variant",
+  "label": "base-cold",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 26.026839939993806,
+  "build_seconds": 984.6693819990032,
+  "children_peak_rss_kib": 702000,
+  "edges": 137,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 79,
+   "files_in_cache": 158,
+   "cache_size_kibibyte": 12216,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "56ca0506cde556fc87bc0cd9f78fdd832893378322c8447466936a53ee124255",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "6046a050b34e99b9e83703aafd1a6662129fdcb88c043f3a4109f58b03758a6f",
+   "decision_trace_tests": "79b24231b5e65a1b9dc0e56134669c8f807d6d2b55c0719c388ff31cc3bf050d",
+   "episodic_memory_tests": "0bd340dd8056e356dfdc5f675a5fcaefdecf9729dae1bbf7d4c95c53467af7c0",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "3bf4f996b282a432b3333be54836f1aec077306ad19ab1fd120625256a8976d2",
+   "financial_session_tests": "583e52a64ea930a3a2daa1f5e04bf5f14a6544d303b34331ddf31119f6c23739",
+   "group_waves_tests": "eda3ca39e2aed19ef122a69602afbd00af14a0ace518ad627981a3a26f7bca38",
+   "klpo_actor_tests": "ab52c603588ea74ca4704e0afae9d7e7bb9736adfd7d22898dbe8d50c01d5b06",
+   "klpo_collection_tests": "08cebf3291f0c8a7c6fdd0ac9fa7c498d48a49b20cfdacff16b2002cd0106c68",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "d24b5a8d16de0b4d6d4c1b85d38ccb4b8a65cc13812106506d92da505484f4d9",
+   "klpo_policy_tests": "a88c50baa736a1c2322d1c688847c030da1b0d05e7d17aa4d78c757c9df84670",
+   "klpo_reference_tests": "df18eb070d81e7367dfb9d3b315fecfbcdc228ee89ba86fc0b6825e43a15d1c1",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "78a5d8b4be2bb596ba0b1c45c3b810c983f98d4a46713a604586dc48fd808a6f",
+   "learning_traces_tests": "841cc0052223b1ca9854bf165d2b9be6c62806c19065cd07971d34cce0974528",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "adf68bfcf897d8cf63e8ec6f998824952037d57aeb80e88b6700bb6e9f2178ec",
+   "mars-titan-batch-benchmark": "deafedd1a46c6296476cd4e18231e56f798e8a1fecd83bafc80e2d9f2a7996b1",
+   "mars-titan-klpo": "6db775ae8233d768e6721403518745e7fcf1bed7bbb13e0ef96500eefe130f04",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "409ac74c0a32bcac4adb0d6ba5e813687108504eb72e6bb74fdd96c379bff023",
+   "mars-titan-policy-benchmark": "24c431797f5c123b2ca9fb6107c1d066f6a5de90500ef1dece964cb39ba65bae",
+   "mars-titan-ppo": "9314ba5018d714638e34f65b286bb3f4a787e68ef513b937b2528e92e7383018",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "5f54b7adfde6fe7bc334d605ebf96b69d14b92aa55a3d1ed000630f7a6f2d6be",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "fdf4a0fc1302b9e02917a04f5527b887ccbdf55c5e0a96e28ebac34ca8fabe39",
+   "policy_evaluation_only_tests": "302cef1dbaf06d05ac198e372a786e0afa7f6384535114580f57c47456efb8b5",
+   "ppo_checkpoint_tests": "44751fda6082426c27708876d85b8ce91c9006ebf135230e73b4448abf131058",
+   "ppo_collection_tests": "be04c71cce4ab441997c9c75ae08095b5de4c1af5885f924ed02de6284d2a8b3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "c72e932b37bccf483adedda3c7870fac92a243559ca148072cbcf8251dbdf844",
+   "ppo_gru_packing_tests": "c6158a8c6258924c08c4e1aac88ec002c396c4c2074ea64c88cf4d8443e0efdb",
+   "ppo_inputs_tests": "e4552b5b2e3a02d90395b27f06bec446a007c282e03d1d58d641a5f1a752fffe",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "c17ef3cc22bfc56d4ac495f902b176ae0f54b4aa7b04c3cf9f5b7ec2b3140d20",
+   "ppo_training_tests": "2e105bbc14e3797f77213ae29da58c413de520db0592147caace84e160af9917",
+   "ppo_variant_objective_tests": "cc449298756bc90effa6fcc70744a19e705650fefb7a2a86b30f1911da29f96e",
+   "ppo_variant_state_tests": "f6a808c0c5de34b2c8874d4c97e726f567431ec4ff8c96c0855998e39dcb4d0c",
+   "qr_dqn_policy_tests": "6d7f6dcc524e3ec3b5f0ad55859f2745251a0efe2190f8bb63078938c13573e6",
+   "rl_variety_tests": "30eabc4442e06b6ce9b5cbfca84ffea13a090d4b2583065dab5b98b608588460",
+   "simulation_tests": "fbae066d3cd5aa676f06c3a3732a9191daa23baff9b23227fdd8c990ff0d93ba",
+   "threaded_simulation": "70597c6f3761e1f89814aed7eb61e2a52228e2961bc678ae7949d157c2cba1fa"
+  },
+  "started": {
+   "date": "2026-10-15T14:23:39+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 80.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    8.25390625,
+    6.4677734375,
+    4.203125
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 13795065856
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5875 MiB",
+    "temperature.gpu": "86"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  },
+  "environment": {
+   "date": "2026-10-15T14:40:30+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 78.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.80078125,
+    10.64501953125,
+    8.40283203125
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 12255227904
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5874 MiB",
+    "temperature.gpu": "87"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  }
+ },
+ "base-edit": {
+  "kind": "native_build_variant",
+  "label": "base-edit",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 5.082830675994046,
+  "build_seconds": 89.3082418559934,
+  "children_peak_rss_kib": 671840,
+  "edges": 94,
+  "ccache": {
+   "direct_cache_hit": 0,
+   "preprocessed_cache_hit": 49,
+   "cache_miss": 6,
+   "files_in_cache": 280,
+   "cache_size_kibibyte": 24760,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "c834e09d7fa3f81cf39fe8cf9c921bf7c8f3e17b8a1104540abf161665ddf2dc",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "6046a050b34e99b9e83703aafd1a6662129fdcb88c043f3a4109f58b03758a6f",
+   "decision_trace_tests": "201db3dc1bfac15c9fceac1d5a4bd5851f4710cc7b07900cc6e8cbeb1b5b2478",
+   "episodic_memory_tests": "0bd340dd8056e356dfdc5f675a5fcaefdecf9729dae1bbf7d4c95c53467af7c0",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "3bf4f996b282a432b3333be54836f1aec077306ad19ab1fd120625256a8976d2",
+   "financial_session_tests": "583e52a64ea930a3a2daa1f5e04bf5f14a6544d303b34331ddf31119f6c23739",
+   "group_waves_tests": "ae0ec32db3825fb506a756a67723638dbcb42ccf6208bbb2695007d711a8904b",
+   "klpo_actor_tests": "7134073ec8faa52c7405a238e917e9c831c441e838ed800f4b6f576f54220142",
+   "klpo_collection_tests": "659d2f2f229cb88e6c99adb7f60a93ccee613510708968b7d92c275329140d91",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "e2b79bb94dabfb6815441f53c24e51b0efd9a7355836218a0eb9a3f5f71df661",
+   "klpo_policy_tests": "f18902e599f142b95b2dbe654dd106bca5511c183ad4fd26d1f0935e5bfd3104",
+   "klpo_reference_tests": "c4c92bba3a993508c55474ebc99933ac100736921acf3f25a16511e1a8500add",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "78a5d8b4be2bb596ba0b1c45c3b810c983f98d4a46713a604586dc48fd808a6f",
+   "learning_traces_tests": "592934247e320071e299592ce1f6f4e13edd7ef9a0665072b17062faf255ac86",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "adf68bfcf897d8cf63e8ec6f998824952037d57aeb80e88b6700bb6e9f2178ec",
+   "mars-titan-batch-benchmark": "35321896893d9e7e782772ce21851c00fe406e668d368356193765f7173d4715",
+   "mars-titan-klpo": "8ef39122cbe4d30dd839de09b298ccd78255a59a5bd4bfbefa16b1ae6fd2aa4f",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "409ac74c0a32bcac4adb0d6ba5e813687108504eb72e6bb74fdd96c379bff023",
+   "mars-titan-policy-benchmark": "509e742a44447ab1c97d90a847ba4029e80a8b7085116fdafb0153b39147f4a4",
+   "mars-titan-ppo": "2319cd30d10b1989df7ff7237b708a68b80c164848820fa01a598d2218cf12b2",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "e1c89a0fe0a413474c846d454e2f0ee32d7bf32e0cd26bca3cdd5d5969cbbc31",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "fdf4a0fc1302b9e02917a04f5527b887ccbdf55c5e0a96e28ebac34ca8fabe39",
+   "policy_evaluation_only_tests": "3e5f9c30ace309c0ff3a41af9007a6734b711b3d3d009960a3beb61406c49cc6",
+   "ppo_checkpoint_tests": "63302c2db86ce28c129c03e1472a505e0bb900bbe923b1357608dda9d38b0f14",
+   "ppo_collection_tests": "3d539499ffed9a936b1418c92328475298414f527214feb6870e1a85684f01b3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "146c838227983857e7845a56396e02fe205f7b02c47a0ad405426374fd18cb57",
+   "ppo_gru_packing_tests": "4112ffb6851d31df1d8cd2a9abe84ca5a081f5cfc114e1798dca24236e377bff",
+   "ppo_inputs_tests": "c40ce7a066327c8c49a29189c980f7b3ac6d53121b115b3ca8b9e16f15df7519",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "81fd229a65b01ac90b173a2a6ec60844f19532b38fdec238234233b0c08b8dcf",
+   "ppo_training_tests": "08b7351b014637d7dac238afe999a38dedf33553453a8837822268b376e52927",
+   "ppo_variant_objective_tests": "14f8b0ed1fcdc24f01b57e6a101108c401a0e73a953e51ea6463f2737ab6a101",
+   "ppo_variant_state_tests": "1533bb31a24d3b71a90304c96fab28ba9bf369e7dff9de352b629f43124b822e",
+   "qr_dqn_policy_tests": "b2303eef912981175f1a8b24ab4797cc54335c4c3757b07fb0a5d3edae29c271",
+   "rl_variety_tests": "c9732b600546a73d361df5981773e5fd3cc0393ba392b49ba020ca8368eafbd4",
+   "simulation_tests": "fbae066d3cd5aa676f06c3a3732a9191daa23baff9b23227fdd8c990ff0d93ba",
+   "threaded_simulation": "70597c6f3761e1f89814aed7eb61e2a52228e2961bc678ae7949d157c2cba1fa"
+  },
+  "started": {
+   "date": "2026-10-15T14:42:43+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 79.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.47412109375,
+    9.220703125,
+    8.1591796875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 14551015424
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5874 MiB",
+    "temperature.gpu": "75"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  },
+  "environment": {
+   "date": "2026-10-15T14:44:18+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 62.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    5.7666015625,
+    8.13525390625,
+    7.869140625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18177863680
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "428 MiB",
+    "temperature.gpu": "58"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  }
+ },
+ "base-revert": {
+  "kind": "native_build_variant",
+  "label": "base-revert",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 4.015565697976854,
+  "build_seconds": 10.972059674997581,
+  "children_peak_rss_kib": 672072,
+  "edges": 94,
+  "ccache": {
+   "direct_cache_hit": 55,
+   "preprocessed_cache_hit": 0,
+   "cache_miss": 0,
+   "files_in_cache": 280,
+   "cache_size_kibibyte": 24760,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "56ca0506cde556fc87bc0cd9f78fdd832893378322c8447466936a53ee124255",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "6046a050b34e99b9e83703aafd1a6662129fdcb88c043f3a4109f58b03758a6f",
+   "decision_trace_tests": "79b24231b5e65a1b9dc0e56134669c8f807d6d2b55c0719c388ff31cc3bf050d",
+   "episodic_memory_tests": "0bd340dd8056e356dfdc5f675a5fcaefdecf9729dae1bbf7d4c95c53467af7c0",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "3bf4f996b282a432b3333be54836f1aec077306ad19ab1fd120625256a8976d2",
+   "financial_session_tests": "583e52a64ea930a3a2daa1f5e04bf5f14a6544d303b34331ddf31119f6c23739",
+   "group_waves_tests": "eda3ca39e2aed19ef122a69602afbd00af14a0ace518ad627981a3a26f7bca38",
+   "klpo_actor_tests": "ab52c603588ea74ca4704e0afae9d7e7bb9736adfd7d22898dbe8d50c01d5b06",
+   "klpo_collection_tests": "08cebf3291f0c8a7c6fdd0ac9fa7c498d48a49b20cfdacff16b2002cd0106c68",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "d24b5a8d16de0b4d6d4c1b85d38ccb4b8a65cc13812106506d92da505484f4d9",
+   "klpo_policy_tests": "a88c50baa736a1c2322d1c688847c030da1b0d05e7d17aa4d78c757c9df84670",
+   "klpo_reference_tests": "df18eb070d81e7367dfb9d3b315fecfbcdc228ee89ba86fc0b6825e43a15d1c1",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "78a5d8b4be2bb596ba0b1c45c3b810c983f98d4a46713a604586dc48fd808a6f",
+   "learning_traces_tests": "841cc0052223b1ca9854bf165d2b9be6c62806c19065cd07971d34cce0974528",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "adf68bfcf897d8cf63e8ec6f998824952037d57aeb80e88b6700bb6e9f2178ec",
+   "mars-titan-batch-benchmark": "deafedd1a46c6296476cd4e18231e56f798e8a1fecd83bafc80e2d9f2a7996b1",
+   "mars-titan-klpo": "6db775ae8233d768e6721403518745e7fcf1bed7bbb13e0ef96500eefe130f04",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "409ac74c0a32bcac4adb0d6ba5e813687108504eb72e6bb74fdd96c379bff023",
+   "mars-titan-policy-benchmark": "24c431797f5c123b2ca9fb6107c1d066f6a5de90500ef1dece964cb39ba65bae",
+   "mars-titan-ppo": "9314ba5018d714638e34f65b286bb3f4a787e68ef513b937b2528e92e7383018",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "5f54b7adfde6fe7bc334d605ebf96b69d14b92aa55a3d1ed000630f7a6f2d6be",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "fdf4a0fc1302b9e02917a04f5527b887ccbdf55c5e0a96e28ebac34ca8fabe39",
+   "policy_evaluation_only_tests": "302cef1dbaf06d05ac198e372a786e0afa7f6384535114580f57c47456efb8b5",
+   "ppo_checkpoint_tests": "44751fda6082426c27708876d85b8ce91c9006ebf135230e73b4448abf131058",
+   "ppo_collection_tests": "be04c71cce4ab441997c9c75ae08095b5de4c1af5885f924ed02de6284d2a8b3",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "c72e932b37bccf483adedda3c7870fac92a243559ca148072cbcf8251dbdf844",
+   "ppo_gru_packing_tests": "c6158a8c6258924c08c4e1aac88ec002c396c4c2074ea64c88cf4d8443e0efdb",
+   "ppo_inputs_tests": "e4552b5b2e3a02d90395b27f06bec446a007c282e03d1d58d641a5f1a752fffe",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "c17ef3cc22bfc56d4ac495f902b176ae0f54b4aa7b04c3cf9f5b7ec2b3140d20",
+   "ppo_training_tests": "2e105bbc14e3797f77213ae29da58c413de520db0592147caace84e160af9917",
+   "ppo_variant_objective_tests": "cc449298756bc90effa6fcc70744a19e705650fefb7a2a86b30f1911da29f96e",
+   "ppo_variant_state_tests": "f6a808c0c5de34b2c8874d4c97e726f567431ec4ff8c96c0855998e39dcb4d0c",
+   "qr_dqn_policy_tests": "6d7f6dcc524e3ec3b5f0ad55859f2745251a0efe2190f8bb63078938c13573e6",
+   "rl_variety_tests": "30eabc4442e06b6ce9b5cbfca84ffea13a090d4b2583065dab5b98b608588460",
+   "simulation_tests": "fbae066d3cd5aa676f06c3a3732a9191daa23baff9b23227fdd8c990ff0d93ba",
+   "threaded_simulation": "70597c6f3761e1f89814aed7eb61e2a52228e2961bc678ae7949d157c2cba1fa"
+  },
+  "started": {
+   "date": "2026-10-15T14:44:18+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 62.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    5.7666015625,
+    8.13525390625,
+    7.869140625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18167746560
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "428 MiB",
+    "temperature.gpu": "58"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  },
+  "environment": {
+   "date": "2026-10-15T14:44:33+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 61.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    5.2265625,
+    7.8994140625,
+    7.79541015625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 18883084288
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "428 MiB",
+    "temperature.gpu": "57"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base"
+  }
+ },
+ "base-worktree": {
+  "kind": "native_build_variant",
+  "label": "base-worktree",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+   "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  ],
+  "jobs": 2,
+  "configure_seconds": 14.282620248006424,
+  "build_seconds": 116.43377575601335,
+  "children_peak_rss_kib": 671500,
+  "edges": 137,
+  "ccache": {
+   "direct_cache_hit": 24,
+   "preprocessed_cache_hit": 49,
+   "cache_miss": 6,
+   "files_in_cache": 219,
+   "cache_size_kibibyte": 18488,
+   "uncacheable": 0,
+   "compiler_check_failed": 0
+  },
+  "identity": {
+   "sha256": "1d16b2395fd753df5a838482a6055b404dc7cf5221338fc215cc3eb88a41a317",
+   "compiler_launcher": "ccache",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "62997effbbc28e31cb90b9de42785e78d4147d4c198e274ab0475e2d0ecf46d1",
+   "decision_trace_tests": "4f306ca3edd27608f1cdd3420985c960e1920177bce1fc10df92f79b6accce87",
+   "episodic_memory_tests": "c3fff763f11200b739999ab25809e6a94922215889381ed642e6114742aef40b",
+   "episodic_projection_tests": "0ac6cff0314de99fa13606d0adae87d74a88321fd6bb235871aab67b549b40eb",
+   "financial_batch_tests": "26bc3315af9f5f2a1f9b291d53cbf61fe5c8e463ddc647a5a52a22f363109514",
+   "financial_session_tests": "8c1392ef6e6a658afdf94b6a81ca674bfd02c7a0d9f69e9b2fff45c81d75fe2a",
+   "group_waves_tests": "ce786a756d9d81a7d8a9e980b7b4746a0851710e872d36ac1290fd8d640bd3e0",
+   "klpo_actor_tests": "272044858628acd3e18838f519e179fecb3e8c9d8d8eebdfa489605ac1da99a0",
+   "klpo_collection_tests": "e0d65f3829f665e3fdcc1feb040937914e6a40a7044c38786ab19a2c7c0daff2",
+   "klpo_episodes_tests": "c72bd290cac2fb43163030eee23f124005a16116fc83c02e2013396e00f2c1a1",
+   "klpo_learning_tests": "6993e745b6df576db5b7a24f0c9eb7b4536db91f44e3090430881bf06d6d1020",
+   "klpo_policy_tests": "165b5bf012bc19801992cc21bf2b7011975ad3bf74557d17d4747f5447879268",
+   "klpo_reference_tests": "348aaa4c3785a9e6b240dd2ac3e3d9fa983fa8ba58fc7d73efad9fd8695ac614",
+   "klpo_terminal_tests": "2fe86b38a494c7425711723e9bdb9776f48646fa4502e32111a7396b5bd757d8",
+   "learning_gate_tests": "6fd9eacca340c7a32c6141125350c9dca304942f3b0b7468a0873a18b9248494",
+   "learning_hold_tests": "503afb03350b78ae21d4ec30db9b63154bcc0d9501f6fd5b909644c2aaa02a14",
+   "learning_replay_tests": "1a662a2536234adfc537143d453b6a835cf9abf4a014f8ab22ca128b41c78a0f",
+   "learning_traces_tests": "c7ca18b52d56074150c0e5f013bbf3384d93b4142c43cf95b4f18e7fd96a68f6",
+   "libmars_titan_simulation.so": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+   "markov_filter_tests": "8fdab2ce3266a98a2a70257fad2d7005521fee271f235cc25d16daff4d0d8bcf",
+   "mars-titan-batch-benchmark": "6df7a83da844376e90f3d33b57c41d33df796bd0ec15721423ee65c14126ac1a",
+   "mars-titan-klpo": "b85b155c161ab854abd9690ffd8e707603348f899640a0daba138fcaca79172d",
+   "mars-titan-learning-gate": "f2f89d874eadd033c456e11d40dc58ec9022fb7da7f789ca6ace9eaa69fd648d",
+   "mars-titan-memory-benchmark": "eaeb8150948c4b0bd7121fe904f5ba69fdef89028902def18c4e0b7d897e3e52",
+   "mars-titan-policy-benchmark": "f69df68c5223dd484e00fb3693d0a149db50dfed759515eab4a21087ff55bbaf",
+   "mars-titan-ppo": "5f77200d302ddc38059150803b2d5a9011a254200e95558b7bb3747bfd04c18e",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "acd417acdd11714c7b9a808d3f4ed3cc6a401db6edc7c4bf70a1528f967d5740",
+   "medoid_kernels_tests": "a4b8d72b0d57629d0ce5fd4eae35f05d7b48acf0f15328351fa269207bd4132f",
+   "policy_context_tests": "0c455985bf9f2e37233fe497df436040a4c90be630f5b0bc0e4024b7b8cdefca",
+   "policy_evaluation_only_tests": "e115c52bac8885e55efa9c20bb61d5b063f5b8f687ee7e9b4a341102fcf57a2d",
+   "ppo_checkpoint_tests": "af4598ec5fbc07515a33cac8dd14cc9c9ab8b5aa8acb00f26ea049c6637e2b76",
+   "ppo_collection_tests": "694ff2c4227ac2f9978af9246ada385561ff9b6acd962aaff70b8ca892ec3f82",
+   "ppo_controller_tests": "faa2df92eab18d4a75c4716f8de65914b6e760b97549baf9dfd25df59f14c5bb",
+   "ppo_evaluation_tests": "a3b60e6595a2287c2659d056c7a0d15af7374b89b1d9a470f9d93ad3b7826b29",
+   "ppo_gru_packing_tests": "c0ffe5db85dd86a5e43fa3e468c7e1c4f596f300c281ffbce212d6b5bd28e85f",
+   "ppo_inputs_tests": "dba0adbae592c4ab287d3559b728e887cfcc0f254bc78ff16c0c943ef3461ae3",
+   "ppo_objective_tests": "7258381185f3b21399e3efb6b0123a565c64553e49ae9adec91a8a46694bd865",
+   "ppo_policy_tests": "892a8d7a66537152ebdb04f3fcb6b3e3d296d42a0ce40d480a3a00388583b9c9",
+   "ppo_training_tests": "26c1dde72659386b9906121d82f2af62a6063e611a8dfd3468aaf4c58b9aa80b",
+   "ppo_variant_objective_tests": "ed49e0aeab2f0d7bdcd6def20bac915d1ee2e8e0a21ed981f2f79e1bbf1cbf17",
+   "ppo_variant_state_tests": "9d2c1cc8aa8775d8067a2063c508db42065ab975b078c5bfbb2cef823a571b74",
+   "qr_dqn_policy_tests": "5eec252107c34d919761accbba27e453c13a7f9afedb620ead2606bc23182383",
+   "rl_variety_tests": "167a0d7eb939d5d9ccc785a2319845c85bd8c49b6f344a760bc21c477d4b5340",
+   "simulation_tests": "15ccc68ddc04bb1c601e32cffe68c1eeffb578f749b6f5ae21d6831cdc83e63a",
+   "threaded_simulation": "8e97df1810e84dce6d4e828444788dc0c533faa90aecff82978cacce9accb55d"
+  },
+  "started": {
+   "date": "2026-10-15T14:40:31+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 78.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    10.255859375,
+    10.53466796875,
+    8.37890625
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 12275040256
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5874 MiB",
+    "temperature.gpu": "87"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base2"
+  },
+  "environment": {
+   "date": "2026-10-15T14:42:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 79.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.47412109375,
+    9.220703125,
+    8.1591796875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 14369034240
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5874 MiB",
+    "temperature.gpu": "75"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-identity-487",
+   "ccache_basedir": "build-identity-487-base2"
+  }
+ },
+ "compare-after-r1": {
+  "kind": "native_build_comparison",
+  "first": "after-r1-cold",
+  "second": "after-r1-worktree",
+  "identity_sha256": [
+   "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6"
+  ],
+  "objects_sha256": {
+   "total": 80,
+   "equal": 79,
+   "identity_only": 1,
+   "identity_and_link_metadata": 0,
+   "content": 0,
+   "differences": {
+    "CMakeFiles/mars_titan_financial.dir/src/build_identity.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 46,
+   "equal": 11,
+   "identity_only": 0,
+   "identity_and_link_metadata": 35,
+   "content": 0,
+   "differences": {
+    "c_abi_test": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_batch_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-sim": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "simulation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    }
+   }
+  }
+ },
+ "compare-after-r2": {
+  "kind": "native_build_comparison",
+  "first": "after-r2-cold",
+  "second": "after-r2-worktree",
+  "identity_sha256": [
+   "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6"
+  ],
+  "objects_sha256": {
+   "total": 80,
+   "equal": 79,
+   "identity_only": 1,
+   "identity_and_link_metadata": 0,
+   "content": 0,
+   "differences": {
+    "CMakeFiles/mars_titan_financial.dir/src/build_identity.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 46,
+   "equal": 11,
+   "identity_only": 0,
+   "identity_and_link_metadata": 35,
+   "content": 0,
+   "differences": {
+    "c_abi_test": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_batch_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-sim": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "simulation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    }
+   }
+  }
+ },
+ "compare-after-r3": {
+  "kind": "native_build_comparison",
+  "first": "after-r3-cold",
+  "second": "after-r3-worktree",
+  "identity_sha256": [
+   "6e8a362adef3d0164a681de8149b0cd1a62e8e49198b7ad29b6b0ba4716492a4",
+   "555ed067e8e169eca2c16c9bcedc298e5718875a9c49a75123c3a3db42c75bc6"
+  ],
+  "objects_sha256": {
+   "total": 80,
+   "equal": 79,
+   "identity_only": 1,
+   "identity_and_link_metadata": 0,
+   "content": 0,
+   "differences": {
+    "CMakeFiles/mars_titan_financial.dir/src/build_identity.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 46,
+   "equal": 11,
+   "identity_only": 0,
+   "identity_and_link_metadata": 35,
+   "content": 0,
+   "differences": {
+    "c_abi_test": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_batch_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-sim": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "simulation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    }
+   }
+  }
+ },
+ "compare-base": {
+  "kind": "native_build_comparison",
+  "first": "base-cold",
+  "second": "base-worktree",
+  "identity_sha256": [
+   "56ca0506cde556fc87bc0cd9f78fdd832893378322c8447466936a53ee124255",
+   "1d16b2395fd753df5a838482a6055b404dc7cf5221338fc215cc3eb88a41a317"
+  ],
+  "objects_sha256": {
+   "total": 79,
+   "equal": 73,
+   "identity_only": 6,
+   "identity_and_link_metadata": 0,
+   "content": 0,
+   "differences": {
+    "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+     "class": "identity_only",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": []
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 46,
+   "equal": 11,
+   "identity_only": 0,
+   "identity_and_link_metadata": 35,
+   "content": 0,
+   "differences": {
+    "c_abi_test": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_batch_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "mars-titan-sim": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "simulation_tests": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    }
+   }
+  }
+ }
+}

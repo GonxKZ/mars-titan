@@ -1,0 +1,7725 @@
+{
+ "compare-base-ppo-ipo-pgo": {
+  "kind": "native_build_comparison",
+  "first": "ppo-base-r3",
+  "second": "ppo-ipo-pgo",
+  "identity_sha256": [
+   "01faf814f3c694e625dbb1c335edcac4ecaa3cea02f492b7df1b1e3f59a281bb",
+   "7e3507c93370b307f88f8431b84427ef4cfecd91d30d71663c5a44dc8c8badf6"
+  ],
+  "objects_sha256": {
+   "total": 77,
+   "equal": 0,
+   "identity_only": 0,
+   "identity_and_link_metadata": 0,
+   "content": 77,
+   "differences": {
+    "CMakeFiles/c_abi_test.dir/tests/c_abi_test.c.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/decision_trace_tests.dir/tests/decision_trace_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_memory_tests.dir/tests/episodic_memory_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_projection_tests.dir/tests/episodic_projection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_batch_tests.dir/tests/financial_batch_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_session_tests.dir/tests/financial_session_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/group_waves_tests.dir/tests/group_waves_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_actor_tests.dir/tests/klpo_actor_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_collection_tests.dir/tests/klpo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_episodes_tests.dir/tests/klpo_episodes_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_learning_tests.dir/tests/klpo_learning_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_policy_tests.dir/tests/klpo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_reference_tests.dir/tests/klpo_reference_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_terminal_tests.dir/tests/klpo_terminal_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_gate_tests.dir/tests/learning_gate_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_hold_tests.dir/tests/learning_hold_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_replay_tests.dir/tests/learning_replay_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_traces_tests.dir/tests/learning_traces_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/markov_filter_tests.dir/tests/markov_filter_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-klpo.dir/src/klpo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-learning-gate.dir/src/learning_gate_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-memory-benchmark.dir/benchmarks/episodic_query.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-policy-benchmark.dir/benchmarks/policy_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-ppo.dir/src/ppo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-projection-benchmark.dir/benchmarks/episodic_projection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-sim.dir/src/simulation_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_episodic_projection.dir/src/episodic_projection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_batch.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_session.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/markov_filter.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/group_waves.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_learning.dir/src/klpo_learning.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_learning_gate.dir/src/learning_gate.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_learning_hold.dir/src/learning_hold.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_evaluation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_tapes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/episodic_memory.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/learning_replay.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/policy_context.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_policy.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_training.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/decision_trace.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/learning_traces.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_checkpoints.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_inputs.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/group_relative.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_episodes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_terminal.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_controller.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_objectives.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/quantile_dqn.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation.dir/src/simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/financial_parquet.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/reconstructed_tape.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_context_tests.dir/tests/policy_context_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_evaluation_only_tests.dir/tests/policy_evaluation_only_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_checkpoint_tests.dir/tests/ppo_checkpoint_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_collection_tests.dir/tests/ppo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_controller_tests.dir/tests/ppo_controller_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_evaluation_tests.dir/tests/ppo_evaluation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_gru_packing_tests.dir/tests/ppo_gru_packing_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_inputs_tests.dir/tests/ppo_inputs_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_objective_tests.dir/tests/ppo_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_policy_tests.dir/tests/ppo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_training_tests.dir/tests/ppo_training_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_objective_tests.dir/tests/ppo_variant_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_state_tests.dir/tests/ppo_variant_state_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/qr_dqn_policy_tests.dir/tests/qr_dqn_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/rl_variety_tests.dir/tests/rl_variety_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/simulation_tests.dir/tests/simulation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/threaded_simulation.dir/tests/threaded_simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 45,
+   "equal": 0,
+   "identity_only": 0,
+   "identity_and_link_metadata": 0,
+   "content": 45,
+   "differences": {
+    "c_abi_test": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".note.gnu.build-id",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_projection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "financial_batch_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_episodes_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_terminal_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_gate_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_hold_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "libmars_titan_simulation.so": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-learning-gate": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-projection-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "mars-titan-sim": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_controller_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "simulation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".rela.dyn",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    }
+   }
+  }
+ },
+ "compare-base-ppo-ipo": {
+  "kind": "native_build_comparison",
+  "first": "ppo-base-r3",
+  "second": "ppo-ipo",
+  "identity_sha256": [
+   "01faf814f3c694e625dbb1c335edcac4ecaa3cea02f492b7df1b1e3f59a281bb",
+   "89a00ee36cfbbe9c709e6f423837672b9b462112a877c94d5820aca113f11e94"
+  ],
+  "objects_sha256": {
+   "total": 77,
+   "equal": 0,
+   "identity_only": 0,
+   "identity_and_link_metadata": 0,
+   "content": 77,
+   "differences": {
+    "CMakeFiles/c_abi_test.dir/tests/c_abi_test.c.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/decision_trace_tests.dir/tests/decision_trace_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_memory_tests.dir/tests/episodic_memory_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_projection_tests.dir/tests/episodic_projection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_batch_tests.dir/tests/financial_batch_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_session_tests.dir/tests/financial_session_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/group_waves_tests.dir/tests/group_waves_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_actor_tests.dir/tests/klpo_actor_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_collection_tests.dir/tests/klpo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_episodes_tests.dir/tests/klpo_episodes_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_learning_tests.dir/tests/klpo_learning_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_policy_tests.dir/tests/klpo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_reference_tests.dir/tests/klpo_reference_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_terminal_tests.dir/tests/klpo_terminal_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_gate_tests.dir/tests/learning_gate_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_hold_tests.dir/tests/learning_hold_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_replay_tests.dir/tests/learning_replay_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_traces_tests.dir/tests/learning_traces_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/markov_filter_tests.dir/tests/markov_filter_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-klpo.dir/src/klpo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-learning-gate.dir/src/learning_gate_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-memory-benchmark.dir/benchmarks/episodic_query.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-policy-benchmark.dir/benchmarks/policy_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-ppo.dir/src/ppo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-projection-benchmark.dir/benchmarks/episodic_projection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-sim.dir/src/simulation_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_episodic_projection.dir/src/episodic_projection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_batch.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_session.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/markov_filter.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/group_waves.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_learning.dir/src/klpo_learning.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_learning_gate.dir/src/learning_gate.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_learning_hold.dir/src/learning_hold.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_evaluation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_tapes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/episodic_memory.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/learning_replay.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/policy_context.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_policy.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_training.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/decision_trace.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/learning_traces.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_checkpoints.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_inputs.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/group_relative.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_episodes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_terminal.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_controller.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_objectives.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/quantile_dqn.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation.dir/src/simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/financial_parquet.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/reconstructed_tape.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_context_tests.dir/tests/policy_context_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_evaluation_only_tests.dir/tests/policy_evaluation_only_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_checkpoint_tests.dir/tests/ppo_checkpoint_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_collection_tests.dir/tests/ppo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_controller_tests.dir/tests/ppo_controller_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_evaluation_tests.dir/tests/ppo_evaluation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_gru_packing_tests.dir/tests/ppo_gru_packing_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_inputs_tests.dir/tests/ppo_inputs_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_objective_tests.dir/tests/ppo_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_policy_tests.dir/tests/ppo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_training_tests.dir/tests/ppo_training_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_objective_tests.dir/tests/ppo_variant_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_state_tests.dir/tests/ppo_variant_state_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/qr_dqn_policy_tests.dir/tests/qr_dqn_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/rl_variety_tests.dir/tests/rl_variety_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/simulation_tests.dir/tests/simulation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/threaded_simulation.dir/tests/threaded_simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 45,
+   "equal": 0,
+   "identity_only": 0,
+   "identity_and_link_metadata": 0,
+   "content": 45,
+   "differences": {
+    "c_abi_test": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".note.gnu.build-id",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_projection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "financial_batch_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_episodes_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_learning_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_terminal_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_gate_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".rela.dyn",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_hold_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "libmars_titan_simulation.so": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-learning-gate": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-projection-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "mars-titan-sim": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_controller_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "simulation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".note.gnu.build-id",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".rela.dyn",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    }
+   }
+  }
+ },
+ "compare-base-ppo-pgo": {
+  "kind": "native_build_comparison",
+  "first": "ppo-base-r3",
+  "second": "ppo-pgo",
+  "identity_sha256": [
+   "01faf814f3c694e625dbb1c335edcac4ecaa3cea02f492b7df1b1e3f59a281bb",
+   "ec43bc3b8a8d85d6e4fffc78fb7c56ceac577216282004bd6b3b29d8bac324a9"
+  ],
+  "objects_sha256": {
+   "total": 77,
+   "equal": 4,
+   "identity_only": 0,
+   "identity_and_link_metadata": 0,
+   "content": 73,
+   "differences": {
+    "CMakeFiles/decision_trace_tests.dir/tests/decision_trace_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_memory_tests.dir/tests/episodic_memory_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/episodic_projection_tests.dir/tests/episodic_projection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_batch_tests.dir/tests/financial_batch_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/financial_session_tests.dir/tests/financial_session_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/group_waves_tests.dir/tests/group_waves_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_actor_tests.dir/tests/klpo_actor_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_collection_tests.dir/tests/klpo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_episodes_tests.dir/tests/klpo_episodes_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_learning_tests.dir/tests/klpo_learning_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_policy_tests.dir/tests/klpo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_reference_tests.dir/tests/klpo_reference_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/klpo_terminal_tests.dir/tests/klpo_terminal_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_gate_tests.dir/tests/learning_gate_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_hold_tests.dir/tests/learning_hold_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_replay_tests.dir/tests/learning_replay_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/learning_traces_tests.dir/tests/learning_traces_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/markov_filter_tests.dir/tests/markov_filter_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-batch-benchmark.dir/benchmarks/batch_rollout.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-klpo.dir/src/klpo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-learning-gate.dir/src/learning_gate_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-memory-benchmark.dir/benchmarks/episodic_query.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-policy-benchmark.dir/benchmarks/policy_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-ppo.dir/src/ppo_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars-titan-sim.dir/src/simulation_main.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_batch.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/financial_session.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_financial.dir/src/markov_filter.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/group_waves.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_collection.dir/src/klpo_collection.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_klpo_learning.dir/src/klpo_learning.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_learning_hold.dir/src/learning_hold.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/klpo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_command.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_evaluation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/policy_tapes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_policy_stage.dir/src/ppo_experiment.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/episodic_memory.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/learning_replay.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/policy_context.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_policy.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo.dir/src/ppo_training.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/decision_trace.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/learning_traces.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_checkpoints.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_ppo_files.dir/src/ppo_inputs.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/group_relative.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_episodes.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/klpo_terminal.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_controller.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/ppo_objectives.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_rl_objectives.dir/src/quantile_dqn.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation.dir/src/simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/financial_parquet.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/reconstructed_tape.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/mars_titan_simulation_files.dir/src/simulation_files.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_context_tests.dir/tests/policy_context_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/policy_evaluation_only_tests.dir/tests/policy_evaluation_only_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_checkpoint_tests.dir/tests/ppo_checkpoint_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_collection_tests.dir/tests/ppo_collection_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_controller_tests.dir/tests/ppo_controller_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_evaluation_tests.dir/tests/ppo_evaluation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_gru_packing_tests.dir/tests/ppo_gru_packing_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_inputs_tests.dir/tests/ppo_inputs_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_objective_tests.dir/tests/ppo_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_policy_tests.dir/tests/ppo_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_training_tests.dir/tests/ppo_training_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_objective_tests.dir/tests/ppo_variant_objective_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/ppo_variant_state_tests.dir/tests/ppo_variant_state_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/qr_dqn_policy_tests.dir/tests/qr_dqn_policy_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/rl_variety_tests.dir/tests/rl_variety_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "CMakeFiles/simulation_tests.dir/tests/simulation_tests.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".eh_frame",
+      ".llvm_addrsig",
+      ".rela.eh_frame",
+      ".rela.text",
+      ".rodata.cst16",
+      ".rodata.cst8",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "CMakeFiles/threaded_simulation.dir/tests/threaded_simulation.cpp.o": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    }
+   }
+  },
+  "linked_sha256": {
+   "total": 45,
+   "equal": 1,
+   "identity_only": 0,
+   "identity_and_link_metadata": 1,
+   "content": 43,
+   "differences": {
+    "c_abi_test": {
+     "class": "identity_and_link_metadata",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".dynamic",
+      ".dynstr",
+      ".note.gnu.build-id"
+     ]
+    },
+    "decision_trace_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_memory_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "episodic_projection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "financial_batch_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "financial_session_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "group_waves_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_actor_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_episodes_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": null
+    },
+    "klpo_learning_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_reference_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "klpo_terminal_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_gate_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_hold_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_replay_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "learning_traces_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "libmars_titan_simulation.so": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "markov_filter_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-batch-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-klpo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-learning-gate": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-memory-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-policy-benchmark": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-ppo": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "mars-titan-sim": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_context_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "policy_evaluation_only_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_checkpoint_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_collection_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_controller_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_evaluation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_gru_packing_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_inputs_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_training_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_objective_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "ppo_variant_state_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "qr_dqn_policy_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "rl_variety_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      1,
+      1
+     ],
+     "differing_sections": [
+      ".data",
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gcc_except_table",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "simulation_tests": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data",
+      ".dynamic",
+      ".dynstr",
+      ".dynsym",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".fini_array",
+      ".gnu.hash",
+      ".gnu.version",
+      ".gnu.version_r",
+      ".got.plt",
+      ".init_array",
+      ".note.gnu.build-id",
+      ".plt",
+      ".plt.got",
+      ".rela.dyn",
+      ".rela.plt",
+      ".rodata",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    },
+    "threaded_simulation": {
+     "class": "content",
+     "identity_occurrences": [
+      0,
+      0
+     ],
+     "differing_sections": [
+      ".data.rel.ro",
+      ".dynamic",
+      ".dynstr",
+      ".eh_frame",
+      ".eh_frame_hdr",
+      ".gcc_except_table",
+      ".note.gnu.build-id",
+      ".rela.dyn",
+      ".strtab",
+      ".symtab",
+      ".text"
+     ]
+    }
+   }
+  }
+ },
+ "ppo-ipo-pgo": {
+  "kind": "native_build_variant",
+  "label": "ppo-ipo-pgo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DCMAKE_CXX_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DMARS_TITAN_ENABLE_IPO=ON",
+   "-DMARS_TITAN_PGO=use",
+   "-DMARS_TITAN_PGO_DATA=policy.profdata"
+  ],
+  "jobs": 2,
+  "configure_seconds": 9.464102162019117,
+  "build_seconds": 479.9799079479999,
+  "children_peak_rss_kib": 703832,
+  "edges": 133,
+  "ccache": null,
+  "identity": {
+   "sha256": "7e3507c93370b307f88f8431b84427ef4cfecd91d30d71663c5a44dc8c8badf6",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "ON",
+   "pgo": "use"
+  },
+  "linked_sha256": {
+   "c_abi_test": "673a4dd0ce6744ad9c684a06dcb2e9910f2e588028354e82c4171da74387f50f",
+   "decision_trace_tests": "d719aa738476527fa3c061820029640fad65e1f8c858e91bcb762ea9d941d8b5",
+   "episodic_memory_tests": "b1c8116dc9abc643efd072577f12cee5af1969019ae8bd05c7a5be68ce320b39",
+   "episodic_projection_tests": "984eb727d95a2cedb924c8adc0ff3f9d7a16d52daca386cfb5a6005c94e2d349",
+   "financial_batch_tests": "afb5ae367732905ffa19f0189648e0cd307bb73285f8d05d9f56563efb964fe9",
+   "financial_session_tests": "2d79cfe7969807f1ccbcc5c639839d40589e059586c6f745b71425058df29a9a",
+   "group_waves_tests": "3b4e39719fda1c278786c12b2d609fbd952448934ac62bca21f25ab60a70f48f",
+   "klpo_actor_tests": "0f4741d6b89f9f8610aed9ce8f01745bb04509b2275cef51b673cd45fd15c5bd",
+   "klpo_collection_tests": "a6dcce0dfd25e60d2dd551e818324625656903f5ab3db5e918c33f75ceeae26f",
+   "klpo_episodes_tests": "8934601e6a2c792a06031554ebb93f32fff878dd432cbb8a8eca32445c41b345",
+   "klpo_learning_tests": "75ab3f6d3d7e4d8112b4f84055fa6ef3cafd018793c696f8bf4c2e56b48491ef",
+   "klpo_policy_tests": "4ad1c20d44aa9908564cd971a5efa1f60a4bb8698804fdf5b46d6816e059a008",
+   "klpo_reference_tests": "7c4a8179f188d60348bed146c5ba26d8d21295b4338f28f848842f531b49dc47",
+   "klpo_terminal_tests": "2053c5058713b56d3f91e35febc4dcb190d31a01e6da939b97cc17535f6bc77d",
+   "learning_gate_tests": "2feb1e9508b1e72519ad11d14ec5cc0976b9bb27ab67b51765013b8b2183d1f7",
+   "learning_hold_tests": "53e284e0ad0c460b2cff1f0ef766be57c29bacbc40b66ecdaa72fec108857fe1",
+   "learning_replay_tests": "393f198b626a59fbe6b187fe976e2e613a6cc07d64c538fe5f18764e64043910",
+   "learning_traces_tests": "dd8b4a8c6ce0361992a145da5bd88bee34df2874b69fdac454c4d3a89a2d5eaa",
+   "libmars_titan_simulation.so": "3b065f8e68595f24697b1a10f8b2f898aef0c7575b999c9c0a8c154ed63596ff",
+   "markov_filter_tests": "a7730f698cafd8aee33697e0c73b1b53e5e5441744ef6169a75f0963f83d8f43",
+   "mars-titan-batch-benchmark": "b2e5991deea17d5ec25a277e2f8e23044fc0eeba3693276860d8063988322fc3",
+   "mars-titan-klpo": "e869b2bfcc5630ab8ff04681aea4e724aae797c60df5d5c9c8ca868348e8c4db",
+   "mars-titan-learning-gate": "632cd7061dc65e90c3136bb262d27fd6cf33c11d61c30e490b48416859531e85",
+   "mars-titan-memory-benchmark": "155efc676dce7c340cd8f12e58caab92035556dde9b9ebc64e629fe571a59098",
+   "mars-titan-policy-benchmark": "3eb77eba0dffd5ddc3cc3bb2b4e51cdfddc812ea7062bedb730ae1504d312a92",
+   "mars-titan-ppo": "d7e2db3858c0ae6281ec6e8bf6839425e4b3b93a0fdededb7bfd555eabf76457",
+   "mars-titan-projection-benchmark": "ce9896e200c2caa22ddddda1ea4619b9b93a17e5397bb99ac247be1fc96fd423",
+   "mars-titan-sim": "ceb1e20fa104e1a3ad0c02431e2b9adae67a3b417d3bf40f729aa0ea636cad79",
+   "policy_context_tests": "283bec4694f5aae941522d737af30ed4eb52405f7a92530a83ccb3d6da6a99a0",
+   "policy_evaluation_only_tests": "07be93314df38e34f86967a919945ef72eb16e9b7e609150252cc09893939456",
+   "ppo_checkpoint_tests": "81c3e256503298fa6fee1450da8ce3db89235f66a0e4f70ed691ff88cf77feda",
+   "ppo_collection_tests": "dea59de637f7dcf54f22b381c83bf0e8839c02c3daf9c691194f654d3abef108",
+   "ppo_controller_tests": "a97c7dab1c4eede1518e9987cdf2cb36abfdc1d1fbaa57d34b160416f33472bc",
+   "ppo_evaluation_tests": "1f072fe604cfdd453e7b9db97e37b74f5db55b36417c8bc0fba74661c6374a20",
+   "ppo_gru_packing_tests": "8cabf94ac65c0efa15c1361958841130314957408a6c25458635601c64ebfacf",
+   "ppo_inputs_tests": "ce76b89c4a58f1ebc4fc74d732551a157875a16132850d8657a6da76034a776a",
+   "ppo_objective_tests": "e841d29b3a2b5ab8bdd0bb69e825c659d89567c4732f4a7ad18d7a54a4b605bc",
+   "ppo_policy_tests": "2f7f5747f0d6b87f1c22bfd132132202e255f03ade3c86f3866ef99ccdf7b391",
+   "ppo_training_tests": "1f89993f3ec0ccde2a649e84a396fc7b9ba0c8205a3def919c76009468d10ece",
+   "ppo_variant_objective_tests": "53c79a937b63ed4ce0019ca6e81015d33222de198ea2b501be227364b05e58af",
+   "ppo_variant_state_tests": "079b9d46043153c9081a3c298d662acc203ef9e12e84eef7d7b06dca4514ea7e",
+   "qr_dqn_policy_tests": "004544c3873802bcecb09445a8b84a15d058f6ffc5166eed77775f513d8df0ab",
+   "rl_variety_tests": "167f23b77cb167303272ba9696e59dce489a0f53891de0865b64f04e1cb07f2a",
+   "simulation_tests": "e1c54502b6137ca66aae141106d2c60e7e0464667aa611591a82604e031d0242",
+   "threaded_simulation": "096565e13157bae5177c03748bbe98d76274d7a7882e48970bd48f5310778ecf"
+  },
+  "linked_bytes": {
+   "c_abi_test": 16240,
+   "decision_trace_tests": 533208,
+   "episodic_memory_tests": 233824,
+   "episodic_projection_tests": 119696,
+   "financial_batch_tests": 211032,
+   "financial_session_tests": 192080,
+   "group_waves_tests": 755312,
+   "klpo_actor_tests": 271336,
+   "klpo_collection_tests": 948656,
+   "klpo_episodes_tests": 83000,
+   "klpo_learning_tests": 1082184,
+   "klpo_policy_tests": 217112,
+   "klpo_reference_tests": 693848,
+   "klpo_terminal_tests": 101248,
+   "learning_gate_tests": 46480,
+   "learning_hold_tests": 144896,
+   "learning_replay_tests": 108768,
+   "learning_traces_tests": 393152,
+   "libmars_titan_simulation.so": 43168,
+   "markov_filter_tests": 125264,
+   "mars-titan-batch-benchmark": 172968,
+   "mars-titan-klpo": 1764536,
+   "mars-titan-learning-gate": 120792,
+   "mars-titan-memory-benchmark": 66264,
+   "mars-titan-policy-benchmark": 1536208,
+   "mars-titan-ppo": 2117896,
+   "mars-titan-projection-benchmark": 106040,
+   "mars-titan-sim": 709696,
+   "policy_context_tests": 299880,
+   "policy_evaluation_only_tests": 993224,
+   "ppo_checkpoint_tests": 414648,
+   "ppo_collection_tests": 718320,
+   "ppo_controller_tests": 65000,
+   "ppo_evaluation_tests": 802272,
+   "ppo_gru_packing_tests": 338000,
+   "ppo_inputs_tests": 748384,
+   "ppo_objective_tests": 67632,
+   "ppo_policy_tests": 483560,
+   "ppo_training_tests": 897488,
+   "ppo_variant_objective_tests": 182232,
+   "ppo_variant_state_tests": 618600,
+   "qr_dqn_policy_tests": 255928,
+   "rl_variety_tests": 305128,
+   "simulation_tests": 25608,
+   "threaded_simulation": 18264
+  },
+  "started": {
+   "date": "2026-10-15T15:30:04+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 44.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.75,
+    7.71533203125,
+    8.0458984375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 14642847744
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "43"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  },
+  "environment": {
+   "date": "2026-10-15T15:38:14+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 44.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    12.798828125,
+    9.18896484375,
+    8.3388671875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 15639433216
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "43"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  }
+ },
+ "ppo-ipo": {
+  "kind": "native_build_variant",
+  "label": "ppo-ipo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DMARS_TITAN_ENABLE_IPO=ON"
+  ],
+  "jobs": 2,
+  "configure_seconds": 6.857036063011037,
+  "build_seconds": 282.4484207339992,
+  "children_peak_rss_kib": 703224,
+  "edges": 133,
+  "ccache": null,
+  "identity": {
+   "sha256": "89a00ee36cfbbe9c709e6f423837672b9b462112a877c94d5820aca113f11e94",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "ON",
+   "pgo": "off"
+  },
+  "linked_sha256": {
+   "c_abi_test": "122d3f2b7f58a51f7d10617bdb7e991c8bbaa3dae3b86ba49ad145d9b4e32a31",
+   "decision_trace_tests": "e87e29f4ea8f4195cc71fdf0b4be27c5f11bac462f6937bb621f392ea306fe0f",
+   "episodic_memory_tests": "828ee97d452efca490834226c22780cafe751373e1a77f35f83243d38917c69b",
+   "episodic_projection_tests": "56b692cd9f2ed76fefb24f5128c8626075da7db3888c89c214c8d3ba331a0134",
+   "financial_batch_tests": "e794f466b3f58bd6dd9dfebb6d6f766df28af111251be2794e85ff5664673bb7",
+   "financial_session_tests": "f67f2765d6c1bd55644ce3b511ba32d4d88a0752d9b34549150ab6bea86ed89e",
+   "group_waves_tests": "3ca83491bcca08c3815ce924442c8e06adb29dd0cb32d35a39472de0772047a0",
+   "klpo_actor_tests": "54537290922f1605c67876ee9522e7968b7633923622e5ed52b920aa03681deb",
+   "klpo_collection_tests": "d53cb076dc8a0ca201c1a75a83a02ef373badec470903f0e9e70515816f5b1a7",
+   "klpo_episodes_tests": "ba4145c984f8f36794e5d4c894023d3a34b11539aae6b171ff9280cbb27d974d",
+   "klpo_learning_tests": "a33936db35c19fcc1bf0ea18796547017786221a177a6fa86814d364c65b0626",
+   "klpo_policy_tests": "9a13b60ba49a0a2d5ac546af45f2b071ba7eb741ab9bdc6423422fd057e8d0de",
+   "klpo_reference_tests": "c336ab8ef612aa1c3d1525a6826210e871e0257b0b900ac193597bbd8ba071a8",
+   "klpo_terminal_tests": "6b5b6d8fcc483411c68af677fbaef2834fa9eb1e9099525fb383991b81645198",
+   "learning_gate_tests": "0552eb0eeeef56c13537f339ef01dfabb896733f274d2e610a9694e7696914f1",
+   "learning_hold_tests": "27a0efa1982ce4c879d6c636b2170dcb0b5953ab0d475db0299cf6fad9ab5db9",
+   "learning_replay_tests": "c7a73da055122c8109d6436cea680143c9bb5473e8f51362a81015fb76fef7b4",
+   "learning_traces_tests": "58d20e76b3eeae7fc55cd41a050c5ad8b8f530a7dc3c2afc666fc8e864c96168",
+   "libmars_titan_simulation.so": "488727a36e550c20bfece57c800439ed8def49c1522720ac13382910c44ce9b5",
+   "markov_filter_tests": "35d914dc7e49b5f3d7991d82fb1e786b9859311706e7a77d62c67803d7a6361f",
+   "mars-titan-batch-benchmark": "29943979b48c3e8974c02bbf596374e1bb96689154b6e1712c40e2e2563893e0",
+   "mars-titan-klpo": "3f6bb7974da069e6d6b1fede972a37994ec3c34a24bc077db000a381e1df0e11",
+   "mars-titan-learning-gate": "d0b5dca41062d29c8151e54eda7682d243fa4b5148a11c9b925427a7e7f15118",
+   "mars-titan-memory-benchmark": "910a79060aa6211e9f73afe88df1057982911a5d221c8f815a263bbd40b5eafb",
+   "mars-titan-policy-benchmark": "13aca5e1d40c2cf892ace26e14d2247b82d77e7d13f448b35640f1a6b2be9e29",
+   "mars-titan-ppo": "99fac0e712c32992d2bb09674ef2ebb89456ba955a31c37f14eed269c1ccab61",
+   "mars-titan-projection-benchmark": "d1b86878c25ced3e8da1c8730c36ddb2237c44e14b7d7c0d222b06f676e8b4a9",
+   "mars-titan-sim": "faabc448ea5a7329d103c96a5749c4b03e9d9306905e6e7a69e7cd6fd8151886",
+   "policy_context_tests": "18982f7ced0e79e4058f644fbdad8d8e713e70dbaf4f7af9e0c16be6ea00a887",
+   "policy_evaluation_only_tests": "24494d7592f8b293019407718dc21e3de04c2f7d9bbc5f7c3949dd54b6a223f0",
+   "ppo_checkpoint_tests": "ca0a1b227dfa934efbfd4ca158289b5cdc58dd0ea6754c7f9d981a5496ddf5b9",
+   "ppo_collection_tests": "d419bd815b26bc28b34b7accd0e79a79f5b6b91cb345cb8c3b8c48fd11b9aca2",
+   "ppo_controller_tests": "6f28883afb67eaa25e7f4aa1b33bef5b5172be12cd1cc365a5b0297625bf74a1",
+   "ppo_evaluation_tests": "89013de9f87fed52f9fa92aaffee23bad6e5b414edeca9e2af2ff03755930c8d",
+   "ppo_gru_packing_tests": "42d14cbbc4aba53fc7b422f89a04c3ff15b3d2f74da746d9604fbb44625e3f2b",
+   "ppo_inputs_tests": "0b1fdd29447ff41563ec11e28db01fbb6914f8877710920a769f6d4fc2ba787e",
+   "ppo_objective_tests": "2d74117c0bc57eb254eec3a99bfc0f5ff5020359f19157c66ecce6595494519a",
+   "ppo_policy_tests": "b6e562685307e40ba8a490962595203f47114974ea3ed684a41bae57441dd447",
+   "ppo_training_tests": "07d1ccf4ffeab2f31d8fba3c18a5fa802318216c17a9b1367162e50035ce914d",
+   "ppo_variant_objective_tests": "e76e969e9979d955bc26ce992b2d0ee1539c48422b112a0e654459bf3395c2d6",
+   "ppo_variant_state_tests": "5195f4860061cf9c91c67265f208efe77896dc8c71ab8678603bca208e2ed4dc",
+   "qr_dqn_policy_tests": "303a676025ce7f2813726e8bc92fbba07d5969814dc226c20e8e494b0c3642be",
+   "rl_variety_tests": "98e0e6ddb15d0aa86e1cd4a1f6e7d49276ccdb839a4f128eb079a8bd71c81d3e",
+   "simulation_tests": "3a1f1169461bffcc19792b03d8ad647eeda92b2a7fd6adea8447992c04bce3b9",
+   "threaded_simulation": "2e8b8719ae82756015491afd7d9e16e958f9bd6f668a2c8d8c267f1a9ad3cbdd"
+  },
+  "linked_bytes": {
+   "c_abi_test": 16240,
+   "decision_trace_tests": 492032,
+   "episodic_memory_tests": 231488,
+   "episodic_projection_tests": 119816,
+   "financial_batch_tests": 204272,
+   "financial_session_tests": 177800,
+   "group_waves_tests": 754144,
+   "klpo_actor_tests": 269952,
+   "klpo_collection_tests": 970504,
+   "klpo_episodes_tests": 87176,
+   "klpo_learning_tests": 1081504,
+   "klpo_policy_tests": 220520,
+   "klpo_reference_tests": 705640,
+   "klpo_terminal_tests": 97296,
+   "learning_gate_tests": 47624,
+   "learning_hold_tests": 147968,
+   "learning_replay_tests": 107176,
+   "learning_traces_tests": 379320,
+   "libmars_titan_simulation.so": 42792,
+   "markov_filter_tests": 124320,
+   "mars-titan-batch-benchmark": 165360,
+   "mars-titan-klpo": 1743840,
+   "mars-titan-learning-gate": 119648,
+   "mars-titan-memory-benchmark": 62632,
+   "mars-titan-policy-benchmark": 1595768,
+   "mars-titan-ppo": 2092416,
+   "mars-titan-projection-benchmark": 106040,
+   "mars-titan-sim": 694032,
+   "policy_context_tests": 311104,
+   "policy_evaluation_only_tests": 1018392,
+   "ppo_checkpoint_tests": 415488,
+   "ppo_collection_tests": 779232,
+   "ppo_controller_tests": 69408,
+   "ppo_evaluation_tests": 808952,
+   "ppo_gru_packing_tests": 350648,
+   "ppo_inputs_tests": 712920,
+   "ppo_objective_tests": 67984,
+   "ppo_policy_tests": 487520,
+   "ppo_training_tests": 932792,
+   "ppo_variant_objective_tests": 190640,
+   "ppo_variant_state_tests": 651048,
+   "qr_dqn_policy_tests": 258512,
+   "rl_variety_tests": 310632,
+   "simulation_tests": 26024,
+   "threaded_simulation": 18312
+  },
+  "started": {
+   "date": "2026-10-15T04:39:25+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 59.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    3.84521484375,
+    7.03466796875,
+    9.44921875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 15038025728
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5863 MiB",
+    "temperature.gpu": "56"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-measure",
+   "ccache_basedir": "native-build-sizes-486"
+  },
+  "environment": {
+   "date": "2026-10-15T04:44:14+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.6533203125,
+    5.8896484375,
+    8.171875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 14997487616
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5863 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "ccache-measure",
+   "ccache_basedir": "native-build-sizes-486"
+  }
+ },
+ "ppo-pgo-generate": {
+  "kind": "native_build_variant",
+  "label": "ppo-pgo-generate",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DMARS_TITAN_PGO=generate",
+   "-DMARS_TITAN_PGO_DATA=raw"
+  ],
+  "jobs": 2,
+  "configure_seconds": 9.831422297982499,
+  "build_seconds": 562.9983032459859,
+  "children_peak_rss_kib": 703952,
+  "edges": 133,
+  "ccache": null,
+  "identity": {
+   "sha256": "4cd6f04a5731fbb2db23f63979f19b3e9f308b79237975ffd64dd92e0c3441e9",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "generate"
+  },
+  "linked_sha256": {
+   "c_abi_test": "175944975b6b17e87ab089fecdf9683025434911fb68eb87e0fb8dbdb95abe12",
+   "decision_trace_tests": "8fc323792757fb5b9b66a30daea5ef9e7844e20efeee9fe9cbcf4a87fc6282cc",
+   "episodic_memory_tests": "d7d627a43fbfae3bff61a950edef1021be67f56ae670f368ad0fe412ffb3f952",
+   "episodic_projection_tests": "a3f7f3279fa120fda697eaecda36d3f5b06986175d91da318a7d1e7f5c007688",
+   "financial_batch_tests": "5599067ae9cb113c3f61eb99eacd4ebdd78ac91cfc6254435236fa08a31449e7",
+   "financial_session_tests": "64f3ecc797ed468f691f8567df3017bd77879cc49c004f7f52687779f7046497",
+   "group_waves_tests": "342d47513e81dc5f75490584bed6e26ec2ff062efb9e407f17adc38294081968",
+   "klpo_actor_tests": "cbd933e1149cf97902808f5526ab0f1229b61d75ad99ba8580b471a80e5dac31",
+   "klpo_collection_tests": "dbefaf96ed1235d0ef7ffa420f8de5b88471f1bb835ea024a93e0bc44fa22027",
+   "klpo_episodes_tests": "1abec46a8838eff8df0f9c9d407dff8eaf3c5271608b7f2b8e6fd0ae20792b8f",
+   "klpo_learning_tests": "c59ee148214a997bf56040eab4283ea164582f5f460abe817833b92b7e3168d8",
+   "klpo_policy_tests": "d66905422f5b26e9f8f26fb4f87689e9dbdb21a0b5483391a882860eb64584b0",
+   "klpo_reference_tests": "8779dc0c73b77d605e2d989397a2994bdeddddb0c70e5a05a4c385b1a18e33c5",
+   "klpo_terminal_tests": "866092a84c4d17c850f6b1018f3c772586486212abc537cc7a41f909f0904674",
+   "learning_gate_tests": "e163f77df4f369c09dfe269b1602ccc4150a5d99e895bfb2e9291233a7384c09",
+   "learning_hold_tests": "9dd4b8ff8205ba0211e1613fb03908cb6daaa72e0ae669610f6ab5e81b23de52",
+   "learning_replay_tests": "c7e35c4ef8dab083181e6f662c0adfc8ef777de04d17069a1cf03edc5dfec868",
+   "learning_traces_tests": "1546702684ca8468c4ec41e1796d0b182464eee542c874c5e6aab00119d2e41e",
+   "libmars_titan_simulation.so": "b2178f8a4979b5c59b12b36c507d7161c1db374c5efe2660f5053cdf7e0d9b6e",
+   "markov_filter_tests": "64925d48c9b12c7f7822639e3056784f962eea2e19907fae578928e38be43ecd",
+   "mars-titan-batch-benchmark": "8a9166bd9bb7a9794a69cb65b563ed530b992ce53250ddac35645b268bf9d960",
+   "mars-titan-klpo": "08d6ebb111c1ae2cee672c46d00b0103bc68a261a7ce137f50a014739fb4e90f",
+   "mars-titan-learning-gate": "9daf2355711dda315464ea68b30c6c15c18aea002defc946cf9a5318d74ea24d",
+   "mars-titan-memory-benchmark": "a6d16698e4715e8cdb86b6809d2f25fccdc3aa847ac9eeb56b1261ac0fff4d53",
+   "mars-titan-policy-benchmark": "4f541b6b78f96e363d0bcdc44ee2754921c8eb4777ea8f43e0f912af690fd07f",
+   "mars-titan-ppo": "efa5ce9056ad84015a73990344e81503a28b2253b6d7adeb5b2828c5888b936d",
+   "mars-titan-projection-benchmark": "f34a4c4f1072f6f333894ee098ab80b902c229e12ba486e0a726fbdff9e466cb",
+   "mars-titan-sim": "6ef0f0210c100fffa3c3b2e9efc362290f7e1b12d220edbba01b6c2261996acc",
+   "policy_context_tests": "14a59b8e5a3fbe416eb48dcb5039e6f488b916794a9be659fd90531b1b8b8907",
+   "policy_evaluation_only_tests": "50725d2ee84ae4cb9f0cdc0ca3b7ed318472bcb8c3113cf58835973e090a6c9e",
+   "ppo_checkpoint_tests": "ac68980bfac2e1d09bc965acd5dcf3ba2749053065dc7a829f5336b6ccd6de27",
+   "ppo_collection_tests": "d3cf10311c0f092cdcfa348db4881e493e0ddb1bfb0ca06c6339786a3b83104e",
+   "ppo_controller_tests": "d179bf02af917b66b06dfd935c2e802159069eb1d1f49a5acf6577169d8f3ffd",
+   "ppo_evaluation_tests": "aefecf971996b0e36ba927d489155aeda0ec5dbcc65a1649147073512f9fdec0",
+   "ppo_gru_packing_tests": "328bc0a40a06fe0c364de43a0a16574fd7c2081f51d6fee4c5f78c7ed9fe474d",
+   "ppo_inputs_tests": "01abc345bb22fd83fcbd66b559a81049a2f64840215aea5e455c23280745ea37",
+   "ppo_objective_tests": "099b839dfb69fc39f6766f26566d120c0a9db48549c7baae1803d9484141a6f3",
+   "ppo_policy_tests": "5fc7878a944fbc96c50cf62df8317efc18b3dad3f1e242310ca03630498c10d1",
+   "ppo_training_tests": "f293354a24f125eeb482aefb2fee6d95a215250b8607a1193bbb9c58b544ea64",
+   "ppo_variant_objective_tests": "b51ccfc37d94ffc39fec297b79ee6f95150af9765c94ec0b27a10a9763a25088",
+   "ppo_variant_state_tests": "268872e8fd0a86e5e25f3e4c8fce51f87ecefd8c7eeca54eadb221114ea777e2",
+   "qr_dqn_policy_tests": "faa311f5de2a241f6c3c38e81e6e0b7c9342122594d324ed1ab5f9ef0e699ddc",
+   "rl_variety_tests": "44fc8688fa76ce3cba5f3f79893c3e60adb63cdda7776c44c759ed30465e6a26",
+   "simulation_tests": "eb66133ecf6e10f6eb4e862120e8bcc57921aa6fef980d4bbf6eb2effdc146e5",
+   "threaded_simulation": "3f8d11bf53b5f47f3308b642f8e1c4b82ed3a4db1f865421a36ca0ba9baeb084"
+  },
+  "linked_bytes": {
+   "c_abi_test": 89480,
+   "decision_trace_tests": 907192,
+   "episodic_memory_tests": 343168,
+   "episodic_projection_tests": 222104,
+   "financial_batch_tests": 337960,
+   "financial_session_tests": 293968,
+   "group_waves_tests": 1699040,
+   "klpo_actor_tests": 1096520,
+   "klpo_collection_tests": 1609864,
+   "klpo_episodes_tests": 169208,
+   "klpo_learning_tests": 1732680,
+   "klpo_policy_tests": 1062440,
+   "klpo_reference_tests": 1554792,
+   "klpo_terminal_tests": 181432,
+   "learning_gate_tests": 123048,
+   "learning_hold_tests": 248936,
+   "learning_replay_tests": 205192,
+   "learning_traces_tests": 786880,
+   "libmars_titan_simulation.so": 126136,
+   "markov_filter_tests": 199664,
+   "mars-titan-batch-benchmark": 292088,
+   "mars-titan-klpo": 2953672,
+   "mars-titan-learning-gate": 232896,
+   "mars-titan-memory-benchmark": 234872,
+   "mars-titan-policy-benchmark": 2262552,
+   "mars-titan-ppo": 2566200,
+   "mars-titan-projection-benchmark": 207456,
+   "mars-titan-sim": 896608,
+   "policy_context_tests": 567576,
+   "policy_evaluation_only_tests": 1940288,
+   "ppo_checkpoint_tests": 802384,
+   "ppo_collection_tests": 1521136,
+   "ppo_controller_tests": 157768,
+   "ppo_evaluation_tests": 1612360,
+   "ppo_gru_packing_tests": 1107080,
+   "ppo_inputs_tests": 1188784,
+   "ppo_objective_tests": 167824,
+   "ppo_policy_tests": 1222608,
+   "ppo_training_tests": 1661656,
+   "ppo_variant_objective_tests": 1075496,
+   "ppo_variant_state_tests": 1530248,
+   "qr_dqn_policy_tests": 1330528,
+   "rl_variety_tests": 1148320,
+   "simulation_tests": 104944,
+   "threaded_simulation": 91712
+  },
+  "started": {
+   "date": "2026-10-15T15:10:09+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    8.048828125,
+    7.78271484375,
+    7.1201171875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16468512768
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "44"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  },
+  "environment": {
+   "date": "2026-10-15T15:19:42+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 45.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    8.2626953125,
+    9.00830078125,
+    8.17626953125
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 16041635840
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "43"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  }
+ },
+ "ppo-pgo": {
+  "kind": "native_build_variant",
+  "label": "ppo-pgo",
+  "preset": "native-ppo-release",
+  "defines": [
+   "-DMARS_TITAN_TORCH_ENVIRONMENT=.venv",
+   "-DCMAKE_C_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DCMAKE_CXX_FLAGS=-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date",
+   "-DMARS_TITAN_PGO=use",
+   "-DMARS_TITAN_PGO_DATA=policy.profdata"
+  ],
+  "jobs": 2,
+  "configure_seconds": 13.96145798699581,
+  "build_seconds": 553.0456450509955,
+  "children_peak_rss_kib": 703356,
+  "edges": 133,
+  "ccache": null,
+  "identity": {
+   "sha256": "ec43bc3b8a8d85d6e4fffc78fb7c56ceac577216282004bd6b3b29d8bac324a9",
+   "compiler_launcher": "",
+   "linker_type": "",
+   "ipo": "OFF",
+   "pgo": "use"
+  },
+  "linked_sha256": {
+   "c_abi_test": "d6f8da4ab078445179b27d4dc91c8aa94f6b18b3378fe3e2877f19c6d7702b23",
+   "decision_trace_tests": "ac044764a58f3d5523d4a7a653353300b4505b78ce03e843dbf657e4dbdeb2b7",
+   "episodic_memory_tests": "7b6ae031c99cff7cfecaa6bbb6983b240778113f90144e7a2c903d0e8bf2d357",
+   "episodic_projection_tests": "59f1ebce39a2494d5cd8dd0243978f5edc52b8cf3dfc02ea4ce61f29f5efba67",
+   "financial_batch_tests": "cd3ca981de0dcf23b083f3d138052693ca0dfdf5951f8c74bdae0036dbf71bea",
+   "financial_session_tests": "887195fa1d9c198ee634a474d301e6296b51a6e4104ddf687399368a8ef7b749",
+   "group_waves_tests": "80a995bbc587dfa7764228f57970b0883ee3249b0799a67e53c73d34d6c6b493",
+   "klpo_actor_tests": "c82d886ed4ada54b5ad49aedd8ac56b0ed80b5e8523e573df84a15c9a3b15499",
+   "klpo_collection_tests": "2a077e62803d3e48fcb844fc5442172e9f922566569b591830ef5359046017cd",
+   "klpo_episodes_tests": "80237e73551578b8711ddab8a0ba0a03170ee0f4844a9b41676ab23e6eae2334",
+   "klpo_learning_tests": "56ae309cbfcd1e2c787ef1fc62653ea6889da502138244a8583af73724fc4175",
+   "klpo_policy_tests": "e6450716473d988bf7f7f62cf1dc297140a1105078d81606d26d4174e74ed515",
+   "klpo_reference_tests": "d75ba1aae4c40f31e3f8fa72c953c095351d0cf518a80c711429022352a35240",
+   "klpo_terminal_tests": "9fc76b3679d0e38080d8601b1862640204e4cfa3ea55114253f8c987dae2eb73",
+   "learning_gate_tests": "5be7687b0518dac33c469ec9c3691ab041901569ca97477c415151f41a95c47b",
+   "learning_hold_tests": "b024d635d4b2f0ff7fc17e7bdb784e1346435426d6a8e514dd43a6b4b141fe81",
+   "learning_replay_tests": "bddc43b771ca3fcacb31133035b0e5307cd3eb5e8ead89996a924f63e606dd24",
+   "learning_traces_tests": "8c1f7202924565b55671ff43ac6a4486d0257d7663ad65ef9cbeb5e976365c6a",
+   "libmars_titan_simulation.so": "0cb5a5c228b723ccd3c7983b13e01e8cd373ec4bee4a19b7dba1b036b852df45",
+   "markov_filter_tests": "a8948c55e4a6673a944f8361e462dcff428817c9ae165f334ce0b458c1ec9712",
+   "mars-titan-batch-benchmark": "33f5a44ff64e8e58f37326ecc3f159aaf7f040c31ba59cef5a804e6642d4067a",
+   "mars-titan-klpo": "5e874cd4f6f3b9f42cd91926195b0c6696bde589405652bb6f051a96b7cdb73b",
+   "mars-titan-learning-gate": "ebbc3990b7b893672a52324a64fecbae61ce4b43e63107a688de08652ce71014",
+   "mars-titan-memory-benchmark": "c00fba416cbc84300d7912d00388ff2a37013b92cc77cdf9603312741edf8f58",
+   "mars-titan-policy-benchmark": "e59ecbf9aa6f878c0b29622969e02a0e4e375676f6da21fe9d6f7a3603f8ade7",
+   "mars-titan-ppo": "8ea904060f51589a940757a502e5f44aa3016bdac38c1efffee53c79dce60873",
+   "mars-titan-projection-benchmark": "f24a716e68ce30e9cb7202084e2d89e1f8b1b789eb828633cc8cc00e7593ddf5",
+   "mars-titan-sim": "918946c5905c883a86d1b9e16acee1c7a30fb68f659140a729eb5751b689db96",
+   "policy_context_tests": "b14d609c8cb8a82b05d6c2e215da1a7e90d66ba40487e8a47ec99bff97b75c02",
+   "policy_evaluation_only_tests": "7d45783eb30e8082481678d164b371be69e743add36bc9575a3fc2a54935f32a",
+   "ppo_checkpoint_tests": "90958be3a8d703be1e0ffe2201f91e9112448b4e0368e2fc8535d41b5f5f65b5",
+   "ppo_collection_tests": "d90242514aa46462d5350212d002534f0f94b1d24f7fccab248d3c6ce54623fb",
+   "ppo_controller_tests": "ab11716633eca1a1b29e936b8453300e721d58ddf3704ffeb48844cb60e91909",
+   "ppo_evaluation_tests": "65cb88f10b6ac6f585f7fb94e8dbb603d76473e4495d2d3a6a0fffbeba25a135",
+   "ppo_gru_packing_tests": "223f6f459f3cd4b8a504967670b7b00b934622ebc3f6d40862685e195f036cb1",
+   "ppo_inputs_tests": "3ea1f54d1a6b48ef06e3eb859ad6497732b713b537457f4ca86c21be7f1ffd69",
+   "ppo_objective_tests": "23861abf06637dd03ed42667d818aedf5e8fb63947f64217d8f6a4267cc1db9c",
+   "ppo_policy_tests": "fcbe37e069c6ae15f5eb8299dccd48371b556f962d4278d574dd59eb0bfee048",
+   "ppo_training_tests": "e17c3be47ebf1797452f858d5a33b1b7ba58f1e1540f1420a4dc7061f0d78a09",
+   "ppo_variant_objective_tests": "985b680dd21d5e3b502236a45c33b98b984226343a1aeb4b2f7b3642e4f9bfc0",
+   "ppo_variant_state_tests": "fa17d469a792aeff2501fd368ce8fbf2a4b176af77e66f7c2c2ae817a57282f3",
+   "qr_dqn_policy_tests": "63eb21b0573684b76a2c048c6145fccb2e9318192d4c311c5973b535ef1b601c",
+   "rl_variety_tests": "be71c34c9819b0efe0b965b3f27d9d87ea4686d0499040f11f884bc486886beb",
+   "simulation_tests": "2759e2ef719fd13f0a345213e1538a024f927e7971b3274dc5f3dfedda16d2f5",
+   "threaded_simulation": "e340aa9f3dafccd4753ea628080813fc09e4516dbd67439c57ccceeb4bdeccae"
+  },
+  "linked_bytes": {
+   "c_abi_test": 16272,
+   "decision_trace_tests": 841624,
+   "episodic_memory_tests": 245832,
+   "episodic_projection_tests": 119560,
+   "financial_batch_tests": 236304,
+   "financial_session_tests": 199024,
+   "group_waves_tests": 1466640,
+   "klpo_actor_tests": 947480,
+   "klpo_collection_tests": 1384392,
+   "klpo_episodes_tests": 93880,
+   "klpo_learning_tests": 1493144,
+   "klpo_policy_tests": 912320,
+   "klpo_reference_tests": 1332048,
+   "klpo_terminal_tests": 103136,
+   "learning_gate_tests": 47472,
+   "learning_hold_tests": 172984,
+   "learning_replay_tests": 119256,
+   "learning_traces_tests": 704152,
+   "libmars_titan_simulation.so": 43216,
+   "markov_filter_tests": 121464,
+   "mars-titan-batch-benchmark": 194112,
+   "mars-titan-klpo": 2701256,
+   "mars-titan-learning-gate": 150200,
+   "mars-titan-memory-benchmark": 142920,
+   "mars-titan-policy-benchmark": 1941512,
+   "mars-titan-ppo": 2341856,
+   "mars-titan-projection-benchmark": 110856,
+   "mars-titan-sim": 791560,
+   "policy_context_tests": 436008,
+   "policy_evaluation_only_tests": 1654144,
+   "ppo_checkpoint_tests": 693896,
+   "ppo_collection_tests": 1283688,
+   "ppo_controller_tests": 73384,
+   "ppo_evaluation_tests": 1376112,
+   "ppo_gru_packing_tests": 958792,
+   "ppo_inputs_tests": 1089784,
+   "ppo_objective_tests": 82456,
+   "ppo_policy_tests": 1064704,
+   "ppo_training_tests": 1429248,
+   "ppo_variant_objective_tests": 920872,
+   "ppo_variant_state_tests": 1294744,
+   "qr_dqn_policy_tests": 1133792,
+   "rl_variety_tests": 995176,
+   "simulation_tests": 25624,
+   "threaded_simulation": 18376
+  },
+  "started": {
+   "date": "2026-10-15T15:20:37+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 46.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    7.23974609375,
+    8.5546875,
+    8.06591796875
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 15833288704
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "45"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  },
+  "environment": {
+   "date": "2026-10-15T15:30:04+0200",
+   "platform_profile": "low-power",
+   "thermal_zone0_celsius": 44.0,
+   "machine": "x86_64",
+   "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+   "kernel": "7.0.0-38-generic",
+   "cpus": 16,
+   "load_average": [
+    6.75,
+    7.71533203125,
+    8.0458984375
+   ],
+   "memory": {
+    "total_bytes": 32313376768,
+    "available_bytes": 14647500800
+   },
+   "gpu": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total": "8188 MiB",
+    "memory.used": "5862 MiB",
+    "temperature.gpu": "43"
+   },
+   "tools": {
+    "clang++": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "cmake": "cmake version 4.2.3",
+    "ninja": "1.13.2",
+    "ccache": "ccache version 4.12.3",
+    "mold": "mold 2.40.4 (compatible with GNU ld)",
+    "llvm-profdata-21": "Ubuntu LLVM version 21.1.8"
+   },
+   "ccache_dir": "",
+   "ccache_basedir": "native-build-sizes-486"
+  }
+ },
+ "profile-cpu": {
+  "assets": 167,
+  "device": "cpu",
+  "environment_step": {
+   "calls": 512,
+   "items_per_second": 29334.956553360917,
+   "mean_us": 545.4243632812497,
+   "observation_width": 1004,
+   "p50_us": 539.413,
+   "p95_us": 578.577,
+   "p99_us": 591.3710000000001
+  },
+  "environments": 16,
+  "evaluation_single_lane": {
+   "calls": 3,
+   "items_per_second": 9269.414188595896,
+   "mean_us": 26970.420666666665,
+   "p50_us": 27031.813,
+   "p95_us": 27031.813,
+   "p99_us": 27031.813
+  },
+  "executable_peak_rss_bytes": 531427328,
+  "gae_cpu_fp64": {
+   "calls": 512,
+   "items_per_second": 390909.29302777717,
+   "mean_us": 2619.5335292968766,
+   "p50_us": 2595.243,
+   "p95_us": 2719.186,
+   "p99_us": 3047.653
+  },
+  "group_objectives": {
+   "block_episodes": 8,
+   "dapo_outcome_static_v1": {
+    "calls": 5,
+    "items_per_second": 34087.07326440877,
+    "mean_us": 117962.60619999998,
+    "p50_us": 117847.937,
+    "p95_us": 118569.832,
+    "p99_us": 118569.832
+   },
+   "dapo_outcome_static_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 33483.080449863184,
+    "mean_us": 120090.50379999999,
+    "p50_us": 118707.781,
+    "p95_us": 119945.64600000001,
+    "p99_us": 119945.64600000001
+   },
+   "dr_grpo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 34399.01698987382,
+    "mean_us": 116892.8752,
+    "p50_us": 116524.422,
+    "p95_us": 116853.37899999999,
+    "p99_us": 116853.37899999999
+   },
+   "dr_grpo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 32968.60236588529,
+    "mean_us": 121964.5272,
+    "p50_us": 121014.90400000001,
+    "p95_us": 122085.58499999999,
+    "p99_us": 122085.58499999999
+   },
+   "episodes": 16,
+   "grpo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 34564.135107406466,
+    "mean_us": 116334.4602,
+    "p50_us": 116214.569,
+    "p95_us": 116779.079,
+    "p99_us": 116779.079
+   },
+   "grpo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 33828.64663977133,
+    "mean_us": 118863.75600000001,
+    "p50_us": 119181.01000000001,
+    "p95_us": 119790.805,
+    "p99_us": 119790.805
+   },
+   "gspo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 33847.72509338635,
+    "mean_us": 118796.75779999999,
+    "p50_us": 118495.252,
+    "p95_us": 121367.456,
+    "p99_us": 121367.456
+   },
+   "gspo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 33522.47322428091,
+    "mean_us": 119949.3836,
+    "p50_us": 119339.665,
+    "p95_us": 121400.82100000001,
+    "p99_us": 121400.82100000001
+   },
+   "klpo_terminal_token_full_v1": {
+    "calls": 5,
+    "items_per_second": 34577.556796031924,
+    "mean_us": 116289.3036,
+    "p50_us": 115953.24799999999,
+    "p95_us": 116627.826,
+    "p99_us": 116627.826
+   },
+   "records_sha256": "7506eea901ee859790b3fc386eb8aef58afddf8fdae400062bbafd53cca15a12",
+   "wave_transitions": 4021
+  },
+  "inference": [
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 49486.25570594588,
+     "mean_us": 323.3220976562502,
+     "p50_us": 315.212,
+     "p95_us": 369.18399999999997,
+     "p99_us": 461.10600000000005
+    },
+    "architecture": "ppo_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 67532.67484633655,
+     "mean_us": 236.9223496093751,
+     "p50_us": 229.32,
+     "p95_us": 262.854,
+     "p99_us": 311.154
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 860589.0854150424,
+     "mean_us": 18.591916015625003,
+     "p50_us": 17.493,
+     "p95_us": 25.397000000000002,
+     "p99_us": 33.903
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 45344.08591871791,
+     "mean_us": 352.8574824218751,
+     "p50_us": 347.28200000000004,
+     "p95_us": 388.299,
+     "p99_us": 440.057
+    },
+    "architecture": "double_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 66618.85105138202,
+     "mean_us": 240.17225976562494,
+     "p50_us": 235.69199999999998,
+     "p95_us": 264.647,
+     "p99_us": 282.531
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 862379.8779151377,
+     "mean_us": 18.55330859375,
+     "p50_us": 17.793,
+     "p95_us": 22.291999999999998,
+     "p99_us": 32.981
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 37885.904554297784,
+     "mean_us": 422.3206542968751,
+     "p50_us": 417.034,
+     "p95_us": 475.673,
+     "p99_us": 519.205
+    },
+    "architecture": "qr_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 50006.49864727295,
+     "mean_us": 319.9584140624999,
+     "p50_us": 314.81100000000004,
+     "p95_us": 355.988,
+     "p99_us": 407.53499999999997
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 816293.5866846088,
+     "mean_us": 19.600791015625017,
+     "p50_us": 18.455,
+     "p95_us": 27.402,
+     "p99_us": 35.447
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 37537.82255234346,
+     "mean_us": 426.23676367187505,
+     "p50_us": 420.329,
+     "p95_us": 470.142,
+     "p99_us": 524.876
+    },
+    "architecture": "qr_dqn_cvar_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 50370.69220134467,
+     "mean_us": 317.645029296875,
+     "p50_us": 313.74899999999997,
+     "p95_us": 352.142,
+     "p99_us": 376.82800000000003
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 802954.2285704482,
+     "mean_us": 19.926416015625005,
+     "p50_us": 18.895,
+     "p95_us": 26.049,
+     "p99_us": 34.846
+    },
+    "pinned_host_memory": false
+   }
+  ],
+  "kind": "rl_stage_policy_collection_benchmark",
+  "klpo_wave": {
+   "collection_tick": {
+    "calls": 252,
+    "items_per_second": 11064.611431099098,
+    "mean_us": 1442.1066031746034,
+    "p50_us": 1438.762,
+    "p95_us": 1551.534,
+    "p99_us": 1637.786
+   },
+   "collection_wave_seconds": 0.3634108640000001,
+   "objective_forward_backward_seconds": 0.194500475,
+   "records_sha256": "7506eea901ee859790b3fc386eb8aef58afddf8fdae400062bbafd53cca15a12",
+   "sampler_sha256": "3d7352332c6dfb5cc3de80236ac6853c9b7d090e1e4b8e418ed94cbc04512b2a",
+   "wave_ticks": 252,
+   "wave_transitions": 4021
+  },
+  "learning": "none_no_optimizer_steps",
+  "ppo_minibatch": {
+   "forward_backward": {
+    "calls": 512,
+    "items_per_second": 432.9537603193843,
+    "mean_us": 2309.7154746093743,
+    "p50_us": 2294.318,
+    "p95_us": 2452.205,
+    "p99_us": 2629.849
+   },
+   "forward_no_grad": {
+    "calls": 512,
+    "items_per_second": 1367.3839790317218,
+    "mean_us": 731.3234726562501,
+    "p50_us": 712.518,
+    "p95_us": 895.311,
+    "p99_us": 994.1259999999999
+   },
+   "rows": 64
+  },
+  "ppo_trainer_collection": {
+   "calls": 31,
+   "diagnostic": true,
+   "environment_sha256": "68f272520c49e627bbc4f7296ad41adf862a3e67f7035d5e9e8a0d33986474ca",
+   "episodes": 0,
+   "items_per_second": 3712.440135405865,
+   "lanes": 1,
+   "mean_us": 269.3646129032258,
+   "p50_us": 229.291,
+   "p95_us": 277.05,
+   "p99_us": 426.74199999999996,
+   "rollout_sha256": "1a7416015a4c23b46889ffb17ad96291eaa056abde01f11e5afe537d52dd9de5",
+   "sampler_sha256": "89a0ce39955a19495a78a8a453054034fefcbc2645a313370e912949ccc54389"
+  },
+  "ppo_trainer_first_tick": {
+   "calls": 64,
+   "diagnostic": true,
+   "items_per_second": 11168.730782270883,
+   "lanes": 16,
+   "mean_us": 1432.5710156250002,
+   "p50_us": 1410.368,
+   "p95_us": 1580.007,
+   "p99_us": 1675.066
+  },
+  "profiled": false,
+  "ticks": 512,
+  "torch_interop_threads": 1,
+  "torch_threads": 1,
+  "total_seconds": 21.420083662,
+  "train_tapes": 3,
+  "value_minibatch": [
+   {
+    "architecture": "double_dqn_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 356.28990319048046,
+     "mean_us": 2806.703167968748,
+     "p50_us": 2774.86,
+     "p95_us": 2984.685,
+     "p99_us": 3376.12
+    },
+    "parameters": 68870,
+    "rows": 64
+   },
+   {
+    "architecture": "qr_dqn_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 178.99399592643437,
+     "mean_us": 5586.779572265625,
+     "p50_us": 5532.089,
+     "p95_us": 5966.053,
+     "p99_us": 6291.192999999999
+    },
+    "parameters": 80960,
+    "rows": 64
+   },
+   {
+    "architecture": "qr_dqn_cvar_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 175.7383433343804,
+     "mean_us": 5690.2778359375025,
+     "p50_us": 5589.786,
+     "p95_us": 6122.046,
+     "p99_us": 8299.826
+    },
+    "parameters": 80960,
+    "rows": 64
+   }
+  ],
+  "warmup": 32,
+  "workers": 1
+ },
+ "profile-cuda": {
+  "assets": 167,
+  "device": "cuda:0",
+  "environment_step": {
+   "calls": 512,
+   "items_per_second": 28964.593941302068,
+   "mean_us": 552.398560546875,
+   "observation_width": 1004,
+   "p50_us": 544.1890000000001,
+   "p95_us": 591.969,
+   "p99_us": 638.787
+  },
+  "environments": 16,
+  "evaluation_single_lane": {
+   "calls": 3,
+   "items_per_second": 2481.808697969795,
+   "mean_us": 100732.98566666666,
+   "p50_us": 99324.632,
+   "p95_us": 99324.632,
+   "p99_us": 99324.632
+  },
+  "executable_peak_rss_bytes": 1454063616,
+  "gae_cpu_fp64": {
+   "calls": 512,
+   "items_per_second": 405300.2199953157,
+   "mean_us": 2526.522191406249,
+   "p50_us": 2504.112,
+   "p95_us": 2650.157,
+   "p99_us": 2837.262
+  },
+  "group_objectives": {
+   "block_episodes": 8,
+   "dapo_outcome_static_v1": {
+    "calls": 5,
+    "items_per_second": 42561.338154721794,
+    "mean_us": 94475.41300000002,
+    "p50_us": 97511.59,
+    "p95_us": 99881.90800000001,
+    "p99_us": 99881.90800000001
+   },
+   "dapo_outcome_static_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 41212.18159441339,
+    "mean_us": 97568.2394,
+    "p50_us": 102239.281,
+    "p95_us": 104069.039,
+    "p99_us": 104069.039
+   },
+   "dr_grpo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 44949.958265623805,
+    "mean_us": 89455.033,
+    "p50_us": 85150.456,
+    "p95_us": 95567.238,
+    "p99_us": 95567.238
+   },
+   "dr_grpo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 39370.95325275129,
+    "mean_us": 102131.1314,
+    "p50_us": 98269.743,
+    "p95_us": 102164.783,
+    "p99_us": 102164.783
+   },
+   "episodes": 16,
+   "grpo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 43196.93862898451,
+    "mean_us": 93085.3002,
+    "p50_us": 93765.586,
+    "p95_us": 93820.399,
+    "p99_us": 93820.399
+   },
+   "grpo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 43294.42246127644,
+    "mean_us": 92875.7048,
+    "p50_us": 91059.28000000001,
+    "p95_us": 95015.316,
+    "p99_us": 95015.316
+   },
+   "gspo_outcome_v1": {
+    "calls": 5,
+    "items_per_second": 42595.193329148235,
+    "mean_us": 94400.32280000001,
+    "p50_us": 95186.694,
+    "p95_us": 97101.18299999999,
+    "p99_us": 97101.18299999999
+   },
+   "gspo_outcome_v1_with_trace": {
+    "calls": 5,
+    "items_per_second": 42295.00510883902,
+    "mean_us": 95070.3278,
+    "p50_us": 95899.731,
+    "p95_us": 96352.486,
+    "p99_us": 96352.486
+   },
+   "klpo_terminal_token_full_v1": {
+    "calls": 5,
+    "items_per_second": 41030.70762035914,
+    "mean_us": 97999.7722,
+    "p50_us": 95886.445,
+    "p95_us": 99529.549,
+    "p99_us": 99529.549
+   },
+   "records_sha256": "10c640fa9aad666ebc848bc8546920149fa0a135e293f2b5f03544a6e635f6bd",
+   "wave_transitions": 4021
+  },
+  "inference": [
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 23871.257830658407,
+     "mean_us": 670.2621250000003,
+     "p50_us": 643.386,
+     "p95_us": 762.36,
+     "p99_us": 1250.764
+    },
+    "architecture": "ppo_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 51085.665172776804,
+     "mean_us": 313.19940625000004,
+     "p50_us": 298.254,
+     "p95_us": 367.69500000000005,
+     "p99_us": 549.849
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 162239.52011324445,
+     "mean_us": 98.61962109375001,
+     "p50_us": 94.609,
+     "p95_us": 122.251,
+     "p99_us": 162.838
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 24494.9329904808,
+     "mean_us": 653.1963164062505,
+     "p50_us": 640.12,
+     "p95_us": 733.837,
+     "p99_us": 881.1659999999999
+    },
+    "architecture": "ppo_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 51831.280703050295,
+     "mean_us": 308.69389648437516,
+     "p50_us": 300.10699999999997,
+     "p95_us": 354.89099999999996,
+     "p99_us": 471.46200000000005
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 188230.51915227153,
+     "mean_us": 85.00215624999998,
+     "p50_us": 80.56200000000001,
+     "p95_us": 103.45599999999999,
+     "p99_us": 141.227
+    },
+    "pinned_host_memory": true
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 14952.932332547238,
+     "mean_us": 1070.0242363281259,
+     "p50_us": 1053.0,
+     "p95_us": 1159.962,
+     "p99_us": 1273.9170000000001
+    },
+    "architecture": "double_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 52838.62721402284,
+     "mean_us": 302.8087753906249,
+     "p50_us": 295.74899999999997,
+     "p95_us": 343.058,
+     "p99_us": 419.56300000000005
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 167718.0780310813,
+     "mean_us": 95.3981835937501,
+     "p50_us": 91.483,
+     "p95_us": 113.865,
+     "p99_us": 128.453
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 14735.017060252032,
+     "mean_us": 1085.8487597656253,
+     "p50_us": 1070.684,
+     "p95_us": 1181.863,
+     "p99_us": 1385.819
+    },
+    "architecture": "double_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 52461.14594777259,
+     "mean_us": 304.9876191406248,
+     "p50_us": 299.64599999999996,
+     "p95_us": 341.586,
+     "p99_us": 399.114
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 180413.1010743696,
+     "mean_us": 88.68535546875005,
+     "p50_us": 85.01100000000001,
+     "p95_us": 108.084,
+     "p99_us": 121.53
+    },
+    "pinned_host_memory": true
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 13514.510814178107,
+     "mean_us": 1183.9126269531237,
+     "p50_us": 1167.2259999999999,
+     "p95_us": 1272.916,
+     "p99_us": 1383.926
+    },
+    "architecture": "qr_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 37073.228958858526,
+     "mean_us": 431.5782695312503,
+     "p50_us": 427.02700000000004,
+     "p95_us": 472.75399999999996,
+     "p99_us": 513.24
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 168228.37165738008,
+     "mean_us": 95.10880859375001,
+     "p50_us": 91.202,
+     "p95_us": 114.506,
+     "p99_us": 126.57000000000001
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 13437.756093149315,
+     "mean_us": 1190.6749824218746,
+     "p50_us": 1169.33,
+     "p95_us": 1286.682,
+     "p99_us": 1480.919
+    },
+    "architecture": "qr_dqn_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 36975.05637511292,
+     "mean_us": 432.7241542968746,
+     "p50_us": 427.34799999999996,
+     "p95_us": 468.846,
+     "p99_us": 559.858
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 187491.14555213216,
+     "mean_us": 85.33736328124988,
+     "p50_us": 81.484,
+     "p95_us": 103.045,
+     "p99_us": 117.162
+    },
+    "pinned_host_memory": true
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 13673.381678540829,
+     "mean_us": 1170.156759765625,
+     "p50_us": 1154.152,
+     "p95_us": 1236.187,
+     "p99_us": 1308.793
+    },
+    "architecture": "qr_dqn_cvar_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 37415.15040193952,
+     "mean_us": 427.6342558593749,
+     "p50_us": 424.973,
+     "p95_us": 457.706,
+     "p99_us": 489.115
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 168540.2262335702,
+     "mean_us": 94.93282617187496,
+     "p50_us": 90.852,
+     "p95_us": 110.639,
+     "p99_us": 119.225
+    },
+    "pinned_host_memory": false
+   },
+   {
+    "act_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 13305.48000876966,
+     "mean_us": 1202.5120468750001,
+     "p50_us": 1172.496,
+     "p95_us": 1352.366,
+     "p99_us": 1688.8619999999999
+    },
+    "architecture": "qr_dqn_cvar_mlp64",
+    "bootstrap_and_copy_back": {
+     "calls": 512,
+     "items_per_second": 36437.79328987542,
+     "mean_us": 439.1045273437497,
+     "p50_us": 428.099,
+     "p95_us": 495.79699999999997,
+     "p99_us": 700.364
+    },
+    "copy_two_observation_batches": {
+     "calls": 512,
+     "items_per_second": 183706.76202793783,
+     "mean_us": 87.09532421875002,
+     "p50_us": 81.975,
+     "p95_us": 109.146,
+     "p99_us": 141.588
+    },
+    "pinned_host_memory": true
+   }
+  ],
+  "kind": "rl_stage_policy_collection_benchmark",
+  "klpo_wave": {
+   "collection_tick": {
+    "calls": 252,
+    "items_per_second": 6506.298716882491,
+    "mean_us": 2452.446452380952,
+    "p50_us": 2380.839,
+    "p95_us": 2862.109,
+    "p99_us": 3260.511
+   },
+   "collection_wave_seconds": 0.6180165060000006,
+   "objective_forward_backward_seconds": 0.114963375,
+   "records_sha256": "10c640fa9aad666ebc848bc8546920149fa0a135e293f2b5f03544a6e635f6bd",
+   "sampler_sha256": "d9734fee16b18d5b50283944f5d7eb8f1aeaca808e0a08d96c61dd596a17ed3d",
+   "wave_ticks": 252,
+   "wave_transitions": 4021
+  },
+  "learning": "none_no_optimizer_steps",
+  "ppo_minibatch": {
+   "forward_backward": {
+    "calls": 512,
+    "items_per_second": 196.83893683250395,
+    "mean_us": 5080.295677734378,
+    "p50_us": 4736.079,
+    "p95_us": 6901.312,
+    "p99_us": 7537.924
+   },
+   "forward_no_grad": {
+    "calls": 512,
+    "items_per_second": 3446.358221824014,
+    "mean_us": 290.16136328124986,
+    "p50_us": 256.59499999999997,
+    "p95_us": 426.035,
+    "p99_us": 474.046
+   },
+   "rows": 64
+  },
+  "ppo_trainer_collection": {
+   "calls": 512,
+   "diagnostic": false,
+   "environment_sha256": "7a5119fcabc486d9bce32af97e1192a9b51a7b17114623fb2ddc6fb16659e7e1",
+   "episodes": 32,
+   "items_per_second": 7919.672838856412,
+   "lanes": 16,
+   "mean_us": 2020.2854746093744,
+   "p50_us": 1714.941,
+   "p95_us": 1989.4489999999998,
+   "p99_us": 2235.194,
+   "rollout_sha256": "119d1a945089dd259d68bc5485832058fc2f2040fc1c34d40ae37330feb944d4",
+   "sampler_sha256": "7bb79a202a10bef8b9547e8d5b3b2f060ff460075ecc5878de6cbdea9ed633d0"
+  },
+  "ppo_trainer_first_tick": {
+   "calls": 64,
+   "diagnostic": false,
+   "items_per_second": 6808.402582068064,
+   "lanes": 16,
+   "mean_us": 2350.0372968749994,
+   "p50_us": 2295.658,
+   "p95_us": 2682.559,
+   "p99_us": 2910.3
+  },
+  "profiled": false,
+  "ticks": 512,
+  "torch_interop_threads": 1,
+  "torch_threads": 1,
+  "total_seconds": 30.221993334,
+  "train_tapes": 3,
+  "value_minibatch": [
+   {
+    "architecture": "double_dqn_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 324.88355002844,
+     "mean_us": 3078.025957031253,
+     "p50_us": 2994.7799999999997,
+     "p95_us": 3553.225,
+     "p99_us": 4284.949
+    },
+    "parameters": 68870,
+    "rows": 64
+   },
+   {
+    "architecture": "qr_dqn_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 191.62241810924544,
+     "mean_us": 5218.596080078126,
+     "p50_us": 5039.313999999999,
+     "p95_us": 6493.431,
+     "p99_us": 7970.102
+    },
+    "parameters": 80960,
+    "rows": 64
+   },
+   {
+    "architecture": "qr_dqn_cvar_mlp64",
+    "loss_forward_backward": {
+     "calls": 512,
+     "items_per_second": 173.29469498402923,
+     "mean_us": 5770.517095703129,
+     "p50_us": 5504.393,
+     "p95_us": 7345.942,
+     "p99_us": 8721.421999999999
+    },
+    "parameters": 80960,
+    "rows": 64
+   }
+  ],
+  "warmup": 32,
+  "workers": 1
+ },
+ "tapes": {
+  "kind": "rl_stage_benchmark_tapes",
+  "scores": "synthetic_not_from_any_model",
+  "edition": "edition-v1",
+  "listing_status_sha256": "645d78434ded6f139f0decd6bc85e19202eebe994e27d80e062641d0ec809ac8",
+  "markets": [
+   {
+    "market": "US",
+    "policy_window": "fold-018",
+    "candidates": 400,
+    "layout": 167,
+    "tapes": [
+     {
+      "role": "train",
+      "window": "fold-014",
+      "folder": "0-train-fold-014",
+      "assets": 167,
+      "universe": 128,
+      "sessions": 252,
+      "excluded": 0
+     },
+     {
+      "role": "train",
+      "window": "fold-015",
+      "folder": "1-train-fold-015",
+      "assets": 167,
+      "universe": 128,
+      "sessions": 253,
+      "excluded": 0
+     },
+     {
+      "role": "train",
+      "window": "fold-016",
+      "folder": "2-train-fold-016",
+      "assets": 167,
+      "universe": 128,
+      "sessions": 252,
+      "excluded": 0
+     },
+     {
+      "role": "validation",
+      "window": "fold-017",
+      "folder": "3-validation-fold-017",
+      "assets": 167,
+      "universe": 128,
+      "sessions": 251,
+      "excluded": 0
+     },
+     {
+      "role": "evaluation",
+      "window": "fold-018",
+      "folder": "4-evaluation-fold-018",
+      "assets": 167,
+      "universe": 128,
+      "sessions": 250,
+      "excluded": 0
+     }
+    ]
+   }
+  ]
+ },
+ "profdata_sha256": "3bb93f6ffc5a9e0aeb663c8f72a561ea3968ed8efef2b4df9ca76ecbe8068ee9"
+}
