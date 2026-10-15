@@ -142,6 +142,11 @@ def artifacts(build_dir):
     return linked, objects
 
 
+def linked_bytes(build_dir, linked):
+    """Tamaño en bytes de cada salida enlazada, para comparar variantes junto a su tiempo."""
+    return {name: (build_dir / name).stat().st_size for name in linked}
+
+
 def identity(build_dir):
     files = sorted(build_dir.glob("native-build-identity-*.txt"))
     if not files:
@@ -279,6 +284,7 @@ def command_build(args):
         "ccache": ccache_stats(env) if args.launcher else None,
         "identity": identity(build_dir),
         "linked_sha256": linked,
+        "linked_bytes": linked_bytes(build_dir, linked),
         "objects_sha256": objects,
         "started": started,
         "environment": environment_record(),
@@ -324,6 +330,7 @@ def command_relink(args):
         "link_seconds": seconds,
         "identity": identity(build_dir),
         "linked_sha256": linked,
+        "linked_bytes": linked_bytes(build_dir, linked),
         "started": started,
         "environment": environment_record(),
     }
