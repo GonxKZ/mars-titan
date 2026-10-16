@@ -1,6 +1,6 @@
 # Trabajo de anfitrión por evento de Titans-MAC
 
-Recibos del 13 de octubre de 2026 para [#549](https://github.com/GonxKZ/mars-titan/issues/549). La descripción de la vista CPU sellada y de las comprobaciones diferidas está en el [adaptador financiero](../../../docs/engineering/titans-financial-adapter.md) y en el [entrenador cronológico](../../../docs/engineering/titans-chronological-trainer.md).
+Recibos del 13 al 16 de octubre de 2026 para [#549](https://github.com/GonxKZ/mars-titan/issues/549). La descripción de la vista CPU sellada y de las comprobaciones diferidas está en el [adaptador financiero](../../../docs/engineering/titans-financial-adapter.md) y en el [entrenador cronológico](../../../docs/engineering/titans-chronological-trainer.md).
 
 | Archivo | Contenido |
 | --- | --- |
@@ -10,6 +10,8 @@ Recibos del 13 de octubre de 2026 para [#549](https://github.com/GonxKZ/mars-tit
 | [`parity_capture.py`](parity_capture.py), [`parity_compare.py`](parity_compare.py) | Captura y comparación bit a bit |
 | [`work_counts.py`](work_counts.py) | Cuentas de SHA-256, JSON, sincronizaciones y lanzamientos |
 | [`mutations.py`](mutations.py) | Mutaciones, cada una con sus pruebas |
+| [`abba-20261014.json`](abba-20261014.json) | Rondas A B B A del recorrido con eventos reales |
+| [`profiles-20261016.json`](profiles-20261016.json), [`profiles.py`](profiles.py) | Perfiles de py-spy y Nsight Systems del recorrido y benchmark del CUDA Graph de la emisión |
 
 Ningún recibo ejecuta pasos de optimizador. Los recorridos usan `RecordingOptimizer` de las pruebas, que no hereda de `torch.optim.Optimizer` y solo copia los gradientes de cada llamada, con el gancho de `campaign_throughput` que prohíbe cualquier paso de `torch.optim`. Al final se comprueba que ningún parámetro ni búfer ha cambiado. La protección local de aprendizaje sigue activa.
 
@@ -122,15 +124,46 @@ Las capturas de las cuatro rondas de cada modelo coinciden bit a bit, entre árb
 
 Como los eventos vienen guardados, los cocientes describen el recorrido por evento. El tiempo de una ventana completa incluye también la lectura de la vista, la preparación y las validaciones, y no se extrapola de estas rondas.
 
-## Pendiente
+## Perfiles
 
-Quedan los perfiles de py-spy y Nsight Systems del recorrido actual y el benchmark del CUDA Graph de la emisión. Solo con ellos se decidirá si compensa capturar CUDA Graphs por forma exacta o fusionar la actualización de memoria en un núcleo CUDA, que este informe no evalúa. Las órdenes, desde la raíz de cada árbol y con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`:
+Los perfiles se tomaron el 16 de octubre de 2026 entre las 04:03 y las 04:12, con el árbol de `main` en af476f38 (el mismo contenido que `develop` en e01a17b8, que ya integra #589), los mismos eventos y opciones de [Medidas de tiempo](#medidas-de-tiempo) y un trabajo `memslot gpu` por ejecución. El llama-server de Kaizten no usó la GPU durante los dos perfiles. La carga media estuvo entre 3,8 y 4,9. El recibo es [`profiles-20261016.json`](profiles-20261016.json), generado con [`profiles.py`](profiles.py).
 
-1. Eventos, una vez y sin GPU: `python benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`.
-2. Rondas alternas, cada una en su propio trabajo `memslot gpu`: `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family titans --arm titans_mac_online --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para los lectores, `--family readout --arm mars_titan_m1` y `--arm mars_titan_m3` con `--option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728`, y `BENCH_M3_EVENTS=eventos.pkl` para que M3 estime sus escalas con los mismos eventos.
-3. Bits de las rondas: `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues`.
-4. Perfiles: `py-spy record --rate 100 --format raw` y `MARS_TITAN_NVTX=1 nsys profile --trace=cuda,nvtx --sample=none --cpuctxsw=none` sobre la orden de la ronda, resumidos con `benchmarks/collapsed_profile_summary.py` y `benchmarks/nsys_range_summary.py`.
-5. Emisión con CUDA Graph: `python benchmarks/titans_emission_graph.py eventos.pkl VISTA/manifest.json salida.json 1024`.
+Los dos perfiladores alargan el lado del anfitrión. El tramo medido tardó 7,79 s con py-spy y 9,26 s con Nsight Systems, frente a unos 4,5 s en las rondas limpias del 14 de octubre. Por eso los perfiles sirven para repartir el tiempo, pero no como medida de caudal.
+
+| Parte del recorrido (py-spy, muestras inclusivas de `_train_pass`) | Fracción |
+| --- | --- |
+| `_observe`, la emisión de cada evento | 52,9 % |
+| `_update`, con `_replay` (repetición del tramo con autograd) en 41,0 % | 43,8 % |
+| `prepare` del predictor, en la emisión y en la repetición | 48,0 % |
+| `forward` de `MemoryAsContext` | 20,5 % |
+| `validated_cpu_batch`, la vista CPU sellada | 17,1 % |
+| SHA-256 de la vista CPU (`_digest`) | 9,7 % |
+| Actualización de la memoria neuronal (`NeuralMemory.update`) | 8,6 % |
+| `encode_last` del codificador de precios | 7,6 % |
+| `json.dumps` de `canonical`, sobre todo para contar los bytes de metadatos del estado | 4,4 % |
+| `validate_historical_vectors` | 4,0 % |
+| Motor de autograd en el backward | 3,4 % |
+| `_emit`, el registro de las predicciones emitidas | 1,7 % |
+
+En Nsight Systems, la ventana del recorrido, del primer evento a la última actualización, dura 14,58 s y contiene 207.328 núcleos con 2,84 s de cálculo en la GPU. La GPU solo está ocupada el 19,5 % de la ventana. Hay 197.371 llamadas a `cudaLaunchKernel` y 9.760 copias. La traza alarga el anfitrión, pero no los núcleos, así que sin ella la fracción ocupada sería mayor. Escalando la ventana por el tramo medido (9,26 s con la traza frente a 4,5 s sin ella) quedaría en torno al 40 %, una estimación y no una medida. El recorrido sigue limitado por el anfitrión, que lanza núcleos pequeños de unos 14 µs de media. La atención de PyTorch (`fmha_cutlass`) se lleva el 28 % del tiempo de los núcleos.
+
+### CUDA Graph de la emisión
+
+`benchmarks/titans_emission_graph.py` repite 20 veces, tras 3 de calentamiento, la emisión de un bloque de 1.024 flujos con `differentiable=True` por tres rutas: `prepare` con sus validaciones, el mismo cálculo sin ellas y ese cálculo capturado en un CUDA Graph. Las tres rutas dieron los mismos bits en las tres ejecuciones.
+
+| Ejecución | `prepare` | Sin validaciones | CUDA Graph | Grafo frente al mismo cálculo sin grafo |
+| --- | --- | --- | --- | --- |
+| 1 | 8,74 ms | 6,44 ms | 6,38 ms | 1,01 |
+| 2 | 14,88 ms | 12,46 ms | 12,95 ms | 0,96 |
+| 3 | 9,61 ms | 7,46 ms | 6,26 ms | 1,19 |
+
+Son medianas por ejecución. En la segunda el llama-server de Kaizten usó la SM en 4 de sus 11 muestras.
+
+## Decisión
+
+- **CUDA Graphs por forma exacta: se descartan.** El grafo no gana de forma reproducible al mismo cálculo sin él (1,01 de mediana, entre 0,96 y 1,19). La emisión dentro de `_observe` (`titans.prepare`, 182 bloques) ocupa 3,16 s de la ventana de 14,58 s, un 21,6 %, así que incluso con la mejor ejecución el ahorro rondaría el 3 % del recorrido. Además, cada grafo solo sirve para una forma de bloque y los bloques cambian de tamaño entre eventos. La diferencia entre `prepare` y el cálculo sin validaciones (de 1,19 a 1,36) no está disponible, porque esas validaciones son las garantías de [Garantías](#garantías).
+- **Núcleo CUDA propio para la actualización de memoria: se descarta mientras se exija igualdad de bits.** La actualización de la memoria neuronal ocupa el 8,6 % de las muestras del anfitrión, lo que acota el ahorro posible. Fusionarla cambiaría el orden de las operaciones respecto de la referencia de PyTorch y necesitaría su propio backward para la repetición del tramo.
+- **Lo que queda medido.** Los costes mayores del anfitrión que no son cálculo del modelo son el SHA-256 de la vista CPU (9,7 %, ya con SHA-NI a 1,76 GB/s en OpenSSL 3.5.8), la serialización JSON que solo cuenta los bytes de metadatos del estado en `_usage` y `_state_size` (3,5 %) y `validate_historical_vectors` (4,0 %). Son garantías que deben conservarse, así que solo cabe calcularlas con menos trabajo o en paralelo, con los mismos resultados.
 
 ## Reproducción
 
@@ -138,5 +171,8 @@ Quedan los perfiles de py-spy y Nsight Systems del recorrido actual y el benchma
 - Igualdad de bits: `python parity_capture.py ÁRBOL salida.pt DISPOSITIVO DTYPE TRABAJO` en cada árbol, con el mismo `TRABAJO` en los dos porque las huellas del corpus incluyen su ruta, y después `python parity_compare.py develop.pt rama.pt`.
 - Trabajo contado: `python work_counts.py ÁRBOL salida.json TRABAJO`.
 - Mutaciones: `python mutations.py ÁRBOL salida.json cpu` y `... cuda`.
+- Eventos, una vez y sin GPU: `python benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`.
+- Rondas alternas, cada una en su propio trabajo `memslot gpu`: `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family titans --arm titans_mac_online --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para los lectores, `--family readout --arm mars_titan_m1` y `--arm mars_titan_m3` con `--option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728`, y `BENCH_M3_EVENTS=eventos.pkl` para que M3 estime sus escalas con los mismos eventos. Bits de las rondas: `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues`.
+- Perfiles, sobre la orden de la ronda de `titans_mac_online` sin `--capture`: `py-spy record --rate 100 --format raw -o DIRECTORIO/titans.pyspy -- python ...` y `MARS_TITAN_NVTX=1 nsys profile --trace=cuda,nvtx --sample=none --cpuctxsw=none -o DIRECTORIO/titans python ...`, después `nsys export --type sqlite -o DIRECTORIO/titans.sqlite DIRECTORIO/titans.nsys-rep`. La emisión con CUDA Graph: `python benchmarks/titans_emission_graph.py eventos.pkl VISTA/manifest.json DIRECTORIO/graph-N.json 1024`. Cada ejecución guarda `nvidia-smi pmon -s u -d 1` en `DIRECTORIO/ETIQUETA.pmon`. El recibo sale de `python profiles.py DIRECTORIO salida.json` desde la raíz del repositorio.
 
 Todas las órdenes usan `CUBLAS_WORKSPACE_CONFIG=:4096:8`, dos hilos y `PYTHONPATH=ÁRBOL/src`, y las del lector el enlace episódico de `MARS_TITAN_EPISODIC_NATIVE`. Las pruebas, capturas y recuentos se ejecutaron en una RTX 4070 Laptop con torch 2.14.0 y CUDA 13.0.
