@@ -17,6 +17,7 @@ import importlib
 import json
 import math
 import time
+from contextlib import closing
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,7 +34,7 @@ from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
-from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
+from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batches
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import (
     deferred_checks,
@@ -51,6 +52,7 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .selection import (
@@ -426,8 +428,12 @@ class ChronologicalInference:
         # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
         self.kernel_policy = declared_policy(recipe.precision)
 
-    def _observe(self, run, source, event, *, differentiable):
-        """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados."""
+    def _observe(self, run, source, event, *, differentiable, blocks=None):
+        """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados.
+
+        `blocks` es el resultado de validar los bloques del evento con `prepared`, adelantado
+        en el hilo del prefetch. Sin él, los bloques se validan aquí.
+        """
         predictor, specification = self.predictor, self.predictor.config.inputs
         warmup = event.at < source.phase.decision_start
         grad = differentiable and not warmup
@@ -436,7 +442,10 @@ class ChronologicalInference:
         if grad and run.instants == 0 and predictor.config.variant == "mac_frozen":
             self._anchor_frozen(run.flows)
         with nvtx_ranges.phase("titans.validate"):
-            validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+            if blocks is None:
+                validated = validated_cpu_batches(event.inputs, specification)
+            else:
+                validated = blocks.result()
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
@@ -1038,13 +1047,26 @@ class ChronologicalTrainer(ChronologicalInference):
     def _train_pass(self, run, cursor, stop, save):
         predictor, source = self.predictor, self.train
         predictor.train()
-        start, stage = cursor["event"], cursor["stage"]
+        specification = predictor.config.inputs
+        # Con prefetch, el hilo productor lee el evento siguiente y valida sus bloques mientras
+        # este hilo calcula el actual. La validación no depende del estado del ajuste.
         events = nvtx_ranges.iterate(
             "titans.read",
-            source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows),
+            prepared(
+                source.batched_events(
+                    start_cursor=cursor["event"], block_rows=self.recipe.block_rows
+                ),
+                lambda event: validated_cpu_batches(event.inputs, specification),
+                source.dataset.pipeline.prefetch_batches,
+            ),
         )
+        with closing(events):
+            return self._train_events(run, cursor, stop, save, events)
+
+    def _train_events(self, run, cursor, stop, save, events):
+        source, start, stage = self.train, cursor["event"], cursor["stage"]
         since, last = 0, time.perf_counter()
-        for index, event in enumerate(events, start):
+        for index, (event, blocks) in enumerate(events, start):
             if not (index == start and stage == "inputs"):
                 with nvtx_ranges.phase("titans.labels"):
                     self._labels(run, event, train=True)
@@ -1072,7 +1094,7 @@ class ChronologicalTrainer(ChronologicalInference):
                     nvtx_ranges.phase("titans.observe"),
                     observing(self.traces, self.global_step + 1),
                 ):
-                    self._observe(run, source, event, differentiable=True)
+                    self._observe(run, source, event, differentiable=True, blocks=blocks)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):

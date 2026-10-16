@@ -17,6 +17,7 @@ from mars_titan.training.input_pipeline import (
     PipelineOptions,
     background,
     ordered_map,
+    prepared,
 )
 
 
@@ -222,6 +223,76 @@ def test_an_abandoned_producer_closes_its_source_before_the_interpreter_exits(so
 def test_invalid_depth_is_rejected(depth):
     with pytest.raises(ValueError):
         next(background(iter(range(3)), depth))
+
+
+@pytest.mark.parametrize("depth", [0, 1, 3])
+def test_prepared_pairs_each_item_with_its_preparation_in_order(depth):
+    pairs = list(prepared(iter(range(100)), jittered, depth))
+    assert [item for item, _ in pairs] == list(range(100))
+    assert [outcome.result() for _, outcome in pairs] == [v * v for v in range(100)]
+
+
+@pytest.mark.parametrize("depth", [0, 2])
+def test_a_preparation_error_waits_until_the_consumer_asks_for_it(depth):
+    def prepare(value):
+        if value == 4:
+            raise Boom(value)
+        return value
+
+    stream = prepared(source(8), prepare, depth)
+    pairs = [next(stream) for _ in range(6)]
+    # El error no detiene la lectura ni se adelanta: solo lo ve quien pide ese resultado.
+    assert [item for item, _ in pairs] == list(range(6))
+    assert [outcome.result() for _, outcome in pairs[:4]] == [0, 1, 2, 3]
+    for _ in range(2):
+        with pytest.raises(Boom):
+            pairs[4][1].result()
+    assert pairs[5][1].result() == 5
+    stream.close()
+
+
+@pytest.mark.parametrize("depth", [0, 2])
+def test_prepared_raises_a_read_error_after_the_previous_items(depth):
+    received, log = [], []
+    with pytest.raises(Boom):
+        for item, outcome in prepared(source(20, fail_at=9, log=log), jittered, depth):
+            received.append((item, outcome.result()))
+    assert received == [(v, v * v) for v in range(9)]
+    assert log[-1] == "closed"
+
+
+@pytest.mark.parametrize(("depth", "outside"), [(0, False), (2, True)])
+def test_prepared_runs_the_preparation_ahead_in_the_producer_thread_only_with_prefetch(
+    depth, outside
+):
+    threads = []
+
+    def prepare(value):
+        threads.append(threading.current_thread())
+        return value
+
+    pairs = list(prepared(iter(range(3)), prepare, depth))
+    assert len(threads) == (3 if outside else 0)
+    assert [outcome.result() for _, outcome in pairs] == [0, 1, 2]
+    assert (threading.current_thread() not in threads) is outside
+
+
+def test_prepared_stays_within_its_depth_and_closes_its_source():
+    log, done = [], []
+    stream = prepared(source(10_000, log=log), done.append, 3)
+    next(stream)
+    time.sleep(0.05)
+    # Un elemento entregado, `depth` en la cola y uno preparado esperando a entrar.
+    assert len(done) <= 1 + 3 + 1
+    stream.close()
+    assert log[-1] == "closed"
+    assert not [t for t in threading.enumerate() if t.name == "mars-titan-prefetch"]
+
+
+@pytest.mark.parametrize("depth", [-1, True, 1.0])
+def test_prepared_rejects_an_invalid_depth(depth):
+    with pytest.raises(ValueError):
+        prepared(iter(range(3)), jittered, depth)
 
 
 def test_options_default_to_the_sequential_reader(monkeypatch):

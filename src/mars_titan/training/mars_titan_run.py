@@ -22,6 +22,7 @@ import importlib
 import json
 import math
 import time
+from contextlib import closing
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -51,7 +52,7 @@ from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
     DecisionBatch,
     device_tensor,
-    validated_cpu_batch,
+    validated_cpu_batches,
 )
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import deferred_checks
@@ -66,6 +67,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .financial_run import FlowStates, Paused, _compatible, _read_report
+from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_search_cases
@@ -483,8 +485,12 @@ class MarsTitanInference:
             fold=self.fold,
         )
 
-    def _observe(self, run, phase, event, *, train):
-        """Predecir los bloques del instante con la instantánea previa a sus etiquetas."""
+    def _observe(self, run, phase, event, *, train, blocks=None):
+        """Predecir los bloques del instante con la instantánea previa a sus etiquetas.
+
+        `blocks` es el resultado de validar los bloques del evento con `prepared`, adelantado
+        en el hilo del prefetch. Sin él, los bloques se validan aquí.
+        """
         predictor, specification = self.predictor, self.predictor.config.inputs
         warmup = event.at < phase.decision_start
         snapshot = context = None
@@ -502,7 +508,10 @@ class MarsTitanInference:
                     )
         seen = 0 if run.bank is None else run.bank.seen
         with nvtx_ranges.phase("readout.validate"):
-            validated = [validated_cpu_batch(raw, specification) for raw in event.inputs]
+            if blocks is None:
+                validated = validated_cpu_batches(event.inputs, specification)
+            else:
+                validated = blocks.result()
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
         # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del
@@ -968,15 +977,29 @@ class ReadoutTrainer(MarsTitanInference):
         loss.backward()
 
     def _train_pass(self, run, cursor, stop, save):
-        source, phase = self.train, self.train.phase
+        source = self.train
         self.readout.train()
-        start, stage = cursor["event"], cursor["stage"]
+        specification = self.predictor.config.inputs
+        # Con prefetch, el hilo productor lee el evento siguiente y valida sus bloques mientras
+        # este hilo calcula el actual. La validación no depende del estado del ajuste.
         events = nvtx_ranges.iterate(
             "readout.read",
-            source.batched_events(start_cursor=start, block_rows=self.recipe.block_rows),
+            prepared(
+                source.batched_events(
+                    start_cursor=cursor["event"], block_rows=self.recipe.block_rows
+                ),
+                lambda event: validated_cpu_batches(event.inputs, specification),
+                source.dataset.pipeline.prefetch_batches,
+            ),
         )
+        with closing(events):
+            return self._train_events(run, cursor, stop, save, events)
+
+    def _train_events(self, run, cursor, stop, save, events):
+        phase = self.train.phase
+        start, stage = cursor["event"], cursor["stage"]
         since, last = 0, time.perf_counter()
-        for index, event in enumerate(events, start):
+        for index, (event, blocks) in enumerate(events, start):
             if not (index == start and stage == "inputs"):
                 with nvtx_ranges.phase("readout.labels"):
                     self._labels(run, phase, event, train=True)
@@ -1004,7 +1027,7 @@ class ReadoutTrainer(MarsTitanInference):
                     nvtx_ranges.phase("readout.observe"),
                     observing(self.traces, self.global_step + 1),
                 ):
-                    self._observe(run, phase, event, train=True)
+                    self._observe(run, phase, event, train=True, blocks=blocks)
             with nvtx_ranges.phase("readout.admit"):
                 self._admit(run, phase, event.at)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")

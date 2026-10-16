@@ -5,6 +5,8 @@
 UV ?= uv
 RUN ?= $(UV) run --locked
 THREADS ?= 2
+# Trabajadores de pytest-xdist en test-fast. Con 0 corre en un solo proceso (#491).
+TEST_WORKERS ?= 3
 NATIVE_JOBS ?= 2
 BUILD := $(CURDIR)/build/native
 DOCS_OUT ?= $(CURDIR)/build/docs
@@ -41,8 +43,8 @@ lint: ## Ruff, formato y comprobación del repositorio
 
 check: lint test-fast ## Comprobaciones obligatorias antes de abrir una PR
 
-test-fast: ## Pruebas rápidas en CPU, sin las lentas, las nativas ni las de CUDA
-	$(CPU_ENV) $(RUN) pytest -q -m "not slow and not native and not cuda"
+test-fast: ## Pruebas rápidas en CPU con pytest-xdist, sin las lentas, las nativas ni las de CUDA
+	$(CPU_ENV) $(RUN) pytest -q -n $(TEST_WORKERS) --dist loadfile -m "not slow and not native and not cuda"
 
 test: ## Suite CPU completa por carpetas, con los binarios de native-build si existen
 	@set -e; for part in $(SUITE_PARTS); do \

@@ -11,7 +11,7 @@ Las pruebas se agrupan por la responsabilidad que comprueban:
 
 Las pruebas de herramientas no acceden a la red. Comprueban identificadores, metadatos, integridad, formatos, límites de descarga y conservación de archivos anteriores. Las pruebas científicas usan datos sintéticos o artefactos locales controlados y distinguen las medidas de coste de los resultados predictivos.
 
-Desde la raíz del repositorio, `make test-fast` ejecuta en pocos minutos las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
+Desde la raíz del repositorio, `make test-fast` ejecuta en unos dos minutos, repartidas entre tres procesos de pytest-xdist, las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
 
 Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con un motivo que dice qué falta y cómo conseguirlo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas.
 
@@ -31,11 +31,19 @@ uv run --locked pytest -q -m "not slow and not native and not cuda"
 uv run --locked pytest -q -rs -m "native and not cuda" tests/memory
 ```
 
-La lista de pruebas lentas procede de informes JUnit. La actual junta la suite CPU completa con cobertura y los binarios nativos del 10 de octubre de 2026, que alarga los tiempos, y dos ejecuciones de `make test-fast` en un clon limpio con el equipo cargado, del 10 y del 13 de octubre. Una función entra si sus casos suman un segundo o más en alguna de ellas. JUnit atribuye la preparación de un fixture de módulo a la primera prueba que lo usa, así que una función de diez segundos o más arrastra también a las que comparten con ella un fixture de módulo o de sesión. Si no, la siguiente pagaría ese coste en el subconjunto rápido. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
+La lista de pruebas lentas procede de informes JUnit. La de partida junta la suite CPU completa con cobertura y los binarios nativos del 10 de octubre de 2026, que alarga los tiempos, y dos ejecuciones de `make test-fast` en un clon limpio con el equipo cargado, del 10 y del 13 de octubre. El 15 de octubre se añadieron las funciones que habían entrado después sin medida ([#635](https://github.com/GonxKZ/mars-titan/issues/635)), con dos informes de `make test-fast` en serie: uno que tardó 67 minutos con la lista anterior y otro con la lista corregida, con otra suite en la segunda plaza de `memslot`. Una función entra si sus casos suman un segundo o más en alguna de ellas. JUnit atribuye la preparación de un fixture de módulo a la primera prueba que lo usa, así que una función de diez segundos o más arrastra también a las que comparten con ella un fixture de módulo o de sesión. Si no, la siguiente pagaría ese coste en el subconjunto rápido. Para regenerarla se ejecuta la suite con `--junitxml` y se revisa el diff. Con varios informes de ejecuciones distintas, cada función conserva el mayor de sus tiempos:
 
 ```bash
 uv run --locked pytest -q --junitxml=suite.xml
 uv run --locked python scripts/list_slow_tests.py --threshold 1 --shared 10 suite.xml > tests/slow_tests.txt
+```
+
+Si `make test-fast` se alarga, basta con su propio informe. Esa selección no mide las funciones que ya están en la lista, así que `--previous` las conserva y añade las nuevas:
+
+```bash
+uv run --locked pytest -q -m "not slow and not native and not cuda" --junitxml=fast.xml
+uv run --locked python scripts/list_slow_tests.py --threshold 1 --shared 10 --previous tests/slow_tests.txt fast.xml > nueva.txt
+mv nueva.txt tests/slow_tests.txt
 ```
 
 `tests/test_suite_support.py` comprueba que cada función de la lista sigue existiendo.

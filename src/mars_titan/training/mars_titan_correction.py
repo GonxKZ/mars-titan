@@ -336,9 +336,9 @@ class CorrectionInference(ChronologicalInference):
         self.delayed = AssociativeMemory(self.correction.memory) if self.kalman else None
         self._incoming, self._held, self._due, self.extra = [], {}, [], {}
 
-    def _observe(self, run, source, event, *, differentiable):
+    def _observe(self, run, source, event, *, differentiable, blocks=None):
         _require(not differentiable, "B6 no tiene parámetros que ajustar")
-        super()._observe(run, source, event, differentiable=False)
+        super()._observe(run, source, event, differentiable=False, blocks=blocks)
         if event.at < source.phase.decision_start:
             return
         specification = self.predictor.config.inputs

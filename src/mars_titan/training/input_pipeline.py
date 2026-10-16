@@ -1,10 +1,11 @@
 """Tubería acotada de lectura: decodificación ordenada en hilos y prefetch en segundo plano.
 
-Las dos piezas conservan el orden exacto de la ruta secuencial. `ordered_map` reparte una
+Las piezas conservan el orden exacto de la ruta secuencial. `ordered_map` reparte una
 función pura entre hilos y entrega sus resultados en el orden de entrada, con un número
 máximo de tareas pendientes. `background` recorre un iterable en un hilo productor con una
-cola acotada. Un error se entrega en la misma posición en que lo habría lanzado la ruta
-secuencial, después de los elementos anteriores, y cerrar el consumidor detiene al productor.
+cola acotada. `prepared` adelanta además en ese hilo una preparación pura de cada elemento.
+Un error se entrega en la misma posición en que lo habría lanzado la ruta secuencial, después
+de los elementos anteriores, y cerrar el consumidor detiene al productor.
 
 Las opciones se declaran con `PipelineOptions` o con las variables de entorno
 `MARS_TITAN_DECODE_WORKERS` y `MARS_TITAN_PREFETCH_BATCHES`. Sin ellas la lectura es la
@@ -17,6 +18,7 @@ import os
 import queue
 import threading
 from collections import deque
+from concurrent.futures import Future
 from dataclasses import dataclass
 
 DECODE_WORKERS_ENV = "MARS_TITAN_DECODE_WORKERS"
@@ -263,3 +265,49 @@ def background(iterable, depth):
                 continue
         worker.join()
         _PRODUCERS.discard(producer)
+
+
+def prepared(items, prepare, depth):
+    """Entregar cada elemento de `items` junto con `prepare(elemento)`.
+
+    Devuelve parejas (elemento, resultado). `resultado.result()` devuelve lo que da `prepare`
+    o lanza su error cuando el consumidor lo pide, así que el error no se adelanta a lo que el
+    consumidor hace antes con el elemento. Con `depth` positivo, la lectura de `items` y
+    `prepare` van en el hilo productor de `background`, con hasta `depth` parejas en espera,
+    y el resultado es un `Future` ya resuelto. Con cero no hay hilo y `prepare` se calcula
+    cuando el consumidor pide el resultado, igual que sin esta función. `prepare` debe ser una
+    función pura del elemento, sin efectos que dependan de cuándo se ejecuta.
+    """
+    if type(depth) is not int or depth < 0:
+        raise ValueError("La profundidad del prefetch debe ser un entero no negativo")
+    if not depth:
+        return ((item, _Later(prepare, item)) for item in items)
+    return background(_with_outcomes(items, prepare), depth)
+
+
+class _Later:
+    """Preparación sin prefetch, calculada en el hilo del consumidor al pedirla."""
+
+    __slots__ = ("_item", "_prepare")
+
+    def __init__(self, prepare, item):
+        self._prepare, self._item = prepare, item
+
+    def result(self):
+        return self._prepare(self._item)
+
+
+def _with_outcomes(items, prepare):
+    iterator = iter(items)
+    try:
+        for item in iterator:
+            outcome = Future()
+            try:
+                outcome.set_result(prepare(item))
+            except Exception as error:  # Se lanza cuando el consumidor pide el resultado.
+                outcome.set_exception(error)
+            yield item, outcome
+    finally:
+        close = getattr(iterator, "close", None)
+        if close is not None:
+            close()
