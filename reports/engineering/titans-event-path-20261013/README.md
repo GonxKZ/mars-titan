@@ -135,7 +135,7 @@ Los dos perfiladores alargan el lado del anfitrión. El tramo medido tardó 7,79
 | `_observe`, la emisión de cada evento | 52,9 % |
 | `_update`, con `_replay` (repetición del tramo con autograd) en 41,0 % | 43,8 % |
 | `prepare` del predictor, en la emisión y en la repetición | 48,0 % |
-| `forward` de `MemoryAsContext` | 20,5 % |
+| `forward` de `TitansMAC` | 20,5 % |
 | `validated_cpu_batch`, la vista CPU sellada | 17,1 % |
 | SHA-256 de la vista CPU (`_digest`) | 9,7 % |
 | Actualización de la memoria neuronal (`NeuralMemory.update`) | 8,6 % |
@@ -161,7 +161,7 @@ Son medianas por ejecución. En la segunda el llama-server de Kaizten usó la SM
 
 ## Decisión
 
-- **CUDA Graphs por forma exacta: se descartan.** El grafo no gana de forma reproducible al mismo cálculo sin él (1,01 de mediana, entre 0,96 y 1,19). La emisión dentro de `_observe` (`titans.prepare`, 182 bloques) ocupa 3,16 s de la ventana de 14,58 s, un 21,6 %, así que incluso con la mejor ejecución el ahorro rondaría el 3 % del recorrido. Además, cada grafo solo sirve para una forma de bloque y los bloques cambian de tamaño entre eventos. La diferencia entre `prepare` y el cálculo sin validaciones (de 1,19 a 1,36) no está disponible, porque esas validaciones son las garantías de [Garantías](#garantías).
+- **CUDA Graphs por forma exacta: se descartan.** El grafo no gana de forma reproducible al mismo cálculo sin él (1,01 de mediana, entre 0,96 y 1,19). La emisión dentro de `_observe` (`titans.prepare`, 182 bloques) ocupa 3,16 s de la ventana de 14,58 s, un 21,6 %, así que incluso con la mejor ejecución el ahorro no pasaría del 3,5 % del recorrido. Además, cada grafo solo sirve para una forma de bloque y los bloques cambian de tamaño entre eventos. La diferencia entre `prepare` y el cálculo sin validaciones (de 1,19 a 1,36) no está disponible, porque esas validaciones son las garantías de [Garantías](#garantías).
 - **Núcleo CUDA propio para la actualización de memoria: se descarta mientras se exija igualdad de bits.** La actualización de la memoria neuronal ocupa el 8,6 % de las muestras del anfitrión, lo que acota el ahorro posible. Fusionarla cambiaría el orden de las operaciones respecto de la referencia de PyTorch y necesitaría su propio backward para la repetición del tramo.
 - **Lo que queda medido.** Los costes mayores del anfitrión que no son cálculo del modelo son el SHA-256 de la vista CPU (9,7 %, ya con SHA-NI a 1,76 GB/s en OpenSSL 3.5.8), la serialización JSON que solo cuenta los bytes de metadatos del estado en `_usage` y `_state_size` (3,5 %) y `validate_historical_vectors` (4,0 %). Son garantías que deben conservarse, así que solo cabe calcularlas con menos trabajo o en paralelo, con los mismos resultados.
 
