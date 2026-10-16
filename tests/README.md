@@ -11,7 +11,7 @@ Las pruebas se agrupan por la responsabilidad que comprueban:
 
 Las pruebas de herramientas no acceden a la red. Comprueban identificadores, metadatos, integridad, formatos, límites de descarga y conservación de archivos anteriores. Las pruebas científicas usan datos sintéticos o artefactos locales controlados y distinguen las medidas de coste de los resultados predictivos.
 
-Desde la raíz del repositorio, `make test-fast` ejecuta en pocos minutos las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
+Desde la raíz del repositorio, `make test-fast` ejecuta en unos dos minutos, repartidas entre tres procesos de pytest-xdist, las pruebas de CPU sin las marcas `slow`, `native` ni `cuda`, y `make test` recorre la suite CPU completa por carpetas. Las [órdenes habituales](../CONTRIBUTING.md#órdenes-habituales) explican qué necesita cada objetivo.
 
 Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su disponibilidad y, si falta, se omiten con un motivo que dice qué falta y cómo conseguirlo. Nunca cambian a CPU de forma silenciosa. La [suite completa en condiciones reales](#suite-completa-en-condiciones-reales) describe cómo ejecutarlas todas.
 
