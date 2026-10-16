@@ -1,0 +1,534 @@
+{
+ "kind": "test_suite_parallelism",
+ "issue": 491,
+ "reference_counts": {
+  "passed": 7463,
+  "skipped": 377
+ },
+ "configs": {
+  "serie": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    201.7790870666504,
+    205.2565677165985,
+    224.93033456802368
+   ],
+   "median_seconds": 205.2565677165985,
+   "max_anon_peak_bytes": 908177408,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  },
+  "n2-loadfile": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    114.79818987846375,
+    116.14276766777039,
+    117.00194907188416
+   ],
+   "median_seconds": 116.14276766777039,
+   "max_anon_peak_bytes": 1960493056,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  },
+  "n2-loadgroup": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    135.9338355064392,
+    136.76899456977844,
+    138.49681639671326
+   ],
+   "median_seconds": 136.76899456977844,
+   "max_anon_peak_bytes": 2097229824,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  },
+  "n3-loadfile": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    91.03321981430054,
+    91.85833954811096,
+    91.92365026473999
+   ],
+   "median_seconds": 91.85833954811096,
+   "max_anon_peak_bytes": 2656509952,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  },
+  "n3-loadgroup": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    113.06295728683472,
+    113.81589412689209,
+    114.31651329994202
+   ],
+   "median_seconds": 113.81589412689209,
+   "max_anon_peak_bytes": 2817187840,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  }
+ },
+ "runs": [
+  {
+   "config": "serie",
+   "round": 0,
+   "started": "2026-10-16T05:40:28+0200",
+   "load_before": [
+    "2.67",
+    "2.99",
+    "3.78"
+   ],
+   "load_after": [
+    "1.87",
+    "2.48",
+    "3.40"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-serie.xml tests",
+   "returncode": 0,
+   "seconds": 224.93033456802368,
+   "anon_peak_bytes": 892571648,
+   "peak_bytes": 1718644736,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 0,
+   "started": "2026-10-16T05:44:15+0200",
+   "load_before": [
+    "1.87",
+    "2.48",
+    "3.40"
+   ],
+   "load_after": [
+    "2.47",
+    "2.51",
+    "3.30"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 0,
+   "seconds": 116.14276766777039,
+   "anon_peak_bytes": 1932394496,
+   "peak_bytes": 2373189632,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 0,
+   "started": "2026-10-16T05:46:14+0200",
+   "load_before": [
+    "2.47",
+    "2.51",
+    "3.30"
+   ],
+   "load_after": [
+    "3.53",
+    "2.94",
+    "3.35"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 138.49681639671326,
+   "anon_peak_bytes": 2056429568,
+   "peak_bytes": 2645307392,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 0,
+   "started": "2026-10-16T05:48:35+0200",
+   "load_before": [
+    "3.53",
+    "2.94",
+    "3.35"
+   ],
+   "load_after": [
+    "3.63",
+    "3.18",
+    "3.39"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 0,
+   "seconds": 91.03321981430054,
+   "anon_peak_bytes": 2608627712,
+   "peak_bytes": 3083530240,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 0,
+   "started": "2026-10-16T05:50:08+0200",
+   "load_before": [
+    "3.63",
+    "3.18",
+    "3.39"
+   ],
+   "load_after": [
+    "3.78",
+    "3.45",
+    "3.47"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 114.31651329994202,
+   "anon_peak_bytes": 2789994496,
+   "peak_bytes": 3360890880,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 1,
+   "started": "2026-10-16T05:52:04+0200",
+   "load_before": [
+    "3.78",
+    "3.45",
+    "3.47"
+   ],
+   "load_after": [
+    "3.16",
+    "3.37",
+    "3.44"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 0,
+   "seconds": 117.00194907188416,
+   "anon_peak_bytes": 1934368768,
+   "peak_bytes": 2407321600,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 1,
+   "started": "2026-10-16T05:54:04+0200",
+   "load_before": [
+    "3.16",
+    "3.37",
+    "3.44"
+   ],
+   "load_after": [
+    "2.76",
+    "3.18",
+    "3.36"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 136.76899456977844,
+   "anon_peak_bytes": 2066964480,
+   "peak_bytes": 2564923392,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 1,
+   "started": "2026-10-16T05:56:22+0200",
+   "load_before": [
+    "2.76",
+    "3.18",
+    "3.36"
+   ],
+   "load_after": [
+    "3.39",
+    "3.29",
+    "3.38"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 0,
+   "seconds": 91.92365026473999,
+   "anon_peak_bytes": 2642944000,
+   "peak_bytes": 3131535360,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 1,
+   "started": "2026-10-16T05:57:56+0200",
+   "load_before": [
+    "3.39",
+    "3.29",
+    "3.38"
+   ],
+   "load_after": [
+    "3.54",
+    "3.46",
+    "3.43"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 113.81589412689209,
+   "anon_peak_bytes": 2817187840,
+   "peak_bytes": 3387637760,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "serie",
+   "round": 1,
+   "started": "2026-10-16T05:59:52+0200",
+   "load_before": [
+    "3.54",
+    "3.46",
+    "3.43"
+   ],
+   "load_after": [
+    "1.80",
+    "2.59",
+    "3.09"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-serie.xml tests",
+   "returncode": 0,
+   "seconds": 201.7790870666504,
+   "anon_peak_bytes": 906899456,
+   "peak_bytes": 1279664128,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 2,
+   "started": "2026-10-16T06:03:16+0200",
+   "load_before": [
+    "1.80",
+    "2.59",
+    "3.09"
+   ],
+   "load_after": [
+    "2.26",
+    "2.53",
+    "2.99"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 135.9338355064392,
+   "anon_peak_bytes": 2097229824,
+   "peak_bytes": 2558406656,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 2,
+   "started": "2026-10-16T06:05:33+0200",
+   "load_before": [
+    "2.26",
+    "2.53",
+    "2.99"
+   ],
+   "load_after": [
+    "3.33",
+    "2.90",
+    "3.08"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 0,
+   "seconds": 91.85833954811096,
+   "anon_peak_bytes": 2656509952,
+   "peak_bytes": 3130806272,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 2,
+   "started": "2026-10-16T06:07:07+0200",
+   "load_before": [
+    "3.33",
+    "2.90",
+    "3.08"
+   ],
+   "load_after": [
+    "3.98",
+    "3.36",
+    "3.24"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 0,
+   "seconds": 113.06295728683472,
+   "anon_peak_bytes": 2803105792,
+   "peak_bytes": 3385344000,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "serie",
+   "round": 2,
+   "started": "2026-10-16T06:09:03+0200",
+   "load_before": [
+    "3.98",
+    "3.36",
+    "3.24"
+   ],
+   "load_after": [
+    "1.85",
+    "2.68",
+    "3.00"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-serie.xml tests",
+   "returncode": 0,
+   "seconds": 205.2565677165985,
+   "anon_peak_bytes": 908177408,
+   "peak_bytes": 1296322560,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 2,
+   "started": "2026-10-16T06:12:30+0200",
+   "load_before": [
+    "1.85",
+    "2.68",
+    "3.00"
+   ],
+   "load_after": [
+    "2.51",
+    "2.68",
+    "2.97"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 0,
+   "seconds": 114.79818987846375,
+   "anon_peak_bytes": 1960493056,
+   "peak_bytes": 2400342016,
+   "oom_kill": 0,
+   "max_events": 0,
+   "new_tmp_entries": [],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 7463,
+    "skipped": 377
+   },
+   "same_outcomes_as_serial": true
+  }
+ ],
+ "optimizer_steps": 0,
+ "training_executed": false
+}

@@ -1,0 +1,562 @@
+{
+ "kind": "test_suite_parallelism",
+ "issue": 491,
+ "reference_counts": {
+  "passed": 8093,
+  "skipped": 399
+ },
+ "configs": {
+  "serie": {
+   "runs": 3,
+   "finished": 3,
+   "stopped": 0,
+   "seconds": [
+    1406.065578699112,
+    1487.5375559329987,
+    4049.012457847595
+   ],
+   "median_seconds": 1487.5375559329987,
+   "max_anon_peak_bytes": 5909979136,
+   "all_same_outcomes": true,
+   "possible_own_tmp_entries": 0
+  },
+  "n2-loadfile": {
+   "runs": 3,
+   "finished": 0,
+   "stopped": 3,
+   "seconds": [],
+   "median_seconds": null,
+   "max_anon_peak_bytes": 6399012864,
+   "all_same_outcomes": null,
+   "possible_own_tmp_entries": 0
+  },
+  "n2-loadgroup": {
+   "runs": 3,
+   "finished": 0,
+   "stopped": 3,
+   "seconds": [],
+   "median_seconds": null,
+   "max_anon_peak_bytes": 6401712128,
+   "all_same_outcomes": null,
+   "possible_own_tmp_entries": 1
+  },
+  "n3-loadfile": {
+   "runs": 3,
+   "finished": 0,
+   "stopped": 3,
+   "seconds": [],
+   "median_seconds": null,
+   "max_anon_peak_bytes": 6390710272,
+   "all_same_outcomes": null,
+   "possible_own_tmp_entries": 0
+  },
+  "n3-loadgroup": {
+   "runs": 3,
+   "finished": 0,
+   "stopped": 3,
+   "seconds": [],
+   "median_seconds": null,
+   "max_anon_peak_bytes": 6385049600,
+   "all_same_outcomes": null,
+   "possible_own_tmp_entries": 0
+  }
+ },
+ "runs": [
+  {
+   "config": "serie",
+   "round": 0,
+   "started": "2026-10-15T20:00:16+0200",
+   "load_before": [
+    "7.97",
+    "9.30",
+    "7.45"
+   ],
+   "load_after": [
+    "7.85",
+    "9.74",
+    "10.70"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-serie.xml tests",
+   "returncode": 0,
+   "seconds": 4049.012457847595,
+   "peak_bytes": 6398001152,
+   "new_tmp_entries": [
+    ".com.google.Chrome.2i1zHr",
+    ".com.google.Chrome.EnnwMJ",
+    "com.google.Chrome.93eQkd",
+    "com.google.Chrome.B8zYfs",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.7CEPac",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.9sHnKW",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.F4GuVl",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.KtxrIn",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.L2vnHX",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.omEf2E",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.xJsAWX",
+    "junit-12516263453550956758",
+    "kaizten-web-1n1aj3i6",
+    "kaizten-web-gg_56lk_",
+    "playwright-artifacts-fSAmk9",
+    "playwright_chromiumdev_profile-y3yg4L",
+    "tomcat-docbase.42845.9242421403346530924",
+    "tomcat-docbase.60363.8576820032251173931",
+    "tomcat.0.2074934564729554332",
+    "tomcat.0.6466349041423135050",
+    "tomcat.0.703140723816095362",
+    "tomcat.0.9207192704102153406",
+    "tomcat.42845.16266394822761395769",
+    "tomcat.60363.15801409654620949266",
+    "uv-1a2ca8b5ab99db1a.lock",
+    "uv-4fe2fa489274f589.lock",
+    "uv-531e864eb80e99e2.lock",
+    "uv-6304065c8a16654d.lock",
+    "uv-694f71d256f2110e.lock",
+    "uv-69c9fbba185075fb.lock",
+    "uv-84dd11409e012044.lock",
+    "uv-86b18eb3a1c70136.lock",
+    "uv-89ee05e597d849ad.lock",
+    "uv-95b675408987b6d5.lock",
+    "uv-9aa35d2723c45dbf.lock",
+    "uv-b0c8ff478f695d97.lock",
+    "uv-c4ee4a2b0d8bc9b0.lock",
+    "uv-e6d726730165ef92.lock",
+    "uv-f8c0502460e7972a.lock"
+   ],
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 8093,
+    "skipped": 399
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 0,
+   "started": "2026-10-15T21:07:51+0200",
+   "load_before": [
+    "7.85",
+    "9.74",
+    "10.70"
+   ],
+   "load_after": [
+    "5.33",
+    "6.51",
+    "8.32"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 6399012864,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 0,
+   "started": "2026-10-15T21:29:05+0200",
+   "load_before": [
+    "5.33",
+    "6.51",
+    "8.32"
+   ],
+   "load_after": [
+    "10.78",
+    "10.23",
+    "9.14"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [
+    "com.google.Chrome.OYXrSZ",
+    "kaizten-web-pfpx_kkv",
+    "playwright-artifacts-wpPZgY",
+    "playwright_chromiumdev_profile-7bjz1o",
+    "tmps_0k1b2a",
+    "tomcat-docbase.34137.13470047868591990491",
+    "tomcat-docbase.37831.12758602214053111487",
+    "tomcat-docbase.53905.3208916379230081649",
+    "tomcat.34137.13233899990829474697",
+    "tomcat.37831.5316927564722161372",
+    "tomcat.53905.5867283395563768356",
+    "uv-9979a504fa1340df.lock"
+   ],
+   "anon_peak_bytes": 6401712128,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": [
+    "tmps_0k1b2a"
+   ]
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 0,
+   "started": "2026-10-15T21:42:27+0200",
+   "load_before": [
+    "10.78",
+    "10.23",
+    "9.14"
+   ],
+   "load_after": [
+    "10.25",
+    "10.40",
+    "10.08"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [
+    ".com.google.Chrome.rxyz8c",
+    "com.google.Chrome.2qYpAT",
+    "kaizten-web-3an_e96t",
+    "playwright-artifacts-VwC5WS",
+    "playwright_chromiumdev_profile-FVkQWt",
+    "tomcat-docbase.54827.781739391933424142",
+    "tomcat.54827.5856679972106095802",
+    "uv-dda84a7dc42487af.lock"
+   ],
+   "anon_peak_bytes": 6390710272,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 0,
+   "started": "2026-10-15T22:00:52+0200",
+   "load_before": [
+    "10.25",
+    "10.40",
+    "10.08"
+   ],
+   "load_after": [
+    "4.19",
+    "7.14",
+    "8.70"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=0-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 6375550976,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 1,
+   "started": "2026-10-15T22:30:07+0200",
+   "load_before": [
+    "4.19",
+    "7.14",
+    "8.70"
+   ],
+   "load_after": [
+    "6.62",
+    "5.05",
+    "6.28"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [
+    "com.google.Chrome.05xBni",
+    "kaizten-web-eekzdica",
+    "playwright-artifacts-OxteR1",
+    "playwright_chromiumdev_profile-SyNmJZ",
+    "tomcat-docbase.56905.13673146779977817536",
+    "tomcat.56905.12827629597435700387",
+    "uv-93127489f72e21b6.lock",
+    "uv-d0c3a32c3ce0a7a8.lock"
+   ],
+   "anon_peak_bytes": 6373965824,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 1,
+   "started": "2026-10-15T22:42:41+0200",
+   "load_before": [
+    "6.62",
+    "5.05",
+    "6.28"
+   ],
+   "load_after": [
+    "3.86",
+    "4.16",
+    "4.85"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [
+    ".com.google.Chrome.gT6zkK",
+    ".com.google.Chrome.kiXBam"
+   ],
+   "anon_peak_bytes": 6386442240,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 1,
+   "started": "2026-10-15T23:03:08+0200",
+   "load_before": [
+    "3.86",
+    "4.16",
+    "4.85"
+   ],
+   "load_after": [
+    "3.27",
+    "3.85",
+    "4.44"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 6377000960,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 1,
+   "started": "2026-10-15T23:11:06+0200",
+   "load_before": [
+    "3.27",
+    "3.85",
+    "4.44"
+   ],
+   "load_after": [
+    "5.41",
+    "4.66",
+    "4.56"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 6379126784,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "serie",
+   "round": 1,
+   "started": "2026-10-15T23:17:02+0200",
+   "load_before": [
+    "5.41",
+    "4.66",
+    "4.56"
+   ],
+   "load_after": [
+    "3.61",
+    "3.61",
+    "3.40"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=1-serie.xml tests",
+   "returncode": 0,
+   "seconds": 1406.065578699112,
+   "peak_bytes": 6442450944,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 5886357504,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 8093,
+    "skipped": 399
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadgroup",
+   "round": 2,
+   "started": "2026-10-15T23:40:30+0200",
+   "load_before": [
+    "3.61",
+    "3.61",
+    "3.40"
+   ],
+   "load_after": [
+    "8.68",
+    "7.35",
+    "6.02"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n2-loadgroup.xml tests -n 2 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [
+    ".java_pid2157993",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.0xKWss",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.RDMHNr",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.W5eIi4",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.ZFIPiq",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.dLjmM1",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.k6efmS",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.uMnxTO",
+    "junit-13152222147387961581",
+    "junit-16279001570902682478",
+    "mockitoboot15195479875605449845.jar",
+    "surefire-gonzalo",
+    "tomcat.0.17002355152088910150",
+    "tomcat.0.2342689878665339777",
+    "uv-07ab31b6cafa3408.lock",
+    "uv-1aefb87a2d138b60.lock",
+    "uv-319462c2982d32fc.lock",
+    "uv-409bc321706a6a4d.lock",
+    "uv-926a045be7b6d102.lock",
+    "uv-97fdc9181b4fd568.lock",
+    "uv-9f2c1016b2bc01eb.lock",
+    "uv-af3f377fb117ea5b.lock",
+    "uv-bee740ff556c3b36.lock",
+    "uv-ce9daaa9315bad94.lock",
+    "uv-e0f153c36969424a.lock"
+   ],
+   "anon_peak_bytes": 6382641152,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n3-loadfile",
+   "round": 2,
+   "started": "2026-10-16T00:05:40+0200",
+   "load_before": [
+    "8.68",
+    "7.35",
+    "6.02"
+   ],
+   "load_after": [
+    "9.23",
+    "8.99",
+    "7.62"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n3-loadfile.xml tests -n 3 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [
+    ".java_pid2192758",
+    "2026_10_16_00_17_58_2192758",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.YSGQuL",
+    "junit-147189968036361542",
+    "mockitoboot4011887623249904928.jar",
+    "tomcat-docbase.0.8425369363405631011",
+    "tomcat.0.15516923978218301330",
+    "tomcat.0.16393408612596638630",
+    "tomcat.0.5165180570143495316",
+    "tomcat.0.6550171003491965473",
+    "uv-9721e69a0b5624ff.lock"
+   ],
+   "anon_peak_bytes": 6372823040,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "n3-loadgroup",
+   "round": 2,
+   "started": "2026-10-16T00:18:46+0200",
+   "load_before": [
+    "9.23",
+    "8.99",
+    "7.62"
+   ],
+   "load_after": [
+    "6.21",
+    "6.73",
+    "7.25"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n3-loadgroup.xml tests -n 3 --dist loadgroup",
+   "returncode": 143,
+   "new_tmp_entries": [
+    ".java_pid2237778",
+    "2026_10_16_00_34_22_2237778",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.0ENt0x",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.8Tqcfr",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.N9PXvm",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.S07Rjf",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.UyPdPM",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.cOPPeP",
+    "com.google.Chrome.chrome_chrome_url_fetcher_.yMsLzg",
+    "junit-13255405181395951188",
+    "mockitoboot15976714599153852835.jar",
+    "tomcat-docbase.0.7043077187191263513",
+    "tomcat-docbase.0.7927708667304029466",
+    "tomcat.0.10487457255001415108",
+    "tomcat.0.16275930038013380072",
+    "tomcat.0.2331450678427274963",
+    "tomcat.0.6578344481003895100",
+    "uv-014e56dd1f6333e2.lock",
+    "uv-1a655e78ecc85873.lock",
+    "uv-528f50dfb5c399af.lock",
+    "uv-8579bd6b51f0ced7.lock",
+    "uv-88f74dffb9cefedd.lock",
+    "uv-a59eddad77d6eb66.lock",
+    "uv-c5ccf75f62398d21.lock",
+    "uv-cbf5b99ba4ee7859.lock",
+    "uv-eba2ba347b647405.lock",
+    "uv-ee1a3f23c52d4b7e.lock"
+   ],
+   "anon_peak_bytes": 6385049600,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  },
+  {
+   "config": "serie",
+   "round": 2,
+   "started": "2026-10-16T00:38:29+0200",
+   "load_before": [
+    "6.21",
+    "6.73",
+    "7.25"
+   ],
+   "load_after": [
+    "3.74",
+    "3.88",
+    "4.07"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-serie.xml tests",
+   "returncode": 0,
+   "seconds": 1487.5375559329987,
+   "peak_bytes": 6442450944,
+   "new_tmp_entries": [
+    "uv-5051ff9b2f84d7ea.lock",
+    "uv-f12992f7571e15cd.lock"
+   ],
+   "anon_peak_bytes": 5909979136,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": true,
+   "possible_own_tmp_entries": [],
+   "counts": {
+    "passed": 8093,
+    "skipped": 399
+   },
+   "same_outcomes_as_serial": true
+  },
+  {
+   "config": "n2-loadfile",
+   "round": 2,
+   "started": "2026-10-16T01:03:18+0200",
+   "load_before": [
+    "3.74",
+    "3.88",
+    "4.07"
+   ],
+   "load_after": [
+    "2.90",
+    "3.18",
+    "3.59"
+   ],
+   "command": "python -m pytest -q -p no:cacheprovider -m 'not slow and not native and not cuda' --junitxml=2-n2-loadfile.xml tests -n 2 --dist loadfile",
+   "returncode": 143,
+   "new_tmp_entries": [],
+   "anon_peak_bytes": 6397620224,
+   "anon_peak_source": "muestreo externo cada segundo",
+   "finished": false,
+   "possible_own_tmp_entries": []
+  }
+ ],
+ "optimizer_steps": 0,
+ "training_executed": false
+}
