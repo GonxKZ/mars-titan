@@ -13,7 +13,7 @@ make setup
 make check
 ```
 
-`make setup` crea `.venv` con `uv sync --locked --all-extras`. `make check` ejecuta Ruff, el formato, `scripts/check_repository.py` y las pruebas rápidas. En un clon limpio del 13 de octubre de 2026, con la caché de uv ya llena y el equipo cargado (carga media de 13 a 17 en 16 hilos), `make setup` tardó 1,2 s y `make check` unos cinco minutos. `test-fast` superó 6.510 pruebas, omitió 343 con su motivo y dejó fuera 3.241, con un pico de memoria de 1,7 GB. Las pruebas añadidas después sin medida alargaron `test-fast` hasta 67 minutos el 15 de octubre. Con la lista de lentas corregida ([#635](https://github.com/GonxKZ/mars-titan/issues/635)), tardó 4 min 24 s en serie en una plaza `memslot suite`, con otra suite en la segunda plaza y una carga media de 4 a 9. Superó 7.463 pruebas, omitió 377 y dejó fuera 4.075, con un pico de 1,4 GB de memoria residente. Sin caché, `make setup` tiene que descargar las ruedas de un entorno que ocupa unos 6,5 GB, sobre todo por PyTorch con CUDA.
+`make setup` crea `.venv` con `uv sync --locked --all-extras`. `make check` ejecuta Ruff, el formato, `scripts/check_repository.py` y las pruebas rápidas. En un clon limpio del 13 de octubre de 2026, con la caché de uv ya llena y el equipo cargado (carga media de 13 a 17 en 16 hilos), `make setup` tardó 1,2 s y `make check` unos cinco minutos. `test-fast` superó 6.510 pruebas, omitió 343 con su motivo y dejó fuera 3.241, con un pico de memoria de 1,7 GB. Las pruebas añadidas después sin medida alargaron `test-fast` hasta 67 minutos el 15 de octubre. Con la lista de lentas corregida ([#635](https://github.com/GonxKZ/mars-titan/issues/635)), tardó 4 min 24 s en serie en una plaza `memslot suite`, con otra suite en la segunda plaza y una carga media de 4 a 9. Superó 7.463 pruebas, omitió 377 y dejó fuera 4.075, con un pico de 1,4 GB de memoria residente. Desde [#491](https://github.com/GonxKZ/mars-titan/issues/491), `test-fast` reparte los archivos entre tres procesos de pytest-xdist (`-n 3 --dist loadfile`). En tres rondas dentro de una plaza `memslot suite` de 6 GiB, la mediana bajó de 205 s en serie a 92 s, con un máximo de 2,5 GiB de memoria anónima y el mismo resultado en cada prueba ([informe](reports/engineering/test-suite-parallelism-20261015/README.md)). Sin caché, `make setup` tiene que descargar las ruedas de un entorno que ocupa unos 6,5 GB, sobre todo por PyTorch con CUDA.
 
 Los datos de FinMultiTime, las ediciones derivadas, los pesos y los resultados voluminosos no están en el repositorio. Las pruebas usan datos sintéticos o fixtures pequeños, y las que necesitan un artefacto local lo dicen al omitirse.
 
@@ -25,7 +25,7 @@ El [Makefile](Makefile) es el punto de entrada. `make` sin objetivo lista los di
 | --- | --- | --- |
 | `make setup` | Entorno bloqueado con todos los extras | uv |
 | `make lint` | `ruff check`, `ruff format --check` y `scripts/check_repository.py` | El entorno |
-| `make test-fast` | Pruebas en CPU sin las marcas `slow`, `native` ni `cuda` | El entorno |
+| `make test-fast` | Pruebas en CPU sin las marcas `slow`, `native` ni `cuda`, repartidas por archivo entre `TEST_WORKERS` procesos | El entorno y unos 2,5 GiB de memoria |
 | `make check` | `lint` y `test-fast`. Es la comprobación mínima antes de abrir una PR | El entorno |
 | `make test` | Suite CPU completa por carpetas, con los binarios nativos si están compilados | Unas horas y hasta 6 GiB de memoria en `tests/training` |
 | `make native-build` | Compila `native-release`, `native-ppo-release` y `native-candidate-cuda` en `build/native/` | CMake, Ninja, Clang y el PyTorch del entorno |
@@ -33,7 +33,7 @@ El [Makefile](Makefile) es el punto de entrada. `make` sin objetivo lista los di
 | `make test-cuda` | Pruebas `cuda` en `cuda:0` con `MARS_TITAN_REQUIRE_CUDA=1` | Una GPU NVIDIA libre para esta única carga |
 | `make docs` | Enlaces y órdenes documentadas, pruebas de la web del observatorio y PDF de la memoria en `build/docs/` | Node.js y LaTeX |
 
-Las variables `THREADS` (por defecto 2), `NATIVE_JOBS` (2) y `RUN` (`uv run --locked`) se pueden cambiar en la llamada, por ejemplo `make test-fast THREADS=4`. Todas las comprobaciones y entrenamientos se ejecutan en local. GitHub Actions solo publica GitHub Pages.
+Las variables `THREADS` (por defecto 2, por proceso), `TEST_WORKERS` (3, y 0 para un solo proceso), `NATIVE_JOBS` (2) y `RUN` (`uv run --locked`) se pueden cambiar en la llamada, por ejemplo `make test-fast TEST_WORKERS=0`. Solo `test-fast` usa varios procesos. Con la lista de lentas atrasada, las doce ejecuciones en paralelo de la primera medida superaron los 6 GiB de la plaza, así que `make test` y las pruebas lentas siguen en serie. Todas las comprobaciones y entrenamientos se ejecutan en local. GitHub Actions solo publica GitHub Pages.
 
 ## Pruebas
 
