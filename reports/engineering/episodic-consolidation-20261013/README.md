@@ -12,6 +12,7 @@ Recibos del 13 al 15 de octubre de 2026 para [#547](https://github.com/GonxKZ/ma
 | [`proposal-times-20261015.json`](proposal-times-20261015.json) | Rondas de las propuestas y las instantáneas con los núcleos nativos, de [`proposal_times.py`](proposal_times.py) |
 | [`anchored-options-20261015.json`](anchored-options-20261015.json) | `benchmarks/anchored_medoid_options.py` con los núcleos nativos |
 | [`kernel-mutations-20261015.json`](kernel-mutations-20261015.json) | Mutaciones de los núcleos y de las exportaciones, de [`kernel_mutations.py`](kernel_mutations.py) |
+| [`full-path-20261016.json`](full-path-20261016.json) | Tres tandas A B B A del recorrido de M1, B+M y B+C+M con los núcleos nativos, de [`full_path_rounds.py`](full_path_rounds.py), con la admisión cronometrada por [`admission_timer.py`](admission_timer.py) |
 
 Una propuesta del banco es retención de episodios, no ajuste. Ningún recibo construye un modelo ni ejecuta pasos de optimizador, y la protección local de aprendizaje sigue activa.
 
@@ -129,15 +130,38 @@ Un perfil con py-spy de las propuestas ancladas de B reparte así el tiempo de `
 
 En una medida exploratoria, sin recibo, un micronúcleo propio de AVX-512 sin FMA para el producto tardó entre 46 y 52 ms con 3.000 × 1.024 × 64, frente a 24 ms de la BLAS de NumPy con un hilo y 13,6 ms con dos. La cota no necesita un orden concreto de sumas, así que el producto se queda en la BLAS.
 
-## Pendiente
+## Recorrido completo con los núcleos nativos
 
-- **Recorrido completo.** Faltan las rondas A B B A de M1, B+M y B+C+M con el enlace nuevo sobre los eventos de `US+CN/fold-012`, que esperan turno de GPU. Las órdenes son las de abajo.
+Las rondas repiten los eventos, las opciones y las condiciones de [Medidas de tiempo](#medidas-de-tiempo), con un trabajo `memslot gpu` por ronda. A es `develop` en 131d809e con el enlace de df7bb523 y B es la rama en d07964e8 con su enlace. Las dos se ejecutan dentro de [`admission_timer.py`](admission_timer.py), que envuelve `propose`, `select_anchored_medoids` y `bank_snapshot` y recorta cada llamada a la ventana que mide el benchmark. El cronómetro no cambia lo que calculan esas funciones. Durante cada ronda, `nvidia-smi pmon` registra cada segundo qué procesos usan la SM. Una ronda está limpia si el llama-server de Kaizten no calculó entre la primera y la última muestra en que lo hizo la ronda. El recibo es [`full-path-20261016.json`](full-path-20261016.json), generado con [`full_path_rounds.py`](full_path_rounds.py).
 
-Órdenes para repetir las medidas del recorrido desde la raíz de cada árbol, con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, el enlace en `MARS_TITAN_EPISODIC_NATIVE`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda, alternando los árboles:
+Se tomaron tres tandas, cada una con las cuatro rondas de los tres modelos:
 
-- `python benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family readout --arm mars_titan_m1 --option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8 --events eventos.pkl --capture CAPTURA.pt --output resultados.jsonl --label ETIQUETA`. Para B+M y B+C+M se usa `--family cm_readout --arm cm_v1_bm` y `--arm cm_v1_bcm` con las mismas opciones.
-- `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO salida.json antes:despues` para los bits de las rondas.
-- `py-spy record --rate 50 --format raw` y `MARS_TITAN_NVTX=1 nsys profile --trace=cuda,nvtx --sample=none --cpuctxsw=none` sobre la misma orden, resumidos con `benchmarks/collapsed_profile_summary.py` (raíz `_train_pass@training/mars_titan_run.py` y funciones como `propose@memory/retention_bank.py` y `select_anchored_medoids@cm/anchored_medoids.py`) y `benchmarks/nsys_range_summary.py`.
+- **Tanda 1**, el 15 de octubre de 16:54 a 19:59. El llama-server calculó durante 8 de las 12 rondas, así que no se usa.
+- **Tanda 2**, el 16 de octubre de 04:36 a 05:09, con carga media de 2,8 a 5,9. Todas las rondas están limpias, pero entre las 04:37 y las 04:50 corrían en la CPU las mutaciones de otra rama, durante las rondas de M1 y B+M.
+- **Tanda 3**, el 16 de octubre de 07:30 a 07:58, con carga media de 2,2 a 3,5 y sin otras cargas propias. Todas las rondas están limpias.
+
+| Modelo | Tanda | Filas/s antes | Filas/s después | Cociente de medias | Peor par |
+| --- | --- | --- | --- | --- | --- |
+| `mars_titan_m1` | 2 | 6.734 y 7.157 | 8.946 y 8.846 | 1,28 | 1,24 |
+| `mars_titan_m1` | 3 | 7.006 y 7.263 | 9.437 y 9.164 | 1,30 | 1,26 |
+| `cm_v1_bm` (B+M) | 2 | 5.994 y 4.081 | 7.866 y 6.961 | 1,47 | 1,16 |
+| `cm_v1_bm` (B+M) | 3 | 6.107 y 6.271 | 8.021 y 7.948 | 1,29 | 1,27 |
+| `cm_v1_bcm` (B+C+M) | 2 | 5.228 y 3.148 | 4.928 y 5.968 | 1,30 | 0,94 |
+| `cm_v1_bcm` (B+C+M) | 3 | 6.015 y 6.064 | 8.076 y 7.900 | 1,32 | 1,30 |
+
+En la tanda 3 las dos rondas de después superan a las dos de antes en los tres modelos, con un cociente de 1,29 a 1,32. La tanda 2 apunta en el mismo sentido, pero su dispersión es mucho mayor. La segunda ronda de antes de B+M y de B+C+M procesó entre un 32 y un 40 % menos filas por segundo que la primera. El pico asignado es de 402 MiB y el reservado de 492 o 494 MiB en todas las rondas, y la memoria residente máxima está entre 3.468 y 3.535 MiB en los dos árboles.
+
+La diferencia sale de la admisión. En la tanda 3, cada una de las 64 llamadas de la ventana tarda:
+
+| Modelo | `propose` antes | después | Medoids antes | después | `bank_snapshot` antes | después | Admisión antes | después |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `mars_titan_m1` | 58,6 y 60,9 ms | 32,3 y 33,2 ms | 32,5 y 34,2 ms | 16,3 y 16,9 ms | 15,3 y 18,6 ms | 2,4 ms | 38,8 y 40,8 % | 23,7 y 23,9 % |
+| `cm_v1_bm` | 94,1 y 95,9 ms | 54,4 y 55,1 ms | 67,1 y 69,0 ms | 37,5 y 37,9 ms | 16,7 y 17,9 ms | 2,1 ms | 50,5 y 50,6 % | 32,9 y 33,0 % |
+| `cm_v1_bcm` | 95,8 y 97,6 ms | 54,6 y 55,0 ms | 67,5 y 70,1 ms | 37,2 y 37,3 ms | 17,9 y 18,8 ms | 2,1 ms | 50,1 y 50,9 % | 32,5 y 33,5 % |
+
+Medoids es `select_anchored_medoids`, que forma parte de `propose`. La admisión es la parte de la ventana que ocupan `propose` y `bank_snapshot`. En la media de la tanda 3, la admisión baja de 4,91 a 2,25 s en M1, de 7,19 a 3,64 s en B+M y de 7,36 a 3,64 s en B+C+M, mientras que el resto de la ventana se queda entre 7,0 y 7,4 s en los dos árboles. En la tanda 2 los tiempos por llamada son parecidos, salvo en las dos rondas lentas de antes, con 142 y 188 ms por `propose`.
+
+Las capturas de las doce rondas de cada modelo, en las tres tandas, coinciden bit a bit con la primera ronda de antes. Son 33 comparaciones, cada una con los nombres de los parámetros, los gradientes de las 11 llamadas (77 tensores) y las 3.347 predicciones pendientes, con `torch.equal` y el mismo tipo.
 
 ## Reproducción
 
@@ -145,4 +169,5 @@ En una medida exploratoria, sin recibo, un micronúcleo propio de AVX-512 sin FM
 - Memoria: `python consolidation_memory.py ÁRBOL salida.json`.
 - Mutaciones: `python mutations.py ÁRBOL salida.json` y `python kernel_mutations.py ÁRBOL salida.json`, cada uno sobre una copia del árbol y con el enlace compilado desde ella en `MARS_TITAN_EPISODIC_NATIVE`.
 - Propuestas: `python proposal_times.py ÁRBOL POLÍTICA salida.json` en cada árbol, en rondas A B B A con un trabajo `memslot light` por ronda.
+- Recorrido completo: desde la raíz de cada árbol, con `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src`, el enlace en `MARS_TITAN_EPISODIC_NATIVE`, los eventos de una vista v3.1 (`benchmarks/chronological_events.py VISTA/manifest.json TRABAJO eventos.pkl 100 6`) y un trabajo `memslot gpu` por ronda, alternando los árboles. Cada ronda es `python admission_timer.py admission.jsonl ETIQUETA -- benchmarks/chronological_replay.py VISTA/manifest.json TRABAJO --family readout --arm mars_titan_m1 --option precision='"fp32_strict"' --option block_rows=512 --predictor max_batch=1024 --predictor max_state_bytes=134217728 --strict --warmup 2 --segments 8 --events eventos.pkl --capture ETIQUETA.pt --output results.jsonl --label ETIQUETA`, con `nvidia-smi pmon -s u -d 1 > ETIQUETA.pmon` mientras dura. Para B+M y B+C+M se usa `--family cm_readout --arm cm_v1_bm` y `--arm cm_v1_bcm`. Los bits salen de `python reports/engineering/profiling-20261010/compare_capture.py DIRECTORIO bits.json ANTES:DESPUÉS ...` y el recibo de `python full_path_rounds.py 547 DIRECTORIO bits.json salida.json`.
 - Pruebas: `CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src MARS_TITAN_EPISODIC_NATIVE=ENLACE pytest -p no:randomly tests/memory tests/cm tests/posttraining/test_readout_adapters.py tests/training/test_candidate_run.py tests/training/test_cm_v1_factorial.py tests/training/test_mars_titan_run.py tests/test_learning_hold_lowering.py tests/training/test_learning_hold_inventory.py`. Con `cuda:0` visible y el enlace compilado desde 7012da85 pasaron 962 pruebas en 34 min 48 s.
