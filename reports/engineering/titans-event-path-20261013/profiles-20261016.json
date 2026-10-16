@@ -1,0 +1,367 @@
+{
+ "kind": "titans_event_path_profiles",
+ "issue": 549,
+ "replay": [
+  {
+   "label": "pyspy",
+   "rows": 88028,
+   "labels": 87202,
+   "seconds": 7.78682806197321,
+   "rows_per_s": 11304.731438707713,
+   "optimizer_calls": 11,
+   "peak_allocated_mib": 2113,
+   "peak_reserved_mib": 2420,
+   "loadavg": [
+    3.791015625,
+    5.02734375,
+    4.90283203125
+   ],
+   "tf32_matmul": false,
+   "tf32_cudnn": false,
+   "matmul_precision": "highest",
+   "torch": "2.14.0+cu130",
+   "llama_server_busy_samples": 0,
+   "llama_server_listed_samples": 0
+  },
+  {
+   "label": "nsys",
+   "rows": 88028,
+   "labels": 87202,
+   "seconds": 9.255430307995994,
+   "rows_per_s": 9510.957035023044,
+   "optimizer_calls": 11,
+   "peak_allocated_mib": 2113,
+   "peak_reserved_mib": 2420,
+   "loadavg": [
+    4.88037109375,
+    4.8935546875,
+    4.85986328125
+   ],
+   "tf32_matmul": false,
+   "tf32_cudnn": false,
+   "matmul_precision": "highest",
+   "torch": "2.14.0+cu130",
+   "llama_server_busy_samples": 0,
+   "llama_server_listed_samples": 0
+  }
+ ],
+ "pyspy": {
+  "profile": "titans.pyspy",
+  "samples": 40390,
+  "root": "_train_pass@training/financial_run.py",
+  "root_samples": 1088,
+  "inclusive": {
+   "_observe@training/financial_run.py": {
+    "samples": 576,
+    "share": 0.5294
+   },
+   "_update@training/financial_run.py": {
+    "samples": 477,
+    "share": 0.4384
+   },
+   "_replay@training/financial_run.py": {
+    "samples": 446,
+    "share": 0.4099
+   },
+   "_emit@training/financial_run.py": {
+    "samples": 18,
+    "share": 0.0165
+   },
+   "prepare@models/titans/financial.py": {
+    "samples": 522,
+    "share": 0.4798
+   },
+   "forward@models/titans/mac.py": {
+    "samples": 223,
+    "share": 0.205
+   },
+   "update@models/titans/neural_memory.py": {
+    "samples": 94,
+    "share": 0.0864
+   },
+   "read@models/titans/neural_memory.py": {
+    "samples": 28,
+    "share": 0.0257
+   },
+   "validate_state@models/titans/neural_memory.py": {
+    "samples": 37,
+    "share": 0.034
+   },
+   "encode_last@models/baselines/transformer.py": {
+    "samples": 83,
+    "share": 0.0763
+   },
+   "validated_cpu_batch@models/titans/financial_inputs.py": {
+    "samples": 186,
+    "share": 0.171
+   },
+   "_digest@models/titans/financial_inputs.py": {
+    "samples": 105,
+    "share": 0.0965
+   },
+   "validate_historical_vectors@data/input_policy.py": {
+    "samples": 44,
+    "share": 0.0404
+   },
+   "_engine_run_backward@torch/autograd/graph.py": {
+    "samples": 37,
+    "share": 0.034
+   },
+   "clip_grad_norm_@torch/nn/utils/clip_grad.py": {
+    "samples": 24,
+    "share": 0.0221
+   },
+   "iterencode@json/encoder.py": {
+    "samples": 48,
+    "share": 0.0441
+   }
+  },
+  "top_self": [
+   {
+    "frame": "_digest (mars_titan/models/titans/financial_inputs.py)",
+    "samples": 98,
+    "share": 0.0901
+   },
+   {
+    "frame": "_replay (mars_titan/training/financial_run.py)",
+    "samples": 85,
+    "share": 0.0781
+   },
+   {
+    "frame": "forward (torch/nn/modules/linear.py)",
+    "samples": 58,
+    "share": 0.0533
+   },
+   {
+    "frame": "_observe (mars_titan/training/financial_run.py)",
+    "samples": 58,
+    "share": 0.0533
+   },
+   {
+    "frame": "finite_indicator (mars_titan/models/titans/state.py)",
+    "samples": 49,
+    "share": 0.045
+   },
+   {
+    "frame": "iterencode (json/encoder.py)",
+    "samples": 48,
+    "share": 0.0441
+   },
+   {
+    "frame": "_engine_run_backward (torch/autograd/graph.py)",
+    "samples": 37,
+    "share": 0.034
+   },
+   {
+    "frame": "_layer (mars_titan/models/baselines/transformer.py)",
+    "samples": 34,
+    "share": 0.0312
+   },
+   {
+    "frame": "validate_historical_vectors (mars_titan/data/input_policy.py)",
+    "samples": 34,
+    "share": 0.0312
+   },
+   {
+    "frame": "select (mars_titan/models/titans/financial_inputs.py)",
+    "samples": 32,
+    "share": 0.0294
+   },
+   {
+    "frame": "_canonical_mask (torch/nn/functional.py)",
+    "samples": 26,
+    "share": 0.0239
+   },
+   {
+    "frame": "_get_total_norm (torch/nn/utils/clip_grad.py)",
+    "samples": 20,
+    "share": 0.0184
+   },
+   {
+    "frame": "validate_state (mars_titan/models/titans/neural_memory.py)",
+    "samples": 18,
+    "share": 0.0165
+   },
+   {
+    "frame": "_emit (mars_titan/training/financial_run.py)",
+    "samples": 18,
+    "share": 0.0165
+   },
+   {
+    "frame": "gate_price_window (mars_titan/data/price_windows.py)",
+    "samples": 16,
+    "share": 0.0147
+   }
+  ]
+ },
+ "nsys": {
+  "pass_window_seconds": 14.581028171,
+  "kernels": 207328,
+  "kernel_seconds": 2.836765961,
+  "gpu_busy_fraction": 0.19455184694327685,
+  "copies": 9760,
+  "copy_seconds": 0.140146449,
+  "copy_bytes": 9885098574,
+  "runtime_calls": {
+   "cuKernelGetName": 197371,
+   "cudaLaunchKernel": 197371,
+   "cudaMemcpyAsync": 9760,
+   "cudaLaunchKernelExC": 8420,
+   "cudaStreamIsCapturing": 7868,
+   "cudaMemsetAsync": 7568,
+   "cudaStreamSynchronize": 3689,
+   "cudaEventQuery": 2299
+  },
+  "ranges": {
+   "titans.update": {
+    "instances": 11,
+    "seconds": 8.054644549
+   },
+   "titans.backward": {
+    "instances": 11,
+    "seconds": 7.852547214
+   },
+   "titans.observe": {
+    "instances": 88,
+    "seconds": 6.280578628
+   },
+   "titans.prepare": {
+    "instances": 182,
+    "seconds": 3.155238361
+   },
+   "titans.validate": {
+    "instances": 88,
+    "seconds": 1.560563919
+   },
+   "titans.labels": {
+    "instances": 89,
+    "seconds": 0.234797978
+   },
+   "titans.clip": {
+    "instances": 11,
+    "seconds": 0.13342409
+   },
+   "titans.emit": {
+    "instances": 88,
+    "seconds": 0.084804498
+   },
+   "titans.optimizer": {
+    "instances": 11,
+    "seconds": 0.035796598
+   },
+   "titans.truncate": {
+    "instances": 11,
+    "seconds": 0.010694392
+   },
+   "titans.read": {
+    "instances": 89,
+    "seconds": 0.00704559
+   },
+   "titans.control_plan": {
+    "instances": 88,
+    "seconds": 0.00038812
+   },
+   "titans.checkpoint": {
+    "instances": 1,
+    "seconds": 6.963e-06
+   }
+  }
+ },
+ "emission_graph": [
+  {
+   "label": "graph-1",
+   "rows": 1024,
+   "recipe": "configs/titans/chronological-training-historical-masked.json",
+   "variant": "mac_online",
+   "differentiable": true,
+   "same_bits": {
+    "deferred_vs_prepare": true,
+    "graph_vs_prepare": true
+   },
+   "median_ms": {
+    "prepare": 8.735,
+    "deferred": 6.436,
+    "graph": 6.377
+   },
+   "graph_vs_deferred": 1.009,
+   "deferred_vs_prepare": 1.357,
+   "deferred_checks": 32,
+   "reserved_mib": 826,
+   "load_average": [
+    4.19,
+    4.68,
+    4.79
+   ],
+   "warmup": 3,
+   "repeats": 20,
+   "torch": "2.14.0+cu130",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "llama_server_busy_samples": 0,
+   "llama_server_listed_samples": 0
+  },
+  {
+   "label": "graph-2",
+   "rows": 1024,
+   "recipe": "configs/titans/chronological-training-historical-masked.json",
+   "variant": "mac_online",
+   "differentiable": true,
+   "same_bits": {
+    "deferred_vs_prepare": true,
+    "graph_vs_prepare": true
+   },
+   "median_ms": {
+    "prepare": 14.875,
+    "deferred": 12.458,
+    "graph": 12.949
+   },
+   "graph_vs_deferred": 0.962,
+   "deferred_vs_prepare": 1.194,
+   "deferred_checks": 32,
+   "reserved_mib": 826,
+   "load_average": [
+    5.6,
+    4.87,
+    4.84
+   ],
+   "warmup": 3,
+   "repeats": 20,
+   "torch": "2.14.0+cu130",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "llama_server_busy_samples": 4,
+   "llama_server_listed_samples": 11
+  },
+  {
+   "label": "graph-3",
+   "rows": 1024,
+   "recipe": "configs/titans/chronological-training-historical-masked.json",
+   "variant": "mac_online",
+   "differentiable": true,
+   "same_bits": {
+    "deferred_vs_prepare": true,
+    "graph_vs_prepare": true
+   },
+   "median_ms": {
+    "prepare": 9.613,
+    "deferred": 7.46,
+    "graph": 6.258
+   },
+   "graph_vs_deferred": 1.192,
+   "deferred_vs_prepare": 1.289,
+   "deferred_checks": 32,
+   "reserved_mib": 826,
+   "load_average": [
+    3.23,
+    4.33,
+    4.66
+   ],
+   "warmup": 3,
+   "repeats": 20,
+   "torch": "2.14.0+cu130",
+   "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+   "llama_server_busy_samples": 0,
+   "llama_server_listed_samples": 7
+  }
+ ],
+ "optimizer_steps": 0,
+ "training_executed": false
+}
