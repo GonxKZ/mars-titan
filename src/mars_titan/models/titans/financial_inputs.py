@@ -285,6 +285,11 @@ def validated_cpu_batch(batch, specification):
     return result
 
 
+def validated_cpu_batches(blocks, specification):
+    """Validar en orden los bloques de un evento. El primer bloque inválido detiene el resto."""
+    return [validated_cpu_batch(raw, specification) for raw in blocks]
+
+
 _PINNED_DTYPES = {
     np.dtype(np.float32): torch.float32,
     np.dtype(np.float64): torch.float64,

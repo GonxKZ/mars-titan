@@ -1,0 +1,22 @@
+{
+ "events": 100,
+ "block_rows": 1024,
+ "blocks": 204,
+ "rows": 140843,
+ "digest_bytes": 1002379631,
+ "metadata_bytes": 10495290,
+ "seconds": {
+  "validated_cpu_batch": 0.9569249366759323,
+  "digest": 0.593917747028172,
+  "validate_historical_vectors": 0.12666867434745654,
+  "state_size": 0.053195640502963215,
+  "state_size_json": 0.035217080381698906,
+  "usage": 0.053393603884615004,
+  "usage_json": 0.03383848548401147
+ },
+ "repeats": 3,
+ "torch": "2.14.0+cu130",
+ "python": "3.12.14",
+ "threads": 1,
+ "optimizer_steps": 0
+}

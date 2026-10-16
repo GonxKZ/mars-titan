@@ -9,6 +9,7 @@ import copy
 import json
 import math
 import os
+import threading
 from dataclasses import replace
 from pathlib import Path
 
@@ -31,7 +32,16 @@ from mars_titan.training.selection import FIXED_BUDGET
 from tests.learning_hold_lowering import allowed_hold
 from tests.suite_support import missing_native
 from tests.training.chronological_fixture import decision
-from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus, entries
+from tests.training.test_financial_run import (
+    RecordingOptimizer,
+    StopAtStep,
+    corpus,
+    entries,
+    prefetched,
+    record_validation,
+    refuse_validation,
+    validated_ahead,
+)
 from tests.training.test_financial_run import shared as shared
 
 DECLARED = Path("configs/titans/episodic-readout-historical-masked.json")
@@ -592,6 +602,63 @@ def test_resume_after_a_pause_reproduces_the_continuous_run(
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_observe_uses_the_blocks_validated_ahead_without_validating_again(
+    shared, tmp_path, native, monkeypatch
+):
+    _, streams = shared
+    engine = build(streams, tmp_path / "run", native)
+    phase, run = streams["train"].phase, engine._new_pass("train")
+    event = next(e for e in streams["train"].batched_events(block_rows=2) if e.inputs)
+    blocks = validated_ahead(event, engine.predictor.config.inputs)
+    monkeypatch.setattr(mt, "validated_cpu_batches", refuse_validation)
+    engine._observe(run, phase, event, train=False, blocks=blocks)
+    assert run.counters["observations"] == sum(len(raw["market"]) for raw in event.inputs)
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+@pytest.mark.parametrize("admission", ["m1", "m3"])
+def test_prefetched_validation_reproduces_the_sequential_run_and_its_resume(
+    shared, tmp_path, native, learning_doubles, admission, monkeypatch
+):
+    """Con prefetch, el hilo productor valida el evento siguiente y el ajuste no cambia.
+
+    La pausa abandona eventos ya validados por adelantado, y la reanudación los vuelve a leer
+    desde el cursor confirmado, con el mismo banco y los mismos rasgos pendientes.
+    """
+    dataset, streams = shared
+    plan = recipe(epochs=2, checkpoint_updates=2)
+    sequential = build(streams, tmp_path / "sequential", native, admission=admission, plan=plan)
+    expected = sequential.run()
+    threads, inline = record_validation(monkeypatch, mt, mt.ReadoutTrainer)
+    piped = prefetched(dataset, streams)
+    first = build(piped, tmp_path / "piped", native, admission=admission, plan=plan)
+    stop = StopAtStep(sequential.global_step // 2 + 1)
+    stop.trainer = first
+    assert first.run(stop=stop)["status"] == "paused"
+    second = build(piped, tmp_path / "piped", native, admission=admission, plan=plan)
+    resumed = second.run(resume=True)
+    assert resumed["status"] == "completed"
+    assert first.audit + second.audit == sequential.audit
+    joined, reference = gradients(first) + gradients(second), gradients(sequential)
+    assert len(joined) == len(reference) == sequential.global_step
+    for left, right in zip(joined, reference, strict=True):
+        assert left.keys() == right.keys()
+        for key, value in left.items():
+            if value is None:
+                assert right[key] is None
+            else:
+                torch.testing.assert_close(value, right[key], rtol=0, atol=0)
+    assert resumed["history"] == expected["history"]
+    assert (
+        resumed["best_checkpoint"]["readout_sha256"]
+        == expected["best_checkpoint"]["readout_sha256"]
+    )
+    assert any(thread is not threading.main_thread() for thread in threads)
+    assert not inline
+    assert not [t for t in threading.enumerate() if t.name == "mars-titan-prefetch"]
+
+
 def test_the_default_optimizer_anchors_the_decay_that_the_recipe_declares(shared, tmp_path, native):
     from mars_titan.training.anchored_decay import INITIAL, AnchoredAdamW
 

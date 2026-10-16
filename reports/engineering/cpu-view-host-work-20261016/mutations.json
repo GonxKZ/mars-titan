@@ -1,0 +1,140 @@
+[
+  {
+    "name": "preparation_error_raised_on_read",
+    "file": "src/mars_titan/training/input_pipeline.py",
+    "tests": [
+      "tests/training/test_input_pipeline.py"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_input_pipeline.py::test_a_preparation_error_waits_until_the_consumer_asks_for_it[2]"
+    ],
+    "summary": [
+      "1 failed, 32 passed in 1.49s"
+    ]
+  },
+  {
+    "name": "preparation_error_raised_on_read_in_the_trainer",
+    "file": "src/mars_titan/training/input_pipeline.py",
+    "tests": [
+      "tests/training/test_financial_run.py",
+      "-k",
+      "prefetched_validation_error"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_financial_run.py::test_a_prefetched_validation_error_stops_the_pass_where_the_sequential_one_does[2]"
+    ],
+    "summary": [
+      "1 failed, 1 passed, 38 deselected in 3.96s"
+    ]
+  },
+  {
+    "name": "prefetch_without_producer_thread",
+    "file": "src/mars_titan/training/input_pipeline.py",
+    "tests": [
+      "tests/training/test_input_pipeline.py"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_input_pipeline.py::test_prepared_runs_the_preparation_ahead_in_the_producer_thread_only_with_prefetch[2-True]"
+    ],
+    "summary": [
+      "1 failed, 36 passed in 1.55s"
+    ]
+  },
+  {
+    "name": "prefetch_without_producer_thread_in_the_trainer",
+    "file": "src/mars_titan/training/input_pipeline.py",
+    "tests": [
+      "tests/training/test_financial_run.py",
+      "-k",
+      "prefetched or validated_ahead"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_financial_run.py::test_prefetched_validation_reproduces_the_sequential_run_and_its_resume"
+    ],
+    "summary": [
+      "1 failed, 36 deselected in 7.61s"
+    ]
+  },
+  {
+    "name": "sequential_preparation_ahead_of_the_consumer",
+    "file": "src/mars_titan/training/input_pipeline.py",
+    "tests": [
+      "tests/training/test_input_pipeline.py"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_input_pipeline.py::test_prepared_runs_the_preparation_ahead_in_the_producer_thread_only_with_prefetch[0-False]"
+    ],
+    "summary": [
+      "1 failed, 35 passed in 1.87s"
+    ]
+  },
+  {
+    "name": "titans_observe_validates_again",
+    "file": "src/mars_titan/training/financial_run.py",
+    "tests": [
+      "tests/training/test_financial_run.py",
+      "-k",
+      "prefetched or validated_ahead"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_financial_run.py::test_prefetched_validation_reproduces_the_sequential_run_and_its_resume"
+    ],
+    "summary": [
+      "1 failed, 36 deselected in 16.59s"
+    ]
+  },
+  {
+    "name": "titans_pass_drops_the_blocks",
+    "file": "src/mars_titan/training/financial_run.py",
+    "tests": [
+      "tests/training/test_financial_run.py",
+      "-k",
+      "prefetched or validated_ahead"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_financial_run.py::test_prefetched_validation_reproduces_the_sequential_run_and_its_resume"
+    ],
+    "summary": [
+      "1 failed, 36 deselected in 14.26s"
+    ]
+  },
+  {
+    "name": "reader_observe_validates_again",
+    "file": "src/mars_titan/training/mars_titan_run.py",
+    "tests": [
+      "tests/training/test_mars_titan_run.py",
+      "-k",
+      "prefetched or validated_ahead"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_mars_titan_run.py::test_observe_uses_the_blocks_validated_ahead_without_validating_again"
+    ],
+    "summary": [
+      "1 failed, 52 deselected in 2.39s"
+    ]
+  },
+  {
+    "name": "reader_pass_drops_the_blocks",
+    "file": "src/mars_titan/training/mars_titan_run.py",
+    "tests": [
+      "tests/training/test_mars_titan_run.py",
+      "-k",
+      "prefetched or validated_ahead"
+    ],
+    "status": "detectada",
+    "failed": [
+      "FAILED tests/training/test_mars_titan_run.py::test_prefetched_validation_reproduces_the_sequential_run_and_its_resume[m1]"
+    ],
+    "summary": [
+      "1 failed, 1 passed, 52 deselected in 8.32s"
+    ]
+  }
+]

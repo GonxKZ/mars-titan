@@ -198,10 +198,10 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         source = self.train if phase == self.train.phase else self._source
         return ChronologicalInference._control_plan(self, run, source, event, batches)
 
-    def _observe(self, run, phase, event, *, train):
+    def _observe(self, run, phase, event, *, train, blocks=None):
         self._measured = []
         try:
-            super()._observe(run, phase, event, train=train)
+            super()._observe(run, phase, event, train=train, blocks=blocks)
             if self._measured:
                 keep = train and self.core and event.at >= phase.decision_start
                 ChronologicalInference._penalty(run, self._measured, keep=keep, replay=True)
