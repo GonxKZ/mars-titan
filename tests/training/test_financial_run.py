@@ -2,6 +2,8 @@
 
 import copy
 import json
+import threading
+from concurrent.futures import Future
 from dataclasses import replace
 
 import pytest
@@ -26,6 +28,7 @@ from mars_titan.training.financial_run import (
     ChronologicalTrainer,
     parameter_roles,
 )
+from mars_titan.training.input_pipeline import PipelineOptions
 from mars_titan.training.selection import FIXED_BUDGET
 from tests.training.chronological_fixture import (
     US_2023,
@@ -362,6 +365,143 @@ def test_resume_after_interruption_reproduces_the_continuous_run(shared, tmp_pat
     assert resumed["best_epoch"] == expected["best_epoch"]
     retained = list((tmp_path / "interrupted/checkpoints").glob("state-*.pt"))
     assert 1 <= len(retained) <= 3
+
+
+def prefetched(dataset, streams, depth=2):
+    """Las mismas fuentes leídas con prefetch, que valida cada evento en el hilo productor."""
+    piped = CorpusDataset(
+        dataset.path,
+        input_policy=HISTORICAL_MASKED,
+        pipeline=PipelineOptions(prefetch_batches=depth),
+    )
+    return {name: api.FinancialObservationSource(piped, s.path) for name, s in streams.items()}
+
+
+def record_validation(monkeypatch, module, trainer_class):
+    """Hilos que validan cada evento y validaciones del hilo principal durante el ajuste.
+
+    Con prefetch, el recorrido de ajuste usa los bloques validados en el hilo productor. Solo
+    las pasadas de validación temporal validan en el hilo principal.
+    """
+    threads, inline, training = [], [], threading.Event()
+    validate, events = module.validated_cpu_batches, trainer_class._train_events
+
+    def recorded(blocks, specification):
+        threads.append(threading.current_thread())
+        if training.is_set() and threading.current_thread() is threading.main_thread():
+            inline.append(len(blocks))
+        return validate(blocks, specification)
+
+    def flagged(self, *args):
+        training.set()
+        try:
+            return events(self, *args)
+        finally:
+            training.clear()
+
+    monkeypatch.setattr(module, "validated_cpu_batches", recorded)
+    monkeypatch.setattr(trainer_class, "_train_events", flagged)
+    return threads, inline
+
+
+def assert_same_records(left, right):
+    assert len(left) == len(right)
+    for a, b in zip(left, right, strict=True):
+        assert a.keys() == b.keys()
+        for key in a:
+            if a[key] is None:
+                assert b[key] is None
+            else:
+                torch.testing.assert_close(a[key], b[key], rtol=0, atol=0)
+
+
+def test_prefetched_validation_reproduces_the_sequential_run_and_its_resume(
+    shared, tmp_path, monkeypatch
+):
+    """Con prefetch, el hilo productor valida el evento siguiente y el ajuste no cambia.
+
+    La pausa abandona eventos ya validados por adelantado, y la reanudación los vuelve a leer
+    desde el cursor confirmado.
+    """
+    dataset, streams = shared
+    options = dict(epochs=2, fixed=True, checkpoint_updates=2)
+    sequential = trainer(streams, tmp_path / "sequential", **options)
+    expected = sequential.run()
+    threads, inline = record_validation(monkeypatch, financial_run, ChronologicalTrainer)
+    piped, stop = prefetched(dataset, streams), StopAtStep(15)
+    first = trainer(piped, tmp_path / "piped", **options)
+    stop.trainer = first
+    assert first.run(stop=stop)["status"] == "paused"
+    second = trainer(piped, tmp_path / "piped", **options)
+    resumed = second.run(resume=True)
+    assert resumed["status"] == "completed"
+    assert first.audit + second.audit == sequential.audit
+    assert_same_records(named_records(first) + named_records(second), named_records(sequential))
+    assert resumed["history"] == expected["history"]
+    assert resumed["best_epoch"] == expected["best_epoch"]
+    assert any(thread is not threading.main_thread() for thread in threads)
+    assert not inline
+    assert not [t for t in threading.enumerate() if t.name == "mars-titan-prefetch"]
+
+
+def validated_ahead(event, specification):
+    blocks = Future()
+    blocks.set_result(financial_run.validated_cpu_batches(event.inputs, specification))
+    return blocks
+
+
+def refuse_validation(*_):
+    raise AssertionError("El evento ya llegó validado")
+
+
+def test_observe_uses_the_blocks_validated_ahead_without_validating_again(
+    shared, tmp_path, monkeypatch
+):
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run")
+    source, run = streams["train"], financial_run._Pass()
+    event = next(
+        e
+        for e in source.batched_events(block_rows=2)
+        if e.inputs and e.at >= source.phase.decision_start
+    )
+    blocks = validated_ahead(event, engine.predictor.config.inputs)
+    monkeypatch.setattr(financial_run, "validated_cpu_batches", refuse_validation)
+    engine._observe(run, source, event, differentiable=False, blocks=blocks)
+    assert len(run.pending) == sum(len(raw["market"]) for raw in event.inputs)
+
+
+@pytest.mark.parametrize("depth", [0, 2])
+def test_a_prefetched_validation_error_stops_the_pass_where_the_sequential_one_does(
+    shared, tmp_path, monkeypatch, depth
+):
+    """El error de un evento validado por adelantado se lanza al observarlo, como sin prefetch.
+
+    Antes ya se han aplicado sus etiquetas y, si tocaba, la actualización del tramo.
+    """
+    dataset, streams = shared
+    train, validate = streams["train"], financial_run.validated_cpu_batches
+    decisions = [
+        event.at
+        for event in train.batched_events(block_rows=2)
+        if event.inputs and event.at >= train.phase.decision_start
+    ]
+
+    def failing(blocks, specification):
+        result = validate(blocks, specification)
+        if result[0].prediction_at[0] == decisions[6]:
+            raise ValueError("entrada rechazada")
+        return result
+
+    monkeypatch.setattr(financial_run, "validated_cpu_batches", failing)
+    states = {}
+    for name, sources in (("sequential", streams), ("piped", prefetched(dataset, streams, depth))):
+        engine = trainer(sources, tmp_path / name)
+        with pytest.raises(ValueError, match="entrada rechazada"):
+            engine.run()
+        states[name] = (copy.deepcopy(engine.audit), engine.optimizer.calls, engine.global_step)
+    assert states["piped"] == states["sequential"]
+    assert states["piped"][1] > 0
 
 
 def test_completed_run_resumes_with_the_selected_state_not_the_latest(shared, tmp_path):
