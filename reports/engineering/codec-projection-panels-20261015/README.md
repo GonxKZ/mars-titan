@@ -11,10 +11,11 @@ Este informe acompaña a [#628](https://github.com/GonxKZ/mars-titan/issues/628)
 | [`benchmark-20261015.jsonl`](benchmark-20261015.jsonl) | `mars-titan-projection-benchmark`: versiones portable, AVX2 y AVX-512 del núcleo |
 | [`mutations.py`](mutations.py), [`mutations.json`](mutations.json) | Mutaciones dirigidas del núcleo y su resultado |
 | [`binding_mutations.py`](binding_mutations.py), [`binding-mutations.json`](binding-mutations.json) | Mutaciones dirigidas del reparto en el enlace y su resultado |
+| [`full-path-20261016.json`](full-path-20261016.json) | Tres tandas A B B A del recorrido de M1, B+M y B+C+M con eventos reales, de [`full_path_rounds.py`](../episodic-consolidation-20261013/full_path_rounds.py) |
 
 ## Resumen
 
-Con 32 filas o más, el núcleo copia los pesos de cada grupo de ocho salidas en un panel contiguo y lo recorre con todas las filas. Con un hilo y la máquina libre es entre 1,34 y 1,46 veces más rápido que el de 131d809e desde 64 filas, y por debajo de 32 filas, donde sigue leyendo la transpuesta, queda a menos de un 2 % de él. Desde 2^21 productos el enlace reparte los grupos con el pool inter-op de ATen. En `project_codec_block` con los seis bloques del codec, alternando los enlaces muestra a muestra con la máquina libre, la rama es 1,42 veces más rápida que `develop` con 64 filas, 1,85 con 278, 1,87 con 512 y 2,26 con 1.000, e igual de rápida con 1, 8 y 31. Todas las variantes dan los mismos bits que `einsum` en las pruebas y los mismos bytes en cada medida.
+Con 32 filas o más, el núcleo copia los pesos de cada grupo de ocho salidas en un panel contiguo y lo recorre con todas las filas. Con un hilo y la máquina libre es entre 1,34 y 1,46 veces más rápido que el de 131d809e desde 64 filas, y por debajo de 32 filas, donde sigue leyendo la transpuesta, queda a menos de un 2 % de él. Desde 2^21 productos el enlace reparte los grupos con el pool inter-op de ATen. En `project_codec_block` con los seis bloques del codec, alternando los enlaces muestra a muestra con la máquina libre, la rama es 1,42 veces más rápida que `develop` con 64 filas, 1,85 con 278, 1,87 con 512 y 2,26 con 1.000, e igual de rápida con 1, 8 y 31. Todas las variantes dan los mismos bits que `einsum` en las pruebas y los mismos bytes en cada medida. En el recorrido completo de los lectores con eventos reales, el enlace nuevo es entre 1,06 y 1,08 veces más rápido en la tanda más limpia, con las mismas capturas bit a bit.
 
 La primera versión del reparto usaba `at::parallel_for` y nunca calculaba en paralelo. La plantilla se expande en el enlace y, sin OpenMP al compilarlo, ejecuta todo el rango en el hilo que llama. Las pruebas de bits no podían verlo y `codec_projection_threads` decía dos hilos. Ahora una prueba comprueba en un proceso nuevo que el pool se usa desde el umbral, y una mutación que devuelve el cálculo al hilo que llama hace que falle.
 
@@ -119,9 +120,26 @@ Una primera tanda midió cada enlace en un proceso distinto, en rondas A B B A d
 
 `mars-titan-projection-benchmark` mide las versiones portable, AVX2 y AVX-512 del núcleo de la rama con un hilo, los seis bloques del codec y 41 repeticiones, con carga media de 4 a 8. AVX-512 es la más rápida con todas las filas: 1,04 veces más rápida que AVX2 con una fila y entre 1,30 y 1,60 desde 16, y entre 1,44 y 3,84 veces más rápida que la portable. Sigue siendo la versión por defecto en este procesador. Las pruebas comprueban que las tres dan los mismos bits.
 
-## Pendiente
+## Recorrido del lector
 
-- **Recorrido del lector.** Faltan las rondas A B B A de M1, B+M y B+C+M con eventos reales de `US+CN/fold-012`, como las de [#547](../episodic-consolidation-20261013/README.md#pendiente), que esperan turno de GPU.
+Las rondas usan los eventos, las opciones y las condiciones de las de [#547](../episodic-consolidation-20261013/README.md#recorrido-completo-con-los-núcleos-nativos): vista `US+CN/fold-012` de las vistas v3.1 de A v2, 88.028 filas y 11 llamadas a `_NoStepOptimizer` sin ningún paso, FP32 estricto, dos hilos, perfil de energía de ahorro y un trabajo `memslot gpu` por ronda. Los dos lados ejecutan el mismo árbol de Python, 0dfc5e2d, que no cambia ningún archivo de `src/` respecto a e867e30f. Solo cambia el enlace. A es el de `develop` en e867e30f, que ya incluye los núcleos de #547, y B es el de #628 compilado sobre ese mismo `develop`, con el código nativo de 0dfc5e2d. Una ronda está limpia si el llama-server de Kaizten no calculó en la GPU mientras duraba. El recibo es [`full-path-20261016.json`](full-path-20261016.json).
+
+- **Tanda 1**, el 16 de octubre de 01:18 a 04:02. El llama-server calculó durante 8 de las 12 rondas, así que no se usa.
+- **Tanda 2**, de 05:09 a 05:40, con carga media de 2,7 a 5,3. Todas las rondas están limpias.
+- **Tanda 3**, de 07:58 a 08:26, con carga media de 2,1 a 3,2 y sin otras cargas propias. Todas las rondas están limpias.
+
+| Modelo | Tanda | Filas/s antes | Filas/s después | Cociente de medias | Peor par |
+| --- | --- | --- | --- | --- | --- |
+| `mars_titan_m1` | 2 | 6.604 y 7.426 | 8.566 y 7.761 | 1,16 | 1,05 |
+| `mars_titan_m1` | 3 | 9.140 y 9.444 | 10.000 y 9.641 | 1,06 | 1,02 |
+| `cm_v1_bm` (B+M) | 2 | 6.467 y 7.522 | 6.111 y 8.436 | 1,04 | 0,81 |
+| `cm_v1_bm` (B+M) | 3 | 8.244 y 7.919 | 8.563 y 8.703 | 1,07 | 1,04 |
+| `cm_v1_bcm` (B+C+M) | 2 | 8.036 y 8.271 | 8.738 y 8.581 | 1,06 | 1,04 |
+| `cm_v1_bcm` (B+C+M) | 3 | 7.532 y 8.165 | 8.503 y 8.371 | 1,08 | 1,03 |
+
+En la tanda 3 las dos rondas de después superan a las dos de antes en los tres modelos, con un cociente de 1,06 a 1,08. En la tanda 2 pasa lo mismo en M1 y en B+C+M, pero no en B+M, donde la primera ronda de después fue más lenta que las dos de antes. La ganancia es pequeña porque la proyección del codec solo es una parte del recorrido del lector, y la tanda 2 muestra que una sola tanda no basta para separarla de la variación entre rondas. El caudal absoluto cambia mucho entre tandas (M1 pasa de 6.604 a 9.140 filas/s antes del cambio), así que solo se comparan rondas de la misma tanda.
+
+El pico asignado es de 402 MiB y el reservado de 492 o 494 MiB en todas las rondas, y la memoria residente máxima está entre 3.448 y 3.527 MiB en los dos lados. Las capturas de las doce rondas de cada modelo coinciden bit a bit con la primera ronda de antes en las 33 comparaciones: nombres, gradientes de las 11 llamadas (77 tensores) y 3.347 predicciones pendientes.
 
 ## Reproducción
 
@@ -135,3 +153,4 @@ Desde la raíz del árbol, con `OMP_NUM_THREADS=2 CUDA_VISIBLE_DEVICES=` y cada 
 - Umbral del reparto: `launch_threshold.sh 21 warm` y `launch_threshold.sh 11 cold`, con `python` del entorno con PyTorch, y lo mismo con `pool_threshold.sh` para OpenMP.
 - Enlace completo: `PYTHONPATH=src python reports/engineering/codec-projection-panels-20261015/projection_times.py salida.json develop=ENLACE_DEVELOP rama-un-hilo=ENLACE:1 rama=ENLACE`.
 - Versiones del núcleo: `mars-titan-projection-benchmark`, del mismo preset.
+- Recorrido del lector: las órdenes del [informe de #547](../episodic-consolidation-20261013/README.md#reproducción), sin `admission_timer.py`, con el mismo árbol en los dos lados y cada enlace en `MARS_TITAN_EPISODIC_NATIVE`. El recibo sale de `python ../episodic-consolidation-20261013/full_path_rounds.py 628 DIRECTORIO bits.json salida.json`.
