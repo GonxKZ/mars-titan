@@ -57,7 +57,18 @@ def setup(tmp_path, monkeypatch):
     )
     calls = []
 
-    def backend(manifest, folder, *, kind=None, alpha=None, resume=False, stop=None, **options):
+    def backend(
+        manifest,
+        folder,
+        *,
+        kind=None,
+        alpha=None,
+        resume=False,
+        stop=None,
+        shared_directory=None,
+        **options,
+    ):
+        # La caché pertenece a la ejecución, no a la identidad científica serializada.
         calls.append(dict(kind=kind or "xgboost", alpha=alpha, resume=resume, **options))
         folder.mkdir(parents=True, exist_ok=resume)
         (folder / "model.bin").write_bytes(b"modelo de prueba")

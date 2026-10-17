@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data.storage import sha256
+from tests.suite_support import requires_cuda
 from tests.training.test_temporal_corpus import inputs as inputs
 from tests.training.test_temporal_corpus import prepare
 
@@ -58,6 +59,7 @@ def search_inputs(inputs, tmp_path):
     return config, views
 
 
+@requires_cuda
 def test_strict_search_runs_prespecified_candidates_and_selects_parent_for_paired_controls(
     inputs, tmp_path
 ):

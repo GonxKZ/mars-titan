@@ -95,7 +95,8 @@ def campaign_run(tmp_path_factory, unfused, permitted):
     campaign = titans_campaign(root / "config")
     prepared = engine.prepare_views(campaign, data.parent, root / "views")
     views = {"US": root / "views" / "US"}
-    factory = Factory()
+    # Este fixture comprueba llamadas y recibos. No compara los tensores de cada gradiente.
+    factory = Factory(retain_gradients=False)
     summary = engine.run_campaign(
         campaign,
         views,
@@ -336,8 +337,9 @@ def test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them(campaig
         policy="historical_masked_2000_v1",
         stop=SimpleNamespace(requested=False),
         joint_epoch=None,
+        traces=None,
     )
-    report = wf.titans_fit(run, device="cpu", optimizer_factory=Factory())
+    report = wf.titans_fit(run, device="cpu", optimizer_factory=Factory(retain_gradients=False))
     assert report["status"] == "completed" and report["request"]["predictor_changes"] == PT1
     fit = json.loads((tmp_path / "fit" / "fit/run.json").read_text())["identity"]
     assert fit["predictor"]["memory_stability"] == PT1["memory_stability"]
@@ -347,6 +349,7 @@ def test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them(campaig
             view=later["path"],
             folder=tmp_path / "carry",
             stop=None,
+            traces=None,
         ),
         device="cpu",
     )

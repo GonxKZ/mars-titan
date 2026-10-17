@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from mars_titan.training.checkpoints import StopRequest, load_training_state
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_predictive_parents import setup
 
 pytestmark = pytest.mark.skipif(
@@ -34,6 +34,7 @@ def module():
 
 
 @pytest.mark.parametrize("mode", ["reinforce", "expected", "mae"])
+@requires_cuda
 def test_predictive_controls_visit_every_row_and_record_all_readouts(tmp_path, mode):
     ordered, cache = prepared(tmp_path)
     output = tmp_path / "run"
@@ -67,6 +68,7 @@ def test_predictive_controls_visit_every_row_and_record_all_readouts(tmp_path, m
     )
 
 
+@requires_cuda
 def test_resume_preserves_sampling_optimizer_and_next_update_exactly(tmp_path, monkeypatch):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -104,6 +106,7 @@ def test_resume_preserves_sampling_optimizer_and_next_update_exactly(tmp_path, m
         ).equals(pq.read_table(tmp_path / "resumed" / resumed["predictions"][partition]["path"]))
 
 
+@requires_cuda
 def test_checkpoint_is_confirmed_before_validation_can_be_interrupted(tmp_path, monkeypatch):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -123,6 +126,7 @@ def test_checkpoint_is_confirmed_before_validation_can_be_interrupted(tmp_path, 
     assert state["global_step"] == 3 and state["statistics"]["samples"] == 12
 
 
+@requires_cuda
 def test_resume_rejects_changed_matmul_policy(tmp_path):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -137,6 +141,7 @@ def test_resume_rejects_changed_matmul_policy(tmp_path):
         torch.set_float32_matmul_precision(previous)
 
 
+@requires_cuda
 def test_simultaneous_resume_cannot_write_the_same_training_run(tmp_path, monkeypatch):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -165,6 +170,7 @@ def test_simultaneous_resume_cannot_write_the_same_training_run(tmp_path, monkey
     assert checked
 
 
+@requires_cuda
 def test_failed_cuda_initialization_can_resume_same_preparation(tmp_path, monkeypatch):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -187,6 +193,7 @@ def test_failed_cuda_initialization_can_resume_same_preparation(tmp_path, monkey
     )
 
 
+@requires_cuda
 def test_precomputed_training_normalization_is_reused_for_paired_controls(tmp_path, monkeypatch):
     import json
 
@@ -209,6 +216,7 @@ def test_precomputed_training_normalization_is_reused_for_paired_controls(tmp_pa
         assert report["status"] == "completed"
 
 
+@requires_cuda
 def test_failed_initial_checkpoint_can_restart_without_changing_predictions(tmp_path, monkeypatch):
     engine = module()
     ordered, cache = prepared(tmp_path)
@@ -232,6 +240,7 @@ def test_failed_initial_checkpoint_can_restart_without_changing_predictions(tmp_
         )
 
 
+@requires_cuda
 def test_missing_confirmed_initial_checkpoint_cannot_silently_restart(tmp_path):
     engine = module()
     ordered, cache = prepared(tmp_path)

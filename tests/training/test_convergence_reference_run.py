@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from mars_titan.training.checkpoints import StopRequest, load_training_state
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import case, training_corpus
 
 
@@ -45,6 +46,7 @@ def scores(monkeypatch, values, stop=None):
         ((0.6, 0.5, 0.4, 0.3, 0.2, 0.1), "budget_exhausted", True, 6),
     ],
 )
+@requires_cuda
 def test_reference_receipt_identifies_actual_stop(
     tmp_path, monkeypatch, curve, reason, improved, best
 ):
@@ -59,6 +61,7 @@ def test_reference_receipt_identifies_actual_stop(
     assert len(report["epochs"]) == len(curve)
 
 
+@requires_cuda
 def test_reference_pause_at_selected_prediction_recovers_latest_weights(tmp_path, monkeypatch):
     engine = importlib.import_module("mars_titan.training.reference_run")
     manifest = training_corpus(tmp_path / "data")

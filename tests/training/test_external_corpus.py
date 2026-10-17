@@ -8,7 +8,7 @@ import pytest
 
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.learning_hold import LearningHoldError
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
@@ -61,6 +61,7 @@ def test_the_executor_stops_under_the_hold_before_touching_its_output(tmp_path, 
     assert (stale / "page").read_bytes() == b"page" and report["attempts"] == []
 
 
+@requires_cuda
 def test_racing_creation_does_not_replace_another_run(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "race"
@@ -81,6 +82,7 @@ def test_racing_creation_does_not_replace_another_run(tmp_path, monkeypatch):
     assert (output / "run.json").read_text() == '{"origin":"existing_run"}'
 
 
+@requires_cuda
 def test_full_tabular_population_has_persistent_model_and_session_errors(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -103,6 +105,7 @@ def test_full_tabular_population_has_persistent_model_and_session_errors(tmp_pat
         module().run_external_reference(manifest, output, rounds=3, batch_size=5)
 
 
+@requires_cuda
 def test_paused_tree_round_resumes_without_changing_predictions(tmp_path, monkeypatch):
     engine = module()
     manifest = training_corpus(tmp_path / "data")

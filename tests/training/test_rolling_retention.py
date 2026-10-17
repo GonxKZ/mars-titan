@@ -1,10 +1,13 @@
-"""Retención v2 ventana a ventana sobre la campaña reducida, en CPU y sin ajustes.
+"""Retención v2 ventana a ventana sobre campañas técnicas reducidas.
 
 La campaña y la ablación del fixture ya están confirmadas con pesos iniciales y ningún
 paso de optimizador. Las fases de ajuste se sustituyen por órdenes que solo registran la
 ventana. Los agregados, la regeneración y la liberación son los reales: se comprueba que el
 informe final sale idéntico sin abrir filas, que solo se libera lo que se regenera bit a
 bit y que el recorrido se reanuda sin repetir nada.
+
+La comprobación de publicación usa otro fixture con cuatro ajustes reales de dos épocas
+en CUDA. El control de presupuesto debe rechazar el fixture sin historial de ajustes.
 """
 
 import copy
@@ -29,11 +32,20 @@ from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import rolling_storage
 from mars_titan.training.learning_hold import HOLD_ENV
 from tests.learning_hold_lowering import lowers_learning_hold
-from tests.posttraining.campaign_fixture import CpuLease
+from tests.posttraining.campaign_fixture import CpuLease, write_configs
 from tests.simulation import rl_stage_fixture
 from tests.simulation.unadjusted_edition_fixture import Asset
-from tests.training.test_modality_ablation_stage import RUNNING, base, on_cpu  # noqa: F401
+from tests.suite_support import requires_cuda
+from tests.training.historical_temporal_fixture import historical_temporal_fixture
+from tests.training.test_modality_ablation_stage import (  # noqa: F401
+    RUNNING,
+    base,
+    on_cpu,
+    pattern,
+    write_stage,
+)
 from tests.training.test_prediction_regeneration import flipped, strict_numerics  # noqa: F401
+from tests.training.test_walk_forward_v2_views import sessions
 
 DECLARATION = "configs/baselines/historical-masked-retention-v2.json"
 VOLATILE = {"created_at_utc", "resources", "sources_sha256"}
@@ -92,15 +104,62 @@ class Calls:
 @pytest.fixture(scope="module")
 def walked(base, edition, unconsumed, tmp_path_factory):  # noqa: F811
     """Recorrido completo con un trabajo cuya regeneración no repite un bit."""
-    root = tmp_path_factory.mktemp("rolling")
+    yield from walk(base, edition, unconsumed, tmp_path_factory.mktemp("rolling"), cpu=True)
+
+
+@pytest.fixture(scope="module")
+def fitted_walked(edition, unconsumed, tmp_path_factory):
+    """Cuatro ajustes de dos épocas en CUDA sobre un fixture de dos activos y dos ventanas."""
+    from mars_titan.training.learning_hold import require_learning_allowed
+
+    require_learning_allowed("la prueba de publicación con parámetros ajustados")
+    root = tmp_path_factory.mktemp("rolling-fitted")
+    campaign, _ = write_configs(root / "config", "A")
+    protocol = root / "config/us-protocol.json"
+    document = json.loads(protocol.read_text())
+    document["selection"].update(max_epochs=2, patience=1)
+    atomic_json(protocol, document)
+    comparison_path = root / "config/comparison.json"
+    document = json.loads(comparison_path.read_text())
+    document["modality_ablation"].update(min_rows=1, min_sessions=1)
+    atomic_json(comparison_path, document)
+    data = historical_temporal_fixture(
+        root / "data", ("US",), {"US": sessions("US")}, assets=2, presence=pattern
+    )
+    engine.prepare_views(campaign, data.parent, root / "views")
+    views = {"US": root / "views/US"}
+    summary = engine.run_campaign(campaign, views, root / "fitted", stop=RUNNING)
+    assert summary["status"] == "completed"
+    prepared = SimpleNamespace(
+        campaign=campaign,
+        comparison=comparison_path,
+        stage=write_stage(root / "config"),
+        views=views,
+        output=root / "fitted",
+    )
+    yield from walk(prepared, edition, unconsumed, root / "walk", cpu=False)
+
+
+def walk(base, edition, unconsumed, root, *, cpu):  # noqa: F811
+    """Recorrer y regenerar con el mismo dispositivo en que se creó el padre."""
+    from mars_titan.training.experiment_resources import GpuLease
+
     # Copia propia de la campaña: la liberación no toca el fixture compartido.
     output = root / "campaign"
     shutil.copytree(base.output, output, symlinks=True)
     with pytest.MonkeyPatch.context() as patch:
-        on_cpu(patch)
-        patch.setenv(HOLD_ENV, str(base.hold))
+        if cpu:
+            on_cpu(patch)
+            patch.setenv(HOLD_ENV, str(base.hold))
         staged = root / "ablation"
-        ablation.run_stage(base.stage, base.views, output, staged, lease=CpuLease, stop=RUNNING)
+        ablation.run_stage(
+            base.stage,
+            base.views,
+            output,
+            staged,
+            lease=CpuLease if cpu else GpuLease,
+            stop=RUNNING,
+        )
         masked = ablation.write_sources(base.stage, base.views, output, staged, "US")
         primary = engine.write_sources(base.campaign, base.views, output, "US")
         expected = comparison.evaluate_walk_forward(
@@ -243,13 +302,15 @@ def test_the_final_comparison_from_aggregates_equals_the_one_that_read_the_rows(
     "tests/training/test_rolling_retention.py::"
     "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation"
 )
+@requires_cuda
 def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation(
-    walked, edition, tmp_path
+    fitted_walked, edition, tmp_path
 ):
     """El paso final sin etapa de adaptadores: cartera y ablación desde agregados."""
     from mars_titan.training import campaign_publication as publication
     from tests.training import publication_fixture
 
+    walked = fitted_walked
     shared, state = walked["base"], walked["state"]
     declared = publication_fixture.declare(tmp_path / "declared", shared.campaign, portfolio=True)
     destination = tmp_path / "published"
@@ -295,6 +356,27 @@ def test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablati
             declared.publication, shared.views, state.output, tmp_path / "other"
         )
     assert not (tmp_path / "other").exists()
+
+
+def test_publication_rejects_aggregates_without_an_actual_fit_history(walked, edition, tmp_path):
+    from mars_titan.training import campaign_publication as publication
+    from tests.training import publication_fixture
+
+    shared, state = walked["base"], walked["state"]
+    declared = publication_fixture.declare(tmp_path / "declared", shared.campaign, portfolio=True)
+    destination = tmp_path / "rejected"
+    with pytest.raises(ValueError, match="budget/campaign"):
+        publication.run_publication(
+            declared.publication,
+            shared.views,
+            state.output,
+            destination,
+            aggregates=state.folder / "aggregates",
+            edition=edition,
+            ablation=dict(stage=shared.stage, output=walked["staged"]),
+        )
+    report = json.loads((tmp_path / ".rejected.partial/integrity.json").read_text())
+    assert not destination.exists() and report["failing"] == ["budget/campaign"]
 
 
 def test_only_bit_exact_regenerations_release_their_rows(walked):

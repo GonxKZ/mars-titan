@@ -1,10 +1,8 @@
 """Decaimiento de AdamW anclado al padre (#444).
 
-Ninguna prueba ejecuta la actualización de Adam ni calcula gradientes con datos sintéticos.
 El decaimiento se comprueba sobre copias, con `decayed_parameters`, frente a su fórmula
 cerrada en FP64 y frente al factor que AdamW aplica antes de Adam, `1 - lr * weight_decay`.
-Basta para el paso completo porque AdamW recibe λ = 0 y los mismos hiperparámetros: el
-resto del paso es la actualización de Adam sin decaimiento, que no cambia. Las pruebas que
+Las pruebas de la fórmula no comprueban la llamada real al gancho. Las pruebas que
 dan pasos completos se omiten mientras la protección del aprendizaje esté vigente, porque el
 gancho global de `tests/conftest.py` intercepta `optimizer.step()`.
 """
@@ -42,9 +40,9 @@ def _gradients(model, seed=1):
     Solo lo usan las pruebas de pasos completos, que se omiten bajo la protección.
     """
     generator = torch.Generator().manual_seed(seed)
-    dtype = next(model.parameters()).dtype
-    inputs = torch.randn(32, 6, generator=generator).to(dtype)
-    target = torch.randn(32, 2, generator=generator).to(dtype)
+    parameter = next(model.parameters())
+    inputs = torch.randn(32, 6, generator=generator).to(parameter)
+    target = torch.randn(32, 2, generator=generator).to(parameter)
     model.zero_grad(set_to_none=True)
     (model(inputs) - target).abs().mean().backward()
     return model
@@ -272,7 +270,10 @@ def test_invalid_declarations_and_closures_are_rejected():
     before = _snapshot(model)
     optimizer = AnchoredAdamW(model.parameters(), lr=LARGE[0], weight_decay=LARGE[1])
     _zero_anchors(optimizer)
-    for args, kwargs in (((lambda: 0.0,), {}), ((), dict(closure=lambda: 0.0))):
+    for args, kwargs in (
+        ((optimizer, lambda: 0.0), {}),
+        ((optimizer,), dict(closure=lambda: 0.0)),
+    ):
         with pytest.raises(ValueError, match="clausura"):
             anchored_decay._apply_decay(optimizer, args, kwargs)
     assert _same(_snapshot(model), before)

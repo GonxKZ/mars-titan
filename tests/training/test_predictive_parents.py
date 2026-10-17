@@ -11,7 +11,7 @@ import pytest
 from mars_titan.data.storage import sha256
 from mars_titan.training.tabular_corpus import run_tabular_reference
 from tests.environments.test_corpus_source import fixture
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 
 pytestmark = pytest.mark.skipif(
     any(importlib.util.find_spec(name) is None for name in ("duckdb", "gymnasium")),
@@ -33,6 +33,7 @@ def setup(tmp_path):
     return ordered / "manifest.json", parent / "run.json", report
 
 
+@requires_cuda
 def test_parent_cache_aligns_every_prediction_without_copying_modalities(tmp_path):
     from mars_titan.environments.corpus_source import ParquetCohortSource
 
@@ -71,6 +72,7 @@ def test_parent_cache_aligns_every_prediction_without_copying_modalities(tmp_pat
     "problem",
     ["missing", "duplicate", "wrong_target", "wrong_asset", "wrong_time", "wrong_market", "nan"],
 )
+@requires_cuda
 def test_parent_join_rejects_incomplete_duplicate_or_different_labels(tmp_path, problem):
     ordered, parent, report = setup(tmp_path)
     path = parent.parent / report["predictions"]["train"]["path"]
@@ -98,6 +100,7 @@ def test_parent_join_rejects_incomplete_duplicate_or_different_labels(tmp_path, 
 
 
 @pytest.mark.parametrize("problem", ["manifest", "checkpoint", "status", "test", "model"])
+@requires_cuda
 def test_parent_contract_must_match_completed_reference(tmp_path, problem):
     ordered, parent, report = setup(tmp_path)
     if problem == "manifest":
@@ -115,6 +118,7 @@ def test_parent_contract_must_match_completed_reference(tmp_path, problem):
         module().prepare_parent_cache(ordered, parent, tmp_path / "cache")
 
 
+@requires_cuda
 def test_cached_values_are_read_only_and_changed_cache_is_rejected(tmp_path):
     from mars_titan.environments.corpus_source import ParquetCohortSource
 
@@ -136,6 +140,7 @@ def test_cached_values_are_read_only_and_changed_cache_is_rejected(tmp_path):
         aligned.close()
 
 
+@requires_cuda
 def test_parent_cache_recovers_confirmed_partition_after_interruption(tmp_path, monkeypatch):
     engine = module()
     ordered, parent, _ = setup(tmp_path)

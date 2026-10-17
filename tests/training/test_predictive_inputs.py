@@ -5,7 +5,7 @@ import importlib
 import numpy as np
 import pytest
 
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_predictive_parents import setup
 
 pytestmark = pytest.mark.skipif(
@@ -27,6 +27,7 @@ def dataset(tmp_path):
     return module().PredictiveDataset(ordered, cache / "manifest.json")
 
 
+@requires_cuda
 def test_every_row_and_modality_survives_epoch_shuffle_and_resume(tmp_path):
     with dataset(tmp_path) as data:
         options = dict(partition="train", batch_size=5, epoch=0, seed=42)
@@ -53,6 +54,7 @@ def test_every_row_and_modality_survives_epoch_shuffle_and_resume(tmp_path):
             list(data.batches(**(options | dict(seed=1)), cursor=whole[0]["confirmed_cursor"]))
 
 
+@requires_cuda
 def test_scaler_uses_training_only_and_preserves_constant_columns(tmp_path):
     with dataset(tmp_path) as data:
         expected = np.concatenate(
@@ -79,6 +81,7 @@ def test_scaler_uses_training_only_and_preserves_constant_columns(tmp_path):
         assert np.all(np.array(stats["scale"])[~variable] == 1)
 
 
+@requires_cuda
 def test_batches_own_their_arrays_and_reader_closure_is_explicit(tmp_path):
     data = dataset(tmp_path)
     iterator = data.batches(partition="train", batch_size=5, epoch=0, seed=42)
@@ -91,6 +94,7 @@ def test_batches_own_their_arrays_and_reader_closure_is_explicit(tmp_path):
         list(data.batches(partition="train", batch_size=5, epoch=0, seed=42))
 
 
+@requires_cuda
 def test_closing_a_reader_also_stops_an_existing_iterator(tmp_path):
     data = dataset(tmp_path)
     iterator = data.batches(partition="train", batch_size=1, epoch=0, seed=42)

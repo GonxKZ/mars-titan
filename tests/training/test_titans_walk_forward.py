@@ -76,15 +76,19 @@ def permitted_doubles(learning_doubles):
 class Recorder:
     """Registrar gradientes por grupo y parámetro sin heredar de Optimizer."""
 
-    def __init__(self, groups):
+    def __init__(self, groups, *, retain_gradients=True):
         # Como en un optimizador de PyTorch, cada grupo lleva su tasa, que las trazas registran.
         self.param_groups = [
             dict(group, params=list(group["params"]), lr=group.get("lr", 0.0)) for group in groups
         ]
         self.calls, self.records = 0, []
+        self.retain_gradients = retain_gradients
 
     def step(self):
         self.calls += 1
+        if not self.retain_gradients:
+            self.records.append(None)
+            return
         self.records.append(
             [
                 None if p.grad is None else p.grad.detach().clone()
@@ -110,11 +114,12 @@ class Recorder:
 class Factory:
     """Conservar los registradores de cada intento para comparar recorridos."""
 
-    def __init__(self):
+    def __init__(self, *, retain_gradients=True):
         self.instances = []
+        self.retain_gradients = retain_gradients
 
     def __call__(self, groups):
-        self.instances.append(Recorder(groups))
+        self.instances.append(Recorder(groups, retain_gradients=self.retain_gradients))
         return self.instances[-1]
 
     @property
