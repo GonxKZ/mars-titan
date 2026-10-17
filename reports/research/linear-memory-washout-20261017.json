@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "linear_memory_washout_bound",
+  "recorded_at_utc": "2026-10-17T18:39:02.243795+00:00",
+  "program_sha256": "5051afb75490ba166c6b059cb2f63e89f60cacaeb16d13ade89d0441c6f0f1de",
+  "certificate_program_sha256": "eb2f8fe1b543a2e4990f86ba21afdcf7ca937791fdd2a0351f662eec518be6b5",
+  "certificate_valid": true,
+  "witness": {
+    "p": "181/1000",
+    "q": "49/5",
+    "norm_lower": "99/100",
+    "norm_upper": "981/100"
+  },
+  "vertices": [
+    {
+      "alpha": "1/500",
+      "eta": "0",
+      "theta": "0",
+      "psd": true
+    },
+    {
+      "alpha": "1/500",
+      "eta": "0",
+      "theta": "1/10",
+      "psd": true
+    },
+    {
+      "alpha": "1/500",
+      "eta": "3/10",
+      "theta": "0",
+      "psd": true
+    },
+    {
+      "alpha": "1/500",
+      "eta": "3/10",
+      "theta": "1/10",
+      "psd": true
+    },
+    {
+      "alpha": "1",
+      "eta": "0",
+      "theta": "0",
+      "psd": true
+    },
+    {
+      "alpha": "1",
+      "eta": "0",
+      "theta": "1/10",
+      "psd": true
+    },
+    {
+      "alpha": "1",
+      "eta": "3/10",
+      "theta": "0",
+      "psd": true
+    },
+    {
+      "alpha": "1",
+      "eta": "3/10",
+      "theta": "1/10",
+      "psd": true
+    }
+  ],
+  "rho": "9997/10000",
+  "relative_tolerance": "1/100",
+  "euclidean_prefactor": "63/20",
+  "euclidean_prefactor_valid": true,
+  "full_mac_covered": false,
+  "two_layer_memory_covered": false,
+  "protocol_changed": false,
+  "assumptions": "Memorias lineales con las mismas claves, valores y puertas efectivas",
+  "p_norm": {
+    "steps": 15349,
+    "minimality_verified_exactly": true,
+    "approximate_upper_factor_at_252": 0.9271764908528343
+  },
+  "euclidean": {
+    "steps": 19173,
+    "minimality_verified_exactly": true,
+    "approximate_upper_factor_at_252": 2.920605946186428
+  },
+  "feedback_counterexample": {
+    "kind": "algebraic_feedback_counterexample",
+    "gates_inside_pt1_box": true,
+    "fixed_points": [
+      [
+        "1/9",
+        "1/18"
+      ],
+      [
+        "-1/9",
+        "-1/18"
+      ]
+    ],
+    "fixed_points_verified_exactly": true,
+    "local_jacobian_frobenius_squared": "27/100",
+    "global_incremental_contraction": false,
+    "full_model_experiment": false
+  }
+}

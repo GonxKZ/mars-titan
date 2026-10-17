@@ -135,8 +135,8 @@ class MemoryStability:
     Con `gate_box`, las puertas pasan a α = α_lo + (1 − α_lo)σ(·) y η = η_hi σ(·), mientras
     que θ = θ_max σ(·) no cambia. Con `gradient_clip` igual a G, cada fila de cada matriz del
     gradiente asociativo se reescala para que su norma euclídea no supere G antes de entrar
-    en el momentum. Así la Proposición 5 del certificado acota el estado con cualquier
-    profundidad. Las ecuaciones, su fuente y sus límites están en
+    en el momentum. Con la caja y el recorte activos, la Proposición 5 del certificado
+    acota el estado con cualquier profundidad. Las ecuaciones, su fuente y sus límites están en
     docs/engineering/titans-memory-stability.md.
     """
 
@@ -168,8 +168,10 @@ class MemoryStability:
     def certified_box(self, theta_max: float) -> str | None:
         """Nombre de la caja certificada que contiene la declarada, o None si no hay ninguna.
 
-        La garantía solo vale para la memoria lineal, así que no certifica la memoria de dos
-        capas con LayerNorm que usa la campaña.
+        Identifica la caja, no las hipótesis del módulo. La contracción necesita memoria
+        lineal, claves de norma como máximo uno y las mismas claves, valores y puertas
+        efectivas. No certifica el MAC
+        completo ni la memoria de dos capas con LayerNorm que usa la campaña.
         """
         if not self.gate_box:
             return None
@@ -258,12 +260,12 @@ class MemoryMultiscale:
         )
 
     def contraction(self, alpha_floor: float) -> tuple[float, tuple[float, float, float]]:
-        """Factor ρ y pesos d de una norma ∞ ponderada en la que la transición contrae.
+        """Factor ρ y pesos d para la parte homogénea de la cascada en norma ∞ ponderada.
 
         Para cualquier α ∈ [α_lo, 1], ‖D A(α) D⁻¹‖_∞ ≤ ρ con D = diag(d). Solo la primera
         fila depende de α, como |1 − α − g_{1,2}| más una constante, que es convexa en α. Su
         máximo está en un extremo, así que basta evaluar α_lo y 1. La derivación está en el
-        documento de PT5.
+        documento de PT5. No cubre la escritura que depende del estado ni el MAC completo.
         """
         floor = _finite_number(alpha_floor, "alpha_floor")
         if not 0 < floor < 1:

@@ -438,6 +438,9 @@ std::size_t projection_panel_size(std::size_t width) {
     return width * projection_lanes;
 }
 
+// La firma conserva el orden público de las dimensiones y el presupuesto de hilos. El enlace
+// pasa outputs de la matriz y available de ATen. threads_need_enough_work contrasta ambos.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 std::size_t projection_threads(std::size_t rows, std::size_t width, std::size_t outputs,
                                std::size_t available) {
     // rows · width · outputs ≥ projection_parallel_work sin calcular el producto de los tres.

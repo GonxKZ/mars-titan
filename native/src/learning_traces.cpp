@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdio>
+#include <format>
 #include <limits>
 #include <stdexcept>
 #include <unordered_set>
@@ -58,11 +58,7 @@ bool valid_name(std::string_view name) {
 }
 
 std::string part_name(std::size_t sequence) {
-    std::array<char, 32> buffer{};
-    const auto written = std::snprintf(buffer.data(), buffer.size(), "part-%08zu.parquet", sequence);
-    require(written > 0 && static_cast<std::size_t>(written) < buffer.size(),
-            "No se pudo nombrar la parte de trazas");
-    return {buffer.data(), static_cast<std::size_t>(written)};
+    return std::format("part-{:08}.parquet", sequence);
 }
 
 Json commit_json(const TraceCommit& commit) { return Json::array({commit.major, commit.minor}); }

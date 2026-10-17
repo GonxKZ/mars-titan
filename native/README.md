@@ -87,9 +87,25 @@ Los tests `simulation`, `concurrency` y `c_abi` comprueban la contabilidad, las 
 
 Los perfiles instrumentados conservan símbolos y punteros de pila. CTest solicita trazas simbolizadas y utiliza `llvm-symbolizer` cuando está disponible. Las búsquedas de símbolos por red quedan desactivadas. ASan y UBSan se combinan entre sí. TSan y MSan requieren sus propios directorios y runtimes.
 
+Las referencias numéricas exhaustivas de `simulation` y `episodic_projection` tienen límites de 240 y 480 segundos con sanitizadores. Sin instrumentación conservan 60 y 120 segundos. Los casos, las tolerancias y las aserciones son los mismos. En la comprobación del 17 de octubre con TSan necesitaron 64,69 y 132,44 segundos, respectivamente, por lo que los límites anteriores detenían ambas antes de terminar.
+
 MSan no se configura con una biblioteca estándar sin instrumentar. `MARS_TITAN_MSAN_STDLIB_ROOT` debe señalar una instalación de libc++ y libc++abi compiladas con MSan, con cabeceras en `include/c++/v1` y bibliotecas en `lib`. CMake comprueba esas rutas y las referencias a la instrumentación. La presencia del runtime de Clang por sí sola no basta. En ausencia de estas dependencias, el perfil termina con un error explícito.
 
+El preset `native-msan` utiliza `-O1 -g` en la compilación Debug, como recomienda la [guía de MemorySanitizer de LLVM](https://clang.llvm.org/docs/MemorySanitizer.html#usage). Conserva la instrumentación, los símbolos y las comprobaciones de Debug. Esta opción afecta solo a ese preset.
+
 La [preparación de LLVM para MSan](cmake/msan-runtime.md) fija la versión, el commit y las opciones de la instalación local.
+
+El target `mars-titan-torch-allocation-check`, disponible con `native-candidate-cuda`, enlaza únicamente LibTorch. Repite 30 veces un producto de matrices y su backward en FP32 y FP64, destruye los tensores y consulta los bytes asignados y reservados. No crea optimizadores ni vacía las cachés. Sirve como control para separar las asignaciones del runtime de las de los modelos. Desde `native/`, después de configurar ese preset:
+
+```bash
+cmake --build --preset native-candidate-cuda --target mars-titan-torch-allocation-check
+CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
+  PYTORCH_ALLOC_CONF=per_process_memory_fraction:0.0625 \
+  compute-sanitizer --tool memcheck --leak-check full --error-exitcode 99 \
+  ../build/native/native-candidate-cuda/mars-titan-torch-allocation-check
+```
+
+El 17 de octubre, con PyTorch 2.14.0+cu130, los bytes asignados se mantuvieron en 67.108.864 y los reservados en 69.206.016 en las 30 repeticiones. Compute Sanitizer terminó con código 99 y señaló 136.316.928 bytes en siete asignaciones al salir. Este resultado reproduce una parte de la [incidencia #202](https://github.com/GonxKZ/mars-titan/issues/202) sin enlazar MARS-TITAN. No acredita que toda la incidencia sea del runtime ni que el cierre esté libre de fugas.
 
 ```bash
 cmake --preset native-msan -DMARS_TITAN_BUILD_FINANCIAL=ON \

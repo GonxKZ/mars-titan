@@ -271,6 +271,38 @@ try {
     assert.equal(csv.trim().split("\r\n").length, total() + 1);
   });
 
+  await check("la navegación conserva la URL al agrupar cambios del filtro", async () => {
+    await page.evaluate(() => {
+      window.__observatory.ctx.set({ buscar: "primera" }, { render: false });
+      window.__observatory.ctx.set({ buscar: "segunda" }, { render: false });
+      // Retiene un evento para comprobar el callback agrupado antes de su procesamiento.
+      window.addEventListener("hashchange", event => event.stopImmediatePropagation(), { capture: true, once: true });
+      location.hash = "#vista=rl";
+    });
+    await page.clock.runFor(300);
+    assert.equal(await page.evaluate(() => location.hash), "#vista=rl");
+    await page.evaluate(() => window.dispatchEvent(new HashChangeEvent("hashchange")));
+    await settle(page);
+    assert.equal(await page.locator("#rl").isVisible(), true);
+  });
+
+  await check("una navegación externa prevalece sobre el cierre pendiente del detalle", async () => {
+    await page.evaluate(() => { location.hash = "#vista=registros&buscar=synthetic-generation"; });
+    await page.waitForFunction(() => document.querySelectorAll("#records tbody tr").length === 1);
+    await page.locator("#records tbody .link").first().click();
+    await page.locator("#drawer").waitFor({ state: "visible" });
+    await page.clock.runFor(300);
+    // Reproduce el orden navegación, publicación del cierre y evento hashchange.
+    await page.evaluate(() => {
+      document.getElementById("drawer").close();
+      location.hash = "#vista=rl";
+      window.__observatory.ctx.set({ ejecucion: "" }, { render: false });
+    });
+    await settle(page);
+    assert.equal(await page.evaluate(() => location.hash), "#vista=rl");
+    assert.equal(await page.locator("#rl").isVisible(), true);
+  });
+
   await check("las actividades no predictivas se rotulan y van a su vista", async () => {
     await page.evaluate(() => { location.hash = "#vista=registros&buscar=synthetic-generation"; });
     await page.waitForFunction(() => document.querySelectorAll("#records tbody tr").length === 1);
