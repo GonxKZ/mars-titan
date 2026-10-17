@@ -184,7 +184,18 @@ MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_REQUIRE_REFERENCE=1 make test
 
 ### Parte CUDA
 
-Las pruebas CUDA llevan la marca `cuda`, que la parte CPU omite. `make test-cuda` las ejecuta todas con la GPU visible. Si otras cargas comparten la GPU, conviene repetirlas por tandas cortas de pocos archivos, con la GPU reservada en exclusiva durante cada tanda:
+Las pruebas CUDA recogidas normalmente llevan la marca `cuda`, que la parte CPU omite. `make test-cuda` ejecuta esa selección en `cuda:0`. Los archivos `cuda_*_check.py` no siguen el patrón de recogida de pytest. `make test-cuda-checks` los ejecuta por separado y añade el guion de paridad de la GRU. `make test-cuda-memory` compara acumulación y recomputación con 128, 256 y 512 activos. Estos dos objetivos guardan sus recibos en una carpeta fechada de `build/checks/`, que puede cambiarse con `CUDA_CHECK_DIR`.
+
+Antes de las comprobaciones explícitas se declara `MARS_TITAN_HARDWARE_PROFILE` con el perfil verificado del equipo. En el portátil corresponde `rtx4070-laptop`. Los tres objetivos CUDA se ejecutan en serie, sin `make -j`, y con los binarios nativos declarados:
+
+```bash
+export MARS_TITAN_HARDWARE_PROFILE=rtx4070-laptop
+make test-cuda
+make test-cuda-checks
+make test-cuda-memory
+```
+
+Si otras cargas comparten la GPU, se pueden dividir las pruebas marcadas en tandas de pocos archivos, con la GPU reservada para una sola comprobación durante cada tanda:
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 MARS_TITAN_REQUIRE_NATIVE=1
