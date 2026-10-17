@@ -73,13 +73,22 @@ class _SharedStatistics:
 RIDGE_STATISTICS = _SharedStatistics()
 
 
-def retained_partitions(retention):
+def retained_partitions(retention, *, available=None):
     """Particiones con tabla por fila. La retención reservada solo resume el ajuste."""
     if retention not in PREDICTION_RETENTIONS:
         raise ValueError("La retención de predicciones no pertenece al contrato")
-    if retention == FULL_TRAIN_VALIDATION:
-        return ("train", "validation")
-    return ("validation", "calibration", "evaluation")
+    partitions = (
+        ("train", "validation")
+        if retention == FULL_TRAIN_VALIDATION
+        else ("validation", "calibration", "evaluation")
+    )
+    if available is not None:
+        missing = sorted(set(partitions) - set(available))
+        if missing:
+            raise ValueError(
+                f"Faltan particiones para la retención declarada: {', '.join(missing)}"
+            )
+    return partitions
 
 
 def feature_order(input_policy):
@@ -227,6 +236,7 @@ def run_tabular_reference(
     device = str(require_cuda()) if kind == "ridge" else "cpu"
     masked = masked_inputs(input_policy)
     dataset = CorpusDataset(manifest, input_policy=input_policy)
+    retained_partitions(prediction_retention, available=dataset.partitions)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan particiones de ajuste y validación no vacías")
     for protected in (*dataset.roots.values(), Path("dataset")):

@@ -66,6 +66,7 @@ def case(kind="gru"):
 
 
 @pytest.mark.parametrize("kind", ["rnn", "lstm", "gru", "dlinear"])
+@requires_cuda
 def test_every_epoch_and_prediction_include_all_admissible_rows(tmp_path, kind):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -83,6 +84,7 @@ def test_every_epoch_and_prediction_include_all_admissible_rows(tmp_path, kind):
 
 @pytest.mark.parametrize("architecture", [None, dict(hidden_size=64, layers=2, dropout=0.1)])
 @pytest.mark.parametrize("kind", ["rnn", "lstm", "gru", "dlinear"])
+@requires_cuda
 def test_interruption_resumes_exact_next_batch_and_final_weights(
     tmp_path, monkeypatch, architecture, kind
 ):
@@ -136,6 +138,7 @@ def test_interruption_resumes_exact_next_batch_and_final_weights(
     )
 
 
+@requires_cuda
 def test_scientific_configuration_changes_capacity_and_rejects_other_parent_architecture(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     configuration = {**case(), "architecture": dict(hidden_size=64, layers=2, dropout=0.1)}
@@ -182,6 +185,7 @@ def test_evaluation_averages_sessions_without_company_count_weighting(tmp_path):
     assert result["session_mae"] == pytest.approx(0.07)
 
 
+@requires_cuda
 def test_resume_rejects_changed_corpus_and_loss(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -198,6 +202,7 @@ def test_resume_rejects_changed_corpus_and_loss(tmp_path):
         module().run_reference_case(manifest, output, case(), batch_size=5, resume=True)
 
 
+@requires_cuda
 def test_explicit_sample_cache_records_resources_and_preserves_cuda_recovery(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     engine = module()
@@ -268,6 +273,7 @@ def test_explicit_sample_cache_records_resources_and_preserves_cuda_recovery(tmp
         )
 
 
+@requires_cuda
 def test_posttraining_requires_same_parent_population_and_architecture(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     parent = tmp_path / "parent"
@@ -295,6 +301,7 @@ def test_missing_cuda_fails_before_creating_run(tmp_path, monkeypatch):
     assert not (tmp_path / "run").exists()
 
 
+@requires_cuda
 def test_stop_already_requested_does_not_apply_an_extra_update(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     stop = StopRequest()
@@ -303,6 +310,7 @@ def test_stop_already_requested_does_not_apply_an_extra_update(tmp_path):
     assert report["status"] == "paused" and report["global_step"] == 0
 
 
+@requires_cuda
 def test_resume_recovers_directory_created_before_initial_report(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -312,6 +320,7 @@ def test_resume_recovers_directory_created_before_initial_report(tmp_path):
     assert result["status"] == "completed"
 
 
+@requires_cuda
 def test_resume_without_report_does_not_adopt_unrelated_artifacts(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -322,6 +331,7 @@ def test_resume_without_report_does_not_adopt_unrelated_artifacts(tmp_path):
     assert not (output / "run.json").exists()
 
 
+@requires_cuda
 def test_nonfinite_prediction_does_not_publish_completed_run(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     engine = module()
@@ -337,6 +347,7 @@ def test_nonfinite_prediction_does_not_publish_completed_run(tmp_path, monkeypat
     assert report["status"] == "failed" and report["final_test_opened"] is False
 
 
+@requires_cuda
 def test_code_change_during_training_cannot_confirm_a_new_state(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     engine = module()
@@ -357,6 +368,7 @@ def test_code_change_during_training_cannot_confirm_a_new_state(tmp_path, monkey
     assert state["global_step"] == 0
 
 
+@requires_cuda
 def test_completed_case_rejects_corrupt_final_checkpoint(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -366,6 +378,7 @@ def test_completed_case_rejects_corrupt_final_checkpoint(tmp_path):
         module().run_reference_case(manifest, output, case(), batch_size=5, resume=True)
 
 
+@requires_cuda
 def test_resume_rejects_changed_numerical_backend_policy(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -380,6 +393,7 @@ def test_resume_rejects_changed_numerical_backend_policy(tmp_path):
         torch.set_float32_matmul_precision(original)
 
 
+@requires_cuda
 def test_parent_final_checkpoint_cannot_fall_back_to_another_epoch(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     parent = tmp_path / "parent"
@@ -396,6 +410,7 @@ def test_parent_final_checkpoint_cannot_fall_back_to_another_epoch(tmp_path):
     assert not (tmp_path / "child").exists()
 
 
+@requires_cuda
 def test_changed_price_transformation_cannot_resume_checkpoint(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"

@@ -122,9 +122,16 @@ class AnchoredAdamW(torch.optim.AdamW):
 def _apply_decay(optimizer, args, kwargs):
     # Con una clausura, AdamW recalcularía los gradientes después de este gancho, sobre
     # pesos ya decaídos. Los entrenadores del proyecto no la usan.
-    closure = args[0] if args else kwargs.get("closure")
+    # PyTorch entrega también self en args, aunque el optimizador ya sea el primer argumento.
+    positional = args[1:]
+    closure = positional[0] if positional else kwargs.get("closure")
     _require(
-        closure is None and len(args) <= 1 and set(kwargs) <= {"closure"},
+        bool(args)
+        and args[0] is optimizer
+        and closure is None
+        and len(positional) <= 1
+        and set(kwargs) <= {"closure"}
+        and not (positional and "closure" in kwargs),
         "El decaimiento anclado no admite clausura en el paso",
     )
     with torch.no_grad():

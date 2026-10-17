@@ -47,7 +47,7 @@ La [caché FP64 de consulta](../../reports/resources/episodic-query-20261004.md)
 
 La GRU conserva el prefijo del episodio y reconstruye sus estados con los parámetros actuales antes de actualizar cada secuencia. Los reinicios separan episodios y el relleno no contribuye a la pérdida. Un estado oculto previo a una actualización no se reutiliza como si perteneciera a los pesos nuevos.
 
-El HMM se ajusta una vez con `hmmlearn==0.3.3`, usando solo las secuencias de entrenamiento y las variables observadas de retorno, volatilidad y dispersión. Exporta prior, transiciones, medias y varianzas para `MarkovFilter` en C++. Su manifiesto identifica todas las fuentes del ajuste. La inferencia utiliza filtrado hacia delante, sin Viterbi ni suavizado con observaciones futuras. El ajuste es offline sobre entrenamiento, como declara `training_context_point_in_time=false`, y no demuestra que esos estados tengan una interpretación económica real.
+El HMM se ajusta una vez con `hmmlearn==0.3.3`, fijado en el extra `reinforcement`, usando solo las secuencias de entrenamiento y las variables observadas de retorno, volatilidad y dispersión. Exporta prior, transiciones, medias y varianzas para `MarkovFilter` en C++. Su manifiesto identifica todas las fuentes del ajuste. La inferencia utiliza filtrado hacia delante, sin Viterbi ni suavizado con observaciones futuras. El ajuste es offline sobre entrenamiento, como declara `training_context_point_in_time=false`, y no demuestra que esos estados tengan una interpretación económica real.
 
 Las variantes auxiliares conservan hasta 8192 experiencias y comparan selección reciente con reservorio. Su objetivo MAE utiliza la recompensa financiera ya observada, nunca las etiquetas privadas del generador. El optimizador y el RNG auxiliares están separados. El cuerpo compartido puede cambiar con la consolidación, aunque la cabeza del actor no reciba directamente esa pérdida. Las experiencias antiguas no entran en el objetivo PPO recortado.
 
@@ -99,7 +99,7 @@ La compilación usa los [presets PPO existentes](native-ppo.md#compilación-y-ej
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
-uv run --no-sync --with hmmlearn==0.3.3 python scripts/prepare_adaptation_scenarios.py \
+uv run --locked --extra reinforcement python scripts/prepare_adaptation_scenarios.py \
   --config configs/simulation/adaptation-scenarios.json \
   --output data/interim/adaptation-scenarios-v1 \
   --fit-hmm
@@ -110,7 +110,7 @@ La salida debe ser nueva. El generador no sobrescribe un catálogo previo. Las c
 ```bash
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
 MARS_TITAN_PPO_EXECUTABLE=build/native/native-ppo-release/mars-titan-ppo \
-uv run --no-sync --with hmmlearn==0.3.3 pytest \
+uv run --locked --all-extras pytest \
   tests/simulation/test_adaptation_scenarios.py \
   tests/simulation/test_decision_explanations.py \
   tests/simulation/test_native_ppo_runner.py -q

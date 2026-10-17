@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data.storage import sha256
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 
@@ -39,6 +40,7 @@ def module():
     return importlib.import_module("mars_titan.training.reference_campaign")
 
 
+@requires_cuda
 def test_completed_case_is_not_retrained_after_campaign_pause(tmp_path, monkeypatch):
     config, manifest = setup(tmp_path)
     engine = module()
@@ -161,6 +163,7 @@ def test_v2_market_views_reconcile_all_candidates_and_keep_cohort_rows(tmp_path)
 
 
 @pytest.mark.parametrize("change", ["source", "environment"])
+@requires_cuda
 def test_campaign_cannot_mix_completed_cases_with_a_new_model_environment(
     tmp_path, monkeypatch, change
 ):

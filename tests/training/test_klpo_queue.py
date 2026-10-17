@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from mars_titan.data.storage import sha256
+from tests.suite_support import requires_cuda
 from tests.training.test_baseline_queue import study
 
 
@@ -145,6 +146,7 @@ def test_queue_rejects_unconfirmed_or_unrelated_parents(tmp_path, problem):
         engine().selected_parents(reference, tabular)
 
 
+@requires_cuda
 def test_cuda_queue_resumes_after_one_parent_and_confirms_all_rows(tmp_path, monkeypatch):
     from mars_titan.training.checkpoints import StopRequest
     from tests.training.test_klpo_study import config

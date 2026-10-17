@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from mars_titan.data.storage import sha256
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 
@@ -92,6 +93,7 @@ def test_paired_neural_continuations_keep_the_same_update_budget(tmp_path):
         module()._configuration(config)
 
 
+@requires_cuda
 def test_search_resumes_without_retraining_confirmed_cases_and_reuses_seed42(tmp_path, monkeypatch):
     config, manifest = setup(tmp_path)
     engine = module()
@@ -170,6 +172,7 @@ def test_declared_context_must_match_the_frozen_population(tmp_path):
     assert not (tmp_path / "study").exists()
 
 
+@requires_cuda
 def test_search_recovers_initial_view_files_without_a_summary(tmp_path, monkeypatch):
     config, manifest = setup(tmp_path)
     engine = module()
@@ -205,6 +208,7 @@ def pause_after_case(tmp_path, monkeypatch):
     return config, manifest, output
 
 
+@requires_cuda
 def test_resume_publishes_running_status_before_applying_new_updates(tmp_path, monkeypatch):
     config, manifest, output = pause_after_case(tmp_path, monkeypatch)
     engine, statuses = module(), []
@@ -225,6 +229,7 @@ def test_resume_publishes_running_status_before_applying_new_updates(tmp_path, m
 @pytest.mark.parametrize(
     "changes", [dict(planned_runs=1), dict(scope="full_corpus"), dict(final_test_opened=True)]
 )
+@requires_cuda
 def test_resume_rejects_altered_summary_contract(tmp_path, monkeypatch, changes):
     config, manifest, output = pause_after_case(tmp_path, monkeypatch)
     path = output / "summary.json"
@@ -250,6 +255,7 @@ def test_changed_source_between_view_read_and_hash_is_not_adopted(tmp_path, monk
     assert not (tmp_path / "study").exists()
 
 
+@requires_cuda
 def test_failed_output_verification_does_not_count_as_a_completed_trial(tmp_path, monkeypatch):
     config, manifest = setup(tmp_path)
     engine, real = module(), module().run_reference_case

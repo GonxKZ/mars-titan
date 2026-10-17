@@ -457,6 +457,7 @@ def run_external_reference(
         ):
             raise ValueError("El presupuesto de caché de validación no es válido")
     dataset, output = CorpusDataset(Path(manifest), input_policy=input_policy), Path(output)
+    retained_partitions(prediction_retention, available=dataset.partitions)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan entrenamiento y validación no vacíos")
     for protected in (*dataset.roots.values(), Path("dataset")):

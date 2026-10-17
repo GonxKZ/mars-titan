@@ -225,8 +225,9 @@ INVENTORY = {
     ),
     "tests/training/test_rolling_retention.py::"
     "test_the_campaign_publication_reads_the_aggregates_with_portfolio_and_ablation": (
-        "parte del recorrido de la retención v2 del fixture `walked`, que regenera predicciones "
-        "y ejecuta la etapa de ablación con la protección rebajada"
+        "ejecuta cuatro ajustes CUDA de dos épocas sobre dos activos sintéticos, regenera "
+        "sus predicciones y comprueba la publicación desde agregados con el historial real "
+        "de esos ajustes técnicos"
     ),
 }
 

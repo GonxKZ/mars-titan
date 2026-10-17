@@ -11,6 +11,7 @@ import torch
 
 from mars_titan.data.storage import sha256
 from mars_titan.models.baselines.ridge import RidgeModel
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 
@@ -18,7 +19,9 @@ def module():
     return importlib.import_module("mars_titan.training.tabular_corpus")
 
 
-@pytest.mark.parametrize("kind,device", [("ridge", "cuda:0"), ("boosting", "cpu")])
+@pytest.mark.parametrize(
+    "kind,device", [pytest.param("ridge", "cuda:0", marks=requires_cuda), ("boosting", "cpu")]
+)
 def test_tabular_fit_and_predictions_use_the_whole_neural_population(tmp_path, kind, device):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
@@ -78,6 +81,7 @@ def test_boosting_budget_does_not_turn_into_row_sampling(tmp_path):
     assert not (output / "model.joblib").exists()
 
 
+@requires_cuda
 def test_validation_targets_do_not_change_ridge_fit(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     engine = module()
@@ -107,6 +111,7 @@ def test_ridge_without_cuda_fails_without_cpu_substitution(tmp_path, monkeypatch
     assert not (tmp_path / "run").exists()
 
 
+@requires_cuda
 def test_existing_tabular_run_is_not_overwritten(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"

@@ -1,4 +1,4 @@
-"""Confirmación acotada de modelos y admisión de la edición temporal, sin CUDA."""
+"""Confirmación de modelos y admisión temporal. La matriz externa necesita CUDA."""
 
 import copy
 import json
@@ -15,7 +15,7 @@ from mars_titan.training import external_corpus as engine
 from mars_titan.training import tabular_search
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_reference_run import training_corpus
 from tests.training.test_tabular_search import setup
 
@@ -221,6 +221,8 @@ def test_model_write_failure_leaves_previous_receipt_recoverable(tmp_path, monke
     assert len(list((tmp_path / "checkpoints").iterdir())) == 1
 
 
+@requires_cuda
+@pytest.mark.filterwarnings("error::UserWarning")
 def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
     tmp_path, monkeypatch
 ):
@@ -266,6 +268,11 @@ def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
             )
 
         completed = resume.booster.num_boosted_rounds() if resume else 0
+
+        def validation_blocks():
+            # La referencia CPU usa la validación completa, sin la caché incremental CUDA.
+            yield from validation_factory()
+
         booster = xgb.train(
             dict(device="cpu", nthread=1, tree_method="hist", max_depth=1),
             xgb.DMatrix(x, label=y, nthread=1),
@@ -276,7 +283,7 @@ def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
                     xgb,
                     control,
                     lambda booster: selection.session_validation(
-                        wrap(booster), validation_factory, expected_rows=validation_rows
+                        wrap(booster), validation_blocks, expected_rows=validation_rows
                     ),
                     lambda booster, state: checkpoint(wrap(booster)),
                 )
@@ -320,8 +327,8 @@ def test_orchestration_recovers_selected_predictions_with_explicit_cpu_fixture(
     stop = StopRequest()
     save = engine._confirm_selection
 
-    def pause(output, receipt, model):
-        save(output, receipt, model)
+    def pause(output, receipt, model, cursor=None):
+        save(output, receipt, model, cursor)
         if receipt["completed_rounds"] == 2:
             stop.request_stop()
 

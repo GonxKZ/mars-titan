@@ -81,8 +81,8 @@ def test_cuda_selection_recovers_patience_best_model_and_session_metric(
     stop = StopRequest()
     confirm = external_corpus._confirm_selection
 
-    def pause_after_confirmation(output, report, model):
-        confirm(output, report, model)
+    def pause_after_confirmation(output, report, model, cursor=None):
+        confirm(output, report, model, cursor)
         if report["completed_rounds"] == 3:
             stop.request_stop()
 

@@ -1,9 +1,10 @@
-"""Ventana compartida de XGBoost en CUDA con el lector real, sin ajustar ningún árbol.
+"""Ventana compartida de XGBoost en CUDA con el lector real.
 
 `xgb.train` se sustituye por un doble que anota la matriz recibida y se detiene. Se
 comprueba qué configuraciones reutilizan la matriz cuantizada y la validación, cuántas
 veces se recorre el corpus, que las claves de las filas siguen el orden del lector y que
 no quedan páginas en disco al liberar la ventana ni tras un intento interrumpido.
+El último caso compara ajustes reales sobre el mismo fixture temporal acotado.
 """
 
 import importlib
@@ -17,6 +18,7 @@ from mars_titan.training import external_corpus
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.suite_support import missing_extra, skip_without_cuda
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
+from tests.training.test_historical_temporal import prepare
 
 pytestmark = [
     pytest.mark.skipif(
@@ -29,6 +31,12 @@ pytestmark = [
 SELECTION = dict(schema_version=1, minimum_rounds=2, patience_rounds=2, min_delta=1e-5)
 
 
+def temporal_manifest(root):
+    fixture = historical_temporal_fixture(root / "fixture")
+    prepare(fixture, root / "views")
+    return root / "views/fold-000/manifest.json"
+
+
 class TrainingReached(Exception):
     """La matriz y la validación están listas y se iba a ajustar."""
 
@@ -39,7 +47,7 @@ def window(tmp_path, monkeypatch, learning_doubles):
     skip_without_cuda()
     import xgboost as xgb
 
-    manifest = historical_temporal_fixture(tmp_path / "fixture").parent
+    manifest = temporal_manifest(tmp_path)
     received, reads = [], []
 
     def train(params, data, *args, **kwargs):
@@ -153,7 +161,7 @@ def test_after_the_hold_a_shared_matrix_fits_the_same_model_as_its_own(tmp_path)
     """
     pytest.importorskip("torch", reason=missing_extra("torch"))
     skip_without_cuda()
-    manifest = historical_temporal_fixture(tmp_path / "fixture").parent
+    manifest = temporal_manifest(tmp_path)
     shared = tmp_path / "jobs" / ".shared-matrix"
     options = dict(
         rounds=6,
