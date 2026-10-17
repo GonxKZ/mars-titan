@@ -1,6 +1,6 @@
 # Referencias neuronales con la edición histórica con máscaras
 
-Este documento describe la adaptación de las referencias RNN, LSTM, GRU, DLinear y Transformer compacto a la edición histórica desde 2000 (`historical_masked_2000_v1`). El objetivo es que reciban las mismas filas, máscaras y objetivos que el núcleo Titans-MAC y que sus campañas conserven igualdad de actualizaciones. Es una preparación técnica. No se ha entrenado ningún modelo ni se ha evaluado la edición, que sigue pendiente de verificación. La reserva de 2024 permanece cerrada.
+Este documento describe la adaptación de RNN, LSTM, GRU, DLinear y Transformer compacto a `historical_masked_2000_v1`. Reciben las mismas filas, máscaras y objetivos que Titans-MAC, con presupuestos de actualización comparables. La [edición v3.1 y sus objetivos](../data/edition-v3-1.md#ejecución-del-10-y-11-de-octubre) y las [vistas A v2](../../reports/data/campaign-a-v2-views-v31-20261014.json) ya están verificados. No se han entrenado ni evaluado científicamente estos modelos sobre esa edición. El bloqueo de aprendizaje continúa y 2024 permanece reservado.
 
 ## Política de entradas
 
