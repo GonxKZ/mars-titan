@@ -16,6 +16,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.training import external_corpus, tabular_corpus
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.reference_run import FULL_TRAIN_VALIDATION, HELDOUT_FULL_TRAIN_SESSIONS
+from tests.training.historical_temporal_fixture import historical_temporal_fixture
 from tests.training.test_masked_tabular import LibrariesReached, external
 from tests.training.test_walk_forward_v2_views import PROTOCOLS, fixture, prepare
 
@@ -102,6 +103,23 @@ def test_unknown_retention_is_rejected_before_creating_outputs(view, tmp_path, f
             view, tmp_path / "run", kind="ridge", prediction_retention="everything"
         )
     assert not (tmp_path / "run").exists() and fixed == []
+
+
+@pytest.mark.parametrize("kind", ["boosting", "xgboost"])
+def test_missing_retained_partitions_fail_before_fitting(tmp_path, monkeypatch, fixed, kind):
+    manifest = historical_temporal_fixture(tmp_path / "fixture").parent
+    output = tmp_path / "run"
+    options = dict(
+        input_policy=HISTORICAL_MASKED,
+        prediction_retention=HELDOUT_FULL_TRAIN_SESSIONS,
+    )
+    external(monkeypatch)
+    with pytest.raises(ValueError, match="calibration.*evaluation"):
+        if kind == "xgboost":
+            external_corpus.run_external_reference(manifest, output, **options)
+        else:
+            tabular_corpus.run_tabular_reference(manifest, output, kind=kind, **options)
+    assert not output.exists() and fixed == []
 
 
 def test_external_partitions_follow_the_declared_retention(
