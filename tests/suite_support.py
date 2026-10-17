@@ -210,6 +210,7 @@ MODULE_EXTRAS = {
     "torch": "cuda",
     "duckdb": "data",
     "gymnasium": "reinforcement",
+    "hmmlearn": "reinforcement",
     "cupy": "boosting",
     "xgboost": "boosting",
     "sklearn": "research",
@@ -229,11 +230,7 @@ UNADJUSTED_EDITION_REASON = (
     "edición de precios sin ajustar y de su listing-status.json (docs/data/unadjusted-prices.md). "
     "La prueba solo las lee"
 )
-HMMLEARN_REASON = (
-    "Falta hmmlearn 0.3.3, que no está en uv.lock. Se añade con "
-    "`uv run --with hmmlearn==0.3.3`, y como ajusta el HMM espera a que el bloqueo de "
-    "aprendizaje lo permita"
-)
+HMMLEARN_REASON = missing_extra("hmmlearn")
 
 
 def skip_without_episodic_native():

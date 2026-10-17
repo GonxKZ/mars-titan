@@ -42,6 +42,7 @@ boosting = [
 ]
 reinforcement = [
     "gymnasium==1.3.0",
+    "hmmlearn==0.3.3",
 ]
 
 [project.urls]
