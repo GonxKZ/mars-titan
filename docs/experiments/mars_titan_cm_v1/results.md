@@ -1,5 +1,7 @@
 # Comprobaciones técnicas de CM-v1
 
+La [verificación del 17 de octubre](../../../reports/engineering/validation-20261017/README.md) repitió los 199 casos CPU de `tests/cm` y las rutas CUDA permitidas dentro del inventario general. Registra también el coste de los controles de memoria, los fallos corregidos y las omisiones por el bloqueo. No se ha ejecutado el contraste científico B, B+C, B+M y B+C+M. Las diferencias de MAE siguen sin medir.
+
 El 8 de octubre de 2026 se ejecutaron 77 pruebas CPU de los mecanismos aislados, sin construir modelos, optimizadores ni recorridos de aprendizaje. Pasaron los casos de matriz cero, normal, nilpotente y no normal, el contraejemplo alternante, las derivadas numéricas fuera de empates y los casos degenerados comprobados como finitud. Las pruebas también cubren entradas NaN/Inf, conversiones de precisión, presupuestos y conservación del RNG ajeno.
 
 M se contrastó con una referencia independiente de enumeración pequeña. Se probaron candidatos diferentes de los clientes, IDs compartidos, duplicados con multiplicidad, empates, permutaciones, ambas distancias, capacidades, límites y desbordamientos. Un caso L1 entero pasa de coste greedy 86 a 77 mediante dos intercambios. Es un fixture técnico y no una mejora predictiva.
