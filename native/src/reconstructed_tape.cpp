@@ -60,6 +60,9 @@ constexpr std::string_view status_cutoff = "2023-12-31";
 constexpr std::string_view status_coverage = "2010-01-01";
 constexpr std::size_t maximum_special_spans = 30;
 constexpr std::size_t iso_day_length = 10;
+constexpr std::size_t iso_month_separator = 7;
+constexpr int decimal_base = 10;
+constexpr std::size_t china_status_fields = 5;
 constexpr double special_treatment_band = 0.05;
 constexpr std::array<std::string_view, 4> partitions{"train", "validation", "calibration",
                                                      "evaluation"};
@@ -216,11 +219,11 @@ Day iso_day(std::string_view value) {
         for (std::size_t index = from; index < from + count; ++index) {
             require(value[index] >= '0' && value[index] <= '9',
                     "Una fecha del estado de cotización no es ISO");
-            result = result * 10 + (value[index] - '0');
+            result = result * decimal_base + (value[index] - '0');
         }
         return result;
     };
-    require(value.size() == iso_day_length && value[4] == '-' && value[7] == '-',
+    require(value.size() == iso_day_length && value[4] == '-' && value[iso_month_separator] == '-',
             "Una fecha del estado de cotización no es ISO");
     const Day result{digits(0, 4), static_cast<unsigned>(digits(5, 2)),
                      static_cast<unsigned>(digits(8, 2))};
@@ -278,7 +281,7 @@ std::vector<std::pair<std::string, std::optional<std::string>>> status_spans(con
 
 // Misma comprobación que china_entry en Python, sin consultar calendarios.
 ChinaStatus china_status(const Json& value) {
-    require(value.is_object() && value.size() == 5 && value.contains("listed_on") &&
+    require(value.is_object() && value.size() == china_status_fields && value.contains("listed_on") &&
                 value.contains("limit_free_until") && value.contains("special_treatment") &&
                 value.contains("share_reform_pending") && value.contains("limit_free_days") &&
                 value.at("listed_on").is_string() &&
@@ -633,6 +636,7 @@ InstrumentRules china_a_share_rules(std::string_view asset, const ChinaStatus& s
     std::vector<std::pair<int64_t, int64_t>> special;
     std::vector<std::pair<int64_t, int64_t>> free;
     if (kind == "main") {
+        special.reserve(status.special_treatment.size() + status.share_reform_pending.size());
         for (const auto* spans : {&status.special_treatment, &status.share_reform_pending}) {
             for (const auto& [start, stop] : *spans) {
                 special.emplace_back(beijing_at(start), stop ? beijing_at(*stop) : end);
@@ -640,20 +644,23 @@ InstrumentRules china_a_share_rules(std::string_view asset, const ChinaStatus& s
         }
     }
     constexpr int64_t day_length = int64_t{86'400} * 1'000'000;
+    free.reserve(status.limit_free_days.size() + (status.limit_free_until ? 1 : 0));
     for (const auto& day : status.limit_free_days) {
-        free.emplace_back(beijing_at(day), beijing_at(day) + day_length);
+        const auto start = beijing_at(day);
+        free.emplace_back(start, start + day_length);
     }
     if (status.limit_free_until) {
         free.emplace_back(beijing_at(status.listed_on), beijing_at(*status.limit_free_until));
     }
-    const auto base = result.price_limits;
+    const auto& base = result.price_limits;
     std::vector<int64_t> cuts;
+    cuts.reserve(2 * (base.size() + special.size() + free.size()));
     for (const auto& period : base) {
         cuts.push_back(period.start);
         cuts.push_back(period.end);
     }
-    for (const auto& spans : {special, free}) {
-        for (const auto& [start, stop] : spans) {
+    for (const auto* spans : {&special, &free}) {
+        for (const auto& [start, stop] : *spans) {
             cuts.push_back(start);
             cuts.push_back(stop);
         }

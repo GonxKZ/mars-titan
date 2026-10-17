@@ -1,0 +1,845 @@
+{
+  "schema_version": 1,
+  "kind": "technical_rule_preparation_cost",
+  "recorded_at_utc": "2026-10-17T19:33:35.451975+00:00",
+  "reference_commit": "df1324982290564083e72f39913e04e706b7fa79",
+  "source": "native/src/reconstructed_tape.cpp",
+  "source_sha256": "06a92e9f94ed07ad4631af7b70aee90dc8b5a94db4380e65dca209b81b665104",
+  "compiler": "Clang 21.1.8",
+  "standard": "C++20",
+  "numerical_options": [
+    "-O3",
+    "-DNDEBUG",
+    "-fno-fast-math",
+    "-ffp-contract=off"
+  ],
+  "cpu": "AMD Ryzen 9 8945HS",
+  "power_profile": "power-saver",
+  "threads": 1,
+  "concurrent_cpu_validation": true,
+  "summary": [
+    {
+      "limit_free_days": 0,
+      "reference": {
+        "ordinary_cpp_allocations": 18,
+        "requested_bytes": 1174,
+        "median_mean_seconds_per_call": 4.92018e-07,
+        "minimum": 4.6194399999999997e-07,
+        "maximum": 6.48826e-07
+      },
+      "current": {
+        "ordinary_cpp_allocations": 11,
+        "requested_bytes": 1014,
+        "median_mean_seconds_per_call": 3.888e-07,
+        "minimum": 3.774e-07,
+        "maximum": 5.92172e-07
+      }
+    },
+    {
+      "limit_free_days": 4,
+      "reference": {
+        "ordinary_cpp_allocations": 22,
+        "requested_bytes": 1590,
+        "median_mean_seconds_per_call": 8.33929e-07,
+        "minimum": 7.78646e-07,
+        "maximum": 1.151868e-06
+      },
+      "current": {
+        "ordinary_cpp_allocations": 11,
+        "requested_bytes": 1142,
+        "median_mean_seconds_per_call": 5.50275e-07,
+        "minimum": 5.40794e-07,
+        "maximum": 6.014720000000001e-07
+      }
+    },
+    {
+      "limit_free_days": 30,
+      "reference": {
+        "ordinary_cpp_allocations": 27,
+        "requested_bytes": 4566,
+        "median_mean_seconds_per_call": 3.05242e-06,
+        "minimum": 2.9157e-06,
+        "maximum": 3.1599799999999997e-06
+      },
+      "current": {
+        "ordinary_cpp_allocations": 11,
+        "requested_bytes": 1974,
+        "median_mean_seconds_per_call": 1.931804e-06,
+        "minimum": 1.876808e-06,
+        "maximum": 1.970778e-06
+      }
+    }
+  ],
+  "allocation_run": {
+    "kind": "native_rule_preparation_microbenchmark",
+    "rows": [
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00232923,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00438035,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0148953,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00187305,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00267307,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00951358,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00245403,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.0026891,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0110517,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00210721,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00363503,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0146859,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00214356,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00438511,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0146489,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00174858,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00266685,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00956684,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00177077,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00263868,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00981795,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00226742,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00380304,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0145625,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00226032,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00386642,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0143482,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00169082,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00272629,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0101393,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00171992,
+        "allocations": 11,
+        "allocated_bytes": 1014,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00257114,
+        "allocations": 11,
+        "allocated_bytes": 1142,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00936405,
+        "allocations": 11,
+        "allocated_bytes": 1974,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00212457,
+        "allocations": 18,
+        "allocated_bytes": 1174,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00360635,
+        "allocations": 22,
+        "allocated_bytes": 1590,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0140024,
+        "allocations": 27,
+        "allocated_bytes": 4566,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      }
+    ],
+    "source_sha256": "06a92e9f94ed07ad4631af7b70aee90dc8b5a94db4380e65dca209b81b665104",
+    "probe_sha256": "a9e2a770f04351c5383db30dde6d4315c0bc5c46b46d9d4dbc3b5595f019ef82",
+    "matched_rule_content": true,
+    "limits": [
+      "No mide el recorrido financiero completo",
+      "CPU con otras verificaciones concurrentes",
+      "Cuenta asignaciones C++ ordinarias en el hilo del llamador"
+    ]
+  },
+  "uninstrumented_release_run": {
+    "kind": "uninstrumented_release_rule_preparation",
+    "rounds": [
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00324413,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00575934,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 0,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0153216,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00199746,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00272643,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 1,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00977054,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00296086,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00300736,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 2,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0094881,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00232245,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00455356,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 3,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0157999,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.0026287,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.0042928,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 4,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.014758,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.001887,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00281897,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 5,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00985389,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00193521,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00270917,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 6,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00979661,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.0025504,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00404649,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 7,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0155172,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00230972,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00389323,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 8,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0152026,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00191756,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00270397,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 9,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0095475,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00195279,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00277632,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 10,
+        "variant": "current",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.00938404,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 0,
+        "iterations": 5000,
+        "seconds": 0.00236978,
+        "content_hash": 13129111205757563307,
+        "checksum": 25100
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 4,
+        "iterations": 5000,
+        "seconds": 0.00402027,
+        "content_hash": 4995316535345969235,
+        "checksum": 30120
+      },
+      {
+        "round": 11,
+        "variant": "reference",
+        "days": 30,
+        "iterations": 5000,
+        "seconds": 0.0145785,
+        "content_hash": 9725209367923669075,
+        "checksum": 30120
+      }
+    ],
+    "warmup": 20,
+    "repetitions_per_round": 5000,
+    "probe_sha256": "0ed44f63c7a37cc99fcd5ff5496efc3ff541a0aa246b254463821ba7bceb1784",
+    "source_sha256": "06a92e9f94ed07ad4631af7b70aee90dc8b5a94db4380e65dca209b81b665104",
+    "scope": "Preparación completa de reglas de un activo, sin el resto del motor ni aprendizaje"
+  },
+  "probes": {
+    "china_rules_cost.cpp": {
+      "sha256": "a9e2a770f04351c5383db30dde6d4315c0bc5c46b46d9d4dbc3b5595f019ef82",
+      "source_text": "#include \"mars_titan/reconstructed_tape.hpp\"\n#include <array>\n#include <bit>\n#include <chrono>\n#include <cstdint>\n#include <cstdlib>\n#include <format>\n#include <iostream>\n#include <new>\n\nnamespace {\nthread_local bool tracking = false;\nthread_local std::size_t allocations = 0;\nthread_local std::size_t allocated_bytes = 0;\n}\n\nvoid* operator new(std::size_t count) {\n    if (tracking) { ++allocations; allocated_bytes += count; }\n    if (void* memory = std::malloc(count == 0 ? 1 : count)) { return memory; }\n    throw std::bad_alloc();\n}\nvoid operator delete(void* memory) noexcept { std::free(memory); }\nvoid operator delete(void* memory, std::size_t) noexcept { std::free(memory); }\nvoid* operator new[](std::size_t count) { return ::operator new(count); }\nvoid operator delete[](void* memory) noexcept { std::free(memory); }\nvoid operator delete[](void* memory, std::size_t) noexcept { std::free(memory); }\n\nint main() {\n    using namespace mars_titan::simulation;\n    constexpr int repeats = 5000;\n    for (int days : {0, 4, 30}) {\n        ChinaStatus status;\n        status.listed_on = \"2000-01-01\";\n        status.limit_free_until = \"2000-01-07\";\n        status.special_treatment = {{\"2015-01-01\", \"2017-01-01\"}, {\"2018-01-01\", \"2022-01-01\"}};\n        for (int day = 1; day <= days; ++day) {\n            status.limit_free_days.push_back(std::format(\"2023-01-{:02}\", day));\n        }\n        std::uint64_t digest = 0;\n        for (int warmup = 0; warmup < 20; ++warmup) {\n            digest += china_a_share_rules(\"600000.SH\", status).price_limits.size();\n        }\n        const auto started = std::chrono::steady_clock::now();\n        for (int repeat = 0; repeat < repeats; ++repeat) {\n            const auto result = china_a_share_rules(\"600000.SH\", status);\n            digest += result.price_limits.size();\n        }\n        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();\n        allocations = 0; allocated_bytes = 0; tracking = true;\n        const auto result = china_a_share_rules(\"600000.SH\", status);\n        tracking = false;\n        std::uint64_t content = 1469598103934665603ULL;\n        for (const auto& item : result.price_limits) {\n            for (auto value : {static_cast<std::uint64_t>(item.start), static_cast<std::uint64_t>(item.end), std::bit_cast<std::uint64_t>(item.band), std::bit_cast<std::uint64_t>(item.buy), std::bit_cast<std::uint64_t>(item.sell)}) {\n                content = (content ^ value) * 1099511628211ULL;\n            }\n        }\n        std::cout << \"{\\\"days\\\":\" << days << \",\\\"iterations\\\":\" << repeats\n                  << \",\\\"seconds\\\":\" << seconds << \",\\\"allocations\\\":\" << allocations\n                  << \",\\\"allocated_bytes\\\":\" << allocated_bytes << \",\\\"content_hash\\\":\" << content\n                  << \",\\\"checksum\\\":\" << digest << \"}\\n\";\n    }\n}\n"
+    },
+    "china_rules_cost_plain.cpp": {
+      "sha256": "0ed44f63c7a37cc99fcd5ff5496efc3ff541a0aa246b254463821ba7bceb1784",
+      "source_text": "#include \"mars_titan/reconstructed_tape.hpp\"\n#include <array>\n#include <bit>\n#include <chrono>\n#include <cstdint>\n#include <cstdlib>\n#include <format>\n#include <iostream>\n#include <new>\n\nnamespace {\nthread_local bool tracking = false;\nthread_local std::size_t allocations = 0;\nthread_local std::size_t allocated_bytes = 0;\n}\n\nint main() {\n    using namespace mars_titan::simulation;\n    constexpr int repeats = 5000;\n    for (int days : {0, 4, 30}) {\n        ChinaStatus status;\n        status.listed_on = \"2000-01-01\";\n        status.limit_free_until = \"2000-01-07\";\n        status.special_treatment = {{\"2015-01-01\", \"2017-01-01\"}, {\"2018-01-01\", \"2022-01-01\"}};\n        for (int day = 1; day <= days; ++day) {\n            status.limit_free_days.push_back(std::format(\"2023-01-{:02}\", day));\n        }\n        std::uint64_t digest = 0;\n        for (int warmup = 0; warmup < 20; ++warmup) {\n            digest += china_a_share_rules(\"600000.SH\", status).price_limits.size();\n        }\n        const auto started = std::chrono::steady_clock::now();\n        for (int repeat = 0; repeat < repeats; ++repeat) {\n            const auto result = china_a_share_rules(\"600000.SH\", status);\n            digest += result.price_limits.size();\n        }\n        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();\n        allocations = 0; allocated_bytes = 0; tracking = true;\n        const auto result = china_a_share_rules(\"600000.SH\", status);\n        tracking = false;\n        std::uint64_t content = 1469598103934665603ULL;\n        for (const auto& item : result.price_limits) {\n            for (auto value : {static_cast<std::uint64_t>(item.start), static_cast<std::uint64_t>(item.end), std::bit_cast<std::uint64_t>(item.band), std::bit_cast<std::uint64_t>(item.buy), std::bit_cast<std::uint64_t>(item.sell)}) {\n                content = (content ^ value) * 1099511628211ULL;\n            }\n        }\n        std::cout << \"{\\\"days\\\":\" << days << \",\\\"iterations\\\":\" << repeats\n                  << \",\\\"seconds\\\":\" << seconds << \",\\\"allocations\\\":\" << allocations\n                  << \",\\\"allocated_bytes\\\":\" << allocated_bytes << \",\\\"content_hash\\\":\" << content\n                  << \",\\\"checksum\\\":\" << digest << \"}\\n\";\n    }\n}\n"
+    }
+  },
+  "integration": {
+    "asan_ubsan_fixture_tests": 95,
+    "asan_ubsan_real_data_parity_tests": 6,
+    "real_data_year": 2023,
+    "real_data_markets": [
+      "US",
+      "CN"
+    ],
+    "real_optimizer_steps": 0,
+    "learned_policy_evaluation": false
+  },
+  "limits": [
+    "Bytes solicitados acumulados por llamada, no pico de RAM",
+    "El contador cubre operator new ordinario en el hilo del llamador, no toda asignación del sistema",
+    "Los tiempos proceden de otro binario sin sustitución de operator new",
+    "Se mide la preparación de reglas de un activo, no el recorrido completo de RL o predicción",
+    "No es evidencia de mejora predictiva ni de calidad de una política"
+  ],
+  "input_kind": "synthetic_status_fixture"
+}
