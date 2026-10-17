@@ -6,7 +6,7 @@ import json
 import pytest
 
 from mars_titan.training.checkpoints import StopRequest
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_predictive_parents import setup
 
 pytestmark = pytest.mark.skipif(
@@ -15,6 +15,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@requires_cuda
 def test_study_resumes_paired_controls_and_reuses_parent_preparation(tmp_path, monkeypatch):
     engine = importlib.import_module("mars_titan.training.predictive_study")
     ordered, parent, _ = setup(tmp_path)

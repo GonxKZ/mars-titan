@@ -59,6 +59,7 @@ def test_external_initialization_keeps_torch_matmul_valid_in_fresh_process():
     assert result.returncode == 0, result.stderr
 
 
+@requires_cuda
 def test_external_gpu_fit_consumes_all_rows_and_restores_predictions(tmp_path):
     x, y = arrays()
 
@@ -90,6 +91,7 @@ def test_external_gpu_fit_consumes_all_rows_and_restores_predictions(tmp_path):
         model.save(path)
 
 
+@requires_cuda
 def test_incomplete_factory_does_not_claim_full_training(tmp_path):
     x, y = arrays()
     with pytest.raises(ValueError, match="población|filas"):
@@ -102,6 +104,7 @@ def test_incomplete_factory_does_not_claim_full_training(tmp_path):
         )
 
 
+@requires_cuda
 def test_oversized_batch_is_rejected_before_copying_to_gpu(tmp_path):
     x, y = arrays()
     with pytest.raises(ValueError, match="presupuesto|bloque"):
@@ -114,6 +117,7 @@ def test_oversized_batch_is_rejected_before_copying_to_gpu(tmp_path):
         )
 
 
+@requires_cuda
 def test_nonfinite_values_do_not_become_missing_values_silently(tmp_path):
     x, y = arrays()
     x[0, 0] = np.nan
@@ -123,6 +127,7 @@ def test_nonfinite_values_do_not_become_missing_values_silently(tmp_path):
         )
 
 
+@requires_cuda
 def test_repeated_passes_may_change_batch_boundaries_but_not_rows(tmp_path):
     x, y = arrays()
     calls = 0
@@ -140,6 +145,7 @@ def test_repeated_passes_may_change_batch_boundaries_but_not_rows(tmp_path):
     assert set(model.audit["completed_pass_rows"]) == {24}
 
 
+@requires_cuda
 def test_changed_values_between_passes_are_rejected(tmp_path):
     x, y = arrays()
     calls = 0
@@ -191,6 +197,7 @@ def test_prediction_rejects_finite_values_that_overflow_float32():
         model.predict(np.full((8, 4), 1e300, dtype=np.float64))
 
 
+@requires_cuda
 def test_round_checkpoint_resumes_identical_predictions_and_parameters(tmp_path):
     x, y = arrays()
     engine = module()

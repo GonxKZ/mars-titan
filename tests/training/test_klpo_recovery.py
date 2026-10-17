@@ -8,6 +8,7 @@ from mars_titan.data.storage import sha256
 from mars_titan.environments import corpus_source
 from mars_titan.training import klpo_queue, predictive_parents, predictive_run, predictive_study
 from mars_titan.training.checkpoints import StopRequest
+from tests.suite_support import requires_cuda
 from tests.training.test_klpo_study import config, klpo_case
 from tests.training.test_predictive_parents import setup
 
@@ -29,6 +30,7 @@ def inputs(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("level", ["queue", "study", "ordered", "case", "cache"])
+@requires_cuda
 def test_initial_receipt_failure_can_resume_without_discarding_other_files(
     tmp_path, monkeypatch, level
 ):
@@ -88,6 +90,7 @@ def test_initial_receipt_failure_can_resume_without_discarding_other_files(
 
 
 @pytest.mark.parametrize("level", ["queue", "study"])
+@requires_cuda
 def test_changed_configuration_after_last_child_cannot_be_completed(tmp_path, monkeypatch, level):
     design, ordered, parent = inputs(tmp_path, monkeypatch)
     module = klpo_queue if level == "queue" else predictive_study

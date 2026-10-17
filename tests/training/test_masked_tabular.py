@@ -105,7 +105,7 @@ def test_masked_blocks_follow_the_neural_reader_and_append_five_bits(masked, tmp
     np.testing.assert_array_equal(x[:, :-5], values)
     np.testing.assert_array_equal(x[:, -5:], presence.astype(np.float64))
     np.testing.assert_array_equal(y, targets)
-    assert x.dtype == np.float64 and set(np.unique(x[:, -5:])) <= {0.0, 1.0}
+    assert x.dtype == np.float32 and set(np.unique(x[:, -5:])) <= {0.0, 1.0}
     assert x[:, -5].all() and x[:, -3].all() and not x[:, -4].any()
     assert x[:, -1].any() and not x[:, -1].all()
     offsets = np.cumsum([0, *widths(dataset)])
@@ -171,7 +171,9 @@ def test_strict_matrix_and_receipt_keep_the_previous_layout(tmp_path, monkeypatc
     manifest = training_corpus(tmp_path / "data")
     x, y, report = fitted_inputs(manifest, tmp_path / "run", monkeypatch, batch_size=5)
     _, values, targets, _, _ = reader_rows(manifest, "train", batch_size=5, masked=False)
-    assert x.tobytes() == values.tobytes() and y.tobytes() == targets.tobytes()
+    # El transporte conserva FP32. Al ampliar a FP64 mantiene exactamente los valores del lector.
+    assert x.dtype == np.float32
+    assert x.astype(np.float64).tobytes() == values.tobytes() and y.tobytes() == targets.tobytes()
     assert report["feature_order"] == list(MODALITIES) and report["features"] == x.shape[1]
     assert not {"input_policy", "mask_contract"} & set(report)
     assert set(report["code"]) == LEGACY_CODE

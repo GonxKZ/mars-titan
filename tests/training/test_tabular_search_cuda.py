@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from tests.suite_support import missing_extra
+from tests.suite_support import missing_extra, requires_cuda
 from tests.training.test_reference_run import training_corpus
 
 pytestmark = pytest.mark.skipif(
@@ -14,6 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@requires_cuda
 def test_real_backends_share_the_population_and_reuse_finished_models(tmp_path):
     from mars_titan.training.tabular_search import run_tabular_search
 

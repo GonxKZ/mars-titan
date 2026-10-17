@@ -7,6 +7,7 @@ import torch
 
 from mars_titan.training import predictive_run, predictive_study
 from mars_titan.training.checkpoints import StopRequest, load_training_state
+from tests.suite_support import requires_cuda
 from tests.training.test_predictive_run import case, prepared
 
 
@@ -64,6 +65,7 @@ def test_klpo_options_reject_invalid_sampler_or_regularization(key, value, monke
 
 
 @pytest.mark.parametrize("mode", ["klpo_full", "klpo_mc", "klpo_exact"])
+@requires_cuda
 def test_klpo_cuda_uses_complete_population_and_records_sampler(tmp_path, mode):
     ordered, cache = prepared(tmp_path)
     result = predictive_run.run_predictive_case(
@@ -81,6 +83,7 @@ def test_klpo_cuda_uses_complete_population_and_records_sampler(tmp_path, mode):
         assert metrics["mean_klpo_variance"] >= 0
 
 
+@requires_cuda
 def test_klpo_cuda_resume_restores_both_sampling_streams(tmp_path, monkeypatch):
     ordered, cache = prepared(tmp_path)
     run, stop = predictive_run.run_predictive_case, StopRequest()

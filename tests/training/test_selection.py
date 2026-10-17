@@ -9,6 +9,7 @@ import torch
 
 from mars_titan.data.storage import sha256
 from mars_titan.training.checkpoints import load_training_state, save_training_state
+from tests.suite_support import requires_cuda
 from tests.training.test_reference_run import case, training_corpus
 
 
@@ -61,6 +62,7 @@ def test_initial_parent_selection_does_not_consume_patience():
     assert state["should_stop"] is False
 
 
+@requires_cuda
 def test_supervised_continuation_can_keep_parent_and_bound_checkpoint_retention(tmp_path):
     engine = importlib.import_module("mars_titan.training.reference_run")
     manifest = training_corpus(tmp_path / "data")
@@ -92,6 +94,7 @@ def test_supervised_continuation_can_keep_parent_and_bound_checkpoint_retention(
     assert sum(p.name.startswith("state-") for p in (tmp_path / "child/checkpoints").iterdir()) <= 3
 
 
+@requires_cuda
 def test_parent_baseline_is_recovered_after_pause_without_counting_an_epoch(tmp_path, monkeypatch):
     from mars_titan.training.checkpoints import StopRequest
 
@@ -196,6 +199,7 @@ def selected_case():
     }
 
 
+@requires_cuda
 def test_early_stop_preserves_latest_state_but_predicts_from_selected_epoch(tmp_path):
     engine = importlib.import_module("mars_titan.training.reference_run")
     manifest = training_corpus(tmp_path / "data")
@@ -225,6 +229,7 @@ def test_early_stop_preserves_latest_state_but_predicts_from_selected_epoch(tmp_
     assert child["initialization"]["parent_checkpoint_sha256"] == report["checkpoint"]["sha256"]
 
 
+@requires_cuda
 def test_pause_during_selected_prediction_keeps_coherent_latest_optimizer_state(
     tmp_path, monkeypatch
 ):
@@ -262,6 +267,7 @@ def test_pause_during_selected_prediction_keeps_coherent_latest_optimizer_state(
     )
 
 
+@requires_cuda
 def test_initial_checkpoint_failure_is_reported_as_failed(tmp_path, monkeypatch):
     engine = importlib.import_module("mars_titan.training.reference_run")
     manifest = training_corpus(tmp_path / "data")
@@ -276,6 +282,7 @@ def test_initial_checkpoint_failure_is_reported_as_failed(tmp_path, monkeypatch)
     assert report["status"] == "failed" and report["error_type"] == "OSError"
 
 
+@requires_cuda
 def test_resume_rejects_best_pointer_redirected_to_another_valid_epoch(tmp_path, monkeypatch):
     from mars_titan.training.checkpoints import StopRequest
 
