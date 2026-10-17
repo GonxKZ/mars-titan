@@ -47,6 +47,7 @@ const store = {
 
 const scheduler = new FrameScheduler();
 let state = parseHash(location.hash);
+let observedHash = location.hash;
 const indexResource = new ConditionalResource(new URL("./data/observatory.json", import.meta.url));
 const deploymentResource = new ConditionalResource(new URL("./data/deployment.json", import.meta.url), { maxBytes: 4096 });
 const pages = new PageStore(new URL("./data/", import.meta.url), validateSnapshot);
@@ -61,9 +62,13 @@ export const ctx = {
   scheduler,
   // `render: false` solo actualiza la URL. Lo usa el zoom, que ya ha movido las gráficas.
   set(patch, { push = false, render = true } = {}) {
-    const next = { ...state, ...patch };
+    // El cierre del detalle puede publicarse antes del hashchange de una navegación.
+    const currentHash = location.hash;
+    const base = currentHash === observedHash ? state : parseHash(currentHash);
+    const next = { ...base, ...patch };
     const changedView = next.vista !== state.vista;
     state = next;
+    observedHash = currentHash;
     writeHash(push || changedView);
     if (changedView) showView();
     else if (render) invalidate(state.vista);
@@ -134,6 +139,7 @@ const writeHash = throttle(push => {
   if (hash === (location.hash || "#")) return;
   if (push) history.pushState(null, "", hash);
   else history.replaceState(null, "", hash);
+  observedHash = location.hash;
 }, 250);
 
 // Cada origen de aviso se guarda aparte. Así una consulta correcta del índice no borra
@@ -591,7 +597,8 @@ function bindControls() {
   });
   byId("flow-play").addEventListener("click", () => playFlow());
   window.addEventListener("hashchange", () => {
-    const next = parseHash(location.hash);
+    observedHash = location.hash;
+    const next = parseHash(observedHash);
     const viewChanged = next.vista !== state.vista;
     state = next;
     if (viewChanged) showView();
