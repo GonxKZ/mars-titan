@@ -35,24 +35,27 @@ struct Bound {
     double absolute;
     double shrink;
 
-    explicit Bound(std::size_t dimensions)
-        : relative(4 * (static_cast<double>(dimensions) + 4) * unit), absolute(4 * unit),
-          shrink(1 - (8 * static_cast<double>(dimensions) + 2048) * unit) {}
-
     // Cota inferior de la distancia de referencia de un par con cuadrado calculado `square` y
-    // raíces de las normas centradas `left` y `right`. Repite las operaciones de NumPy.
-    [[nodiscard]] double operator()(double square, double left, double right) const {
-        const double limit = left + right;
+    // suma `limit` de las raíces de las normas centradas. Repite las operaciones de NumPy.
+    [[nodiscard]] double operator()(double square, double limit) const {
         double value = square - limit * limit * relative;
         value = std::sqrt(std::max(value, 0.0));
         value -= limit * absolute;
         return value * shrink;
     }
 };
+
+Bound distance_bound(std::size_t dimensions) {
+    constexpr double rounding_slope = 8;
+    constexpr double rounding_guard = 2048;
+    return {.relative = 4 * (static_cast<double>(dimensions) + 4) * unit,
+            .absolute = 4 * unit,
+            .shrink = 1 - (rounding_slope * static_cast<double>(dimensions) + rounding_guard) * unit};
+}
 } // namespace
 
 double background_bound(double square, double left, double right, std::size_t dimensions) {
-    return Bound(dimensions)(square, left, right);
+    return distance_bound(dimensions)(square, left + right);
 }
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -89,7 +92,7 @@ void nearest_reference_block(std::span<double> products, std::span<const double>
     std::vector<double> roots(centers);
     std::ranges::transform(center_norms, roots.begin(),
                            [](double value) { return std::sqrt(value); });
-    const Bound bound(dimensions);
+    const Bound bound = distance_bound(dimensions);
     for (std::size_t row = 0; row < rows; ++row) {
         const double norm = client_norms[row];
         const double root = std::sqrt(norm);
@@ -106,7 +109,7 @@ void nearest_reference_block(std::span<double> products, std::span<const double>
         // El mínimo provisional baja con cada distancia calculada, y con él los pares que hay
         // que calcular.
         for (std::size_t column = 0; column < centers; ++column) {
-            if (column != first && bound(square[column], root, roots[column]) <= best) {
+            if (column != first && bound(square[column], root + roots[column]) <= best) {
                 best = std::min(best, reference_distance(client, fixed.data() + column * dimensions,
                                                          dimensions));
             }
@@ -134,14 +137,14 @@ bool min_column_sums(const StridedMatrix& distance, std::span<const double> base
                 const double value = values[(first + column) * distance.column_stride];
                 // numpy.minimum propaga NaN. Una base NaN ya pasa por la comparación y la
                 // rechaza add, como cualquier valor no finito.
-                if (std::isnan(value) || !sums[column].add(value < limit ? value : limit)) {
+                if (std::isnan(value) || !sums.at(column).add(value < limit ? value : limit)) {
                     return false;
                 }
             }
         }
         for (std::size_t column = 0; column < width; ++column) {
-            found[column] = sums[column].value();
-            if (!std::isfinite(found[column])) {
+            found.at(column) = sums.at(column).value();
+            if (!std::isfinite(found.at(column))) {
                 return false;
             }
         }

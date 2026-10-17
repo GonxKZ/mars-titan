@@ -1,5 +1,6 @@
 """Comprobaciones reales del contrato CMake con programas C++ temporales."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -46,6 +47,31 @@ def compile_target(build):
     return subprocess.run(
         ["cmake", "--build", str(build), "--parallel", "2"], capture_output=True, text=True
     )
+
+
+@pytest.mark.parametrize(("sanitizer", "expected"), [("none", (60, 120)), ("thread", (240, 480))])
+def test_instrumented_reference_checks_keep_a_bounded_time_budget(tmp_path, sanitizer, expected):
+    build, result = configure(
+        tmp_path,
+        "int main() { return 0; }\n",
+        "-DBUILD_TESTING=ON",
+        f"-DMARS_TITAN_SANITIZER={sanitizer}",
+    )
+    assert result.returncode == 0, result.stderr
+    collected = subprocess.run(
+        ["ctest", "--test-dir", str(build / "native"), "--show-only=json-v1"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    cases = {
+        test["name"]: {p["name"]: p["value"] for p in test["properties"]}
+        for test in json.loads(collected.stdout)["tests"]
+    }
+    assert (
+        tuple(cases[name]["TIMEOUT"] for name in ("simulation", "episodic_projection")) == expected
+    )
+    assert cases["concurrency"]["TIMEOUT"] == 60
 
 
 @pytest.mark.parametrize("sanitizer", ["none", "address", "address-undefined"])
