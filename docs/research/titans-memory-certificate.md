@@ -44,13 +44,13 @@ La comprobación `decomposition` lo contrasta en dimensiones 1, 2, 3, 8 y 32 con
 
 ## 3. Estabilidad de cada paso
 
-**Lema 2 (derivación propia con el criterio de Jury).** El polinomio característico de $B_\parallel$ es $\lambda^2-(1-\alpha-2\theta+\eta)\lambda+\eta(1-\alpha)$. Con $\alpha\in(0,1]$ y $\eta\in[0,1)$, $B_\parallel$ tiene radio espectral menor que uno si y solo si
+**Lema 2 (derivación propia con el criterio de Jury).** El polinomio característico de $B_\parallel$ es $\lambda^2-(1-\alpha-2\theta+\eta)\lambda+\eta(1-\alpha)$. Con $\alpha\in(0,1]$, $\eta\in[0,1)$ y $\theta\ge0$, $B_\parallel$ tiene radio espectral menor que uno si y solo si
 
 $$
 \theta<\tfrac12(2-\alpha)(1+\eta).
 $$
 
-Las otras dos condiciones de Jury, $|\eta(1-\alpha)|<1$ y $\alpha(1-\eta)+2\theta>0$, se cumplen siempre en ese dominio. Los autovalores de $B_\perp$ son $1-\alpha$ y $\eta$. Como $\theta\le\theta_{max}=0{,}1$, cada transición de la implementación es estable por separado siempre que $\alpha>0$ y $\eta<1$. Las sigmoides garantizan ambas cosas, aunque sin margen uniforme.
+Las otras dos condiciones de Jury, $|\eta(1-\alpha)|<1$ y $\alpha(1-\eta)+2\theta>0$, se cumplen siempre en ese dominio. Los autovalores de $B_\perp$ son $1-\alpha$ y $\eta$. Como $\theta\le\theta_{max}=0{,}1$, cada transición del modelo matemático es estable por separado siempre que $\alpha>0$ y $\eta<1$. En aritmética exacta, las sigmoides garantizan ambas cosas para entradas finitas, aunque sin margen uniforme. En coma flotante pueden redondearse a los extremos.
 
 ## 4. La estabilidad de cada paso no basta
 
@@ -107,7 +107,7 @@ La receta de campaña inicia las puertas en $\alpha\approx0{,}0027$ (semivida de
 
 ## 7. Escritura acotada y contracción incremental
 
-**Proposición 5 (resultado conocido en otra forma).** Sea $\psi_\delta(r)=\max(-\delta,\min(\delta,r))$ la derivada de la pérdida de Huber (dividida por dos) y supongamos la escritura $s_t=\eta_ts_{t-1}-2\theta_t\psi_\delta(w_{t-1}^\top k_t-v_{o,t})k_t$ con puertas en $[\alpha_{lo},1]\times[0,\eta_{hi}]\times[0,\theta_{hi}]$ y $\eta_{hi}<1$. Entonces, para cualquier secuencia de claves, valores y puertas,
+**Proposición 5 (resultado conocido en otra forma).** Sea $\psi_\delta(r)=\max(-\delta,\min(\delta,r))$ la derivada de la pérdida de Huber (dividida por dos), con $\delta>0$. Supongamos la escritura $s_t=\eta_ts_{t-1}-2\theta_t\psi_\delta(w_{t-1}^\top k_t-v_{o,t})k_t$, con claves de norma como máximo uno y puertas en $[\alpha_{lo},1]\times[0,\eta_{hi}]\times[0,\theta_{hi}]$, donde $0<\alpha_{lo}\le1$, $0\le\eta_{hi}<1$ y $\theta_{hi}\ge0$. Entonces, para cualquier secuencia admisible de claves, valores y puertas,
 
 $$
 \lVert s_t\rVert\le\max\!\Big(\lVert s_0\rVert,\frac{2\theta_{hi}\delta}{1-\eta_{hi}}\Big)=:\bar s,\qquad

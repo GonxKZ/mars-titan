@@ -2,6 +2,8 @@
 
 La revisión utilizada está fijada a [`adc7f1241b42e322a6451854ab7e4b4c146bf78a`](https://github.com/openai/math/tree/adc7f1241b42e322a6451854ab7e4b4c146bf78a), del 6 de octubre de 2026. La lectura inicial se realizó el día 7. Se inspeccionaron definiciones, enunciados superiores e introducciones de los manuscritos C y M. No se ejecutó Lean ni se revisó toda la cadena de demostración.
 
+El 17 de octubre se comprobó con Lean 4.35.0 un [contraejemplo propio de realimentación](../../../reports/research/lean/README.md). Es una ejecución distinta, con su fuente y recibo. No reproduce los comparadores de las familias 325 o 125 ni cambia sus estados de verificación recogidos aquí.
+
 El 9 de octubre se observó la revisión [`fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb`](https://github.com/openai/math/tree/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb), del día 8. Los cuatro PDF y los enunciados C/M seleccionados conservan sus bytes. Cambian `formalization.yaml` y el README de comparadores. Esa comparación parcial no acredita que todas las dependencias sean iguales. Se conserva el pin anterior. El [registro de capturas y hashes](../../../reports/engineering/cm-source-audit-20261009.json) identifica ambas revisiones y los archivos comprobados.
 
 ## Fuentes S1–S8

@@ -75,5 +75,10 @@
     "Los verificadores externos aceptan el export concreto. No se completó la comprobación aislada de todo el proyecto ni una comparación con un enunciado independiente",
     "Se utilizaron binarios oficiales de Lean y artefactos precompilados de Mathlib. No se reconstruyó la cadena de compiladores",
     "La validez del contraejemplo no acredita novedad bibliográfica ni superioridad frente a otras arquitecturas"
-  ]
+  ],
+  "fresh_replay_attempt": {
+    "command": "timeout 300 lake env leanchecker --fresh MemoryFeedback",
+    "exit_code": 124,
+    "completed": false
+  }
 }
