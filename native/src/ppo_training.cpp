@@ -327,9 +327,13 @@ AdaptiveState read_adaptive(std::string_view bytes) {
 }
 }
 
+// La API conserva semilla y trabajadores como argumentos distintos. Las llamadas de PPO,
+// KLPO y policy_evaluation_only pasan los campos homónimos de su configuración.
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 std::size_t policy_observation_width(const std::vector<simulation::BatchInput>& inputs,
                                      const PpoLearningOptions& learning, uint64_t seed,
                                      std::size_t workers) {
+    // NOLINTEND(bugprone-easily-swappable-parameters)
     require(!inputs.empty(), "La anchura de observación necesita al menos una fuente");
     // Basta una fuente: todas comparten activos y campos, y la anchura no depende de los carriles.
     const std::vector<simulation::BatchInput> first{inputs.front()};

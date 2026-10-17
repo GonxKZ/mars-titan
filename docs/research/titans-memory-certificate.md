@@ -1,6 +1,6 @@
 # Contracción certificada de la memoria lineal de Titans
 
-Estado: derivación propia comprobada con aritmética racional exacta y con pruebas numéricas en CPU. No es un resultado predictivo ni sustituye la evaluación con datos. Cubre la memoria lineal de una capa con claves unitarias. La memoria de dos capas con LayerNorm residual de la receta de campaña queda fuera del teorema y solo hereda la cota de escritura acotada de la sección 6.
+Estado: derivación propia comprobada con aritmética racional exacta y con pruebas numéricas en CPU. No es un resultado predictivo ni sustituye la evaluación con datos. Cubre la memoria lineal de una capa con claves unitarias. La memoria de dos capas con LayerNorm residual de la receta de campaña queda fuera del teorema y solo hereda la cota de escritura acotada de la sección 7.
 
 El programa [`check_titans_memory_certificate.py`](../../reports/research/check_titans_memory_certificate.py) reproduce todas las comprobaciones y su [recibo del 10 de octubre de 2026](../../reports/research/titans-memory-certificate-20261010.json) conserva los valores. No carga datos financieros, no crea optimizadores y se ejecutó con `CUDA_VISIBLE_DEVICES=-1`. La propuesta que usa este resultado es PT1 en las [propuestas posteriores a Titans](post-titans-proposals.md).
 
@@ -122,14 +122,44 @@ La pérdida de Huber como sesgo atencional procede de la variante Yaad de MIRAS 
 
 *Demostración.* $\psi_\delta$ es monótona y 1-Lipschitz, así que $\psi_\delta(r)-\psi_\delta(r')=c\,(r-r')$ con $c\in[0,1]$. La diferencia sigue la transición homogénea con paso $c\theta\in[0,\theta_{hi}]$, que pertenece a $\mathcal{B}$. Se aplica el Teorema 4 paso a paso. ∎
 
-La consecuencia práctica es que la memoria olvida su estado inicial y cualquier perturbación pasada a un ritmo certificado, y que dos copias del mismo flujo recuperadas desde estados distintos convergen. Es la propiedad de contracción en el sentido de Lohmiller y Slotine (1998). En 200 pares de trayectorias de 400 pasos dentro de la caja PT1, con recorte $\delta=0{,}5$ y valores de colas pesadas, la distancia nunca superó $\rho^t$ veces la inicial (cociente máximo 0,81).
+La consecuencia es que dos memorias lineales sometidas a las mismas claves, valores y puertas efectivas olvidan la diferencia entre sus estados iniciales. Es la propiedad de contracción en el sentido de Lohmiller y Slotine (1998). En 200 pares de trayectorias de 400 pasos dentro de la caja PT1, con recorte $\delta=0{,}5$ y valores de colas pesadas, la distancia nunca superó $\rho^t$ veces la inicial (cociente máximo 0,81).
+
+### 7.1. Qué permite afirmar sobre el calentamiento
+
+Para una diferencia inicial no nula $D_0$, la cota en norma $P$ es $D_n/D_0\le\rho^n$. El primer entero que hace que esta cota sea como máximo una tolerancia relativa $\varepsilon$ satisface $\rho^n\le\varepsilon$. Es una consecuencia de la contracción, no un teorema nuevo ni el número mínimo de observaciones que necesita el predictor real.
+
+Con el testigo PT1, se comprueba exactamente $0{,}99I\preceq P_0\preceq9{,}81I$ y $\sqrt{\kappa(P_0)}\le63/20$. Por tanto, en norma euclídea puede utilizarse $(63/20)\rho^n$. La [comprobación adicional](../../reports/research/check_memory_washout.py) verifica los ocho vértices, la conversión de norma y la minimalidad de cada entero con fracciones. Su [recibo](../../reports/research/linear-memory-washout-20261017.json) da:
+
+| Norma | Cota relativa tras 252 actualizaciones, aproximada | Primer entero para que la cota sea ≤ 1/100 |
+| --- | ---: | ---: |
+| $P$ | 0,927176 | 15.349 |
+| Euclídea, con prefactor 63/20 | 2,920606 | 19.173 |
+
+La tolerancia se refiere a la diferencia entre estados, no al MAE. Esta cota conservadora no permite justificar por sí sola que 252 actualizaciones borren el estado inicial. Tampoco demuestra que el efecto real dure miles de pasos. Se cuentan actualizaciones del flujo, no filas de otros activos ni refinamientos K. El cálculo no cambia el calentamiento del protocolo ni impone estos horizontes a la campaña.
+
+El certificado racional verifica un modelo de aritmética exacta. No acota el redondeo de toda la implementación FP32 o FP64. Si se acreditara un defecto numérico por paso de norma $P$ menor o igual que $\delta$, el argumento sería $D_n\le\rho^nD_0+\delta(1-\rho^n)/(1-\rho)$. Para PT1, $1/(1-\rho)=10000/3$. No se ha calculado aquí una $\delta$ válida para el programa, por lo que no se presenta una certificación de sus trayectorias en coma flotante.
+
+### 7.2. La realimentación de MAC cambia la condición
+
+En [`TitansMAC`](../../src/mars_titan/models/titans/mac.py), la atención recibe la lectura de memoria y su salida `observed` alimenta la escritura. Dos estados rápidos distintos pueden producir claves, valores y puertas distintos aunque reciban los mismos datos externos. El corolario anterior exige igualdad de esas entradas efectivas. No acredita contracción global del MAC completo, incluso si se utiliza una memoria de una capa. El Jacobiano de la transición completa debe incluir esa realimentación.
+
+Un contraejemplo algebraico dentro de la caja PT1 usa una dirección de clave unitaria, $\alpha=1/2$, $\eta=1/10$, $\theta=1/20$ y recorte del gradiente a uno. El valor se realimenta como $v=21w$ y se trata como dato al tomar la derivada parcial de la pérdida asociativa:
+
+$$
+s^+=\tfrac1{10}s-\tfrac1{20}\operatorname{clip}_1(2(w-v)),\qquad
+w^+=\tfrac12w+s^+.
+$$
+
+Los estados $(w,s)=\pm(1/9,1/18)$ son dos puntos fijos distintos. Ambos están acotados y el recorte está saturado en sus vecindades. Allí el Jacobiano es $\left(\begin{smallmatrix}1/2&1/10\\0&1/10\end{smallmatrix}\right)$, cuya norma de Frobenius al cuadrado es $27/100<1$. Aun así, la distancia entre los dos puntos fijos no disminuye. Las mismas comprobaciones racionales verifican estas identidades.
+
+El ejemplo no es una ejecución de MARS-TITAN ni muestra que el modelo tenga esos puntos fijos. Refuta la inferencia de contracción global a partir de estados acotados y Jacobianos locales pequeños en los estados observados. La [formalización en Lean](../../reports/research/lean/README.md) comprueba los puntos fijos, las ramas afines y la ausencia de contracción global estricta en L1. Su export fue aceptado por los seis verificadores registrados, con los axiomas estándar. No formaliza el predictor completo.
 
 ## 8. Lo que no queda demostrado
 
 - La memoria de la campaña tiene dos capas con GELU y LayerNorm residual. El Teorema 4 no la cubre. La Proposición 5, con recorte por filas del gradiente interno, sí acota su estado. Su contracción solo puede medirse con el Jacobiano completo que ya calcula `transition_jacobian.py`, y la [especificación de diagnósticos](memory-diagnostics.md) lo pide sobre datos reales cuando se levante el bloqueo.
 - El entrenamiento exterior por retropropagación truncada no está cubierto. La contracción del estado rápido no implica que el gradiente exterior esté acotado ni que el ajuste converja.
 - Ninguna de estas propiedades implica menor error predictivo. PT1 se evalúa como no inferioridad con un control emparejado.
-- No se ha ejecutado Lean. Los Lemas 1 y 2 y la extensión de vértices a caja son formalizables con Mathlib (matrices, `PosSemidef`, producto de Kronecker) con un esfuerzo moderado. Los certificados racionales concretos ya son una comprobación exacta, pero dependen de esos lemas. La necesidad del Teorema 4 usa la medida de Haar y su formalización sería más costosa. Queda como trabajo pendiente y no se presenta como hecho.
+- Los Lemas 1 y 2 y los Teoremas 4 y 6 no están formalizados en Lean. Sus certificados racionales concretos dependen de los argumentos escritos, incluida la extensión de vértices a caja y la simetrización con medida de Haar. La comprobación Lean del 17 de octubre solo cubre el contraejemplo escalar de la sección 7.2 y no cambia ese estado.
 
 ## Referencias
 

@@ -328,7 +328,7 @@ flowchart TD
 
 El banco y B6 no se combinan en la misma variante, como fija la declaración de MARS-TITAN. PT1 actúa dentro de la escritura de la memoria neuronal y cambia el núcleo, así que exige reentrenar Titans-MAC. PT2 y PT3 trabajan sobre predicciones ya emitidas y solo usan resultados maduros.
 
-**PT1. Memoria de Titans acotada y contractiva** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Implementada y comprobada sin entrenar como `memory_stability`, desactivada por defecto, con ecuaciones, pruebas y coste en [su documento](../engineering/titans-memory-stability.md). Resultado experimental pendiente.
+**PT1. Escritura acotada y contracción condicionada** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)). Implementada y comprobada sin entrenar como `memory_stability`, desactivada por defecto, con ecuaciones, pruebas y coste en [su documento](../engineering/titans-memory-stability.md). Resultado experimental pendiente.
 
 **PT2. Calibración conformal en línea con etiquetas maduras** ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Implementada y comprobada sin entrenar como `OnlineConformal`, con κ = 0 idéntica a la CQR estática y conectada a la comparación por ventanas de A v2 junto a su alternativa de recalibración periódica. Ecuaciones, pruebas y coste en [su documento](../engineering/online-conformal-calibration.md). Resultado experimental pendiente.
 

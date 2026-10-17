@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "formal_feedback_counterexample",
+  "verified_at_utc": "2026-10-17T19:02:28.593832+00:00",
+  "lean_version": "4.35.0",
+  "lean_commit": "eb6cafb7290e8bd5f2937522d8d804f58f02bafc",
+  "lean_release_url": "https://github.com/leanprover/lean4/releases/tag/v4.35.0",
+  "lean_archive_sha256": "7289597a44543246c9227b8cae501767e095ce17f6d448b95fc4a8dc97268f6d",
+  "mathlib_commit": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "source_sha256": {
+    "MemoryFeedback.lean": "318ddfdef31ca4e7253f140d286c4cdf09cfb55858b1854b3b68e73b0f02162f",
+    "lakefile.toml": "e1352f312bad0ffda75b8edf643482b6ce3973247fa0ba21ab0f2f8c255b28e3",
+    "lake-manifest.json": "f34fa18ca44ea4bd22ac7fdd0db89df37fa38a1e08c3059b7c2881e4d6bbe612",
+    "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c"
+  },
+  "export_sha256": "78523b66864fca460acacb6022e8f725dc55e7ef1b2d9ea68559f240e3efa6a1",
+  "export_bytes": 28281404,
+  "build": {
+    "command": "lake --wfail build",
+    "exit_code": 0
+  },
+  "export_check": {
+    "command": "lake check --paranoid --from-export=memory-feedback-export.ndjson",
+    "exit_code": 0,
+    "accepted_by": [
+      "Lean paranoid",
+      "lean4lean",
+      "nanoda",
+      "con-leche",
+      "con-ron",
+      "Lean default"
+    ],
+    "log": [
+      "Running Lean paranoid kernel on solution",
+      "Lean paranoid kernel accepts the solution",
+      "Running lean4lean kernel on solution",
+      "checked 6658 declarations",
+      "lean4lean kernel accepts the solution",
+      "Running nanoda kernel on solution",
+      "nanoda kernel accepts the solution",
+      "Running con-leche kernel on solution",
+      "con-leche: accepted 6661 declarations (--verified)",
+      "con-leche kernel accepts the solution",
+      "Running con-ron kernel on solution",
+      "con-ron: accepted 6661 declarations (--verified)",
+      "con-ron kernel accepts the solution",
+      "Running Lean default kernel on solution",
+      "Lean default kernel accepts the solution",
+      "Uses axioms: propext, Quot.sound, Classical.choice"
+    ]
+  },
+  "axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "custom_axioms": [],
+  "native_evaluation": false,
+  "negative_control": {
+    "exit_code": 1,
+    "rejected": true,
+    "change": "positive.w: 1/9 -> 1/8"
+  },
+  "full_project_check": {
+    "exit_code": 1,
+    "reason": "La resolución aislada de dependencias no pudo materializar el enlace simbólico local a Mathlib"
+  },
+  "scope": [
+    "Recurrencia escalar sobre los reales con v = 21w y gradiente parcial asociativo 2(w-v)",
+    "Dos puntos fijos, distancia L1, ramas afines, suma de cuadrados de sus coeficientes y ausencia de contracción global estricta en L1"
+  ],
+  "limits": [
+    "No formaliza el teorema matricial de PT1 ni audita las familias 325 y 125",
+    "No certifica el programa PyTorch, el redondeo flotante ni la calidad predictiva",
+    "Los verificadores externos aceptan el export concreto. No se completó la comprobación aislada de todo el proyecto ni una comparación con un enunciado independiente",
+    "Se utilizaron binarios oficiales de Lean y artefactos precompilados de Mathlib. No se reconstruyó la cadena de compiladores",
+    "La validez del contraejemplo no acredita novedad bibliográfica ni superioridad frente a otras arquitecturas"
+  ]
+}

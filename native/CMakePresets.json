@@ -83,7 +83,9 @@
       "displayName": "MSan con biblioteca estándar instrumentada",
       "inherits": "native-debug",
       "cacheVariables": {
-        "MARS_TITAN_SANITIZER": "memory"
+        "MARS_TITAN_SANITIZER": "memory",
+        "CMAKE_C_FLAGS_DEBUG": "-O1 -g",
+        "CMAKE_CXX_FLAGS_DEBUG": "-O1 -g"
       }
     },
     {
