@@ -68,7 +68,9 @@ class ReferenceStepGraph:
         flags = nonfinite_flags([*checks, (loss, LOSS_MESSAGE)])
         loss.backward()
         messages = [message for _, message in checks] + [LOSS_MESSAGE]
-        return prediction, flags, messages, loss.detach()
+        # El backward ya terminó de encolarse. Solo se conserva el búfer, no los nodos de
+        # autograd del stream de captura que interferirían con el siguiente lote parcial.
+        return prediction.detach(), flags, messages, loss.detach()
 
     def _capture(self, batch, target, weights):
         device = target.device

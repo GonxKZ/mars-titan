@@ -1,0 +1,151 @@
+{
+  "kind": "technical_verification",
+  "test_command": "uv run pytest -q tests/models/titans/test_memory_washout.py",
+  "tests_passed": 17,
+  "optimizer_steps": 0,
+  "quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-17T20:46:56.207929",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [
+      "reports/research/check_memory_washout.py"
+    ],
+    "totals": {
+      "statements": 69,
+      "covered_statements": 64,
+      "branches": 30,
+      "covered_branches": 25
+    },
+    "files": [
+      {
+        "path": "reports/research/check_memory_washout.py",
+        "source_sha256": "5051afb75490ba166c6b059cb2f63e89f60cacaeb16d13ade89d0441c6f0f1de",
+        "statements": 69,
+        "covered_statements": 64,
+        "branches": 30,
+        "covered_branches": 25
+      }
+    ],
+    "functions": [
+      {
+        "path": "reports/research/check_memory_washout.py",
+        "function": "contraction_steps",
+        "start_line": 13,
+        "end_line": 34,
+        "cyclomatic_complexity": 13,
+        "statements": 19,
+        "covered_statements": 19,
+        "coverage_fraction": 1.0,
+        "branches": 16,
+        "covered_branches": 16,
+        "crap": 13.0
+      },
+      {
+        "path": "reports/research/check_memory_washout.py",
+        "function": "check_feedback_counterexample",
+        "start_line": 78,
+        "end_line": 102,
+        "cyclomatic_complexity": 10,
+        "statements": 15,
+        "covered_statements": 13,
+        "coverage_fraction": 0.8666666666666667,
+        "branches": 6,
+        "covered_branches": 4,
+        "crap": 10.237037037037037
+      },
+      {
+        "path": "reports/research/check_memory_washout.py",
+        "function": "check_washout",
+        "start_line": 37,
+        "end_line": 75,
+        "cyclomatic_complexity": 7,
+        "statements": 15,
+        "covered_statements": 13,
+        "coverage_fraction": 0.8666666666666667,
+        "branches": 6,
+        "covered_branches": 4,
+        "crap": 7.116148148148148
+      },
+      {
+        "path": "reports/research/check_memory_washout.py",
+        "function": "main",
+        "start_line": 105,
+        "end_line": 124,
+        "cyclomatic_complexity": 1,
+        "statements": 7,
+        "covered_statements": 7,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "635032d14f2f2b55975b2da4d5f6248b81ddc7663cab7ce8674dc9d2b69aac6d",
+    "functions_measured": 4
+  },
+  "targeted_mutations": {
+    "source_sha256": "5051afb75490ba166c6b059cb2f63e89f60cacaeb16d13ade89d0441c6f0f1de",
+    "kind": "targeted_source_mutation",
+    "cases": [
+      {
+        "name": "prefactor",
+        "replacement_before": "prefactor * rho**",
+        "replacement_after": "F(1) * rho**",
+        "selected_test": "test_horizon_is_the_first_integer_that_meets_the_bound",
+        "returncode": 1,
+        "detected": true
+      },
+      {
+        "name": "boundary",
+        "replacement_before": "prefactor * rho**high > tolerance",
+        "replacement_after": "prefactor * rho**high >= tolerance",
+        "selected_test": "test_horizon_is_the_first_integer_that_meets_the_bound",
+        "returncode": 1,
+        "detected": true
+      },
+      {
+        "name": "momentum",
+        "replacement_before": "eta * momentum - theta * clipped",
+        "replacement_after": "-theta * clipped",
+        "selected_test": "test_feedback_can_preserve_two_fixed_points_inside_the_gate_box",
+        "returncode": 1,
+        "detected": true
+      },
+      {
+        "name": "clipping",
+        "replacement_before": "clipped = max(-limit, min(limit, gradient))",
+        "replacement_after": "clipped = gradient",
+        "selected_test": "test_feedback_can_preserve_two_fixed_points_inside_the_gate_box",
+        "returncode": 1,
+        "detected": true
+      },
+      {
+        "name": "scope",
+        "replacement_before": "full_mac_covered=False",
+        "replacement_after": "full_mac_covered=True",
+        "selected_test": "test_pt1_horizons_are_exact_and_do_not_claim_to_cover_the_complete_predictor",
+        "returncode": 1,
+        "detected": true
+      }
+    ],
+    "all_detected": true
+  }
+}

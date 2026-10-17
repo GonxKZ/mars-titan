@@ -17,18 +17,32 @@ CTEST_EXCLUDED := ^(optimizer-steps|cuda)$$
 
 # Artefactos nativos que leen las pruebas, con las rutas que deja `make native-build`. Solo
 # se declaran los que existen: una ruta declarada que no existe hace fallar la prueba.
-native_var = $(if $(wildcard $(2)),$(1)=$(firstword $(wildcard $(2))))
-NATIVE_ENV := $(call native_var,MARS_TITAN_EPISODIC_NATIVE,$(BUILD)/native-candidate-cuda/_episodic_native*.so) \
-	$(call native_var,MARS_TITAN_NATIVE_LIBRARY,$(BUILD)/native-release/libmars_titan_simulation.so) \
-	$(call native_var,MARS_TITAN_SIM_EXECUTABLE,$(BUILD)/native-release/mars-titan-sim) \
-	$(call native_var,MARS_TITAN_PPO_EXECUTABLE,$(BUILD)/native-ppo-release/mars-titan-ppo) \
-	$(call native_var,MARS_TITAN_KLPO_EXECUTABLE,$(BUILD)/native-ppo-release/mars-titan-klpo)
+native_var = $(shell for artifact in "$(BUILD)"/$(2); do \
+	if test -f "$$artifact"; then printf '$(1)="%s"' "$$artifact"; break; fi; done)
+NATIVE_ENV := $(call native_var,MARS_TITAN_EPISODIC_NATIVE,native-candidate-cuda/_episodic_native*.so) \
+	$(call native_var,MARS_TITAN_NATIVE_LIBRARY,native-release/libmars_titan_simulation.so) \
+	$(call native_var,MARS_TITAN_SIM_EXECUTABLE,native-release/mars-titan-sim) \
+	$(call native_var,MARS_TITAN_PPO_EXECUTABLE,native-ppo-release/mars-titan-ppo) \
+	$(call native_var,MARS_TITAN_KLPO_EXECUTABLE,native-ppo-release/mars-titan-klpo)
 CPU_ENV := OMP_NUM_THREADS=$(THREADS) MKL_NUM_THREADS=$(THREADS) CUDA_VISIBLE_DEVICES=-1
+CUDA_ENV := OMP_NUM_THREADS=$(THREADS) MKL_NUM_THREADS=$(THREADS) CUDA_VISIBLE_DEVICES=0 \
+	CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 $(NATIVE_ENV)
+CUDA_CHECK_ENV := MARS_TITAN_GRU_CHECK_DEVICE=cuda:0 MARS_TITAN_M3_CHECK_DEVICE=cuda:0 \
+	MARS_TITAN_REGENERATION_CHECK_DEVICE=cuda:0 MARS_TITAN_MARS_RUN_CHECK_DEVICE=cuda:0 \
+	MARS_TITAN_TITANS_ADAPTERS_CHECK_DEVICE=cuda:0 MARS_TITAN_CM_CONTROL_CHECK_DEVICE=cuda:0 \
+	MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE=cuda:0 MARS_TITAN_READOUT_ADAPTERS_CHECK_DEVICE=cuda:0 \
+	MARS_TITAN_CANDIDATE_ADAPTERS_CHECK_DEVICE=cuda:0
 SUITE_PARTS := data models training simulation memory posttraining evaluation environments \
-	episodes calibration cm integrity learning_traces native tooling
+	episodes calibration cm integrity learning_traces native tooling hardware
+CUDA_CHECKS := $(filter-out tests/models/candidate/cuda_candidate_check.py,\
+	$(wildcard tests/*/cuda_*_check.py tests/*/*/cuda_*_check.py))
+ifndef CUDA_CHECK_DIR
+CUDA_CHECK_DIR := $(CURDIR)/build/checks/cuda-$(shell date -u +%Y%m%dT%H%M%S)
+endif
 
 .DEFAULT_GOAL := help
-.PHONY: help setup check lint test-fast test test-native test-cuda native-build docs
+.PHONY: help setup check lint test-fast test test-native test-cuda test-cuda-checks \
+	test-cuda-memory native-build docs
 
 help: ## Lista los objetivos
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-13s %s\n", $$1, $$2}'
@@ -50,7 +64,7 @@ test: ## Suite CPU completa por carpetas, con los binarios de native-build si ex
 	@set -e; for part in $(SUITE_PARTS); do \
 		echo "== tests/$$part"; \
 		$(CPU_ENV) $(NATIVE_ENV) $(RUN) pytest -q -rs tests/$$part; \
-	done; $(CPU_ENV) $(RUN) pytest -q -rs tests/test_suite_support.py
+	done; $(CPU_ENV) $(NATIVE_ENV) $(RUN) pytest -q -rs $(wildcard tests/test_*.py tests/*_test.py)
 
 test-native: ## Pruebas que usan los binarios de native-build y su CTest, sin CUDA
 	$(CPU_ENV) $(NATIVE_ENV) $(RUN) pytest -q -rs -m "native and not cuda"
@@ -60,8 +74,22 @@ test-native: ## Pruebas que usan los binarios de native-build y su CTest, sin CU
 	done
 
 test-cuda: ## Pruebas marcadas cuda en cuda:0. Reserva la GPU para esta única carga
-	CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 $(NATIVE_ENV) \
-		$(RUN) pytest -q -rs -m cuda
+	$(CUDA_ENV) $(RUN) pytest -q -rs -m cuda
+
+test-cuda-checks: ## Paridades CUDA explícitas, cada archivo en un proceso, sin optimizador
+	@set -e; for check in $(CUDA_CHECKS); do \
+		$(CUDA_ENV) $(CUDA_CHECK_ENV) $(RUN) pytest -q -rs $$check; \
+	done
+	mkdir -p "$(CUDA_CHECK_DIR)"
+	$(CUDA_ENV) $(CUDA_CHECK_ENV) $(RUN) python tests/models/candidate/cuda_candidate_check.py \
+		--output "$(CUDA_CHECK_DIR)/candidate.json"
+
+test-cuda-memory: ## Memoria y recomputación de la GRU en CUDA con 128, 256 y 512 activos
+	mkdir -p "$(CUDA_CHECK_DIR)"
+	$(CUDA_ENV) MARS_TITAN_CANDIDATE_MEMORY_CHECK_DEVICE=cuda:0 \
+		MARS_TITAN_CANDIDATE_MEMORY_CHECK_ASSETS=128,256,512 \
+		MARS_TITAN_CANDIDATE_MEMORY_CHECK_REPORT="$(CUDA_CHECK_DIR)/memory.json" \
+		$(RUN) pytest -q -rs tests/training/candidate_memory_check.py
 
 native-build: ## Compila native-release, native-ppo-release y native-candidate-cuda
 	cd native && cmake --preset native-release -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON

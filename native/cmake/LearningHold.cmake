@@ -34,4 +34,12 @@ if(BUILD_TESTING)
         "${MARS_TITAN_BLOCKED_HOLD}" ${MARS_TITAN_LEARNING_GATE_SKIP})
     set_tests_properties(learning_gate PROPERTIES TIMEOUT 60 LABELS "unit;learning-hold")
     mars_titan_sanitizer_test_environment(learning_gate)
+    if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_custom_target(learning-gate-analysis
+            COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
+                --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_gate.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_gate_main.cpp"
+            VERBATIM)
+    endif()
 endif()

@@ -124,6 +124,23 @@ def case_for(kind, *, quantiles):
 
 
 @cuda
+def test_captured_prediction_releases_autograd_nodes_before_a_partial_batch(deterministic):
+    batches, replacements = sequence("rnn", quantiles=True, masked=True)
+    model = build("rnn", seed=1, quantiles=True, masked=True)
+    records, _, graph = walk(
+        model,
+        batches,
+        replacements,
+        case_for("rnn", quantiles=True),
+        graphed=True,
+        weighted=False,
+    )
+    assert len(records) == len(batches)
+    assert graph.prediction.grad_fn is None
+    assert not graph.prediction.requires_grad
+
+
+@cuda
 @pytest.mark.parametrize("kind", GRAPH_KINDS)
 @pytest.mark.parametrize(
     ("quantiles", "masked", "weighted"), [(True, True, False), (False, False, True)]

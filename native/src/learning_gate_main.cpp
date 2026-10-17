@@ -11,7 +11,8 @@
 // prueba. Una protección que no se puede leer detiene la prueba como fallo, sin lanzarla.
 int main(int argc, char** argv) {
     using namespace mars_titan::learning;
-    const std::span<char* const> command(argv + 1, static_cast<std::size_t>(argc > 0 ? argc - 1 : 0));
+    const std::span<char* const> arguments(argv, static_cast<std::size_t>(argc > 0 ? argc : 0));
+    const auto command = arguments.empty() ? arguments : arguments.subspan(1);
     try {
         const auto hold = learning_hold_path();
         return run_learning_gate(learning_blocked(hold), command, hold, std::cerr);
