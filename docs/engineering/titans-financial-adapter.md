@@ -33,7 +33,7 @@ Las modalidades ausentes se anulan después de sus proyecciones con bias. Las ci
 
 El lote de decisión contiene únicamente entradas, presencias, IDs de muestra y flujo, corte, disponibilidad e identidad. No copia ni consulta `target` o `target_available_at`. Requiere un único corte por lote, flujos únicos y disponibilidad no posterior a ese corte. La reserva desde 2024 se rechaza. Los tensores del lote se consideran de solo lectura. El control de versiones detecta modificaciones ordinarias posteriores a la adaptación, pero no es un certificado criptográfico frente a escrituras externas mediante `.data` o almacenamiento compartido manipulado.
 
-`CorpusDataset.batches` puede mezclar activos, grupos y filas. No debe usarse como si ya fuese un flujo cronológico. El futuro coordinador tendrá que reutilizar sus validaciones, separar observaciones sin objetivo y agrupar las decisiones por corte. No se ha añadido otro lector ni un materializador de objetivos.
+`CorpusDataset.batches` puede mezclar activos, grupos y filas. No se utiliza directamente como un flujo cronológico. El [consumidor financiero](financial-session-v2.md) y el [entrenador cronológico](titans-chronological-trainer.md) separan observaciones y etiquetas y agrupan las decisiones por corte, reutilizando las validaciones comunes. El adaptador no añade otro materializador de objetivos.
 
 ## Preparación y estado
 
