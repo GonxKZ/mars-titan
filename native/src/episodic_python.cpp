@@ -252,6 +252,8 @@ using Matrix = py::array_t<double, py::array::c_style>;
 
 // El pool inter-op de ATen solo se usa si se registró el aviso de fork y este proceso no es un
 // hijo de fork. Un hijo hereda el pool sin sus hilos y una tarea lanzada allí no terminaría.
+// Debe cambiar al inicializar el módulo y en el hijo de fork, por lo que no puede ser const.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::atomic<bool> inter_op_pool_usable{false};
 
 // Hilos de una proyección: los de ATen en este proceso, que siguen OMP_NUM_THREADS o

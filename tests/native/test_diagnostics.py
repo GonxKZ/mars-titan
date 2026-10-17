@@ -49,6 +49,90 @@ def compile_target(build):
     )
 
 
+def analysis_tools():
+    tools = {name: shutil.which(name) for name in ("cmake", "clang++")}
+    if not all(tools.values()):
+        pytest.skip("La comprobación necesita CMake y Clang")
+    version = (
+        subprocess.run(
+            [tools["clang++"], "-dumpversion"], capture_output=True, text=True, check=True
+        )
+        .stdout.strip()
+        .split(".")[0]
+    )
+    tools["clang-check"] = shutil.which(f"clang-check-{version}") or shutil.which("clang-check")
+    if tools["clang-check"] is None:
+        pytest.skip("La comprobación necesita clang-check de la versión instalada de Clang")
+    return tools
+
+
+def test_global_static_analysis_runs_the_learning_gate_analysis(tmp_path):
+    tools = analysis_tools()
+    project = tmp_path / "dispatcher"
+    project.mkdir()
+    marker = tmp_path / "gate-analyzed"
+    (project / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.24)\nproject(analysis_dispatch LANGUAGES C CXX)\n"
+        'set(MARS_TITAN_BUILD_SIMULATION OFF CACHE BOOL "")\n'
+        'set(MARS_TITAN_ENABLE_STATIC_ANALYZER ON CACHE BOOL "")\n'
+        "add_custom_target(learning-gate-analysis\n"
+        f'  COMMAND "${{CMAKE_COMMAND}}" -E touch "{marker}")\n'
+        f'add_subdirectory("{NATIVE}" native)\n'
+    )
+    build = tmp_path / "build"
+    configured = subprocess.run(
+        [tools["cmake"], "-S", str(project), "-B", str(build), "-DCMAKE_CXX_COMPILER=clang++"],
+        capture_output=True,
+        text=True,
+    )
+    assert configured.returncode == 0, configured.stderr
+    checked = subprocess.run(
+        [tools["cmake"], "--build", str(build), "--target", "static-analysis"],
+        capture_output=True,
+        text=True,
+    )
+    assert checked.returncode == 0, checked.stderr
+    assert marker.is_file()
+
+
+def test_static_analysis_includes_the_learning_gate_and_its_launcher(tmp_path):
+    tools = analysis_tools()
+    project = tmp_path / "gate"
+    for folder, names in {
+        "src": ("learning_hold.cpp", "learning_gate.cpp", "learning_gate_main.cpp"),
+        "tests": ("learning_hold_tests.cpp", "learning_gate_tests.cpp"),
+        "include/mars_titan": ("learning_hold.hpp", "learning_gate.hpp"),
+    }.items():
+        (project / folder).mkdir(parents=True, exist_ok=True)
+        for name in names:
+            shutil.copyfile(NATIVE / folder / name, project / folder / name)
+    (project / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.24)\nproject(gate_analysis LANGUAGES CXX)\n"
+        "set(CMAKE_CXX_STANDARD 20)\nset(CMAKE_EXPORT_COMPILE_COMMANDS ON)\n"
+        "set(BUILD_TESTING ON)\nset(MARS_TITAN_ENABLE_STATIC_ANALYZER ON)\n"
+        f'set(MARS_TITAN_CLANG_CHECK "{tools["clang-check"]}")\n'
+        "add_library(nlohmann_json::nlohmann_json INTERFACE IMPORTED)\n"
+        "function(mars_titan_configure_target target)\nendfunction()\n"
+        "function(mars_titan_sanitizer_test_environment target)\nendfunction()\n"
+        f'include("{NATIVE / "cmake/LearningHold.cmake"}")\n'
+    )
+    build = tmp_path / "build"
+    configured = subprocess.run(
+        [tools["cmake"], "-S", str(project), "-B", str(build), "-DCMAKE_CXX_COMPILER=clang++"],
+        capture_output=True,
+        text=True,
+    )
+    assert configured.returncode == 0, configured.stderr
+    checked = subprocess.run(
+        [tools["cmake"], "--build", str(build), "--target", "learning-gate-analysis"],
+        capture_output=True,
+        text=True,
+    )
+    assert checked.returncode == 0, checked.stderr
+    assert (build / "learning_gate.plist").is_file()
+    assert (build / "learning_gate_main.plist").is_file()
+
+
 @pytest.mark.parametrize(("sanitizer", "expected"), [("none", (60, 120)), ("thread", (240, 480))])
 def test_instrumented_reference_checks_keep_a_bounded_time_budget(tmp_path, sanitizer, expected):
     build, result = configure(
