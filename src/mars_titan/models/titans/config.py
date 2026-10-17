@@ -168,8 +168,9 @@ class MemoryStability:
     def certified_box(self, theta_max: float) -> str | None:
         """Nombre de la caja certificada que contiene la declarada, o None si no hay ninguna.
 
-        La garantía solo vale para la memoria lineal, así que no certifica la memoria de dos
-        capas con LayerNorm que usa la campaña.
+        Identifica la caja, no las hipótesis del módulo. La contracción necesita memoria
+        lineal y las mismas claves, valores y puertas efectivas. No certifica el MAC
+        completo ni la memoria de dos capas con LayerNorm que usa la campaña.
         """
         if not self.gate_box:
             return None
