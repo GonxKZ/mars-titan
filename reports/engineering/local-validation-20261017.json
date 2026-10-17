@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-17T17:40:52.517617+00:00",
+  "kind": "technical_validation_and_documentation_reconciliation",
+  "source_commit": "756931d981dd9d04eb299a6e9226344ad781e7e3",
+  "code_changed": false,
+  "configurations_changed": false,
+  "source_tree": "c5479407df1dbc39234d0d18299bc5996d8da347",
+  "native_tree_matches_commit": "cd6b2c56",
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "software": {
+    "python": "3.12.14",
+    "pytorch": "2.14.0+cu130"
+  },
+  "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "power_profile": "power-saver",
+  "cpu": {
+    "command": "make test-fast RUN='uv run --no-sync --offline'",
+    "selection": "not slow and not native and not cuda",
+    "workers": 3,
+    "passed": 7477,
+    "skipped": 378,
+    "warnings": 2,
+    "pytest_seconds": 150.96,
+    "memory_limit_gib": 6
+  },
+  "cuda": {
+    "device": "cuda:0",
+    "selection": [
+      {
+        "file": "tests/memory/cuda_gru_session_check.py",
+        "passed": 1,
+        "pytest_seconds": 11.74,
+        "process_seconds": 14.18
+      },
+      {
+        "file": "tests/memory/cuda_mature_error_check.py",
+        "passed": 2,
+        "pytest_seconds": 34.42,
+        "process_seconds": 36.91
+      },
+      {
+        "file": "tests/training/cuda_cm_v1_control_check.py",
+        "passed": 8,
+        "pytest_seconds": 64.76,
+        "process_seconds": 67.36
+      }
+    ],
+    "passed": 11,
+    "separate_process_per_file": true,
+    "memory_limit_gib": 6,
+    "optimizer_steps": 0,
+    "scope": "Sesiones de GRU, retención M2/M3 y control C del núcleo, con fixtures y parámetros iniciales. No es la batería CUDA completa."
+  },
+  "documentation": {
+    "mermaid_diagrams_rendered": 4,
+    "mermaid_errors": 0,
+    "repository_check": true,
+    "ruff": true,
+    "ruff_format": true
+  },
+  "learning_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "learning_executed": false,
+  "final_test_opened": false,
+  "logs_sha256": {
+    "test-fast.log": "284ad60df67c2cf59bed1935cb56e9971e574d7c4f4a713c961859232b8ad5a9",
+    "test-fast-shared-env.log": "1e4962256ae155860daeb044bb84312e19ec9347b912e8ecb64fd07b912896e4",
+    "mermaid-check.log": "3d2d920f1190d89c7d5d77f1c78fcf52c6a4b3e2a03575451b3e9e96cc09f203",
+    "repository-final.log": "960f3e7018cc9c989e1ce84c58900ca46043f6e0c9318fc0a7af8739c4c5b606",
+    "cuda-selection.log": "b8d1b2fca501daa904cb50c7b78f863333332ed62e67e4982dd0fad1a604f66d",
+    "cuda_gru_session_check.log": "3ca753c30b7a06447ead3f2d8284ed8404696822ab6ae271e21db23f3997a95e",
+    "cuda_mature_error_check.log": "6c25cf3bcc550ae29f284c7bf670afb63f9d36eaeeb362edb0e2b25c12479eb0",
+    "cuda_cm_v1_control_check.log": "e9863f54aba36dc1f00d163721f0d7d2e1d7b6becfa69b27ac35c9163c1d2f8f"
+  },
+  "execution_notes": [
+    "El primer make test-fast se detuvo antes de recoger pruebas porque hatchling no estaba en la caché sin red. La ejecución comprobada reutilizó el entorno preparado mediante uv --no-sync, sin cambiar el lockfile.",
+    "El primer lanzador CUDA expandió las variables del nombre de log en systemd. Los tres comandos terminaron correctamente, pero solo quedó el último log completo. Se conservaron las ocho comprobaciones de C y se repitieron únicamente GRU y M2/M3 para registrar sus salidas por separado.",
+    "Los tiempos corresponden a validaciones, con otras actividades locales. No comparan rendimiento ni acreditan una mejora predictiva.",
+    "Las omisiones de la selección CPU y la limitación a tres archivos CUDA no se presentan como ejecución de todas las pruebas del repositorio."
+  ]
+}
