@@ -40,6 +40,17 @@ def factor_interaction(mask):
     }
 
 
+def averaged_factor_difference(mask):
+    """Promediar una diferencia factorial sobre los niveles de los otros factores."""
+    if type(mask) is not int or not 1 <= mask <= 7:
+        raise ValueError("La diferencia necesita uno, dos o tres factores")
+    scale = 2 ** (3 - mask.bit_count())
+    return {
+        f"cell{bits}-mean": (-1) ** (mask.bit_count() - (bits & mask).bit_count()) / scale
+        for bits in range(8)
+    }
+
+
 def contrast_families(series, fold):
     """Familias fijadas por el catálogo, sin escoger pares por sus resultados."""
     families = {}
@@ -55,6 +66,10 @@ def contrast_families(series, fold):
             add("factorial", name + "_minus_cell0", delta("cell0-mean", name))
     for mask in (3, 5, 6, 7):
         add("factorial", f"interaction_{mask}", factor_interaction(mask))
+    for mask in (1, 2, 4, 3, 5, 6):
+        add("factorial", f"averaged_difference_{mask}", averaged_factor_difference(mask))
+    for mask in (1, 2, 4):
+        add("factorial", f"joint_minus_without_{mask}", delta(f"cell{7 ^ mask}-mean", "cell7-mean"))
     add("alternatives", "pt1_init_minus_base", delta("cell0-mean", "pt1_init-mean"))
     add("alternatives", "pt1_minus_initialization", delta("pt1_init-mean", "cell1-mean"))
     for job in jobs():
@@ -97,6 +112,8 @@ def contrast_families(series, fold):
         if name != cm[0]:
             add("cm", name + "_minus_b", delta(cm[0], name))
     add("cm", "cm_interaction", interaction(*cm))
+    add("cm", "cm_joint_minus_c", delta(cm[1], cm[3]))
+    add("cm", "cm_joint_minus_m", delta(cm[2], cm[3]))
     add("cm", "core_c_minus_core_b", delta(f"{fold}/cm_v1_core_b-42", f"{fold}/cm_v1_core_c-42"))
     return families
 

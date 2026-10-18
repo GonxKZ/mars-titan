@@ -101,6 +101,13 @@ def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
 
 
+def test_context_parent_requires_a_consumer_with_session_lifecycle(tmp_path):
+    document = json.loads(readout_recipe(tmp_path).read_text())
+    document["predictor"] = dict(session_context="market_memory_v1", dtype="float32")
+    with pytest.raises(ValueError, match="no recupera el contexto"):
+        mw._frozen_parent(document, None, 42, "cpu", tmp_path / "absent", {"request": {}})
+
+
 @pytest.mark.parametrize("bits", range(1, 9))
 def test_reader_reconstructs_the_exact_combination_of_parent_extensions(tmp_path, bits):
     from tests.training.test_titans_walk_forward import PT1

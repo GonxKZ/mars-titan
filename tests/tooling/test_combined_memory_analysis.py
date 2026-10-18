@@ -40,6 +40,25 @@ def test_interactions_use_the_full_inclusion_exclusion_signs():
     assert sum(coefficients[name] * value for name, value in effects.items()) == -0.25
 
 
+def test_average_factor_differences_separate_main_pair_and_triple_terms():
+    values = {
+        f"cell{i}-mean": 10.0 + bool(i & 1) + 2 * bool(i & 2) + 3 * bool(i & 4) + 0.5 * (i & 3 == 3)
+        for i in range(8)
+    }
+    expected = {1: 1.25, 2: 2.25, 4: 3.0, 3: 0.5, 5: 0.0, 6: 0.0, 7: 0.0}
+    for mask, value in expected.items():
+        coefficients = analysis.averaged_factor_difference(mask)
+        assert len(coefficients) == 8
+        assert sum(coefficients.values()) == 0
+        assert sum(coefficients[key] * v for key, v in values.items()) == value
+
+
+@pytest.mark.parametrize("mask", [0, -1, 8, True, 1.0])
+def test_average_factor_differences_reject_other_masks(mask):
+    with pytest.raises(ValueError):
+        analysis.averaged_factor_difference(mask)
+
+
 def test_readers_use_the_matching_frozen_parent_and_cm_keeps_its_own_baseline():
     available = {j["id"]: None for j in jobs() if j["fold"] == "fold-018"}
     available["zero"] = None
@@ -55,6 +74,11 @@ def test_readers_use_the_matching_frozen_parent_and_cm_keeps_its_own_baseline():
         "fold-018/cm_v1_bc-42": -1.0,
         "fold-018/cm_v1_bm-42": -1.0,
         "fold-018/cm_v1_b-42": 1.0,
+    }
+    assert families["factorial"]["joint_minus_without_1"] == {"cell7-mean": 1.0, "cell6-mean": -1.0}
+    assert families["cm"]["cm_joint_minus_c"] == {
+        "fold-018/cm_v1_bcm-42": 1.0,
+        "fold-018/cm_v1_bc-42": -1.0,
     }
     assert all(0 < len(family) <= 64 for family in families.values())
     assert families["readers"]["fold-018/cell7_m2_zero_refinement-42_minus_m1"] == {
