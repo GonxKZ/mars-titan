@@ -60,6 +60,204 @@ def test_parent_history_selects_assets_independently_of_order_and_future_counts(
     assert before == source()
 
 
+def large_source():
+    document = source()
+    template = document["assets"][1]
+    document["assets"] = [dict(copy.deepcopy(template), symbol=f"A{i:03d}") for i in range(300)]
+    document["coverage"] = [dict(market="US", symbol=a["symbol"]) for a in document["assets"]]
+    return document
+
+
+def test_scaling_uses_nested_historical_cohorts_without_future_selection():
+    import hashlib
+
+    original = large_source()
+    small = api().choose_assets(original, 64)
+    large = api().choose_assets(original, 256)
+    assert len(small) == 64 and len(large) == 256
+    # Identidad de la selección anterior, calculada con 058ce7f04 sobre esta misma fixture.
+    assert hashlib.sha256("\n".join(small).encode()).hexdigest() == (
+        "41011bb0029cef1ad469960a231555979a10428d2448e1df243a58ea74a1ab5d"
+    )
+    assert set(small) < set(large)
+    assert api().cohort_contract(large)["common_assets"] == list(small)
+    changed = copy.deepcopy(original)
+    changed["assets"].reverse()
+    for index, asset in enumerate(changed["assets"]):
+        asset["counts"]["evaluation"] = index * 1000
+        asset["future_target"] = index * -2000
+    assert api().choose_assets(changed, 256) == large
+    assert original == large_source()
+
+
+def test_explicit_cohort_configuration_does_not_modify_the_template_or_candidates():
+    before = api().CONFIG.read_bytes()
+    small, large = (api().configuration(cohort_size=size) for size in (64, 256))
+    assert large == small | {"cohort_size": 256}
+    assert api().configuration()["cohort_size"] == 64
+    assert api().jobs(large) == api().jobs(small)
+    assert len(api().jobs(large)) == 72
+    assert api().CONFIG.read_bytes() == before
+
+
+@pytest.mark.parametrize("size", [0, 65, 128, 257, True])
+def test_explicit_cohort_configuration_rejects_undeclared_sizes(size):
+    with pytest.raises(ValueError, match="cohorte"):
+        api().configuration(cohort_size=size)
+
+
+def test_both_cohorts_bound_batches_without_changing_checkpoint_retention(tmp_path):
+    for size in (64, 256):
+        paths = api()._recipes(tmp_path / str(size), api().configuration(cohort_size=size))
+        documents = [json.loads(path.read_text()) for path in paths]
+        for document in documents:
+            assert document["recipe"]["block_rows"] == 256
+            assert document["recipe"]["checkpoint_updates"] == 256
+            assert document["recipe"]["checkpoint_seconds"] == 900.0
+            if "predictor" in document:
+                assert document["predictor"]["max_batch"] == 256
+                assert document["recipe"]["accumulation_rows"] is None
+
+
+def test_256_projection_keeps_every_source_row_of_selected_assets():
+    original = large_source()
+    selected = api().choose_assets(original, 256)
+    projected = api().project_view(original, selected, "fold-017", 2)
+    expected = [asset for asset in original["assets"] if asset["symbol"] in selected]
+    assert projected["assets"] == expected
+    assert projected["samples"] == 25600
+    assert projected["counts"]["train"] == 12800
+    assert projected["temporal_view"]["fold"]["train"][0] == "2000-01-01"
+
+
+def capacity_api():
+    return importlib.import_module("benchmarks.refinement_study_capacity")
+
+
+def test_capacity_counts_unresolved_rows_and_emits_before_maturity():
+    import pyarrow as pa
+
+    table = pa.table(
+        dict(
+            event_at=[99, 100, 100, 200, 200, 300, 400, 999],
+            kind=[0, 0, 0, 0, 1, 1, 0, 2],
+            sample_at=[99, 100, 100, 200, 100, 100, 400, -1],
+        )
+    )
+    result = capacity_api().event_capacity([table], decision_start=100)
+    assert result["observations"] == 4
+    assert result["mature_labels"] == 2
+    assert result["max_pending"] == 3
+    assert result["unresolved_at_close"] == 2
+    assert result["max_decision_rows"] == 2
+    assert (
+        capacity_api().event_capacity([table.take([7, 6, 5, 4, 3, 2, 1, 0])], decision_start=100)
+        == result
+    )
+
+
+def test_capacity_rejects_maturity_without_an_emission():
+    import pyarrow as pa
+
+    table = pa.table(dict(event_at=[200], kind=[1], sample_at=[100]))
+    with pytest.raises(ValueError, match="maduraciones"):
+        capacity_api().event_capacity([table], decision_start=100)
+
+
+@pytest.mark.parametrize(
+    "field, limit", [("max_pending", 32768), ("mature_labels", 131072), ("max_decision_rows", 256)]
+)
+def test_collection_capacity_keeps_exact_existing_limits(field, limit):
+    record = dict(max_pending=1, mature_labels=1, max_decision_rows=1)
+    record[field] = limit
+    capacity_api().require_capacity(record, collection=True)
+    record[field] = limit + 1
+    with pytest.raises(ValueError, match="capacidad"):
+        capacity_api().require_capacity(record, collection=True)
+
+
+def test_capacity_does_not_apply_trace_queue_limit_to_noncollection_phases():
+    capacity_api().require_capacity(
+        dict(max_pending=32769, mature_labels=10, max_decision_rows=256), collection=False
+    )
+
+
+def test_256_routed_states_match_four_batches_and_reject_overflow():
+    import torch
+
+    from mars_titan.models.titans.episodic_readout import (
+        EpisodeSnapshot,
+        EpisodicReadout,
+        EpisodicReadoutConfig,
+    )
+    from mars_titan.models.titans.refinement_policy import apply_routes
+
+    codec, context = "a" * 64, "b" * 64
+    reader = EpisodicReadout(
+        EpisodicReadoutConfig(
+            codec, hidden_size=32, seed=25, neighbors=3, refinements=4, max_batch=256
+        ),
+        dtype=torch.float64,
+    )
+    reader.eval().requires_grad_(False)
+    snapshot = EpisodeSnapshot.create(
+        keys=torch.eye(64, dtype=torch.float32)[:3].contiguous(),
+        values=torch.ones((3, 64), dtype=torch.float32),
+        labels=torch.zeros(3, dtype=torch.float64),
+        ids=torch.arange(1, 4, dtype=torch.int64),
+        decision_at=torch.ones(3, dtype=torch.int64),
+        available_at=torch.ones(3, dtype=torch.int64),
+        maturity_at=torch.full((3,), 2, dtype=torch.int64),
+        cutoff=10,
+        codec_id=codec,
+        context_id=context,
+        device="cpu",
+        dtype=torch.float64,
+    )
+    base = torch.randn((256, 32), generator=torch.Generator().manual_seed(17), dtype=torch.float64)
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(42)
+        head = torch.nn.Linear(32, 1, dtype=torch.float64).eval().requires_grad_(False)
+    choices = tuple(index % 6 for index in range(256))
+    rng = torch.random.get_rng_state().clone()
+    result = apply_routes(
+        reader, base, head, snapshot, choices=choices, context_id=context, cutoff=10
+    )
+    smaller = [
+        apply_routes(
+            reader,
+            base[start : start + 64],
+            head,
+            snapshot,
+            choices=choices[start : start + 64],
+            context_id=context,
+            cutoff=10,
+        )
+        for start in range(0, 256, 64)
+    ]
+    torch.testing.assert_close(
+        result.state, torch.cat([row.state for row in smaller]), rtol=1e-12, atol=1e-12
+    )
+    torch.testing.assert_close(
+        result.point_predictions,
+        torch.cat([row.point_predictions for row in smaller]),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert result.route_codes == choices
+    assert torch.equal(torch.random.get_rng_state(), rng)
+    with pytest.raises(ValueError, match="256"):
+        apply_routes(
+            reader,
+            torch.cat((base, base[:1])),
+            head,
+            snapshot,
+            choices=choices + (0,),
+            context_id=context,
+            cutoff=10,
+        )
+
+
 @pytest.mark.parametrize("count", [0, 8, 65, True])
 def test_invalid_or_unavailable_cohort_size_is_rejected(count):
     with pytest.raises(ValueError, match="activos"):
@@ -161,24 +359,42 @@ def test_learning_hold_is_checked_before_reading_study_or_loading_torch(tmp_path
         api().run_job(tmp_path / "absent", "absent")
 
 
-def test_prepared_study_rejects_software_and_input_drift(tmp_path):
+@pytest.mark.parametrize("cohort_size", [64, 256])
+def test_prepared_study_rejects_software_and_input_drift(tmp_path, cohort_size):
     from mars_titan.data.storage import atomic_json, sha256
 
     artifact, source = tmp_path / "artifact.json", tmp_path / "source.json"
     atomic_json(artifact, dict(value=1))
     atomic_json(source, dict(value=2))
+    capacity = tmp_path / "capacity.json"
+    atomic_json(capacity, dict(fixture=True))
     prepared = dict(
-        configuration=api().configuration(),
+        configuration=api().configuration(cohort_size=cohort_size),
+        assets=list(api().choose_assets(large_source(), cohort_size)),
+        cohort=api().cohort_contract(api().choose_assets(large_source(), cohort_size)),
         configuration_sha256=sha256(api().CONFIG),
         jobs=api().jobs(),
         code=api().code_identity(),
         environment=api().environment_identity(),
-        artifacts={artifact.name: sha256(artifact)},
+        artifacts={artifact.name: sha256(artifact), capacity.name: sha256(capacity)},
+        capacity_sha256=sha256(capacity),
         source_manifests={"fixture": dict(path=str(source), sha256=sha256(source))},
     )
     path = tmp_path / "prepared.json"
     atomic_json(path, prepared)
     assert api().verify_prepared(tmp_path) == prepared
+    assert api().verify_prepared(tmp_path, cohort_size=cohort_size) == prepared
+    atomic_json(capacity, dict(fixture=False))
+    with pytest.raises(ValueError, match="capacidad"):
+        api().verify_prepared(tmp_path)
+    atomic_json(capacity, dict(fixture=True))
+    with pytest.raises(ValueError, match="otra cohorte"):
+        api().verify_prepared(tmp_path, cohort_size=256 if cohort_size == 64 else 64)
+    changed = copy.deepcopy(prepared)
+    changed["cohort"]["common_assets"][0] = "NOT-SELECTED"
+    atomic_json(path, changed)
+    with pytest.raises(ValueError):
+        api().verify_prepared(tmp_path)
     changed = copy.deepcopy(prepared)
     changed["environment"]["packages"]["torch"] = "different-fixture-version"
     atomic_json(path, changed)
@@ -190,13 +406,68 @@ def test_prepared_study_rejects_software_and_input_drift(tmp_path):
         api().verify_prepared(tmp_path)
 
 
-@pytest.mark.parametrize("helper", ["memory_microstudy.py", "memory_microstudy_analysis.py"])
+def test_cli_passes_explicit_cohort_to_prepare_and_blocks_run_override(monkeypatch, tmp_path):
+    import sys
+
+    calls = []
+
+    def prepared(sources, work, *, cohort_size):
+        calls.append((sources, work, cohort_size))
+        return dict(fixture=True)
+
+    monkeypatch.setattr(api(), "prepare", prepared)
+
+    def forbidden_run(*args):
+        raise AssertionError("run no puede cambiar la cohorte confirmada")
+
+    monkeypatch.setattr(api(), "run_job", forbidden_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "refinement_study",
+            "prepare",
+            "--work",
+            str(tmp_path),
+            "--sources",
+            str(tmp_path / "sources"),
+            "--cohort-size",
+            "256",
+        ],
+    )
+    api().main()
+    assert calls == [(tmp_path / "sources", tmp_path, 256)]
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "refinement_study",
+            "run",
+            "--work",
+            str(tmp_path),
+            "--job",
+            "linear_v1-42/core",
+            "--cohort-size",
+            "256",
+        ],
+    )
+    with pytest.raises(SystemExit) as error:
+        api().main()
+    assert error.value.code == 2
+
+
+@pytest.mark.parametrize(
+    "helper",
+    ["memory_microstudy.py", "memory_microstudy_analysis.py", "refinement_study_capacity.py"],
+)
 def test_prepared_study_rejects_changes_to_budget_or_score_helpers(tmp_path, monkeypatch, helper):
     from mars_titan.data.storage import atomic_json, sha256
 
     module = api()
     prepared = dict(
         configuration=module.configuration(),
+        assets=list(module.choose_assets(large_source(), 64)),
+        cohort=module.cohort_contract(module.choose_assets(large_source(), 64)),
         configuration_sha256=sha256(module.CONFIG),
         jobs=module.jobs(),
         code=module.code_identity(),
@@ -764,8 +1035,8 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
     config["cohort_size"] = 2
     config["policy"].update(ridge=[0.1], min_gain=[0.0], cost_per_extra_refinement=[0.0])
     config["calibration"]["min_rows"] = 1
-    monkeypatch.setattr(api(), "configuration", lambda: copy.deepcopy(config))
-    monkeypatch.setattr(policy_api(), "configuration", lambda: copy.deepcopy(config))
+    monkeypatch.setattr(api(), "configuration", lambda **kwargs: copy.deepcopy(config))
+    monkeypatch.setattr(policy_api(), "configuration", lambda **kwargs: copy.deepcopy(config))
     work = tmp_path / "work"
     prepared = api().prepare(sources, work)
     assert api().verify_prepared(work) == prepared

@@ -17,6 +17,8 @@ y [la política de ganancias firmadas](../../src/mars_titan/models/titans/refine
 El [contraste de representaciones gráficas](refinement-representations-v1.md)
 repite este catálogo con núcleos propios por representación y fija el orden
 emparejado y el presupuesto conjunto de esa comparación.
+La [revisión de escalado a 256 activos](refinement-scaling-v1.md) conserva el
+catálogo y declara una cohorte adicional anidada, con un runtime común nuevo.
 
 ## Datos y orden temporal
 

@@ -1,9 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "bounded_refinement_development_study",
   "parent_fold": "fold-017",
   "policy_fold": "fold-018",
   "cohort_size": 64,
+  "cohort_sizes": [64, 256],
+  "max_decision_batch": 256,
   "cohort_salt": "mars-titan-refinement-development-v1",
   "seeds": [42, 43, 44],
   "projections": ["linear_v1", "mac_paper"],

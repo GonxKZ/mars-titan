@@ -1,0 +1,63 @@
+{
+  "recorded_at_utc": "2026-10-18T21:32:43.204237+00:00",
+  "kind": "technical_cuda_routed_batch_parity",
+  "runtime": {
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "free_vram_bytes": 7555317760,
+    "max_vram_bytes": 2147483648,
+    "max_ram_bytes": 3221225472,
+    "reserved_margin_bytes": 1073741824
+  },
+  "checks": [
+    {
+      "dtype": "torch.float32",
+      "rows": 256,
+      "routes": 6,
+      "atol": 2e-06,
+      "rtol": 2e-06,
+      "max_abs_state_error": 4.76837158203125e-07,
+      "max_abs_prediction_error": 1.7881393432617188e-07,
+      "matches_four_batches": true,
+      "rng_unchanged": true
+    },
+    {
+      "dtype": "torch.float64",
+      "rows": 256,
+      "routes": 6,
+      "atol": 1e-12,
+      "rtol": 1e-12,
+      "max_abs_state_error": 8.881784197001252e-16,
+      "max_abs_prediction_error": 4.996003610813204e-16,
+      "matches_four_batches": true,
+      "rng_unchanged": true
+    }
+  ],
+  "peak_cuda_allocated_bytes": 11254784,
+  "peak_cuda_reserved_bytes": 25165824,
+  "peak_rss_bytes": 1479905280,
+  "optimizer_steps": 0,
+  "real_data": false,
+  "final_test_opened": false,
+  "latency_benchmark": false,
+  "hidden_size": 32,
+  "episodic_fixture_size": 3,
+  "overflow_checks": [
+    {
+      "dtype": "torch.float32",
+      "rows": 257,
+      "rejected": true,
+      "error": "Las rutas necesitan un lote de entre 1 y 256 estados de trabajo"
+    },
+    {
+      "dtype": "torch.float64",
+      "rows": 257,
+      "rejected": true,
+      "error": "Las rutas necesitan un lote de entre 1 y 256 estados de trabajo"
+    }
+  ],
+  "overflow_recorded_at_utc": "2026-10-18T21:34:04.054231+00:00",
+  "precision": "fp32_strict_no_tf32_and_fp64"
+}

@@ -124,3 +124,8 @@ con otra que incluya lectura y transferencias sin desglosar esa diferencia.
 
 Este documento fija el contraste y las medidas pendientes. No contiene
 resultados de entrenamientos ni latencias de checkpoints reales.
+
+La [ampliación a 64 y 256 activos](refinement-scaling-v1.md) fija el presupuesto
+de dieciséis horas para cuatro estudios y compara el escalado también sobre
+los 64 activos comunes. El límite de ocho horas de este documento corresponde
+a una pareja de representaciones del mismo tamaño.
