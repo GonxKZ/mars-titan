@@ -12,7 +12,9 @@ El cambio no modifica operaciones numéricas, límites, orden de etiquetas ni el
 
 ## Medidas
 
-El equipo es una RTX 4070 Laptop de 8 GiB, con driver 595.91.07, PyTorch 2.14.0+cu130 y CUDA 13.0. Se usa `cuda:0`, FP32 estricto, dos hilos CPU y una carga propia de GPU. El perfil energético `power-saver` permanece sin cambios.
+El equipo es una RTX 4070 Laptop de 8 GiB, con driver 595.91.07, PyTorch 2.14.0+cu130 y CUDA 13.0. Se usa `cuda:0`, FP32 estricto, dos hilos para PyTorch y BLAS y una carga propia de GPU. El perfil energético `power-saver` permanece sin cambios.
+
+El perfil posterior repite el recorrido corto inicial. La reconstrucción completa de metadatos pasa de 290 a nueve llamadas. Sus tiempos instrumentados se conservan por separado de los benchmarks y no se usan para calcular aceleración.
 
 | Medida | Referencia | Cambio | Reducción del tiempo |
 | --- | ---: | ---: | ---: |

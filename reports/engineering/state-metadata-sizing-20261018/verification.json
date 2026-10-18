@@ -4640,5 +4640,54 @@
     "No se midieron energía, contadores de hardware ni presión de memoria a escala completa."
   ],
   "final_test_opened": false,
-  "full_campaign_started": false
+  "full_campaign_started": false,
+  "profile_counts": {
+    "tool": "cProfile",
+    "warmup_segments": 2,
+    "measured_segments": 6,
+    "measured_rows": 192,
+    "records": {
+      "baseline": {
+        "_metadata": {
+          "calls": 290,
+          "self_seconds": 0.001347062,
+          "cumulative_seconds": 0.064277045
+        },
+        "_usage": {
+          "calls": 144,
+          "self_seconds": 0.0018392200000000001,
+          "cumulative_seconds": 0.057624259000000004
+        },
+        "_state_size": {
+          "calls": 146,
+          "self_seconds": 0.0014037960000000001,
+          "cumulative_seconds": 0.049275047
+        }
+      },
+      "after": {
+        "_metadata_bytes": {
+          "calls": 290,
+          "self_seconds": 0.00091142,
+          "cumulative_seconds": 0.009364601
+        },
+        "_metadata": {
+          "calls": 9,
+          "self_seconds": 5.0343e-05,
+          "cumulative_seconds": 0.002230297
+        },
+        "_usage": {
+          "calls": 144,
+          "self_seconds": 0.000887801,
+          "cumulative_seconds": 0.011438642
+        },
+        "_state_size": {
+          "calls": 146,
+          "self_seconds": 0.00035352100000000003,
+          "cumulative_seconds": 0.004460475
+        }
+      }
+    },
+    "limits": "Los perfiles incluyen calentamiento y preparación. Sus tiempos instrumentados no se usan para calcular aceleración."
+  },
+  "thread_scope": "PyTorch intra-op y variables de BLAS"
 }
