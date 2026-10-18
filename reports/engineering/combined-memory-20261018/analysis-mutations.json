@@ -1,0 +1,310 @@
+{
+  "tool": "Mutación textual dirigida con pytest",
+  "source": "benchmarks/combined_memory_analysis.py",
+  "source_sha256": "0dc061afa2b4d5ad6a40d98203ac4dc3bb63d9e42b669d1d67cf26b6d2ddaf5b",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 4.175191641959827,
+    "log_sha256": "ac6f6f559f616741548f97242a463e04aeceb32c9597e4fb9ae7a11adf4e6a9a",
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/tooling/test_combined_memory_analysis.py"
+    ]
+  },
+  "restored": {
+    "exit_code": 0,
+    "seconds": 3.773345995985437,
+    "log_sha256": "61bb41440b4c7d60b82391a17f2bc3b420f9538342c9e978dc8da50cf2dabd60",
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/tooling/test_combined_memory_analysis.py"
+    ]
+  },
+  "mutants": [
+    {
+      "name": "average_partial_seeds",
+      "changes": [
+        [
+          "keys = [f\"{fold}/{name}-{seed}\" for seed in seeds]",
+          "keys = [f\"{fold}/{name}-{seed}\" for seed in seeds if f\"{fold}/{name}-{seed}\" in series]"
+        ],
+        [
+          "if all(key in series for key in keys):",
+          "if keys:"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 4.074100850033574,
+      "log_sha256": "caf4b702a8908ecee8228b6c8c7fd676294e4ab2cc3662c9c352af84320a5332",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "wrong_interaction_sign",
+      "changes": [
+        [
+          "(-1) ** (mask.bit_count() - bits.bit_count())",
+          "1"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.4226254660170525,
+      "log_sha256": "dfdfd438f6b6d6283834ab692dd63d8a346f902e29e0ef715bbeff82f897af84",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "wrong_reader_parent",
+      "changes": [
+        [
+          "frozen = parent + \"_frozen-\" + seed",
+          "frozen = job[\"parent\"]"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 4.125016884005163,
+      "log_sha256": "6040838cd94b8b74a193026981969f21597465d04f993f740bf2c8209e9d17e2",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "accept_open_test",
+      "changes": [
+        [
+          "run.get(\"final_test_opened\") is not False",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.873655773990322,
+      "log_sha256": "f4dbb1f1e2d4cedfe142a6a7cf9c28e3215b2c56b428df58789cca3c0b4229d4",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "accept_final_year",
+      "changes": [
+        [
+          "f\"{year + 1}-01-01\"",
+          "f\"{year + 2}-01-01\""
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.6727007610024884,
+      "log_sha256": "896efd9bc569c4a3239a46df9d4a0e8b6ff2a0759cf42eeef274f374ccecb4cb",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_prediction_hash",
+      "changes": [
+        [
+          "sha256(path) != record[\"sha256\"]",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.473186368995812,
+      "log_sha256": "d3b4fb209169ffd85572ed4db315e4ff628654696283e4d48cff1db53afa44f5",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_row_receipt",
+      "changes": [
+        [
+          "record[\"rows\"] != count",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 4.125059920013882,
+      "log_sha256": "c4b1749699ff42d1b57f4f2358abccdb6c234b364421e89d1a21d3612eeae6e0",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_target_pairing",
+      "changes": [
+        [
+          "scores = score_table(table, cohort)",
+          "scores = score_table(table)"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 4.324018532992341,
+      "log_sha256": "203ca425078da42a7772d5008e0353d217d91526f33cc9c40c8800a500a949dd",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_execution_provenance",
+      "changes": [
+        [
+          "m.get(\"prepared_sha256\") != prepared_sha",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.6734365849988535,
+      "log_sha256": "9f37d3a1929c4f28e5bd658684b84e17ad31401010c5dab1417233b9de61432b",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_missing_cost",
+      "changes": [
+        [
+          "if not any(m.get(\"job\") == job and m[\"status\"] == \"completed\" for m in measurements):",
+          "if False:"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.4735518299858086,
+      "log_sha256": "8665d3660412475cb4206eb5a84966c077e49aada2d205436ac869fe169b8ff9",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "overlapping_strata",
+      "changes": [
+        [
+          "len(members) != len(set(members)) or not observed <= set(members)",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 5.126458098995499,
+      "log_sha256": "3f1804146912f5fa61d461c7f19be2e22859d332647ca440e424de8764205b77",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "wrong_frozen_checkpoint",
+      "changes": [
+        [
+          "run.get(\"checkpoint_sha256\") != parent_run[\"checkpoint\"][\"sha256\"]",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 4.174037538992707,
+      "log_sha256": "349922973ef60c4f4eb93ab32f1e8d08ac5fbcf26eba48a0865adfe019313ba7",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    },
+    {
+      "name": "ignore_strata_audit",
+      "changes": [
+        [
+          "sha256(path) != receipt[\"audit_sha256\"]",
+          "False"
+        ]
+      ],
+      "outcome": "detected",
+      "exit_code": 1,
+      "seconds": 3.8234517239616252,
+      "log_sha256": "f6b6e044a4fda2c8272ccf9c59f1680e09975b597098b371ec20b6607c5babd1",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ]
+    }
+  ]
+}

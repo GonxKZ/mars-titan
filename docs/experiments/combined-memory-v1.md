@@ -1,6 +1,6 @@
 # Combinaciones de memoria en dos ventanas de desarrollo
 
-Protocolo del 18 de octubre de 2026. Estudio exploratorio independiente, con configuración en [combined-memory-v1.json](../../configs/experiments/combined-memory-v1.json). El test final de 2024 permanece cerrado. Los resultados anteriores y la identidad de B en CM-v1 se conservan. Este estudio no sustituye la campaña sobre el corpus completo ni acredita su preparación.
+Protocolo del 18 de octubre de 2026. Estudio exploratorio independiente, con configuración en [combined-memory-v1.json](../../configs/experiments/combined-memory-v1.json). El test final de 2024 permanece cerrado. Los resultados anteriores se conservan. B mantiene la arquitectura definida para CM-v1, con una identidad nueva para los datos, la receta y el código de este estudio. Este estudio no sustituye la campaña sobre el corpus completo ni acredita su preparación.
 
 ## Datos y comparación
 
@@ -49,3 +49,5 @@ Se informan por separado variación temporal y dispersión entre semillas. La re
 La evidencia técnica incluye paridad al desactivar ampliaciones, estados y gradientes, recuperación, orden de activos, procedencia, cobertura de ramas, complejidad, CRAP y mutación dirigida. CRAP usa la fracción de sentencias de cada función y la complejidad de Radon, con las limitaciones registradas por `scripts/summarize_python_quality.py`. Ninguna de esas medidas demuestra ausencia de fallos.
 
 `uv run --no-sync python -m benchmarks.combined_memory_study --help` describe los comandos. `prepare` recibe la carpeta de vistas US, la auditoría de entradas y un destino nuevo. `run` recibe ese destino y un identificador de la lista preparada. La preparación no ajusta pesos. La ejecución requiere la autorización local acotada y conserva el bloqueo global y la reserva final.
+
+El análisis se ejecuta con `uv run --no-sync python -m benchmarks.combined_memory_analysis`. Recibe `--work`, `--output` y, para el desglose descriptivo por cobertura pasada, `--audit`. Exige las huellas preparadas, las mismas filas y objetivos, el año de evaluación declarado y un recibo de coste de cada resultado completado. Cada lector se compara con la ruta congelada de su propio padre. Los desgloses de cobertura son descriptivos y no seleccionan modelos. Los contrastes del lector incluyen M1 frente a M0, M2 frente a M1 y M3 frente a M2 en ambos padres e inicializaciones. M0 conserva su error frente a cero en el resumen, sin un intervalo adicional dentro de esta familia.
