@@ -116,14 +116,25 @@ def replay_boundary(tmp_path, monkeypatch, learning_doubles):
     class Recipe:
         precision: str | None = "fp32_strict"
 
+    @dataclass
+    class Configuration:
+        attention_layout: str = "batch_first_v1"
+
     class Model(torch.nn.Module):
         def __init__(self):
             super().__init__()
             self.head = torch.nn.Linear(2, 1).eval()
+            self.config = Configuration()
+            self.mac = SimpleNamespace(config=Configuration())
+            self.sealed = False
             self.eval()
 
         def _parameter_digest(self):
             return tuple(tuple(p.detach().flatten().tolist()) for p in self.parameters())
+
+        def _seal_parameters(self):
+            assert self.config.attention_layout == self.mac.config.attention_layout
+            self.sealed = True
 
     state = SimpleNamespace(model=Model(), fault=None, recipe=None)
     table = pa.table(dict(sample_id=["a", "b"], prediction=[0.1, 0.2]))
@@ -226,6 +237,27 @@ def test_replay_rejects_learning_or_changed_rows(tmp_path, monkeypatch, replay_b
 def test_replay_rejects_an_undeclared_parent(tmp_path, learning_doubles):
     with pytest.raises(ValueError, match="referencias declaradas"):
         audit.replay(tmp_path, "fold-015/cell7-42", "fp32_tracked", tmp_path / "out")
+
+
+def test_diagnostic_layout_is_explicit_and_reidentifies_the_fresh_state(
+    tmp_path, monkeypatch, replay_boundary
+):
+    monkeypatch.delenv("TORCH_LINEAR_FLATTEN_3D", raising=False)
+    result = audit.replay(
+        tmp_path,
+        "fold-018/cell7-42",
+        "fp32_frozen",
+        tmp_path / "out",
+        attention_layout="sequence_contiguous_v1",
+    )
+    assert result["diagnostic_attention_layout"] == "sequence_contiguous_v1"
+    assert replay_boundary.model.sealed
+    assert replay_boundary.model.config.attention_layout == "sequence_contiguous_v1"
+    assert replay_boundary.model.mac.config.attention_layout == "sequence_contiguous_v1"
+    with pytest.raises(ValueError, match="attention_layout"):
+        audit.replay(
+            tmp_path, "fold-018/cell7-42", "fp32_frozen", tmp_path / "other", attention_layout="bad"
+        )
 
 
 def test_numerical_cli_forwards_paths_and_route(tmp_path, monkeypatch, capsys):

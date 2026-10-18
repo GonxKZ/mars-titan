@@ -117,6 +117,10 @@ class TitansMAC(nn.Module):
             mask = torch.ones(
                 packed_length, packed_length, dtype=torch.bool, device=segment.device
             ).triu(1)
+            if self.config.attention_layout == "sequence_contiguous_v1":
+                # MultiheadAttention transpone antes de QKV. Hacer contigua esa vista evita
+                # que matmul elija mm o bmm según requires_grad en la proyección sin sesgo.
+                packed = packed.transpose(0, 1).contiguous().transpose(0, 1)
             attended, _ = self.attention(packed, packed, packed, attn_mask=mask, need_weights=False)
             observed = attended[:, -length:]
             check_finite(observed, "La salida de atención")

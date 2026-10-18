@@ -108,7 +108,7 @@ def test_context_parent_requires_a_consumer_with_session_lifecycle(tmp_path):
         mw._frozen_parent(document, None, 42, "cpu", tmp_path / "absent", {"request": {}})
 
 
-@pytest.mark.parametrize("bits", range(1, 9))
+@pytest.mark.parametrize("bits", [*range(1, 10), 15, 16])
 def test_reader_reconstructs_the_exact_combination_of_parent_extensions(tmp_path, bits):
     from tests.training.test_titans_walk_forward import PT1
 
@@ -118,9 +118,11 @@ def test_reader_reconstructs_the_exact_combination_of_parent_extensions(tmp_path
         changes["memory_multiscale"] = dict(form="cascade", coupling=0.0625)
     if bits & 4:
         changes["presence_modulation"] = "film_v1"
+    if bits in (9, 15, 16):
+        changes["attention_layout"] = "sequence_contiguous_v1"
     parent = tmp_path / "parent"
     core_recipe = recipe(tmp_path)
-    if bits == 8:
+    if bits in (8, 16):
         document = json.loads(core_recipe.read_text())
         document["predictor"]["session_context"] = "market_memory_v1"
         document["recipe"]["accumulation_rows"] = None
@@ -146,14 +148,14 @@ def test_reader_reconstructs_the_exact_combination_of_parent_extensions(tmp_path
         assert result["predictions"][phase]["rows"] == parent_report["predictions"][phase]["rows"]
         for column in ("sample_id", "target", "prediction_at"):
             assert table(output, phase)[column].equals(table(parent, phase)[column])
-    if bits in (7, 8):
+    if bits in (7, 8, 9, 15, 16):
         from benchmarks.combined_memory_reference import frozen_reference
 
         reference = tmp_path / "frozen"
         frozen = frozen_reference(view, parent, reference, seed=42, device="cpu")
         assert frozen["optimizer_steps"] == 0 and frozen["shared_parameters_unchanged"]
         assert table(reference, "evaluation").equals(table(output, "evaluation"))
-    if bits == 7:
+    if bits in (7, 9, 15, 16):
         resumed_factory = Factory()
 
         class StopAfterThree:
