@@ -336,7 +336,7 @@ def native_copy(tmp_path):
     copy.mkdir()
     for part in ("CMakeLists.txt", "CMakePresets.json"):
         shutil.copy(NATIVE / part, copy / part)
-    for folder in ("cmake", "src", "include", "tests"):
+    for folder in ("cmake", "src", "include", "tests", "benchmarks"):
         shutil.copytree(NATIVE / folder, copy / folder)
     return copy
 
