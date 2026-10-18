@@ -61,10 +61,10 @@ predictor que consume vectores precalculados. El recorrido no incluye toda la le
 Parquet, las demás modalidades, el ajuste ni la confirmación de una edición. No se midieron
 energía, coste monetario o transferencias CPU/GPU.
 
-`benchmarks.candle_geometry measure --device cuda` está preparado para añadir ResNet18 con
-la reserva GPU existente. Su ejecución y la comparación predictiva quedan pendientes y deben
-conservar sus propias evidencias. La comprobación CPU del fallo de admisión verifica que la
-petición CUDA no cambia silenciosamente de dispositivo, sin ejecutar CUDA.
+En aquella revisión, `benchmarks.candle_geometry measure --device cuda` estaba preparado
+sin una medida CUDA. La ejecución posterior se describe al final de este informe. La
+comprobación CPU del fallo de admisión sigue siendo una prueba del rechazo de la petición,
+sin ejecutar CUDA.
 
 ## Derivación desde una edición codificada
 
@@ -152,3 +152,79 @@ de precisión ni un resultado predictivo.
 
 Las medidas de preparación y derivación publicadas arriba conservan sus propias versiones
 y huellas. La selección y el presupuesto de disco son posteriores a esas medidas.
+
+## Datos reales y extracción con ResNet en CUDA
+
+La [derivación de 64 activos](cohort64.json) contiene 235.482 filas. Tardó 55,59 segundos
+en la llamada y alcanzó 238.948.352 bytes de RSS. Sus 260 archivos ocupan 265.926.624 bytes.
+El cotejo conserva exactamente las columnas restantes y sus metadatos. La selección tiene
+`cohort_complete=false`, `selection_complete=true` y `training_ready=false`. No acredita
+que la edición histórica completa esté lista para reanudar la campaña.
+
+El [cotejo de rasgos](cohort64-feature-audit.json) conserva 15.070.848 posiciones de precios
+observadas, sin huecos en esta selección US. No implica presencia completa de las demás
+modalidades. Las pequeñas salidas de rango y mechas negativas no superan 1,625 × 10⁻¹⁴
+en valor absoluto. El caso adversarial de amplificación cerca de rango nulo sigue siendo
+válido y no se ha recortado para mejorar las cifras.
+
+Se midieron cuatro ventanas repartidas a lo largo de la historia de cada activo. Son 256
+ventanas entre el 3 de abril de 2000 y el 29 de diciembre de 2023. Su preparación verifica
+258 huellas de fuentes, no lee objetivos y conserva un NPZ de 541.188 bytes. Las mismas
+entradas se usan en geometría, tinta y ResNet. El [recibo de procedencia](real-verification.json)
+vincula la selección, las ventanas y las vistas supervisadas.
+
+La [medida final](real-windows-cuda.json), realizada sobre el benchmark del commit
+`60be0893f`, usa cinco calentamientos y treinta repeticiones con orden alterno. ResNet se
+ejecuta en la RTX 4070 Laptop, con FP32 sin TF32 y lotes de ocho imágenes. La geometría y
+el control de tinta usan CPU. Había otras comprobaciones CPU en marcha.
+
+| Representación | p50 del lote | p95 del lote | p99 del lote | Ventanas por segundo según p50 |
+| --- | ---: | ---: | ---: | ---: |
+| Geometría | 20,076 ms | 22,531 ms | 39,236 ms | 12.751,67 |
+| PNG y tinta | 1.990,040 ms | 2.062,506 ms | 2.501,770 ms | 128,64 |
+| PNG y ResNet | 1.529,460 ms | 1.592,660 ms | 1.597,114 ms | 167,38 |
+
+Son representaciones distintas. La medida acredita un menor coste de extracción de la
+geometría en esta carga, sin demostrar paridad de sus vectores, menor MAE ni la misma
+aceleración cuando el predictor consume vectores precalculados. El pico de tensores CUDA
+es 193.570.304 bytes, con 260.046.848 reservados. El RSS de todo el proceso es
+1.835.184.128 bytes e incluye codificadores residentes que la geometría no utiliza.
+No se atribuyen esos picos a una única variante. La llamada completa duró 136,53 segundos.
+
+El primer intento rechazó las discrepancias OHLC ya admitidas porque no transmitía la
+tolerancia del corpus. El segundo no fijaba FP32 estricto antes de cargar el codificador.
+Ambos errores se corrigieron y se conservaron sus registros. Los datos y los contratos de
+la edición no se relajaron. La medida final registra pesos, versiones, precisión y huellas
+de implementación. Otra ejecución previa tuvo tiempos diferentes bajo carga concurrente,
+por lo que no se interpreta esa diferencia como un efecto del cambio de metadatos.
+
+Las vistas emparejadas superan 41 pruebas y 11 mutaciones dirigidas. Su
+[cobertura y CRAP](views-quality.json) registran 118/119 sentencias, 39/40 ramas y CRAP
+máximo 28. Reutilizan los archivos originales de etiquetas y sus fingerprints, sin
+recalcular objetivos. Las dos ventanas conservan los mismos recuentos y cortes.
+
+El benchmark y su integración superan 38 pruebas CPU. Se detectaron las
+[cinco mutaciones dirigidas](benchmark-mutations.json) de tolerancia, precisión, sobrescritura
+y cambio de fuente. El [diagnóstico del benchmark](benchmark-quality.json) utiliza
+coverage.py 7.16.1 y Radon 6.0.1. La cobertura procede de pruebas CPU y no suma los recorridos
+CUDA ejecutados sin instrumentación. Los grupos de pruebas de este informe se solapan.
+La comparación predictiva queda pendiente de su estudio identificado.
+
+## Ampliación a 256 activos
+
+La [selección ampliada](cohort256.json) contiene 943.780 filas y conserva los 64 activos
+anteriores. Los Parquet de muestras de esos 64 activos tienen exactamente los mismos
+hashes en ambas selecciones. Las 256 representaciones geométricas ocupan 1.008.762.744 bytes
+frente a los 3.169.913.544 bytes de los Parquet de muestras originales seleccionados.
+Son tamaños de muestras, sin sumar etiquetas ni toda la edición histórica.
+
+La derivación completa tardó 176,02 segundos de proceso y alcanzó 254.722.048 bytes de RSS.
+Se usaron bloques de 128 filas, sin cargar un modelo ni utilizar CUDA. Las vistas emparejadas
+reutilizan las etiquetas existentes y conservan 63.679 filas de evaluación en 2023.
+No se añaden filas ficticias para completar 256 activos por sesión. Los indicadores de
+edición completa y disponibilidad para la campaña siguen siendo falsos.
+
+La comparación entre tamaños debe publicar también el error sobre los 64 activos comunes.
+El promedio de 256 activos describe otra población y no permite atribuir por sí solo un
+cambio de MAE a disponer de más datos de entrenamiento. Esta preparación no contiene
+resultados de aprendizaje ni habilita el test final.

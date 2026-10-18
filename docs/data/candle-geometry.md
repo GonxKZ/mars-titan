@@ -200,8 +200,11 @@ uv run --no-sync python -m benchmarks.candle_geometry measure \
 ```
 
 La opción `--device cuda` añade el control ResNet18 en `cuda:0`, con `GpuLease` y FP32
-estricto. Falla si la GPU no está disponible o está ocupada y no cambia a CPU. Esa medición
-queda preparada para su ejecución coordinada. No se ha ejecutado en esta tarea.
+estricto. La CLI fija esa precisión antes de cargar los pesos. Falla si la GPU no está
+disponible o está ocupada y no cambia a CPU. `--ordering-rtol` transmite la misma tolerancia
+de orden a todas las representaciones y la registra, con cero como valor predeterminado.
+Una edición auditada debe usar su tolerancia ya declarada. La medida no corrige los precios.
+Los destinos existentes se rechazan antes de medir o comparar.
 
 Cada variante usa las mismas ventanas. Se alterna el orden de medida, se hace una pasada
 de referencia y después el calentamiento indicado. Se verifican los mismos bits entre
@@ -220,4 +223,15 @@ conserva la primera comprobación de 164 pruebas CPU y la ampliación a 200 tras
 derivación. La selección y el presupuesto elevan la batería a 217 pruebas y 23 mutaciones
 dirigidas, con cobertura y CRAP registrados. También conserva los costes de lectura,
 preparación y escritura de fixtures de 128 y 512 filas de la versión anterior a la selección.
-No contiene resultados CUDA ni una comparación predictiva.
+La ampliación del informe incluye la derivación de 235.482 filas de 64 activos, otra de
+943.780 filas de 256 activos y una medida de extracción con 256 ventanas reales de los
+64 activos iniciales, incluidas ResNet y la reserva CUDA. No contiene una comparación
+predictiva. La [revisión de las fuentes](../references/candle-and-negotiation-sources.md)
+explica qué se tomó de los antecedentes y qué queda fuera del contraste.
+
+Las vistas supervisadas emparejadas se preparan con `benchmarks.candle_geometry_views`.
+El cotejo de la edición acredita que solo cambian `charts` y `chart_hash`. Se conservan
+los mismos Parquet de etiquetas, sus hashes, configuración y fingerprints originales.
+La representación nueva se identifica por separado y recibe su propio padre temporal.
+Ambas vistas conservan `development_snapshot`, `cohort_complete=false` y `training_ready=false`.
+No se transfiere a la geometría un checkpoint ajustado sobre ResNet.
