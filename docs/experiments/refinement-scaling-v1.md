@@ -42,9 +42,12 @@ recetas impiden confundir este recorrido con uno anterior de otra capacidad.
 
 `benchmarks/refinement_study_capacity.py` reutiliza los registros de
 `financial_observations._records` para contar emisiones y maduraciones, sin
-ejecutar el predictor. Las emisiones preceden a las maduraciones del mismo
-instante. Las predicciones sin etiqueta siguen contándose hasta el cierre
-de la fase. La comprobación no se limita a las filas finalmente puntuadas.
+ejecutar el predictor. Calcula una cota superior sumando las emisiones antes
+de restar las maduraciones del mismo instante. El runner resuelve primero las
+etiquetas disponibles y después observa. La cota puede superar su pico real
+cuando coinciden ambos tipos de evento. Las predicciones sin etiqueta siguen
+contándose hasta el cierre de la fase. La comprobación no se limita a las
+filas finalmente puntuadas.
 
 La colección conserva el máximo de 32.768 trazas pendientes y 131.072 filas
 maduras. Si una fase no cabe, la preparación se detiene con sus recuentos,
@@ -53,12 +56,14 @@ aplica a la colección de ajuste y validación de la puerta. Los pendientes
 del padre y de otras fases también se registran, pero no son esa misma cola.
 
 La [auditoría de la cohorte de 256](../../reports/engineering/refinement-scaling-capacity-20261018/verification.json)
-observó un máximo de 512 trazas pendientes tanto en el ajuste como en la
-validación de la puerta. El padre desde 2000 alcanzó 16.389 predicciones
-pendientes y terminó con 16.133 sin resolver. La evaluación de desarrollo de
-2023 tuvo 63.679 etiquetas, un máximo de 513 pendientes y 257 sin resolver
-al cierre. El máximo de filas de una decisión fue 256. Son recuentos de
-disponibilidad, no resultados predictivos.
+obtuvo una cota de 512 trazas pendientes tanto en el ajuste como en la
+validación de la puerta. Para el padre desde 2000, la cota fue 16.389 y el
+recuento al cierre fue de 16.133 sin resolver. La evaluación de desarrollo de
+2023 tuvo 63.679 etiquetas, una cota de 513 pendientes y 257 sin resolver
+al cierre. El máximo de filas de una decisión fue 256. La
+[aclaración del recibo conservado](../../reports/engineering/refinement-scaling-capacity-20261018/capacity-bound-clarification.json)
+identifica esa interpretación sin cambiar las cifras originales. Son
+recuentos de disponibilidad, no resultados predictivos.
 
 El buffer de escritura sigue siendo de 1.024 filas. La lectura de tablas de
 trazas conserva el límite de 64 MiB. La memoria de modelos, grafos, snapshots

@@ -8,10 +8,12 @@ MAX_DECISION_ROWS = 256
 
 
 def event_capacity(tables, *, decision_start):
-    """Máximo pendiente del índice real, incluyendo emisiones que nunca reciben etiqueta.
+    """Cota superior de pendientes, incluyendo emisiones que nunca reciben etiqueta.
 
     El índice valida las identidades de las observaciones. Aquí se agregan sus
-    cantidades por instante. Emitir antes de madurar conserva el orden del runner.
+    cantidades por instante. Se cuentan las emisiones antes de restar maduraciones.
+    El runner resuelve etiquetas antes de observar en un mismo instante. Este
+    orden conservador no mide su pico exacto cuando ambos eventos coinciden.
     """
     events = {}
     for table in tables:
@@ -43,6 +45,9 @@ def event_capacity(tables, *, decision_start):
         unresolved_at_close=pending,
         max_decision_rows=largest,
         order="emit_then_mature",
+        pending_measure="conservative_upper_bound",
+        runtime_event_order="mature_then_emit",
+        exact_pending_peak_measured=False,
         values_used=False,
     )
 
@@ -81,6 +86,10 @@ def capacity_audit(parent, current, *, parent_fold, policy_phases):
 
     return dict(
         kind="observation_queue_capacity_without_model_execution",
+        pending_measure="conservative_upper_bound",
+        bound_event_order="emit_then_mature",
+        runtime_event_order="mature_then_emit",
+        exact_pending_peak_measured=False,
         parent_view_sha256=parent.identity,
         policy_view_sha256=current.identity,
         max_decision_rows=MAX_DECISION_ROWS,
