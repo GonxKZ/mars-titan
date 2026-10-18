@@ -103,10 +103,10 @@ class HashedRoutes:
         if (
             type(self.counts) is not tuple
             or len(self.counts) != len(ROUTES)
-            or any(type(value) is not int or value < 0 for value in self.counts)
+            or any(type(value) is not int or not 0 <= value < 2**63 for value in self.counts)
             or sum(self.counts) <= 0
         ):
-            raise ValueError("Se necesitan seis recuentos enteros no negativos con suma positiva")
+            raise ValueError("Se necesitan seis recuentos int64 no negativos con suma positiva")
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
 
     def identity(self):

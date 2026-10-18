@@ -110,10 +110,10 @@ añade dos controles desplegables. `ThresholdRoutePolicy` elige una continuació
 si un rasgo de K1 supera estrictamente su umbral, comparado en FP64. Es una regla sencilla,
 sin pesos aprendidos ni estimación de ganancia. `HashedRoutes` asigna rutas de forma
 pseudoaleatoria determinista mediante SHA-256 de semilla, flujo y fecha. Usa los primeros
-64 bits y una CDF con límites enteros. Sus seis recuentos se fijan con las frecuencias de
-validación, nunca con evaluación. Conserva la elección al permutar o dividir lotes, pero
-no garantiza recuentos exactos ni el mismo coste realizado en una muestra finita. El
-consumidor identifica ambos controles y registra sus rutas efectivas sin consultar
+64 bits y una CDF con límites enteros. Sus seis recuentos int64 no negativos se fijan
+con las frecuencias de validación, nunca con evaluación. Conserva la elección al permutar
+o dividir lotes, pero no garantiza recuentos exactos ni el mismo coste realizado en una
+muestra finita. El consumidor identifica ambos controles y registra sus rutas efectivas sin consultar
 etiquetas ni avanzar MAC más veces.
 
 Esta implementación no es evidencia de mejora predictiva ni de novedad del mecanismo
