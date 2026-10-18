@@ -132,7 +132,7 @@ def test_control_changes_are_rejected_before_consuming_the_source(shared, native
         engine = build(streams, native, mode="hashed", schedule=schedule)
         engine.schedule = replace(schedule, seed=6)
     with pytest.raises(ValueError, match="cambi"):
-        engine.evaluate(None)
+        engine.evaluate(streams["validation"])
 
 
 @pytest.mark.parametrize(

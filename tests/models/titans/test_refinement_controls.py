@@ -131,7 +131,7 @@ def test_hash_assignment_is_invariant_to_permutation_microbatches_and_scaled_cou
         == expected
     )
     assert (
-        replace(schedule, counts=tuple(n * 2**70 for n in schedule.counts)).choices(flows, times)
+        replace(schedule, counts=tuple(n * 2**60 for n in schedule.counts)).choices(flows, times)
         == expected
     )
     assert replace(schedule, seed=24).choices(flows, times) != expected
@@ -177,6 +177,13 @@ def test_hash_cdf_uses_integer_boundaries_and_excludes_zero_count_routes(monkeyp
 def test_hash_rejects_invalid_counts_and_seeds(counts, seed):
     with pytest.raises(ValueError):
         api().HashedRoutes(counts=counts, seed=seed)
+
+
+def test_hash_counts_are_bounded_to_nonnegative_int64():
+    with pytest.raises(ValueError):
+        api().HashedRoutes(counts=(2**63, 0, 0, 0, 0, 0), seed=0)
+    maximum = api().HashedRoutes(counts=(0, 0, 2**63 - 1, 0, 0, 0), seed=2**32 - 1)
+    assert maximum.choices(("US/A", "CN/000001"), (1, 2)) == (2, 2)
 
 
 @pytest.mark.parametrize(
