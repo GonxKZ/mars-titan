@@ -7,6 +7,7 @@ import platform
 import resource
 import tempfile
 import time
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -39,7 +40,7 @@ class TraceSink:
         os.close(fd)
         self.temporary = Path(name)
         self.buffer, self.seen, self.writer = [], set(), None
-        self.count, self.confirmed = 0, False
+        self.count, self.confirmed, self.sealed = 0, False, False
         self.schema = pa.schema(
             [
                 ("flow_id", pa.string()),
@@ -58,7 +59,7 @@ class TraceSink:
         )
 
     def append(self, record):
-        if self.confirmed or self.count >= MAX_ROWS:
+        if self.confirmed or self.sealed or self.count >= MAX_ROWS:
             raise ValueError("Las trazas están cerradas o superan el límite de filas")
         if set(record) != set(self.schema.names):
             raise ValueError("La traza no conserva los campos declarados")
@@ -102,11 +103,14 @@ class TraceSink:
         self.buffer.clear()
 
     def table(self):
+        if self.sealed:
+            return pq.read_table(self.temporary)
         self.flush()
         if self.writer is None:
             raise ValueError("La fase no ha producido trazas maduras")
         self.writer.close()
         self.writer = None
+        self.sealed = True
         return pq.read_table(self.temporary)
 
     def confirm(self):
@@ -207,11 +211,14 @@ def validate_trace_rows(table, expected, phase):
     return differences
 
 
-def reconstruct(work, job, source, *, mode, trace=None, route=None, policy=None, device="cuda:0"):
+def reconstruct(
+    work, job, source, *, mode, trace=None, route=None, policy=None, schedule=None, device="cuda:0"
+):
     """Cargar el mejor padre y el mejor lector, sin ajustar pesos al trasladar el codec."""
     from mars_titan.posttraining.chronological_windows import _arm_parts, _best, _readout_models
+    from mars_titan.training.mars_titan_run import MarsTitanInference
     from mars_titan.training.mars_titan_walk_forward import _carried_readout, _native
-    from mars_titan.training.refinement_inference import RefinementInference
+    from mars_titan.training.refinement_inference import RefinementInference, _model_digest
 
     arm = work / "runs" / job["parent"]
     parent_view = work / "fold-017/view.json"
@@ -232,28 +239,47 @@ def reconstruct(work, job, source, *, mode, trace=None, route=None, policy=None,
     _, state = _best(arm, report)
     _carried_readout(state["model"], readout)
     readout.eval().requires_grad_(False)
-    engine = RefinementInference(
-        frozen,
-        readout,
-        recipe,
+    native = _native(variant.admission)
+    arguments = dict(
         admission=variant.admission,
         retention=family.retention(recipe, variant),
-        native=_native(variant.admission),
+        native=native,
         codec=codec,
         world=family.world,
         fold="fold-018",
-        mode=mode,
-        trace=trace,
-        route=route,
-        policy=policy,
     )
+    if mode == "per_step":
+        if any(value is not None for value in (trace, route, policy, schedule)):
+            raise ValueError("El control por paso no admite otra política")
+        readout.config = replace(readout.config, refinements=4, episode_selection="per_step")
+        engine = MarsTitanInference(frozen, readout, recipe, **arguments)
+        inference_identity = dict(
+            controller="legacy_k4_per_step_without_retraining",
+            predictor_sha256=_model_digest(frozen),
+            readout_sha256=_model_digest(readout),
+            readout_configuration=readout.get_extra_state(),
+        )
+    else:
+        engine = RefinementInference(
+            frozen,
+            readout,
+            recipe,
+            **arguments,
+            mode=mode,
+            trace=trace,
+            route=route,
+            policy=policy,
+            schedule=schedule,
+        )
+        inference_identity = engine.identity()
     return engine, dict(
         reader_run_sha256=digest,
         reader_checkpoint=report["fit"]["best_checkpoint"],
         parent_run_sha256=sha256(parent / "run.json"),
         parent_checkpoint=parent_report["checkpoint"],
         parent_view_sha256=sha256(parent_view),
-        inference=engine.identity(),
+        inference=inference_identity,
+        episodic_native_sha256=sha256(Path(native.__file__)),
     )
 
 
@@ -346,16 +372,22 @@ def dispatch(work, job, budget):
                 variant="mac_online",
                 **common,
             )
-        if job["kind"] == "reader":
+        if job["kind"] in ("reader", "m0_reader"):
             return mars.run_mars_titan_window(
                 folder / "view.json",
                 work / "runs" / job["parent"],
                 work / "recipes/reader.json",
-                components=reader_components(job["depth"]),
+                components=dict(episodic_bank="m0_no_bank")
+                if job["kind"] == "m0_reader"
+                else reader_components(job["depth"]),
                 **common,
             )
         if job["kind"] == "collect":
             return collect(work, job, stop=budget)
+        if job["kind"] in ("reference", "m0_reference"):
+            from .refinement_study_controls import frozen_reference
+
+            return frozen_reference(work, job, stop=budget)
         if job["kind"] in ("select", "evaluate"):
             from .refinement_study_policy import evaluate_selected, select_policy
 

@@ -26,6 +26,8 @@
     "fallback": "k1_outside_observed_feature_ranges"
   },
   "scalar_contraction": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "threshold_control": {"feature": "first_interval_width", "fit_quantiles": [0.5, 0.75, 0.9], "routes": ["k2c", "k4cc", "k4cr"]},
+  "hash_seed_offset": 104729,
   "calibration": {"nominals": [0.8, 0.95], "min_rows": 256},
   "bootstrap": {"block_length": 16, "replicates": 2000, "seed": 20261018, "confidence": 0.95},
   "sensitivity_block_lengths": [8, 32]

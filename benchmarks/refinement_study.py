@@ -4,7 +4,9 @@ import argparse
 import copy
 import hashlib
 import json
+import platform
 from datetime import UTC, datetime
+from importlib.metadata import version
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
@@ -113,6 +115,21 @@ def jobs():
             base = dict(projection=projection, seed=seed)
             core = f"{stem}/core"
             result.append(dict(base, id=core, kind="core", fold="fold-017"))
+            result.append(
+                dict(base, id=f"{stem}/reference", kind="reference", parent=core, fold="fold-018")
+            )
+            result.append(
+                dict(base, id=f"{stem}/m0-reader", kind="m0_reader", parent=core, fold="fold-017")
+            )
+            result.append(
+                dict(
+                    base,
+                    id=f"{stem}/m0-reference",
+                    kind="m0_reference",
+                    parent=f"{stem}/m0-reader",
+                    fold="fold-018",
+                )
+            )
             for depth in config["reader_depths"]:
                 reader = f"{stem}/reader-k{depth}"
                 result.append(
@@ -158,12 +175,36 @@ def code_identity():
     """Huellas del ejecutor y de los módulos que fijan su comportamiento numérico y temporal."""
     paths = [
         Path(__file__),
-        ROOT / "benchmarks/refinement_study_traces.py",
-        ROOT / "benchmarks/refinement_study_policy.py",
+        *(
+            ROOT / "benchmarks" / name
+            for name in (
+                "refinement_study_traces.py",
+                "refinement_study_policy.py",
+                "refinement_study_controls.py",
+            )
+        ),
     ]
-    for package in ("models/titans", "training", "memory", "posttraining"):
+    paths.extend(
+        (ROOT / "uv.lock", ROOT / "pyproject.toml", ROOT / "src/mars_titan/models/quantile_head.py")
+    )
+    for package in (
+        "models/titans",
+        "training",
+        "memory",
+        "posttraining",
+        "calibration",
+        "evaluation",
+        "data",
+    ):
         paths.extend(sorted((ROOT / "src/mars_titan" / package).glob("*.py")))
     return {str(path.relative_to(ROOT)): sha256(path) for path in paths}
+
+
+def environment_identity():
+    return dict(
+        python=platform.python_version(),
+        packages={name: version(name) for name in ("torch", "numpy", "pyarrow")},
+    )
 
 
 def _recipes(work, config):
@@ -251,6 +292,7 @@ def prepare(sources, work):
         configuration_sha256=sha256(CONFIG),
         jobs=jobs(),
         code=code_identity(),
+        environment=environment_identity(),
         artifacts={str(p.relative_to(work)): sha256(p) for p in artifacts},
         source_manifests={
             name: dict(
@@ -279,8 +321,10 @@ def verify_prepared(work):
     receipt = read_manifest(work / "prepared.json")[0]
     if (
         receipt["configuration_sha256"] != sha256(CONFIG)
+        or receipt["configuration"] != configuration()
         or receipt["jobs"] != jobs()
         or receipt["code"] != code_identity()
+        or receipt["environment"] != environment_identity()
     ):
         raise ValueError("La configuración, código o catálogo cambió después de preparar")
     for name, digest in receipt["artifacts"].items():

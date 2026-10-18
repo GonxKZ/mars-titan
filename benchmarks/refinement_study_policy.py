@@ -40,10 +40,17 @@ def best_candidate(records):
 
 
 def save_policy(path, policy):
+    import torch
+
+    from mars_titan.models.titans.refinement_controls import ThresholdRoutePolicy
+
+    threshold = type(policy) is ThresholdRoutePolicy
+    if not threshold and any(value.dtype != torch.float64 for _, value in policy.named_buffers()):
+        raise ValueError("El ajuste ridge debe conservar sus buffers FP64")
     payload = dict(
         identity=policy.get_extra_state(),
         buffers={name: value.detach().cpu().tolist() for name, value in policy.named_buffers()},
-        dtype="float64",
+        dtype=None if threshold else "float64",
     )
     if path.exists():
         if read_manifest(path)[0] != payload:
@@ -55,21 +62,56 @@ def save_policy(path, policy):
 def load_policy(path, *, device):
     import torch
 
+    from mars_titan.models.titans.refinement_controls import ThresholdRoutePolicy
     from mars_titan.models.titans.refinement_policy import RoutePolicy
 
     value = read_manifest(path)[0]
-    if value.get("dtype") != "float64":
-        raise ValueError("La política necesita la precisión FP64 del ajuste ridge")
-    model = RoutePolicy(
-        **{
-            name: torch.tensor(data, device=device, dtype=torch.float64)
-            for name, data in value["buffers"].items()
-        },
-        min_gain=value["identity"]["min_gain"],
-    )
+    if value["identity"].get("policy") == "strict_feature_threshold_after_k1_v1":
+        if value.get("dtype") is not None or value.get("buffers") != {}:
+            raise ValueError("El control por umbral no contiene buffers ajustados")
+        model = ThresholdRoutePolicy(
+            **{key: value["identity"][key] for key in ("feature_name", "cutoff", "route")}
+        )
+    else:
+        if value.get("dtype") != "float64":
+            raise ValueError("La política necesita la precisión FP64 del ajuste ridge")
+        model = RoutePolicy(
+            **{
+                name: torch.tensor(data, device=device, dtype=torch.float64)
+                for name, data in value["buffers"].items()
+            },
+            min_gain=value["identity"]["min_gain"],
+        )
     if model.get_extra_state() != value["identity"]:
         raise ValueError("La identidad de la política no conserva su contrato")
     return model
+
+
+def route_table(traces, route):
+    """Una alternativa registrada, con las mismas identidades y etiquetas maduras."""
+    from mars_titan.models.titans.refinement_routes import ROUTES
+
+    if route not in ROUTES:
+        raise ValueError("La ruta no pertenece a la colección")
+    position = ROUTES.index(route)
+    flows, times = traces["flow_id"].to_pylist(), traces["decision_at"].to_pylist()
+    predictions = np.asarray(traces["predictions"].to_pylist(), dtype=np.float64)
+    columns = dict(
+        sample_id=[f"{flow}/{at}" for flow, at in zip(flows, times, strict=True)],
+        asset_id=flows,
+        market=[flow.split("/", 1)[0] for flow in flows],
+        prediction_at=pa.array(times, type=pa.timestamp("us", tz="UTC")),
+        prediction=predictions[:, position],
+        target=traces["target"],
+        zero=np.zeros(len(traces)),
+    )
+    quantiles = traces["quantiles"].to_pylist()
+    if any(value is not None for value in quantiles):
+        if any(value is None for value in quantiles):
+            raise ValueError("La colección mezcla salidas con y sin cuantiles")
+        values = np.asarray(quantiles, dtype=np.float64)[:, position]
+        columns.update(zip(QUANTILE_COLUMNS, values.T, strict=True))
+    return pa.table(columns)
 
 
 def _traces(folder, partition):
@@ -93,13 +135,34 @@ def _sources(work, names):
     return dataset, build_sources(dataset, phases, work / "indices/policy")
 
 
-def predict_phase(work, job, dataset, source, output, *, policy, parent_identity, stop, device):
+def predict_phase(
+    work,
+    job,
+    dataset,
+    source,
+    output,
+    *,
+    policy=None,
+    mode="policy",
+    route=None,
+    schedule=None,
+    parent_identity,
+    stop,
+    device,
+):
     """Reproducir la política efectiva, incluidos los grupos que siguen rutas distintas."""
     from mars_titan.training.titans_walk_forward import PredictionRows, checked_tables
 
     reader_job = dict(job, parent=job["reader"])
     engine, origin = reconstruct(
-        work, reader_job, source, mode="policy", policy=policy, device=device
+        work,
+        reader_job,
+        source,
+        mode=mode,
+        policy=policy,
+        route=route,
+        schedule=schedule,
+        device=device,
     )
     identity = dict(
         prepared_sha256=sha256(work / "prepared.json"),
@@ -113,9 +176,16 @@ def predict_phase(work, job, dataset, source, output, *, policy, parent_identity
     output.mkdir(parents=True, exist_ok=True)
     atomic_json(output / "phase.json", dict(status="running", identity=identity))
     rows = PredictionRows(engine.quantiles)
+    from mars_titan.training.refinement_inference import _model_digest
+
+    before = tuple(_model_digest(model) for model in (engine.predictor, engine.readout, policy))
     started = time.perf_counter()
     metrics = engine.evaluate(source, stop=stop, rows=rows)
     elapsed = time.perf_counter() - started
+    if before != tuple(
+        _model_digest(model) for model in (engine.predictor, engine.readout, policy)
+    ):
+        raise ValueError("La fase modificó parámetros o contratos de los modelos")
     tables = checked_tables(rows, metrics, dataset, source.phase.partition)
     path = output / "predictions.parquet"
     count = atomic_parquet_batches(path, tables)
@@ -147,7 +217,7 @@ def select_policy(work, job, *, stop=None, device="cuda:0"):
 
     folder, output = work / "runs" / job["parent"], work / "runs" / job["id"]
     train, training = _traces(folder, "train")
-    _, validation = _traces(folder, "validation")
+    validation_table, validation = _traces(folder, "validation")
     identity = dict(
         prepared_sha256=sha256(work / "prepared.json"),
         job=job,
@@ -233,11 +303,37 @@ def select_policy(work, job, *, stop=None, device="cuda:0"):
                         costs=costs,
                         policy_sha256=sha256(local / "policy.json"),
                         validation_sha256=sha256(local / "validation/phase.json"),
+                        validation_route_counts=metrics["route_counts"],
                     )
                 )
     selected = best_candidate(candidates)
+    thresholds = select_thresholds(
+        work, job, output, train, dataset, sources["validation"], stop=stop, device=device
+    )
+    from mars_titan.models.titans.refinement_routes import ROUTES
+
+    target = validation_table["target"].to_numpy()
+    weights = session_weights(validation_table["decision_at"].to_numpy())
+    predictions = np.asarray(validation_table["predictions"].to_pylist(), dtype=np.float64)
+    fixed = [
+        dict(
+            id=route,
+            session_mae=float(np.average(np.abs(predictions[:, index] - target), weights=weights)),
+            mean_refinements=int(route[1]),
+        )
+        for index, route in enumerate(ROUTES)
+    ]
+    baseline = np.asarray(validation_table["features"].to_pylist())[:, 0]
+    scalars = [
+        dict(
+            alpha=alpha,
+            session_mae=float(np.average(np.abs(alpha * baseline - target), weights=weights)),
+        )
+        for alpha in configuration()["scalar_contraction"]
+    ]
+    scalar = min(scalars, key=lambda row: row["session_mae"])
     artifacts = {}
-    for row in candidates:
+    for row in candidates + thresholds:
         for suffix in (
             "policy.json",
             "fit.json",
@@ -251,6 +347,19 @@ def select_policy(work, job, *, stop=None, device="cuda:0"):
         identity=identity,
         candidates=candidates,
         selected=selected,
+        controls=dict(
+            threshold=best_candidate(thresholds),
+            threshold_candidates=thresholds,
+            hashed=dict(
+                counts=[int(selected["validation_route_counts"][route]) for route in ROUTES],
+                seed=job["seed"] + configuration()["hash_seed_offset"],
+                frequency_scope="all_validation_predictions_including_unresolved",
+            ),
+            fixed_route=best_candidate(fixed),
+            fixed_candidates=fixed,
+            scalar=scalar,
+            scalar_candidates=scalars,
+        ),
         selection_partition="validation",
         calibration_used_for_selection=False,
         evaluation_used_for_selection=False,
@@ -260,6 +369,57 @@ def select_policy(work, job, *, stop=None, device="cuda:0"):
     )
     atomic_json(output / "phase.json", receipt)
     return receipt
+
+
+def select_thresholds(work, job, output, train, dataset, source, *, stop, device):
+    """Umbrales disponibles después de K1, elegidos en una familia separada del ridge."""
+    from mars_titan.models.titans.refinement_controls import FEATURES, ThresholdRoutePolicy
+
+    spec = configuration()["threshold_control"]
+    values = np.asarray(train["features"].to_pylist(), dtype=np.float64)[
+        :, FEATURES.index(spec["feature"])
+    ]
+    records = []
+    for fraction in spec["fit_quantiles"]:
+        cutoff = float(np.quantile(values, fraction, method="linear"))
+        for route in spec["routes"]:
+            identifier = f"threshold-{len(records):02d}"
+            local = output / identifier
+            policy = ThresholdRoutePolicy(feature_name=spec["feature"], cutoff=cutoff, route=route)
+            save_policy(local / "policy.json", policy)
+            fitted = dict(
+                feature=spec["feature"],
+                fit_quantile=fraction,
+                cutoff=cutoff,
+                route=route,
+                threshold_source="train_only",
+            )
+            atomic_json(local / "fit.json", fitted)
+            receipt = predict_phase(
+                work,
+                job,
+                dataset,
+                source,
+                local / "validation",
+                policy=policy,
+                parent_identity=dict(
+                    candidate=identifier, policy_sha256=sha256(local / "policy.json")
+                ),
+                stop=stop,
+                device=device,
+            )
+            metrics = receipt["metrics"]
+            records.append(
+                dict(
+                    id=identifier,
+                    session_mae=metrics["session_mae"],
+                    mean_refinements=metrics["refinements"] / metrics["predictions"],
+                    policy_sha256=sha256(local / "policy.json"),
+                    validation_sha256=sha256(local / "validation/phase.json"),
+                    **fitted,
+                )
+            )
+    return records
 
 
 def fit_calibrator(output, calibration_path):
@@ -322,6 +482,9 @@ def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
     if sha256(policy_path) != seal["selected"]["policy_sha256"]:
         raise ValueError("La política elegida cambió después de la selección")
     policy = load_policy(policy_path, device=device)
+    from .refinement_study_controls import reference_paths
+
+    references = reference_paths(work, job)
     dataset, sources = _sources(work, ("calibration", "evaluation"))
     output = work / "runs" / job["id"]
     selected_sha = sha256(selected_folder / "phase.json")
@@ -355,6 +518,13 @@ def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
         record,
         output / "evaluation/predictions.parquet",
     )
+    from .refinement_study_controls import calibrate_references, compare_controls, evaluate_controls
+
+    controls = evaluate_controls(
+        work, job, dataset, sources, output, selected_folder, seal, stop=stop, device=device
+    )
+    calibrate_references(output, references, seal["controls"]["scalar"]["alpha"])
+    comparison = compare_controls(output, seal)
     from .memory_microstudy_analysis import score_table
 
     scores = score_table(pq.read_table(output / "calibrated-evaluation.parquet"))
@@ -366,6 +536,8 @@ def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
         selection_sha256=selected_sha,
         phases=results,
         calibration=calibrated,
+        controls=controls,
+        comparison=comparison,
         scores=scores.summary(),
         artifacts={
             name: sha256(output / name)

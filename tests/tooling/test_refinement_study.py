@@ -137,6 +137,35 @@ def test_learning_hold_is_checked_before_reading_study_or_loading_torch(tmp_path
         api().run_job(tmp_path / "absent", "absent")
 
 
+def test_prepared_study_rejects_software_and_input_drift(tmp_path):
+    from mars_titan.data.storage import atomic_json, sha256
+
+    artifact, source = tmp_path / "artifact.json", tmp_path / "source.json"
+    atomic_json(artifact, dict(value=1))
+    atomic_json(source, dict(value=2))
+    prepared = dict(
+        configuration=api().configuration(),
+        configuration_sha256=sha256(api().CONFIG),
+        jobs=api().jobs(),
+        code=api().code_identity(),
+        environment=api().environment_identity(),
+        artifacts={artifact.name: sha256(artifact)},
+        source_manifests={"fixture": dict(path=str(source), sha256=sha256(source))},
+    )
+    path = tmp_path / "prepared.json"
+    atomic_json(path, prepared)
+    assert api().verify_prepared(tmp_path) == prepared
+    changed = copy.deepcopy(prepared)
+    changed["environment"]["packages"]["torch"] = "different-fixture-version"
+    atomic_json(path, changed)
+    with pytest.raises(ValueError):
+        api().verify_prepared(tmp_path)
+    atomic_json(path, prepared)
+    atomic_json(source, dict(value=3))
+    with pytest.raises(ValueError, match="origen"):
+        api().verify_prepared(tmp_path)
+
+
 def traces_api():
     try:
         return importlib.import_module("benchmarks.refinement_study_traces")
@@ -169,6 +198,19 @@ def test_trace_sink_publishes_rows_only_after_confirmation_and_preserves_values(
         assert not path.exists()
         sink.confirm()
     assert pq.read_table(path).to_pylist() == [trace_record(1), trace_record(2)]
+
+
+def test_trace_verification_seals_rows_before_atomic_publication(tmp_path):
+    import pyarrow.parquet as pq
+
+    path = tmp_path / "traces.parquet"
+    with traces_api().TraceSink(path, partition="train") as sink:
+        sink.append(trace_record())
+        assert len(sink.table()) == 1
+        with pytest.raises(ValueError, match="cerrad"):
+            sink.append(trace_record(2))
+        sink.confirm()
+    assert pq.read_table(path).to_pylist() == [trace_record()]
 
 
 @pytest.mark.parametrize(
@@ -350,6 +392,40 @@ def test_policy_round_trip_preserves_choices_and_rejects_forged_identity(tmp_pat
         policy_api().load_policy(path, device="cpu")
 
 
+def test_threshold_round_trip_keeps_feature_cutoff_and_continuation(tmp_path):
+    import torch
+
+    from mars_titan.models.titans.refinement_controls import ThresholdRoutePolicy
+
+    path = tmp_path / "threshold.json"
+    model = ThresholdRoutePolicy(feature_name="first_interval_width", cutoff=0.3, route="k4cr")
+    policy_api().save_policy(path, model)
+    restored = policy_api().load_policy(path, device="cpu")
+    features = torch.zeros((3, 9), dtype=torch.float64)
+    features[:, 3] = torch.tensor([0.2, 0.3, 0.4], dtype=torch.float64)
+    assert restored(features).tolist() == [0, 0, 4]
+
+
+def test_trace_control_keeps_rows_targets_and_named_route_quantiles():
+    import pyarrow as pa
+
+    from mars_titan.models.quantile_head import QUANTILE_COLUMNS
+
+    row = trace_record()
+    row["quantiles"] = [[float(j) + shift for shift in (-2, -1, 0, 1, 2)] for j in range(6)]
+    table = policy_api().route_table(pa.Table.from_pylist([row]), "k4cr")
+    assert table["prediction"].to_pylist() == [-0.1]
+    assert table["target"].to_pylist() == [0.05]
+    assert table["sample_id"].to_pylist() == ["US/A1/100"]
+    assert [table[column].to_pylist()[0] for column in QUANTILE_COLUMNS] == [
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+    ]
+
+
 def test_selected_phase_cannot_start_without_the_learning_exception(tmp_path, monkeypatch):
     from mars_titan.training.learning_hold import LearningHoldError
 
@@ -474,6 +550,7 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
 
     import pyarrow.parquet as pq
 
+    from benchmarks.refinement_study_controls import frozen_reference
     from mars_titan.data.input_policy import HISTORICAL_MASKED
     from mars_titan.data.storage import sha256
     from mars_titan.data.temporal import MarketClock
@@ -542,6 +619,34 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
             device="cpu",
             optimizer_factory=Factory(retain_gradients=False),
         )
+        run_mars_titan_window(
+            work / "fold-017/view.json",
+            work / "runs" / chosen["core"]["id"],
+            work / "recipes/reader.json",
+            components={"episodic_bank": "m0_no_bank"},
+            seed=42,
+            search_case="lr1e-3",
+            output=work / "runs" / chosen["m0_reader"]["id"],
+            device="cpu",
+            optimizer_factory=Factory(retain_gradients=False),
+        )
+        from mars_titan.training.financial_run import Paused
+
+        reference_root = work / "runs" / chosen["reference"]["id"]
+
+        class StopAfterValidation:
+            @property
+            def requested(self):
+                path = reference_root / "validation/phase.json"
+                return path.exists() and json.loads(path.read_text())["status"] == "completed"
+
+        with pytest.raises(Paused):
+            frozen_reference(work, chosen["reference"], device="cpu", stop=StopAfterValidation())
+        assert not (reference_root / "frozen.json").exists()
+        confirmed = sha256(reference_root / "validation/validation-predictions.parquet")
+        frozen_reference(work, chosen["reference"], device="cpu")
+        assert sha256(reference_root / "validation/validation-predictions.parquet") == confirmed
+        frozen_reference(work, chosen["m0_reference"], device="cpu")
         collection = traces_api().collect(work, chosen["collect"], device="cpu")
         assert set(collection["phases"]) == {"train", "validation"}
         assert not (work / "runs" / chosen["collect"]["id"] / "evaluation").exists()
@@ -552,6 +657,17 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
         selection_hash = sha256(selection)
         evaluated = policy_api().evaluate_selected(work, chosen["evaluate"], device="cpu")
         assert evaluated["status"] == "completed"
+        assert evaluated["comparison"]["missing_controls"] == []
+        assert {
+            "policy",
+            "core",
+            "m0",
+            "scalar",
+            "zero",
+            "threshold",
+            "hashed",
+            "per_step_k4",
+        } <= set(evaluated["comparison"]["scores"])
         assert sha256(selection) == selection_hash
         output = work / "runs" / chosen["evaluate"]["id"]
         original = sha256(output / "evaluation/predictions.parquet")

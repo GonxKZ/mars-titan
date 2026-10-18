@@ -8,7 +8,8 @@ nuevo modelo base.
 
 La configuración es `configs/experiments/refinement-development-v1.json`.
 Los ejecutores son `benchmarks/refinement_study.py`,
-`benchmarks/refinement_study_traces.py` y `benchmarks/refinement_study_policy.py`.
+`benchmarks/refinement_study_traces.py`, `benchmarks/refinement_study_policy.py`
+y `benchmarks/refinement_study_controls.py`.
 La implementación del mecanismo y sus límites están en
 [las rutas de refinamiento](../../src/mars_titan/models/titans/refinement_routes.py)
 y [la política de ganancias firmadas](../../src/mars_titan/models/titans/refinement_policy.py).
@@ -61,6 +62,8 @@ valores proyectados. R vuelve a consultar antes del bloque siguiente. Los dos
 últimos pasos de K4 comparten la decisión tomada después de K2. La política
 elige una sola ruta tras K1 y no accede a etiquetas financieras para decidir.
 K cuenta refinamientos, no actualizaciones de memoria neuronal.
+Las letras de las rutas describen consultas episódicas. El control de
+estabilidad C de CM-v1 conserva su identidad y no interviene en este estudio.
 
 La colección comparte prefijos entre alternativas y requiere nueve
 refinamientos y hasta tres búsquedas por fila. Ese coste se registra por
@@ -82,7 +85,7 @@ por el menor número medio de refinamientos y finalmente por el orden declarado.
 La calibración nunca elige la puerta. El registro de selección y sus huellas
 se confirman antes de abrir las fases posteriores.
 
-Los controles interpretativos previstos son las seis rutas fijas, K4 con una
+Los controles interpretativos incorporados son las seis rutas fijas, K4 con una
 consulta por paso, un lector M0 propio, el predictor congelado sin lector,
 retorno residual cero, contracción escalar hacia cero, un umbral sencillo y una
 asignación por hash con frecuencias fijadas en validación. Cada control necesita
@@ -91,13 +94,28 @@ frecuencia fijada para el control aleatorio no garantiza igualdad exacta de
 cómputo en una ventana posterior. La presencia de un control en este protocolo
 no implica que ya exista un resultado suyo.
 
+El control por umbral compara el ancho del primer intervalo con los cuantiles
+0,5, 0,75 y 0,9 de ese rasgo en las trazas de ajuste. Se contrasta continuar por
+K2C, K4CC o K4CR. Sus nueve candidatos se seleccionan en una familia separada
+de los doce candidatos ridge. El control por hash usa los recuentos de rutas
+del ridge elegido en validación, incluidas las emisiones que aún no habían
+madurado al cerrar el tramo. No utiliza RNG global ni los resultados de la
+evaluación para asignar una ruta.
+
+M0 ajusta su propio lector K1 con el mismo núcleo, datos y dos épocas. No es un
+lector M1 al que se le retire el banco después del ajuste. K4 por paso conserva
+los pesos del lector elegido y cambia explícitamente su calendario de consulta,
+sin otro entrenamiento. La contracción escalar aplica al predictor sin lector
+uno de los cinco coeficientes del catálogo, elegido solo con validación.
+
 ## Recibos y recuperación
 
 `prepare` recibe el directorio que contiene `fold-017/manifest.json` y
 `fold-018/manifest.json`, más un destino nuevo. Proyecta manifiestos sin
 modificar las fuentes, guarda las recetas y la prueba de filas y fija huellas
 del código. `verify` comprueba que no han cambiado los artefactos ni los
-manifiestos originales. `run` recibe uno de los identificadores del catálogo
+manifiestos originales y que siguen las mismas versiones de Python, PyTorch,
+NumPy y PyArrow. `run` recibe uno de los identificadores del catálogo
 de `prepared.json`. La ayuda disponible es:
 
 ```bash
@@ -138,7 +156,8 @@ La dependencia temporal impide presentar la cobertura como garantía universal.
 
 Los recibos distinguen tiempo total de fase, trabajo de colección y de
 despliegue, búsquedas, refinamientos, proyecciones de valores, filas y picos de
-RAM y VRAM. La latencia por solicitud y sus percentiles requieren además una
+RAM y memoria CUDA registrada por el asignador de PyTorch. La latencia por
+solicitud y sus percentiles requieren además una
 medición del recorrido efectivo con calentamiento y sincronización adecuados.
 No se deducen de dividir el tiempo de fase por el número de filas.
 
