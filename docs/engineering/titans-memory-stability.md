@@ -2,6 +2,8 @@
 
 Estado a 10 de octubre de 2026: **implementado, conectado a la campaña A v2 y comprobado sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide el piloto y la comparación. Tarea [#453](https://github.com/GonxKZ/mars-titan/issues/453). La motivación y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt1-memoria-de-titans-acotada-y-contractiva) y la matemática propia en el [certificado de contracción](../research/titans-memory-certificate.md).
 
+El [microensayo del 18 de octubre](../../reports/research/memory-microstudy-20261018/README.md) mide PT1 con tres semillas, cuatro activos y una época. El MAE medio aumenta un 21,02 % frente a `mac_online`, aunque disminuye el máximo observado del momentum durante evaluación. No respalda promover PT1. El piloto principal y la campaña continúan pendientes.
+
 ## Qué hace
 
 PT1 añade a la memoria neuronal de Titans dos piezas que se activan por separado con `MemoryStability`:
