@@ -40,8 +40,9 @@ del pico de memoria del proceso.
 
 [refinement_policy.py](../../src/mars_titan/models/titans/refinement_policy.py) implementa
 primero una decisión única después de K1. Agrupa las filas por ruta y ejecuta sus
-continuaciones. Las filas que paran quedan fuera de los bloques siguientes. Planificar
-estos grupos exige una copia explícita de los códigos a CPU. Su sincronización y el
+continuaciones. Las filas que paran quedan fuera de los bloques siguientes. Los códigos
+producidos en CUDA necesitan una copia explícita a CPU para planificar los grupos.
+Una tupla de códigos ya disponible en CPU evita ese viaje. La sincronización y el
 cambio de tamaño de las matrices forman parte de la medida de latencia y de la
 comprobación numérica. Reducir pasos medios no garantiza reducir p95 o p99.
 
@@ -103,6 +104,17 @@ Debe separar utilidad de consultar, profundidad adicional y contracción de la s
 hacia cero. Se mide la política realmente ejecutada, con MAE por sesión, incertidumbre
 temporal por bloques y coste completo. Los parámetros de la puerta quedan congelados
 durante evaluación y la calibración no selecciona arquitectura.
+
+[refinement_controls.py](../../src/mars_titan/models/titans/refinement_controls.py)
+añade dos controles desplegables. `ThresholdRoutePolicy` elige una continuación declarada
+si un rasgo de K1 supera estrictamente su umbral, comparado en FP64. Es una regla sencilla,
+sin pesos aprendidos ni estimación de ganancia. `HashedRoutes` asigna rutas de forma
+pseudoaleatoria determinista mediante SHA-256 de semilla, flujo y fecha. Usa los primeros
+64 bits y una CDF con límites enteros. Sus seis recuentos se fijan con las frecuencias de
+validación, nunca con evaluación. Conserva la elección al permutar o dividir lotes, pero
+no garantiza recuentos exactos ni el mismo coste realizado en una muestra finita. El
+consumidor identifica ambos controles y registra sus rutas efectivas sin consultar
+etiquetas ni avanzar MAC más veces.
 
 Esta implementación no es evidencia de mejora predictiva ni de novedad del mecanismo
 general de parada aprendida. [PonderNet](https://arxiv.org/abs/2107.05407) ya aprende
