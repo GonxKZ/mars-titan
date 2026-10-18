@@ -41,7 +41,7 @@
     "skipped": 0,
     "pytest_seconds": 0.73,
     "device": "cpu",
-    "fixture_authorization": "Misma autorización local acotada de fixtures que la batería general. No se modifica la protección global.",
+    "scope": "Fixtures de metadatos y configuración de CMake, sin campañas ni acceso al test final.",
     "source_runtime_modified": false
   },
   "quality": {
