@@ -1,0 +1,215 @@
+{
+  "recorded_at_utc": "2026-10-18T21:36:44.015323+00:00",
+  "universe_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+  "collected": 12273,
+  "counts": {
+    "passed_same_snapshot": 12265,
+    "corrected_fixture": 1,
+    "pending": 1,
+    "updated_test_contract": 6
+  },
+  "resolved": 12272,
+  "pending": [
+    {
+      "nodeid": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+      "status": "pending",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed"
+        }
+      ],
+      "unresolved_failure": {
+        "state": "failed",
+        "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
+        "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171"
+      },
+      "tracking_issue": 674
+    }
+  ],
+  "boundary_confirmed": "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
+  "correction_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+  "counting_rule": "Una entrada por nodeid del universo de 12.273 casos. Las repeticiones y los nuevos controles no aumentan ese universo.",
+  "limits": [
+    "El prefijo original se reconstruye desde progreso serial y resumen final. No dispone de audit ni JUnit propios.",
+    "Los siete casos corregidos se atribuyen a sus revisiones de pruebas. No pasan a contarse como superados en el snapshot original.",
+    "El cambio del contrato del padre tiene una correspondencia explícita entre el nombre anterior y el nuevo."
+  ],
+  "inputs_sha256": {
+    "memory-numerics-20261018/review-collection.log": "67959b3e81e6c9679601270b28136dc497d6f612a87dff802ffd8c6ec79c9e52",
+    "memory-numerics-20261018/review-reconciliation.json": "f0a48a5acbc89f1073eb56c09c5ff8e8fe4baa3c5568bfe96d3ec47c395321df",
+    "residual-cpu-20261018T200125.477525Z/summary.json": "bec9edc7826a01de623a178cd18c1ce1a6983504e07a0c33c5fec175222fe29a",
+    "residual-cuda-20261018T202340.743276Z/summary.json": "6968fec946879b869378e518e5971d39d9420ea8d8c330dc8f60107470302940",
+    "snapshot-20261018T212350.357939Z/cases.json": "83f4e30da729db760bac9e538de82036faa1359b2edfe5f45263b43d32a887d5",
+    "current-20261018T212703.528643Z/cases.json": "55987fee92047e0820c6495faada4554e29a48f7bfa498544c6afda86533710c"
+  },
+  "revision_corrections": [
+    {
+      "nodeid": "tests/native/test_optimizer_steps_hold.py::test_a_missing_label_a_new_stepping_test_or_an_open_preset_is_reported",
+      "status": "corrected_fixture",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "full-suite.log",
+          "kind": "serial_progress_reconstruction",
+          "outcome": "failed"
+        },
+        {
+          "source_commit": "d5dad65e4d1d56a16711937193b0475c5d0c8ac6",
+          "receipt": "reports/engineering/optimizer-hold-fixture-20261018/verification.json",
+          "kind": "corrected_fixture_retest",
+          "outcome": "passed",
+          "pr": 669
+        }
+      ],
+      "original_nonpass": "F"
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]"
+        }
+      ]
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]"
+        }
+      ]
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]"
+        }
+      ]
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]"
+        }
+      ]
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]"
+        }
+      ]
+    },
+    {
+      "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent",
+      "status": "updated_test_contract",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cpu-20261018T200125.477525Z/098/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed",
+          "phases": {
+            "setup": "passed",
+            "call": "failed",
+            "teardown": "passed"
+          }
+        },
+        {
+          "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+          "receipt": "current-20261018T212703.528643Z/cases.json",
+          "kind": "same_files_as_measured_worktree",
+          "outcome": "passed",
+          "executed_nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent"
+        }
+      ]
+    }
+  ],
+  "ledger_sha256": "a8bc05253cb3e2f40c1abed9901014d922116e476fb218fc713dd214610794cb"
+}

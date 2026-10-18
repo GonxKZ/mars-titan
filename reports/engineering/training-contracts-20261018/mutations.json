@@ -1,0 +1,104 @@
+{
+  "recorded_at_utc": "2026-10-18T21:31:03.338622+00:00",
+  "tool": "Sustituciones dirigidas con pytest separado por mutante",
+  "seconds": 34.613930520019494,
+  "source_restored": true,
+  "global_hold_unchanged": true,
+  "source_sha256": {
+    "src/mars_titan/training/mars_titan_walk_forward.py": "6d6f2460146515a75e6ea2a704ba672c2a61f042aefd50baad26aa08c03f7953",
+    "src/mars_titan/training/search_cases.py": "de83211b637b369340f5a11a659ad6e3efa991cf088f38cb21788bbc965fa348",
+    "tests/training/test_reference_run.py": "a33f13f896a3001263464a90ca6db76b72e0a5273a1e373543840fd07ee9342d"
+  },
+  "mutants": [
+    {
+      "name": "declared_names",
+      "path": "src/mars_titan/training/search_cases.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.624191488022916,
+      "log_sha256": "b8802efee91b9d1dbb417597a7f1f076098190c6ebbba1b026ed04571129fc84",
+      "mutant_sha256": "3cbb01cc81e0b11ead98805fcb133dc7c2e1bd9328eb5cc31834cf37363f88a2"
+    },
+    {
+      "name": "nonempty_changes",
+      "path": "src/mars_titan/training/search_cases.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.3246925129787996,
+      "log_sha256": "2706e8afd5f24c2d1f2094c97a50cae302134b0bc0fd86a0b23d98d9456e8299",
+      "mutant_sha256": "8be729579a73168dd8d3b27bcf69f3f2a4240459c9770170f6197c4973f44a2e"
+    },
+    {
+      "name": "typed_options",
+      "path": "src/mars_titan/training/search_cases.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.673744308995083,
+      "log_sha256": "96d38fb57fdb9763af9dbd358834de5ed3edd82e994e0e8141ffe61b6afda3b6",
+      "mutant_sha256": "064467d169bd57e37d1f344a0be7d1b1d092157a7a3720af37cbedff2280a1ea"
+    },
+    {
+      "name": "parent_validation",
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.175281724019442,
+      "log_sha256": "1e6784566285192aed839747d8954d23655c375181fe15f742cc301b77aabddc",
+      "mutant_sha256": "54fbac91b19548e6be50e6016f0a62b2eef27c032f6b935fe56c412fb657a985"
+    },
+    {
+      "name": "parent_options",
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.023980777012184,
+      "log_sha256": "853bb7449da340e4eb234d736cf1050aff788689e1d5eb6609236d5ed105467f",
+      "mutant_sha256": "9ff67186ccf67e10e52b6251673d313f98699ac4300d1dd55e9e74f2c7ae7e92"
+    },
+    {
+      "name": "parent_parameters",
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.074500154005364,
+      "log_sha256": "3cb1f7f37e65478769fdf7cb34994b5633a092652d4e16fafa842fb857e1ab8f",
+      "mutant_sha256": "9394e21ce27ddfac8b95426e4241624742ece57de8a5965b04adcdf9b356efc5"
+    },
+    {
+      "name": "checkpoint_digest",
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.475788811047096,
+      "log_sha256": "9bbe21b9e0665547f6bfc36d2279be341e9f2dfa00e7b71101d5ae582aa55213",
+      "mutant_sha256": "5be45a32cbac7ebe5373a8d6afc02da9291ca6d114f5404a46e2e5a2ce34e564"
+    },
+    {
+      "name": "frozen_parameters",
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.324470403022133,
+      "log_sha256": "321afe3079bc612b1c2414ecd9e6cf7de89ab0042ce68c0aa7ca2f5371835071",
+      "mutant_sha256": "a00e60643ec75c8c446951d8e4db3163f10c57bc34f1222c8fbc2e3070ab1073"
+    },
+    {
+      "name": "explicit_cublas_fixture",
+      "path": "tests/training/test_reference_run.py",
+      "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.870749710011296,
+      "log_sha256": "de6c1cd023757e9aa4cbeed71df29db25d9462dd9270dfab4b5139372e875d14",
+      "mutant_sha256": "53cc684c085cb8944f4039cfe3cc8d18c226b721d5f97edf2143c0e5d3e615fa"
+    }
+  ]
+}

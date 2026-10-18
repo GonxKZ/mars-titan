@@ -1,0 +1,329 @@
+{
+  "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+  "receipt": {
+    "exitstatus": 0,
+    "selected": [
+      {
+        "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+        "markers": []
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+        "markers": []
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[foreign]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty-option]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[scalar]",
+        "markers": [
+          "parametrize"
+        ]
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request",
+        "markers": []
+      }
+    ],
+    "deselected": [],
+    "results": [
+      {
+        "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0028318919939920306,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.06676843197783455,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0008408980211243033,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0017300050240010023,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 1.8092227639863268,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0006122390041127801,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0007482329965569079,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.0006189410341903567,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0004918129998259246,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0007245389861054718,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.0005744679947383702,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.00046452099923044443,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0006623630179092288,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.0005295230075716972,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.000445134995970875,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0005934939836151898,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.0005513340001925826,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.00044613698264583945,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0011295390431769192,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.31343521003145725,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0006832219660282135,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0016828369698487222,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.004213673993945122,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0006437980337068439,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[foreign]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.001640447007957846,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[foreign]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.003909824998117983,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[foreign]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0008809830178506672,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty-option]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0019424139754846692,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty-option]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.0037900189636275172,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty-option]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.000710653024725616,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[scalar]",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0017218709690496325,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[scalar]",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.003616715024691075,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[scalar]",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.0006313140038400888,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request",
+        "when": "setup",
+        "outcome": "passed",
+        "seconds": 0.0005679359892383218,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request",
+        "when": "call",
+        "outcome": "passed",
+        "seconds": 0.09843462600838393,
+        "detail": null
+      },
+      {
+        "nodeid": "tests/training/test_titans_campaign.py::test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request",
+        "when": "teardown",
+        "outcome": "passed",
+        "seconds": 0.000582793029025197,
+        "detail": null
+      }
+    ]
+  }
+}
