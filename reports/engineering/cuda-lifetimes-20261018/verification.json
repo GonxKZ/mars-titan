@@ -1,0 +1,1143 @@
+{
+  "schema_version": 1,
+  "kind": "cuda_lifetime_investigation",
+  "issue": 202,
+  "recorded_at_utc": "2026-10-18T00:14:50.842876+00:00",
+  "code_commit": "efa59f543135afb3458467c7785cd4c963cce4d8",
+  "source_sha256": {
+    "native/.clang-tidy": "1d463b87e90c8d13fe5ad09ee8594075611c99bf16c8b24b9418b8ff621269a6",
+    "native/benchmarks/cuda_lifetime_options.hpp": "45b42246915ab510f1832d5558857128f7b047ac1a3547e2c791048b2fa6d43b",
+    "native/benchmarks/cuda_lifetimes.cpp": "741b1e20a825e3f8f5d04b46c63bd91917466a7b232e4e6dd242aca845fc640d",
+    "native/cmake/Candidate.cmake": "fed8bd622893b93c3c4f073be1768c7ea3c97e28498037ad12f63eae28202b85",
+    "native/tests/candidate_cuda_fixture.hpp": "f9977a3953c36b92ee69290410f0967b5c395e4f17aadd0a09033c24ebb5ae68",
+    "native/tests/candidate_cuda_tests.cpp": "24cb6f6cfacd8a85ed246a75d6f52ce02bde359e9353accde3c7fe8c37de4696",
+    "native/tests/cuda_lifetime_options_tests.cpp": "df3af3d3bb84df91a5e9c2f9b615691345fe58efcfe0bf2bd3ff305e6d6489d1",
+    "scripts/analyze_cuda_lifetimes.py": "7b202ad9702416c8235d8d0d549d612279d7e27d89a41e125fc191772c6a8ec9",
+    "tests/native/test_cuda_lifetimes.py": "7e275131e568f2c20aab40bfdf28947da34fc11b4d817512e89912425cc6fb7d"
+  },
+  "environment": {
+    "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "vram_mib": 8188,
+    "driver": "595.91.07",
+    "torch": "2.14.0+cu130",
+    "runtime_cuda": "13.0",
+    "pytorch_commit": "08187d9e0fba026dc8217405802ab5381dc88d90",
+    "toolkit_headers": "13.4",
+    "compute_sanitizer": "2026.3.0.0 build 38855100",
+    "compiler": "Clang 21.1.8",
+    "cpp_standard": 20,
+    "precision": [
+      "float64",
+      "float32"
+    ],
+    "tf32": false,
+    "cpu_threads": 1,
+    "power_profile": "power-saver",
+    "concurrent_work": "Escritorio, navegador y observatorio. Una carga CUDA propia a la vez.",
+    "allocator_memory_fraction": 0.0625,
+    "cublas_workspace_config": ":4096:8"
+  },
+  "optimizer_steps": 0,
+  "runs": [
+    {
+      "name": "v2-plain-candidate-300-keep",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "candidate",
+        "repetitions": 300,
+        "release_workspaces": false,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 0,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "6aa5af3a18dd845a5fa4c16aaaaad52d8e11e14f6d52020c2b47d06c734dcf2b",
+      "scheduler_seconds": 179.55834826198407,
+      "process_seconds": 179.5,
+      "peak_rss_bytes": 1375571968,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": false,
+        "memcheck_errors": null,
+        "non_leak_errors": null,
+        "retained_bytes": null,
+        "allocations": [],
+        "final_phase": "after_scope",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 300,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 301,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {},
+      "memory_space_bytes": {},
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 300,
+          "allocated_bytes": 67108864,
+          "active_bytes": 67108864,
+          "reserved_bytes": 100663296
+        }
+      },
+      "maximum_output_error": {
+        "float64": 6.661338147750939e-16,
+        "float32": 2.384185791015625e-07
+      }
+    },
+    {
+      "name": "v2-memcheck-empty-1-keep",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "empty",
+        "repetitions": 1,
+        "release_workspaces": false,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 0,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "2fada4e10fee2c15a759c33ca9b7073bea567432bcecbf373117e5110324949b",
+      "scheduler_seconds": 1.051706982019823,
+      "process_seconds": 1.0,
+      "peak_rss_bytes": 633102336,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": true,
+        "memcheck_errors": 0,
+        "non_leak_errors": 0,
+        "retained_bytes": 0,
+        "allocations": [],
+        "final_phase": "after_scope",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 1,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 2,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {},
+      "memory_space_bytes": {},
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 1,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        }
+      },
+      "maximum_output_error": {}
+    },
+    {
+      "name": "v2-memcheck-gemm-1-keep",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "gemm",
+        "repetitions": 1,
+        "release_workspaces": false,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 99,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "37b8e08170b6165f5103e577d9a7d82a7e79dc01f563ecbec19f9fbc066f0afa",
+      "scheduler_seconds": 1.7602137250360101,
+      "process_seconds": 1.7,
+      "peak_rss_bytes": 1067171840,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": true,
+        "memcheck_errors": 8,
+        "non_leak_errors": 0,
+        "retained_bytes": 136316929,
+        "allocations": [
+          {
+            "bytes": 33554432,
+            "address": "0x7033a4000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_cublas_workspace"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7033a6000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7033b6600000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7033b6c00000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7033b6c00400",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 1,
+            "address": "0x7033b6e00000",
+            "memory_space": "host_pinned",
+            "evidence": "same_process_host_segment_address_and_size",
+            "category": "torch_host_cache"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7033be000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_cublas_workspace"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7033c0000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          }
+        ],
+        "final_phase": "after_scope",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 1,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 2,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {
+        "torch_cublas_workspace": 67108864,
+        "cublas_handle_creation": 67110912,
+        "torch_inactive_cache": 2097152,
+        "torch_host_cache": 1
+      },
+      "memory_space_bytes": {
+        "device": 136316928,
+        "host_pinned": 1
+      },
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 1,
+          "allocated_bytes": 67108864,
+          "active_bytes": 67108864,
+          "reserved_bytes": 69206016
+        }
+      },
+      "maximum_output_error": {}
+    },
+    {
+      "name": "v2-memcheck-gru-30-keep",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "gru",
+        "repetitions": 30,
+        "release_workspaces": false,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 99,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "cfcdb0c4a3246b05eba76035e6465b80f2e78af70e0169f2445144a2f5af3fad",
+      "scheduler_seconds": 7.370256435009651,
+      "process_seconds": 7.31,
+      "peak_rss_bytes": 1475960832,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": true,
+        "memcheck_errors": 10,
+        "non_leak_errors": 0,
+        "retained_bytes": 25179665,
+        "allocations": [
+          {
+            "bytes": 2097152,
+            "address": "0x7334f2600000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7334f2e00000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7334f2e01c00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7334f2e01e00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7334f2e03a00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7334f3000000",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7334f3000200",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 1,
+            "address": "0x7334f3000400",
+            "memory_space": "host_pinned",
+            "evidence": "same_process_host_segment_address_and_size",
+            "category": "torch_host_cache"
+          },
+          {
+            "bytes": 20971520,
+            "address": "0x7334fa000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7334fb600000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          }
+        ],
+        "final_phase": "after_scope",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 30,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 31,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {
+        "torch_inactive_cache": 25165824,
+        "cudnn_handle_creation": 13840,
+        "torch_host_cache": 1
+      },
+      "memory_space_bytes": {
+        "device": 25179656,
+        "host_pinned": 9
+      },
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 30,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 25165824
+        }
+      },
+      "maximum_output_error": {}
+    },
+    {
+      "name": "v2-memcheck-candidate-30-keep",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "candidate",
+        "repetitions": 30,
+        "release_workspaces": false,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 99,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "f5bb483e9a052d400850126aabe14b1e8a757a57573bc8826daaf80faa6fcbe6",
+      "scheduler_seconds": 305.59094357601134,
+      "process_seconds": 305.54,
+      "peak_rss_bytes": 2764775424,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": true,
+        "memcheck_errors": 20,
+        "non_leak_errors": 0,
+        "retained_bytes": 167788049,
+        "allocations": [
+          {
+            "bytes": 2097152,
+            "address": "0x7ce9c2000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7ce9c2200000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7ce9c4000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_cublas_workspace"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7ce9c6000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7ce9ce000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_cublas_workspace"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x7ce9d0000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7cea16600000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 20971520,
+            "address": "0x7cea16800000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7cea17c00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7cea23400000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7cea23401c00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7cea23401e00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7cea23402200",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7cea23402600",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7cea23404200",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7cea23600000",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 1,
+            "address": "0x7cea23600200",
+            "memory_space": "host_pinned",
+            "evidence": "same_process_host_segment_address_and_size",
+            "category": "torch_host_cache"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7cea23600400",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7cea23c00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7cea2bc00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          }
+        ],
+        "final_phase": "after_scope",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 30,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 31,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {
+        "torch_inactive_cache": 33554432,
+        "torch_cublas_workspace": 67108864,
+        "cublas_handle_creation": 67110912,
+        "cudnn_handle_creation": 13840,
+        "torch_host_cache": 1
+      },
+      "memory_space_bytes": {
+        "device": 167788040,
+        "host_pinned": 9
+      },
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 30,
+          "allocated_bytes": 67108864,
+          "active_bytes": 67108864,
+          "reserved_bytes": 100663296
+        }
+      },
+      "maximum_output_error": {
+        "float64": 6.661338147750939e-16,
+        "float32": 2.384185791015625e-07
+      }
+    },
+    {
+      "name": "v2-memcheck-candidate-1-release-workspaces",
+      "configuration": {
+        "record": "configuration",
+        "schema_version": 1,
+        "workload": "candidate",
+        "repetitions": 1,
+        "release_workspaces": true,
+        "tf32": false,
+        "optimizer_steps": 0
+      },
+      "exit_code": 99,
+      "binary_sha256": "e4bfd08b040ee152e6d19b1dbc1201061bb5fabccb8e1e7e245e800aadfda9da",
+      "log_sha256": "3d44549036a4968c6e58526be0f43997b997142727c949e6c2d58e9dcf19dec6",
+      "scheduler_seconds": 21.974441646947525,
+      "process_seconds": 21.92,
+      "peak_rss_bytes": 2620743680,
+      "attribution": {
+        "schema_version": 1,
+        "kind": "cuda_lifetime_attribution",
+        "memcheck_observed": true,
+        "memcheck_errors": 20,
+        "non_leak_errors": 0,
+        "retained_bytes": 167788049,
+        "allocations": [
+          {
+            "bytes": 2097152,
+            "address": "0x786866000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x786866200000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x786868000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x78686a000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x786872000000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 33554432,
+            "address": "0x786874000000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7868b6600000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 20971520,
+            "address": "0x7868b6800000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7868b7c00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7868c5400000",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7868c5401c00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7868c5401e00",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 1024,
+            "address": "0x7868c5402200",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cublas_handle_creation"
+          },
+          {
+            "bytes": 6912,
+            "address": "0x7868c5402600",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7868c5404200",
+            "memory_space": "device",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7868c5600000",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 1,
+            "address": "0x7868c5600200",
+            "memory_space": "host_pinned",
+            "evidence": "same_process_host_segment_address_and_size",
+            "category": "torch_host_cache"
+          },
+          {
+            "bytes": 4,
+            "address": "0x7868c5600400",
+            "memory_space": "host_pinned",
+            "evidence": "allocation_backtrace",
+            "category": "cudnn_handle_creation"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7868c5c00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          },
+          {
+            "bytes": 2097152,
+            "address": "0x7868c7c00000",
+            "memory_space": "device",
+            "evidence": "same_process_segment_address_and_size",
+            "category": "torch_inactive_cache"
+          }
+        ],
+        "final_phase": "final_workspace_release",
+        "unattributed_active_bytes": 0,
+        "host_active_bytes": 0,
+        "repetitions": 1,
+        "allocated_growth_bytes": 0,
+        "active_growth_bytes": 0,
+        "reserved_growth_bytes": 0,
+        "host_active_growth_bytes": 0,
+        "host_reserved_growth_bytes": 0,
+        "stable_after_first": true,
+        "snapshot_count": 5,
+        "completion_record_observed": true,
+        "limits": "La pila atribuye la creación en el proveedor. No acredita la liberación de todos sus recursos ni sustituye la comprobación de errores de acceso."
+      },
+      "category_bytes": {
+        "torch_inactive_cache": 100663296,
+        "cublas_handle_creation": 67110912,
+        "cudnn_handle_creation": 13840,
+        "torch_host_cache": 1
+      },
+      "memory_space_bytes": {
+        "device": 167788040,
+        "host_pinned": 9
+      },
+      "last_snapshot_per_phase": {
+        "initial": {
+          "iteration": 0,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 0
+        },
+        "after_scope": {
+          "iteration": 1,
+          "allocated_bytes": 67108864,
+          "active_bytes": 67108864,
+          "reserved_bytes": 100663296
+        },
+        "after_workspace_release": {
+          "iteration": 1,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 100663296
+        },
+        "after_recreation": {
+          "iteration": 2,
+          "allocated_bytes": 67108864,
+          "active_bytes": 67108864,
+          "reserved_bytes": 100663296
+        },
+        "final_workspace_release": {
+          "iteration": 2,
+          "allocated_bytes": 0,
+          "active_bytes": 0,
+          "reserved_bytes": 100663296
+        }
+      },
+      "maximum_output_error": {
+        "float64": 6.661338147750939e-16,
+        "float32": 2.384185791015625e-07
+      }
+    }
+  ],
+  "sources": [
+    {
+      "file": "CublasHandlePool.cpp",
+      "sha256": "2dfaea7f42cb654bf4db6bddedbfd5f2661d92c6d96f2c90652f3d9c162baf2c",
+      "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/CublasHandlePool.cpp"
+    },
+    {
+      "file": "CudnnHandle.cpp",
+      "sha256": "c32612aad389cfcff7e29a420ef0ec7fa8a37e1f902ff861ac7a12390a4e4371",
+      "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cudnn/Handle.cpp"
+    },
+    {
+      "file": "CachingHostAllocator.cpp",
+      "sha256": "ff5d1578c1fd7f607b87bb57de41ff7e77cb3bcfac376fa7507f05b586093ae0",
+      "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/CachingHostAllocator.cpp"
+    }
+  ],
+  "historical_log": {
+    "sha256": "dd96e47f3978f421371244a78dcb6079d5d4b3efc3d0ce73972d3dc86b91ada4",
+    "retained_bytes": 136316933,
+    "allocations": 9,
+    "level": "Pilas de creación conservadas. El proceso histórico no emitía snapshots por dirección."
+  },
+  "verification": {
+    "python_cases": 37,
+    "release_options_and_invalid_cli": 2,
+    "cuda_ctest_cases": 2,
+    "asan_ubsan_options_cases": 1,
+    "clang_tidy": "Sin diagnósticos propios en tres unidades.",
+    "static_analyzer": "Sin diagnósticos en tres unidades, analyzer-werror.",
+    "asan_ubsan_cuda": {
+      "status": "initialization_failed",
+      "exit_code": 1,
+      "error": "cudaGetDeviceCount: Error 2 out of memory",
+      "checks_reached": 0,
+      "process_seconds": 1.5,
+      "peak_rss_bytes": 1075564544
+    },
+    "mutations": [
+      {
+        "mutation": "ignore_segment_address",
+        "exit_code": 1,
+        "source_sha256": "4cf1f3615ec2af50766b34f7580a84257d076d350f81aa127e4127f93a69d561",
+        "log_sha256": "52396f29acc7743f4afc46d7ca4ff886016c196e19d0cc98a8ee80bf8fd8833e",
+        "failures": [
+          "FAILED tests/native/test_cuda_lifetimes.py::test_workspace_ownership_requires_the_same_address",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_provider_attribution_uses_the_backtrace_and_names_its_evidence[cublasCreate_v2-cublas_handle_creation]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_provider_attribution_uses_the_backtrace_and_names_its_evidence[cudnnCreate-cudnn_handle_creation]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_a_host_allocation_is_not_matched_to_a_device_segment",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_a_provider_name_inside_a_filename_is_not_an_allocation_symbol",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_pinned_cache_ownership_requires_the_host_snapshot_address"
+        ]
+      },
+      {
+        "mutation": "ignore_sanitizer_totals",
+        "exit_code": 1,
+        "source_sha256": "acd586e942363f86ab09f3bf71dc9a2e760d6001b118d34e328297a5a366165c",
+        "log_sha256": "02287dade16c6a153070e8ae0ed697cd30afbcc7a202f1b5b4217f16b80de046",
+        "failures": [
+          "FAILED tests/native/test_cuda_lifetimes.py::test_truncated_or_inconsistent_sanitizer_output_is_rejected[<lambda>0]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_truncated_or_inconsistent_sanitizer_output_is_rejected[<lambda>1]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_truncated_or_inconsistent_sanitizer_output_is_rejected[<lambda>2]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_truncated_or_inconsistent_sanitizer_output_is_rejected[<lambda>3]"
+        ]
+      },
+      {
+        "mutation": "call_active_memory_cache",
+        "exit_code": 1,
+        "source_sha256": "819046677f383e78529624c0d7b678753e1e91aa9420bc863962e4f6bb300283",
+        "log_sha256": "1ccc1bf19c315cfab150254007360d88618779d90a86f883ec1aeba87c1f19e9",
+        "failures": [
+          "FAILED tests/native/test_cuda_lifetimes.py::test_workspace_ownership_requires_the_same_address",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_an_active_block_without_a_workspace_reference_remains_unattributed"
+        ]
+      },
+      {
+        "mutation": "ignore_host_growth",
+        "exit_code": 1,
+        "source_sha256": "5829ef3be55555f4eb057aadfe9729cc99313fb023beacea2eb58b06da464bcc",
+        "log_sha256": "337d1484de772e77da6be7c788fc5811c5eea2c2c94dec6232588cd974c22097",
+        "failures": [
+          "FAILED tests/native/test_cuda_lifetimes.py::test_repeated_snapshots_report_growth_without_treating_release_as_a_repetition",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_pending_host_memory_growth_is_visible_even_when_device_memory_is_stable"
+        ]
+      },
+      {
+        "mutation": "ignore_failed_completion",
+        "exit_code": 1,
+        "source_sha256": "70c4fc4fab90b97db89ed1f2dd222123e1859b4aec0f37595118edd4b1207b94",
+        "log_sha256": "dfca6975c00fa6bd131318da9dbf5b9211323548f4f24c0d4502e35e6c35dab1",
+        "failures": [
+          "FAILED tests/native/test_cuda_lifetimes.py::test_versioned_execution_requires_one_successful_completion[completion0]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_versioned_execution_requires_one_successful_completion[completion1]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_versioned_execution_requires_one_successful_completion[completion2]",
+          "FAILED tests/native/test_cuda_lifetimes.py::test_versioned_execution_requires_one_successful_completion[completion3]"
+        ]
+      }
+    ],
+    "quality": {
+      "schema_version": 1,
+      "measured_at": "2026-10-18T02:09:26.839162",
+      "tools": {
+        "coverage": "7.16.1",
+        "radon": "6.0.1",
+        "branch_coverage": true,
+        "python": "3.12.14",
+        "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+      },
+      "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+      "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+      "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+      "limits": [
+        "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+        "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+        "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+        "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+        "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+        "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+      ],
+      "include": [
+        "scripts/analyze_cuda_lifetimes.py"
+      ],
+      "totals": {
+        "statements": 160,
+        "covered_statements": 159,
+        "branches": 78,
+        "covered_branches": 76
+      },
+      "files": [
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "source_sha256": "7b202ad9702416c8235d8d0d549d612279d7e27d89a41e125fc191772c6a8ec9",
+          "statements": 160,
+          "covered_statements": 159,
+          "branches": 78,
+          "covered_branches": 76
+        }
+      ],
+      "functions": [
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "analyze",
+          "start_line": 171,
+          "end_line": 227,
+          "cyclomatic_complexity": 28,
+          "statements": 35,
+          "covered_statements": 35,
+          "coverage_fraction": 1.0,
+          "branches": 24,
+          "covered_branches": 23,
+          "crap": 28.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_segments",
+          "start_line": 27,
+          "end_line": 74,
+          "cyclomatic_complexity": 26,
+          "statements": 33,
+          "covered_statements": 33,
+          "coverage_fraction": 1.0,
+          "branches": 18,
+          "covered_branches": 18,
+          "crap": 26.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_ownership",
+          "start_line": 77,
+          "end_line": 116,
+          "cyclomatic_complexity": 15,
+          "statements": 29,
+          "covered_statements": 29,
+          "coverage_fraction": 1.0,
+          "branches": 12,
+          "covered_branches": 12,
+          "crap": 15.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_growth",
+          "start_line": 135,
+          "end_line": 153,
+          "cyclomatic_complexity": 11,
+          "statements": 8,
+          "covered_statements": 8,
+          "coverage_fraction": 1.0,
+          "branches": 4,
+          "covered_branches": 4,
+          "crap": 11.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_host_segments",
+          "start_line": 119,
+          "end_line": 132,
+          "cyclomatic_complexity": 10,
+          "statements": 7,
+          "covered_statements": 7,
+          "coverage_fraction": 1.0,
+          "branches": 4,
+          "covered_branches": 4,
+          "crap": 10.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_validate_completion",
+          "start_line": 156,
+          "end_line": 168,
+          "cyclomatic_complexity": 9,
+          "statements": 10,
+          "covered_statements": 10,
+          "coverage_fraction": 1.0,
+          "branches": 8,
+          "covered_branches": 8,
+          "crap": 9.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_address",
+          "start_line": 15,
+          "end_line": 18,
+          "cyclomatic_complexity": 3,
+          "statements": 3,
+          "covered_statements": 3,
+          "coverage_fraction": 1.0,
+          "branches": 2,
+          "covered_branches": 2,
+          "crap": 3.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "_count",
+          "start_line": 21,
+          "end_line": 24,
+          "cyclomatic_complexity": 3,
+          "statements": 3,
+          "covered_statements": 3,
+          "coverage_fraction": 1.0,
+          "branches": 2,
+          "covered_branches": 2,
+          "crap": 3.0
+        },
+        {
+          "path": "scripts/analyze_cuda_lifetimes.py",
+          "function": "main",
+          "start_line": 230,
+          "end_line": 242,
+          "cyclomatic_complexity": 2,
+          "statements": 12,
+          "covered_statements": 12,
+          "coverage_fraction": 1.0,
+          "branches": 2,
+          "covered_branches": 2,
+          "crap": 2.0
+        }
+      ],
+      "shadowed_regions": [],
+      "coverage_sha256": "2ee6f6934332a2182e245796ea82fdeaedad2bfd767e66bd26d339f2b30178d9",
+      "functions_measured": 9
+    },
+    "logs": {
+      "clang-tidy-final.log": "da5985b78528a1cb2eca1b682d8d102872f4730f4c83b5d5ac05700f54201cd6",
+      "options-final-tidy.log": "5a188161b8dce6ef7b4bc4079b8bd606b8b2568d4b5780d485ff97ba5f34a01b",
+      "static-analysis-21.log": "315d569081f93e96a5aa2f837d57049b4a629dd562ef286824000fef08b43260",
+      "options-final-analysis.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "options-final-ctest.log": "8d83505503d9eabe64a64cce36a3787a4cc9c2e815f23ef9f11672c19f9a0a1d",
+      "options-final-asan-ctest.log": "90b2580663e4e38b77cd4cb50007052cae4453fbf04eafccf74e60416b68e580",
+      "cuda-ctest.log": "4f6bc72b9b96eeaae78a59d39d4579e14dd2c8dbb80b25a3c0438bb4e36716cd",
+      "analyzer-coverage-final.log": "165cf835e1f713cd622aad009cbf7aa3c40404a32a5033bf953d935f50805f8c",
+      "asan-candidate.log": "7bb9a03839858d7e2fde1d8ade63b7ad26783eda046a7494a60ee138dd68f5e0",
+      "ruff-check.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "ruff-format.log": "800834b3fb9484a6bfc6d00e201ecbee60e5ce6b9010e38817cb5cf66a0fe268",
+      "repository-check.log": "521c087da5e2c610de0f61042edab46b91925d80c09430cc17da2bcd0919bf27"
+    }
+  },
+  "unmeasured": [
+    "Pico de VRAM durante las operaciones",
+    "Latencias por operación y energía",
+    "Todos los estados internos de cuBLAS y cuDNN",
+    "Otros modelos y tamaños"
+  ],
+  "limits": [
+    "Sin crecimiento observado en estas formas y repeticiones, no una garantía para cualquier carga.",
+    "El código 99 de Compute Sanitizer se conserva. No hubo supresiones, emptyCache ni reset del contexto.",
+    "clearCublasWorkspaces se usa solo en el diagnóstico. No se cambia la política de producción.",
+    "Ningún entrenamiento ni resultado predictivo forma parte de esta comprobación."
+  ]
+}

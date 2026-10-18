@@ -107,6 +107,21 @@ CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
 
 El 17 de octubre, con PyTorch 2.14.0+cu130, los bytes asignados se mantuvieron en 67.108.864 y los reservados en 69.206.016 en las 30 repeticiones. Compute Sanitizer terminó con código 99 y señaló 136.316.928 bytes en siete asignaciones al salir. Este resultado reproduce una parte de la [incidencia #202](https://github.com/GonxKZ/mars-titan/issues/202) sin enlazar MARS-TITAN. No acredita que toda la incidencia sea del runtime ni que el cierre esté libre de fugas.
 
+`mars-titan-cuda-lifetimes` añade snapshots por dirección, controles `empty`, `gemm`, `gru` y `candidate`, y entre 1 y 300 repeticiones. Necesita cabeceras completas de CUDA de la misma versión mayor que el runtime de Torch. Enlaza las bibliotecas del entorno fijado, sin sustituirlas por las del Toolkit. Desde `native/`:
+
+```bash
+cmake --build --preset native-candidate-cuda --target mars-titan-cuda-lifetimes
+CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
+  PYTORCH_ALLOC_CONF=per_process_memory_fraction:0.0625 \
+  compute-sanitizer --tool memcheck --leak-check full --error-exitcode 99 \
+  ../build/native/native-candidate-cuda/mars-titan-cuda-lifetimes candidate 30 keep \
+  > cuda-lifetimes.log 2>&1
+uv run --no-sync python ../scripts/analyze_cuda_lifetimes.py \
+  --log cuda-lifetimes.log --output cuda-lifetimes-analysis.json
+```
+
+El modo `release-workspaces` solo sirve para atribuir reservas tras sincronizar y destruir los tensores. No vacía la caché ni destruye handles. El analizador no sobrescribe informes. La [comprobación del 18 de octubre](../reports/engineering/cuda-lifetimes-20261018/README.md) conserva el código 99, separa dispositivo y host, registra 300 ciclos sin crecimiento observado y documenta el intento ASan/UBSan que no pudo inicializar CUDA.
+
 ```bash
 cmake --preset native-msan -DMARS_TITAN_BUILD_FINANCIAL=ON \
   -DMARS_TITAN_MSAN_STDLIB_ROOT="${MSAN_STDLIB_ROOT:?Define la instalación instrumentada}"
