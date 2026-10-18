@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "conditional_route_policy_regret_bound",
+  "verified_at_utc": "2026-10-18T20:23:38.960511+00:00",
+  "lean_version": "4.35.0",
+  "lean_commit": "eb6cafb7290e8bd5f2937522d8d804f58f02bafc",
+  "mathlib_commit": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "source_sha256": {
+    "RoutePolicyRegret.lean": "96d54cbef040f4ce23ca8ae3a2728488c795ce1729ce7800792faa682c9661b7",
+    "lakefile.toml": "1ad48405678eaa32fb7280f3b7f28c5285247d02b9694e3960185d20a5299cdc",
+    "lake-manifest.json": "f34fa18ca44ea4bd22ac7fdd0db89df37fa38a1e08c3059b7c2881e4d6bbe612",
+    "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c"
+  },
+  "compiled_olean_sha256": "1544476d81d4b7c3aae1485d55f17eab58237a0aee279e01a7a0224bac85b3a6",
+  "verification": {
+    "command": [
+      "lean",
+      "-j2",
+      "-M2048",
+      "-o",
+      "RoutePolicyRegret.olean",
+      "RoutePolicyRegret.lean"
+    ],
+    "working_directory": "reports/research/lean",
+    "exit_code": 0,
+    "elapsed_seconds": 1.1584697639918886,
+    "output": "'MarsTitan.RoutePolicy.regret_against_any_route' depends on axioms: [propext, Classical.choice, Quot.sound]",
+    "dependencies": "Imports precompilados locales correspondientes a los pins existentes",
+    "downloaded_dependencies": false,
+    "lake_build_executed": false
+  },
+  "axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "custom_axioms": [],
+  "native_evaluation": false,
+  "independent_checker_executed": false,
+  "negative_control": {
+    "change": "Sustituir 2 * delta por delta en la conclusión",
+    "exit_code": 1,
+    "rejected_by": "La prueba con linarith no cierra la cota alterada"
+  },
+  "scope": "Desigualdad algebraica sobre funciones reales con error uniforme y máximo estimado aportados como hipótesis",
+  "limits": [
+    "No demuestra una cota uniforme para ridge ni formaliza la esperanza condicional",
+    "No verifica el programa PyTorch ni su aritmética en coma flotante",
+    "El retorno forzado a K1 fuera de los rangos marginales no satisface necesariamente el supuesto de máximo",
+    "No acredita mejora predictiva, novedad matemática ni superioridad del modelo",
+    "Se reutilizaron binarios e imports precompilados, sin reconstruir la cadena de compiladores ni ejecutar otros comprobadores"
+  ]
+}
