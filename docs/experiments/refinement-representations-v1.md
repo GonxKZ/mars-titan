@@ -84,7 +84,9 @@ que ese coste quede fuera del total conjunto.
 La supervisión solicita la parada de su propio árbol de procesos antes de
 agotar el saldo conjunto y limita la espera de cierre a cinco segundos. El
 comando `timeout`, ejecutado como proceso independiente, conserva ese límite
-si el supervisor termina abruptamente.
+si el supervisor termina abruptamente. El límite externo utiliza el menor
+saldo disponible entre el conjunto y el estudio. Al incluir el arranque del
+hijo, puede detenerse antes que el cronómetro interno del estudio.
 Registra cualquier exceso observado durante el cierre. Una parada forzada
 conserva el último estado confirmado y puede dejar una reserva pública sin
 cerrar. Ese caso requiere revisar los recibos antes de reanudar. No se
