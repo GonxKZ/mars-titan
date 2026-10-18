@@ -1,0 +1,49 @@
+{
+  "recorded_at_utc": "2026-10-18T23:26:45.164003+00:00",
+  "source_commit": "51efb6396ebd5cee655ed6020993488e53653191",
+  "sources": {
+    "benchmarks/refinement_scaling_analysis.py": "ff58eef575fa0fcd9ba1f543935a9a1fa4118300a1e96bd6f86b291672b9aef6",
+    "tests/tooling/test_refinement_scaling_analysis.py": "e5d6cf861f76df26665774f6d258c5b097927b65350244288c51f7e0a688a7a4"
+  },
+  "tests": {
+    "tests": "27",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "1.772"
+  },
+  "artifact_sha256": {
+    "scaling-analysis-quality-v3/tests.log": "8dc50fc3613d4f9e1a859f67e4217b4b90f3c6357bbcb2e2ba3bab5bb82e5a65",
+    "scaling-analysis-quality-v3/tests.xml": "d3023e15f3e2141fef5eb8dce51273c0855f72462db5e9206be51ce2f04b9716",
+    "scaling-analysis-quality-v3/coverage.json": "1b8f440f6582a068dc75d4f3905d92e24bed577ee8ceba8afd2d4209bb5d0ba9",
+    "scaling-analysis-mutations-v1/mutations.json": "da27dda3a4aaa850679a01c992b456da6496ee52bc25eea8d56ed6031b5a620c",
+    "scaling-analysis-preflight-v1.json": "678a9575050a9da063929d40af78e473513dcab5f02844f466c913440ab6473a",
+    "scaling-analysis-binding-red.log": "a588b04510656d765b362ecb04f478384ba4ef3a68d7471c8053a4729b985393",
+    "scaling-analysis-boundaries.log": "a1d91132ee9e4bc29c187052de0851ad64ccf2f944a81aa0cea8280b74d1e99e"
+  },
+  "preflight": {
+    "recorded_at_utc": "2026-10-18T23:22:28.913174+00:00",
+    "status": "verified_metadata_only",
+    "seconds": 0.2088335669832304,
+    "prepared_sha256": {
+      "n64-original": "e20a6e89c55bac8c93941026e59438b0cc2be3d30266ca785aa5907b178b87b1",
+      "n64-geometry": "f6cbff2b100f728214c77b1d17ac90e256909bdcf641ff6fa1602add69aec946",
+      "n256-original": "96a9d07b7676b9fec3f30bbcb8757ab36f3e48912331fb8f6cb76a5d51c13a87",
+      "n256-geometry": "a7db78a96968b5ca80e6885d82f53f5883a0894be3815411caa5adaf58fb79e4"
+    },
+    "cohorts": {
+      "n64-original": 64,
+      "n64-geometry": 64,
+      "n256-original": 256,
+      "n256-geometry": 256
+    },
+    "evaluation_predictions_read": false,
+    "final_test_opened": false
+  },
+  "inference_or_training": false,
+  "gpu_used": false,
+  "final_test_opened": false,
+  "result_scope": "Fixtures técnicos y comprobación de metadatos reales. Sin resultados predictivos nuevos.",
+  "scientific_comparison": "pending",
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+}

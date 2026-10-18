@@ -1,0 +1,148 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-19T01:24:50.236396",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [],
+ "totals": {
+  "statements": 182,
+  "covered_statements": 172,
+  "branches": 90,
+  "covered_branches": 85
+ },
+ "files": [
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "source_sha256": "ff58eef575fa0fcd9ba1f543935a9a1fa4118300a1e96bd6f86b291672b9aef6",
+   "statements": 182,
+   "covered_statements": 172,
+   "branches": 90,
+   "covered_branches": 85
+  }
+ ],
+ "functions": [
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "score_populations",
+   "start_line": 29,
+   "end_line": 66,
+   "cyclomatic_complexity": 19,
+   "statements": 27,
+   "covered_statements": 26,
+   "coverage_fraction": 0.9629629629629629,
+   "branches": 18,
+   "covered_branches": 17,
+   "crap": 19.01834070009653
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "average_seeds",
+   "start_line": 98,
+   "end_line": 126,
+   "cyclomatic_complexity": 19,
+   "statements": 17,
+   "covered_statements": 17,
+   "coverage_fraction": 1.0,
+   "branches": 12,
+   "covered_branches": 12,
+   "crap": 19.0
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "analyze",
+   "start_line": 223,
+   "end_line": 286,
+   "cyclomatic_complexity": 18,
+   "statements": 37,
+   "covered_statements": 37,
+   "coverage_fraction": 1.0,
+   "branches": 16,
+   "covered_branches": 16,
+   "crap": 18.0
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "preparations",
+   "start_line": 170,
+   "end_line": 193,
+   "cyclomatic_complexity": 15,
+   "statements": 15,
+   "covered_statements": 14,
+   "coverage_fraction": 0.9333333333333333,
+   "branches": 10,
+   "covered_branches": 9,
+   "crap": 15.066666666666666
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "compare_population",
+   "start_line": 69,
+   "end_line": 95,
+   "cyclomatic_complexity": 13,
+   "statements": 16,
+   "covered_statements": 16,
+   "coverage_fraction": 1.0,
+   "branches": 14,
+   "covered_branches": 14,
+   "crap": 13.0
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "load_tables",
+   "start_line": 129,
+   "end_line": 167,
+   "cyclomatic_complexity": 13,
+   "statements": 26,
+   "covered_statements": 26,
+   "coverage_fraction": 1.0,
+   "branches": 14,
+   "covered_branches": 14,
+   "crap": 13.0
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "main",
+   "start_line": 289,
+   "end_line": 296,
+   "cyclomatic_complexity": 3,
+   "statements": 7,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 2,
+   "covered_branches": 0,
+   "crap": 12.0
+  },
+  {
+   "path": "benchmarks/refinement_scaling_analysis.py",
+   "function": "write_population",
+   "start_line": 196,
+   "end_line": 220,
+   "cyclomatic_complexity": 4,
+   "statements": 7,
+   "covered_statements": 7,
+   "coverage_fraction": 1.0,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 4.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "1b8f440f6582a068dc75d4f3905d92e24bed577ee8ceba8afd2d4209bb5d0ba9",
+ "functions_measured": 8
+}
