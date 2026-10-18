@@ -292,7 +292,7 @@ flowchart LR
     E --> C[Análisis crítico<br/>mejoras, fallos y límites]
 ```
 
-La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory-review.md) deja tres innovaciones para el núcleo de la campaña, cada una desactivable y desactivada por defecto. Su punto de inserción sobre Titans-MAC y las ampliaciones de MARS-TITAN está en el [diagrama del sistema](docs/research/titans-mac-architecture.md#innovaciones-posteriores-a-titans). Ninguna se ha entrenado ni evaluado, así que no hay resultados experimentales.
+La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory-review.md) deja tres innovaciones para el núcleo de la campaña, cada una desactivable y desactivada por defecto. Su punto de inserción sobre Titans-MAC y las ampliaciones de MARS-TITAN está en el [diagrama del sistema](docs/research/titans-mac-architecture.md#innovaciones-posteriores-a-titans). PT1 tiene [resultados exploratorios del 18 de octubre](reports/research/combined-memory-20261018/README.md), sin completar su comparación declarada. PT2 y PT3 siguen sin resultados financieros de sus comparaciones.
 
 - **PT1, escritura acotada y contracción condicionada** ([#453](https://github.com/GonxKZ/mars-titan/issues/453)): implementada y comprobada sin entrenar ([documento](docs/engineering/titans-memory-stability.md)). La campaña A v2 la declara con su alternativa trivial como extensiones del núcleo de `titans_mac_online`, con sus mismos casos, semillas y parada. Resultado experimental pendiente.
 
