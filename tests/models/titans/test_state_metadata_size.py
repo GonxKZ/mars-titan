@@ -10,7 +10,7 @@ from tests.models.titans.test_financial_adapter import VARIANTS, api, on_device,
 
 
 def serialized_size(model, state):
-    # El formato completo anterior es el oráculo, independiente del recuento optimizado.
+    # El formato completo anterior es la referencia, independiente del recuento optimizado.
     return len(
         canonical(
             model._metadata(state.flow_ids, state.last_sample_ids, state.last_prediction_at)
