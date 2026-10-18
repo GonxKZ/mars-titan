@@ -84,6 +84,52 @@ contabilizarse. Con `--encoders pretraining_free`, tanto la composición como su
 tinta se ejecutan en CPU. No se atribuye a la imagen una diferencia que provenga de cambiar
 también el codificador de noticias.
 
+Para una edición ya codificada se utiliza
+[candle_geometry_edition.py](../../src/mars_titan/data/candle_geometry_edition.py):
+
+```bash
+uv run --no-sync python -m mars_titan.data.candle_geometry_edition \
+  --source data/derived/encoded-history-v3.1 \
+  --output data/derived/encoded-history-geometry-v1 --batch-rows 128
+```
+
+Esta ruta copia todas las filas y columnas de la edición confirmada y sustituye únicamente
+`charts` y `chart_hash`. No instancia ningún codificador, no abre las cachés de noticias y no
+ejecuta el contrato `text_carry`. Sus metadatos siguen identificando la procedencia original
+del texto. La configuración, los recibos y la representación visual reciben identidades nuevas.
+Los factores empresariales se copian sin cambiar sus bytes.
+
+El texto sigue ocupando 384 valores FP32 y las velas 512. ResNet18 sin la clasificación final
+tiene 11.176.512 parámetros, que ocupan 44.706.048 bytes en FP32, más sus buffers. Es el tamaño
+de parámetros inspeccionado en CPU, no una medida del ahorro de RAM o VRAM del proceso.
+La derivación evita cargarlo, pero sigue leyendo y comprimiendo las columnas conservadas al
+escribir otro Parquet completo. No elimina ese coste de almacenamiento.
+
+El origen debe ser un `materialized_corpus` histórico completo con contrato de ventanas v3.1.
+Se verifican las huellas de configuración, manifiestos, muestras, precios y factores antes
+y después. También se comprueban identidad, tamaño y fechas de modificación de esos archivos,
+para detectar una reescritura aunque al terminar vuelvan a contener los mismos bytes.
+`price_end_index`, sesión, hora de decisión y disponibilidad de precios deben corresponder
+al mismo cierre del calendario. No se admiten decisiones desde 2024 ni huecos particulares
+de un activo que no estén declarados como ausencias de todo el mercado.
+
+La carpeta provisional `.<destino>.geometry-staging` permite reanudar activos confirmados.
+Un recibo solo se guarda después de confirmar su Parquet. La recuperación verifica cada
+archivo confirmado y rechaza una fuente, configuración o representación distinta. Un candado
+evita dos escrituras sobre el mismo destino. El directorio final aparece mediante renombrado
+atómico sin sustitución, tras el cotejo completo. No se borra ni sobrescribe una edición previa.
+`comparison-manifest.json` conserva exactamente el manifiesto que se cotejó antes de añadir
+el informe de derivación al manifiesto final.
+
+El lote predeterminado tiene 128 filas y puede configurarse entre 1 y 512. Se limita a 16 MiB
+decodificados. Cada grupo Parquet y la tabla de precios de un activo tienen un presupuesto
+de 64 MiB, con un máximo de 200.000 filas por activo y 10.000 candidatos. Estos límites acotan
+las entradas, no constituyen una cota de la RAM total de Python y Arrow. Se procesa un activo
+cada vez. El informe separa lectura Parquet, preparación de precios, geometría y empaquetado,
+escritura con confirmación, copia de factores, comparación y verificación final del origen.
+`before_publication_seconds` termina antes de escribir el manifiesto final y renombrar el
+directorio. El benchmark mide también la llamada completa, incluida esa publicación.
+
 ## Comparación sobre las mismas filas
 
 Se prepara un control y una edición geométrica en destinos nuevos, usando el mismo
@@ -96,6 +142,7 @@ Comprueba las huellas de muestras antes y después de leer y compara lotes de 12
 Todas las columnas salvo `charts` y `chart_hash` deben coincidir, incluidos sesión,
 `price_end_index`, disponibilidad y máscaras. El límite es 16 MiB por lote decodificado y
 64 MiB por grupo Parquet. La salida identifica ambos manifiestos y configuraciones.
+La implementación de este cotejo se comparte con la derivación en el módulo de datos.
 
 Este cotejo es específico del contraste de representación. `edition_comparison` se diseñó
 para comparar v3 con v3.1 y presupone ventanas comunes con 64 filas observadas consecutivas.
@@ -138,5 +185,7 @@ y rechazo de opciones incompatibles. Las pruebas de integración conservan el hu
 y todas sus filas admisibles. La variante no ejecuta pasos de optimizador.
 
 La [comprobación del 18 de octubre](../../reports/engineering/candle-geometry-20261018/README.md)
-registra 164 pruebas CPU, cobertura, CRAP, nueve mutaciones y costes de preparación. No contiene
-resultados CUDA ni una comparación predictiva.
+conserva la primera comprobación de 164 pruebas CPU y la ampliación a 200 tras añadir la
+derivación, con cobertura, CRAP y 16 mutaciones dirigidas. También registra costes de lectura,
+preparación y escritura de fixtures de 128 y 512 filas. No contiene resultados CUDA ni una
+comparación predictiva.

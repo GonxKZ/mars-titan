@@ -20,106 +20,15 @@ from pathlib import Path
 
 import numpy as np
 import PIL
-import pyarrow.parquet as pq
 
 from mars_titan.data.candle_geometry import geometry_chart, geometry_spec
+from mars_titan.data.candle_geometry_edition import compare_representations
 from mars_titan.data.charts import chart_png
-from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.pretraining_free_encoders import chart_vectors
-from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.hardware.platform_identity import cpu_name
 
 MAX_BYTES = 16 * 1024**2
-
-
-def _input_configuration(configuration):
-    # El contraste solo cambia imágenes. La caché y las huellas de código quedan registradas
-    # por separado, mientras el contrato efectivo de texto y el de las entradas deben coincidir.
-    result = {k: v for k, v in configuration.items() if k not in {"code", "cache_charts"}}
-    result["encoders"] = {
-        k: v
-        for k, v in configuration["encoders"].items()
-        if k not in {"image_model", "image_policy", "image_url", "image_weights_sha256"}
-    }
-    return result
-
-
-def _compare_samples(paths):
-    with pq.ParquetFile(paths[0]) as before, pq.ParquetFile(paths[1]) as after:
-        if (
-            before.schema_arrow != after.schema_arrow
-            or before.metadata.num_rows != after.metadata.num_rows
-        ):
-            raise ValueError("Las representaciones no conservan las mismas filas y columnas")
-        for file in (before, after):
-            if file.metadata.num_rows > 200_000 or any(
-                file.metadata.row_group(i).total_byte_size > 64 * 1024**2
-                for i in range(file.num_row_groups)
-            ):
-                raise ValueError("Las muestras superan el presupuesto de comparación")
-        columns = [
-            name for name in before.schema_arrow.names if name not in {"charts", "chart_hash"}
-        ]
-        streams = [
-            file.iter_batches(batch_size=128, columns=columns, use_threads=False)
-            for file in (before, after)
-        ]
-        count = 0
-        for left, right in zip(*streams, strict=True):
-            if max(left.nbytes, right.nbytes) > MAX_BYTES:
-                raise ValueError("El lote decodificado supera el presupuesto de comparación")
-            if not left.equals(right):
-                raise ValueError("Han cambiado filas, orden o entradas distintas de las velas")
-            count += left.num_rows
-        return count
-
-
-def compare_representations(previous, current, output):
-    """Comparar las mismas muestras y su preparación, sin reconstruir ventanas sin máscara."""
-    roots = (Path(previous), Path(current))
-    output = Path(output)
-    for root in roots:
-        outside_source(root, output)
-    configurations = [read_manifest(root / "configuration.json") for root in roots]
-    if _input_configuration(configurations[0][0]) != _input_configuration(configurations[1][0]):
-        raise ValueError("La comparación necesita la misma preparación y los mismos contratos")
-    manifests = [read_manifest(root / "manifest.json") for root in roots]
-    if any(manifest[0].get("cohort_complete") is not True for manifest in manifests):
-        raise ValueError("La comparación necesita dos ediciones completas")
-    assets = [sorted((a["market"], a["symbol"]) for a in item[0]["assets"]) for item in manifests]
-    if assets[0] != assets[1] or len(set(assets[0])) != len(assets[0]):
-        raise ValueError("Las representaciones no conservan la misma población de activos")
-    count = 0
-    for market, symbol in assets[0]:
-        folders = [root / "samples" / market / symbol for root in roots]
-        for root, folder in zip(roots, folders, strict=True):
-            safe_destination(folder)
-            if not folder.resolve().is_relative_to(root.resolve()):
-                raise ValueError("Un activo queda fuera de la edición")
-        receipts = [read_manifest(folder / "manifest.json")[0] for folder in folders]
-        paths = [folder / "samples.parquet" for folder in folders]
-        expected = [receipt["samples_sha256"] for receipt in receipts]
-        if [sha256(path) for path in paths] != expected:
-            raise ValueError("Las muestras no coinciden con sus huellas confirmadas")
-        count += _compare_samples(paths)
-        if [sha256(path) for path in paths] != expected:
-            raise ValueError("Las muestras han cambiado durante la comparación")
-    if any(count != item[0]["samples"] for item in manifests):
-        raise ValueError("El recuento leído no coincide con el manifiesto")
-    result = dict(
-        schema_version=1,
-        assets=len(assets[0]),
-        samples=count,
-        same_inputs=True,
-        different_columns_allowed=["charts", "chart_hash"],
-        configuration_sha256=[item[1] for item in configurations],
-        manifest_sha256=[item[1] for item in manifests],
-        batch_rows=128,
-        max_batch_bytes=MAX_BYTES,
-    )
-    safe_destination(output)
-    atomic_json(output / "summary.json", result)
-    return result
 
 
 def windows(samples, path=None):

@@ -101,6 +101,14 @@ def geometry_spec():
     )
 
 
+def geometry_encoder_spec(base_spec):
+    """Conservar la procedencia del texto y declarar la nueva representación visual."""
+    result = {**deepcopy(base_spec), "image_model": MODEL, "image_policy": geometry_spec()}
+    result.pop("image_url", None)
+    result.pop("image_weights_sha256", None)
+    return result
+
+
 class GeometryEncoders:
     """Delegar el texto en el codificador elegido y sustituir solo la representación de velas.
 
@@ -118,13 +126,7 @@ class GeometryEncoders:
         ):
             raise ValueError("La composición requiere un codificador de texto identificado")
         self.base, self._base_spec = base, deepcopy(base.spec)
-        self.spec = {
-            **deepcopy(base.spec),
-            "image_model": MODEL,
-            "image_policy": geometry_spec(),
-        }
-        self.spec.pop("image_url", None)
-        self.spec.pop("image_weights_sha256", None)
+        self.spec = geometry_encoder_spec(base.spec)
         self._expected_spec = deepcopy(self.spec)
 
     def _check(self):

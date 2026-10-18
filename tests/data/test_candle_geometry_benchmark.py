@@ -7,6 +7,30 @@ import numpy as np
 import pytest
 
 
+def test_derivation_benchmark_records_distinct_stages_without_models(tmp_path):
+    from benchmarks.candle_geometry_derivation import measure_derivation
+
+    result = measure_derivation(tmp_path, samples=5, repeats=2, batch_rows=2)
+    assert result["fixture"]["samples"] == 5
+    assert len(result["runs"]) == 2
+    for run in result["runs"]:
+        assert run["timing_seconds"]["read"] > 0
+        assert run["timing_seconds"]["geometry"] > 0
+        assert run["timing_seconds"]["write"] > 0
+        assert run["samples"] == 5
+    assert result["device"] == "cpu" and result["learned_models_loaded"] == 0
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("field,value", [("samples", 513), ("repeats", 0), ("batch_rows", True)])
+def test_derivation_benchmark_rejects_unbounded_work_before_creating_files(tmp_path, field, value):
+    from benchmarks.candle_geometry_derivation import measure_derivation
+
+    with pytest.raises(ValueError, match="presupuesto"):
+        measure_derivation(tmp_path, **{field: value})
+    assert list(tmp_path.iterdir()) == []
+
+
 def benchmark():
     try:
         return importlib.import_module("benchmarks.candle_geometry")
