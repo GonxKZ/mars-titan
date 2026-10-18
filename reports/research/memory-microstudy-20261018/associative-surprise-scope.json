@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "associative_surprise_scope_counterexample",
+  "derivation": "loss=(w^2-v)^2, derivative=4*w*(w^2-v)",
+  "rational": [
+    {
+      "weight": "0",
+      "target": "1",
+      "loss": "1",
+      "derivative": "0",
+      "gradient_squared": "0"
+    },
+    {
+      "weight": "1",
+      "target": "3/2",
+      "loss": "1/4",
+      "derivative": "-2",
+      "gradient_squared": "4"
+    }
+  ],
+  "cuda_losses": [
+    1.0,
+    0.25
+  ],
+  "cuda_gradients": [
+    -0.0,
+    -2.0
+  ],
+  "exact_agreement_for_these_binary_representable_values": true,
+  "torch": "2.14.0+cu130",
+  "device": "cuda:0",
+  "dtype": "float64",
+  "optimizer_steps": 0,
+  "source_sha256": "28be29a57c29f44cc553dc7fe577a67de7a315035991d8891ed2c25ebfa09e23",
+  "scope": "Contraejemplo elemental para una memoria no lineal. No es una ejecuci\u00f3n del predictor ni una prueba de novedad matem\u00e1tica."
+}
