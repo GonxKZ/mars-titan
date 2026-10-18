@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "issue": 670,
+  "source_commit": "d6a67e3ff4d4c56411635640cbc7273ce05cc8da",
+  "recorded_at_utc": "2026-10-18T21:08:25.448350+00:00",
+  "scope": "Lanzador local y complemento de recibos. Fixtures CPU y tres comprobaciones CUDA sin pasos de optimizador.",
+  "software": {
+    "python": "3.12.14",
+    "pytest": "9.1.1",
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "torch": "2.14.0+cu130"
+  },
+  "hardware": {
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver_version": "595.91.07",
+    "memory.total [MiB]": "8188 MiB",
+    "memory.free [MiB]": "7342 MiB"
+  },
+  "cpu": {
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds_with_coverage": 20.74,
+    "command": "uv run --no-sync coverage run -m pytest -q tests/tooling/test_cuda_test_runner.py tests/tooling/test_makefile.py",
+    "subprocess_coverage": "coverage.py con branch=True, parallel=True y patch=subprocess. Combinación posterior de los archivos.",
+    "log_sha256": "e80cdac14c05ce6d4e59d348df215a3573fc6a07e61a4530e4cb646ff6caec0d"
+  },
+  "cuda": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "supervisor_seconds": 34.69587781804148,
+    "collection_seconds": 4.224514389003161,
+    "supervisor_imported_torch": false,
+    "distinct_supervisor_collection_and_case_pids": 5,
+    "cases": [
+      {
+        "nodeid": "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+        "state": "passed",
+        "exit_code": 0,
+        "seconds": 10.538804808980785
+      },
+      {
+        "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]",
+        "state": "passed",
+        "exit_code": 0,
+        "seconds": 10.790004000999033
+      },
+      {
+        "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]",
+        "state": "passed",
+        "exit_code": 0,
+        "seconds": 9.138009410002269
+      }
+    ],
+    "summary_sha256": "6f2510068c0276e1f598f079b7cac1eafcb200680423d5e43d497dff5b67b66b",
+    "process_measurement": {
+      "tool": "GNU time",
+      "wall_seconds": 34.75,
+      "user_seconds": 29.75,
+      "system_seconds": 5.93,
+      "maximum_process_rss_kib": 1645296,
+      "log_sha256": "711763b589e1b10c027c255d7113a00658c7840a3f5dd09e1d62bebf17ffc137"
+    }
+  },
+  "guard": {
+    "training_allowed": false,
+    "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+  },
+  "quality": {
+    "coverage": {
+      "statements": 153,
+      "covered_statements": 153,
+      "branches": 32,
+      "covered_branches": 32
+    },
+    "max_crap": 10.0,
+    "mutation_killed": 13,
+    "mutation_total": 13
+  },
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  },
+  "limits": [
+    "La prueba CUDA comprende los tres nodos identificados, no una repetición de la suite completa.",
+    "La cobertura y CRAP describen recorridos observados. No demuestran ausencia de errores.",
+    "GNU time informa del mayor RSS de un proceso. No mide la suma de procesos concurrentes ni el pico de VRAM."
+  ]
+}

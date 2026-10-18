@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "scope": "technical_preparation_and_feature_extraction",
+  "benchmark_commit": "60be0893f",
+  "windows": {
+    "count": 256,
+    "rule": "four_evenly_spaced_sample_positions_per_selected_asset",
+    "first_session": "2000-04-03",
+    "last_session": "2023-12-29",
+    "source_file_count": 258,
+    "npz_sha256": "77abf2881e859d0e0b4e11a068a85f420db26855c84526e8ae9226b613d0599b",
+    "preparation_script_sha256": "0c3f8bdc6f80b0feb72f7e81b2d46cfbf5c9ec09e04b888dd0abdee2cce6e9a4",
+    "source_receipt_sha256": "513684f53b77fdd3c353d34b203792241e972a8409ccad26690660985b076ec8",
+    "target_values_read": false
+  },
+  "paired_views": {
+    "source_commit": "b394970407f01636bbcd02badad966d67e24cd11",
+    "proof_sha256": "53fa2a6f2910f8d57ba7058df82d05e4c7b96e62d43fe57ea86633749edd71ac",
+    "labels_recalculated": false,
+    "views": {
+      "baseline": {
+        "fold-017": {
+          "sha256": "2c6f10639206893ba42bb357f946b6506647a0c2d099c2b5f96671da4806970e",
+          "counts": {
+            "train": 187158,
+            "validation": 8064,
+            "calibration": 4032,
+            "evaluation": 16000
+          }
+        },
+        "fold-018": {
+          "sha256": "95883a3412ffe0bdd7bda1e891639639f0e5a356ea934230c165097940554c07",
+          "counts": {
+            "train": 203350,
+            "validation": 8000,
+            "calibration": 3968,
+            "evaluation": 15936
+          }
+        }
+      },
+      "geometry": {
+        "fold-017": {
+          "sha256": "77ffa406958215626db2331be15ba847e01fbf4d281935db85c8396a7a9016f8",
+          "counts": {
+            "train": 187158,
+            "validation": 8064,
+            "calibration": 4032,
+            "evaluation": 16000
+          }
+        },
+        "fold-018": {
+          "sha256": "67478b16847695d9a19f473118d03ba8699fe79e75872fae59c865ac3e57249b",
+          "counts": {
+            "train": 203350,
+            "validation": 8000,
+            "calibration": 3968,
+            "evaluation": 15936
+          }
+        }
+      }
+    }
+  },
+  "checks": {
+    "views_tests": 41,
+    "views_mutants_detected": 11,
+    "views_mutants_total": 11,
+    "benchmark_and_integration_tests": 38,
+    "benchmark_mutants_detected": 5,
+    "benchmark_mutants_total": 5,
+    "scopes_overlap": true,
+    "benchmark_coverage_device": "cpu"
+  },
+  "prior_failures": [
+    "El primer benchmark no transmitía la tolerancia OHLC admitida.",
+    "El segundo intento no fijaba FP32 estricto antes de cargar el codificador."
+  ],
+  "concurrent_workloads": [
+    "Pruebas CPU del proyecto y comprobaciones de desarrollo."
+  ],
+  "scientific_comparison": "not_executed",
+  "final_test_opened": false,
+  "global_hold_changed": false
+}

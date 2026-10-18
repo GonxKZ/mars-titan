@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "scope": "technical_preparation",
+  "assets": 256,
+  "samples": 943780,
+  "code_sha256": {
+    "candle_geometry_edition.py": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+    "candle_geometry_selection.py": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+    "candle_geometry.py": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+    "price_windows.py": "cb3a39c076a9333d5979a3f286025a908a63c6659b7e3528637a9450a13363aa",
+    "prices.py": "4fcc8bd817fe1e385770a441ec947fe78f56902e6449d422a30af22923ba7cf4",
+    "batches.py": "ef261c2e67e7296008c4a49632c63befd845ec7514c00ac8c3c39bc1c63c1b13",
+    "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "manifest_sha256": "3636458b5cf83f8a58a943fac2f8ed3be36393f439868d1efbfc83af96add268",
+  "selection_sha256": "2c1fcc7185a995d256ff5b3237c6c8214923a9c979462be63e28258d6368b17a",
+  "source_manifest_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+  "source_configuration_sha256": "3b1bf03baa281ca171403611e8f4ecd99ccc66253918dbe7822fefbeb8cab96e",
+  "cohort_complete": false,
+  "selection_complete": true,
+  "training_ready": false,
+  "final_test_opened": false,
+  "before_publication_seconds": 175.38520437298575,
+  "process_wall_seconds": 176.02,
+  "peak_process_rss_bytes": 254722048,
+  "source_samples_file_bytes": 3169913544,
+  "samples_output_bytes": 1008762744,
+  "timing_seconds": {
+    "read": 17.9761734144995,
+    "price_preparation": 6.891392650548369,
+    "geometry": 58.81758465524763,
+    "write": 42.672686472244095,
+    "factor_copy": 0.35101652395678684,
+    "comparison": 31.749324344971683,
+    "final_source_verification": 3.9219639970106073
+  },
+  "comparison": {
+    "schema_version": 1,
+    "assets": 256,
+    "samples": 943780,
+    "same_inputs": true,
+    "different_columns_allowed": [
+      "charts",
+      "chart_hash"
+    ],
+    "configuration_sha256": [
+      "3b1bf03baa281ca171403611e8f4ecd99ccc66253918dbe7822fefbeb8cab96e",
+      "84163833607ce4ebe14ae28eff117642051659530e8204a4a82595b6ab428f98"
+    ],
+    "manifest_sha256": [
+      "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+      "3636458b5cf83f8a58a943fac2f8ed3be36393f439868d1efbfc83af96add268"
+    ],
+    "batch_rows": 128,
+    "max_batch_bytes": 16777216
+  },
+  "raw_derivation_receipt_sha256": "5c04021e442d0566c5cebfbb0ce97ce296d7fd1a91eb582f08916f1c6b7372f0",
+  "process_measurement_sha256": "d8aa70b192363c3498b80bf740e738c7033b031f76ecb2478ed321c3bc8231f8",
+  "paired_views_proof_sha256": "489f1c0985f8fbd49807aec3082e88f09c2752c06feae9eaa0bf3197ab564e59",
+  "paired_views": {
+    "baseline": {
+      "fold-017": {
+        "sha256": "bf7d280a6bff6634e754847d429c8dcec8d6cb8afbd3d9d69d1f78c9eb2238fa",
+        "counts": {
+          "train": 750751,
+          "validation": 32061,
+          "calibration": 16128,
+          "evaluation": 64000
+        }
+      },
+      "fold-018": {
+        "sha256": "421fd47e870d843fe5bcd13693d81c0830b37e34dacc5bb02838bc41dab8119c",
+        "counts": {
+          "train": 815324,
+          "validation": 32000,
+          "calibration": 15872,
+          "evaluation": 63679
+        }
+      }
+    },
+    "geometry": {
+      "fold-017": {
+        "sha256": "fe29ccdda334b210a31aabcbb8b3d4e17c9761e2196d6c3b18f5094c7302f2e5",
+        "counts": {
+          "train": 750751,
+          "validation": 32061,
+          "calibration": 16128,
+          "evaluation": 64000
+        }
+      },
+      "fold-018": {
+        "sha256": "2f3db0f1b5b1bf2458fbc3ae43de73da51743acb4fd49397e719cd3072be2ea7",
+        "counts": {
+          "train": 815324,
+          "validation": 32000,
+          "calibration": 15872,
+          "evaluation": 63679
+        }
+      }
+    }
+  },
+  "nesting": {
+    "common_assets": 64,
+    "same_sample_sha256": true,
+    "source_manifests": {
+      "64": "5027c8e4dca9643a51382dbc2e89d2bbcbac38554c994faf0f351c46e47bbddf",
+      "256": "3636458b5cf83f8a58a943fac2f8ed3be36393f439868d1efbfc83af96add268"
+    }
+  },
+  "labels_recalculated": false,
+  "derivation_financial_labels_read": false,
+  "scientific_comparison": "not_executed"
+}

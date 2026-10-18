@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "kind": "memory_technical_evidence_review",
+  "recorded_at_utc": "2026-10-18T17:14:48.562377+00:00",
+  "source_commit": "69ea68c3c6ecee62bcee798e85476ace69871181",
+  "scope": "Revisión de documentación y criterios técnicos de PT1, PT2, PT3, PT5 y PT6. Sin cambios en código, configuraciones ni resultados previos.",
+  "tests": {
+    "started_at_utc": "2026-10-18T17:13:32.959420+00:00",
+    "finished_at_utc": "2026-10-18T17:13:56.948328+00:00",
+    "selection_command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-rs",
+      "tests/models/titans/test_memory_stability.py",
+      "tests/models/titans/test_multiscale_memory.py",
+      "tests/models/titans/test_presence_modulation.py",
+      "tests/calibration/test_online_conformal.py",
+      "tests/calibration/test_periodic_conformal.py",
+      "tests/evaluation/test_online_calibration.py",
+      "tests/evaluation/test_declared_events.py",
+      "tests/evaluation/test_kalman_diagnostics.py",
+      "tests/memory/test_kalman_associative_memory.py",
+      "tests/memory/test_cohort_noise.py",
+      "tests/training/test_kalman_correction.py",
+      "tests/training/test_titans_campaign_recipe.py",
+      "tests/training/test_predictor_extension_composition.py"
+    ],
+    "exit_code": 0,
+    "passed": 296,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 21.13,
+    "process_seconds": 23.99211002001539,
+    "files": [
+      {
+        "path": "tests/models/titans/test_memory_stability.py",
+        "passed": 32,
+        "source_sha256": "c46b9129b5803cc4b0697a4866eff8e3105d2d7eea01b630f229896199b864c8"
+      },
+      {
+        "path": "tests/models/titans/test_multiscale_memory.py",
+        "passed": 32,
+        "source_sha256": "fd35f7b6dc0a772d11e6a06bdecc3c04bcba240d2d4ba71e94e476a4fa52faa9"
+      },
+      {
+        "path": "tests/models/titans/test_presence_modulation.py",
+        "passed": 19,
+        "source_sha256": "74f92865d67462db99173963e3f83d1ab64380d5da5d854563dc7beadb0f4362"
+      },
+      {
+        "path": "tests/calibration/test_online_conformal.py",
+        "passed": 29,
+        "source_sha256": "d0a5ca58215393756b50285b2fadf9a065007409dc6a0d3680ff68bf019deabf"
+      },
+      {
+        "path": "tests/calibration/test_periodic_conformal.py",
+        "passed": 10,
+        "source_sha256": "f09bf4fc44b80c796d1587c4be9dfc5a9ff4e7b21b2b880ec706b999f21f35bd"
+      },
+      {
+        "path": "tests/evaluation/test_online_calibration.py",
+        "passed": 35,
+        "source_sha256": "513fe01ae5436bb67a0653b83e3c5039bd723faba6e98230dacc5b955eeb4fad"
+      },
+      {
+        "path": "tests/evaluation/test_declared_events.py",
+        "passed": 18,
+        "source_sha256": "2178f1ec9b61f786bf436503ee25d5ca6b6fbcf0af7f24c57be7349ef7e699a4"
+      },
+      {
+        "path": "tests/evaluation/test_kalman_diagnostics.py",
+        "passed": 16,
+        "source_sha256": "36a956bbb78f8350adefbe72f42bb38d1e41273472a5e2c9e1736df8c61f4fcc"
+      },
+      {
+        "path": "tests/memory/test_kalman_associative_memory.py",
+        "passed": 32,
+        "source_sha256": "bf4969f63efa7895df6636f80f51b93e5ab774eb62fe994d91b932c8420bf505"
+      },
+      {
+        "path": "tests/memory/test_cohort_noise.py",
+        "passed": 16,
+        "source_sha256": "9a8ad49b7299064a023d866c35e21f24dab08f6c18a4f38df01b21b0219e4aea"
+      },
+      {
+        "path": "tests/training/test_kalman_correction.py",
+        "passed": 29,
+        "source_sha256": "3d859acbb7c39479c4eee1e9c76f8342f5e169a680633ad99504eb50a892a8d7"
+      },
+      {
+        "path": "tests/training/test_titans_campaign_recipe.py",
+        "passed": 21,
+        "source_sha256": "b20ab072808d25bbe2bb75503988b51dd05f6d769bc150e860decbd982a2033f"
+      },
+      {
+        "path": "tests/training/test_predictor_extension_composition.py",
+        "passed": 7,
+        "source_sha256": "18a3bd174325b5c591a962578d5ff905d9c4a8379d51644ff8fed98c52783fae"
+      }
+    ],
+    "log_sha256": "ed778145e564ac986a0da2321cac2d6377001d5796799a4fbb5378d7c3ed764b",
+    "junit_sha256": "2b199d8adbd9fc1d148a62135a36c95e1c701f0abef30cf61964eaad75a0aa6b",
+    "initial_collection_failure": {
+      "cause": "El entorno inicialmente seleccionado no tenía arch. La recogida falló en test_declared_events.py y test_kalman_diagnostics.py antes de ejecutar casos. Se repitió en el entorno existente de la validación anterior, sin instalar paquetes.",
+      "exit_code": 2,
+      "log_sha256": "b362ef3005c7e547728579ee3111d3c8ff11ad36134d2983056088fc76753960"
+    }
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "device": "cpu",
+    "threads": 2,
+    "cuda_visible_devices": "",
+    "packages": {
+      "arch": "8.0.0",
+      "statsmodels": "0.15.0",
+      "torch": "2.14.0+cu130",
+      "pytest": "9.1.1",
+      "coverage": "7.16.1",
+      "radon": "6.0.1"
+    },
+    "environment_reused": true,
+    "packages_installed": false
+  },
+  "learning": {
+    "optimizer_steps": 0,
+    "scientific_experiments": false,
+    "final_test_access": false,
+    "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+  },
+  "historical_evidence": [
+    {
+      "path": "reports/engineering/titans-memory-stability-mutations-20261010.json",
+      "sha256": "7a2551e10dbe49c7c27d30481cb7c0b8a7e175697c37861e2b291f1cfddf8ac9"
+    },
+    {
+      "path": "reports/engineering/titans-memory-stability-cuda-20261010.json",
+      "sha256": "9ceef11e4dc1227beef6f9d10ad1978316a269e326d91d7892f7f9bbbfbb48be"
+    },
+    {
+      "path": "reports/engineering/titans-memory-stability-cost-20261010.json",
+      "sha256": "4504d5de8bc59e5653bed87a3ea6476940f6ae1157b8e062ceb2db1656735ac8"
+    },
+    {
+      "path": "reports/engineering/online-conformal-calibration-mutations-20261010.json",
+      "sha256": "6283704cdcd10039408cac034c956b9fb6100182d69d402b656e4a7879ffdc25"
+    },
+    {
+      "path": "reports/engineering/kalman-associative-memory-mutations-20261010.json",
+      "sha256": "67e743e72f9d818c9dfa8a933d3908d507d9f24a40cc8e3c419fd1b3ac2385c6"
+    },
+    {
+      "path": "reports/engineering/multiscale-memory-20261010/mutations.json",
+      "sha256": "7c9002caa053aea107b8035d2dd9de59bc00041c8a14ef1108d9f463581873f2"
+    },
+    {
+      "path": "reports/engineering/presence-modulation-20261010/mutations.json",
+      "sha256": "800b969de9deba6601e428e3866be30677fb134f6c694b0fa4f446de3664a54a"
+    },
+    {
+      "path": "reports/engineering/omitted-tests-20261018/verification.json",
+      "sha256": "537d2c950e352c27f11aee37f82ea4e76a332a75bd1e6b5b10737cce01099471"
+    },
+    {
+      "path": "reports/engineering/validation-20261017/verification.json",
+      "sha256": "bc88a66c057d3730115bc8d192762e257fb326cf606af56da923ec180df17303"
+    },
+    {
+      "path": "reports/research/combined-memory-20261018/results.json",
+      "sha256": "ac6fdbd8890485968686dd81e7e35a49db9a48d91346a97db1bc602e5de70a71"
+    },
+    {
+      "path": "reports/research/combined-memory-20261018/numerics.json",
+      "sha256": "1cad4f40320f03a75d4113826b7b20528a576712b491f82ef1b21f644aa63735"
+    }
+  ],
+  "limits": [
+    "No se ha repetido la suite completa ni las comprobaciones CUDA.",
+    "Las mutaciones citadas son los recibos históricos. No se ejecutan mutaciones nuevas para este cambio documental.",
+    "La sensibilidad FP32 de la combinación completa se sigue en #662 y no queda resuelta por estas pruebas cortas.",
+    "PT2 y PT3 no tienen resultados en la comparación financiera declarada. Los ensayos acotados de PT1, PT5 y PT6 no completan sus controles ni las ventanas del piloto original.",
+    "La cobertura de esta selección no mide run_correction_window, carry_correction ni las rutas de memoria compartida. No describe la cobertura de toda la suite."
+  ],
+  "coverage": {
+    "execution": {
+      "started_at_utc": "2026-10-18T17:20:21.930558+00:00",
+      "finished_at_utc": "2026-10-18T17:20:57.794493+00:00",
+      "selection_command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "coverage",
+        "run",
+        "--branch",
+        "--source=src/mars_titan",
+        "-m",
+        "pytest",
+        "-q",
+        "-rs",
+        "tests/models/titans/test_memory_stability.py",
+        "tests/models/titans/test_multiscale_memory.py",
+        "tests/models/titans/test_presence_modulation.py",
+        "tests/calibration/test_online_conformal.py",
+        "tests/calibration/test_periodic_conformal.py",
+        "tests/evaluation/test_online_calibration.py",
+        "tests/evaluation/test_declared_events.py",
+        "tests/evaluation/test_kalman_diagnostics.py",
+        "tests/memory/test_kalman_associative_memory.py",
+        "tests/memory/test_cohort_noise.py",
+        "tests/training/test_kalman_correction.py",
+        "tests/training/test_titans_campaign_recipe.py",
+        "tests/training/test_predictor_extension_composition.py"
+      ],
+      "exit_code": 0,
+      "process_seconds": 35.86394344799919,
+      "log_sha256": "fed574627713e429385924cda0120bc0da10fc26a53ca24976cd8d22c59d175a",
+      "junit_sha256": "d8f0c79900a1966aeff1ac27870b6d0666656e30f1c40ba5e7e06c3589329d05",
+      "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "passed": 296,
+      "failed": 0,
+      "skipped": 0,
+      "pytest_seconds": 31.5
+    },
+    "distinct_cases_note": "La cobertura repite los mismos 296 casos. No son 592 casos distintos.",
+    "source_scope": [
+      "src/mars_titan/models/titans/config.py",
+      "src/mars_titan/models/titans/neural_memory.py",
+      "src/mars_titan/models/titans/presence_modulation.py",
+      "src/mars_titan/models/titans/financial.py",
+      "src/mars_titan/calibration/online_conformal.py",
+      "src/mars_titan/calibration/periodic_conformal.py",
+      "src/mars_titan/evaluation/online_calibration.py",
+      "src/mars_titan/evaluation/declared_events.py",
+      "src/mars_titan/evaluation/kalman_diagnostics.py",
+      "src/mars_titan/memory/associative_memory.py",
+      "src/mars_titan/memory/cohort_noise.py",
+      "src/mars_titan/training/mars_titan_correction.py",
+      "src/mars_titan/training/search_cases.py"
+    ],
+    "summary": "quality.json",
+    "summary_sha256": "6714f501b2ac9c4608a2ba8aa8aa06daa9050ca645f41eefefa7e4ec61784a30",
+    "summary_script": "scripts/summarize_python_quality.py",
+    "functions_measured": 245,
+    "functions_reported": 25,
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 2696,
+      "covered_statements": 2239,
+      "branches": 856,
+      "covered_branches": 596
+    },
+    "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "initial_instrumentation_failure": {
+      "cause": "La selección de fuentes por nombres de módulos falló antes de recoger casos al importar torch._C. Una sonda de siete casos terminó con SystemError y código 4, sin datos de cobertura. La selección por directorio evita esa importación anticipada y la misma sonda pasa, seguida de los 296 casos.",
+      "probe_exit_code": 4
+    }
+  },
+  "repository_checks": [
+    {
+      "recorded_at_utc": "2026-10-18T17:23:02.138429+00:00",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit_code": 0,
+      "seconds": 0.13457921403460205,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "recorded_at_utc": "2026-10-18T17:23:02.339922+00:00",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit_code": 0,
+      "seconds": 0.2014419810147956,
+      "log_sha256": "7e314c03c7c02e3df5fb4eb925e42e8b1b80cb6c47828a5875f38fff7ff87ef0"
+    },
+    {
+      "recorded_at_utc": "2026-10-18T17:23:05.849200+00:00",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "python",
+        "scripts/check_repository.py"
+      ],
+      "exit_code": 0,
+      "seconds": 3.5092413839884102,
+      "log_sha256": "8d9230810c414b2e222ddbfa492eca0bf99c2d3df9a4e2d477a62a8ff903c399"
+    },
+    {
+      "recorded_at_utc": "2026-10-18T17:23:05.856175+00:00",
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.006956829980481416,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

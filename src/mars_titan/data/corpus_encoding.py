@@ -9,6 +9,8 @@ from functools import partial
 from pathlib import Path
 
 from .accounting_catalog import HISTORICAL_ACCOUNTING, JOINT_CONCEPTS, historical_accounting_context
+from .candle_geometry import MODEL as GEOMETRY_MODEL
+from .candle_geometry import GeometryEncoders
 from .cohort_contexts import MacroVectors
 from .cohort_files import read_manifest as _read
 from .cohort_files import safe_destination
@@ -76,6 +78,7 @@ def encode_corpus(
     shard=None,
     on_confirmed=None,
     text_carry=None,
+    chart_representation=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores.
 
@@ -93,7 +96,18 @@ def encode_corpus(
     `text_carry` nombra una edición cuyos textos se reutilizan aunque su codificador registre
     otra precisión, siempre que superen el contraste por activo de `encode_pending`. Los gráficos
     nunca se heredan por esta vía.
+    `chart_representation` permite una edición geométrica adicional, en una sola pasada. Solo
+    cambia la representación de las velas y delega el texto en el mismo codificador elegido.
     """
+    if chart_representation not in (None, GEOMETRY_MODEL):
+        raise ValueError("La representación de velas no está admitida")
+    geometry = chart_representation == GEOMETRY_MODEL or isinstance(encoders, GeometryEncoders)
+    if geometry and context != 64:
+        raise ValueError("La representación geométrica requiere 64 sesiones")
+    if geometry and (
+        isinstance(encoders, (CollectingEncoders, ReuseOnlyEncoders)) or text_carry is not None
+    ):
+        raise ValueError("La representación geométrica calcula sus vectores en una sola pasada")
     if shard is not None and (
         not isinstance(shard, tuple)
         or len(shard) != 2
@@ -223,6 +237,8 @@ def encode_corpus(
     if min_free_disk_bytes and _free_disk_bytes(output) < min_free_disk_bytes:
         raise OSError("El disco libre no alcanza la reserva de codificación")
     encoders = encoders if encoders is not None else FrozenEncoders(**(encoder_options or {}))
+    if geometry and not isinstance(encoders, GeometryEncoders):
+        encoders = GeometryEncoders(encoders)
     identity = dict(
         **policy_identity(input_policy),
         preparation_sha256=preparation_hash,
@@ -599,7 +615,21 @@ def main():
         default="frozen",
         help="MiniLM y ResNet18 congelados en CUDA o el control sin preentrenamiento en CPU",
     )
+    parser.add_argument(
+        "--chart-representation",
+        choices=(GEOMETRY_MODEL,),
+        help="Representación experimental de 64 velas. Por defecto conserva el gráfico PNG",
+    )
     args = parser.parse_args()
+    if args.chart_representation and (
+        args.collect
+        or args.reuse_only
+        or args.encode_pending
+        or args.release_vectors
+        or args.text_carry
+        or args.substitute_previous
+    ):
+        parser.error("La geometría requiere una pasada nueva sin sustitución de otra edición")
     control = args.encoders == "pretraining_free"
     if control and (args.reuse_only or args.collect or args.encode_pending or args.text_carry):
         parser.error("El control sin preentrenamiento calcula sus vectores en una sola pasada")
@@ -679,6 +709,7 @@ def main():
         shard=tuple(args.shard) if args.shard else None,
         on_confirmed=substitution,
         text_carry=args.text_carry,
+        chart_representation=args.chart_representation,
     )
     summary = {
         k: result[k]

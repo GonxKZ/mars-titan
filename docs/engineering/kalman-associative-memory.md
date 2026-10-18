@@ -1,6 +1,6 @@
 # Regla kalman de B6 con ruido de cohorte correlacionado (PT3)
 
-Estado a 14 de octubre de 2026: **implementado, conectado a las ventanas walk-forward y a la campaña A v2 y comprobado sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide emitir las predicciones del núcleo y estimar las varianzas con ellas. Tarea [#455](https://github.com/GonxKZ/mars-titan/issues/455). La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt3-corrección-madura-bayesiana-con-ruido-de-cohorte-correlacionado).
+Estado a 18 de octubre de 2026: implementado, conectado a las ventanas walk-forward y a la campaña A v2, con pruebas del componente y de la ventana completa sobre fixtures aislados. La comparación de [#455](https://github.com/GonxKZ/mars-titan/issues/455) sigue sin resultados financieros. El [ensayo combinado de memoria](../../reports/research/combined-memory-20261018/README.md) no ejecuta la corrección Kalman ni sus controles de correlación y retraso. La motivación, el control y la regla de decisión están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt3-corrección-madura-bayesiana-con-ruido-de-cohorte-correlacionado).
 
 ## Qué hace
 
@@ -186,7 +186,7 @@ E[MSW] = σ_w² y E[MSB] = σ_w² + n₀σ_b², de donde σ_b² = max(0, (MSB �
 | Media de la corrección invariante a σ², P proporcional a σ² y primeras decisiones sin corregir | `test_the_mean_correction_does_not_depend_on_the_estimated_variance` |
 | ϱ cambia la corrección y la alternativa trivial equivale a ϱ = 0 | `test_cohort_correlation_changes_the_correction_and_zero_is_its_alternative` |
 | Plan, contrastes, rechazos y proyección de horas en A v2 | `test_v2_declares_the_kalman_correction_with_its_own_recipe_and_contrasts`, `test_v2_rejects_kalman_models_without_their_recipe_or_correlation`, `test_the_projection_measures_the_kalman_estimation_with_the_calibration` y `test_uniform_rates_project_the_b6_correction_as_prediction_only` en `tests/training/test_campaign_a_joint.py`, y `test_correction_hours_predict_each_measured_tramo_once` y la medida de caudal con la regla kalman en `tests/training/test_campaign_throughput.py` |
-| Ventana completa: una sola estimación, reanudación, alternativa ϱ = 0 y traslado bit a bit | `test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it` en `tests/training/test_mars_titan_correction.py`, que parte de un padre ajustado con el optimizador sustituido y se omite mientras rige el bloqueo (inventario de [#546](https://github.com/GonxKZ/mars-titan/issues/546)) |
+| Ventana completa: una sola estimación, reanudación, alternativa ϱ = 0 y traslado bit a bit | `test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it` en `tests/training/test_mars_titan_correction.py`. Superada en CPU con fixtures aislados, según el [recibo del 18 de octubre](../../reports/engineering/omitted-tests-20261018/verification.json), que conserva el identificador, el resultado y la huella del registro |
 | Sesión financiera con referencia, causalidad y corte antes de publicar | `test_kalman_rule_follows_the_same_session_contract_and_recovers_its_covariance` en `tests/memory/test_financial_session_associative.py`, que necesita `MARS_TITAN_EPISODIC_NATIVE` |
 
 Las pruebas están en `tests/memory/test_kalman_associative_memory.py`. El aislamiento entre activos y sesiones lo da el contrato de B6: A es común a la variante por diseño y cada escritura devuelve una memoria nueva sin tocar la anterior. La prueba de la sesión financiera necesita el enlace nativo. El 13 de octubre de 2026 pasó, con las otras diez de su archivo, usando el enlace compilado de las mismas fuentes nativas.
@@ -223,7 +223,7 @@ La escritura kalman cuesta lo mismo que la proximal en orden de magnitud y basta
 
 - El efecto predictivo, la cobertura de la varianza predictiva y la regla de decisión, bloqueados porque no hay predicciones de la campaña.
 - La cobertura del intervalo de ±1,645 desviaciones predictivas y la ganancia con una sesión más de retraso (D3). La ventana las emite y la comparación las calcula desde el 14 de octubre de 2026, pero no hay predicciones de la campaña.
-- La ventana completa con un padre ajustado, cuya prueba se omite mientras rige el bloqueo.
+- La ventana completa con un padre aprendido sobre la cohorte financiera y su coste. La prueba con fixtures ya se ejecutó, pero no cubre ese resultado científico.
 
 ## Referencias
 
