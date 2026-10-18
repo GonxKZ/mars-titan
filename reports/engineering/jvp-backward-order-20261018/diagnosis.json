@@ -1725,7 +1725,7 @@
       ]
     }
   },
-  "repository_cuda_verification": "pending",
+  "repository_cuda_verification": "reported_in_final-verification.json",
   "predictive_effect_measured": false,
   "limits": [
     "Las sondas intervienen sobre el runtime fijado y no sustituyen la verificación CUDA del código final.",

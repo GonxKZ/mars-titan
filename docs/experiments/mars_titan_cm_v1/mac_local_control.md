@@ -28,8 +28,9 @@ radio y el backward exterior conservan sus recorridos. Esta política responde
 a una falta de repetibilidad exacta observada en la penalización con
 acumulación por bloques. El [diagnóstico técnico](../../../reports/engineering/jvp-backward-order-20261018/README.md)
 separa los contrastes CUDA FP32/FP64 y sus medidas de coste de la comprobación
-del código final, todavía pendiente. No se le atribuyen los costes históricos
-de esta página.
+del código final. El nodo original, la variante FP32 y la restauración del
+contexto pasan sin relajar la igualdad. No se le atribuyen los costes
+históricos de esta página.
 
 Los checkpoints de diagnóstico o penalización con identidad 1 se rechazan
 antes de copiar la base. Para reanudarlos se conserva su runtime fijado.

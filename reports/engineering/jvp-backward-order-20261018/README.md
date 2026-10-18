@@ -64,23 +64,55 @@ CRAP 2, y el emparejamiento tiene 23,02. Estas medidas no demuestran ausencia
 de errores. Los 166,44 segundos de la batería instrumentada no son una
 medida de rendimiento del modelo.
 
-La sonda del operador usa CUDA sincronizada, dos calentamientos y nueve
+El código final `54fa0ed6fa0253f2bd6b361a5517abeb98920998` pasó once casos
+CUDA: el nodo original y diez casos de restauración normal o ante excepción,
+con operadores FP32 y FP64. Un contraste adicional reutilizó la prueba
+NVTX off/on con el constructor de la fixture en FP32 y también pasó.
+Se mantuvieron `torch.equal` y los flags numéricos originales. El contexto
+de autograd quedó restaurado. Los [recibos finales](final-verification.json)
+separan esa variante FP32 del nodo original FP64 y conservan sus huellas.
+
+La primera sonda del operador usa CUDA sincronizada, dos calentamientos y nueve
 repeticiones por política, con orden alternado. Incluye construir el grafo,
-pero excluye el gradiente de su pérdida cuadrática. Los recorridos completos
-solo tienen dos pasadas por política, en procesos distintos y con trabajo
-CPU simultáneo.
+pero excluye el gradiente de su pérdida cuadrática.
 
-| Precisión | Operador con trabajadores | Operador en hilo llamador | Recorrido con trabajadores | Recorrido en hilo llamador |
-| --- | ---: | ---: | ---: | ---: |
-| FP64 | 39,409 ms | 38,140 ms | 7,274 s | 6,295 s |
-| FP32 | 34,018 ms | 33,294 ms | 6,814 s | 7,407 s |
+| Precisión | Operador con trabajadores | Operador en hilo llamador |
+| --- | ---: | ---: |
+| FP64 | 39,409 ms | 38,140 ms |
+| FP32 | 34,018 ms | 33,294 ms |
 
-Son medianas descriptivas. Las dos pasadas completas no permiten afirmar
-aceleración ni descartar una regresión. El proceso del operador alcanzó
+El proceso del operador alcanzó
 1.539.592.192 bytes de RSS y 68.128.768 bytes asignados por CUDA, incluidas
 las estructuras ya residentes. No son incrementos atribuibles al cambio.
-Los recibos conservan hardware, versiones, flags, muestras y huellas.
 
-La comprobación CUDA del código final y una medida alternada del recorrido
-completo siguen pendientes. Las sondas sobre el runtime anterior no las
-sustituyen.
+El contraste final del recorrido completo compara el método `_operator`
+histórico y el corregido sobre el mismo runtime. Por cada precisión hay un
+calentamiento y cuatro pasadas medidas por política, alternando el orden
+de cada pareja. El tiempo sincronizado incluye `ChronologicalTrainer.run`,
+validación, auditoría y checkpoints. Excluye crear los datos y el modelo.
+Los diez motores se retienen hasta el final. Los checkpoints de la rama
+de referencia son artefactos de diagnóstico, no estados para reanudar un
+experimento con la identidad nueva.
+
+| Precisión | Recorrido con trabajadores | Recorrido en hilo llamador |
+| --- | ---: | ---: |
+| FP64 | 6,521 s | 5,870 s |
+| FP32 | 6,491 s | 5,738 s |
+
+Son medianas de cuatro observaciones. Los tiempos y rangos completos están
+en el recibo. No se observa un aumento de la mediana en esta fixture.
+La actividad CPU ajena no se aisló y estas medidas no acreditan una
+aceleración general. Las dos pasadas iniciales por política se conservan
+en el diagnóstico y no se mezclan con este contraste alternado.
+
+Las cinco pasadas corregidas de cada precisión conservan los bits de los
+407 tensores de gradiente. Frente a su calentamiento, las cuatro pasadas
+medidas con trabajadores difieren en 30 tensores FP32 y 39 FP64. Sus máximos
+absolutos son 3,64e-12 y 8,67e-19 respectivamente. Auditoría, historial y
+parámetros coinciden también entre políticas. Estas diferencias se registran
+sin inferir su efecto durante un ajuste que actualice parámetros.
+
+El pico asignado por CUDA fue 89.610.240 bytes en FP32 y 101.654.528 en FP64.
+Incluye los motores y registros retenidos. No se midió el pico de RSS de
+estos recorridos completos, energía ni contadores de kernels. Los recibos
+conservan hardware, versiones, flags, muestras y huellas.
