@@ -104,6 +104,21 @@ def test_explicit_cuda_target_runs_every_check_in_its_own_process(tmp_path, monk
     )
 
 
+def test_cuda_target_uses_the_isolated_case_runner_and_keeps_device_selection(tmp_path):
+    records = recorded_commands(tmp_path, "test-cuda")
+    assert len(records) == 1
+    assert records[0]["argv"] == [
+        "python",
+        "scripts/run_cuda_tests.py",
+        "--output",
+        str(tmp_path / "receipts with spaces" / "cases"),
+        "--timeout-seconds",
+        "600",
+    ]
+    assert records[0]["environment"]["CUDA_VISIBLE_DEVICES"] == "0"
+    assert records[0]["environment"]["MARS_TITAN_REQUIRE_CUDA"] == "1"
+
+
 def test_cuda_memory_target_selects_cuda_and_the_full_capacity_comparison(tmp_path):
     records = recorded_commands(tmp_path, "test-cuda-memory")
     assert len(records) == 1

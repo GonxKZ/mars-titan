@@ -7,6 +7,7 @@ RUN ?= $(UV) run --locked
 THREADS ?= 2
 # Trabajadores de pytest-xdist en test-fast. Con 0 corre en un solo proceso (#491).
 TEST_WORKERS ?= 3
+CUDA_TEST_TIMEOUT ?= 600
 NATIVE_JOBS ?= 2
 BUILD := $(CURDIR)/build/native
 DOCS_OUT ?= $(CURDIR)/build/docs
@@ -73,8 +74,9 @@ test-native: ## Pruebas que usan los binarios de native-build y su CTest, sin CU
 			-LE '$(CTEST_EXCLUDED)'; \
 	done
 
-test-cuda: ## Pruebas marcadas cuda en cuda:0. Reserva la GPU para esta única carga
-	$(CUDA_ENV) $(RUN) pytest -q -rs -m cuda
+test-cuda: ## Pruebas cuda en procesos nuevos y secuenciales, con recibo por caso
+	$(CUDA_ENV) $(RUN) python scripts/run_cuda_tests.py --output "$(CUDA_CHECK_DIR)/cases" \
+		--timeout-seconds $(CUDA_TEST_TIMEOUT)
 
 test-cuda-checks: ## Paridades CUDA explícitas, cada archivo en un proceso, sin optimizador
 	@set -e; for check in $(CUDA_CHECKS); do \
