@@ -59,7 +59,7 @@ def test_selection_uses_only_training_availability_and_is_independent_of_asset_o
     assert original == manifest()
 
 
-@pytest.mark.parametrize("change", ["test", "start", "window", "insufficient"])
+@pytest.mark.parametrize("change", ["test", "start", "window", "insufficient", "no_train"])
 def test_projection_rejects_a_different_scope(change):
     value = manifest()
     if change == "test":
@@ -68,8 +68,11 @@ def test_projection_rejects_a_different_scope(change):
         value["temporal_view"]["protocol"]["train_start"] = "2010-01-01"
     elif change == "window":
         value["temporal_view"]["fold"]["id"] = "fold-018"
-    else:
+    elif change == "insufficient":
         value["assets"] = value["assets"][:2]
+    else:
+        for asset in value["assets"]:
+            asset["counts"]["train"] = 0
     with pytest.raises(ValueError):
         project_view(value)
 
