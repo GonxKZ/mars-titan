@@ -1,41 +1,26 @@
 {
-  "recorded_at_utc": "2026-10-18T21:36:44.015323+00:00",
+  "recorded_at_utc": "2026-10-18T22:50:00.647734+00:00",
   "universe_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
   "collected": 12273,
   "counts": {
     "passed_same_snapshot": 12265,
     "corrected_fixture": 1,
-    "pending": 1,
-    "updated_test_contract": 6
+    "corrected_implementation": 1,
+    "updated_test_contract": 6,
+    "pending": 0
   },
-  "resolved": 12272,
-  "pending": [
-    {
-      "nodeid": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
-      "status": "pending",
-      "evidence": [
-        {
-          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
-          "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
-          "kind": "instrumented_phases",
-          "outcome": "failed"
-        }
-      ],
-      "unresolved_failure": {
-        "state": "failed",
-        "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
-        "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171"
-      },
-      "tracking_issue": 674
-    }
-  ],
+  "resolved": 12273,
+  "pending": [],
   "boundary_confirmed": "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
   "correction_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
   "counting_rule": "Una entrada por nodeid del universo de 12.273 casos. Las repeticiones y los nuevos controles no aumentan ese universo.",
   "limits": [
     "El prefijo original se reconstruye desde progreso serial y resumen final. No dispone de audit ni JUnit propios.",
     "Los siete casos corregidos se atribuyen a sus revisiones de pruebas. No pasan a contarse como superados en el snapshot original.",
-    "El cambio del contrato del padre tiene una correspondencia explícita entre el nombre anterior y el nuevo."
+    "El cambio del contrato del padre tiene una correspondencia explícita entre el nombre anterior y el nuevo.",
+    "El nodo NVTX se resuelve tras corregir la implementación en 54fa0ed6f. Su fallo en 932d8ab02 permanece registrado.",
+    "Los diez casos nuevos de restauración y la variante FP32 no aumentan los 12.273 nodeids originales.",
+    "La conciliación reúne comprobaciones entre revisiones. No es una única suite completa verde ni un porcentaje global de calidad."
   ],
   "inputs_sha256": {
     "memory-numerics-20261018/review-collection.log": "67959b3e81e6c9679601270b28136dc497d6f612a87dff802ffd8c6ec79c9e52",
@@ -43,7 +28,10 @@
     "residual-cpu-20261018T200125.477525Z/summary.json": "bec9edc7826a01de623a178cd18c1ce1a6983504e07a0c33c5fec175222fe29a",
     "residual-cuda-20261018T202340.743276Z/summary.json": "6968fec946879b869378e518e5971d39d9420ea8d8c330dc8f60107470302940",
     "snapshot-20261018T212350.357939Z/cases.json": "83f4e30da729db760bac9e538de82036faa1359b2edfe5f45263b43d32a887d5",
-    "current-20261018T212703.528643Z/cases.json": "55987fee92047e0820c6495faada4554e29a48f7bfa498544c6afda86533710c"
+    "current-20261018T212703.528643Z/cases.json": "55987fee92047e0820c6495faada4554e29a48f7bfa498544c6afda86533710c",
+    "residual-cuda-20261018T202340.743276Z/51/cases.json": "cef945572f2e575f107a8900e71f6f22b56132f915491d7820411963dd6fc734",
+    "final-cuda-v1/result.json": "7bae8377d44e80962ecf65cd9c8333de9e36ce4afd31bec11caaff0c67d09681",
+    "final-cuda-v1/junit.xml": "dec881461640fa5a008cf55a47ceee4dad8036282fea7630aca732f21964c42a"
   },
   "revision_corrections": [
     {
@@ -209,7 +197,50 @@
           "executed_nodeid": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent"
         }
       ]
+    },
+    {
+      "nodeid": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+      "status": "corrected_implementation",
+      "evidence": [
+        {
+          "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+          "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
+          "kind": "instrumented_phases",
+          "outcome": "failed"
+        },
+        {
+          "source_commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+          "receipt": "final-cuda-v1/junit.xml",
+          "receipt_sha256": "dec881461640fa5a008cf55a47ceee4dad8036282fea7630aca732f21964c42a",
+          "kind": "junit_retest_after_code_correction",
+          "outcome": "passed",
+          "result_receipt": "final-cuda-v1/result.json",
+          "result_sha256": "7bae8377d44e80962ecf65cd9c8333de9e36ce4afd31bec11caaff0c67d09681",
+          "public_receipt": "reports/engineering/jvp-backward-order-20261018/final-verification.json",
+          "public_receipt_sha256": "8fbd45c75a39f3f77b1621c71019b2e035962d0e10cd4c8e71c206e9a5656ad5",
+          "public_receipt_commit": "718d0bc2e758fffd47d8519d62bc07e4475e0aad",
+          "integrated_in_develop": "4e7e0f78dd1a0b7f91658742d7bee4e50455d70b",
+          "pr": 676,
+          "executed_nodeid": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+          "test_source_sha256": "c79a14ac41c35b74ee2a33e22f41d0017a90fbfee37529e90875beab4c9ce157"
+        }
+      ],
+      "tracking_issue": 674,
+      "original_failure": {
+        "state": "failed",
+        "receipt": "residual-cuda-20261018T202340.743276Z/51/cases.json",
+        "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171"
+      }
     }
   ],
-  "ledger_sha256": "a8bc05253cb3e2f40c1abed9901014d922116e476fb218fc713dd214610794cb"
+  "ledger_sha256": "20307981f2893327a6ec541e3e6354eb881d1c6a27f1b0a2f0e02990c0121f62",
+  "implementation_correction_commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+  "previous_artifacts_sha256": {
+    "unique-cases.json": "a8bc05253cb3e2f40c1abed9901014d922116e476fb218fc713dd214610794cb",
+    "reconciliation.json": "f0fb028633bb0ed7ba8e14ef6d003dc431bccda7232d4204e038234451e415cf",
+    "pending-nodeids.txt": "82be020d81f07df44d626374f8a80d181a6a89245974e979177531776ce4357a",
+    "public-reconciliation.json": "dec00830700c2e5e162277e851439ed2d882cc7db6805dc8a8ccd8b9895f2d60"
+  },
+  "unchanged_ledger_entries": 12272,
+  "single_revision_full_suite": false
 }
