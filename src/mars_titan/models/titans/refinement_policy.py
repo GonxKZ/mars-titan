@@ -15,10 +15,12 @@ from .state import check_finite, deferred_checks, require_true
 
 
 class RoutePolicy(nn.Module):
-    """Regresión congelada de ganancias firmadas, con K1 fuera del soporte observado.
+    """Regresión congelada de ganancias firmadas, con K1 fuera de rangos marginales.
 
     Los costes ya están convertidos a unidades de MAE por el protocolo. No son
     milisegundos ni probabilidades. El orden de ROUTES resuelve los empates.
+    Los límites son rangos marginales por rasgo. Pertenecer a ellos no acredita
+    soporte conjunto ni una combinación observada. No es un detector OOD calibrado.
     """
 
     def __init__(self, *, mean, scale, coefficients, support_min, support_max, costs, min_gain):
@@ -113,8 +115,8 @@ class RoutePolicy(nn.Module):
         check_finite(features, "Los rasgos de la política")
         features = features.to(self.mean.dtype)
         supported = ((features >= self.support_min) & (features <= self.support_max)).all(-1)
-        # Las filas fuera del soporte terminan en K1. No se extrapola su regresión,
-        # que podría desbordarse aunque los rasgos originales fuesen finitos.
+        # Las filas fuera de los rangos marginales terminan en K1. No se evalúa
+        # la regresión sobre esos valores, que podrían desbordarla.
         allowed = torch.where(supported[:, None], features, self.mean)
         standardized = (allowed - self.mean) / self.scale
         gain = standardized @ self.coefficients[:-1] + self.coefficients[-1]

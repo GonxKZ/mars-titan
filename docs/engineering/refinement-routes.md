@@ -69,9 +69,15 @@ mejor en una etiqueta de clasificación ni trunca las ganancias negativas.
 La política escoge el máximo entre cero, correspondiente a K1, y las cinco ganancias
 previstas menos sus costes y un margen mínimo. Los costes son incrementos respecto a K1
 expresados en unidades de MAE mediante una conversión declarada por el protocolo. No son
-milisegundos sin convertir. Los empates siguen el orden de la tabla. Fuera de los rangos
-de rasgos observados durante el ajuste devuelve K1. Esta regla limita la extrapolación,
-pero no certifica incertidumbre ni detecta todos los cambios de distribución.
+milisegundos sin convertir. Los empates siguen el orden de la tabla. Los límites son
+rangos marginales por rasgo. Pertenecer a ellos no acredita soporte conjunto ni una
+combinación observada. Fuera de esos rangos devuelve K1. Esta regla no es un detector
+OOD calibrado.
+
+El [alcance matemático de la política](refinement-policy-mathematics.md) define la
+utilidad penalizada y una cota condicional de regret. La cota requiere un error
+uniforme que el ridge actual no certifica y no cubre el retorno forzado a K1 fuera
+de los rangos marginales.
 
 El ajuste rechaza filas que precedan a la selección del núcleo y lector, decisiones fuera
 del intervalo y etiquetas que maduren después de su frontera. Esas comprobaciones

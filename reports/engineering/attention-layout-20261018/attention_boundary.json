@@ -1,0 +1,105 @@
+{
+  "checkpoint_sha256": "ce780fe936181a010ecdfd66d48084ef995dbc84ae44631f3188f6f80f7cc8c7",
+  "script_sha256": "c04740549a16cbb18845ca6b7ae33008c829e813455185a12cb5faaa08444458",
+  "torch": "2.14.0+cu130",
+  "torch_commit": "08187d9e0fba026dc8217405802ab5381dc88d90",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "optimizer_steps": 0,
+  "rows": [
+    {
+      "call": 1,
+      "flows": 64,
+      "timestamp": 1641243900000000,
+      "token": null,
+      "prediction": {
+        "shape": [
+          64
+        ],
+        "max_abs": 2.1792948246002197e-07,
+        "mean_abs": 5.029141902923584e-08,
+        "equal": false
+      },
+      "module_differences": [
+        {
+          "module": "mac.attention",
+          "slot": 0,
+          "shape": [
+            64,
+            6,
+            64
+          ],
+          "max_abs": 2.682209014892578e-07,
+          "mean_abs": 1.50285851911273e-08,
+          "equal": false
+        },
+        {
+          "module": "mac.memory.key_projection",
+          "slot": 0,
+          "shape": [
+            64,
+            64
+          ],
+          "max_abs": 1.4901161193847656e-07,
+          "mean_abs": 3.179843588441145e-08,
+          "equal": false
+        },
+        {
+          "module": "mac.memory.value_projection",
+          "slot": 0,
+          "shape": [
+            64,
+            64
+          ],
+          "max_abs": 1.862645149230957e-07,
+          "mean_abs": 3.328432285343297e-08,
+          "equal": false
+        },
+        {
+          "module": "mac.memory.alpha_projection",
+          "slot": 0,
+          "shape": [
+            64,
+            64
+          ],
+          "max_abs": 4.76837158203125e-07,
+          "mean_abs": 2.8870999813079834e-08,
+          "equal": false
+        },
+        {
+          "module": "mac.memory.eta_projection",
+          "slot": 0,
+          "shape": [
+            64,
+            1
+          ],
+          "max_abs": 1.1920928955078125e-07,
+          "mean_abs": 4.132743924856186e-08,
+          "equal": false
+        },
+        {
+          "module": "mac.memory.theta_projection",
+          "slot": 0,
+          "shape": [
+            64,
+            1
+          ],
+          "max_abs": 1.6391277313232422e-07,
+          "mean_abs": 5.8673322200775146e-08,
+          "equal": false
+        },
+        {
+          "module": "head",
+          "slot": 0,
+          "shape": [
+            64,
+            5
+          ],
+          "max_abs": 2.384185791015625e-07,
+          "mean_abs": 7.469207048416138e-08,
+          "equal": false
+        }
+      ]
+    }
+  ]
+}

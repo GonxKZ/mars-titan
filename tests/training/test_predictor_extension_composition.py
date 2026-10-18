@@ -10,6 +10,7 @@ def test_declared_multiscale_and_presence_options_can_be_combined():
     changes = dict(
         memory_multiscale=dict(form="cascade", coupling=0.0625),
         presence_modulation="film_v1",
+        attention_layout="sequence_contiguous_v1",
         memory_stability=dict(alpha_floor=0.002, eta_ceiling=0.3, gradient_clip=4.0, gate_box=True),
     )
     assert checked_predictor_changes(changes) == changes
