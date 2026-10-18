@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-18T23:28:21.198101",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió.",
+    "Esta selección no recorre el traslado del padre ni el gemelo con control C en _frozen_parent. Esas rutas no han cambiado."
+  ],
+  "include": [],
+  "totals": {
+    "statements": 88,
+    "covered_statements": 84,
+    "branches": 12,
+    "covered_branches": 10
+  },
+  "files": [
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "source_sha256": "6d6f2460146515a75e6ea2a704ba672c2a61f042aefd50baad26aa08c03f7953"
+    },
+    {
+      "path": "src/mars_titan/training/search_cases.py",
+      "source_sha256": "de83211b637b369340f5a11a659ad6e3efa991cf088f38cb21788bbc965fa348"
+    },
+    {
+      "path": "tests/training/test_reference_run.py",
+      "source_sha256": "a33f13f896a3001263464a90ca6db76b72e0a5273a1e373543840fd07ee9342d"
+    },
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "source_sha256": "1d2a550c805263231ea79ab8ba346197fcb4b6b9ea086336dd2fecc84a3f7a20"
+    }
+  ],
+  "functions": [
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "function": "test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "start_line": 396,
+      "end_line": 442,
+      "cyclomatic_complexity": 11,
+      "statements": 36,
+      "covered_statements": 36,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 11.0
+    },
+    {
+      "path": "src/mars_titan/training/search_cases.py",
+      "function": "checked_predictor_changes",
+      "start_line": 50,
+      "end_line": 69,
+      "cyclomatic_complexity": 10,
+      "statements": 5,
+      "covered_statements": 5,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 10.0
+    },
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "function": "_parent",
+      "start_line": 171,
+      "end_line": 194,
+      "cyclomatic_complexity": 7,
+      "statements": 7,
+      "covered_statements": 7,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 7.0
+    },
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "function": "_frozen_parent",
+      "start_line": 197,
+      "end_line": 236,
+      "cyclomatic_complexity": 5,
+      "statements": 15,
+      "covered_statements": 11,
+      "coverage_fraction": 0.7333333333333333,
+      "branches": 4,
+      "covered_branches": 2,
+      "crap": 5.474074074074075
+    },
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "function": "test_predictor_changes_outside_the_extensions_are_rejected",
+      "start_line": 369,
+      "end_line": 374,
+      "cyclomatic_complexity": 3,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 3.0
+    },
+    {
+      "path": "tests/training/test_reference_run.py",
+      "function": "test_missing_cuda_fails_before_creating_run",
+      "start_line": 296,
+      "end_line": 302,
+      "cyclomatic_complexity": 2,
+      "statements": 6,
+      "covered_statements": 6,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    },
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "function": "parent_report",
+      "start_line": 377,
+      "end_line": 393,
+      "cyclomatic_complexity": 2,
+      "statements": 9,
+      "covered_statements": 9,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "function": "_frozen_parent.build",
+      "start_line": 212,
+      "end_line": 218,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "function": "test_core_extensions_reject_declarations_that_change_more_than_the_extension",
+      "start_line": 312,
+      "end_line": 316,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "tests/training/test_titans_campaign.py",
+      "function": "test_parent_rejects_changes_outside_the_declared_extensions",
+      "start_line": 450,
+      "end_line": 453,
+      "cyclomatic_complexity": 1,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "dd099fd0831060f93631580caaef0f5c32022124241e853db00f47197db4c264",
+  "functions_measured": 10,
+  "scope": {
+    "tests/training/test_reference_run.py": [
+      "test_missing_cuda_fails_before_creating_run"
+    ],
+    "tests/training/test_titans_campaign.py": [
+      "parent_report",
+      "test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "test_core_extensions_reject_declarations_that_change_more_than_the_extension",
+      "test_parent_rejects_changes_outside_the_declared_extensions",
+      "test_predictor_changes_outside_the_extensions_are_rejected"
+    ],
+    "src/mars_titan/training/search_cases.py": [
+      "checked_predictor_changes"
+    ],
+    "src/mars_titan/training/mars_titan_walk_forward.py": [
+      "_frozen_parent",
+      "_frozen_parent.build",
+      "_parent"
+    ]
+  },
+  "scope_note": "Selección por ruta y nombre del informe de summarize_python_quality.py. Incluye las funciones de prueba modificadas, su fixture y la admisión y reconstrucción del padre ampliado. No es cobertura de todos los módulos."
+}
