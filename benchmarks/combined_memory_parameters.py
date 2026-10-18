@@ -81,10 +81,11 @@ def collect(work, output):
                 inference_registered_parameter_bytes=parent["inference_registered_parameter_bytes"],
             )
             continue
-        fit = json.loads((folder / "fit/run.json").read_text())
+        fit_folder = folder / ("run" if job["kind"] == "candidate" else "fit")
+        fit = json.loads((fit_folder / "run.json").read_text())
         checkpoint = fit["best_checkpoint"]["sha256"]
         state = load_training_state(
-            folder / "fit/checkpoints",
+            fit_folder / "checkpoints",
             expected_identity=fit["identity"],
             selection="best",
             expected_sha256=checkpoint,

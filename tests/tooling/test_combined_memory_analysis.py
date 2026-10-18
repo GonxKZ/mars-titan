@@ -321,3 +321,31 @@ def test_unfinished_jobs_are_reported_without_inventing_metrics(tmp_path, monkey
     job = receipt["jobs"][0]
     (work / "runs" / job["id"] / "run.json").unlink()
     assert analysis.read_result(work, job, 3, None) == (None, "Sin manifiesto")
+
+
+def test_candidate_selection_uses_the_candidate_checkpoint_layout(tmp_path):
+    work = tmp_path / "work"
+    receipt, _ = fixture_runs(work)
+    job = receipt["jobs"][0] | dict(kind="candidate")
+    folder = work / "runs" / job["id"]
+    (folder / "run.json").rename(folder / "window.json")
+    (folder / "run").mkdir()
+    selection = dict(best_epoch=1, best_score=0.02)
+    (folder / "run/run.json").write_text(json.dumps(dict(selection=selection)))
+    value, reason = analysis.read_result(work, job, 3, None)
+    assert reason is None and value[0]["selection"] == selection
+
+
+def test_terminated_receipt_does_not_look_like_an_active_job(tmp_path, monkeypatch):
+    work = tmp_path / "work"
+    receipt, _ = fixture_runs(work)
+    monkeypatch.setattr(analysis, "verify_prepared", lambda _: receipt)
+    job = receipt["jobs"][0]
+    (work / "runs" / job["id"] / "run.json").write_text(json.dumps(dict(status="running")))
+    (work / "measurements/0.json").write_text(
+        json.dumps(dict(job=job, status="terminated", process_seconds=3, exit_code=143))
+    )
+    result = analysis.analyze(work, tmp_path / "out")
+    pending = next(row for row in result["pending"] if row["job"] == job["id"])
+    assert pending["reason"] == "terminated"
+    assert pending["manifest_status"] == "running"

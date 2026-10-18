@@ -1,0 +1,179 @@
+{
+  "tool": "Mutación textual dirigida con pytest",
+  "source": "benchmarks/combined_memory_parameters.py",
+  "source_sha256": "a4aeb20b1d2a9a001a56ad796f4179796e153e017a216c0e525f490abf4ca995",
+  "baseline": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_parameters.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "91eb7251eeee51f87d2b3889fa1aad927177276f19509aa4bda0655657c3cf0c"
+  },
+  "restored": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_parameters.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "cf3877f5a0006b0cfe5842a91c99c70d59a6ac6d7e439551f7f664fc7cfe8886"
+  },
+  "mutants": [
+    {
+      "name": "candidate_layout",
+      "old": "fit_folder = folder / (\"run\" if job[\"kind\"] == \"candidate\" else \"fit\")",
+      "new": "fit_folder = folder / \"fit\"",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "8603946e876caaf35db9587d62a21669002a8a9bdcf313c9e00e8dbcb1b25726"
+    },
+    {
+      "name": "omit_inert",
+      "old": "names = trained + frozen + inert",
+      "new": "names = trained + frozen",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "c44e19cbb281189fbdf1e91af83810013438c0ae99c068f11815209b58262bcb"
+    },
+    {
+      "name": "assume_fp32",
+      "old": "state[name].numel() * state[name].element_size()",
+      "new": "state[name].numel() * 4",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "e0bc0a3e2cc8a379073c386dc64b750f67c8aa06e6257b8ed0bb26de7398f1b1"
+    },
+    {
+      "name": "allow_duplicate_roles",
+      "old": "len(names) != len(set(names)) or any(",
+      "new": "False or any(",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "da10da23177577777865c88ca8d6904d7af5ae160bbfb757ac7a76ed1e5f27ce"
+    },
+    {
+      "name": "omit_parent_size",
+      "old": "count += models[job[\"parent\"]][f\"inference_registered_parameter_{unit}\"]",
+      "new": "count += 0",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "ea4a9e48aa340d783c0c75f27660d6b4369f68e7a5d73bd4a3aec94d857a15e1"
+    },
+    {
+      "name": "double_count_adapter_parent",
+      "old": "job[\"kind\"] in (\"readout\", \"cm_readout\")",
+      "new": "job[\"kind\"] in (\"readout\", \"cm_readout\", \"post\")",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "86c50058063076e86e0c00a6ccf4e03ee84d46c6817a0e190b46efbaf4ef4181"
+    },
+    {
+      "name": "use_latest_instead_of_selected",
+      "old": "selection=\"best\"",
+      "new": "selection=\"latest\"",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "59963750f385c8db3f9a55248e3c9a83e12d14f92aaa4de7b2e1273e1d622caa"
+    },
+    {
+      "name": "ignore_final_reserve",
+      "old": "run.get(\"final_test_opened\") is not False",
+      "new": "False",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "4fae7002179f9f383569fea31e820892b43e0f47c861fa05551cc7ca11e4f39b"
+    }
+  ]
+}

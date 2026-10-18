@@ -69,19 +69,20 @@ def test_selected_checkpoints_separate_inference_size_and_stage_updates(tmp_path
         if job["kind"] == "post":
             identity = dict(parameter_roles=dict(adapters=["b"]), frozen_parameters=["a"])
             state["b"] = torch.ones(3)
+        fit_folder = folder / ("run" if job["kind"] == "candidate" else "fit")
         saved = save_training_state(
-            folder / "fit/checkpoints",
+            fit_folder / "checkpoints",
             dict(global_step=0, model=state),
             identity=identity,
             best=True,
         )
-        (folder / "fit/run.json").write_text(
+        (fit_folder / "run.json").write_text(
             json.dumps(
                 dict(identity=identity, best_checkpoint=dict(sha256=inventory.sha256(saved)))
             )
         )
         save_training_state(
-            folder / "fit/checkpoints",
+            fit_folder / "checkpoints",
             dict(global_step=1, model={k: v + 1 for k, v in state.items()}),
             identity=identity,
         )

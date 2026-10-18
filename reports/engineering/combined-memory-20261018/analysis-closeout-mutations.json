@@ -1,0 +1,71 @@
+{
+  "tool": "Mutación textual dirigida con pytest",
+  "source": "benchmarks/combined_memory_analysis.py",
+  "source_sha256": "b60e6808377974e2ee5f343669580da0959116db3a1dcec558d9e89bfcb08108",
+  "baseline": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_analysis.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "39f76deebce5353168e13e3d158767f4341ed9a3316a9d8f85df7f4a44a10d5b"
+  },
+  "restored": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_analysis.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "2ddc5cd3143f17254258cb4009ce9c311d021371ee9778531d4a61ee61c3d9c5"
+  },
+  "mutants": [
+    {
+      "name": "candidate_selection_layout",
+      "old": "fit_path = folder / (\"run/run.json\" if job[\"kind\"] == \"candidate\" else \"fit/run.json\")",
+      "new": "fit_path = folder / \"fit/run.json\"",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "9603600b683f0d84924f3191cd448745ce923bca6ee12aebffc14fc2850f3811"
+    },
+    {
+      "name": "ignore_termination",
+      "old": "if reason == \"running\" and last.get(\"status\") == \"terminated\":",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_analysis.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "79b3f95253df9f3a6440b2b9b6b82cd651ed683511e4054c0f84332678b7deb7"
+    }
+  ]
+}

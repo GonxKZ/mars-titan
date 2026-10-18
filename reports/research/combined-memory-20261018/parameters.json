@@ -1,0 +1,1488 @@
+{
+  "kind": "selected_parameter_inventory",
+  "prepared_sha256": "60f06de97f22f18285ab5e674c330347f51d2e431eb4740eebeef544431c0712",
+  "source_sha256": "a4aeb20b1d2a9a001a56ad796f4179796e153e017a216c0e525f490abf4ca995",
+  "models": {
+    "fold-018/cell0-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "b9ac59751580ad33ee0ac80925312da4a8b7c779252df424221e49a6856f2548",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell1-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "48e24c42e226f2bd99c89024da8f0f39496b926793bbfc3a3245e07ccf4b235e",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell2-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "582010a28ae0e95d38cf9a3ae7c03be4fbc2fc0e9229940e767111d0f0965d73",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell3-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "447809911796a87759f82cb8c073b77ed99fec2abd0be3ab7ee4958108d327fc",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell4-42": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "a5f2394a98f15ef41f5ab76313845574818ff81f623b80eb3a4dc52e976804ea",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell5-42": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "75df1622cf4ca0c4509abcbdf350c7f7dc7a914496f67bd4ab73be05d4966646",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell6-42": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "23d4ac6185d2f8d8ee79ce5f868591192e8e3dd46d353b2b7be5294588153186",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell7-42": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "ce780fe936181a010ecdfd66d48084ef995dbc84ae44631f3188f6f80f7cc8c7",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell1-43": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "3c637080d117bb79ab7bbcf7109bb4a469d810a2e20a6de4db6db3256a76f7a8",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell2-43": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "0f4ce4ce1e221bce5376e2e057439839bd66498d5ae2463bbe6c7a5f84bdd976",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell3-43": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "1379fc63d031311a230f49589dafc57eed9593e731ab4f8620f0bcf27bce85f3",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell4-43": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "cc8a07f7af617f3809d396564e8c962e1a887cdfa083f3a5fcd74fe7d41ebfaf",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell5-43": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "4f4cd66f88ee07fa55dd620dec25244d9b314e72fdedffde543a0e8810d60ed7",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell6-43": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "4f4fc4ac1e4a06fbac905d680f891040d4319ca9b7f8ba25ce742c56f4ebcb47",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell7-43": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "e7abf22060c8929aae1d18340d2c6f109ff5844c166c80d5942aad603273d295",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell0-43": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "e039530e6067c56f69d43122fefe1c78906065cc48b611343c690fc94ce719bc",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell2-44": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "0b500bb738f4754caadb72a92c8d586bccf6a9da319ebf6d17b8abc1c004366e",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell3-44": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "f1cfd1c50753ec0a7d1edd7753d3d10f026c8481ab09c36ad99660513e25bbd0",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell4-44": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "994e3a6ad15c7a0cdd8c97712fb27aa58001bf85548eaa59e4af59b10f59e0ee",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell5-44": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "0ad61255c35391cef01c86df1f3eb973aee8e3d3c990f283b8af02e76cb0c202",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell6-44": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "fb16bf4cc4441af9adbd7190966ef61961fc288f5474211d08581f592c5c446b",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell7-44": {
+      "registered_parameter_elements": 189319,
+      "registered_parameter_bytes": 757276,
+      "stage_trainable_elements": 189319,
+      "stage_trainable_bytes": 757276,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 180871,
+          "bytes": 723484
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "583eaa3a40182e2c995d755603632a9dbc9eb69935c1ac067fec8de39fd1c94d",
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cell0-44": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "554f22e4889a42e395892cd0b674284e31efc82eb76aec9d2f1272531f61c4ef",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell1-44": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "3109f2bbc1a1682507c079aac4b4b6d0e5aaa968ca7a2bc5d91050530fe77841",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/transformer_direct-42": {
+      "registered_parameter_elements": 144709,
+      "registered_parameter_bytes": 578836,
+      "stage_trainable_elements": 144709,
+      "stage_trainable_bytes": 578836,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 144709,
+          "bytes": 578836
+        },
+        "persistent_memory": {
+          "elements": 0,
+          "bytes": 0
+        },
+        "initial_fast_weights": {
+          "elements": 0,
+          "bytes": 0
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "751987323fb098ba00381502547ec645e7a205b5b4d2ec2ebdf3512a396f6c6f",
+      "inference_registered_parameter_elements": 144709,
+      "inference_registered_parameter_bytes": 578836
+    },
+    "fold-018/mac_disabled-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "b097bccc38682d4acec866e3350c2461d9bb380de1d43ce57ac8e7520e848eaa",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/mac_frozen-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "6e918153f66a4baf652a24e1e6d5b3897c633afd18a9cfaadb05fb8b0ecc7a6f",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/mac_paper-42": {
+      "registered_parameter_elements": 186887,
+      "registered_parameter_bytes": 747548,
+      "stage_trainable_elements": 186887,
+      "stage_trainable_bytes": 747548,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 178439,
+          "bytes": 713756
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "ade5a3822f37d2fb8b935968159c8e5da781f0b63d39ba4886c894cb4e9c3288",
+      "inference_registered_parameter_elements": 186887,
+      "inference_registered_parameter_bytes": 747548
+    },
+    "fold-018/gru_episodic-42": {
+      "registered_parameter_elements": 545414,
+      "registered_parameter_bytes": 2181656,
+      "stage_trainable_elements": 545414,
+      "stage_trainable_bytes": 2181656,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "encoder": {
+          "elements": 429440,
+          "bytes": 1717760
+        },
+        "episodic_read": {
+          "elements": 49536,
+          "bytes": 198144
+        },
+        "refiner": {
+          "elements": 65793,
+          "bytes": 263172
+        },
+        "head": {
+          "elements": 645,
+          "bytes": 2580
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "40a13059cd969de3f4f7d938bace26a3eb8e9ab7205032164a58005fd7d9c062",
+      "inference_registered_parameter_elements": 545414,
+      "inference_registered_parameter_bytes": 2181656
+    },
+    "fold-018/cell0_frozen-42": {
+      "parent": "fold-018/cell0-42",
+      "stage_trainable_elements": 0,
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cell7_frozen-42": {
+      "parent": "fold-018/cell7-42",
+      "stage_trainable_elements": 0,
+      "inference_registered_parameter_elements": 189319,
+      "inference_registered_parameter_bytes": 757276
+    },
+    "fold-018/cm_v1_core_b-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 65536,
+      "unclassified_tensor_bytes": 262144,
+      "unclassified_tensor_names": [
+        "local_control.basis"
+      ],
+      "checkpoint_sha256": "ae13b9bfa03f0d8984c8c4111d29f159ed8164921387c75a45dd1d35bef857d7",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cm_v1_core_c-42": {
+      "registered_parameter_elements": 186119,
+      "registered_parameter_bytes": 744476,
+      "stage_trainable_elements": 186119,
+      "stage_trainable_bytes": 744476,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "shared": {
+          "elements": 177671,
+          "bytes": 710684
+        },
+        "persistent_memory": {
+          "elements": 256,
+          "bytes": 1024
+        },
+        "initial_fast_weights": {
+          "elements": 8192,
+          "bytes": 32768
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 65536,
+      "unclassified_tensor_bytes": 262144,
+      "unclassified_tensor_names": [
+        "local_control.basis"
+      ],
+      "checkpoint_sha256": "3faa4f95580f06b772e687526fb48c45ee8778886d5f65d255f9e6e1dae6c167",
+      "inference_registered_parameter_elements": 186119,
+      "inference_registered_parameter_bytes": 744476
+    },
+    "fold-018/cm_v1_b-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "8dad8130a433f77a58b1e01cf5b64f27e9fdf281387c5527cad8fb5cc3240b0e",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cm_v1_bc-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "69ee2681fab0516fa90265477bea7cf17677791a8cfed8188afe98d200124312",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cm_v1_bm-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "5e789ed63594c2e5a2fbf1625750fa9aba8c8b8afd60120f7af01d21fd91086a",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cm_v1_bcm-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "5bd679cb63643d67681dcb61b1902d6d36e411abfd94586157aa9fac42e4eaee",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m0_no_bank_pytorch_default-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 12417,
+      "stage_trainable_bytes": 49668,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 8384,
+        "bytes": 33536
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "15f197ad902b6e568f12182577649b25e318ac084c6fb679493a2584052760eb",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m0_no_bank_zero_refinement-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 12417,
+      "stage_trainable_bytes": 49668,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 8384,
+        "bytes": 33536
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "c0edd7a14813adb9056482c40d6f439771fb1a9c01781b8efc40b67bb21e62af",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m1_pytorch_default-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "a5747bf6bc41a60d6c60009a8d4184e9a87ffe38822ce6c99009bb0dbd261e0c",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m1_zero_refinement-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "0ac4966b5914adc21e19558b946653616df5336a953e8e20c22e736ea1d4ebd7",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m2_pytorch_default-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "8f034bc00687012eb05250528e000cb1b8f113c0ec3dc574c3fe6bcc207ade82",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m2_zero_refinement-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "a0e5400a867a0aad13b6ab0913968c1bfd5f70d65b9c63e41dc0244a6b2c851a",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    },
+    "fold-018/cell0_m3_pytorch_default-42": {
+      "registered_parameter_elements": 20801,
+      "registered_parameter_bytes": 83204,
+      "stage_trainable_elements": 20801,
+      "stage_trainable_bytes": 83204,
+      "stage_trainable_scope": "parameters_listed_for_the_stage_optimizer",
+      "roles": {
+        "episodic_read": {
+          "elements": 8384,
+          "bytes": 33536
+        },
+        "refiner": {
+          "elements": 12417,
+          "bytes": 49668
+        }
+      },
+      "frozen": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "inert": {
+        "elements": 0,
+        "bytes": 0
+      },
+      "unclassified_tensor_elements": 0,
+      "unclassified_tensor_bytes": 0,
+      "unclassified_tensor_names": [],
+      "checkpoint_sha256": "c531252e6efda7d2dc5538542cc682f61843903df816f375eead8703540cb886",
+      "inference_registered_parameter_elements": 206920,
+      "inference_registered_parameter_bytes": 827680
+    }
+  },
+  "pending": [
+    "fold-018/cell0_m3_zero_refinement-42",
+    "fold-018/cell0_m1_zero_k2-42",
+    "fold-018/cell0_m1_zero_k4-42",
+    "fold-018/cell7_m0_no_bank_pytorch_default-42",
+    "fold-018/cell7_m0_no_bank_zero_refinement-42",
+    "fold-018/cell7_m1_pytorch_default-42",
+    "fold-018/cell7_m1_zero_refinement-42",
+    "fold-018/cell7_m2_pytorch_default-42",
+    "fold-018/cell7_m2_zero_refinement-42",
+    "fold-018/cell7_m3_pytorch_default-42",
+    "fold-018/cell7_m3_zero_refinement-42",
+    "fold-018/cell7_m1_zero_k2-42",
+    "fold-018/cell7_m1_zero_k4-42",
+    "fold-018/cell0_context-42",
+    "fold-018/cell0_context_frozen-42",
+    "fold-018/cell0_context_m1_zero-42",
+    "fold-018/cell7_context-42",
+    "fold-018/cell7_context_frozen-42",
+    "fold-018/cell7_context_m1_zero-42",
+    "fold-018/pt1_init-42",
+    "fold-018/pt1_init-43",
+    "fold-018/pt1_init-44",
+    "fold-018/ema-42",
+    "fold-018/wide-42",
+    "fold-018/pt1_ema_film-42",
+    "fold-018/pt1_cascade_wide-42",
+    "fold-018/pt1_ema_wide-42",
+    "fold-015/cell0-42",
+    "fold-015/cell1-42",
+    "fold-015/cell2-42",
+    "fold-015/cell3-42",
+    "fold-015/cell4-42",
+    "fold-015/cell5-42",
+    "fold-015/cell6-42",
+    "fold-015/cell7-42",
+    "fold-018/full_continuation-42",
+    "fold-018/head-42",
+    "fold-018/head+fusion-42",
+    "fold-018/head+readout+fusion-42"
+  ],
+  "scope": "shared_model_parameters_and_stage_optimizer_roles",
+  "fast_states_and_episodic_banks_included": false
+}

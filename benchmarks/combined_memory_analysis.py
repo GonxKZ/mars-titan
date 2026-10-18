@@ -152,7 +152,7 @@ def read_result(work, job, count, cohort):
         ):
             raise ValueError("La referencia no conserva el padre congelado declarado")
     scores = score_table(table, cohort)
-    fit_path = folder / "fit/run.json"
+    fit_path = folder / ("run/run.json" if job["kind"] == "candidate" else "fit/run.json")
     fit = json.loads(fit_path.read_text()) if fit_path.exists() else {}
     result = dict(
         summary=scores.summary(),
@@ -228,7 +228,12 @@ def analyze(work, output, *, audit=None):
                 continue
             value, reason = read_result(work, job, population["counts"]["evaluation"], cohort)
             if reason:
-                pending.append(dict(job=job["id"], reason=reason))
+                item = dict(job=job["id"], reason=reason)
+                attempts = [m for m in measurements if m.get("job") == job]
+                last = max(attempts, key=lambda m: m.get("started_at_utc", ""), default={})
+                if reason == "running" and last.get("status") == "terminated":
+                    item.update(reason="terminated", manifest_status=reason)
+                pending.append(item)
                 continue
             if not any(m.get("job") == job and m["status"] == "completed" for m in measurements):
                 raise ValueError("Falta la medición de ejecución de un resultado completado")
@@ -288,7 +293,8 @@ def analyze(work, output, *, audit=None):
         final_test_opened=False,
         limits=[
             "Dos épocas no acreditan convergencia ni superioridad general.",
-            "La ventana secundaria tiene una sola semilla y una población distinta.",
+            "La ventana secundaria está prevista con una semilla y otra población. "
+            "Su estado indica si llegó a ejecutarse.",
             "Los intervalos simultáneos se refieren a cada familia declarada, no a todas juntas.",
             "El coste de lectores y adaptadores se añade al de su padre.",
         ],
