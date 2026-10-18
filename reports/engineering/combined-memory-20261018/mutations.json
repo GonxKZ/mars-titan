@@ -1,0 +1,511 @@
+{
+  "tool": "Mutación textual dirigida con compilación sintáctica y pytest",
+  "source_restored": true,
+  "mutants": [
+    {
+      "name": "random_refinement",
+      "source": "src/mars_titan/models/titans/episodic_readout.py",
+      "before": "nn.init.zeros_(self.refinement.weight)",
+      "after": "pass",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 3.473667612997815,
+        "log_sha256": "a02e43ed129e3d422bd0df4935c1c41cb882c6038034a660fe018799320a8446",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/models/titans/test_readout_initialization.py",
+          "-k",
+          "preserves_the_parent"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "cf202e6a23243de0bb858190d5c8e20542e14ca9444aca036bc396aa724ccd84",
+      "exit_code": 1,
+      "seconds": 3.5241567420307547,
+      "log_sha256": "393bc3dc0bbe8d237f1bc9cf980273672743c96be31be80dda7c50d1a2e009b3",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_readout_initialization.py",
+        "-k",
+        "preserves_the_parent"
+      ]
+    },
+    {
+      "name": "legacy_identity_drift",
+      "source": "src/mars_titan/models/titans/episodic_readout.py",
+      "before": "if initialization != \"pytorch_default\":",
+      "after": "if True:",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.872350588964764,
+        "log_sha256": "1799c7efc622286b692c0715c63b4fb6aec1c57637084e67cd2da0b39395c869",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/models/titans/test_readout_initialization.py",
+          "-k",
+          "legacy_identity"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "cf202e6a23243de0bb858190d5c8e20542e14ca9444aca036bc396aa724ccd84",
+      "exit_code": 1,
+      "seconds": 2.9224178349832073,
+      "log_sha256": "77d9955dfdba4f45fe902a693f14ef16df4e5ea742b6470423d57c96d80dc2cf",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_readout_initialization.py",
+        "-k",
+        "legacy_identity"
+      ]
+    },
+    {
+      "name": "ignore_parent_extensions",
+      "source": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "before": "options = predictor_options(document, report[\"request\"])",
+      "after": "options = {k: v for k, v in document[\"predictor\"].items() if k != \"dtype\"}",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 10.691771916986909,
+        "log_sha256": "5ba3e5b596e011193ba801b71c52b954aa338d6169a4c5581f6a962b23c9f64b",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/training/test_mars_titan_walk_forward.py::test_reader_reconstructs_the_exact_combination_of_parent_extensions[1]"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "6d6f2460146515a75e6ea2a704ba672c2a61f042aefd50baad26aa08c03f7953",
+      "exit_code": 1,
+      "seconds": 8.085300555976573,
+      "log_sha256": "4617d0983bc6909ee140f39a5897ee650544e14ff8cb0bea249f748c0cc95bb0",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/training/test_mars_titan_walk_forward.py::test_reader_reconstructs_the_exact_combination_of_parent_extensions[1]"
+      ]
+    },
+    {
+      "name": "publish_context_per_block",
+      "source": "src/mars_titan/training/mars_titan_run.py",
+      "before": "run.parent_context = prepared.next_context",
+      "after": "run.parent_context = self.predictor.commit_context(prepared.next_context)",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 7.183023534016684,
+        "log_sha256": "df7db642d0a9b840f8dfa69f4aad3224f57fd5b8a9640ab590f92a741f67e031",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/training/test_mars_titan_run.py",
+          "-k",
+          "block_order"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "470f74a25ec18a2966df6866baa74ef765f69cfa66fb224725bf8192ec730ad2",
+      "exit_code": 1,
+      "seconds": 5.728797311952803,
+      "log_sha256": "b5af1b462e7a94c144229d369e808463e491dd01cdb3468a973349405657b760",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/training/test_mars_titan_run.py",
+        "-k",
+        "block_order"
+      ]
+    },
+    {
+      "name": "lose_context_on_resume",
+      "source": "src/mars_titan/training/mars_titan_run.py",
+      "before": "run.parent_context = self.predictor.restore_context(payload[\"parent_context\"])",
+      "after": "run.parent_context = self.predictor.initial_context()",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 15.602165549003985,
+        "log_sha256": "2274573aa63759895a803f38235e8a60c4b855bd26139a7b68fee8d3d0edb6a3",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/training/test_mars_titan_run.py",
+          "-k",
+          "market_context",
+          "-m",
+          "not cuda"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "470f74a25ec18a2966df6866baa74ef765f69cfa66fb224725bf8192ec730ad2",
+      "exit_code": 1,
+      "seconds": 15.048200356017333,
+      "log_sha256": "7eafaf439eb8f558c618b7f525fda465651d6b0edefe8ad89c72ded966d8879b",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/training/test_mars_titan_run.py",
+        "-k",
+        "market_context",
+        "-m",
+        "not cuda"
+      ]
+    },
+    {
+      "name": "untracked_presence_source",
+      "source": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "for name in _SOURCE_MODULES\n",
+      "after": "for name in _SOURCE_MODULES if not name.endswith(\"presence_modulation\")\n",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.320710026018787,
+        "log_sha256": "d0e94233a786e6d641f62a60b9556b1740f0914b8a7f02fabcd205e7ca2fd43b",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/models/titans/test_frozen_financial.py",
+          "-k",
+          "extension_source"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "7e82f0a57703460225a314677f2925e5bc93534aa6735b0a428ba552fc304d4a",
+      "exit_code": 1,
+      "seconds": 2.470811720995698,
+      "log_sha256": "8789e87742615901e6d8c5b0530072d179999e610b0e57d6e117cf88ed80313a",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_frozen_financial.py",
+        "-k",
+        "extension_source"
+      ]
+    },
+    {
+      "name": "ignore_temporal_bounds",
+      "source": "benchmarks/combined_memory_cohort.py",
+      "before": "or temporal.get(\"fold\") != expected",
+      "after": "or False",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 1.8192026420147158,
+        "log_sha256": "9dc6fb169766806b982bd0efc52f423c5e9b7da2096b8e5dde9920ec3f91ddd7",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_cohort.py",
+          "-k",
+          "projection"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "3a217e8f205f1339b670bf99f9bea220bf20c83e15b52a1a96b4308e047eb174",
+      "exit_code": 1,
+      "seconds": 2.0698072919622064,
+      "log_sha256": "a5f1f7d2a1f4200fabfa8d71bf18bedb08e52a7fe598f69ce543b498be70d204",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_cohort.py",
+        "-k",
+        "projection"
+      ]
+    },
+    {
+      "name": "drop_stratification",
+      "source": "benchmarks/combined_memory_cohort.py",
+      "before": "groups[name].append(symbol)",
+      "after": "groups[\"all\"].append(symbol)",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.1704942799988203,
+        "log_sha256": "eace287b151e7b55e0a92b0e1965eda907f2ac2803d3e49661d68124fde94ee0",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_cohort.py",
+          "-k",
+          "balances"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "3a217e8f205f1339b670bf99f9bea220bf20c83e15b52a1a96b4308e047eb174",
+      "exit_code": 1,
+      "seconds": 2.2704724820214324,
+      "log_sha256": "ec35acba021eab084a030aa78c26cef15ee614b373837765ec401eb035e1010b",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_cohort.py",
+        "-k",
+        "balances"
+      ]
+    },
+    {
+      "name": "ignore_failed_cost",
+      "source": "benchmarks/combined_memory_study.py",
+      "before": "json.loads(p.read_text())[\"process_seconds\"]",
+      "after": "0 if json.loads(p.read_text())[\"status\"] == \"failed\" else json.loads(p.read_text())[\"process_seconds\"]",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.320192014973145,
+        "log_sha256": "c7dcdd49f849fe30327395be44f9a07b6be1609f5634b4bcb4b2cdc17609a8ea",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "budget"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "25b027f3b0cfaaad8f4c34433f479a7cb8cc5bdceb560b4e9f2428d9fff0eece",
+      "exit_code": 1,
+      "seconds": 2.120067469018977,
+      "log_sha256": "18dd093bc3d39f107959441c7dad844f115adf3b508bf8c3861821ee5d096326",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "budget"
+      ]
+    },
+    {
+      "name": "drop_combined_cell",
+      "source": "benchmarks/combined_memory_study.py",
+      "before": "order = list(range(8))",
+      "after": "order = list(range(7))",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 1.9700264200218953,
+        "log_sha256": "fd800d90fa9a3caa5264c5150462d8d41445eac7dbab1256697353a30b32e8d3",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "factorial"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "25b027f3b0cfaaad8f4c34433f479a7cb8cc5bdceb560b4e9f2428d9fff0eece",
+      "exit_code": 1,
+      "seconds": 2.0196640649810433,
+      "log_sha256": "6caa0951a9cb87ae72355c3426e41ff402097941398ebebf859adf45e4d389d4",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "factorial"
+      ]
+    },
+    {
+      "name": "ignore_prepared_config",
+      "source": "benchmarks/combined_memory_study.py",
+      "before": "receipt[\"configuration_sha256\"] != sha256(CONFIG) or receipt[\"jobs\"] != jobs()",
+      "after": "receipt[\"jobs\"] != jobs()",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.219935149012599,
+        "log_sha256": "0f4d73fbe8cdacb094ee0e99eec7e1de6aaf1f5fe17c86c47e8c30c34fb767b2",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "drift"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "25b027f3b0cfaaad8f4c34433f479a7cb8cc5bdceb560b4e9f2428d9fff0eece",
+      "exit_code": 1,
+      "seconds": 2.520997561980039,
+      "log_sha256": "ed34f8045250361d545345bcd67f0227c10d9d3214ffcba9a705749624797baa",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "drift"
+      ]
+    },
+    {
+      "name": "ignore_learning_hold",
+      "source": "benchmarks/combined_memory_study.py",
+      "before": "require_learning_allowed(\"el estudio combinado de desarrollo\")",
+      "after": "pass",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.370209190994501,
+        "log_sha256": "7b8da2538203b3a149a9a1d93a52d6e2b8142c3634c768d7df5db56c4c46b7fc",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "global_hold"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "25b027f3b0cfaaad8f4c34433f479a7cb8cc5bdceb560b4e9f2428d9fff0eece",
+      "exit_code": 1,
+      "seconds": 2.370424260967411,
+      "log_sha256": "25fc76a0c4eb0de40f1d6e6b093a2d3ce68a8066949bfc4e762bcbd09d52fbe8",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "global_hold"
+      ]
+    },
+    {
+      "name": "missing_cuda_fallback",
+      "source": "benchmarks/combined_memory_reference.py",
+      "before": "not torch.cuda.is_available()",
+      "after": "False",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.9711440590326674,
+        "log_sha256": "b9ad608f723cca06e45981a51e6355583f64ae0f4334d4034b19b5759384a392",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "fall_back"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "cb0653b150b1cfc6231e9030c9a335189e0dc470d8b79527976c192f323759f3",
+      "exit_code": 1,
+      "seconds": 2.5711916510481387,
+      "log_sha256": "cbbf834e29f08c0b095f46d735cf1c0d4482872a1859d86f8c134f1362fd0727",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "fall_back"
+      ]
+    },
+    {
+      "name": "mixed_cli_modes",
+      "source": "benchmarks/combined_memory_study.py",
+      "before": "if args.job is None or args.sources is not None or args.audit is not None:",
+      "after": "if False:",
+      "baseline": {
+        "exit_code": 0,
+        "seconds": 2.5210748290410265,
+        "log_sha256": "1daadc727862c3a27a892ab4477e4a4d9d8e8920dbe88cacf5ac570519df1ca8",
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-q",
+          "tests/tooling/test_combined_memory_study.py",
+          "-k",
+          "incomplete_or_mixed"
+        ]
+      },
+      "outcome": "detected",
+      "source_sha256": "25b027f3b0cfaaad8f4c34433f479a7cb8cc5bdceb560b4e9f2428d9fff0eece",
+      "exit_code": 1,
+      "seconds": 2.5209472879651003,
+      "log_sha256": "33753174aff3bca5cc30b22621921d7663e44773e16f85c81aa2260d435abf91",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_study.py",
+        "-k",
+        "incomplete_or_mixed"
+      ]
+    }
+  ],
+  "initial_invalid_attempt": "La primera prueba de argumentos inválidos alcanzaba el bloqueo de aprendizaje, que omitía tres casos. Se sustituyeron las operaciones de ejecución por funciones que fallan si reciben argumentos inválidos. El mutante se repitió y fue detectado sin omisiones."
+}

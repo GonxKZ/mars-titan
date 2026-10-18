@@ -76,6 +76,7 @@ MEMORY_POLICY = "reset_each_pass_then_input_warmup_v1"
 DTYPES = {"float32": torch.float32, "float64": torch.float64}
 _ROWS_PER_TABLE = 65_536
 _CODE = (
+    "mars_titan.training.search_cases",
     "mars_titan.training.titans_walk_forward",
     "mars_titan.training.financial_run",
     "mars_titan.memory.financial_observations",

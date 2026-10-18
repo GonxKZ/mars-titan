@@ -1,0 +1,44 @@
+{
+  "source": "benchmarks/combined_memory_queue.py",
+  "source_sha256": "a74f006936ee519f9ba54133fc19bf6da1f516c90563bca28ca0cc8f7d0239ee",
+  "command": [
+    "uv",
+    "run",
+    "--no-sync",
+    "pytest",
+    "-q",
+    "tests/tooling/test_combined_memory_queue.py"
+  ],
+  "baseline_log_sha256": "1cce3ba4edbd626a3afe9b79c68de56d985784bdc8b31bee3c1ee66bccaef9b9",
+  "restored_log_sha256": "2b0629437046edf89a33cc088f4cc22685d44b1e154e6d9af02a0954cba3ac22",
+  "mutants": [
+    {
+      "name": "abandon_paused_job",
+      "old": "if current == \"completed\":",
+      "new": "if current in (\"completed\", \"paused\"):",
+      "detected": true,
+      "log_sha256": "6787987dd09d956f2c7fed228589e11f9a70f3948642500d7af45d1b16375434"
+    },
+    {
+      "name": "ignore_absolute_deadline",
+      "old": "if left <= 0:",
+      "new": "if False:",
+      "detected": true,
+      "log_sha256": "9315852b45812d9ff4518b7e7cf504e919aa89f93274adc54be29950053d8cdb"
+    },
+    {
+      "name": "retry_without_progress",
+      "old": "checkpoint(work, job) == before",
+      "new": "False",
+      "detected": true,
+      "log_sha256": "30798d53b945cc4f3b6b71d6878038353beb71b3a448f6b0f219bedad0802df1"
+    },
+    {
+      "name": "ignore_learning_hold",
+      "old": "require_learning_allowed(\"la cola acotada de combinaciones\")",
+      "new": "pass",
+      "detected": true,
+      "log_sha256": "83be29610dc761241b5156d914c51324cd68ab538cf05221cb03acd9b2f7b94b"
+    }
+  ]
+}

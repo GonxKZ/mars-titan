@@ -1,0 +1,28 @@
+{
+  "recorded_at_utc": "2026-10-18T12:42:19.011195+00:00",
+  "scientific_experiments_executed": false,
+  "validations": [
+    {
+      "cases": 301,
+      "passed": 301,
+      "warnings": 1,
+      "seconds": 303.82,
+      "log_sha256": "3041950abef6e586e95524d9da924309f8eeb16b62df808b7751291b3025580c"
+    },
+    {
+      "cases": 19,
+      "passed": 19,
+      "warnings": 0,
+      "seconds": 35.54,
+      "log_sha256": "423acb42ec3ccfce6b1947dcef80ff1f5f8ed7e69532ee57d7eff3adda14928a"
+    }
+  ],
+  "count_note": "Las invocaciones comparten dos identificadores de prueba. No son 320 casos distintos.",
+  "mutation_scope": "14 fallos dirigidos sobre las decisiones modificadas, con ejecución sin mutar y restauración de fuentes.",
+  "total_detected": 14,
+  "limits": [
+    "No se ha mutado todo el repositorio.",
+    "La cobertura de estos recorridos no incluye todas las rutas de traslado entre ventanas.",
+    "No se ha modificado ni recompilado código C++/CUDA en este cambio."
+  ]
+}

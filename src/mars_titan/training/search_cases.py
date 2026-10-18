@@ -44,7 +44,7 @@ def checked_search_cases(cases, base, build):
 # Cambios del predictor que un modelo de Titans-MAC declara sobre la receta común, como la
 # memoria acotada PT1 (#453). Son extensiones desactivables del núcleo: sin ellos el modelo es
 # el de la receta. Su contenido lo valida `FinancialConfig` al construir el predictor.
-PREDICTOR_CHANGES = ("gate_bias", "memory_stability")
+PREDICTOR_CHANGES = ("gate_bias", "memory_stability", "memory_multiscale", "presence_modulation")
 
 
 def checked_predictor_changes(changes):
@@ -55,11 +55,16 @@ def checked_predictor_changes(changes):
         isinstance(changes, dict)
         and changes
         and set(changes) <= set(PREDICTOR_CHANGES)
-        and all(isinstance(value, dict) and value for value in changes.values())
+        and all(
+            (type(value) is str and bool(value))
+            if name == "presence_modulation"
+            else (isinstance(value, dict) and bool(value))
+            for name, value in changes.items()
+        )
     ):
         raise ValueError(
-            "Los cambios del predictor solo declaran gate_bias y memory_stability, cada uno "
-            "como un objeto no vacío"
+            "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
+            "como objetos no vacíos y presence_modulation como nombre no vacío"
         )
     return changes
 

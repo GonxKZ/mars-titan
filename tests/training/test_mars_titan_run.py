@@ -10,6 +10,7 @@ import json
 import math
 import os
 import threading
+from concurrent.futures import Future
 from dataclasses import replace
 from pathlib import Path
 
@@ -78,7 +79,9 @@ def recipe(**changes):
     return mt.ReadoutRecipe(**(options | changes))
 
 
-def reader(streams, admission, *, refinements=1, episodes="per_step", seed=42, **options):
+def reader(
+    streams, admission, *, refinements=1, episodes="per_step", seed=42, device="cpu", **options
+):
     codec = FrozenEpisodeCodec(streams["train"].specification())
     config = EpisodicReadoutConfig(
         codec.fingerprint(),
@@ -90,7 +93,7 @@ def reader(streams, admission, *, refinements=1, episodes="per_step", seed=42, *
         episode_selection=episodes,
         **options,
     )
-    return EpisodicReadout(config, dtype=torch.float64), codec
+    return EpisodicReadout(config, dtype=torch.float64, device=device), codec
 
 
 def scalers_for(streams, plan):
@@ -130,6 +133,111 @@ def gradients(engine):
     return [
         {names[key]: value for key, value in record.items()} for record in engine.optimizer.records
     ]
+
+
+def contextual_parent(streams, device="cpu"):
+    config = FinancialConfig(
+        streams["train"].specification(),
+        variant="mac_online",
+        hidden_size=32,
+        seed=42,
+        head="quantile_head_v1",
+        session_context="market_memory_v1",
+    )
+    model = FinancialPredictor(config, dtype=torch.float64, device=device)
+    state = model.state_dict()
+    state["session_context.output"] = torch.eye(32, dtype=torch.float64, device=device) * 0.1
+    model.load_state_dict(state)
+    return model.eval().requires_grad_(False)
+
+
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)])
+def test_context_and_predictions_are_invariant_to_asset_block_order(
+    shared, tmp_path, native, device
+):
+    _, streams = shared
+    source = streams["validation"]
+    engines = [
+        build(
+            streams,
+            tmp_path / str(i),
+            native,
+            model=contextual_parent(streams, device),
+            device=device,
+            plan=recipe(block_rows=1),
+        )
+        for i in range(2)
+    ]
+    runs = [engine._new_pass(source.phase.partition) for engine in engines]
+    observed = 0
+    for event in source.batched_events(block_rows=1):
+        if not event.inputs:
+            continue
+        batches = list(mt.validated_cpu_batches(event.inputs, engines[0].predictor.config.inputs))
+        for index, (engine, run) in enumerate(zip(engines, runs, strict=True)):
+            blocks = Future()
+            blocks.set_result(batches if index == 0 else list(reversed(batches)))
+            engine._observe(run, source.phase, event, train=False, blocks=blocks)
+        observed += int(event.at >= source.phase.decision_start)
+        if observed == 6:
+            break
+    assert observed == 6 and len(batches) > 1
+    for engine, run in zip(engines, runs, strict=True):
+        assert run.parent_context is not None
+        assert len(engine.audit) > 6
+    assert sorted(engines[0].audit) == sorted(engines[1].audit)
+    states = [
+        engine.predictor.export_context(run.parent_context)
+        for engine, run in zip(engines, runs, strict=True)
+    ]
+    for first, second in zip(leaves(states[0]), leaves(states[1]), strict=True):
+        torch.testing.assert_close(first, second, rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("initialization", ["pytorch_default", "zero_refinement"])
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)])
+def test_market_context_and_reader_resume_with_the_same_nonzero_parent(
+    shared, tmp_path, native, learning_doubles, initialization, device
+):
+    _, streams = shared
+
+    plan = recipe(epochs=2, checkpoint_updates=2, refinement_initialization=initialization)
+    options = dict(plan=plan, refinement_initialization=initialization, device=device)
+    continuous = build(
+        streams,
+        tmp_path / "continuous",
+        native,
+        model=contextual_parent(streams, device),
+        **options,
+    )
+    expected = continuous.run()
+    first = build(
+        streams, tmp_path / "paused", native, model=contextual_parent(streams, device), **options
+    )
+    stop = StopAtStep(continuous.global_step // 2 + 1)
+    stop.trainer = first
+    assert first.run(stop=stop)["status"] == "paused"
+    saved = load_training_state(tmp_path / "paused/checkpoints", expected_identity=first.identity)
+    assert saved["run"]["parent_context"] is not None and saved["run"]["fast"]
+    broken = copy.deepcopy(saved["run"])
+    broken.pop("parent_context")
+    with pytest.raises(ValueError, match="contexto"):
+        first._restore(broken)
+    broken = copy.deepcopy(saved["run"])
+    broken["parent_context"] = None
+    with pytest.raises(ValueError, match="contexto"):
+        first._restore(broken)
+    second = build(
+        streams, tmp_path / "paused", native, model=contextual_parent(streams, device), **options
+    )
+    observed = second.run(resume=True)
+    assert first.audit + second.audit == continuous.audit
+    assert observed["history"] == expected["history"]
+    for left, right in zip(
+        gradients(first) + gradients(second), gradients(continuous), strict=True
+    ):
+        for name, value in left.items():
+            assert (value is None and right[name] is None) or torch.equal(value, right[name])
 
 
 def test_declared_recipe_searches_two_rates_with_the_titans_budget_and_segments():

@@ -1,0 +1,43 @@
+{
+  "recorded_at_utc": "2026-10-18T16:27:30.826833+00:00",
+  "tests": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "coverage",
+      "run",
+      "--branch",
+      "--source=benchmarks",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/tooling/test_combined_memory_parameters.py",
+      "tests/tooling/test_combined_memory_analysis.py",
+      "tests/tooling/test_combined_memory_numerics.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "41191557e46130f23d97daad1435c6a3ea28e9b9b1c13e0ed1ea8e16e3934d66",
+    "passed": 67,
+    "skipped": 0,
+    "seconds": 6.58
+  },
+  "scope": [
+    "tests/tooling/test_combined_memory_parameters.py",
+    "tests/tooling/test_combined_memory_analysis.py",
+    "tests/tooling/test_combined_memory_numerics.py"
+  ],
+  "mutations": {
+    "parameters": 8,
+    "analysis": 2,
+    "numerics": 12
+  },
+  "hold_inventory": {
+    "passed": 17,
+    "skipped": 0,
+    "seconds": 274.08,
+    "log_sha256": "4c13ac95ab105cec0fb1a2b1a04a31d6beb45c9679e49a6b85106e95c1a6ac0a",
+    "coverage_scope": "tests/learning_hold_lowering.py",
+    "warning": "coverage.py no encontró el nombre importable tests.test_learning_hold_guard. El informe limita su alcance al módulo del inventario."
+  }
+}

@@ -1,6 +1,8 @@
 """Composición congelada y contrato efectivo, sin ajustar parámetros."""
 
 import importlib
+from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -193,3 +195,44 @@ def test_future_snapshot_is_rejected_at_the_actual_decision_cutoff():
             snapshot=snapshot,
             context_id=CONTEXT,
         )
+
+
+@pytest.mark.parametrize("modulation", ["film_v1", "wide_fusion_v1"])
+def test_frozen_consumer_executes_presence_extensions(modulation):
+    model, batch = setup()
+    model = type(model)(replace(model.config, presence_modulation=modulation), dtype=torch.float64)
+    model.eval().requires_grad_(False)
+    engine = consumer(model)
+    state = model.initial_state(batch.flow_ids)
+    actual = engine.prepare(batch, state, context_id=CONTEXT)
+    expected = model.prepare(batch, state)
+    torch.testing.assert_close(actual.point_predictions, expected.point_predictions, rtol=0, atol=0)
+
+
+def test_context_consumer_rejects_missing_session_lifecycle_explicitly():
+    model, _ = setup()
+    model = (
+        type(model)(replace(model.config, session_context="market_memory_v1"), dtype=torch.float64)
+        .eval()
+        .requires_grad_(False)
+    )
+    with pytest.raises(ValueError, match="ciclo de sesión"):
+        consumer(model)
+
+
+@pytest.mark.parametrize("module", ["presence_modulation", "session_context"])
+def test_extension_source_changes_invalidate_strong_verification(monkeypatch, tmp_path, module):
+    api = importlib.import_module("mars_titan.models.titans.frozen_financial")
+    engine, _ = frozen()
+    original = api.importlib.import_module
+    changed = tmp_path / "different_source.py"
+    changed.write_text("different implementation\n")
+
+    def redirected(name):
+        if name == "mars_titan.models.titans." + module:
+            return SimpleNamespace(__file__=str(changed))
+        return original(name)
+
+    monkeypatch.setattr(api.importlib, "import_module", redirected)
+    with pytest.raises(ValueError, match="código"):
+        engine.verify()
