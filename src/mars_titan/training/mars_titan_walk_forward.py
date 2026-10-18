@@ -73,6 +73,7 @@ from .financial_run import Paused
 from .learning_hold import require_learning_allowed
 from .mars_titan_run import MarsTitanInference, ReadoutTrainer, case_recipe, load_recipe
 from .mars_titan_run import retention_config as readout_retention
+from .search_cases import checked_predictor_changes
 from .selection import AWAIT, campaign_rule, with_rule
 from .titans_walk_forward import (
     DTYPES,
@@ -88,6 +89,7 @@ from .titans_walk_forward import (
     checked_tables,
     control_config,
     memory_policy,
+    predictor_options,
     unfused_attention,
     view_protocol,
     walk_forward_options,
@@ -107,6 +109,7 @@ CASE_FIELDS = {"recipe", "recipe_sha256", "components", "seed", "search_case", "
 # La regla de parada solo aparece si la campaña declara una parada temprana.
 STOPPING_FIELD = "stopping_rule"
 _CODE = (
+    "mars_titan.training.search_cases",
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.training.mars_titan_run",
     "mars_titan.training.titans_walk_forward",
@@ -186,23 +189,24 @@ def _parent(folder, view, seed, control=None):
         request.get("local_control") == control,
         "El control C del padre no es el que declara la familia del lector",
     )
-    # El lector y B6 reconstruyen el padre con la receta común. Un Titans-MAC con cambios del
-    # predictor, como PT1, tendría otra arquitectura y no puede ser su padre.
-    _require(
-        request.get("predictor_changes") is None,
-        "El padre de MARS-TITAN es el Titans-MAC de la receta, sin cambios del predictor",
-    )
+    checked_predictor_changes(request.get("predictor_changes"))
     _verify(folder, report)
     return report, digest
 
 
-def _frozen_parent(document, specification, seed, device, folder, report, *, carried=False):
+def _frozen_parent(
+    document, specification, seed, device, folder, report, *, carried=False, allow_context=False
+):
     """Mejor estado del padre, exacto en su vista o portable en una ventana trasladada.
 
     Un padre ajustado con la penalización C se copia a un gemelo en modo disabled con la
     misma base. C no interviene al predecir con el núcleo congelado y su emisión no cambia.
     """
-    options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
+    options = predictor_options(document, report["request"])
+    _require(
+        allow_context or options.get("session_context") is None,
+        "Este consumidor todavía no recupera el contexto compartido de PT4",
+    )
     control = control_config(report["request"].get("local_control"))
 
     def build(local_control):
@@ -267,6 +271,7 @@ def _readout(variant, codec, predictor, recipe, seed):
         neighbors=recipe.neighbors,
         temperature=recipe.temperature,
         max_working_bytes=recipe.max_working_bytes,
+        refinement_initialization=recipe.refinement_initialization,
         seed=seed,
         # El lector atiende los mismos bloques que su padre. Con 256 conserva su identidad.
         max_batch=predictor.config.max_batch,
@@ -507,7 +512,9 @@ def run_readout_window(
     )
     sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
-    predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
+    predictor = _frozen_parent(
+        titans, specification, seed, device, parent, parent_report, allow_context=True
+    )
     variant = family.variant(predictor, parent_report)
     codec = FrozenEpisodeCodec(specification)
     readout = _readout(variant, codec, predictor, readout_recipe, seed)
@@ -776,7 +783,7 @@ def carry_readout(
     specification = sources[partitions[0]].specification()
     seed = request["seed"]
     predictor = _frozen_parent(
-        titans, specification, seed, device, parent, parent_report, carried=True
+        titans, specification, seed, device, parent, parent_report, carried=True, allow_context=True
     )
     variant = family.variant(predictor, parent_report)
     codec = FrozenEpisodeCodec(specification)

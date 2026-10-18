@@ -101,6 +101,70 @@ def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
 
 
+@pytest.mark.parametrize("bits", range(1, 9))
+def test_reader_reconstructs_the_exact_combination_of_parent_extensions(tmp_path, bits):
+    from tests.training.test_titans_walk_forward import PT1
+
+    view, protocol = views(tmp_path / "data")
+    changes = dict(PT1) if bits & 1 else {}
+    if bits & 2:
+        changes["memory_multiscale"] = dict(form="cascade", coupling=0.0625)
+    if bits & 4:
+        changes["presence_modulation"] = "film_v1"
+    parent = tmp_path / "parent"
+    core_recipe = recipe(tmp_path)
+    if bits == 8:
+        document = json.loads(core_recipe.read_text())
+        document["predictor"]["session_context"] = "market_memory_v1"
+        document["recipe"]["accumulation_rows"] = None
+        core_recipe.write_text(json.dumps(document))
+    parent_report, _ = window(
+        view, protocol, core_recipe, parent, predictor_changes=changes or None
+    )
+    plan = readout_recipe(tmp_path, refinement_initialization="zero_refinement")
+    output = tmp_path / "reader"
+    result, factory = mars(view, parent, plan, output)
+    assert result["status"] == "completed" and factory.records
+    parent_fit = json.loads((parent / "fit/run.json").read_text())
+    reader_fit = json.loads((output / "fit/run.json").read_text())
+    assert (
+        result["identity"]["variant"]["base"]["configuration"]
+        == parent_fit["identity"]["predictor"]
+    )
+    assert (
+        reader_fit["identity"]["readout"]["configuration"]["refinement_initialization"]
+        == "zero_refinement"
+    )
+    for phase in ("validation", "calibration", "evaluation"):
+        assert result["predictions"][phase]["rows"] == parent_report["predictions"][phase]["rows"]
+        for column in ("sample_id", "target", "prediction_at"):
+            assert table(output, phase)[column].equals(table(parent, phase)[column])
+    if bits in (7, 8):
+        from benchmarks.combined_memory_reference import frozen_reference
+
+        reference = tmp_path / "frozen"
+        frozen = frozen_reference(view, parent, reference, seed=42, device="cpu")
+        assert frozen["optimizer_steps"] == 0 and frozen["shared_parameters_unchanged"]
+        assert table(reference, "evaluation").equals(table(output, "evaluation"))
+    if bits == 7:
+        resumed_factory = Factory()
+
+        class StopAfterThree:
+            @property
+            def requested(self):
+                return sum(item.calls for item in resumed_factory.instances[-1:]) >= 3
+
+        paused = tmp_path / "resumed"
+        report, _ = mars(
+            view, parent, plan, paused, stop=StopAfterThree(), optimizer_factory=resumed_factory
+        )
+        assert report["status"] == "paused"
+        report, _ = mars(view, parent, plan, paused, optimizer_factory=resumed_factory)
+        assert report["status"] == "completed"
+        for phase in ("validation", "calibration", "evaluation"):
+            assert table(paused, phase).equals(table(output, phase))
+
+
 @pytest.mark.parametrize("name", ["m1", "m0", "m3"])
 def test_window_fits_the_reader_and_scores_the_parent_rows(base, name):
     report, factory = base["runs"][name]

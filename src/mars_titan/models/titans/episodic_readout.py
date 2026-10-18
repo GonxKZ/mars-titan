@@ -16,6 +16,7 @@ from .state import check_differentiable, check_finite, deferred_checks, require_
 # `per_step` vuelve a seleccionar episodios en cada refinamiento. `first_read` fija en los
 # pasos siguientes los episodios de la primera lectura y solo recalcula sus pesos.
 EPISODE_SELECTIONS = ("per_step", "first_read")
+REFINEMENT_INITIALIZATIONS = ("pytorch_default", "zero_refinement")
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,7 @@ class EpisodicReadoutConfig:
     max_batch: int = 256
     max_working_bytes: int = 32 * 1024**2
     episode_selection: str = "per_step"
+    refinement_initialization: str = "pytorch_default"
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec")
@@ -45,6 +47,11 @@ class EpisodicReadoutConfig:
         if self.episode_selection not in EPISODE_SELECTIONS:
             raise ValueError("La selección de episodios debe ser per_step o first_read")
         if (
+            type(self.refinement_initialization) is not str
+            or self.refinement_initialization not in REFINEMENT_INITIALIZATIONS
+        ):
+            raise ValueError("La inicialización del refinador no está admitida")
+        if (
             type(self.temperature) not in (int, float)
             or not math.isfinite(self.temperature)
             or not 1e-4 <= self.temperature <= 100
@@ -56,6 +63,7 @@ class EpisodicReadoutConfig:
         fields = asdict(self)
         # El modo anterior conserva literalmente su identidad y su huella.
         episodes = fields.pop("episode_selection")
+        initialization = fields.pop("refinement_initialization")
         result = dict(
             **fields,
             schema_version=1,
@@ -74,6 +82,8 @@ class EpisodicReadoutConfig:
                 episode_selection=episodes,
                 selection="global_first_read_fp64_stable_low_id_then_fixed_positions",
             )
+        if initialization != "pytorch_default":
+            result["refinement_initialization"] = initialization
         return result
 
 
@@ -122,6 +132,10 @@ class EpisodicReadout(nn.Module):
             self.value_projection = nn.Linear(65, config.hidden_size, dtype=dtype)
             self.refinement = nn.Linear(3 * config.hidden_size + 1, config.hidden_size, dtype=dtype)
             self.step_logit = nn.Parameter(torch.tensor(math.log(0.1 / 0.9), dtype=dtype))
+            if config.refinement_initialization == "zero_refinement":
+                # Se conservan los sorteos de las proyecciones y la ruta anterior del RNG.
+                nn.init.zeros_(self.refinement.weight)
+                nn.init.zeros_(self.refinement.bias)
         self.to(device=device, dtype=dtype)
 
     def get_extra_state(self):

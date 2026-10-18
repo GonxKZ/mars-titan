@@ -1,0 +1,15 @@
+# Composición de memorias y preparación del estudio
+
+El lector episódico puede recuperar un padre que combine PT1, PT5 y PT6. El recorrido de lectura también conserva el contexto PT4, lo publica después de todos los bloques de una sesión y lo restaura desde su checkpoint. El consumidor aislado sin ciclo de sesión continúa rechazando PT4 de forma explícita.
+
+La opción `zero_refinement` empieza con peso y sesgo nulos en la última proyección del lector. Conserva los sorteos de las otras proyecciones y la identidad anterior cuando se mantiene el valor predeterminado. Las pruebas comprueban la igualdad inicial con el padre y la capacidad de aprender del refinador y, después, de las proyecciones. No se ha cambiado el modelo predeterminado.
+
+La batería de modelos y recorridos supera 301 pruebas, incluidas las rutas CUDA. La invocación adicional del ejecutor y sus referencias supera 19. Dos identificadores aparecen en ambas invocaciones, por lo que no se suman como casos distintos. El aviso de PyTorch indica que el diagnóstico de sincronizaciones CUDA es experimental. Las pruebas no se omiten. Los recibos están en [verification.json](verification.json).
+
+La [medida de cobertura y CRAP](quality.json) registra 1.803 de 2.114 sentencias y 527 de 652 ramas en los nueve archivos seleccionados. Usa coverage.py 7.16.1 y Radon 6.0.1. La convención es `C² × (1 − cobertura de sentencias)³ + C` por función. Los recorridos de traslado entre ventanas no están completamente cubiertos por esta batería. El informe conserva las funciones con mayor complejidad, sin ocultarlas mediante una media global.
+
+La [mutación dirigida](mutations.json) detecta los 14 fallos seleccionados. Comprende inicialización, identidad histórica, reconstrucción del padre, publicación de contexto, recuperación, procedencia, selección de datos, límites de coste, catálogo, bloqueo y argumentos. Cada mutante tiene una ejecución sin modificar que pasa y una fuente restaurada. Es un 100 % sobre esos 14 fallos, no sobre todas las mutaciones posibles del repositorio. El primer intento del mutante de argumentos provocó tres omisiones por la protección del aprendizaje. La prueba se corrigió para impedir cualquier llegada al ejecutor y el mutante se volvió a detectar sin omisiones. No se desactivó la protección.
+
+Las [medidas técnicas de coste](cost-probes.json) se ejecutaron sin pasos de optimizador. Con 64 instrumentos aumenta el trabajo útil por lote frente a 16 sin acercarse al límite de VRAM. El recorrido completo de entradas de ajuste ocupa 78,1 segundos y alcanza 195 MiB asignados por PyTorch. Son medidas preliminares del árbol de desarrollo, sin huella integral de código por intento. No constituyen una comparación reproducible de velocidad entre versiones ni una medida de mejora predictiva. El estudio fija su código antes de aprender.
+
+El [protocolo combinado](../../../docs/experiments/combined-memory-v1.md) prepara 83 trabajos con cohortes equilibradas por cobertura pasada, dos épocas y tres semillas en el factorial principal. Este informe técnico se registró antes de ejecutarlos. El test final permanece cerrado.
