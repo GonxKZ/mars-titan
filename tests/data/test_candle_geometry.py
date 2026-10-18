@@ -44,6 +44,16 @@ def test_zero_range_keeps_observed_mask_and_finite_zero_geometry(price):
     assert (vector[:, 7] == 1).all()
 
 
+def test_flat_high_low_range_keeps_admitted_close_rounding():
+    prices = np.full((64, 4), 10.0)
+    prices[10, 3] += 5e-9
+    original = prices.copy()
+    vector = module().geometry_vector(prices, end_index=63, ordering_rtol=1e-9).reshape(64, 8)
+    assert 0.49 < vector[10, 3] < 0.51
+    assert vector[10, 5] == -vector[10, 3]
+    assert np.isfinite(vector).all() and np.array_equal(prices, original)
+
+
 def test_absences_keep_calendar_slots_without_creating_observations():
     present = np.ones(64, dtype=bool)
     present[[0, 5, 61, 62]] = False

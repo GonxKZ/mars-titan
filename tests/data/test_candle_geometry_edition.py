@@ -460,12 +460,17 @@ def test_selection_rejects_unknown_duplicate_and_malformed_assets(tmp_path, asse
     assert not (tmp_path / "geometry").exists()
 
 
-def test_selection_never_admits_an_incomplete_source(tmp_path):
+def test_selection_never_admits_an_incomplete_source(tmp_path, monkeypatch):
     source, clocks = source_edition(tmp_path)
     path = source / "manifest.json"
     manifest = json.loads(path.read_text())
     manifest["cohort_complete"] = False
     atomic_json(path, manifest)
+
+    def no_prices(*args, **kwargs):
+        raise AssertionError("Un origen incompleto no admite lecturas de precios")
+
+    monkeypatch.setattr(edition, "_prices", no_prices)
     with pytest.raises(ValueError, match="completa"):
         edition.derive_geometry_edition(
             source, tmp_path / "geometry", selection=selection_file(tmp_path), clocks=clocks
@@ -479,6 +484,7 @@ def test_storage_estimate_reads_only_metadata_and_does_not_create_output(tmp_pat
         raise AssertionError("La estimación no decodifica filas")
 
     monkeypatch.setattr(pq.ParquetFile, "iter_batches", no_rows)
+    monkeypatch.setattr(pq, "read_table", no_rows)
     output = tmp_path / "geometry"
     plan = edition.derive_geometry_edition(
         source, output, clocks=clocks, selection=selection_file(tmp_path), estimate_only=True
@@ -497,6 +503,17 @@ def test_insufficient_disk_space_fails_before_creating_output(tmp_path, monkeypa
     monkeypatch.setattr(candle_geometry_selection, "free_disk_bytes", lambda path: 0)
     with pytest.raises(OSError, match="reserva"):
         edition.derive_geometry_edition(source, tmp_path / "geometry", clocks=clocks)
+    assert not (tmp_path / ".geometry.geometry-staging").exists()
+
+
+def test_disk_reserve_is_additional_to_the_estimated_output(tmp_path, monkeypatch):
+    source, clocks = source_edition(tmp_path)
+    output = tmp_path / "geometry"
+    plan = edition.derive_geometry_edition(source, output, clocks=clocks, estimate_only=True)
+    available = plan["estimated_output_bytes"] + plan["reserve_bytes"] - 1
+    monkeypatch.setattr(edition.selection_policy, "free_disk_bytes", lambda path: available)
+    with pytest.raises(OSError, match="reserva"):
+        edition.derive_geometry_edition(source, output, clocks=clocks)
     assert not (tmp_path / ".geometry.geometry-staging").exists()
 
 

@@ -124,3 +124,31 @@ bytes, incluida la construcción del fixture. El proceso completo duró 3,14 y 4
 Las muestras escritas ocupan 22.211 y 72.713 bytes. Las modalidades ausentes comprimen más
 que un corpus con noticias y fundamentales presentes. Estas medidas no estiman todavía
 el coste de v3.1, no miden inferencia y no comparan la derivación con recodificar modelos.
+
+## Selección explícita y reserva de disco
+
+El commit `597ba65987d331eafc82da1682a8a74e9e9f3f73` añade selección de candidatos de un
+origen completo y estimación previa mediante metadatos. La salida de una selección conserva
+todas sus filas, se identifica como `development_snapshot` y declara completitud solo dentro
+de esa selección. La reserva de disco se comprueba antes de escribir y al avanzar por activos.
+Los confirmados no se presupuestan de nuevo al recuperar una ejecución interrumpida.
+
+La revisión posterior pasa 217 pruebas CPU. El [diagnóstico de selección](selection-quality.json)
+registra 77/77 sentencias y 18/18 ramas para el extractor, 333/352 sentencias y 111/128 ramas
+para la derivación y 85/93 sentencias y 28/36 ramas para selección y presupuesto. La función
+que coordina la derivación tiene complejidad 37 y CRAP 37,31. Ese tamaño y los rechazos todavía
+sin cubrir quedan visibles en el diagnóstico, sin convertir la cobertura en una garantía.
+
+Las [23 mutaciones dirigidas](selection-mutations.json) fueron detectadas. Los casos nuevos
+comprueban rechazo temprano del origen incompleto, duplicados y activos ajenos, estado de
+la selección, vínculo con el manifiesto original, reserva adicional al espacio estimado y
+ausencia de lectura de filas durante la estimación. Ruff y el control del repositorio pasan.
+
+Una prueba adicional conserva el caso adversarial en el que todos los máximos y mínimos
+valen 10 y un cierre difiere en 5 × 10⁻⁹. Con la tolerancia de orden admitida y el suelo
+relativo de 10⁻⁹, ese cierre normalizado queda cerca de 0,5 y su mecha superior es negativa.
+El contrato documenta ese efecto sin recortar ni reparar el precio. No supone una garantía
+de precisión ni un resultado predictivo.
+
+Las medidas de preparación y derivación publicadas arriba conservan sus propias versiones
+y huellas. La selección y el presupuesto de disco son posteriores a esas medidas.

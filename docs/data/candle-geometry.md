@@ -40,14 +40,18 @@ El orden es temporal, con ocho valores consecutivos por sesión. Son 64 × 8 = 5
 2.048 bytes por vector, igual dimensión que el vector visual actual. Los significados son
 distintos. Los tres canales derivados son redundantes y su utilidad debe contrastarse.
 
-Con rango nulo, los siete valores geométricos son cero y la presencia vale uno. Una posición
-ausente contiene ocho ceros positivos. La máscara procede de `present_slots` y del contrato
-de calendario declarado por la edición, no se estima a partir de un precio cero. El último
+Con todos los OHLC idénticos, los siete valores geométricos son cero y la presencia vale uno.
+Una posición ausente contiene ocho ceros positivos. La máscara procede de `present_slots`
+y del contrato de calendario declarado por la edición, no se estima a partir de un precio cero. El último
 instante debe estar observado y la ventana necesita al menos dos observaciones.
 
 Se rechazan precios no positivos, NaN, infinitos, formas incorrectas y desorden OHLC que
 supere la tolerancia de la auditoría. Los conflictos pequeños admitidos se conservan. Una
-mecha puede ser ligeramente negativa por ese redondeo y no se recorta para ocultarlo.
+mecha puede resultar negativa por ese redondeo y no se recorta para ocultarlo.
+Si máximos y mínimos coinciden pero apertura o cierre difieren dentro de la tolerancia,
+se conserva esa diferencia dividida por el suelo relativo de 10⁻⁹. Por eso el rango declarado
+nulo no implica un vector nulo cuando existen esos conflictos. La normalización puede
+amplificar el redondeo en ventanas casi planas y ese efecto forma parte del contraste pendiente.
 Solo se convierten e inspeccionan como máximo las 64 filas observadas necesarias. Cambiar
 precios anteriores a la ventana o posteriores al cierre elegido no cambia el vector.
 
@@ -213,6 +217,7 @@ y todas sus filas admisibles. La variante no ejecuta pasos de optimizador.
 
 La [comprobación del 18 de octubre](../../reports/engineering/candle-geometry-20261018/README.md)
 conserva la primera comprobación de 164 pruebas CPU y la ampliación a 200 tras añadir la
-derivación, con cobertura, CRAP y 16 mutaciones dirigidas. También registra costes de lectura,
-preparación y escritura de fixtures de 128 y 512 filas. No contiene resultados CUDA ni una
-comparación predictiva.
+derivación. La selección y el presupuesto elevan la batería a 217 pruebas y 23 mutaciones
+dirigidas, con cobertura y CRAP registrados. También conserva los costes de lectura,
+preparación y escritura de fixtures de 128 y 512 filas de la versión anterior a la selección.
+No contiene resultados CUDA ni una comparación predictiva.
