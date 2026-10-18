@@ -14,6 +14,10 @@ La implementación del mecanismo y sus límites están en
 [las rutas de refinamiento](../../src/mars_titan/models/titans/refinement_routes.py)
 y [la política de ganancias firmadas](../../src/mars_titan/models/titans/refinement_policy.py).
 
+El [contraste de representaciones gráficas](refinement-representations-v1.md)
+repite este catálogo con núcleos propios por representación y fija el orden
+emparejado y el presupuesto conjunto de esa comparación.
+
 ## Datos y orden temporal
 
 Se eligen 64 activos US ordenando una huella con sal fija. Solo son elegibles
