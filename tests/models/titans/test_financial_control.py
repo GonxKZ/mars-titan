@@ -202,6 +202,80 @@ def test_pairing_rejects_different_control_bases():
         api().copy_paired_parameters(legacy, source)
 
 
+@pytest.mark.parametrize(
+    "source_mode,target_mode",
+    [
+        ("disabled", "diagnostic"),
+        ("diagnostic", "disabled"),
+        ("disabled", "penalty"),
+        ("penalty", "disabled"),
+        ("diagnostic", "penalty"),
+        ("penalty", "diagnostic"),
+    ],
+)
+def test_pairing_keeps_each_control_identity(source_mode, target_mode):
+    source, _ = configured(source_mode)
+    target, _ = configured(target_mode)
+    source_state = copy.deepcopy(source.get_extra_state())
+    target_state = copy.deepcopy(target.get_extra_state())
+    receipt = api().copy_paired_parameters(source, target)
+    assert source.get_extra_state() == source_state
+    assert target.get_extra_state() == target_state
+    assert receipt["local_control"]["source_id"] == source.local_control.fingerprint()
+    assert receipt["local_control"]["target_id"] == target.local_control.fingerprint()
+    assert receipt["local_control"]["basis_transferred"] is False
+
+
+@pytest.mark.parametrize("mode", ["disabled", "diagnostic", "penalty"])
+def test_pairing_rejects_different_schedules_before_copying_parameters(mode):
+    source, _ = configured(mode)
+    target = api().FinancialPredictor(
+        replace(source.config, seed=43),
+        local_control=replace(source.local_control.config, frequency=2),
+        dtype=torch.float64,
+    )
+    previous = target.head.weight.detach().clone()
+    version = target.head.weight._version
+    with pytest.raises(ValueError, match="configuración"):
+        api().copy_paired_parameters(source, target)
+    assert torch.equal(target.head.weight, previous)
+    assert target.head.weight._version == version
+
+
+def test_active_pairing_rejects_different_jvp_execution(monkeypatch):
+    source, _ = configured("diagnostic")
+    target, _ = configured("penalty")
+    identity = MACProjectionConfig.identity
+
+    def changed(config):
+        result = identity(config)
+        if config is target.local_control.config:
+            result["jvp_backward_execution"] = "worker_threads_v0"
+        return result
+
+    monkeypatch.setattr(MACProjectionConfig, "identity", changed)
+    version = target.head.weight._version
+    with pytest.raises(ValueError, match="configuración"):
+        api().copy_paired_parameters(source, target)
+    assert target.head.weight._version == version
+
+
+@pytest.mark.parametrize("mode", ["diagnostic", "penalty"])
+def test_legacy_active_control_is_rejected_before_predictor_parameters_are_copied(mode):
+    model, _ = configured(mode)
+    payload = copy.deepcopy(model.state_dict())
+    payload["head.weight"] += 1
+    identity = payload["local_control._extra_state"]["configuration"]
+    identity["schema_version"] = 1
+    del identity["jvp_backward_execution"]
+    previous = model.head.weight.detach().clone()
+    version = model.head.weight._version
+    with pytest.raises(ValueError):
+        model.load_state_dict(payload, strict=False)
+    assert torch.equal(model.head.weight, previous)
+    assert model.head.weight._version == version
+
+
 @pytest.mark.parametrize("training", [False, True])
 @pytest.mark.parametrize("differentiable", [False, True])
 def test_mac_sdpa_math_matches_ordinary_and_probe_routes_in_each_mode(

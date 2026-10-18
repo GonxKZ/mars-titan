@@ -1,0 +1,211 @@
+{
+  "kind": "historical_disabled_projection_fixture",
+  "source_commit": "175f9890e9dc8e7f306d0318ab0b4e671646eac6",
+  "source_sha256": "0c3e0fd57cd8e8629837bc4bf2300af77a0b276402257b1e575d925e04d5f5b5",
+  "torch": "2.14.0+cu130",
+  "extra_state": {
+    "configuration": {
+      "mode": "disabled",
+      "rank": 2,
+      "frequency": 1,
+      "seed": 91,
+      "grid_size": 13,
+      "threshold": 1.0,
+      "weight": 0.0,
+      "max_flows": 1,
+      "max_estimated_bytes": 134217728,
+      "schema_version": 1,
+      "state_layout": "weights_then_momentum_row_major",
+      "local_state": "detached_snapshot",
+      "token_gradient": "preserved_when_differentiable_penalty",
+      "coordinate_metric": "unscaled_euclidean",
+      "derivative": "autograd_functional_jvp",
+      "mac_sdpa_backend": "math",
+      "basis": "cpu_float64_qr_positive_diagonal_then_cast",
+      "selection": "logical_group_eligible_canonical_ids",
+      "max_group_flows": 8192,
+      "schedule": "next_observed_step_mod_frequency",
+      "measure": "angular_corrected_estimate",
+      "reduction": "sum_block_over_logical_selected_flows",
+      "budget_version": 2,
+      "metadata_budget": "python_objects_and_json_reserve_v1"
+    },
+    "mac_contract": {
+      "memory": {
+        "dim": 2,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 4,
+        "max_tokens": 1,
+        "max_state_bytes": 67108864,
+        "parameter_seed": 42,
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "heads": 1,
+      "persistent_tokens": 2,
+      "max_segment": 1,
+      "memory_mode": "online",
+      "max_attention_elements": 8388608,
+      "parameter_seed": 43,
+      "schema_version": 1,
+      "layout": "persistent_memory_segment",
+      "output_gate": "hadamard",
+      "output_granularity": "segment_close",
+      "write_positions": "segment_only",
+      "attention_mask": "triangular_on_packed_sequence",
+      "attention_bias": false,
+      "dropout": 0.0,
+      "disabled_policy": "attention_only_without_prefix_or_gate"
+    },
+    "dtype": "torch.float64",
+    "basis_sha256": "c69b84ca70a20de2bb2e64a9d7bec51fdd351f146fdaef17602caee3690fa214"
+  },
+  "basis": [
+    [
+      0.3213905420525123,
+      0.3409490491300936
+    ],
+    [
+      0.07026139531558928,
+      0.09488945820029948
+    ],
+    [
+      -0.0965511328296808,
+      -0.12901604723910468
+    ],
+    [
+      -0.09263958500071437,
+      -0.2581130743402516
+    ],
+    [
+      0.35655567113740994,
+      -0.2606632666165667
+    ],
+    [
+      0.227999079763198,
+      -0.1084335336179051
+    ],
+    [
+      -0.1570527764315865,
+      -0.08804306346106364
+    ],
+    [
+      0.0005272289784566494,
+      -0.46540726903216173
+    ],
+    [
+      -0.4586250944347256,
+      0.18314745101993063
+    ],
+    [
+      -0.2648154568677988,
+      0.08799070895594698
+    ],
+    [
+      -0.040988077038917894,
+      0.03056122885213578
+    ],
+    [
+      -0.1283369037324274,
+      -0.5060914818764288
+    ],
+    [
+      -0.21882472071473588,
+      -0.29963059597728564
+    ],
+    [
+      0.03366549903919999,
+      -0.2785703089997189
+    ],
+    [
+      -0.1695061992399086,
+      0.12809667524599155
+    ],
+    [
+      -0.5419606071817242,
+      0.07271148764818097
+    ]
+  ],
+  "token": [
+    [
+      [
+        0.1,
+        0.3
+      ]
+    ]
+  ],
+  "output": [
+    [
+      -9.458429807423477e-07,
+      -0.0011822275899237387
+    ]
+  ],
+  "following_weights": [
+    [
+      [
+        [
+          -0.5473256962694806,
+          -0.5395334159911027
+        ],
+        [
+          -0.463332808480491,
+          -0.5483617578149323
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.0326222750351798,
+          -0.028117762750572553
+        ],
+        [
+          0.5537813724470841,
+          0.5209529903902873
+        ]
+      ]
+    ]
+  ],
+  "following_momentum": [
+    [
+      [
+        [
+          -0.003345243375256186,
+          -0.001407945605353032
+        ],
+        [
+          -0.0030910114927322494,
+          -0.0013009445230437989
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.00040060512610955786,
+          0.0004638110065287803
+        ],
+        [
+          -0.002835908640068063,
+          -0.0032833470044362745
+        ]
+      ]
+    ]
+  ],
+  "following_steps": [
+    1
+  ]
+}

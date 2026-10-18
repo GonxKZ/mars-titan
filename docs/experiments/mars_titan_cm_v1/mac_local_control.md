@@ -20,6 +20,23 @@ La compresión puede omitir direcciones expansivas. Para `J = diag(0.2,0.2,2)` y
 
 El control usa [`autograd.functional.jvp`](https://docs.pytorch.org/docs/2.14/generated/torch.autograd.functional.jvp.html) y `mac_sdpa_backend='math'`. J incluye derivadas de la actualización asociativa y derivar la penalización puede necesitar terceras derivadas de su pérdida. El backend CPU predeterminado de la instalación comprobada no admite la derivada de su atención fusionada que necesita esta ruta. El consumidor del nuevo factorial debe usar SDPA Math para MAC también en B, con identidad propia. El [factorial](factorial.md) lo hace con C en `disabled`.
 
+En diagnóstico y penalización, la identidad 2 declara
+`jvp_backward_execution='calling_thread_v1'`. Cada JVP
+ejecuta su doble backward en el hilo llamador, mediante un contexto local que
+restaura el modo de autograd anterior incluso si hay un error. El cálculo del
+radio y el backward exterior conservan sus recorridos. Esta política responde
+a una falta de repetibilidad exacta observada en la penalización con
+acumulación por bloques. El [diagnóstico técnico](../../../reports/engineering/jvp-backward-order-20261018/README.md)
+separa los contrastes CUDA FP32/FP64 y sus medidas de coste de la comprobación
+del código final, todavía pendiente. No se le atribuyen los costes históricos
+de esta página.
+
+Los checkpoints de diagnóstico o penalización con identidad 1 se rechazan
+antes de copiar la base. Para reanudarlos se conserva su runtime fijado.
+No hay una migración implícita de su política numérica. El modo `disabled`
+conserva exactamente su identidad 1 y admite sus estados anteriores, porque
+no ejecuta JVP. `local_control=None` también mantiene su contrato anterior.
+
 La selección se fija sobre el grupo lógico completo antes de dividirlo en lotes físicos:
 
 ```python
@@ -56,7 +73,7 @@ La versión 2 del presupuesto suma `metadata_estimated_bytes` para todo el grupo
 
 ## Integración y comprobaciones
 
-`FinancialPredictor(..., local_control=None)` conserva la identidad y el recorrido anteriores. Una configuración explícita añade la base y el contrato al modelo. Tanto la transición MAC ordinaria como sus reevaluaciones usan SDPA Math, incluido B con modo disabled. Solo se admite `mac_online`. El emparejamiento copia parámetros comunes y exige la misma base y configuración numérica, salvo modo y peso. Las cargas ordinarias siguen rechazando modos diferentes.
+`FinancialPredictor(..., local_control=None)` conserva la identidad y el recorrido anteriores. Una configuración explícita añade la base y el contrato al modelo. Tanto la transición MAC ordinaria como sus reevaluaciones usan SDPA Math, incluido B con modo disabled. Solo se admite `mac_online`. El emparejamiento copia parámetros comunes y exige la misma base y configuración numérica, salvo modo y peso. Cuando uno está desactivado se compara la configuración común de B, que no ejecuta JVP. Entre controles activos también debe coincidir la política de ejecución JVP. Cada modelo conserva su identidad. Las cargas ordinarias siguen rechazando modos diferentes.
 
 El contexto SDPA no obliga al backbone a usar una implementación concreta. En eval sin gradiente se observa `_transformer_encoder_layer_fwd`, que no pasa por SDPA. Se conserva esa ruta. Las pruebas trazan train/eval con gradiente activado y desactivado y verifican la misma ruta SDPA Math en MAC para B y diagnóstico. No se desactivan otros caminos del Transformer.
 
