@@ -192,6 +192,13 @@ class Budget:
 
 
 def _execute(work, job, budget):
+    from mars_titan.training.titans_walk_forward import unfused_attention
+
+    with unfused_attention():
+        return _dispatch(work, job, budget)
+
+
+def _dispatch(work, job, budget):
     from mars_titan.training import cm_v1_factorial, mars_titan_walk_forward, titans_walk_forward
 
     config = configuration()

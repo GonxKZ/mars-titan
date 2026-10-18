@@ -128,6 +128,9 @@ def test_all_declared_jobs_reach_existing_entrypoints_with_valid_recipes(tmp_pat
     called = []
 
     def record(*args, **kwargs):
+        import torch
+
+        assert torch.backends.mha.get_fastpath_enabled() is False
         called.append(kwargs)
         return dict(status="prepared")
 
