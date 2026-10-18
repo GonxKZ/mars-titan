@@ -136,3 +136,7 @@ Las pruebas cubren fórmula, escala positiva, rango nulo, ausencias, extremos, t
 orden, hashes, identidad, texto delegado, ventanas futuras, comparación de filas, recuperación
 y rechazo de opciones incompatibles. Las pruebas de integración conservan el hueco declarado
 y todas sus filas admisibles. La variante no ejecuta pasos de optimizador.
+
+La [comprobación del 18 de octubre](../../reports/engineering/candle-geometry-20261018/README.md)
+registra 164 pruebas CPU, cobertura, CRAP, nueve mutaciones y costes de preparación. No contiene
+resultados CUDA ni una comparación predictiva.
