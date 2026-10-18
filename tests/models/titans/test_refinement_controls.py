@@ -8,7 +8,7 @@ from dataclasses import FrozenInstanceError, replace
 import numpy as np
 import pytest
 import torch
-from test_episodic_readout import CONTEXT
+from test_episodic_readout import CODEC, CONTEXT
 from test_refinement_routes import fixture, reference
 
 from mars_titan.models.titans.refinement_policy import apply_routes
@@ -260,3 +260,46 @@ def test_threshold_subclasses_are_rejected_before_k1(monkeypatch):
 def test_host_routes_reject_a_scalar_working_state_with_a_contract_error():
     with pytest.raises(ValueError):
         apply_routes(None, torch.tensor(1.0), None, choices=(0,))
+
+
+@pytest.mark.cuda
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_cuda_controls_preserve_threshold_boundaries_routes_and_rng(dtype):
+    reader, snapshot, base = fixture(dtype)
+    reader.to("cuda:0")
+    snapshot = type(snapshot).restore(
+        snapshot.export_cpu(),
+        codec_id=CODEC,
+        context_id=CONTEXT,
+        cutoff=10,
+        device="cuda:0",
+        dtype=dtype,
+    )
+    base = base.to("cuda:0")
+    with torch.random.fork_rng():
+        head = torch.nn.Linear(32, 1, dtype=dtype).to("cuda:0")
+    features = torch.ones((1, len(api().FEATURES)), device="cuda:0", dtype=dtype)
+    boundary = threshold(feature_name="memory_present", cutoff=1.0 - 2**-25, route="k4cc")
+    assert boundary(features).tolist() == [3]
+    assert threshold(feature_name="memory_present", cutoff=1.0)(features).tolist() == [0]
+    schedule = api().HashedRoutes(counts=(1,) * 6, seed=7)
+    codes = schedule.choices(
+        ("US/AAPL", "US/MSFT", "CN/000001", "CN/600000"), (1609459200000000,) * 4
+    )
+    assert codes == (4, 5, 2, 5)
+    cpu_rng, cuda_rng = torch.get_rng_state(), torch.cuda.get_rng_state(0)
+    options = dict(context_id=CONTEXT, cutoff=10)
+    routed = apply_routes(reader, base, head, snapshot, choices=codes, **options)
+    assert routed.route_codes == codes
+    assert routed.route_ids.tolist() == list(codes)
+    tolerance = 1e-12 if dtype == torch.float64 else 4e-6
+    for index, code in enumerate(codes):
+        expected, _ = reference(reader, snapshot, base, api().ROUTES[code])
+        torch.testing.assert_close(
+            routed.state[index], expected[index], rtol=tolerance, atol=tolerance
+        )
+    selected = apply_routes(reader, base, head, snapshot, policy=threshold(cutoff=-1), **options)
+    expected, _ = reference(reader, snapshot, base, "k2r")
+    assert torch.equal(selected.state, expected)
+    assert torch.equal(torch.get_rng_state(), cpu_rng)
+    assert torch.equal(torch.cuda.get_rng_state(0), cuda_rng)

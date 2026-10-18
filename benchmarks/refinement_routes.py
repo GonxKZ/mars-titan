@@ -21,6 +21,7 @@ from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicR
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 from mars_titan.models.titans.refinement_policy import FEATURES, RoutePolicy, apply_routes
 from mars_titan.models.titans.refinement_routes import run_route
+from mars_titan.models.titans.state import deferred_checks
 
 CODEC, CONTEXT = "a" * 64, "b" * 64
 
@@ -146,9 +147,18 @@ def _statistics(seconds, rows):
     )
 
 
-def _case(batch, episodes, device, warmup, repeats):
+def _case(batch, episodes, device, warmup, repeats, checks):
     reader, snapshot, base, head = fixture(batch, episodes, device)
-    functions = calls(reader, snapshot, base, head)
+    operations = calls(reader, snapshot, base, head)
+
+    def checked(function):
+        def run():
+            with deferred_checks() if checks == "deferred" else nullcontext():
+                return function()
+
+        return run
+
+    functions = {name: checked(function) for name, function in operations.items()}
     synchronize = (lambda: torch.cuda.synchronize(0)) if device == "cuda:0" else lambda: None
     with torch.no_grad():
         reference = functions["legacy_first_read_k4"]()
@@ -207,6 +217,7 @@ def measure(
     warmup=5,
     repeats=30,
     concurrent_workloads=(),
+    checks="immediate",
 ):
     if (
         device not in ("cpu", "cuda:0")
@@ -214,6 +225,7 @@ def measure(
         or not 0 <= warmup <= 50
         or type(repeats) is not int
         or not 2 <= repeats <= 200
+        or checks not in ("immediate", "deferred")
     ):
         raise ValueError("Dispositivo, calentamiento o repeticiones fuera del contrato")
     if not batches or not episodes or len(batches) > 8 or len(episodes) > 8:
@@ -233,7 +245,9 @@ def measure(
         if device == "cuda:0" and not torch.cuda.is_available():
             raise RuntimeError("CUDA no está disponible. No se cambia a CPU")
         cases = [
-            _case(batch, count, device, warmup, repeats) for batch in batches for count in episodes
+            _case(batch, count, device, warmup, repeats, checks)
+            for batch in batches
+            for count in episodes
         ]
         if device == "cuda:0":
             admitted.check()
@@ -245,6 +259,7 @@ def measure(
         kind="refinement_component_cost",
         measured_at_utc=datetime.now(UTC).isoformat(),
         scope="reader_only_without_mac_data_loading_or_training",
+        checks=checks,
         device=device,
         gpu=gpu,
         python=platform.python_version(),
@@ -284,6 +299,7 @@ def main():
     parser.add_argument("--repeats", type=int, default=30)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--concurrent-workload", action="append", default=[])
+    parser.add_argument("--checks", choices=("immediate", "deferred"), default="immediate")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("La medida necesita un destino nuevo")
@@ -294,6 +310,7 @@ def main():
         warmup=args.warmup,
         repeats=args.repeats,
         concurrent_workloads=args.concurrent_workload,
+        checks=args.checks,
     )
     atomic_json(args.output, record)
     print(

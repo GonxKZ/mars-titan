@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "source_base_commit": "69063377e",
+  "source_sha256": {
+    "tests/models/titans/test_refinement_routes.py": "b489c1748a0ad0ce6ad13fe8ed8e0d53692ac4ad41fcd396fff9097c9f3ac7ce",
+    "tests/models/titans/test_refinement_policy.py": "a77a462a1d626a880f9329e54b496ea2f8ead5bc8d7954a873fea80cb85a40c2",
+    "tests/models/titans/test_refinement_controls.py": "6cb08a360af5d6718e5c27519ccfbb67e74eadfbf57406b005be3b0f08748c16",
+    "benchmarks/refinement_routes.py": "a5a97418dc0085edac911756b9fbd4d3656dff29c89f8882cf9c41ea7a68c00c",
+    "tests/tooling/test_refinement_routes_benchmark.py": "d8f84e2ad04b6ad5ce70cd85a4185ff0d764ebbcdb0b5e71a567be0bae3d5df3"
+  },
+  "cuda_new_cases": {
+    "passed": 5,
+    "nodeids": [
+      "tests/models/titans/test_refinement_routes.py::test_cuda_routes_and_shared_gradients_preserve_the_reference[dtype0]",
+      "tests/models/titans/test_refinement_routes.py::test_cuda_routes_and_shared_gradients_preserve_the_reference[dtype1]",
+      "tests/models/titans/test_refinement_policy.py::test_cuda_rejected_load_is_atomic_even_inside_deferred_checks",
+      "tests/models/titans/test_refinement_controls.py::test_cuda_controls_preserve_threshold_boundaries_routes_and_rng[dtype0]",
+      "tests/models/titans/test_refinement_controls.py::test_cuda_controls_preserve_threshold_boundaries_routes_and_rng[dtype1]"
+    ],
+    "log_sha256": "b7327ff49bbb58c4d467ed13e23586a8959960bd6d20ed771793f837ba745cd3",
+    "scope": "rutas_gradientes_controles_y_carga_atomica",
+    "fixtures_only": true,
+    "optimizer_steps": 0
+  },
+  "legacy_cuda_regression": "pending_on_this_refactored_source",
+  "benchmark_cpu_tests": 15,
+  "benchmark_mutants": {
+    "detected": 4,
+    "total": 4
+  },
+  "scientific_evaluation": "not_executed",
+  "precision": "float32_and_float64_explicit_cuda",
+  "global_hold_modified": false
+}
