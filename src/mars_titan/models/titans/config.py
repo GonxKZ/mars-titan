@@ -5,6 +5,8 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+ATTENTION_LAYOUTS = ("batch_first_v1", "sequence_contiguous_v1")
+
 
 def bounded_integer(value: int, name: str, minimum: int, maximum: int) -> None:
     if type(value) is not int or not minimum <= value <= maximum:
@@ -443,6 +445,7 @@ class MACConfig(FingerprintOnce):
     memory_mode: str = "online"
     max_attention_elements: int = 8 * 1024 * 1024
     parameter_seed: int = 43
+    attention_layout: str = "batch_first_v1"
 
     def __post_init__(self) -> None:
         if not isinstance(self.memory, MemoryConfig):
@@ -456,9 +459,11 @@ class MACConfig(FingerprintOnce):
             raise ValueError("heads debe dividir dim")
         if self.memory_mode not in ("online", "frozen", "disabled"):
             raise ValueError("memory_mode debe ser online, frozen o disabled")
+        if self.attention_layout not in ATTENTION_LAYOUTS:
+            raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
 
     def identity(self) -> dict:
-        return {
+        result = {
             **asdict(self),
             "memory": self.memory.identity(),
             "schema_version": 1,
@@ -471,3 +476,6 @@ class MACConfig(FingerprintOnce):
             "dropout": 0.0,
             "disabled_policy": "attention_only_without_prefix_or_gate",
         }
+        if self.attention_layout == "batch_first_v1":
+            result.pop("attention_layout")
+        return result

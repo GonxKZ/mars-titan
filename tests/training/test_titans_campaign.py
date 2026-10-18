@@ -32,6 +32,7 @@ from mars_titan.training.campaign_plan import (
     pending_families,
     plan_campaign,
 )
+from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.search_cases import SEARCHED, checked_predictor_changes
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.training.test_masked_campaign import Recorder, doubles, write_campaign
@@ -41,6 +42,9 @@ from tests.training.test_walk_forward_v2_views import fixture
 ARM = "titans_mac_online"
 RECIPE = "configs/titans/chronological-training-historical-masked.json"
 CASES = {"lr1e-4": 1e-4, "lr1e-3": 1e-3}
+PREDICTOR_CHANGES_ERROR = (
+    "^Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
+)
 
 
 @pytest.fixture(scope="module")
@@ -296,7 +300,7 @@ def _fields(campaign, declared):
     [
         (_base, "debe extender un modelo de la sección"),
         (_seeds, "con sus mismas semillas"),
-        (_foreign, "gate_bias y memory_stability"),
+        (_foreign, PREDICTOR_CHANGES_ERROR),
         (_undeclared, "o una extensión declarada"),
         (_empty, "o una extensión declarada"),
         (_absent, "o una extensión declarada"),
@@ -366,12 +370,12 @@ def test_predictor_changes_outside_the_extensions_are_rejected(changes):
     # La ventana Titans-MAC los comprueba justo después de la protección y antes de leer nada.
     assert checked_predictor_changes(None) is None
     assert checked_predictor_changes(PT1) == PT1
-    with pytest.raises(ValueError, match="gate_bias y memory_stability"):
+    with pytest.raises(ValueError, match=PREDICTOR_CHANGES_ERROR):
         checked_predictor_changes(changes)
 
 
-def test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent(tmp_path):
-    """Los lectores y B6 reconstruyen el padre con la receta común, así que PT1 no es padre."""
+def parent_report(tmp_path, changes=None):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     view = tmp_path / "view.json"
     view.write_text("{}")
     report = dict(
@@ -382,12 +386,71 @@ def test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent(tmp_path)
         request=dict(variant="mac_online", seed=42, view_sha256=sha256(view)),
         predictions={},
     )
-    atomic_json(tmp_path / "plain" / "run.json", report)
-    report["request"]["predictor_changes"] = PT1
-    atomic_json(tmp_path / "pt1" / "run.json", report)
-    assert mw._parent(tmp_path / "plain", view, 42)[0]["request"].get("predictor_changes") is None
-    with pytest.raises(ValueError, match="sin cambios del predictor"):
-        mw._parent(tmp_path / "pt1", view, 42)
+    if changes is not None:
+        report["request"]["predictor_changes"] = changes
+    folder = tmp_path / "parent"
+    atomic_json(folder / "run.json", report)
+    return view, folder, report
+
+
+def test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent(tmp_path):
+    """El lector recupera las opciones y los parámetros del padre ampliado de #660."""
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+    from tests.models.titans.test_financial_adapter import specification
+
+    plain_view, plain_folder, _ = parent_report(tmp_path / "plain")
+    assert mw._parent(plain_folder, plain_view, 42)[0]["request"].get("predictor_changes") is None
+    view, folder, report = parent_report(tmp_path / "pt1", PT1)
+    document = json.loads(Path(RECIPE).read_text())
+    document["predictor"].update(hidden_size=32, dtype="float32")
+    spec = specification()
+    config = FinancialConfig(
+        spec, variant="mac_online", seed=42, **wf.predictor_options(document, report["request"])
+    )
+    parent = FinancialPredictor(config, dtype=torch.float32)
+    with torch.no_grad():
+        # Distingue el checkpoint de una inicialización nueva con la misma semilla.
+        next(parent.parameters()).add_(0.125)
+    identity = dict(predictor=config.identity())
+    checkpoint = save_training_state(
+        folder / "fit/checkpoints",
+        dict(global_step=0, model=parent.state_dict()),
+        identity=identity,
+        best=True,
+    )
+    atomic_json(folder / "fit/run.json", dict(identity=identity))
+    report["checkpoint"] = dict(sha256=sha256(checkpoint))
+    atomic_json(folder / "run.json", report)
+    admitted, digest = mw._parent(folder, view, 42)
+    assert admitted == report and digest == sha256(folder / "run.json")
+    restored = mw._frozen_parent(document, spec, 42, "cpu", folder, admitted)
+    assert restored.config.identity() == parent.config.identity()
+    assert restored.config.identity()["memory_stability"] == PT1["memory_stability"]
+    assert restored.training is False
+    before, after = dict(parent.named_parameters()), dict(restored.named_parameters())
+    assert before.keys() == after.keys()
+    for name, value in before.items():
+        assert torch.equal(value, after[name]), name
+        assert value.data_ptr() != after[name].data_ptr()
+        assert after[name].requires_grad is False
+    plain = dict(admitted, request=dict(admitted["request"]))
+    plain["request"].pop("predictor_changes")
+    with pytest.raises(ValueError, match="no coincide con el contrato"):
+        mw._frozen_parent(document, spec, 42, "cpu", folder, plain)
+    changed = dict(admitted, checkpoint=dict(sha256="0" * 64))
+    with pytest.raises(ValueError, match="seleccionado ha cambiado"):
+        mw._frozen_parent(document, spec, 42, "cpu", folder, changed)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{}, dict(hidden_size=dict(value=32)), dict(memory_stability={}), dict(gate_bias=0.15)],
+    ids=["empty", "foreign", "empty-option", "scalar"],
+)
+def test_parent_rejects_changes_outside_the_declared_extensions(tmp_path, changes):
+    view, folder, _ = parent_report(tmp_path, changes)
+    with pytest.raises(ValueError, match=PREDICTOR_CHANGES_ERROR):
+        mw._parent(folder, view, 42)
 
 
 def test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request():

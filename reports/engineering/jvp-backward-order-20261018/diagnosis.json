@@ -1,0 +1,1743 @@
+{
+  "schema_version": 1,
+  "kind": "technical_jvp_backward_order_diagnosis",
+  "baseline_source_sha256": {
+    "src/mars_titan/nvtx_ranges.py": "db96b01efa4e7f20f860462f675b345dc7274c6e10240aa0c4ff9cd839185f13",
+    "src/mars_titan/models/titans/local_control.py": "0c3e0fd57cd8e8629837bc4bf2300af77a0b276402257b1e575d925e04d5f5b5",
+    "src/mars_titan/models/titans/transition_jacobian.py": "e42c562b1c9a21c7d321da242ab681046ac1b75c1e7696bfa94dae2e5b3637c3",
+    "src/mars_titan/cm/numerical_radius.py": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+    "src/mars_titan/training/financial_run.py": "a1fb055377ce517a9ae8f33ca8763152519b9773be2df94d08a09c30bf24072e",
+    "tests/training/test_nvtx_parity.py": "c79a14ac41c35b74ee2a33e22f41d0017a90fbfee37529e90875beab4c9ce157",
+    "tests/training/test_financial_run.py": "9ec3f76ae730f678de8a75d8c12c1e535020d20e5259eba37b5f31b14a213ba2",
+    "tests/tooling/test_nvtx_ranges.py": "8ab3322f6621bc5f8e867c0e348a3186f13c9af7e292c565cc3f3cc3682f57df"
+  },
+  "original_case": "penalty-2-cuda:0",
+  "probes": [
+    {
+      "recorded_at_utc": "2026-10-18T20:49:12.682147+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "2b767611f89d81aad2f6cc864d4958abd0b7089b85627dceb3279eab001f8c57",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "penalty-off-off-v1",
+      "receipt_sha256": "b65d35ce769c2aadb9b192cf2d7e7b443af3df16b23bcb1b3fae8b9121ee80d5",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 9.473846831999253,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 10.529031498008408,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T20:51:29.792966+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "2b767611f89d81aad2f6cc864d4958abd0b7089b85627dceb3279eab001f8c57",
+      "pair": "on-on",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "penalty-on-on-v1",
+      "receipt_sha256": "9e7ce788a040ff102a2e125162961389d090902024bf4d0592826c0498d6505f",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": true,
+          "process_seconds": 9.800207432010211,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 2562,
+          "balanced_marks": true
+        },
+        {
+          "enabled": true,
+          "process_seconds": 7.325227900000755,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 2562,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T20:53:36.691076+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "2b767611f89d81aad2f6cc864d4958abd0b7089b85627dceb3279eab001f8c57",
+      "pair": "off-on",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "penalty-off-on-v1",
+      "receipt_sha256": "9824f4ba3a1602d79c3ee5ba324b193f08ceae6dd4770eede17d3492cfc8933b",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 9.282809455995448,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": true,
+          "process_seconds": 7.255510056973435,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 2562,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T20:58:41.820363+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "a229dcecf56dcc065014b8e7d28c156ac1c45417105b77ca196f54c9df12abe5",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "penalty-four-off-v1",
+      "receipt_sha256": "6562110d6415423e061a1e66317b9e03ee4a8dd3f55d6cb1c1f98d2af6a7a7da",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "left_pass": 0,
+          "right_pass": 1,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        },
+        {
+          "left_pass": 1,
+          "right_pass": 2,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 16,
+          "maximum_absolute_difference": 8.673617379884035e-19,
+          "maximum_symmetric_relative_difference": 1.229345487149974e-07,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 2,
+              "parameter": "price_encoder.blocks.0.self_attn.in_proj_bias",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                96
+              ],
+              "dtype": "float64",
+              "different_values": 32,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.286656923897519e-29,
+              "max_symmetric_relative_difference": 1.229345487149974e-07,
+              "first_different_value": {
+                "flat_index": 32,
+                "coordinates": [
+                  32
+                ],
+                "left": 2.3811974510632917e-21,
+                "right": 2.381197458356939e-21
+              }
+            }
+          ]
+        },
+        {
+          "left_pass": 2,
+          "right_pass": 3,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 14,
+          "maximum_absolute_difference": 8.673617379884035e-19,
+          "maximum_symmetric_relative_difference": 4.306565315450037e-13,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 2,
+              "parameter": "mac.memory.alpha_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                32,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 268,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.710505431213761e-20,
+              "max_symmetric_relative_difference": 2.220371377714341e-16,
+              "first_different_value": {
+                "flat_index": 15,
+                "coordinates": [
+                  0,
+                  15
+                ],
+                "left": -6.208158811361661e-05,
+                "right": -6.208158811361662e-05
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 8.500318582984619,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 7.396539477049373,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 6.9425355749554,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 8.706445917021483,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T20:55:37.334110+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "2b767611f89d81aad2f6cc864d4958abd0b7089b85627dceb3279eab001f8c57",
+      "pair": "off-off",
+      "control_mode": "absent",
+      "accumulation_rows": null,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "absent-off-off-v1",
+      "receipt_sha256": "cc4197b7217208af7fbcbd325978d1e23940da42902531831f001592569ed4b5",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 3.9186235209926963,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "final_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 2.6810514079988934,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "final_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T20:57:45.203193+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "2b767611f89d81aad2f6cc864d4958abd0b7089b85627dceb3279eab001f8c57",
+      "pair": "off-on",
+      "control_mode": "absent",
+      "accumulation_rows": null,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "absent-off-on-v1",
+      "receipt_sha256": "318428c13c29b897cf3cc91ee6384afd02c4bb9d38a526b4716902c6af3a7c8c",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 3.5492483749985695,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "final_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": true,
+          "process_seconds": 2.3560981409973465,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "final_parameters_sha256": "fd63e1c3e6ff26a40dcceddb6bc04472f2242ef1a5da73d0fd7ca7241d0312e7",
+          "status": "completed",
+          "marks": 2352,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:23:24.005981+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "b931eedcacd6a1f5d88e9c7836beb0c184be02f8d2c74a55928fe87a45479319",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "diagnostic_configuration": {
+        "autograd_single": false,
+        "deterministic": true
+      },
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "deterministic-off-off-v1",
+      "receipt_sha256": "a7a8c331c4b2ae62ec9fe93171d835458661137b058de3e202c2d69ed5537253",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": true,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 8.728618338995147,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 7.91214630700415,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ]
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:24:06.903448+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "08456a621e08a560bd7c9c81643cdb80ee342a58476b73edb9be37af112eae28",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "tensor_backward_only",
+      "autograd_single": true,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "single-outer-off-off-v1",
+      "receipt_sha256": "f8cbfa7297ce51d2d700b78c5961084846df79a74e9187c74a6be7c5c88844d4",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 8.257193425961304,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 6.243327794014476,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "backward_multithreading_calls": {
+        "enabled": 0,
+        "disabled": 44
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:26:56.995155+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "fc03707c4c50899bab1201b86e1639720de8bf073a21e86cb5f29255caf25e74",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "autograd_single": false,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "worker-jvp-off-off-v1",
+      "receipt_sha256": "552493db663d5f677ee9414b6d0cd6c38e59731b69dfa0c01789d78f51b36dea",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 9,
+          "maximum_absolute_difference": 2.710505431213761e-20,
+          "maximum_symmetric_relative_difference": 2.956605944752871e-14,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 3,
+              "parameter": "mac.memory.theta_projection.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                1,
+                32
+              ],
+              "dtype": "float64",
+              "different_values": 3,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 2.6469779601696886e-23,
+              "max_symmetric_relative_difference": 2.7249684107395856e-16,
+              "first_different_value": {
+                "flat_index": 3,
+                "coordinates": [
+                  0,
+                  3
+                ],
+                "left": 1.1277026322354418e-08,
+                "right": 1.1277026322354416e-08
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 7.319570524967276,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 7.2279706400004216,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 516,
+        "disabled": 0
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:25:25.627375+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "fc03707c4c50899bab1201b86e1639720de8bf073a21e86cb5f29255caf25e74",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "autograd_single": true,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "single-jvp-off-off-v1",
+      "receipt_sha256": "e916baf3dadfcacaf9baf392b0d1f902883519bf4be309a2f233a3baf104852c",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 6.829933038970921,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 5.760158602963202,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 0,
+        "disabled": 516
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:27:43.911750+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "fc03707c4c50899bab1201b86e1639720de8bf073a21e86cb5f29255caf25e74",
+      "pair": "off-on",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "autograd_single": true,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "single-jvp-off-on-v1",
+      "receipt_sha256": "0128cd9e75dde9ea6094ccac49fa99816fa5a844b971f2660c0c85f7b51943ea",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 6.5225730200181715,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": true,
+          "process_seconds": 6.652845953009091,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 2562,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 0,
+        "disabled": 516
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:28:34.260644+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "c1c95af34f1ea16166b2e62437d919ed4eb6cf0281f0b11e58577bf38ab21b35",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "single-jvp-four-off-v1",
+      "receipt_sha256": "f82a684f3122ad19ff42b7af41e608ffb61d3dcb28fa09871fa0f1f530d21e48",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "left_pass": 0,
+          "right_pass": 1,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        },
+        {
+          "left_pass": 1,
+          "right_pass": 2,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        },
+        {
+          "left_pass": 2,
+          "right_pass": 3,
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 7.748120950011071,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 5.185934517998248,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 5.415700022014789,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 6.102943183970638,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "final_parameters_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 0,
+        "disabled": 1032
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:40:11.849324+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "1bfafd290f3389437ae21a2b08c84d8f893c6a2892ad310885b9d93d117c8d46",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "autograd_single": false,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "fp32-worker-off-off-v1",
+      "receipt_sha256": "a40ae8fa7371f2c892d5578a59ab8b467bba63bd0d3caa2305879d4ffae23d4f",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": false,
+          "gradient_bytes_equal": false,
+          "divergent_gradient_tensors": 6,
+          "maximum_absolute_difference": 3.308722450212111e-24,
+          "maximum_symmetric_relative_difference": 3.456397278303168e-05,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": [
+            {
+              "update_index": 5,
+              "parameter": "encoders.fundamentals.0.weight",
+              "equal": false,
+              "bytes_equal": false,
+              "shape": [
+                32,
+                3
+              ],
+              "dtype": "float32",
+              "different_values": 39,
+              "nonfinite_pairs": 0,
+              "max_absolute_difference": 8.271806125530277e-25,
+              "max_symmetric_relative_difference": 1.6312217889430944e-05,
+              "first_different_value": {
+                "flat_index": 0,
+                "coordinates": [
+                  0,
+                  0
+                ],
+                "left": -1.2999976969231919e-19,
+                "right": -1.2999974384292504e-19
+              }
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 6.792378808953799,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "final_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 6.8365258449921384,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "final_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 516,
+        "disabled": 0
+      }
+    },
+    {
+      "recorded_at_utc": "2026-10-18T21:40:31.376313+00:00",
+      "runtime_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "script_sha256": "1bfafd290f3389437ae21a2b08c84d8f893c6a2892ad310885b9d93d117c8d46",
+      "pair": "off-off",
+      "control_mode": "penalty",
+      "accumulation_rows": 2,
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "autograd_functional_jvp_only",
+      "autograd_single": true,
+      "audit_equal": true,
+      "optimizer_calls_equal": true,
+      "history_equal": true,
+      "selection_equal": true,
+      "probe": "fp32-single-off-off-v1",
+      "receipt_sha256": "34ae46aab099494ef600b9ad976fdacbd132291284b8377bb3b84ae47ca29127",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "gradients": [
+        {
+          "updates": 11,
+          "compared_gradient_tensors": 407,
+          "gradients_equal": true,
+          "gradient_bytes_equal": true,
+          "divergent_gradient_tensors": 0,
+          "maximum_absolute_difference": 0.0,
+          "maximum_symmetric_relative_difference": 0.0,
+          "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+          "gradient_stage": "RecordingOptimizer.step, después del clipping original",
+          "first_divergences": []
+        }
+      ],
+      "passes": [
+        {
+          "enabled": false,
+          "process_seconds": 8.246145134966355,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "final_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        },
+        {
+          "enabled": false,
+          "process_seconds": 6.567515787028242,
+          "optimizer_recording_calls": 11,
+          "initial_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "final_parameters_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "status": "completed",
+          "marks": 0,
+          "balanced_marks": true
+        }
+      ],
+      "jvp_multithreading_calls": {
+        "enabled": 0,
+        "disabled": 516
+      }
+    }
+  ],
+  "operator_cost": {
+    "receipt_sha256": "a99d9c99ea03a23fe0c98b1ae4ef5dacb1314200c86a8cd106703cd2c22a7370",
+    "measurement": {
+      "recorded_at_utc": "2026-10-18T21:40:59.921864+00:00",
+      "gpu": {
+        "device": "cuda:0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "free_vram_bytes": 7555907584,
+        "max_vram_bytes": 6442450944,
+        "max_ram_bytes": 12884901888,
+        "reserved_margin_bytes": 1073741824
+      },
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "script_sha256": "6d99fdaefe72e1c1f5966eddbd8a429cae9cbb257e594acaf62c711772001e8e",
+      "code_sha256": {
+        "src/mars_titan/models/titans/local_control.py": "0c3e0fd57cd8e8629837bc4bf2300af77a0b276402257b1e575d925e04d5f5b5",
+        "src/mars_titan/models/titans/transition_jacobian.py": "e42c562b1c9a21c7d321da242ab681046ac1b75c1e7696bfa94dae2e5b3637c3",
+        "src/mars_titan/models/titans/mac.py": "977b34671c25585bff266168c29be001887c6f40478de43740d0e4fbb5f74667"
+      },
+      "cases": [
+        {
+          "dtype": "torch.float64",
+          "hidden": 32,
+          "rank": 2,
+          "token_seed": 42,
+          "mac_contract": {
+            "memory": {
+              "dim": 32,
+              "depth": 2,
+              "normalize_qk": true,
+              "theta_max": 0.1,
+              "max_batch": 256,
+              "max_tokens": 1,
+              "max_state_bytes": 67108864,
+              "parameter_seed": 42,
+              "schema_version": 1,
+              "architecture": "square_mlp",
+              "hidden_activation": "gelu_exact",
+              "bias": false,
+              "residual": false,
+              "layer_norm": false,
+              "normalization_eps": 1e-12,
+              "loss_reduction": "sum_per_token_per_flow",
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "update_order": "sequential_current_weights",
+              "inner_derivative": "partial_at_fixed_observation",
+              "gradient_policy": "explicit_differentiable_or_detached"
+            },
+            "heads": 4,
+            "persistent_tokens": 4,
+            "max_segment": 1,
+            "memory_mode": "online",
+            "max_attention_elements": 8388608,
+            "parameter_seed": 42,
+            "schema_version": 1,
+            "layout": "persistent_memory_segment",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "write_positions": "segment_only",
+            "attention_mask": "triangular_on_packed_sequence",
+            "attention_bias": false,
+            "dropout": 0.0,
+            "disabled_policy": "attention_only_without_prefix_or_gate"
+          },
+          "control_contract": {
+            "mode": "penalty",
+            "rank": 2,
+            "frequency": 2,
+            "seed": 91,
+            "grid_size": 16,
+            "threshold": 0.0,
+            "weight": 0.5,
+            "max_flows": 1,
+            "max_estimated_bytes": 134217728,
+            "schema_version": 1,
+            "state_layout": "weights_then_momentum_row_major",
+            "local_state": "detached_snapshot",
+            "token_gradient": "preserved_when_differentiable_penalty",
+            "coordinate_metric": "unscaled_euclidean",
+            "derivative": "autograd_functional_jvp",
+            "mac_sdpa_backend": "math",
+            "basis": "cpu_float64_qr_positive_diagonal_then_cast",
+            "selection": "logical_group_eligible_canonical_ids",
+            "max_group_flows": 8192,
+            "schedule": "next_observed_step_mod_frequency",
+            "measure": "angular_corrected_estimate",
+            "reduction": "sum_block_over_logical_selected_flows",
+            "budget_version": 2,
+            "metadata_budget": "python_objects_and_json_reserve_v1"
+          },
+          "operator_equal": true,
+          "first_gradients_equal_between_modes": true,
+          "repeated_gradient_tensor_mismatches": {
+            "False": 0,
+            "True": 0
+          },
+          "timings": {
+            "False": {
+              "seconds": [
+                0.04441832302836701,
+                0.03739147202577442,
+                0.03596867999294773,
+                0.04617475299164653,
+                0.04161068797111511,
+                0.039562580990605056,
+                0.03940919297747314,
+                0.03575803397689015,
+                0.03821341600269079
+              ],
+              "median_ms": 39.40919297747314,
+              "p95_ms": 45.47218100633472
+            },
+            "True": {
+              "seconds": [
+                0.04178302199579775,
+                0.03817182796774432,
+                0.03917214699322358,
+                0.04001091403188184,
+                0.0365358850103803,
+                0.030094333982560784,
+                0.03591447800863534,
+                0.03814003802835941,
+                0.03275327000301331
+              ],
+              "median_ms": 38.14003802835941,
+              "p95_ms": 41.07417881023139
+            }
+          }
+        },
+        {
+          "dtype": "torch.float32",
+          "hidden": 32,
+          "rank": 2,
+          "token_seed": 42,
+          "mac_contract": {
+            "memory": {
+              "dim": 32,
+              "depth": 2,
+              "normalize_qk": true,
+              "theta_max": 0.1,
+              "max_batch": 256,
+              "max_tokens": 1,
+              "max_state_bytes": 67108864,
+              "parameter_seed": 42,
+              "schema_version": 1,
+              "architecture": "square_mlp",
+              "hidden_activation": "gelu_exact",
+              "bias": false,
+              "residual": false,
+              "layer_norm": false,
+              "normalization_eps": 1e-12,
+              "loss_reduction": "sum_per_token_per_flow",
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "update_order": "sequential_current_weights",
+              "inner_derivative": "partial_at_fixed_observation",
+              "gradient_policy": "explicit_differentiable_or_detached"
+            },
+            "heads": 4,
+            "persistent_tokens": 4,
+            "max_segment": 1,
+            "memory_mode": "online",
+            "max_attention_elements": 8388608,
+            "parameter_seed": 42,
+            "schema_version": 1,
+            "layout": "persistent_memory_segment",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "write_positions": "segment_only",
+            "attention_mask": "triangular_on_packed_sequence",
+            "attention_bias": false,
+            "dropout": 0.0,
+            "disabled_policy": "attention_only_without_prefix_or_gate"
+          },
+          "control_contract": {
+            "mode": "penalty",
+            "rank": 2,
+            "frequency": 2,
+            "seed": 91,
+            "grid_size": 16,
+            "threshold": 0.0,
+            "weight": 0.5,
+            "max_flows": 1,
+            "max_estimated_bytes": 134217728,
+            "schema_version": 1,
+            "state_layout": "weights_then_momentum_row_major",
+            "local_state": "detached_snapshot",
+            "token_gradient": "preserved_when_differentiable_penalty",
+            "coordinate_metric": "unscaled_euclidean",
+            "derivative": "autograd_functional_jvp",
+            "mac_sdpa_backend": "math",
+            "basis": "cpu_float64_qr_positive_diagonal_then_cast",
+            "selection": "logical_group_eligible_canonical_ids",
+            "max_group_flows": 8192,
+            "schedule": "next_observed_step_mod_frequency",
+            "measure": "angular_corrected_estimate",
+            "reduction": "sum_block_over_logical_selected_flows",
+            "budget_version": 2,
+            "metadata_budget": "python_objects_and_json_reserve_v1"
+          },
+          "operator_equal": true,
+          "first_gradients_equal_between_modes": true,
+          "repeated_gradient_tensor_mismatches": {
+            "False": 0,
+            "True": 0
+          },
+          "timings": {
+            "False": {
+              "seconds": [
+                0.03401808498892933,
+                0.03390836896141991,
+                0.03426684299483895,
+                0.027220815944019705,
+                0.03210064402082935,
+                0.026024137972854078,
+                0.03424779698252678,
+                0.04421761498088017,
+                0.04545822599902749
+              ],
+              "median_ms": 34.01808498892933,
+              "p95_ms": 44.96198159176856
+            },
+            "True": {
+              "seconds": [
+                0.0332938150386326,
+                0.03703736700117588,
+                0.033449887996539474,
+                0.024579463992267847,
+                0.030050761997699738,
+                0.02622931299265474,
+                0.033006776007823646,
+                0.03471456398256123,
+                0.03912480903090909
+              ],
+              "median_ms": 33.2938150386326,
+              "p95_ms": 38.28983221901581
+            }
+          }
+        }
+      ],
+      "warmup_per_mode": 2,
+      "repetitions_per_mode": 9,
+      "optimizer_steps": 0,
+      "host_load_average": [
+        2.89501953125,
+        1.7763671875,
+        1.80859375
+      ],
+      "process_peak_rss_bytes": 1539592192,
+      "cuda_peak_allocated_bytes": 68128768,
+      "cuda_peak_reserved_bytes": 69206016,
+      "timing_scope": "synchronized_wall_time_of_operator_only_including_graph_building",
+      "gradient_probe": "sum_squared_projected_operator_without_eigvalsh",
+      "limits": [
+        "Estado rápido inicial y token técnico fijo",
+        "La sonda de gradiente queda fuera del tiempo",
+        "Percentiles descriptivos con nueve repeticiones",
+        "No mide el recorrido financiero ni calidad predictiva"
+      ]
+    }
+  },
+  "repository_cuda_verification": "reported_in_final-verification.json",
+  "predictive_effect_measured": false,
+  "limits": [
+    "Las sondas intervienen sobre el runtime fijado y no sustituyen la verificación CUDA del código final.",
+    "Los tiempos de dos pasadas completas no permiten afirmar aceleración ni descartar una regresión.",
+    "La igualdad observada corresponde a las formas y versiones registradas."
+  ],
+  "pytorch_revision": "08187d9e0fba026dc8217405802ab5381dc88d90",
+  "autograd_sources_sha256": {
+    "torch/autograd/functional.py": "bffbf95c87f67cc364b8e1a259332b0cf7b8c60fed2cea99f90b17d0e03c6759",
+    "torch/autograd/grad_mode.py": "ddc32c2cc2dfa5e2320f8c8e75b7d048c7661c58e1c9f7304914a22744e2177f",
+    "torch/include/ATen/SequenceNumber.h": "de5651aa892b676f4b4c0c04005554b28e96af104efd9137ad3bef3760caab2f",
+    "torch/include/torch/csrc/autograd/node.h": "d885029444adee9f556414e4894e21660216e22d9078e98ffc713eb4de3523f6",
+    "torch/include/torch/csrc/autograd/engine.h": "86cc296f5db9963fe6c35fa2b69cbe38e132d1900e107f673c9c9d1c00d1a616"
+  }
+}

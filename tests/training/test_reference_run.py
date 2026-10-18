@@ -295,6 +295,7 @@ def test_posttraining_requires_same_parent_population_and_architecture(tmp_path)
 
 def test_missing_cuda_fails_before_creating_run(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
+    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
     with pytest.raises(RuntimeError, match="CUDA|cuda"):
         module().run_reference_case(manifest, tmp_path / "run", case())

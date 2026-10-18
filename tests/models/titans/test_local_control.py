@@ -2,7 +2,9 @@
 
 import copy
 import importlib
+import json
 from dataclasses import asdict, replace
+from pathlib import Path
 
 import pytest
 import torch
@@ -211,6 +213,93 @@ def test_penalty_respects_explicit_gradient_mode(differentiable):
     result = evaluate(control, mac, token, state, differentiable=differentiable)
     assert result.penalty > 0
     assert result.penalty.requires_grad is differentiable
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+@pytest.mark.parametrize("differentiable", [False, True])
+@pytest.mark.parametrize("ambient", [False, True])
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)])
+def test_jvp_runs_in_calling_thread_and_restores_autograd_mode(
+    monkeypatch, dtype, differentiable, ambient, device
+):
+    mac, control, token, state = fixture(dtype=dtype, mode="penalty", weight=0.2)
+    mac, control, token = mac.to(device), control.to(device), token.to(device)
+    state = mac.initial_state(1)
+    original = torch.autograd.functional.jvp
+    observed = []
+
+    def checked(*args, **kwargs):
+        observed.append(torch.autograd.is_multithreading_enabled())
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(torch.autograd.functional, "jvp", checked)
+    with torch.autograd.set_multithreading_enabled(ambient):
+        result = evaluate(control, mac, token, state, differentiable=differentiable)
+        assert torch.autograd.is_multithreading_enabled() is ambient
+    assert observed == [False] * control.config.rank
+    assert torch.isfinite(result.operators).all()
+
+
+@pytest.mark.parametrize("ambient", [False, True])
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)])
+def test_failed_jvp_restores_the_callers_autograd_mode(monkeypatch, ambient, device):
+    mac, control, token, state = fixture()
+    mac, control, token = mac.to(device), control.to(device), token.to(device)
+    state = mac.initial_state(1)
+    observed = []
+
+    def interrupted(*args, **kwargs):
+        observed.append(torch.autograd.is_multithreading_enabled())
+        raise RuntimeError("interrupción del JVP")
+
+    monkeypatch.setattr(torch.autograd.functional, "jvp", interrupted)
+    with torch.autograd.set_multithreading_enabled(ambient):
+        with pytest.raises(RuntimeError, match="interrupción del JVP"):
+            evaluate(control, mac, token, state)
+        assert torch.autograd.is_multithreading_enabled() is ambient
+    assert observed == [False]
+
+
+def test_jvp_execution_is_identified_and_legacy_state_is_rejected_before_copying():
+    _, control, _, _ = fixture()
+    identity = control.config.identity()
+    assert identity["schema_version"] == 2
+    assert identity["jvp_backward_execution"] == "calling_thread_v1"
+    payload = copy.deepcopy(control.state_dict())
+    legacy = payload["_extra_state"]["configuration"]
+    legacy["schema_version"] = 1
+    legacy.pop("jvp_backward_execution")
+    before = control.basis.clone()
+    version = control.basis._version
+    with pytest.raises(ValueError):
+        control.load_state_dict(payload, strict=False)
+    assert torch.equal(control.basis, before)
+    assert control.basis._version == version
+
+
+def test_disabled_loads_historical_state_and_preserves_its_identity_and_transition():
+    path = Path(__file__).resolve().parents[2] / "fixtures/titans/disabled_projection_v1.json"
+    historical = json.loads(path.read_text())
+    mac, control, token, state = fixture(mode="disabled")
+    payload = {
+        "_extra_state": historical["extra_state"],
+        "basis": torch.tensor(historical["basis"], dtype=torch.float64),
+    }
+    control.load_state_dict(payload)
+    assert control.get_extra_state() == historical["extra_state"]
+    assert control.config.identity()["schema_version"] == 1
+    assert "jvp_backward_execution" not in control.config.identity()
+    assert torch.equal(token, torch.tensor(historical["token"], dtype=torch.float64))
+    assert evaluate(control, mac, token, state) is None
+    with torch.no_grad(), sdpa_kernel(SDPBackend.MATH):
+        actual, following = mac(token, state)
+    assert torch.equal(actual, torch.tensor(historical["output"], dtype=torch.float64))
+    for name in ("weights", "momentum"):
+        for actual, expected in zip(
+            getattr(following.memory, name), historical[f"following_{name}"], strict=True
+        ):
+            assert torch.equal(actual, torch.tensor(expected, dtype=torch.float64))
+    assert following.memory.steps.tolist() == historical["following_steps"]
 
 
 def test_explicit_cpu_construction_ignores_ambient_meta_device():

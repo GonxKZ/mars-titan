@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-19T00:03:38.771443",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [],
+  "totals": {
+    "statements": 694,
+    "covered_statements": 592,
+    "branches": 262,
+    "covered_branches": 174
+  },
+  "files": [
+    {
+      "path": "src/mars_titan/models/titans/financial.py",
+      "source_sha256": "502831730718685dff7cd124d35c193f9f472f7ea39c72dc9863eaa93971efc1",
+      "statements": 461,
+      "covered_statements": 361,
+      "branches": 196,
+      "covered_branches": 110
+    },
+    {
+      "path": "src/mars_titan/models/titans/local_control.py",
+      "source_sha256": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "statements": 233,
+      "covered_statements": 231,
+      "branches": 66,
+      "covered_branches": 64
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/models/titans/financial.py",
+      "function": "copy_paired_parameters",
+      "start_line": 911,
+      "end_line": 997,
+      "cyclomatic_complexity": 22,
+      "statements": 39,
+      "covered_statements": 34,
+      "coverage_fraction": 0.8717948717948718,
+      "branches": 22,
+      "covered_branches": 15,
+      "crap": 23.019909303932973
+    },
+    {
+      "path": "src/mars_titan/models/titans/local_control.py",
+      "function": "MACProjectionControl.validate_payload",
+      "start_line": 220,
+      "end_line": 232,
+      "cyclomatic_complexity": 8,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 8.0
+    },
+    {
+      "path": "src/mars_titan/models/titans/local_control.py",
+      "function": "MACProjectionConfig.identity",
+      "start_line": 61,
+      "end_line": 82,
+      "cyclomatic_complexity": 2,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/models/titans/local_control.py",
+      "function": "MACProjectionControl._operator",
+      "start_line": 341,
+      "end_line": 352,
+      "cyclomatic_complexity": 2,
+      "statements": 8,
+      "covered_statements": 8,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "de3484dd81fa716798f25d78e594eb8467b1e721eb2e1f28f39cb7f3473d0c92",
+  "functions_measured": 69,
+  "test_selection": {
+    "covered_cases": 115,
+    "deselected_cuda_and_readout": 17,
+    "additional_active_pairing_cpu_case": 1,
+    "instrumented_seconds": 166.44,
+    "instrumented_time_is_not_a_performance_measurement": true
+  },
+  "mutations": {
+    "source_sha256": {
+      "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "src/mars_titan/models/titans/financial.py": "502831730718685dff7cd124d35c193f9f472f7ea39c72dc9863eaa93971efc1"
+    },
+    "source_unchanged": true,
+    "script_sha256": "be42a617b3ec8a756c0610ee8c6ad1780238874c0cb49adb933f3c430417a626",
+    "baseline": {
+      "name": "baseline",
+      "returncode": 0,
+      "detected": true,
+      "seconds": 3.386748037999496,
+      "output_sha256": "b9a4abd21b848ca26a765e3de6fc3cbe81e32a508ccb502ce441a4b059765387"
+    },
+    "cases": [
+      {
+        "name": "jvp_workers",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 3.1798256170004606,
+        "output_sha256": "ce3dd6c4b535497beb7c688a5f26235f94f953da0d04e1f1fc4bf04e4ee64f33"
+      },
+      {
+        "name": "lost_restoration",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 2.9647672720020637,
+        "output_sha256": "6e6b4238f1871d2ccc782ed6b957a63c49cbfda863a44dc763e1937d241ea93d"
+      },
+      {
+        "name": "disabled_identity_changed",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 2.887268905004021,
+        "output_sha256": "37603c0302c9fe51cb50ebda442279fa7ba013eac72b3cbd9452644d35c9795f"
+      },
+      {
+        "name": "active_identity_omitted",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 2.7849914899561554,
+        "output_sha256": "7f3ee852214648b3fa1c1c8e3e1c62a3bc9bbe798f485b6602d5c06dece29b48"
+      },
+      {
+        "name": "execution_tag_omitted",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 3.2723281770013273,
+        "output_sha256": "997b64448d805b2c09e977487ecdd1078caea75be6113d47d6b5084075d66fec"
+      },
+      {
+        "name": "late_payload_check",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 3.414434055041056,
+        "output_sha256": "0c34e33e94f5d9cf0bd95ef6efa220cda0ff6d78773ef70a383b69d78cb8f345"
+      },
+      {
+        "name": "pairing_never_adapts",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 3.173457110009622,
+        "output_sha256": "5d07407ad9783a03fbb41daa875def403a21e15a7e0aeddc2ff40984d0eecfaf"
+      },
+      {
+        "name": "pairing_always_adapts",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 2.985895500984043,
+        "output_sha256": "92497bd5290525ba168fe1d8e9521426236796599a485c2b49c4ffdaad670827"
+      },
+      {
+        "name": "pairing_ignores_schedule",
+        "returncode": 1,
+        "detected": true,
+        "seconds": 2.9657262379769236,
+        "output_sha256": "9ffac4901c02de9ae33fc29174a39feccda38293685d7b5a154f4f35a549458f"
+      }
+    ]
+  },
+  "measurement_import_order": "Torch se importa antes de activar coverage. Los dos módulos medidos se importan después de activarla.",
+  "maximum_crap_in_measured_files": {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "start_line": 112,
+    "end_line": 191,
+    "cyclomatic_complexity": 39,
+    "statements": 45,
+    "covered_statements": 20,
+    "coverage_fraction": 0.4444444444444444,
+    "branches": 40,
+    "covered_branches": 15,
+    "crap": 299.80246913580254
+  }
+}
