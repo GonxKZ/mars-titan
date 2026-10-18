@@ -130,6 +130,33 @@ escritura con confirmación, copia de factores, comparación y verificación fin
 `before_publication_seconds` termina antes de escribir el manifiesto final y renombrar el
 directorio. El benchmark mide también la llamada completa, incluida esa publicación.
 
+La opción `--selection` recibe un JSON con `assets`, una lista de objetos con `market` y
+`symbol`. Rechaza duplicados e identidades ajenas al manifiesto fuente completo. Conserva
+la solicitud, su hash, la selección ordenada y las huellas del manifiesto y configuración
+originales. Las reglas de selección quedan como procedencia, sin acreditar por sí mismas
+su validez científica. Cada activo conserva todas sus filas, sin filtrar fechas ni modalidades.
+
+```bash
+uv run --no-sync python -m mars_titan.data.candle_geometry_edition \
+  --source data/derived/encoded-history-v3.1 \
+  --output data/derived/geometry-study \
+  --selection data/derived/study-selection.json --estimate-only --reserve-gib 16
+```
+
+Con una selección, la salida declara `scope=development_snapshot`, `cohort_complete=false`
+y `training_ready=false`. `selection_complete=true` solo se publica al terminar todos sus
+candidatos y cotejar las filas correspondientes contra el origen completo. La opción nunca
+permite usar un origen incompleto. No cambia el estado de la edición histórica completa.
+
+`--estimate-only` lee JSON y pies Parquet, sin decodificar muestras ni crear el destino.
+Calcula un presupuesto con el mayor tamaño entre bytes del archivo y páginas sin comprimir,
+añade los nuevos vectores completos, un 20 % y margen por grupos, activos y metadatos. Es una
+estimación, no una cota certificada de compresión. La reserva predeterminada es 16 GiB en el
+sistema de archivos del destino. Se comprueba antes de escribir y antes de cada activo. La
+recuperación descuenta los activos ya confirmados. La estimación no sustituye la comprobación
+posterior de hashes, índices, calendario y fechas. El benchmark de fixtures usa una reserva
+explícita de 64 MiB para poder ejecutarse también en un directorio temporal pequeño.
+
 ## Comparación sobre las mismas filas
 
 Se prepara un control y una edición geométrica en destinos nuevos, usando el mismo

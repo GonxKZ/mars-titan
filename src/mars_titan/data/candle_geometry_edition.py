@@ -17,6 +17,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.training.cohort_contract import cohort_identity
 
+from . import candle_geometry_selection as selection_policy
 from .batches import atomic_parquet_batches, read_bounded_table
 from .candle_geometry import MODEL, WIDTH, geometry_chart, geometry_encoder_spec
 from .cohort_files import read_manifest, safe_destination
@@ -92,13 +93,9 @@ def compare_representations(previous, current, output=None):
     if _input_configuration(configurations[0][0]) != _input_configuration(configurations[1][0]):
         raise ValueError("La comparación necesita la misma preparación y los mismos contratos")
     manifests = [read_manifest(root / "manifest.json") for root in roots]
-    if any(manifest[0].get("cohort_complete") is not True for manifest in manifests):
-        raise ValueError("La comparación necesita dos ediciones completas")
-    assets = [sorted((a["market"], a["symbol"]) for a in item[0]["assets"]) for item in manifests]
-    if assets[0] != assets[1] or len(set(assets[0])) != len(assets[0]):
-        raise ValueError("Las representaciones no conservan la misma población de activos")
+    assets, expected_samples = selection_policy.comparison_population(manifests, configurations)
     count = 0
-    for market, symbol in assets[0]:
+    for market, symbol in assets:
         folders = [root / "samples" / market / symbol for root in roots]
         for root, folder in zip(roots, folders, strict=True):
             safe_destination(folder)
@@ -112,11 +109,11 @@ def compare_representations(previous, current, output=None):
         count += _compare_samples(paths)
         if [sha256(path) for path in paths] != expected:
             raise ValueError("Las muestras han cambiado durante la comparación")
-    if any(count != item[0]["samples"] for item in manifests):
+    if count != expected_samples or count != manifests[1][0]["samples"]:
         raise ValueError("El recuento leído no coincide con el manifiesto")
     result = dict(
         schema_version=1,
-        assets=len(assets[0]),
+        assets=len(assets),
         samples=count,
         same_inputs=True,
         different_columns_allowed=["charts", "chart_hash"],
@@ -399,6 +396,7 @@ def _code():
         name: sha256(Path(__file__).with_name(name))
         for name in (
             "candle_geometry_edition.py",
+            "candle_geometry_selection.py",
             "candle_geometry.py",
             "price_windows.py",
             "prices.py",
@@ -409,15 +407,28 @@ def _code():
     }
 
 
-def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
+def derive_geometry_edition(
+    source,
+    output,
+    *,
+    batch_rows=128,
+    clocks=None,
+    selection=None,
+    reserve_bytes=selection_policy.DEFAULT_RESERVE_BYTES,
+    estimate_only=False,
+):
     """Copiar todas las filas a otro destino y cambiar solo las dos columnas de velas.
 
     Reanuda activos confirmados en una carpeta provisional identificada. El destino final
     aparece únicamente tras cotejar las columnas conservadas y volver a verificar el origen.
     No carga modelos, etiquetas ni cachés de texto y rechaza decisiones desde 2024.
+    `selection` identifica candidatos de un origen completo sin filtrar sus filas.
+    `estimate_only` inspecciona metadatos y devuelve el presupuesto sin crear el destino.
     """
     if type(batch_rows) is not int or not 1 <= batch_rows <= 512:
         raise ValueError("El lote debe contener entre 1 y 512 filas")
+    if type(estimate_only) is not bool:
+        raise ValueError("La opción de estimación debe ser booleana")
     began = time.perf_counter()
     source, output = Path(source), Path(output)
     safe_destination(source)
@@ -453,6 +464,32 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
     calendars = _calendars(configuration, clocks)
     if set(calendars) != set(manifest["markets"]):
         raise ValueError("El calendario no cubre exactamente los mercados de la edición")
+    selected = None
+    if selection is not None:
+        path = Path(selection)
+        request, request_hash = read_manifest(path, maximum=1024**2)
+        _track(path, request_hash, tracked)
+        selected = selection_policy.selection_record(
+            request, request_hash, manifest, manifest_hash, config_hash
+        )
+        manifest = selection_policy.project_manifest(manifest, selected)
+    plan = selection_policy.storage_plan(
+        source, output, manifest, batch_rows=batch_rows, reserve_bytes=reserve_bytes
+    )
+    plan.update(
+        source_manifest_sha256=manifest_hash,
+        source_configuration_sha256=config_hash,
+        selection=selected,
+        derivation_code=_code(),
+        geometry_encoder_spec_sha256=_digest(geometry_encoder_spec(configuration["encoders"])),
+    )
+    if estimate_only:
+        _verify(tracked)
+        return plan
+    stage = output.with_name(f".{output.name}.geometry-staging")
+    safe_destination(stage)
+    if not plan["fits_in_free_space"] and not stage.exists():
+        raise OSError("El espacio libre no alcanza la estimación y la reserva de disco")
     representation = dict(encoders=geometry_encoder_spec(configuration["encoders"]), code=_code())
     identity = dict(
         version=1,
@@ -463,7 +500,8 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
         code=representation["code"],
         batch_rows=batch_rows,
     )
-    stage = output.with_name(f".{output.name}.geometry-staging")
+    if selected is not None:
+        identity["selection"] = selected
     lock_path = output.with_name(f".{output.name}.geometry.lock")
     safe_destination(stage)
     safe_destination(lock_path)
@@ -481,7 +519,22 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
         new_config = deepcopy(configuration)
         new_config["encoders"] = representation["encoders"]
         new_config["code"].update(representation["code"])
+        remaining = (
+            sum(
+                row["estimated_output_bytes"]
+                for row in plan["assets"]
+                if not (
+                    stage / "samples" / row["market"] / row["symbol"] / "manifest.json"
+                ).exists()
+            )
+            + plan["root_metadata_bytes"]
+        )
+        if selection_policy.free_disk_bytes(output.parent) < reserve_bytes + remaining:
+            raise OSError("El espacio libre no conserva la reserva de disco")
         atomic_json(stage / "configuration.json", new_config)
+        estimated = {
+            (row["market"], row["symbol"]): row["estimated_output_bytes"] for row in plan["assets"]
+        }
         coverage, timings, reused = (
             [],
             dict(read=0.0, price_preparation=0.0, geometry=0.0, write=0.0, factor_copy=0.0),
@@ -490,6 +543,8 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
         for item in manifest["coverage"]:
             item = dict(item)
             if item["state"] == "encoded":
+                if selection_policy.free_disk_bytes(output.parent) < reserve_bytes + remaining:
+                    raise OSError("El espacio libre no conserva la reserva de disco")
                 result, was_reused = _asset(
                     source,
                     prepared,
@@ -504,6 +559,7 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
                 item["fingerprint"] = result["fingerprint"]
                 reused += was_reused
                 if not was_reused:
+                    remaining -= estimated[(item["market"], item["symbol"])]
                     for key in timings:
                         timings[key] += result["chart_derivation"]["timing_seconds"][key]
             coverage.append(item)
@@ -523,6 +579,7 @@ def derive_geometry_edition(source, output, *, batch_rows=128, clocks=None):
         timings["final_source_verification"] = time.perf_counter() - started
         result["chart_derivation"] = dict(
             source=identity,
+            storage_plan=plan,
             comparison=compared,
             reused_assets=reused,
             timing_seconds=timings,
@@ -557,11 +614,24 @@ def main(argv=None):
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--batch-rows", type=int, default=128)
+    parser.add_argument("--selection", type=Path, help="JSON con la lista explícita de activos")
+    parser.add_argument("--reserve-gib", type=int, default=16)
+    parser.add_argument("--estimate-only", action="store_true")
     args = parser.parse_args(argv)
-    result = derive_geometry_edition(args.source, args.output, batch_rows=args.batch_rows)
+    result = derive_geometry_edition(
+        args.source,
+        args.output,
+        batch_rows=args.batch_rows,
+        selection=args.selection,
+        reserve_bytes=args.reserve_gib * 1024**3,
+        estimate_only=args.estimate_only,
+    )
     print(
         json.dumps(
-            dict(samples=result["samples"], **result["chart_derivation"]), ensure_ascii=False
+            result
+            if args.estimate_only
+            else dict(samples=result["samples"], **result["chart_derivation"]),
+            ensure_ascii=False,
         )
     )
     return 0

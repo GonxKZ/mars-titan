@@ -1,7 +1,9 @@
 """Derivación por lotes desde una edición confirmada, sin cargar codificadores."""
 
 import json
+import shutil
 from datetime import timedelta
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -15,8 +17,31 @@ from mars_titan.data.storage import atomic_json, sha256
 from tests.data.test_candle_geometry_integration import prepared
 
 
-def source_edition(tmp_path, *, company_factors=False):
+@pytest.fixture(autouse=True)
+def controlled_disk_budget(monkeypatch):
+    # El /tmp del equipo puede ser tmpfs. La unidad comprueba la regla, no su espacio real.
+    monkeypatch.setattr(edition.selection_policy, "free_disk_bytes", lambda path: 1024**4)
+
+
+def source_edition(tmp_path, *, company_factors=False, two_assets=False):
     preparation, options = prepared(tmp_path)
+    if two_assets:
+        meta = json.loads(preparation.read_text())
+        raw = Path(meta["prepared_root"]) / "US"
+        shutil.copytree(raw / "A", raw / "B")
+        document = json.loads((raw / "B/manifest.json").read_text())
+        document["symbol"] = "B"
+        atomic_json(raw / "B/manifest.json", document)
+        meta["assets"].append(
+            dict(
+                market="US",
+                symbol="B",
+                state="prepared",
+                manifest_sha256=sha256(raw / "B/manifest.json"),
+            )
+        )
+        meta["candidate_count"] += 1
+        atomic_json(preparation, meta)
     options["company_factors"] = company_factors
     source = tmp_path / "original"
     encode_corpus(preparation, source, **options)
@@ -346,8 +371,11 @@ def test_changed_source_bytes_restored_before_verification_are_rejected(tmp_path
 
 def test_unconfirmed_source_hash_is_rejected_before_reading_rows(tmp_path, monkeypatch):
     source, clocks = source_edition(tmp_path)
-    with (source / "samples/US/A/samples.parquet").open("ab") as stream:
-        stream.write(b" ")
+    path = source / "samples/US/A/samples.parquet"
+    table = pq.read_table(path)
+    rows = table.to_pylist()
+    rows[0]["news"][0] += 1.0
+    pq.write_table(pa.Table.from_pylist(rows, schema=table.schema), path)
 
     def cannot_calculate(*args, **kwargs):
         raise AssertionError("No se puede calcular sobre un origen sin verificar")
@@ -375,3 +403,168 @@ def test_only_complete_confirmed_corpus_is_accepted(tmp_path):
     atomic_json(path, manifest)
     with pytest.raises(ValueError, match="completa"):
         edition.derive_geometry_edition(source, tmp_path / "geometry", clocks=clocks)
+
+
+def selection_file(tmp_path, assets=None):
+    path = tmp_path / "selection.json"
+    atomic_json(
+        path,
+        dict(
+            assets=assets if assets is not None else [dict(market="US", symbol="A")],
+            rule="technical_fixture",
+            targets_used=False,
+        ),
+    )
+    return path
+
+
+def test_selected_snapshot_keeps_every_row_and_declares_only_selection_complete(tmp_path):
+    source, clocks = source_edition(tmp_path, two_assets=True)
+    path = source / "manifest.json"
+    manifest = json.loads(path.read_text())
+    manifest["candidate_count"] += 1
+    manifest["coverage"].append(dict(market="US", symbol="EMPTY", state="missing_required_prices"))
+    atomic_json(path, manifest)
+    source_hash = sha256(path)
+    selection = selection_file(tmp_path)
+    output = tmp_path / "geometry"
+    result = edition.derive_geometry_edition(source, output, selection=selection, clocks=clocks)
+    assert result["scope"] == "development_snapshot"
+    assert not result["cohort_complete"] and not result["training_ready"]
+    assert result["selection_complete"] and result["candidate_count"] == 1
+    assert result["samples"] == 5 and len(result["assets"]) == 1
+    assert result["selection"]["source_manifest_sha256"] == source_hash
+    assert result["selection"]["request_sha256"] == sha256(selection)
+    assert result["selection"]["request"]["targets_used"] is False
+    assert edition.compare_representations(source, output)["samples"] == 5
+    assert not (output / "samples/US/EMPTY").exists()
+    assert not (output / "samples/US/B").exists()
+    assert sha256(path) == source_hash
+
+
+@pytest.mark.parametrize(
+    "assets",
+    [
+        [],
+        [dict(market="US", symbol="OTHER")],
+        [dict(market="US", symbol="A")] * 2,
+        [dict(market="US", symbol="A", other=1)],
+    ],
+)
+def test_selection_rejects_unknown_duplicate_and_malformed_assets(tmp_path, assets):
+    source, clocks = source_edition(tmp_path)
+    with pytest.raises(ValueError, match="selección"):
+        edition.derive_geometry_edition(
+            source, tmp_path / "geometry", selection=selection_file(tmp_path, assets), clocks=clocks
+        )
+    assert not (tmp_path / "geometry").exists()
+
+
+def test_selection_never_admits_an_incomplete_source(tmp_path):
+    source, clocks = source_edition(tmp_path)
+    path = source / "manifest.json"
+    manifest = json.loads(path.read_text())
+    manifest["cohort_complete"] = False
+    atomic_json(path, manifest)
+    with pytest.raises(ValueError, match="completa"):
+        edition.derive_geometry_edition(
+            source, tmp_path / "geometry", selection=selection_file(tmp_path), clocks=clocks
+        )
+
+
+def test_storage_estimate_reads_only_metadata_and_does_not_create_output(tmp_path, monkeypatch):
+    source, clocks = source_edition(tmp_path)
+
+    def no_rows(*args, **kwargs):
+        raise AssertionError("La estimación no decodifica filas")
+
+    monkeypatch.setattr(pq.ParquetFile, "iter_batches", no_rows)
+    output = tmp_path / "geometry"
+    plan = edition.derive_geometry_edition(
+        source, output, clocks=clocks, selection=selection_file(tmp_path), estimate_only=True
+    )
+    assert plan["selected_candidates"] == 1 and plan["samples"] == 5
+    assert plan["estimated_output_bytes"] > plan["source_samples_file_bytes"]
+    assert plan["reserve_bytes"] == 16 * 1024**3
+    assert plan["fits_in_free_space"] and not output.exists()
+    assert not (tmp_path / ".geometry.geometry-staging").exists()
+
+
+def test_insufficient_disk_space_fails_before_creating_output(tmp_path, monkeypatch):
+    from mars_titan.data import candle_geometry_selection
+
+    source, clocks = source_edition(tmp_path)
+    monkeypatch.setattr(candle_geometry_selection, "free_disk_bytes", lambda path: 0)
+    with pytest.raises(OSError, match="reserva"):
+        edition.derive_geometry_edition(source, tmp_path / "geometry", clocks=clocks)
+    assert not (tmp_path / ".geometry.geometry-staging").exists()
+
+
+def test_recovery_does_not_budget_a_second_copy_of_confirmed_assets(tmp_path, monkeypatch):
+    source, clocks = source_edition(tmp_path)
+    output = tmp_path / "geometry"
+    compare = edition.compare_representations
+    plan = edition.derive_geometry_edition(source, output, clocks=clocks, estimate_only=True)
+
+    def interrupt(*args, **kwargs):
+        raise InterruptedError
+
+    monkeypatch.setattr(edition, "compare_representations", interrupt)
+    with pytest.raises(InterruptedError):
+        edition.derive_geometry_edition(source, output, clocks=clocks)
+    remaining_space = plan["reserve_bytes"] + plan["root_metadata_bytes"] + 1024
+    assert remaining_space < plan["estimated_output_bytes"] + plan["reserve_bytes"]
+    monkeypatch.setattr(edition.selection_policy, "free_disk_bytes", lambda path: remaining_space)
+    monkeypatch.setattr(edition, "compare_representations", compare)
+    result = edition.derive_geometry_edition(source, output, clocks=clocks)
+    assert result["chart_derivation"]["reused_assets"] == 1
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "source_manifest_sha256",
+        "cohort_complete",
+        "selection_complete",
+        "training_ready",
+        "coverage",
+    ],
+)
+def test_comparison_rejects_relabelled_selection(tmp_path, field):
+    source, clocks = source_edition(tmp_path)
+    output = tmp_path / "geometry"
+    edition.derive_geometry_edition(
+        source, output, clocks=clocks, selection=selection_file(tmp_path)
+    )
+    path = output / "manifest.json"
+    value = json.loads(path.read_text())
+    if field == "source_manifest_sha256":
+        value["selection"][field] = "0" * 64
+    elif field == "coverage":
+        value["coverage"][0]["samples"] -= 1
+    else:
+        value[field] = not value[field]
+    atomic_json(path, value)
+    with pytest.raises(ValueError, match="selección"):
+        edition.compare_representations(source, output)
+
+
+def test_estimate_cli_does_not_publish_or_derive(tmp_path, capsys):
+    source, _ = source_edition(tmp_path)
+    output = tmp_path / "geometry"
+    assert (
+        edition.main(
+            [
+                "--source",
+                str(source),
+                "--output",
+                str(output),
+                "--selection",
+                str(selection_file(tmp_path)),
+                "--estimate-only",
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["kind"] == "geometry_storage_estimate"
+    assert not output.exists()

@@ -118,7 +118,11 @@ def measure_derivation(directory, *, samples=128, repeats=5, batch_rows=128):
         for index in range(repeats + 1):
             started = time.perf_counter()
             result = derive_geometry_edition(
-                source, root / f"derived-{index}", batch_rows=batch_rows, clocks={"US": clock}
+                source,
+                root / f"derived-{index}",
+                batch_rows=batch_rows,
+                clocks={"US": clock},
+                reserve_bytes=64 * 1024**2,
             )
             elapsed = time.perf_counter() - started
             report = result["chart_derivation"]
