@@ -63,8 +63,10 @@ Recibos: [verificación](verification.json), [cobertura y CRAP](quality.json),
 Cinco pruebas CUDA comprueban paridad de rutas y gradientes en FP32 y FP64, rechazo atómico
 de una carga inválida y controles de umbral y hash. Los umbrales conservan su comparación
 en FP64, los códigos coinciden con la referencia y los RNG permanecen intactos. No hay
-pasos de optimizador. Las regresiones CUDA heredadas del lector sobre este refactor se
-siguen por separado y no se sustituyen por pruebas de una revisión anterior.
+pasos de optimizador en esos cinco casos. La regresión integrada del commit `d8d98f9a1`
+supera veinte pruebas CUDA en 31,95 segundos de pytest. Incluye estos cinco casos y las
+pruebas heredadas del lector, la inferencia y la disposición de atención. No se suman como
+veinticinco pruebas distintas. Los recibos fijan las huellas de todos los archivos probados.
 
 La medida utiliza la RTX 4070 Laptop, PyTorch 2.14.0+cu130 y FP32 sin TF32. Hay cinco
 calentamientos y treinta repeticiones con orden rotatorio por combinación. Otras pruebas
