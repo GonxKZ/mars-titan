@@ -30,6 +30,7 @@ def source_identity():
         "mars_titan.models.titans.episodic_readout",
         "mars_titan.models.titans.episodic_snapshot",
         "mars_titan.models.titans.refinement_policy",
+        "mars_titan.models.titans.refinement_controls",
         "mars_titan.models.titans.refinement_routes",
         "mars_titan.models.titans.config",
         "mars_titan.models.titans.state",
