@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-18T18:47:55.089930+00:00",
+  "issue": 567,
+  "detected_during_issue": 662,
+  "base_commit": "163c21294692b1ba7fd5dadc42e468628c978a57",
+  "changed_file": "tests/native/test_optimizer_steps_hold.py",
+  "source_sha256": "8e411668e0539e422bd00cfa7a64a466eb4fd058a8a5dfcba2d561e2be4cd7ce",
+  "change": "Copiar native/benchmarks en el fixture temporal de la guarda de aprendizaje.",
+  "failure": {
+    "test": "tests/native/test_optimizer_steps_hold.py::test_a_missing_label_a_new_stepping_test_or_an_open_preset_is_reported",
+    "exception": "AssertionError",
+    "reason": "El registro cuda_lifetimes_gemm apunta a native/benchmarks/cuda_lifetimes.cpp, ausente en la copia del fixture.",
+    "reproduced_commits": [
+      "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+      "163c21294692b1ba7fd5dadc42e468628c978a57"
+    ],
+    "kind": "Fixture incompleto. No es una regresión numérica ni un fallo observado del lanzador de la protección."
+  },
+  "validation": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "-B",
+      "-m",
+      "coverage",
+      "run",
+      "--branch",
+      "--include=*/tests/native/test_optimizer_steps_hold.py",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "tests/native/test_optimizer_steps_hold.py"
+    ],
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 0.73,
+    "device": "cpu",
+    "scope": "Fixtures de metadatos y configuración de CMake, sin campañas ni acceso al test final.",
+    "source_runtime_modified": false
+  },
+  "quality": {
+    "tool": "scripts/summarize_python_quality.py",
+    "report": "quality.json",
+    "scope": "Auditor Python y pruebas del archivo. No es cobertura del código C++ ni del modelo predictivo."
+  },
+  "mutation": {
+    "report": "mutations.json",
+    "baseline_passed": true,
+    "detected": 4,
+    "total": 4,
+    "scope": "Copias en memoria del auditor y fixtures temporales, sin alterar las fuentes."
+  },
+  "global_hold": {
+    "sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "unchanged": true
+  },
+  "logs_sha256": {
+    "reproduce-932d8ab02.log": "d6c58a22c7c70682baf1af55c72c2f076002cc7db81e128b0230da7c3125a3fc",
+    "reproduce-163c21294.log": "a5624008b62de7583a71d2102560ee3f89f8b769f6d20d9cc4e506c0a6a8ba65",
+    "verification.log": "2a378adf15a55081bd7fe0e60493c7c7d7098c7637925a052ca4da08199d28e1"
+  },
+  "limits": [
+    "No se repite la batería completa por esta corrección del fixture. La ejecución general de 932d8ab02 sigue separada.",
+    "No se compila ni ejecuta código nativo, no se utiliza GPU y no se aplican pasos de optimizador.",
+    "La cobertura y CRAP no prueban ausencia de errores."
+  ],
+  "repository_checks": [
+    {
+      "command": "uv run --no-sync ruff check .",
+      "passed": true
+    },
+    {
+      "command": "uv run --no-sync ruff format --check .",
+      "passed": true,
+      "formatted_files": 1535
+    },
+    {
+      "command": "uv run --no-sync python -B scripts/check_repository.py",
+      "passed": true,
+      "files": 2715,
+      "references": 348,
+      "tasks": 64
+    },
+    {
+      "command": "git diff --check",
+      "passed": true
+    }
+  ]
+}
