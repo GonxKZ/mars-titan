@@ -410,6 +410,7 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor admite float32 y float64")
         # Una carga o un cambio de tipo o dispositivo vuelve a sellar y a calcular la identidad.
         self._config_ids = {}
+        self._metadata_sizes = {}
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
 
@@ -546,8 +547,25 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El estado financiero supera el presupuesto de bytes")
 
     def _state_size(self, flows, ids, moments):
-        metadata = len(canonical(self._metadata(flows, ids, moments)).encode())
+        metadata = self._metadata_bytes(flows, ids, moments)
         self._check_bytes(self._tensor_bytes_per_flow() * len(flows) + metadata)
+
+    def _metadata_bytes(self, flows, ids, moments):
+        """Contar el JSON completo sin reconstruir su configuración invariable.
+
+        Solo se conservan dos tamaños, uno por modo train/eval. Las listas y sus escapes
+        se serializan en cada llamada, sin retener identidades ni cursores anteriores.
+        Una carga o un cambio de tipo o dispositivo invalida ambos tamaños al sellar.
+        """
+        variable = dict(flow_ids=flows, last_sample_ids=ids, last_prediction_at=moments)
+        fixed = self._metadata_sizes.get(self.training)
+        if fixed is None:
+            empty = dict.fromkeys(variable, ())
+            fixed = len(canonical(self._metadata((), (), ())).encode()) - len(
+                canonical(empty).encode()
+            )
+            self._metadata_sizes[self.training] = fixed
+        return fixed + len(canonical(variable).encode())
 
     @staticmethod
     def _storage_bytes(tensors):
@@ -569,10 +587,8 @@ class FinancialPredictor(nn.Module):
         if state.mac:
             tensors.extend(mac_tensors(state.mac))
         tensor_bytes = self._storage_bytes(tensors)
-        metadata = len(
-            canonical(
-                self._metadata(state.flow_ids, state.last_sample_ids, state.last_prediction_at)
-            ).encode()
+        metadata = self._metadata_bytes(
+            state.flow_ids, state.last_sample_ids, state.last_prediction_at
         )
         return dict(
             flow_count=len(state.flow_ids),

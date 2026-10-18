@@ -329,6 +329,7 @@ result = dict(
     truncated=truncated,
     max_event_inputs=max(inputs),
     segments=len(gaps),
+    segment_seconds=gaps,
     rows=r1 - r0,
     labels=l1 - l0,
     seconds=t1 - t0,
