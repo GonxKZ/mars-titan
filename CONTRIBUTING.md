@@ -30,10 +30,10 @@ El [Makefile](Makefile) es el punto de entrada. `make` sin objetivo lista los di
 | `make test` | Suite CPU completa por carpetas, con los binarios nativos si están compilados | Unas horas y hasta 6 GiB de memoria en `tests/training` |
 | `make native-build` | Compila `native-release`, `native-ppo-release` y `native-candidate-cuda` en `build/native/` | CMake, Ninja, Clang y el PyTorch del entorno |
 | `make test-native` | Pruebas `native` en CPU y CTest de los tres presets, sin las etiquetas `optimizer-steps` ni `cuda` | `make native-build` |
-| `make test-cuda` | Pruebas `cuda` en `cuda:0` con `MARS_TITAN_REQUIRE_CUDA=1` | Una GPU NVIDIA libre para esta única carga |
+| `make test-cuda` | Pruebas `cuda` en `cuda:0`, cada caso en un proceso nuevo, con `MARS_TITAN_REQUIRE_CUDA=1` | Una GPU NVIDIA libre para esta única carga |
 | `make docs` | Enlaces y órdenes documentadas, pruebas de la web del observatorio y PDF de la memoria en `build/docs/` | Node.js y LaTeX |
 
-Las variables `THREADS` (por defecto 2, por proceso), `TEST_WORKERS` (3, y 0 para un solo proceso), `NATIVE_JOBS` (2) y `RUN` (`uv run --locked`) se pueden cambiar en la llamada, por ejemplo `make test-fast TEST_WORKERS=0`. Solo `test-fast` usa varios procesos. Con la lista de lentas atrasada, las doce ejecuciones en paralelo de la primera medida superaron los 6 GiB de la plaza, así que `make test` y las pruebas lentas siguen en serie. Todas las comprobaciones y entrenamientos se ejecutan en local. GitHub Actions solo publica GitHub Pages.
+Las variables `THREADS` (por defecto 2, por proceso), `TEST_WORKERS` (3, y 0 para un solo proceso), `NATIVE_JOBS` (2) y `RUN` (`uv run --locked`) se pueden cambiar en la llamada, por ejemplo `make test-fast TEST_WORKERS=0`. Solo `test-fast` ejecuta pruebas en paralelo. Con la lista de lentas atrasada, las doce ejecuciones en paralelo de la primera medida superaron los 6 GiB de la plaza, así que `make test` y las pruebas lentas siguen en serie. Todas las comprobaciones y entrenamientos se ejecutan en local. GitHub Actions solo publica GitHub Pages.
 
 ## Pruebas
 

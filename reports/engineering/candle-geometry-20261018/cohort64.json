@@ -1,0 +1,55 @@
+{
+  "completed_at": "2026-10-18T19:14:17.780185+00:00",
+  "commit": "597ba65987d331eafc82da1682a8a74e9e9f3f73",
+  "assets": 64,
+  "samples": 235482,
+  "scope": "development_snapshot",
+  "cohort_complete": false,
+  "selection_complete": true,
+  "training_ready": false,
+  "final_test_opened": false,
+  "configuration_sha256": "84163833607ce4ebe14ae28eff117642051659530e8204a4a82595b6ab428f98",
+  "manifest_sha256": "5027c8e4dca9643a51382dbc2e89d2bbcbac38554c994faf0f351c46e47bbddf",
+  "selection_sha256": "2a52d12040a6697f5e96e72cf278704974ced2fb24cc0bb3112cca89c636d12b",
+  "source_manifest_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+  "source_configuration_sha256": "3b1bf03baa281ca171403611e8f4ecd99ccc66253918dbe7822fefbeb8cab96e",
+  "elapsed_seconds": 55.592822700040415,
+  "peak_process_rss_bytes": 238948352,
+  "total_regular_file_bytes": 265926624,
+  "files": 260,
+  "samples_output_bytes": 261712026,
+  "timing_seconds": {
+    "read": 6.444562164135277,
+    "price_preparation": 2.0006629052804783,
+    "geometry": 17.38534359028563,
+    "write": 13.729159227747004,
+    "factor_copy": 0.07054769794922322,
+    "comparison": 10.516488002962433,
+    "final_source_verification": 1.0407868449692614
+  },
+  "comparison": {
+    "schema_version": 1,
+    "assets": 64,
+    "samples": 235482,
+    "same_inputs": true,
+    "different_columns_allowed": [
+      "charts",
+      "chart_hash"
+    ],
+    "configuration_sha256": [
+      "3b1bf03baa281ca171403611e8f4ecd99ccc66253918dbe7822fefbeb8cab96e",
+      "84163833607ce4ebe14ae28eff117642051659530e8204a4a82595b6ab428f98"
+    ],
+    "manifest_sha256": [
+      "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+      "5027c8e4dca9643a51382dbc2e89d2bbcbac38554c994faf0f351c46e47bbddf"
+    ],
+    "batch_rows": 128,
+    "max_batch_bytes": 16777216
+  },
+  "device": "cpu",
+  "learned_models_loaded": 0,
+  "financial_labels_read": false,
+  "preparation_cutoff": "2023-12-31",
+  "reported_inference_or_predictive_improvement": false
+}

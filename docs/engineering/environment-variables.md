@@ -39,6 +39,7 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 | `MARS_TITAN_REQUIRE_NATIVE` | `1` exige los cinco binarios y que el enlace episódico cargue antes de recoger pruebas. Una prueba `native_binding` omitida cuenta como fallo | `0` |
 | `MARS_TITAN_REQUIRE_CUDA` | `1` detiene la sesión si CUDA no está visible | `0` |
 | `MARS_TITAN_REQUIRE_REFERENCE` | `1` exige el grupo `reference` con sus versiones exactas. Una prueba `external_reference` omitida cuenta como fallo | `0` |
+| `MARS_TITAN_PYTEST_RECEIPT` | Ruta de salida que `scripts/run_cuda_tests.py` asigna a cada hijo para que `scripts/pytest_case_receipt.py` registre su colección y sus fases. La fija el lanzador | El complemento rechaza ejecutarse sin destino |
 | `MARS_TITAN_CUDA_INTEGRATION` | `1` activa las integraciones CUDA que aplican pasos de optimizador. Solo procede fuera del bloqueo de aprendizaje | Se omiten |
 | `MARS_ENCODER_INTEGRATION` | `1` activa la extracción con los codificadores reales en `cuda:0` | Se omite |
 | `MARS_TITAN_UNADJUSTED_EDITION` | Ruta de una edición de precios sin ajustar para las pruebas de humo, que solo la leen | Se omiten |

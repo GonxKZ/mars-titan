@@ -1,0 +1,120 @@
+{
+  "source_sha256": "5c5713079e5130abe9827b3e452b933a2428c7315783f95a26a59d291e677608",
+  "mutants": [
+    {
+      "id": "ignore_original_manifest_hash",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_rejects_foreign_sources_before_publishing[origin_hash]",
+      "old": "if original_digest != origin[\"manifest_sha256\"]:",
+      "new": "if False:",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.015009194961749,
+      "log_sha256": "5d48d55eb1e3721b3d93e7f94fe827172c0ad89429c335a80168602f39560cc2"
+    },
+    {
+      "id": "ignore_original_sample_hash",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_rejects_foreign_sources_before_publishing[samples_hash]",
+      "old": "assets[key][\"samples_sha256\"] != receipt[\"samples_sha256\"]",
+      "new": "False",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.0638731269864365,
+      "log_sha256": "9cec1a665657cc89e90477b3387467d6290d00b37e4c45f6d7c145c8193e195d"
+    },
+    {
+      "id": "rewrite_label_configuration",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_publishes_four_bound_views_with_the_original_label_provenance",
+      "old": "result = copy.deepcopy(source)",
+      "new": "result = copy.deepcopy(source)\n    result[\"configuration\"][\"source_manifest_sha256\"] = representation_digest",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 2.9014047020464204,
+      "log_sha256": "2678aac0a9b5a4beed64f596a5f2657a6521ce42fa355546d459621c4274db07"
+    },
+    {
+      "id": "replace_label_hash",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_publishes_four_bound_views_with_the_original_label_provenance",
+      "old": "copy.deepcopy(by_id[key]),",
+      "new": "copy.deepcopy(by_id[key]),\n            labels_sha256=receipts[key][\"samples_sha256\"],",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.6365855850162916,
+      "log_sha256": "2de3c8356244585851329673c6dd631296f1684d88924e1d3a3a19b01a1fdabf"
+    },
+    {
+      "id": "open_2024",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_rejects_foreign_sources_before_publishing[evaluation_end]",
+      "old": "temporal[\"fold\"][\"evaluation\"][1] > \"2024-01-01\"",
+      "new": "temporal[\"fold\"][\"evaluation\"][1] > \"2025-01-01\"",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 4.208249511022586,
+      "log_sha256": "449fb34594bca57d463808e5cecdf4a7f61800e059b33025eb2669dcf959a3e5"
+    },
+    {
+      "id": "keep_original_parent_link",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_publishes_four_bound_views_with_the_original_label_provenance",
+      "old": "projected[\"temporal_view\"].update(\n                parent_manifest=str(new_parent), parent_sha256=sha256(new_parent)\n            )",
+      "new": "pass",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.1031550509505905,
+      "log_sha256": "13f3c5a49e1b0d78b933d2f711f24b6afc5d36881f043706068fbbba9d2d2b1d"
+    },
+    {
+      "id": "use_original_parent_hash",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_prepare_publishes_four_bound_views_with_the_original_label_provenance",
+      "old": "parent_sha256=sha256(new_parent)",
+      "new": "parent_sha256=parent_digest",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 2.904918806045316,
+      "log_sha256": "9327a33e6c8cf1092ef8c4ac5815a392d1ef3a94ed556fea3adff828eda6d9ab"
+    },
+    {
+      "id": "ignore_change_during_read",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_read_detects_a_change_during_manifest_loading",
+      "old": "if before != _stat(path):",
+      "new": "if False:",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.2386312420130707,
+      "log_sha256": "fd6f7b8991182791967cf0f802545a604d2c14f75cc52454d94bdb3721ffe81f"
+    },
+    {
+      "id": "ignore_source_stat_change",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_late_source_mutation_prevents_the_completion_receipt[True]",
+      "old": "if _stat(path) != signature or sha256(path) != digest:",
+      "new": "if sha256(path) != digest:",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.6480781009886414,
+      "log_sha256": "62ae288fcc538652abf03bce0560afd5540dcd55d57f27ca1c78cc1658124542"
+    },
+    {
+      "id": "ignore_source_content_change",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_content_hash_still_rejects_a_change_with_stale_file_metadata",
+      "old": "if _stat(path) != signature or sha256(path) != digest:",
+      "new": "if _stat(path) != signature:",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 3.182763174001593,
+      "log_sha256": "a92e57c602b7a53d40460a3a9974dbd11ca5ddc0873ab312ee7385b2d92d3e0c"
+    },
+    {
+      "id": "write_inside_source",
+      "test": "tests/tooling/test_candle_geometry_views.py::test_outputs_cannot_overwrite_sources_even_through_an_alias[original]",
+      "old": "outside_source(root, output)",
+      "new": "pass",
+      "exit_code": 1,
+      "detected": true,
+      "wall_seconds": 2.835015534015838,
+      "log_sha256": "f9ffce9a91c0f21f874f91f5d90606e56fc4f5d5e113764bf9971d871b797e9e"
+    }
+  ],
+  "total": 11,
+  "detected": 11,
+  "restored": true,
+  "global_hold_unchanged": true,
+  "wall_seconds": 35.75705975998426
+}

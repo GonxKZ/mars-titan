@@ -1,0 +1,126 @@
+{
+  "timestamp_utc": "2026-10-18T20:50:02.279983+00:00",
+  "tool": "Sustituciones textuales dirigidas, pytest en proceso nuevo por mutante",
+  "original_sha256": "1bdcb21ba6ce6cff63aa5d369d0021bcac929fbf4694ba1f1da374105910594c",
+  "source_restored": true,
+  "seconds": 43.99490870395675,
+  "mutants": [
+    {
+      "name": "cuda_selection",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_collection_and_each_parameter_have_distinct_processes_and_keep_the_hold",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.771981093042996,
+      "source_sha256": "a13df0e982f79a356e6e360340975eb0d50695068a05573ce11223976830313b",
+      "log_sha256": "d7bfac1a0e59a468da4545184352f42adba71e499d5fcf556e621ed96e558360"
+    },
+    {
+      "name": "one_case_per_child",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_collection_and_each_parameter_have_distinct_processes_and_keep_the_hold",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.324868198018521,
+      "source_sha256": "85acd6c51a3eefde21080a15ad482c959abd880343534aa9ddb7eb4a9c499aa4",
+      "log_sha256": "a76358256065f651711dda8d7a6a755aa3aed3dd05c606d6826b59ea30f7c921"
+    },
+    {
+      "name": "outer_pytest_options",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_collection_and_each_parameter_have_distinct_processes_and_keep_the_hold",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.923890844976995,
+      "source_sha256": "18d137b8ee4153be7ff21f5d41f08e94a0546397dcd1c5dc55b6f7a0678b021c",
+      "log_sha256": "ab0e09e1b07bbd7dcf91d9cb96613ec601397cff86bc860bef3fa1069b5df6d5"
+    },
+    {
+      "name": "aggregate_failure",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_failure_does_not_hide_skip_or_prevent_following_cases",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 4.7785988099640235,
+      "source_sha256": "3cd61ea195245a9ecdf778359bde27b4ede41d5b3fc858583fb5fb2256140b3c",
+      "log_sha256": "180ecf58d4285db0d7fecbf2e1cbede1e5bd3b26582edc8b3789472585e9badd"
+    },
+    {
+      "name": "skip_is_not_pass",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_failure_does_not_hide_skip_or_prevent_following_cases",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.524445263959933,
+      "source_sha256": "2ac7a970394827f34684fdad08df5ef24c2a4bd6738ce0ca3ba1440e39d9a7c6",
+      "log_sha256": "7bb437d87b29df41aabff2b731a894ad15e935b6c835360094160bfc44043564"
+    },
+    {
+      "name": "receipt_pid",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_receipt_rejects_wrong_process_outcome_or_selection",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.4721138589666225,
+      "source_sha256": "8396183c0a2b1852b107d846f8ec55afa70a44c10d08955829bcf3644fe33151",
+      "log_sha256": "6a80ddada6b74d7701a9321f34d93ed7106e59c694e83f94846ca84ee853f851"
+    },
+    {
+      "name": "duplicate_phase",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_unexpected_or_duplicate_case_phases_are_rejected",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.3716767390142195,
+      "source_sha256": "a59ac238b3f3f18b7334c1a650d99c3907c8b92d916527722c5f3f0a6ebcde90",
+      "log_sha256": "bcebe50b0cc73193fb76c95c49c871af2d51a558b96d2e54d1f8d7bb490aebdc"
+    },
+    {
+      "name": "kill_unresponsive_child",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_an_unresponsive_child_is_killed_after_the_grace_period",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.4704601780395024,
+      "source_sha256": "c8d8ad87188eb423c9ce1f9fff1a57470b7b412eeb053f058f565d028e8c3900",
+      "log_sha256": "e7b8e8db7a24733b403d83ac098b82e56bec075deb943d18d509e3cb890256ee"
+    },
+    {
+      "name": "positive_budget",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_invalid_time_budget_does_not_start_collection",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.472909792966675,
+      "source_sha256": "7821df9a7906fe60412a52da3eb4216599c368904dfd5e2bae10d1091cdc54df",
+      "log_sha256": "c04bab32e05239f1c0ed7c7cea37c59262418be45c5f4029666949630f83927a"
+    },
+    {
+      "name": "interruption_state",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_interrupted_pytest_is_not_relabelled_as_a_test_failure",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 3.1256552720442414,
+      "source_sha256": "7a1c489ca2bb1626686439b1c626e68ad3b78ccb0548b2694cf0d54abf960098",
+      "log_sha256": "1d0480bf99495982d1c821e0f1111dacbdf441552c4e1687a902c043e4eeb6f0"
+    },
+    {
+      "name": "pending_nodes",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_timeout_stops_child_and_records_the_unstarted_case",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 5.979883933032397,
+      "source_sha256": "071507020d5b6d394f4292460d9b58fb6056e868c1222b21caedb4171d878e6a",
+      "log_sha256": "d035dc2661dcb0c32d12e3f8b9e89ce44624056235fab0ffa9ed4f3d814342cf"
+    },
+    {
+      "name": "cleanup_after_receipt_error",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_receipt_write_failure_after_spawn_also_stops_the_child",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.372464276966639,
+      "source_sha256": "cc371e7d3e74d6e5ed59fc638f21626de8126d40a8d6d50fc07700fa26547293",
+      "log_sha256": "87aa9b89018469e071bbae9c93a5f650dbee2eb9f9a65cab3b72f5423203f30e"
+    },
+    {
+      "name": "process_exit_race",
+      "test": "tests/tooling/test_cuda_test_runner.py::test_child_exit_between_poll_and_signal_is_reaped",
+      "exit_code": 1,
+      "killed": true,
+      "seconds": 2.3709217900177464,
+      "source_sha256": "30128752ed812f27b6aeac808b5dbb838fff3dcb95d591939d6f7d09b6ebbcc8",
+      "log_sha256": "6be6d8fee8beeb4f9a2d55d90d514a3529c926548282d8edd409ced088632173"
+    }
+  ]
+}

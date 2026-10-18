@@ -1,0 +1,114 @@
+{
+  "source_commit": "d6a67e3ff4d4c56411635640cbc7273ce05cc8da",
+  "supervisor_pid": 377567,
+  "supervisor_imported_torch": false,
+  "started_at_utc": "2026-10-18T21:05:51.601109+00:00",
+  "finished_at_utc": "2026-10-18T21:06:26.297003+00:00",
+  "exit_code": 0,
+  "collection": {
+    "schema_version": 1,
+    "pid": 377568,
+    "selected": [
+      "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+      "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]",
+      "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]"
+    ],
+    "phases": [],
+    "exit_code": 0
+  },
+  "cases": [
+    {
+      "schema_version": 1,
+      "pid": 377838,
+      "selected": [
+        "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps"
+      ],
+      "phases": [
+        {
+          "nodeid": "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+          "when": "setup",
+          "outcome": "passed",
+          "seconds": 0.6867151609621942,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+          "when": "call",
+          "outcome": "passed",
+          "seconds": 5.942566485027783,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+          "when": "teardown",
+          "outcome": "passed",
+          "seconds": 0.0003664200194180012,
+          "detail": null
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "schema_version": 1,
+      "pid": 378352,
+      "selected": [
+        "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]"
+      ],
+      "phases": [
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]",
+          "when": "setup",
+          "outcome": "passed",
+          "seconds": 3.22337497305125,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]",
+          "when": "call",
+          "outcome": "passed",
+          "seconds": 2.9318231900106184,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_ppo]",
+          "when": "teardown",
+          "outcome": "passed",
+          "seconds": 0.00040023302426561713,
+          "detail": null
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "schema_version": 1,
+      "pid": 378706,
+      "selected": [
+        "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]"
+      ],
+      "phases": [
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]",
+          "when": "setup",
+          "outcome": "passed",
+          "seconds": 2.4425612000050023,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]",
+          "when": "call",
+          "outcome": "passed",
+          "seconds": 2.6559899779967964,
+          "detail": null
+        },
+        {
+          "nodeid": "tests/simulation/test_native_policy_tapes.py::test_the_initial_evaluation_on_cuda_stays_within_the_tolerance_of_the_cpu[native_klpo]",
+          "when": "teardown",
+          "outcome": "passed",
+          "seconds": 0.0006289430311881006,
+          "detail": null
+        }
+      ],
+      "exit_code": 0
+    }
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-18T20:15:20.267423+00:00",
+  "workload": {
+    "kind": "provided_windows",
+    "source_sha256": "77abf2881e859d0e0b4e11a068a85f420db26855c84526e8ae9226b613d0599b",
+    "samples": 256,
+    "context_sessions": 64,
+    "absent_slots": 0,
+    "input_bytes": 540672,
+    "inputs_sha256": "8a1a21b75f00c84eee46aae2bf55d9e1cbec24e09d6638132cad13e8c00c5251",
+    "ordering_rtol": 1e-09
+  },
+  "geometry": {
+    "version": 1,
+    "context_sessions": 64,
+    "width": 512,
+    "channels": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "body",
+      "upper_wick",
+      "lower_wick",
+      "present"
+    ],
+    "layout": "time_major",
+    "normalization": "(price/max_high-min_low/max_high)/max(1-min_low/max_high,1e-9)",
+    "absent_fill": "positive_zero_all_channels",
+    "ohlc_ordering": "audit_tolerance_without_repair",
+    "content_hash": "sha256_model_nul_presence_bool64_observed_ohlc_little_endian_float64",
+    "computation": "numpy_float64_rounded_once_to_float32",
+    "device": "cpu",
+    "learned_parameters": 0,
+    "pretraining": "none",
+    "numpy": "2.5.3",
+    "code_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+    "price_validation_sha256": "4fcc8bd817fe1e385770a441ec947fe78f56902e6449d422a30af22923ba7cf4"
+  },
+  "output_bytes_per_row": 2048,
+  "optimizer_steps": 0,
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pillow": "12.3.0"
+  },
+  "repetitions": 30,
+  "warmup": 5,
+  "reference_passes_per_variant": 1,
+  "image_batch_size": 8,
+  "results": {
+    "geometry": {
+      "seconds": [
+        0.045556200959254056,
+        0.01887021103175357,
+        0.020060601003933698,
+        0.01844990998506546,
+        0.016913579020183533,
+        0.021027730021160096,
+        0.02053836901905015,
+        0.02009099698625505,
+        0.019852698023896664,
+        0.01991275098407641,
+        0.02084088698029518,
+        0.023761612945236266,
+        0.020748312992509454,
+        0.020042743999511003,
+        0.020348199002910405,
+        0.02042275998974219,
+        0.02018742699874565,
+        0.020313202985562384,
+        0.020266735984478146,
+        0.020094992010854185,
+        0.0200114450417459,
+        0.020372443017549813,
+        0.020207002002280205,
+        0.017738606955390424,
+        0.014334230974782258,
+        0.015370902023278177,
+        0.014443697000388056,
+        0.017346869979519397,
+        0.016083853028248996,
+        0.011775065038818866
+      ],
+      "batch_milliseconds": {
+        "p50": 20.075798995094374,
+        "p95": 22.531365629401982,
+        "p99": 39.23577043518892
+      },
+      "mean_milliseconds_per_window": 0.07760208801907234,
+      "rows_per_second": 12751.67180457201,
+      "output_sha256": "677fcd16903e06dff4cf164dac298cb291ceddc5d74b41d3e6d4e7e252208b67",
+      "reproducible": true
+    },
+    "ink": {
+      "seconds": [
+        2.680583890003618,
+        1.9283636710024439,
+        1.8379070829832926,
+        1.9414992060046643,
+        1.919675474986434,
+        2.0203973010065965,
+        2.060699558991473,
+        2.000544494949281,
+        1.9895678359898739,
+        1.9930707140010782,
+        1.9791330440202728,
+        2.0054274720023386,
+        2.0113994069979526,
+        2.017546672024764,
+        1.9812126589822583,
+        2.0058587040402927,
+        1.9905113330460154,
+        2.063984062988311,
+        2.0080788849736564,
+        2.0161346630193293,
+        1.9567234389833175,
+        2.0334410640061833,
+        2.00515003898181,
+        1.660817340016365,
+        1.5801602669525892,
+        1.742303886974696,
+        1.6505509470007382,
+        1.6333309060428292,
+        1.6374925089767203,
+        1.0815202740486711
+      ],
+      "batch_milliseconds": {
+        "p50": 1990.0395845179446,
+        "p95": 2062.506036189734,
+        "p99": 2501.7699401691793
+      },
+      "mean_milliseconds_per_window": 7.478266510937222,
+      "rows_per_second": 128.6406571967823,
+      "output_sha256": "827915330a7d1b275f8c91cab1e85393a6d37f38e2ad728dc7b620fa3b21e588",
+      "reproducible": true
+    },
+    "resnet": {
+      "seconds": [
+        1.557301703025587,
+        1.537354658008553,
+        1.5216941800317727,
+        1.5151777590508573,
+        1.5207743330392987,
+        1.5174939229618758,
+        1.5897958310088143,
+        1.553274197038263,
+        1.5401556640281342,
+        1.595002684975043,
+        1.5229352730093524,
+        1.5269944539759308,
+        1.5481834890088066,
+        1.525136825046502,
+        1.5283316199784167,
+        1.5305877270293422,
+        1.56739016197389,
+        1.5569178690202534,
+        1.5589442439959385,
+        1.5442485060193576,
+        1.5393036550376564,
+        1.5259127719909884,
+        1.5666084500262514,
+        1.5979766849777661,
+        1.0633987509645522,
+        1.2430506310192868,
+        1.319547289982438,
+        1.3576385859632865,
+        1.3783756759949028,
+        1.3719575650175102
+      ],
+      "batch_milliseconds": {
+        "p50": 1529.4596735038795,
+        "p95": 1592.65960069024,
+        "p99": 1597.1142249769764
+      },
+      "mean_milliseconds_per_window": 5.836128276458416,
+      "rows_per_second": 167.3793722285746,
+      "output_sha256": "1d8ed3bf2f059f21b0a113b7db1afa858b34024870f991a21f7f36f0988f1da8",
+      "reproducible": true
+    }
+  },
+  "cuda": {
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "free_vram_bytes": 7556038656,
+    "max_vram_bytes": 6442450944,
+    "max_ram_bytes": 12884901888,
+    "reserved_margin_bytes": 1073741824
+  },
+  "cuda_framework_peak_bytes": {
+    "allocated": 193570304,
+    "reserved": 260046848
+  },
+  "encoder": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "ab862179e8665e645af92363c52cea8ae4931dbaec77da56e34bb4505110f92b",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "runtime_precision": {
+      "dtype": "float32",
+      "matmul_tf32": false,
+      "cudnn_tf32": false,
+      "float32_matmul_precision": "highest"
+    },
+    "historical_simulation": false,
+    "word_embedding_placement": "cpu",
+    "word_embedding_lookup": {
+      "policy": "cpu_word_inputs_embeds_fp32_v1",
+      "code_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35"
+    },
+    "batch_sizes": {
+      "text_chunks": 32,
+      "images": 8
+    }
+  },
+  "source_sha256": {
+    "benchmark": "4c72f433f4aaa689979813ab8f0e0170cff1f5932c9c47f298800e1a6959ac5e",
+    "mars_titan.data.candle_geometry": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+    "mars_titan.data.charts": "fe002717f402d8a5192891a4a5a733d836394fcd02ee20c00f032bd5e1658076",
+    "mars_titan.data.pretraining_free_encoders": "c17fd0d7979a837cfbd20972cf08b9b4f47b49d3496376072636b592b8ac3f3e",
+    "mars_titan.data.embeddings": "ab862179e8665e645af92363c52cea8ae4931dbaec77da56e34bb4505110f92b",
+    "mars_titan.data.prices": "4fcc8bd817fe1e385770a441ec947fe78f56902e6449d422a30af22923ba7cf4"
+  },
+  "process_peak_rss_bytes": 1835184128,
+  "measure_total_seconds": 136.52891264500795,
+  "benchmark_sha256": "4c72f433f4aaa689979813ab8f0e0170cff1f5932c9c47f298800e1a6959ac5e",
+  "unmeasured": [
+    "energy",
+    "monetary_cost",
+    "transfer_bytes",
+    "predictive_quality"
+  ],
+  "limits": [
+    "Los percentiles corresponden al lote completo entre repeticiones, no a cada fila.",
+    "El pico RSS pertenece al proceso, no a cada representaci\u00f3n por separado.",
+    "La preparaci\u00f3n CUDA incluye el codificador congelado de texto, aunque aqu\u00ed no se usa.",
+    "La procedencia temporal de las ventanas requiere otra auditor\u00eda."
+  ]
+}

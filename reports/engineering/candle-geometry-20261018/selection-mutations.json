@@ -1,0 +1,241 @@
+{
+  "measured_at": "2026-10-18T19:24:33.261200+00:00",
+  "scope": "targeted_mutation_no_training_cpu",
+  "mutations": [
+    {
+      "mutation": "wrong_window",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_only_the_selected_past_window_affects_values_and_source_hash",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1429792400449514,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "7fc52b7530fd3e61e708d57ea3c60ac6f54a5d27b6ac637c8e2caef2f398ec6d"
+    },
+    {
+      "mutation": "observed_absences",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_absences_keep_calendar_slots_without_creating_observations",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.340312697982881,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "6e3e8d20397459d05c08c8660d2c0d0ca2d8715a35e0f0d382cb1a5564d60c8f"
+    },
+    {
+      "mutation": "zero_range",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_zero_range_keeps_observed_mask_and_finite_zero_geometry",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 4.125039192964323,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "cb7a7ba9c38fd09d9792263f234416486b36fe4d70f3750140b698e3e00747bb"
+    },
+    {
+      "mutation": "price_hash",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_input_hash_distinguishes_values_hidden_by_pixel_rounding",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.4781147460453212,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "5933ce2200c9f25d5b7c675417c6eed510a9bf60bc8e4c8c959a708c5a2d141f"
+    },
+    {
+      "mutation": "accept_disorder",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_admitted_rounding_is_kept_without_repairing_prices",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 2.8663429099833593,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "8233817b6d6664078b97af5df696f090f687769e65444a6fedd2b106f95a4a2c"
+    },
+    {
+      "mutation": "repair_wick",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_admitted_rounding_is_kept_without_repairing_prices",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.4052535470109433,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "bbb225b9d5612cc659cf2082ae3548580593bda34a4ce56215eff4c42cf951be"
+    },
+    {
+      "mutation": "mutable_identity",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_geometry_identity_cannot_be_relabelled_after_construction",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.9779923990136012,
+      "original_sha256": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+      "log_sha256": "ccd2e850cd51a966a97e75619a347fc3627267ab21434f809bb6697f63ad7a34"
+    },
+    {
+      "mutation": "rasterize_geometry",
+      "source": "src/mars_titan/data/cohort_samples.py",
+      "test": "tests/data/test_candle_geometry_integration.py::test_materialization_keeps_rows_masks_and_other_inputs_without_rasterizing",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 4.262137298006564,
+      "original_sha256": "e9883602f99f114f66038be568f0089ecd25e52e5152780846dcc7fe61b5d60a",
+      "log_sha256": "eead935b53d45b901666f78107330f7da268beda2da22bf1923cbbadf6e6cb0b"
+    },
+    {
+      "mutation": "ignore_macro_change",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_integration.py::test_comparison_rejects_changes_outside_the_chart_representation[macro]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.814999872003682,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "9f0ead9d9c6fcaf0ea8bdfcd46742018e73008a146ea95f660efe08915d4e91f"
+    },
+    {
+      "mutation": "unbound_session",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_rejects_a_sample_bound_to_a_different_close[session]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 4.1336055300198495,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "990c07b060efeeb5f87c0795237d9d53e94e3199a6acd41673361a07c44abf4a"
+    },
+    {
+      "mutation": "future_window",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_derived_window_does_not_depend_on_later_prepared_prices",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.3542567450203933,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "1ec567a07143d6ce59dd7c36098c9c6014dd6f05c60307b4426c82847744991d"
+    },
+    {
+      "mutation": "missing_presence",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_derive_preserves_every_other_column_and_reuses_no_models",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.4909257650142536,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "482d4575c2aa63ca6aa4ca215735afed1bd2e1f21a4d9722e045e2ed16fc2890"
+    },
+    {
+      "mutation": "unverified_source",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_unconfirmed_source_hash_is_rejected_before_reading_rows",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1146321700070985,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "beb6b5562fc6ab63d017a68fe7cd0247160806393578446210473781f1d81c51"
+    },
+    {
+      "mutation": "ignore_source_change",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_source_changed_during_geometry_is_never_published[prices]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.061754216963891,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "efdfc7c123c05ce1958e421942bc45de8f446df5a00568af593186b7124b8a9a"
+    },
+    {
+      "mutation": "ignore_rewritten_source",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_changed_source_bytes_restored_before_verification_are_rejected",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.423018886009231,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "68d7b58905ce8c1d5832d4e0147ac43916e3d7d8076feb9d56316958d4a2b456"
+    },
+    {
+      "mutation": "lost_metadata",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_derive_preserves_every_other_column_and_reuses_no_models",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.3330409479676746,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "b32da5aac001ad083aaabe473299263ab6800e6df4c413cb05922f06cd5b1d6d"
+    },
+    {
+      "mutation": "incomplete_origin",
+      "source": "src/mars_titan/data/candle_geometry_edition.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_selection_never_admits_an_incomplete_source",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.0873612189898267,
+      "original_sha256": "bab4274c44aa73fdb4e3818af39d54c196e975927e11aa9f310f351718b7ee1b",
+      "log_sha256": "8c74fcbd60832a16a2a0275e7a94eb05ffbf1d4eba58f684cc019f5a727c5dc7"
+    },
+    {
+      "mutation": "duplicate_selection",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_selection_rejects_unknown_duplicate_and_malformed_assets[assets2]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 2.975952403037809,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "3cb1c5f236e1ea6832b3747499bfd9b48716a99c8b37c12736f92798ac9f1190"
+    },
+    {
+      "mutation": "unknown_selection",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_selection_rejects_unknown_duplicate_and_malformed_assets[assets1]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1697846640017815,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "b0bb1158b236d1d93ba3c719076ab4fb2a78f979bac7eb075e45436da8b0c55e"
+    },
+    {
+      "mutation": "false_full_corpus",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_selected_snapshot_keeps_every_row_and_declares_only_selection_complete",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.3244626660016365,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "a64e8ec8c69ad24f507d3f986ae165d52156c1f4badd7f03c090e0d36f0e12d9"
+    },
+    {
+      "mutation": "unbound_selection_origin",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_selected_snapshot_keeps_every_row_and_declares_only_selection_complete",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.2264738010126166,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "4ce7d463b83cfe67249318379568c827a63ff6cd3f473d8ce9ab091727a8c1a2"
+    },
+    {
+      "mutation": "missing_disk_reserve",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_disk_reserve_is_additional_to_the_estimated_output",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1556486029876396,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "5e06f90628353a9240a90bfedfd1e44e13b56683a2fd0ee39e2d926c435721bd"
+    },
+    {
+      "mutation": "decode_estimate",
+      "source": "src/mars_titan/data/candle_geometry_selection.py",
+      "test": "tests/data/test_candle_geometry_edition.py::test_storage_estimate_reads_only_metadata_and_does_not_create_output",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1460702450131066,
+      "original_sha256": "3f43ca25647ea7ae77bc98e408c6782152426b3fd7186ad829f07f92d2ef49de",
+      "log_sha256": "9cb71b8f7fc31dfe85e817bca77f6f68d81440c23369407cd35c59f33d2ecc9c"
+    }
+  ],
+  "killed": 23,
+  "total": 23,
+  "limits": [
+    "No es una exploración exhaustiva de mutantes ni garantía de ausencia de errores."
+  ]
+}

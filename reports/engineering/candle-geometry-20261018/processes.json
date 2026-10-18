@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "tool": "/usr/bin/time -v",
+  "scope": "uv_run_python_benchmark_including_startup_warmup_and_all_repetitions",
+  "runs": [
+    {"samples": 1, "wall_seconds": 0.75, "max_rss_kib": 120052},
+    {"samples": 64, "wall_seconds": 7.08, "max_rss_kib": 122472},
+    {"samples": 256, "wall_seconds": 22.92, "max_rss_kib": 123816}
+  ],
+  "limits": [
+    "Cada proceso mide ambas representaciones y no permite atribuir su pico RSS a una sola.",
+    "Los tiempos de proceso incluyen nueve repeticiones, calentamiento y arranque.",
+    "Había otras comprobaciones en el equipo y no se aisló el procesador."
+  ]
+}

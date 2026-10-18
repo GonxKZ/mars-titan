@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-18T18:20:35.526792+00:00",
+  "workload": {
+    "kind": "synthetic_technical_fixture",
+    "seed": 665,
+    "samples": 64,
+    "context_sessions": 64,
+    "absent_slots": 21,
+    "input_bytes": 135168,
+    "inputs_sha256": "21a10c88daef3a5ec96911a3cf020a494297771b4dbb8d3a4e16bf7fcf6236e4"
+  },
+  "geometry": {
+    "version": 1,
+    "context_sessions": 64,
+    "width": 512,
+    "channels": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "body",
+      "upper_wick",
+      "lower_wick",
+      "present"
+    ],
+    "layout": "time_major",
+    "normalization": "(price/max_high-min_low/max_high)/max(1-min_low/max_high,1e-9)",
+    "absent_fill": "positive_zero_all_channels",
+    "ohlc_ordering": "audit_tolerance_without_repair",
+    "content_hash": "sha256_model_nul_presence_bool64_observed_ohlc_little_endian_float64",
+    "computation": "numpy_float64_rounded_once_to_float32",
+    "device": "cpu",
+    "learned_parameters": 0,
+    "pretraining": "none",
+    "numpy": "2.5.3",
+    "code_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+    "price_validation_sha256": "4fcc8bd817fe1e385770a441ec947fe78f56902e6449d422a30af22923ba7cf4"
+  },
+  "output_bytes_per_row": 2048,
+  "optimizer_steps": 0,
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pillow": "12.3.0"
+  },
+  "repetitions": 9,
+  "warmup": 2,
+  "reference_passes_per_variant": 1,
+  "image_batch_size": 8,
+  "results": {
+    "geometry": {
+      "seconds": [
+        0.005915515008382499,
+        0.0052809930057264864,
+        0.005054527020547539,
+        0.0065870669786818326,
+        0.005127074022311717,
+        0.003724048030562699,
+        0.00352615601150319,
+        0.006275450985413045,
+        0.005253690993413329
+      ],
+      "batch_milliseconds": {
+        "p50": 5.253690993413329,
+        "p95": 6.462420581374317,
+        "p99": 6.5621376992203295
+      },
+      "mean_milliseconds_per_window": 0.08115368412594155,
+      "rows_per_second": 12181.911741714204,
+      "output_sha256": "35d6aeb45cce32d60380617ce1fd9dab5a002ad8c5ac76380d8796609c179f81",
+      "reproducible": true
+    },
+    "ink": {
+      "seconds": [
+        0.4753906729747541,
+        0.4683075940120034,
+        0.4442845369921997,
+        0.5420910409884527,
+        0.5335386320366524,
+        0.40442842699121684,
+        0.4173877469729632,
+        0.5469542189966887,
+        0.5403654290130362
+      ],
+      "batch_milliseconds": {
+        "p50": 475.3906729747541,
+        "p95": 545.0089477933943,
+        "p99": 546.5651647560298
+      },
+      "mean_milliseconds_per_window": 7.59157690794786,
+      "rows_per_second": 134.62611624144918,
+      "output_sha256": "964391ecc09d97be7ca73d8336e4ea0f7fee03a0b75b7f1cec874a50d4ace7d6",
+      "reproducible": true
+    }
+  },
+  "cuda": null,
+  "cuda_framework_peak_bytes": null,
+  "process_peak_rss_bytes": 125411328,
+  "measure_total_seconds": 6.031876677996479,
+  "benchmark_sha256": "8af6e96574464535fa98846105edc2444f8faa16dc98af61390cce340d33cec5",
+  "unmeasured": [
+    "energy",
+    "monetary_cost",
+    "transfer_bytes",
+    "predictive_quality"
+  ],
+  "limits": [
+    "Los percentiles corresponden al lote completo entre repeticiones, no a cada fila.",
+    "El pico RSS pertenece al proceso, no a cada representaci\u00f3n por separado.",
+    "La preparaci\u00f3n CUDA incluye el codificador congelado de texto, aunque aqu\u00ed no se usa.",
+    "La procedencia temporal de las ventanas requiere otra auditor\u00eda."
+  ]
+}
