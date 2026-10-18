@@ -29,7 +29,13 @@ def manifest():
                 final_test_start="2024-01-01",
                 selection=dict(max_epochs=30),
             ),
-            fold=dict(id="fold-000"),
+            fold=dict(
+                id="fold-000",
+                train=["2000-01-01", "2004-04-01"],
+                validation=["2004-04-01", "2004-10-01"],
+                calibration=["2004-10-01", "2005-01-01"],
+                evaluation=["2005-01-01", "2006-01-01"],
+            ),
         ),
         assets=[
             dict(
@@ -103,6 +109,34 @@ def test_step_limit_rejects_the_next_update_before_touching_cuda():
     budget.steps = configuration()["max_optimizer_steps"]
     with pytest.raises(RuntimeError, match="presupuesto"):
         budget.before(None, (), {})
+
+
+def test_a_reused_fold_name_does_not_authorize_later_dates():
+    source = manifest()
+    source["temporal_view"]["fold"]["evaluation"] = ["2023-01-01", "2024-01-01"]
+    with pytest.raises(ValueError):
+        project_view(source)
+
+
+def test_pt1_source_cannot_change_between_preparation_and_execution(tmp_path, monkeypatch):
+    import benchmarks.memory_microstudy as micro
+    from mars_titan.training import titans_walk_forward
+
+    source = tmp_path / "configs/evaluation/titans-memory-stability-comparison.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps(dict(arms=dict(titans_mac_online_pt1=dict(predictor_changes=dict()))))
+    )
+    monkeypatch.setattr(micro, "ROOT", tmp_path)
+
+    def unexpected(*args, **kwargs):
+        raise AssertionError("Se ha alcanzado el ajuste con una declaración PT1 cambiada")
+
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", unexpected)
+    with pytest.raises(ValueError, match="PT1"):
+        _execute(
+            tmp_path, dict(kind="titans", name="pt1", id="pt1-42", seed=42), Budget(configuration())
+        )
 
 
 def test_all_declared_jobs_reach_existing_entrypoints_with_valid_recipes(tmp_path, monkeypatch):

@@ -16,6 +16,14 @@ from mars_titan.training.learning_hold import require_learning_allowed
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/experiments/memory-microstudy-v1.json"
+STABILITY_SHA256 = "8df0cc06cdc1f207a141e9d574a85986de01eea531ce7c65cd9716c4f81a6b01"
+FOLD = dict(
+    id="fold-000",
+    train=["2000-01-01", "2004-04-01"],
+    validation=["2004-04-01", "2004-10-01"],
+    calibration=["2004-10-01", "2005-01-01"],
+    evaluation=["2005-01-01", "2006-01-01"],
+)
 
 
 def configuration():
@@ -67,7 +75,7 @@ def project_view(source):
         or protocol.get("market") != config["market"]
         or protocol.get("train_start") != "2000-01-01"
         or protocol.get("final_test_start") != "2024-01-01"
-        or temporal.get("fold", {}).get("id") != config["window"]
+        or temporal.get("fold") != FOLD
     ):
         raise ValueError("La fuente no es la ventana histórica de desarrollo declarada")
     eligible = [a for a in source["assets"] if a["market"] == "US" and a["counts"]["train"] > 0]
@@ -215,9 +223,14 @@ def _dispatch(work, job, budget):
         name = job["name"]
         changes = None
         if name in ("pt1", "pt1_init"):
-            declaration = json.loads(
-                (ROOT / "configs/evaluation/titans-memory-stability-comparison.json").read_text()
-            )
+            path = ROOT / "configs/evaluation/titans-memory-stability-comparison.json"
+            if (
+                path.is_symlink()
+                or path.stat().st_size > 64 * 1024
+                or sha256(path) != STABILITY_SHA256
+            ):
+                raise ValueError("La declaración PT1 no es la fijada para este microensayo")
+            declaration = json.loads(path.read_text())
             changes = declaration["arms"][f"titans_mac_online_{name}"]["predictor_changes"]
         recipe = "paper" if name == "mac_paper" else "core"
         variant = (
