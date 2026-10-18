@@ -154,3 +154,26 @@ def test_changed_implementation_invalidates_the_benchmark(monkeypatch):
     monkeypatch.setattr(benchmark(), "code_identity", lambda: next(values))
     with pytest.raises(ValueError, match="código cambió"):
         benchmark().measure(samples=1, repeats=1, warmup=0)
+
+
+@pytest.mark.parametrize("command", ["measure", "compare"])
+@pytest.mark.parametrize("kind", ["file", "dangling_link"])
+def test_cli_rejects_existing_artifacts_before_computing(tmp_path, monkeypatch, command, kind):
+    output = tmp_path / "existing.json"
+    if kind == "file":
+        output.write_text("resultado anterior")
+    else:
+        output.symlink_to(tmp_path / "missing.json")
+    arguments = [command, "--output", str(output)]
+    if command == "compare":
+        arguments += ["--previous", str(tmp_path / "old"), "--current", str(tmp_path / "new")]
+    monkeypatch.setattr(benchmark(), "measure", lambda **_: pytest.fail("No debe medir"))
+    monkeypatch.setattr(
+        benchmark(), "compare_representations", lambda *_: pytest.fail("No debe leer")
+    )
+    with pytest.raises(FileExistsError):
+        benchmark().main(arguments)
+    if kind == "file":
+        assert output.read_text() == "resultado anterior"
+    else:
+        assert output.is_symlink()

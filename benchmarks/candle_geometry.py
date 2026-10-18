@@ -278,6 +278,8 @@ def main(argv=None):
     comparison.add_argument("--current", type=Path, required=True)
     comparison.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.output.exists() or args.output.is_symlink():
+        raise FileExistsError("La comparación necesita un destino nuevo")
     if args.command == "measure":
         if args.device == "cuda":
             from mars_titan.data.embeddings import strict_fp32
