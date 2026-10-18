@@ -1,0 +1,90 @@
+{
+  "torch": "2.14.0+cu130",
+  "torch_commit": "08187d9e0fba026dc8217405802ab5381dc88d90",
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "shape": [
+    64,
+    6,
+    64
+  ],
+  "transpose_stride": [
+    64,
+    384,
+    1
+  ],
+  "projection": {
+    "original_True": {
+      "max_to_base": 0.0,
+      "max_to_fp64": 7.957680758785557e-07,
+      "operators": [
+        "aten::matmul",
+        "aten::clone",
+        "aten::copy_",
+        "aten::mm"
+      ]
+    },
+    "original_False": {
+      "max_to_base": 1.9073486328125e-06,
+      "max_to_fp64": 1.92987866309835e-06,
+      "operators": [
+        "aten::matmul",
+        "aten::bmm"
+      ]
+    },
+    "sequence_contiguous_True": {
+      "max_to_base": 0.0,
+      "max_to_fp64": 7.957680758785557e-07,
+      "operators": [
+        "aten::matmul",
+        "aten::mm"
+      ]
+    },
+    "sequence_contiguous_False": {
+      "max_to_base": 0.0,
+      "max_to_fp64": 7.957680758785557e-07,
+      "operators": [
+        "aten::matmul",
+        "aten::mm"
+      ]
+    }
+  },
+  "attention_max_difference_to_original_tracked": {
+    "original_True": 0.0,
+    "original_False": 2.682209014892578e-07,
+    "sequence_contiguous_True": 0.0,
+    "sequence_contiguous_False": 0.0
+  },
+  "seconds_per_call": {
+    "original_True": [
+      0.0001782189100049436,
+      0.00016403565998189152,
+      0.00016303698997944594,
+      0.0001600251195486635,
+      0.00017189864011015742
+    ],
+    "original_False": [
+      0.0002002517896471545,
+      0.00020074922998901455,
+      0.00019208334968425333,
+      0.00018840202945284547,
+      0.0001947777101304382
+    ],
+    "sequence_contiguous_True": [
+      0.00017634298012126238,
+      0.00017875820980407298,
+      0.0001666579896118492,
+      0.0001732722099404782,
+      0.0001717507600551471
+    ],
+    "sequence_contiguous_False": [
+      0.00017533177975565195,
+      0.0001839156000642106,
+      0.00017906950030010193,
+      0.00017576419981196522,
+      0.00016940044006332755
+    ]
+  },
+  "optimizer_steps": 0,
+  "script_sha256": "1f33ff9af85f0e98a1480837d419e1b681c7d54d1ec14cd5e6e8e650dacf135d",
+  "case_sha256": "99994bcdd0e8c700f4edcbf106a4df06df82770418c653fc1015ff3a23e5f6ed"
+}
