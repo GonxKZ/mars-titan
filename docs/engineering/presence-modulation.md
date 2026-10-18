@@ -1,6 +1,10 @@
 # Fusión condicionada por la presencia de modalidades (PT6)
 
-Estado a 10 de octubre de 2026: **implementada y comprobada sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide el piloto y la comparación. Tarea [#458](https://github.com/GonxKZ/mars-titan/issues/458). La motivación, la alternativa trivial y la predicción están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt6-fusión-condicionada-por-la-presencia-de-modalidades-línea-posterior). Es una línea posterior y no entra en la campaña A.
+Estado a 18 de octubre de 2026: implementada y comprobada. [#458](https://github.com/GonxKZ/mars-titan/issues/458) cerró el diseño y la declaración del contraste, no su resultado experimental. La motivación, la alternativa trivial y la predicción están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt6-fusión-condicionada-por-la-presencia-de-modalidades-línea-posterior). No entra en la campaña A v2.
+
+El [ensayo combinado del 18 de octubre](../../reports/research/combined-memory-20261018/README.md) ejecutó FiLM en CUDA con 64 instrumentos, dos épocas y evaluación en 2023. La celda con PT6 solo obtiene un MAE medio por sesión de 0,01422116 frente a 0,01482282 del núcleo, sobre tres semillas y todas las filas. La rama ancha quedó sin ejecutar. Esa media no es el contraste principal de esta tarea, que exige comparar FiLM con la rama ancha en filas con ausencias. La combinación PT5+PT6 reduce el error observado frente al núcleo, pero ninguna celda supera al residual cero.
+
+La combinación PT1+PT5+PT6 presenta [sensibilidad numérica al congelar los parámetros en FP32](../../reports/research/combined-memory-20261018/numerics.json), seguida en [#662](https://github.com/GonxKZ/mars-titan/issues/662). La identidad local de FiLM con todas las modalidades presentes no demuestra equivalencia entre las trayectorias numéricas completas.
 
 ## Qué hace
 
@@ -60,7 +64,7 @@ La [declaración](../../configs/evaluation/presence-modulation-comparison.json) 
 | FiLM | 3.200 | 0,227 s (0,92) | 0,113 s (1,02) | 0,238 s (1,11) |
 | Rama ancha | 3.112 | 0,250 s (1,01) | 0,120 s (1,08) | 0,232 s (1,08) |
 
-Son medianas, con el cociente frente al control entre paréntesis. La máquina tenía otras cargas (carga media entre 10 y 15) y los intervalos entre mínimo y máximo de los tres modelos se solapan, así que a esta escala PT6 no tiene un coste distinguible del control. Ninguna de las dos opciones cambia el estado por flujo (65.552 bytes). No se ha medido en `cuda:0`.
+Son medianas, con el cociente frente al control entre paréntesis. La máquina tenía otras cargas (carga media entre 10 y 15) y los intervalos entre mínimo y máximo de los tres modelos se solapan, así que a esta escala PT6 no tiene un coste distinguible del control. Ninguna de las dos opciones cambia el estado por flujo (65.552 bytes). Esta medida corresponde solo a CPU. El ensayo combinado registra el recorrido de FiLM en CUDA, con otras comprobaciones CPU concurrentes y sin ejecutar la rama ancha. Sigue sin haber una comparación de coste aislada entre las dos opciones en GPU.
 
 ## Desviaciones y límites
 
@@ -70,7 +74,7 @@ Son medianas, con el cociente frente al control entre paréntesis. La máquina t
 
 ## Pendiente sin medir
 
-- El efecto predictivo, el piloto y la regla de decisión, bloqueados por el aprendizaje.
+- La comparación con la rama ancha en filas con ausencias, el piloto de 2018 a 2020 y su regla de decisión. El ensayo combinado no completa ese contraste y la campaña sigue bloqueada.
 - La proporción de filas de validación de 2018 a 2020 con alguna ausencia en los activos del piloto, que decide la potencia de la regla. Debe contarse sin leer objetivos antes de lanzar el piloto.
 
 ## Referencias

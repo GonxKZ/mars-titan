@@ -1,6 +1,10 @@
 # Memoria multiescala sobre los pesos rápidos (PT5)
 
-Estado a 10 de octubre de 2026: **implementada y comprobada sin entrenar**. El resultado experimental está pendiente, porque el bloqueo de aprendizaje impide el piloto y la comparación. Tarea [#457](https://github.com/GonxKZ/mars-titan/issues/457). La motivación, la alternativa trivial y la predicción están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt5-memoria-multiescala-línea-posterior). Es una línea posterior y no entra en la campaña A.
+Estado a 18 de octubre de 2026: implementada y comprobada. [#457](https://github.com/GonxKZ/mars-titan/issues/457) cerró el diseño y la declaración del contraste, no su resultado experimental. La motivación, la alternativa trivial y la predicción están en las [propuestas posteriores a Titans](../research/post-titans-proposals.md#pt5-memoria-multiescala-línea-posterior). No entra en la campaña A v2.
+
+El [ensayo combinado del 18 de octubre](../../reports/research/combined-memory-20261018/README.md) ejecutó la cascada en CUDA con 64 instrumentos, dos épocas y evaluación en 2023. La celda con PT5 solo obtiene un MAE medio por sesión de 0,01369191 frente a 0,01482282 del núcleo, sobre tres semillas. El banco EMA quedó sin ejecutar, por lo que el ensayo no permite atribuir una ventaja al acoplamiento entre niveles ni aplicar la regla de esta tarea. Ninguna celda del factorial supera al residual cero.
+
+La combinación PT1+PT5+PT6 presenta [sensibilidad numérica al congelar los parámetros en FP32](../../reports/research/combined-memory-20261018/numerics.json), seguida en [#662](https://github.com/GonxKZ/mars-titan/issues/662). La contracción de la parte homogénea derivada abajo no garantiza estabilidad de toda la trayectoria de MAC ni igualdad entre rutas numéricas.
 
 ## Qué hace
 
@@ -83,7 +87,7 @@ La [declaración](../../configs/evaluation/multiscale-memory-comparison.json) fi
 | Cascada | 131.088 B | 0,508 s (1,77) | 0,161 s (1,14) | 0,490 s (1,68) |
 | Banco EMA | 131.088 B | 0,547 s (1,90) | 0,176 s (1,25) | 0,464 s (1,59) |
 
-Son medianas, con el cociente frente al control entre paréntesis, y con otras cargas en la máquina (carga media entre 12 y 14). Una medida anterior con el mismo script dio cocientes parecidos (1,89 y 1,92 en el forward y 1,67 y 1,70 en la inferencia). Las dos formas casi duplican el forward y la inferencia porque cada escritura avanza tres copias de cada matriz, y el banco además calcula su media en cada lectura. No añaden parámetros. No se ha optimizado ni medido en `cuda:0` porque PT5 no entra en la campaña. Si se lanza el piloto, el primer paso es perfilar `_advance_levels` y las comprobaciones de finitud del estado en `cuda:0`.
+Son medianas, con el cociente frente al control entre paréntesis, y con otras cargas en la máquina (carga media entre 12 y 14). Una medida anterior con el mismo script dio cocientes parecidos (1,89 y 1,92 en el forward y 1,67 y 1,70 en la inferencia). Las dos formas casi duplican el forward y la inferencia porque cada escritura avanza tres copias de cada matriz, y el banco además calcula su media en cada lectura. No añaden parámetros. Esta medida corresponde solo a CPU. El ensayo combinado registra costes del recorrido en CUDA, con otras comprobaciones CPU concurrentes y sin ejecutar el banco EMA. No constituye una comparación de coste aislada entre las dos formas. Antes del piloto propio siguen pendientes el perfil de `_advance_levels`, las comprobaciones de finitud y un presupuesto basado en ese recorrido.
 
 ## Desviaciones y límites
 
@@ -94,7 +98,7 @@ Son medianas, con el cociente frente al control entre paréntesis, y con otras c
 
 ## Pendiente sin medir
 
-- El efecto predictivo, el piloto y la regla de decisión, bloqueados por el aprendizaje.
+- La comparación con el banco EMA, el piloto de 2018 a 2020 y su regla de decisión. La estimación original de nueve horas debe recalcularse con una medida propia antes de ejecutar. El ensayo combinado no consume ni completa esa declaración, y la campaña sigue bloqueada.
 - El exponente de Lyapunov de la memoria completa con niveles, que el Jacobiano permite estimar sobre trayectorias reales.
 
 ## Referencias
