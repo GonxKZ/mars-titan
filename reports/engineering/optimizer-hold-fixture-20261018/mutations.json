@@ -1,0 +1,44 @@
+{
+  "source_sha256": "8e411668e0539e422bd00cfa7a64a466eb4fd058a8a5dfcba2d561e2be4cd7ce",
+  "scope": "tests/native/test_optimizer_steps_hold.py",
+  "baseline_passed": true,
+  "test": "test_a_missing_label_a_new_stepping_test_or_an_open_preset_is_reported",
+  "mutants": [
+    {
+      "id": "omit_benchmarks",
+      "detected": true,
+      "exception": "AssertionError",
+      "message": "cuda_lifetimes_gemm usa fuentes que no existen: ['/tmp/mars-titan-hold-mutation-hgx7gvv5/native/benchmarks/cuda_lifetimes.cpp']",
+      "old": "(\"cmake\", \"src\", \"include\", \"tests\", \"benchmarks\")",
+      "new": "(\"cmake\", \"src\", \"include\", \"tests\")"
+    },
+    {
+      "id": "invent_labels",
+      "detected": true,
+      "exception": "AssertionError",
+      "message": "",
+      "old": "return set(self.properties.get(test, {}).get(\"LABELS\", []))",
+      "new": "return {LABEL}"
+    },
+    {
+      "id": "ignore_propagated_steps",
+      "detected": true,
+      "exception": "AssertionError",
+      "message": "",
+      "old": "return bool(CALL.search(text)) or bool(OPTIMIZER.search(text) and STEP.search(text))",
+      "new": "return bool(OPTIMIZER.search(text) and STEP.search(text))"
+    },
+    {
+      "id": "invent_preset_exclusion",
+      "detected": true,
+      "exception": "AssertionError",
+      "message": "",
+      "old": "        return None\n\n    return {name: excluded(name)",
+      "new": "        return \"^optimizer-steps$\"\n\n    return {name: excluded(name)"
+    }
+  ],
+  "detected": 4,
+  "total": 4,
+  "wall_seconds": 0.5393751880037598,
+  "mechanism": "Copias en memoria del auditor y fixtures temporales. Sin alterar las fuentes ni ejecutar CTest, compiladores, GPU o pasos de optimizador."
+}
