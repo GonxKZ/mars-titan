@@ -1,0 +1,151 @@
+{
+  "recorded_at_utc": "2026-10-18T23:24:25.813544+00:00",
+  "source_sha256": "ff58eef575fa0fcd9ba1f543935a9a1fa4118300a1e96bd6f86b291672b9aef6",
+  "source_unchanged": true,
+  "mutants": [
+    {
+      "name": "same_targets",
+      "before": "scored = score_table(table, cohort)",
+      "after": "scored = score_table(table)",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_mismatched_rows_or_targets_are_not_silently_intersected[target]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "602c15b2aa0bd7a68c86a44801857370ff77b7a3b4179d89e6f2e5dc79964445",
+      "log_sha256": "edce06570bfd04ac038a587232b2ef080b4e4dea53d4591e1ad8137ed9580c7e"
+    },
+    {
+      "name": "primary_mae",
+      "before": "scores[f\"{name}:{route}\"] = scored.series(\"mae\")",
+      "after": "scores[f\"{name}:{route}\"] = scored.series(\"mse\")",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_common_assets_use_equal_sessions_and_correct_factorial_sign",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "fa7165b2e34a1c184b94390e8a75c879307f22fffee4f9126b010ab7a02975df",
+      "log_sha256": "87aa688b031f39f102cacf23b19441ee2a9f8f15ee76de97cf111543e59ff261"
+    },
+    {
+      "name": "delta_sign",
+      "before": "delta(a, b)",
+      "after": "delta(b, a)",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_common_assets_use_equal_sessions_and_correct_factorial_sign",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "f196b34176e39b32d444a2231aa7f45d5f71009851386b9abaf562de6c32475c",
+      "log_sha256": "fc2f61198d4e0a348fdab366b0be06ee8037e41c500944151c2e40dd5e03b624"
+    },
+    {
+      "name": "interaction_sign",
+      "before": "*(f\"{name}:{route}\" for name in STUDIES)",
+      "after": "*(f\"{name}:{route}\" for name in (STUDIES[0], STUDIES[1], STUDIES[3], STUDIES[2]))",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_common_assets_use_equal_sessions_and_correct_factorial_sign",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "da363ec055587814fc0c94907211aa7cc594a10688cd6ea27cd7deadcf1f4ce9",
+      "log_sha256": "f502b620e7c54488546a9a8338065ce1521d4f6ac8273ec7b3d10f16347444f5"
+    },
+    {
+      "name": "all_seeds",
+      "before": "if missing:\n        return dict(status=\"pending\", missing_seeds=missing)",
+      "after": "if missing:\n        seeds = [seed for seed in seeds if seed in records]",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_seed_average_waits_for_all_declared_seeds_without_adding_dates",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "7d29b6025c3128508494d4cae3063b83585d3a9b807a11756d6d0eb42306bad6",
+      "log_sha256": "2d99e4ec2a54c9e53e55b1180c23bbc974a3f0eacceca3fe1c9ba025c3eb1225"
+    },
+    {
+      "name": "seed_mean",
+      "before": "SessionSeries.average(items)",
+      "after": "items[0]",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_seed_average_waits_for_all_declared_seeds_without_adding_dates",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "2052f95b8a6c35316a8778be08e52118583346607f3012041cd9ccac14e67eca",
+      "log_sha256": "e1b985f18560e9003cecc2b64442677312f181ecfbe85aded8006611315089cc"
+    },
+    {
+      "name": "seed_days",
+      "before": "or not np.array_equal(item.session_period, reference.session_period)",
+      "after": "or False",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_seed_average_rejects_different_sessions_or_model_sets[day]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "8ba5bc4a57efea682b750f53e1cb06308736d3eba1ad36afd38fa059451cee4e",
+      "log_sha256": "1d1c5b57ab584f8088914bae8a6e8376588ba5878fe1cac1ad0e3f18836f6d9a"
+    },
+    {
+      "name": "selection_group",
+      "before": "or report[\"selection_group\"] != selection_group(work, job)",
+      "after": "or False",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_loading_rejects_changed_selection_phase_or_artifact[group]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "d83941786de3e2d2fc776584bce494cf5a405133722d67132e8fe981495d93f0",
+      "log_sha256": "26d3be19eab18dcc2793587cc4ac35334fbaa662aca38ec5c83dad52632ad745"
+    },
+    {
+      "name": "prepared_binding",
+      "before": "if phase[\"identity\"].get(\"prepared_sha256\") != sha256(work / \"prepared.json\"):",
+      "after": "if False:",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_loading_rejects_changed_selection_phase_or_artifact[preparation]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "3f85ea00faa620b8e0beed1cc31cd28e94ca60cfd1d52bbcd30387e67dc2c188",
+      "log_sha256": "d58ff2094863b4be1f165eb8f653c05092f178f900bcc074b07bb8909524d294"
+    },
+    {
+      "name": "confirmed_phase",
+      "before": "if confirmed != phase:",
+      "after": "if False:",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_loading_rejects_changed_selection_phase_or_artifact[phase]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "e5405f86b4a2a3d225146564c6d42f1a91e6c0a22306b962c3835e58d3325e22",
+      "log_sha256": "a2ae0ac6131a7016f6ab2dd3d6daadea103e5f09870b8d93579baf87790436b7"
+    },
+    {
+      "name": "prepared_row_count",
+      "before": "if len(table) != prepared[\"counts\"][\"fold-018\"][\"evaluation\"]:",
+      "after": "if False:",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_loading_rejects_changed_selection_phase_or_artifact[row_count]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "7f415f9c2d74ec087f2e9a64ff69f4699a5463e6c9feb581ea920642428e5d0d",
+      "log_sha256": "6a165753a2eb7f7bdf2f4ba6dad3caa7d11a49ed51573825409af58965947fb0"
+    },
+    {
+      "name": "common_code",
+      "before": "or record[\"code\"] != first[\"code\"]",
+      "after": "or False",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_four_preparations_must_share_the_declared_comparison[code]",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "4d2f697f6759ff2e701107b6a9bf724e0144494109a5f18892297e9eb44b979c",
+      "log_sha256": "17581f3ac753a4e38d259d5dbf2c433e6ab2c35a09c9ecfbdc0a35b1e6037d91"
+    },
+    {
+      "name": "learning_hold",
+      "before": "require_learning_allowed(\"el resumen emparejado de desarrollo de 64 y 256 activos\")",
+      "after": "pass",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_learning_hold_precedes_any_result_read",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "102fa0349372e2455b3a4d374e28bb291444874c4009fd0abb02bc79cc78c46e",
+      "log_sha256": "111e5a1d1dc4f3b50b6be41c32343ff3da5914315e2c9d4943790f88d38e9543"
+    },
+    {
+      "name": "zero_control",
+      "before": "for control in (\"k1\", \"k4cc\", \"zero\"):",
+      "after": "for control in (\"k1\", \"k4cc\"):",
+      "test": "tests/tooling/test_refinement_scaling_analysis.py::test_common_assets_use_equal_sessions_and_correct_factorial_sign",
+      "exit_code": 1,
+      "killed": true,
+      "mutant_sha256": "e237b4b1aa0d9fd182d5f050ffd92c39877780f9d0e7224cea65860635e0539e",
+      "log_sha256": "68ed987de11cdb897d5b1af8950ca03cc871f0a6b15bc38443af30b49274baa2"
+    }
+  ],
+  "total": 14,
+  "killed": 14,
+  "gpu_used": false,
+  "real_data": false
+}
