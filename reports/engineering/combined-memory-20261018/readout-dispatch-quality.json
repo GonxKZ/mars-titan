@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-18T17:33:51.059968",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [
+    "benchmarks/combined_memory_study.py"
+  ],
+  "totals": {
+    "statements": 231,
+    "covered_statements": 225,
+    "branches": 92,
+    "covered_branches": 86
+  },
+  "files": [
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "source_sha256": "d0596562d636c5cb42471a46358b4347eb0d225d454a7145d9079d7c2765f528",
+      "statements": 231,
+      "covered_statements": 225,
+      "branches": 92,
+      "covered_branches": 86
+    }
+  ],
+  "functions": [
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "jobs",
+      "start_line": 43,
+      "end_line": 121,
+      "cyclomatic_complexity": 18,
+      "statements": 40,
+      "covered_statements": 40,
+      "coverage_fraction": 1.0,
+      "branches": 34,
+      "covered_branches": 34,
+      "crap": 18.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "execute",
+      "start_line": 215,
+      "end_line": 315,
+      "cyclomatic_complexity": 15,
+      "statements": 34,
+      "covered_statements": 34,
+      "coverage_fraction": 1.0,
+      "branches": 14,
+      "covered_branches": 14,
+      "crap": 15.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "prepare",
+      "start_line": 124,
+      "end_line": 188,
+      "cyclomatic_complexity": 11,
+      "statements": 46,
+      "covered_statements": 45,
+      "coverage_fraction": 0.9782608695652174,
+      "branches": 16,
+      "covered_branches": 15,
+      "crap": 11.001243116626942
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "run_job",
+      "start_line": 318,
+      "end_line": 396,
+      "cyclomatic_complexity": 9,
+      "statements": 41,
+      "covered_statements": 38,
+      "coverage_fraction": 0.926829268292683,
+      "branches": 6,
+      "covered_branches": 3,
+      "crap": 9.031731982995023
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "main",
+      "start_line": 399,
+      "end_line": 415,
+      "cyclomatic_complexity": 8,
+      "statements": 15,
+      "covered_statements": 15,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 8.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "extensions",
+      "start_line": 32,
+      "end_line": 40,
+      "cyclomatic_complexity": 6,
+      "statements": 8,
+      "covered_statements": 7,
+      "coverage_fraction": 0.875,
+      "branches": 6,
+      "covered_branches": 5,
+      "crap": 6.0703125
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "verify_prepared",
+      "start_line": 191,
+      "end_line": 200,
+      "cyclomatic_complexity": 6,
+      "statements": 9,
+      "covered_statements": 9,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 6.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "remaining_seconds",
+      "start_line": 203,
+      "end_line": 212,
+      "cyclomatic_complexity": 6,
+      "statements": 6,
+      "covered_statements": 6,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 6.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "configuration",
+      "start_line": 28,
+      "end_line": 29,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "benchmarks/combined_memory_study.py",
+      "function": "jobs.add",
+      "start_line": 47,
+      "end_line": 52,
+      "cyclomatic_complexity": 1,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "37c10a721f1a7385414796e21161a996013272de82ebee011b5d9512a306f9e5",
+  "functions_measured": 10
+}

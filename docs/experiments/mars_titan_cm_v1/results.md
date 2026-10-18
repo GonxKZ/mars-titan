@@ -8,6 +8,10 @@ El [microensayo sobre la edición v3.1](../../../reports/research/memory-microst
 
 El efecto aislado de M y la interacción C/M son inconcluyentes en los intervalos temporales. C+M necesita 95,63 segundos contando núcleo y lector, frente a 71,19 de B. El recibo enlazado identifica las predicciones y conserva las ejecuciones, diferencias, incertidumbre y costes medidos. Las predicciones por muestra permanecen en los artefactos locales. Las noticias y fundamentales están ausentes en estas filas. El estudio completo, otras ventanas, repeticiones adicionales y el test final siguen pendientes.
 
+## Ronda combinada en 2023
+
+La [ronda combinada posterior del 18 de octubre](../../../reports/research/combined-memory-20261018/README.md) usa 64 instrumentos, dos épocas, evaluación en 2023 y 128 episodios. B, B+C, B+M y B+C+M obtienen MAE de 0,01295901, 0,01304591, 0,01279317 y 0,01290501. M reduce el error observado un 1,28 % frente a B. C+M lo reduce un 0,42 %, con un intervalo inconcluyente. Las cuatro variantes quedan por detrás del retorno residual cero, que obtiene 0,01231802. El coste del núcleo con C es 1.157,88 segundos, sumando sus dos intentos, frente a 210,84 de B. Esta identidad y cohorte no sustituyen las del microensayo anterior. El estudio confirmatorio permanece pendiente.
+
 ## Comprobaciones anteriores
 
 El 8 de octubre de 2026 se ejecutaron 77 pruebas CPU de los mecanismos aislados, sin construir modelos, optimizadores ni recorridos de aprendizaje. Pasaron los casos de matriz cero, normal, nilpotente y no normal, el contraejemplo alternante, las derivadas numéricas fuera de empates y los casos degenerados comprobados como finitud. Las pruebas también cubren entradas NaN/Inf, conversiones de precisión, presupuestos y conservación del RNG ajeno.
@@ -75,4 +79,4 @@ La [composición de M2 con el diagnóstico C](../../../reports/engineering/m2-lo
 
 Siete mutaciones temporales de la sesión financiera hicieron fallar la prueba. Omitían las mediciones, alteraban una emisión, seleccionaban flujos por bloque físico, consumían el RNG de Torch o de NumPy, construían un optimizador o modificaban las claves pendientes. La versión anterior de la prueba no detectaba el consumo de NumPy ni el optimizador. La validación de producción rechaza por sí misma las claves pendientes modificadas, por lo que esa mutación no acredita la nueva comparación del banco. No se ejecutaron pasos de optimizador ni se estimaron etiquetas. La penalización durante aprendizaje, CUDA de esta combinación y su efecto predictivo siguen sin comprobarse.
 
-No se ha reproducido la prueba formal de los manuscritos auditados ni su algoritmo de aproximación k-median. No hay aprendizaje, evaluación financiera, resultado de validación ni evidencia de estabilidad de MARS-TITAN atribuible a estas funciones.
+No se ha reproducido la prueba formal de los manuscritos auditados ni su algoritmo de aproximación k-median. Las comprobaciones de las funciones aisladas no acreditan utilidad predictiva ni estabilidad global. Los resultados de aprendizaje de las composiciones están limitados a las rondas exploratorias identificadas al principio de este documento.

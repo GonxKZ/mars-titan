@@ -1,0 +1,251 @@
+{
+  "tool": "Mutación textual dirigida con pytest",
+  "source": "benchmarks/combined_memory_numerics.py",
+  "source_sha256": "84d2d465832a5eaa2e69281dd68e7ea803cb5d131c8ee53e1335348c447c9869",
+  "baseline": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_numerics.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "039e3d2f842f1e60a51c3f3dedc005309313d1650cff936a06d2e56ca4367743"
+  },
+  "restored": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "-m",
+      "not cuda",
+      "tests/tooling/test_combined_memory_numerics.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "e8e49bc507eb2cc95c8cce854bb23f715053314d4ce621e64c088fee34b8f4ec"
+  },
+  "mutants": [
+    {
+      "name": "retain_shared_projection_graph",
+      "old": "context = torch.no_grad()",
+      "new": "context = torch.enable_grad()",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "9d095ce6a93bb4b68191cb6fd35ad755f55ee5e0b70de28ecf08e0956c56bdab"
+    },
+    {
+      "name": "leak_hooks",
+      "old": "handle.remove()",
+      "new": "pass",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "972c659e198b747f2f71fec40d9d3827d5c2004f61fee812ec318b9392a02760"
+    },
+    {
+      "name": "lose_exception_gradient_scope",
+      "old": "always_call=True",
+      "new": "always_call=False",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "ccaf6ddb0de1d40d77665c4953e52e217e2eed547d6e93015c81d3959e7bd04f"
+    },
+    {
+      "name": "admit_training_scope",
+      "old": "if torch.is_grad_enabled() or model.training:",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "ab9112d111813f8f1a4371cc05a83b3f54d8117f2c0b8e11bdf1651a8870ebba"
+    },
+    {
+      "name": "ignore_hold",
+      "old": "require_learning_allowed(\"el diagnóstico numérico acotado\")",
+      "new": "pass",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "396c0bb796c8f260a9bf7a818b5916e05b6cee499824b001081bf3357bf18e70"
+    },
+    {
+      "name": "admit_unknown_parent",
+      "old": "if route not in ROUTES or parent_id not in (\"fold-018/cell0-42\", \"fold-018/cell7-42\"):",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "601b80a19353075ffe8351376b96fe2982aaab14aaf9575c2698473146021bd4"
+    },
+    {
+      "name": "force_grad_flags",
+      "old": "model.requires_grad_(not route.endswith(\"_frozen\"))",
+      "new": "model.requires_grad_(True)",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "20c9ad7bfeff56e23872cf62567c29013456d2ba52032a4e74533d84699047e2"
+    },
+    {
+      "name": "ignore_double",
+      "old": "model.double()",
+      "new": "model.float()",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "167370175e718319e6355e470d1e8ab0dddab33def509e3def73d324b3715fcd"
+    },
+    {
+      "name": "ignore_parameter_change",
+      "old": "before != model._parameter_digest()",
+      "new": "False",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "a565bf1e493c9228163e5ef812767076a1ff4e5ac3ae9de07a4c38208ac09327"
+    },
+    {
+      "name": "ignore_shared_gradients",
+      "old": "p.grad is not None for p in model.parameters()",
+      "new": "False for p in model.parameters()",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "e04cd334debb3af81ef9268abcc8cf398138f229516c2bf738d51ba3c0bdcd13"
+    },
+    {
+      "name": "ignore_row_identity",
+      "old": "if not table[\"sample_id\"].equals(original[\"sample_id\"]):",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "27e49a5ea4edd35b604d3bce0e096bb8bab3d7cad21667140a8ae74e4c54e035"
+    },
+    {
+      "name": "allow_optimizer_steps",
+      "old": "register_optimizer_step_pre_hook(forbid_optimizer_steps)",
+      "new": "register_optimizer_step_pre_hook(lambda *_: None)",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "-m",
+        "not cuda",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "76c4266aa5a7a1d7db87190e9a3de68ddb6d909d52620ebc7654a27ecfb99097"
+    }
+  ]
+}

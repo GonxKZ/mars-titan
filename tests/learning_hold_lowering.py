@@ -330,6 +330,19 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/tooling/test_combined_memory_numerics.py": (
+        4,
+        "comprueba rutas, publicación y rechazos con corpus e inferencia simulados, "
+        "sin ajustes y con un gancho que impide cualquier paso de optimizador",
+    ),
+    "tests/tooling/test_combined_memory_queue.py": (
+        5,
+        "comprueba pausas, plazo y cierre de procesos con trabajos y ejecutores simulados",
+    ),
+    "tests/tooling/test_combined_memory_study.py": (
+        2,
+        "comprueba el catálogo y sus argumentos con ejecutores sustituidos antes del ajuste",
+    ),
     "tests/learning_traces/test_native_policy_traces.py": (
         1,
         "la etapa de políticas se detiene al faltar la capacidad de trazas o las vistas, sin "
@@ -362,7 +375,7 @@ DOUBLES = {
     "tests/training/test_external_shared_cuda.py": (1, _ESTIMATOR),
     "tests/training/test_joint_stop_trainers.py": (4, _COUNTED),
     "tests/training/test_mars_titan_correction.py": (4, _RECORDER),
-    "tests/training/test_mars_titan_run.py": (8, _RECORDER),
+    "tests/training/test_mars_titan_run.py": (9, _RECORDER),
     "tests/training/test_mars_titan_walk_forward.py": (3, _RECORDER),
     "tests/training/test_masked_campaign.py": (1, _CAMPAIGN),
     "tests/training/test_masked_campaign_joint.py": (1, _CAMPAIGN),
@@ -382,6 +395,11 @@ DOUBLES = {
 }
 REDIRECTIONS = {
     "tests/conftest.py": (3, _FIXTURES),
+    "tests/tooling/test_combined_memory_numerics.py": (1, _CLOSES),
+    "tests/tooling/test_combined_memory_queue.py": (1, _CLOSES),
+    "tests/tooling/test_combined_memory_study.py": (1, _CLOSES),
+    "tests/tooling/test_memory_microstudy.py": (1, _CLOSES),
+    "tests/tooling/test_memory_microstudy_analysis.py": (1, _CLOSES),
     "tests/evaluation/test_final_test_opening.py": (1, _OPENING),
     "tests/native/test_optimizer_steps_hold.py": (1, _CLOSES),
     "tests/posttraining/campaign_fixture.py": (1, _CAMPAIGN),

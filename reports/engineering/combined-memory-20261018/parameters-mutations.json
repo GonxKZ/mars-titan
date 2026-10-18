@@ -1,0 +1,143 @@
+{
+  "tool": "Mutación textual dirigida con pytest",
+  "source": "benchmarks/combined_memory_parameters.py",
+  "source_sha256": "ffd140c8f5d445f6856e3e798e8179cc355c82e877c87d9a0af4108db63f2537",
+  "baseline": {
+    "exit_code": 0,
+    "log_sha256": "549382ad279450af426155555f4393fbda60e916b629a27e924475be124aeae4",
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/tooling/test_combined_memory_parameters.py"
+    ]
+  },
+  "restored": {
+    "exit_code": 0,
+    "log_sha256": "1da86f31fc86a3d17f9384a446f9a48244186e9d2603f2ca69b7c6c681a19768",
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/tooling/test_combined_memory_parameters.py"
+    ]
+  },
+  "mutants": [
+    {
+      "name": "omit_inert",
+      "old": "names = trained + frozen + inert",
+      "new": "names = trained + frozen",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "7ed92c47e1071826a2158d196fc8c2f976222f1bc2a5e8eb31a27303d50a99ec",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "assume_fp32",
+      "old": "state[name].numel() * state[name].element_size()",
+      "new": "state[name].numel() * 4",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "0748495716b29e9338f2441aaffdfa20d593a0030b1f8ad201cad0dadde2da3b",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "allow_duplicate_roles",
+      "old": "len(names) != len(set(names)) or any(",
+      "new": "False or any(",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "055c28cabcec98c02b3701f3a8fe0fe3c36186df2e1cb33016c5f8678d38eb67",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "omit_parent_size",
+      "old": "count += models[job[\"parent\"]][f\"inference_registered_parameter_{unit}\"]",
+      "new": "count += 0",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "47b27cff3ca06b535160115b427a1eeefb2b12da1f4f4598ba9c563f1084f1c6",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "double_count_adapter_parent",
+      "old": "job[\"kind\"] in (\"readout\", \"cm_readout\")",
+      "new": "job[\"kind\"] in (\"readout\", \"cm_readout\", \"post\")",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "bb5750019bc4a1a78442e02a8fb2e48253a40965426d6c10209bfebfbebdae35",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "use_latest_instead_of_selected",
+      "old": "selection=\"best\"",
+      "new": "selection=\"latest\"",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "74ae2f8853c2e9141d9c3e7b49f219fa85acb184cceffa890d3e97dffe2aeae2",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    },
+    {
+      "name": "ignore_final_reserve",
+      "old": "run.get(\"final_test_opened\") is not False",
+      "new": "False",
+      "outcome": "detected",
+      "exit_code": 1,
+      "log_sha256": "0e408d6cab52fe61aa469d896fbef5813c73ac9a43e63fbb81ba14a7f35b7a5b",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/tooling/test_combined_memory_parameters.py"
+      ]
+    }
+  ]
+}

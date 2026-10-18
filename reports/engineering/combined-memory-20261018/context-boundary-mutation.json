@@ -1,0 +1,20 @@
+{
+  "name": "admit_context_without_session_lifecycle",
+  "source": "src/mars_titan/training/mars_titan_walk_forward.py",
+  "source_sha256": "6d6f2460146515a75e6ea2a704ba672c2a61f042aefd50baad26aa08c03f7953",
+  "old": "allow_context or options.get(\"session_context\") is None",
+  "new": "True",
+  "command": [
+    "uv",
+    "run",
+    "--no-sync",
+    "pytest",
+    "-q",
+    "tests/training/test_mars_titan_walk_forward.py::test_context_parent_requires_a_consumer_with_session_lifecycle"
+  ],
+  "baseline_log_sha256": "392b582e7c6e6f786f0689272be7632a2d498c4c99ce93770c01f072300a79fe",
+  "mutation_log_sha256": "6ab06ee7f15b486615bb6c7c52ca86f93971e259521353aa3d830dcf7d46df56",
+  "restored_log_sha256": "a447b0ef6625e5f28651aff634c1379f233d8e6c96a9490bcd361bc624dc0b5f",
+  "detected": true,
+  "source_restored": true
+}

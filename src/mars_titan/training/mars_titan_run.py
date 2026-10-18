@@ -47,7 +47,11 @@ from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
-from mars_titan.models.titans.episodic_readout import EpisodicReadout, apply_episodic_readout
+from mars_titan.models.titans.episodic_readout import (
+    REFINEMENT_INITIALIZATIONS,
+    EpisodicReadout,
+    apply_episodic_readout,
+)
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
     DecisionBatch,
@@ -134,6 +138,7 @@ class ReadoutRecipe:
     # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
     # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
     weight_decay_anchor: str | None = None
+    refinement_initialization: str = "pytorch_default"
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -164,6 +169,8 @@ class ReadoutRecipe:
             or self.checkpoint_seconds <= 0
             or not valid_precision(self.precision)
             or self.weight_decay_anchor not in ANCHORS
+            or type(self.refinement_initialization) is not str
+            or self.refinement_initialization not in REFINEMENT_INITIALIZATIONS
             or (
                 clip is not None
                 and (type(clip) not in (int, float) or not math.isfinite(clip) or clip <= 0)
@@ -180,6 +187,8 @@ class ReadoutRecipe:
             fields.pop("precision")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
+        if fields["refinement_initialization"] == "pytorch_default":
+            fields.pop("refinement_initialization")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -336,6 +345,7 @@ class _Pass:
     """Estado de un recorrido. Se persisten flujos, pendientes, banco, admisión y errores."""
 
     flows: FlowStates = field(default_factory=FlowStates)
+    parent_context: object = None
     bank: object = None
     staged: list = field(default_factory=list)
     pending: dict = field(default_factory=dict)
@@ -380,6 +390,7 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
+        self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
@@ -410,6 +421,7 @@ class MarsTitanInference:
             or readout.config.neighbors != recipe.neighbors
             or readout.config.temperature != recipe.temperature
             or readout.config.max_working_bytes != recipe.max_working_bytes
+            or readout.config.refinement_initialization != recipe.refinement_initialization
             or recipe.block_rows > min(config.max_batch, readout.config.max_batch)
         ):
             raise ValueError("El lector no corresponde al padre o a la receta declarada")
@@ -451,7 +463,10 @@ class MarsTitanInference:
         """Preparar el bloque desde el estado previo de sus flujos y avanzar su memoria."""
         state = run.flows.gather(batch.flow_ids)
         with torch.no_grad():
-            prepared = self.predictor.prepare(batch, state, **plan)
+            context = dict(context=run.parent_context) if self.uses_context else {}
+            prepared = self.predictor.prepare(batch, state, **plan, **context)
+        if self.uses_context:
+            run.parent_context = prepared.next_context
         run.flows.put(prepared.next_state)
         return prepared
 
@@ -514,6 +529,8 @@ class MarsTitanInference:
                 validated = blocks.result()
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        if self.uses_context and run.parent_context is None:
+            run.parent_context = predictor.initial_context()
         # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del
         # evento se resuelven juntas al final, antes de volver al recorrido, que es el único
         # que admite episodios, aplica pasos o guarda checkpoints.
@@ -594,6 +611,10 @@ class MarsTitanInference:
                         )
                 run.counters["predictions"] += size
                 run.counters["refinements"] += size * self.readout.config.refinements
+            if self.uses_context:
+                # Todos los bloques leen el mismo pasado. La escritura llega tras emitirlos.
+                with torch.no_grad():
+                    run.parent_context = predictor.commit_context(run.parent_context)
         if event.inputs and not warmup:
             run.instants += 1
 
@@ -677,6 +698,7 @@ class MarsTitanInference:
     def _close(run):
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
+        run.parent_context = None
         run.pending.clear()
         run.blocks.clear()
         run.used.clear()
@@ -1066,6 +1088,15 @@ class ReadoutTrainer(MarsTitanInference):
             errors=[[m, t, *values] for (m, t), values in sorted(run.errors.sessions.items())],
             counters=dict(run.counters),
             next_block=run.next_block,
+            **(
+                dict(
+                    parent_context=None
+                    if run.parent_context is None
+                    else predictor.export_context(run.parent_context)
+                )
+                if self.uses_context
+                else {}
+            ),
         )
 
     def _features(self, entries):
@@ -1110,7 +1141,13 @@ class ReadoutTrainer(MarsTitanInference):
         return entries
 
     def _restore(self, payload):
+        if self.uses_context != ("parent_context" in payload):
+            raise ValueError("El estado guardado no conserva el contexto declarado del padre")
+        if self.uses_context and payload["fast"] and payload["parent_context"] is None:
+            raise ValueError("El contexto del padre falta en un recorrido ya iniciado")
         run = self._new_pass("train")
+        if self.uses_context and payload["parent_context"] is not None:
+            run.parent_context = self.predictor.restore_context(payload["parent_context"])
         if (payload["bank"] is None) != (run.bank is None):
             raise ValueError("El estado del banco no corresponde a la escritura declarada")
         if run.bank is not None:

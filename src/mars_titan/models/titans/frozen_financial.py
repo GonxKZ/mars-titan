@@ -25,6 +25,8 @@ _TITANS_MODULES = (
     "financial",
     "financial_inputs",
     "financial_blocks",
+    "presence_modulation",
+    "session_context",
     "local_control",
     "episodic_readout",
     "episodic_snapshot",
@@ -218,6 +220,8 @@ class FrozenFinancialConsumer:
             readout is not None and type(readout) is not EpisodicReadout
         ):
             raise ValueError("El consumidor necesita el predictor y lector identificados")
+        if predictor.config.session_context is not None:
+            raise ValueError("Este consumidor no gestiona el ciclo de sesión del contexto PT4")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

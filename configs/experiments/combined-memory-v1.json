@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "combined_memory_development_study",
+  "folds": {"fold-018": 64, "fold-015": 16},
+  "seeds": [42, 43, 44],
+  "epochs": 2,
+  "search_case": "lr1e-3",
+  "bank_capacity": 128,
+  "precision": "fp32_strict",
+  "accumulation_rows": null,
+  "max_job_seconds": 600,
+  "max_total_seconds": 14400,
+  "reserved_technical_seconds": 1800,
+  "max_optimizer_steps": 4000,
+  "final_test_access": false,
+  "bootstrap": {"block_length": 16, "replicates": 2000, "seed": 20261018, "confidence": 0.95},
+  "sensitivity_block_lengths": [8, 32]
+}
