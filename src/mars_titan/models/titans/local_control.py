@@ -59,7 +59,7 @@ class MACProjectionConfig:
             raise ValueError("Solo penalty admite y exige un peso positivo")
 
     def identity(self):
-        return dict(
+        result = dict(
             **asdict(self),
             schema_version=1,
             state_layout="weights_then_momentum_row_major",
@@ -77,6 +77,9 @@ class MACProjectionConfig:
             budget_version=2,
             metadata_budget="python_objects_and_json_reserve_v1",
         )
+        if self.mode != "disabled":
+            result.update(schema_version=2, jvp_backward_execution="calling_thread_v1")
+        return result
 
 
 @dataclass(frozen=True)
@@ -340,9 +343,11 @@ class MACProjectionControl(nn.Module):
         transition = fast_state_transition(mac, token, state)
         columns = []
         for direction in self.basis.T:
-            _, product = torch.autograd.functional.jvp(
-                transition, point, direction, create_graph=differentiable
-            )
+            # El doble backward construye su grafo en el hilo llamador.
+            with torch.autograd.set_multithreading_enabled(False):
+                _, product = torch.autograd.functional.jvp(
+                    transition, point, direction, create_graph=differentiable
+                )
             columns.append(self.basis.T @ product)
         return torch.stack(columns, dim=1)
 

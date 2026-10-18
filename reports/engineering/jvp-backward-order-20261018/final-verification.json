@@ -1,0 +1,708 @@
+{
+  "schema_version": 1,
+  "kind": "final_jvp_cuda_verification",
+  "checks": [
+    {
+      "recorded_at_utc": "2026-10-18T22:32:46.435259+00:00",
+      "commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+      "node": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+      "script_sha256": "c71212c7a65744e99c88dac646ed9ad53ea48cf58ba68ca4326318e5280d86f6",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "hardware": "name, driver_version, memory.total [MiB], memory.free [MiB]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7346 MiB\n",
+      "status": "completed",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "returncode": 0,
+      "numerics_unchanged": true,
+      "autograd_restored": true,
+      "seconds": 15.681232877017464,
+      "receipt_sha256": "7bae8377d44e80962ecf65cd9c8333de9e36ce4afd31bec11caaff0c67d09681",
+      "junit_sha256": "dec881461640fa5a008cf55a47ceee4dad8036282fea7630aca732f21964c42a",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "test_names": [
+        "test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-False-False-dtype0]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-False-False-dtype1]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-False-True-dtype0]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-False-True-dtype1]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-True-False-dtype0]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-True-False-dtype1]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-True-True-dtype0]",
+        "test_jvp_runs_in_calling_thread_and_restores_autograd_mode[cuda:0-True-True-dtype1]",
+        "test_failed_jvp_restores_the_callers_autograd_mode[cuda:0-False]",
+        "test_failed_jvp_restores_the_callers_autograd_mode[cuda:0-True]"
+      ],
+      "admission": {
+        "device": "cuda:0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "free_vram_bytes": 7563116544,
+        "max_vram_bytes": 6442450944,
+        "max_ram_bytes": 12884901888,
+        "reserved_margin_bytes": 1073741824
+      }
+    },
+    {
+      "fixture_dtype": "torch.float32",
+      "recorded_at_utc": "2026-10-18T22:36:02.249569+00:00",
+      "commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+      "node": "tests/training/test_nvtx_parity.py::test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]",
+      "script_sha256": "33c465cfbabca659520e5ed88fb79e4df17013188583999917f6b9490a997c09",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "hardware": "name, driver_version, memory.total [MiB], memory.free [MiB]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7346 MiB\n",
+      "status": "completed",
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "returncode": 0,
+      "numerics_unchanged": true,
+      "autograd_restored": true,
+      "seconds": 15.831563387997448,
+      "receipt_sha256": "fe31d3f97194bb18696b247cb9ffa9d24906e948a9cd9459fc4067da01b2e7a0",
+      "junit_sha256": "3561609429d12b7a35804880bc1a0a8a2e6d3b745403fc5c7c930c2b2de71fe0",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "test_names": [
+        "test_titans_pass_is_bit_identical_with_ranges[penalty-2-cuda:0]"
+      ],
+      "admission": {
+        "device": "cuda:0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "free_vram_bytes": 7563116544,
+        "max_vram_bytes": 6442450944,
+        "max_ram_bytes": 12884901888,
+        "reserved_margin_bytes": 1073741824
+      }
+    }
+  ],
+  "benchmarks": [
+    {
+      "recorded_at_utc": "2026-10-18T22:33:04.651046+00:00",
+      "commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+      "source_sha256": {
+        "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+        "src/mars_titan/models/titans/financial.py": "502831730718685dff7cd124d35c193f9f472f7ea39c72dc9863eaa93971efc1",
+        "src/mars_titan/models/titans/mac.py": "0795648891a35625bcc9b1b1fa3dfdec47bd0cdff4bbcca9b711698c08fb4b38",
+        "src/mars_titan/models/titans/transition_jacobian.py": "e42c562b1c9a21c7d321da242ab681046ac1b75c1e7696bfa94dae2e5b3637c3",
+        "src/mars_titan/training/financial_run.py": "a1fb055377ce517a9ae8f33ca8763152519b9773be2df94d08a09c30bf24072e",
+        "tests/training/test_nvtx_parity.py": "c79a14ac41c35b74ee2a33e22f41d0017a90fbfee37529e90875beab4c9ce157",
+        "tests/training/test_financial_run.py": "9ec3f76ae730f678de8a75d8c12c1e535020d20e5259eba37b5f31b14a213ba2"
+      },
+      "script_sha256": "d9f1d61da99c7fe9e357f1d042e29ee8241b40e7e95205256a3a5bac6dc59903",
+      "reference_commit": "175f9890e9dc8e7f306d0318ab0b4e671646eac6",
+      "reference_operator_sha256": "f0d72e65996f48ac3acd883ec0505e9d6e6068d918b82d5975c6204b6f4918d7",
+      "dtype": "float32",
+      "device": "cuda:0",
+      "nvidia_smi": "name, driver_version, memory.total [MiB], memory.free [MiB]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7349 MiB\n",
+      "warmup_per_policy": 1,
+      "repetitions_per_policy": 4,
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "historical_operator_or_current_operator_on_the_same_final_runtime",
+      "timing_scope": "ChronologicalTrainer.run con validación, auditoría y checkpoints, sin crear datos o modelo",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "admission": {
+        "device": "cuda:0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "free_vram_bytes": 7563116544,
+        "max_vram_bytes": 6442450944,
+        "max_ram_bytes": 12884901888,
+        "reserved_margin_bytes": 1073741824
+      },
+      "audit_equal": true,
+      "history_equal": true,
+      "parameters_equal": true,
+      "numerics_unchanged": true,
+      "summary": {
+        "workers": {
+          "seconds": [
+            6.857900185044855,
+            7.201918161998037,
+            6.123564257984981,
+            5.248675632989034
+          ],
+          "median_seconds": 6.490732221514918,
+          "p95_seconds": 7.150315465455059,
+          "minimum_seconds": 5.248675632989034,
+          "maximum_seconds": 7.201918161998037
+        },
+        "calling": {
+          "seconds": [
+            5.960309821006376,
+            5.107672750018537,
+            6.381261786038522,
+            5.516387101029977
+          ],
+          "median_seconds": 5.738348461018177,
+          "p95_seconds": 6.3181189912837,
+          "minimum_seconds": 5.107672750018537,
+          "maximum_seconds": 6.381261786038522
+        }
+      },
+      "peak_allocated_bytes": 89610240,
+      "peak_reserved_bytes": 102760448,
+      "source_unchanged": true,
+      "autograd_restored": true,
+      "receipt_sha256": "00c586be89171a3ad68d8412a03bc5e00e87ed2f55c2c6343ba0ae8105e706e8",
+      "cases": [
+        {
+          "index": 0,
+          "policy": "workers",
+          "measured": false,
+          "seconds": 7.857925098040141,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 1,
+          "policy": "calling",
+          "measured": false,
+          "seconds": 5.250443027005531,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 2,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 6.857900185044855,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 30,
+            "maximum_absolute_difference": 3.637978807091713e-12,
+            "maximum_symmetric_relative_difference": 0.0010503165190531123,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 3,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 5.960309821006376,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 4,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 5.107672750018537,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 5,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 7.201918161998037,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 30,
+            "maximum_absolute_difference": 3.637978807091713e-12,
+            "maximum_symmetric_relative_difference": 0.0010503165190531123,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 6,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 6.123564257984981,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 30,
+            "maximum_absolute_difference": 3.637978807091713e-12,
+            "maximum_symmetric_relative_difference": 0.0010503165190531123,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 7,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 6.381261786038522,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 8,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 5.516387101029977,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 9,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 5.248675632989034,
+          "parameter_sha256": "d65679aa32b6459cbbfa09ac6f6c9386c10b098387dd4325ce070acecbc7f799",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 30,
+            "maximum_absolute_difference": 3.637978807091713e-12,
+            "maximum_symmetric_relative_difference": 0.0010503165190531123,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        }
+      ],
+      "total_child_process_seconds": 65.57684919703752,
+      "process_time_source_sha256": "754c9327a1f3ed80d23999fb6fa79cdf3d0f7c9614f663dba7c98f8d8f90bed4"
+    },
+    {
+      "recorded_at_utc": "2026-10-18T22:34:10.691393+00:00",
+      "commit": "54fa0ed6fa0253f2bd6b361a5517abeb98920998",
+      "source_sha256": {
+        "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+        "src/mars_titan/models/titans/financial.py": "502831730718685dff7cd124d35c193f9f472f7ea39c72dc9863eaa93971efc1",
+        "src/mars_titan/models/titans/mac.py": "0795648891a35625bcc9b1b1fa3dfdec47bd0cdff4bbcca9b711698c08fb4b38",
+        "src/mars_titan/models/titans/transition_jacobian.py": "e42c562b1c9a21c7d321da242ab681046ac1b75c1e7696bfa94dae2e5b3637c3",
+        "src/mars_titan/training/financial_run.py": "a1fb055377ce517a9ae8f33ca8763152519b9773be2df94d08a09c30bf24072e",
+        "tests/training/test_nvtx_parity.py": "c79a14ac41c35b74ee2a33e22f41d0017a90fbfee37529e90875beab4c9ce157",
+        "tests/training/test_financial_run.py": "9ec3f76ae730f678de8a75d8c12c1e535020d20e5259eba37b5f31b14a213ba2"
+      },
+      "script_sha256": "d9f1d61da99c7fe9e357f1d042e29ee8241b40e7e95205256a3a5bac6dc59903",
+      "reference_commit": "175f9890e9dc8e7f306d0318ab0b4e671646eac6",
+      "reference_operator_sha256": "f0d72e65996f48ac3acd883ec0505e9d6e6068d918b82d5975c6204b6f4918d7",
+      "dtype": "float64",
+      "device": "cuda:0",
+      "nvidia_smi": "name, driver_version, memory.total [MiB], memory.free [MiB]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7349 MiB\n",
+      "warmup_per_policy": 1,
+      "repetitions_per_policy": 4,
+      "optimizer_steps": 0,
+      "financial_data_used": false,
+      "status": "completed",
+      "intervention": "historical_operator_or_current_operator_on_the_same_final_runtime",
+      "timing_scope": "ChronologicalTrainer.run con validación, auditoría y checkpoints, sin crear datos o modelo",
+      "numerics": {
+        "torch_version": "2.14.0+cu130",
+        "matmul_precision": "highest",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "deterministic": false,
+        "deterministic_warn_only": false,
+        "sdpa_math": true,
+        "sdpa_flash": true,
+        "sdpa_efficient": true,
+        "sdpa_cudnn": true,
+        "mha_fastpath": false,
+        "cpu_threads": 2,
+        "interop_threads": 8,
+        "default_dtype": "torch.float32",
+        "cublas_workspace": ":4096:8"
+      },
+      "admission": {
+        "device": "cuda:0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "free_vram_bytes": 7563051008,
+        "max_vram_bytes": 6442450944,
+        "max_ram_bytes": 12884901888,
+        "reserved_margin_bytes": 1073741824
+      },
+      "audit_equal": true,
+      "history_equal": true,
+      "parameters_equal": true,
+      "numerics_unchanged": true,
+      "summary": {
+        "workers": {
+          "seconds": [
+            7.385904569993727,
+            6.787835506955162,
+            6.243320254026912,
+            6.254527053970378
+          ],
+          "median_seconds": 6.52118128046277,
+          "p95_seconds": 7.296194210537942,
+          "minimum_seconds": 6.243320254026912,
+          "maximum_seconds": 7.385904569993727
+        },
+        "calling": {
+          "seconds": [
+            6.8793022349709645,
+            5.660826182051096,
+            5.188327028998174,
+            6.078892814985011
+          ],
+          "median_seconds": 5.869859498518053,
+          "p95_seconds": 6.759240821973071,
+          "minimum_seconds": 5.188327028998174,
+          "maximum_seconds": 6.8793022349709645
+        }
+      },
+      "peak_allocated_bytes": 101654528,
+      "peak_reserved_bytes": 115343360,
+      "source_unchanged": true,
+      "autograd_restored": true,
+      "receipt_sha256": "a1f300a48d7791a22b26471a7c00b24c9a6820cdc880ea3237abfbdcd3c0dda9",
+      "cases": [
+        {
+          "index": 0,
+          "policy": "workers",
+          "measured": false,
+          "seconds": 9.614104479027446,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 1,
+          "policy": "calling",
+          "measured": false,
+          "seconds": 6.160957672982477,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 2,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 7.385904569993727,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 39,
+            "maximum_absolute_difference": 8.673617379884035e-19,
+            "maximum_symmetric_relative_difference": 0.00024303065903230088,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 3,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 6.8793022349709645,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 4,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 5.660826182051096,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 5,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 6.787835506955162,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 39,
+            "maximum_absolute_difference": 8.673617379884035e-19,
+            "maximum_symmetric_relative_difference": 0.00024303065903230088,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 6,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 6.243320254026912,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 39,
+            "maximum_absolute_difference": 8.673617379884035e-19,
+            "maximum_symmetric_relative_difference": 0.00024303065903230088,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 7,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 5.188327028998174,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 8,
+          "policy": "calling",
+          "measured": true,
+          "seconds": 6.078892814985011,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": true,
+            "gradient_bytes_equal": true,
+            "divergent_gradient_tensors": 0,
+            "maximum_absolute_difference": 0.0,
+            "maximum_symmetric_relative_difference": 0.0,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        },
+        {
+          "index": 9,
+          "policy": "workers",
+          "measured": true,
+          "seconds": 6.254527053970378,
+          "parameter_sha256": "41cc7e0339823b1d8685e869b8c04f440f48605d37a435a4e12787abcb29383b",
+          "optimizer_recording_calls": 11,
+          "gradients": {
+            "updates": 11,
+            "compared_gradient_tensors": 407,
+            "gradients_equal": false,
+            "gradient_bytes_equal": false,
+            "divergent_gradient_tensors": 39,
+            "maximum_absolute_difference": 8.673617379884035e-19,
+            "maximum_symmetric_relative_difference": 0.00024303065903230088,
+            "relative_denominator": "max(abs(left), abs(right)), cero cuando ambos son cero",
+            "gradient_stage": "RecordingOptimizer.step, después del clipping original"
+          }
+        }
+      ],
+      "total_child_process_seconds": 70.88041550799971,
+      "process_time_source_sha256": "754c9327a1f3ed80d23999fb6fa79cdf3d0f7c9614f663dba7c98f8d8f90bed4"
+    }
+  ],
+  "window": {
+    "started_at_utc": "2026-10-18T22:32:03+00:00",
+    "released_at_utc": "2026-10-18T22:36:27.502616+00:00",
+    "deadline_utc": "2026-10-18T22:37:00+00:00",
+    "global_training_hold_changed": false,
+    "fixture_authorizations_created": 0,
+    "window_receipt": "final-cuda-window-v1.json",
+    "additional_fp32_receipt": "final-cuda-fp32-v1/result.json"
+  },
+  "limits": [
+    "La comprobación adicional FP32 reutiliza el caso NVTX con el constructor de la fixture en esa precisión. No es otra ejecución FP64 del nodo original.",
+    "El benchmark compara el método _operator histórico y el actual sobre el mismo runtime final. Los checkpoints de su referencia son artefactos de diagnóstico y no deben reanudarse como experimentos.",
+    "Cuatro medidas por política describen esta fixture. No acreditan una aceleración general ni una mejora predictiva.",
+    "El pico CUDA incluye diez motores y sus registros retenidos. No es memoria incremental ni memoria de producción.",
+    "No se midieron el pico de RSS de estos recorridos completos, energía ni contadores de kernels. La actividad CPU ajena no se aisló.",
+    "La igualdad de gradientes se comprueba entre pasadas de cada política. Auditoría, historial y parámetros se cotejan también entre políticas."
+  ]
+}

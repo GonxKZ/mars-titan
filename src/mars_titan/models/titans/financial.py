@@ -937,15 +937,20 @@ def copy_paired_parameters(source, target):
         if source.local_control is None or target.local_control is None:
             raise ValueError("El nuevo factorial requiere Math en ambos controles")
         left, right = source.local_control, target.local_control
+        left_config, right_config = left.config, right.config
+        if "disabled" in (left_config.mode, right_config.mode):
+            # B conserva su identidad histórica porque no ejecuta el JVP de C.
+            left_config = replace(left_config, mode="disabled", weight=0.0)
+            right_config = replace(right_config, mode="disabled", weight=0.0)
         require_identity(
             {
                 key: value
-                for key, value in left.config.identity().items()
+                for key, value in left_config.identity().items()
                 if key not in {"mode", "weight"}
             },
             {
                 key: value
-                for key, value in right.config.identity().items()
+                for key, value in right_config.identity().items()
                 if key not in {"mode", "weight"}
             },
         )
