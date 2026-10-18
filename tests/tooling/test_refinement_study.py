@@ -114,6 +114,30 @@ def test_catalog_preserves_parent_seed_and_does_not_train_a_gate_on_parent_rows(
     assert all(j["fold"] == "fold-018" for j in jobs if j["kind"] == "collect")
 
 
+def test_references_are_ordered_after_both_selection_seals():
+    available = set()
+    for job in api().jobs():
+        if job["kind"] in ("reference", "m0_reference"):
+            required = {f"{job['projection']}-{job['seed']}/select-k{depth}" for depth in (1, 4)}
+            assert required <= available
+            assert set(job["selection_jobs"]) == required
+        available.add(job["id"])
+
+
+def test_reference_rejects_missing_seals_before_opening_sources(
+    tmp_path, learning_doubles, monkeypatch
+):
+    from benchmarks import refinement_study_controls as controls
+
+    def forbidden_sources(*args, **kwargs):
+        raise AssertionError("No se deben abrir fuentes sin los sellos")
+
+    monkeypatch.setattr(controls, "_sources", forbidden_sources)
+    job = next(item for item in api().jobs() if item["kind"] == "reference")
+    with pytest.raises(ValueError, match="sello"):
+        controls.frozen_reference(tmp_path, job, device="cpu")
+
+
 def test_reader_components_use_valid_default_identity_for_k1():
     from mars_titan.training.mars_titan_walk_forward import _components
 
@@ -164,6 +188,31 @@ def test_prepared_study_rejects_software_and_input_drift(tmp_path):
     atomic_json(source, dict(value=3))
     with pytest.raises(ValueError, match="origen"):
         api().verify_prepared(tmp_path)
+
+
+@pytest.mark.parametrize("helper", ["memory_microstudy.py", "memory_microstudy_analysis.py"])
+def test_prepared_study_rejects_changes_to_budget_or_score_helpers(tmp_path, monkeypatch, helper):
+    from mars_titan.data.storage import atomic_json, sha256
+
+    module = api()
+    prepared = dict(
+        configuration=module.configuration(),
+        configuration_sha256=sha256(module.CONFIG),
+        jobs=module.jobs(),
+        code=module.code_identity(),
+        environment=module.environment_identity(),
+        artifacts={},
+        source_manifests={},
+    )
+    atomic_json(tmp_path / "prepared.json", prepared)
+    changed = module.ROOT / "benchmarks" / helper
+    monkeypatch.setattr(
+        module,
+        "sha256",
+        lambda path: "different-fixture-digest" if path == changed else sha256(path),
+    )
+    with pytest.raises(ValueError, match="cambi"):
+        module.verify_prepared(tmp_path)
 
 
 def traces_api():
@@ -273,6 +322,93 @@ def test_failed_attempt_time_reduces_remaining_budget(tmp_path):
         traces_api().remaining_seconds(tmp_path)
 
 
+def test_attempt_reserves_before_work_and_settles_only_its_confirmed_time(tmp_path):
+    from mars_titan.data.storage import atomic_json
+
+    receipt = dict(configuration=api().configuration())
+    atomic_json(tmp_path / "prepared.json", receipt)
+    path, record = traces_api().reserve_attempt(tmp_path, {"id": "fixture"}, receipt)
+    saved = json.loads(path.read_text())
+    assert saved["reserved_seconds"] == 21600
+    assert saved["attempt_limit_seconds"] == 1800
+    assert saved["actual_seconds"] is None and saved["closure_confirmed"] is False
+    assert traces_api().remaining_seconds(tmp_path) == 0
+    traces_api().settle_attempt(path, record | dict(status="completed"), actual_seconds=12.5)
+    assert traces_api().remaining_seconds(tmp_path) == 21587.5
+    saved = json.loads(path.read_text())
+    assert saved["actual_seconds"] == saved["charged_seconds"] == 12.5
+    assert saved["closure_confirmed"] is True
+    with pytest.raises(ValueError, match="cerrad"):
+        traces_api().settle_attempt(path, record | dict(status="completed"), actual_seconds=0.1)
+
+
+def test_sigkill_keeps_open_reservation_charged(tmp_path):
+    import subprocess
+
+    from mars_titan.data.storage import atomic_json
+
+    atomic_json(tmp_path / "prepared.json", dict(configuration=api().configuration()))
+    script = """
+import json, os, signal, sys
+from pathlib import Path
+from benchmarks.refinement_study_traces import reserve_attempt
+work = Path(sys.argv[1])
+receipt = json.loads((work / 'prepared.json').read_text())
+reserve_attempt(work, {'id': 'killed-fixture'}, receipt)
+os.kill(os.getpid(), signal.SIGKILL)
+"""
+    result = subprocess.run(
+        ["uv", "run", "--no-sync", "python", "-c", script, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode in (-9, 137), result.stderr
+    assert traces_api().remaining_seconds(tmp_path) == 0
+    records = [json.loads(path.read_text()) for path in (tmp_path / "measurements").glob("*.json")]
+    assert len(records) == 1 and records[0]["actual_seconds"] is None
+    with pytest.raises(RuntimeError, match="presupuesto"):
+        traces_api().reserve_attempt(
+            tmp_path, {"id": "another-fixture"}, dict(configuration=api().configuration())
+        )
+
+
+def test_gpu_admission_rejection_closes_the_attempt_without_initializing_cuda(
+    tmp_path, monkeypatch
+):
+    import os
+
+    import torch
+
+    from mars_titan.data.storage import atomic_json
+    from mars_titan.training import experiment_resources
+    from mars_titan.training.gpu_supervisor import GpuSnapshot
+
+    receipt = dict(configuration=api().configuration())
+    atomic_json(tmp_path / "prepared.json", receipt)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
+    monkeypatch.setattr(
+        experiment_resources, "read_gpu", lambda: GpuSnapshot(8192, 7000, (os.getpid() + 1,))
+    )
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
+
+    def forbidden_initialization(*args, **kwargs):
+        raise AssertionError("La admisión rechazada no debe inicializar CUDA")
+
+    monkeypatch.setattr(torch.cuda, "mem_get_info", forbidden_initialization)
+    monkeypatch.setattr(torch.cuda, "set_device", forbidden_initialization)
+    monkeypatch.setattr(torch.cuda, "set_per_process_memory_fraction", forbidden_initialization)
+    with pytest.raises(RuntimeError, match="otra carga"):
+        traces_api()._measured(tmp_path, {"id": "fixture"}, receipt)
+    files = list((tmp_path / "measurements").glob("*.json"))
+    assert len(files) == 1
+    attempt = json.loads(files[0].read_text())
+    assert attempt["status"] == "failed" and attempt["closure_confirmed"] is True
+    assert attempt["optimizer_steps"] == 0 and attempt["actual_seconds"] > 0
+    assert 0 < traces_api().remaining_seconds(tmp_path) < 21600
+
+
 @pytest.fixture(scope="module")
 def technical_streams(tmp_path_factory):
     from tests.training.test_financial_run import corpus
@@ -312,6 +448,52 @@ def test_real_route_collection_matches_exact_view_rows_without_parameter_updates
             with pytest.raises(ValueError, match="filas"):
                 traces_api().validate_trace_rows(wrong, expected, source.phase)
         sink.confirm()
+
+
+def test_per_step_costs_match_executed_nonempty_queries(technical_streams):
+    import os
+
+    from mars_titan.memory.native_backend import load_native
+    from mars_titan.training.mars_titan_run import retention_config
+    from mars_titan.training.titans_walk_forward import unfused_attention
+    from tests.training.test_mars_titan_run import parent, reader, recipe
+
+    _, streams = technical_streams
+    model, codec = reader(streams, "m1", refinements=4, episodes="per_step")
+    query_batches, value_batches = [], []
+    query = model.query_projection.register_forward_hook(
+        lambda module, args, output: query_batches.append(len(args[0]))
+    )
+    values = model.value_projection.register_forward_hook(
+        lambda module, args, output: value_batches.append(len(args[0]))
+    )
+    plan = recipe()
+    with unfused_attention():
+        engine = traces_api().PerStepInference(
+            parent(streams),
+            model.eval().requires_grad_(False),
+            plan,
+            admission="m1",
+            retention=retention_config(plan, "m1"),
+            native=load_native(os.environ["MARS_TITAN_EPISODIC_NATIVE"]),
+            codec=codec,
+            world="fixture",
+            fold="0",
+        )
+        result = engine.evaluate(streams["validation"])
+        first = result["searches"]
+        repeated = engine.evaluate(streams["validation"])
+    query.remove()
+    values.remove()
+    assert first == repeated["searches"] > 0
+    assert 2 * first == sum(query_batches)
+    assert result["value_projections"] == first
+    assert len(query_batches) == len(value_batches)
+    assert all(
+        1 <= values // queries <= plan.neighbors
+        for queries, values in zip(query_batches, value_batches, strict=True)
+    )
+    assert result["refinements"] == 4 * result["predictions"]
 
 
 def test_phase_verifier_rejects_changed_targets_and_temporal_boundary():
@@ -630,6 +812,35 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
             device="cpu",
             optimizer_factory=Factory(retain_gradients=False),
         )
+        with pytest.raises(ValueError, match="sello"):
+            frozen_reference(work, chosen["reference"], device="cpu")
+        collection = traces_api().collect(work, chosen["collect"], device="cpu")
+        assert set(collection["phases"]) == {"train", "validation"}
+        assert not (work / "runs" / chosen["collect"]["id"] / "evaluation").exists()
+        selected = policy_api().select_policy(work, chosen["select"], device="cpu")
+        assert selected["calibration_used_for_selection"] is False
+        assert selected["evaluation_used_for_selection"] is False
+        assert selected["prior_parent_exposure"]["raw_2022_data_unread"] is False
+        with pytest.raises(ValueError, match="sello"):
+            frozen_reference(work, chosen["reference"], device="cpu")
+        four = {
+            item["kind"]: item
+            for item in prepared["jobs"]
+            if item.get("depth") == 4 and item["projection"] == "linear_v1" and item["seed"] == 42
+        }
+        run_mars_titan_window(
+            work / "fold-017/view.json",
+            work / "runs" / chosen["core"]["id"],
+            work / "recipes/reader.json",
+            components=traces_api().reader_components(4),
+            seed=42,
+            search_case="lr1e-3",
+            output=work / "runs" / four["reader"]["id"],
+            device="cpu",
+            optimizer_factory=Factory(retain_gradients=False),
+        )
+        traces_api().collect(work, four["collect"], device="cpu")
+        policy_api().select_policy(work, four["select"], device="cpu")
         from mars_titan.training.financial_run import Paused
 
         reference_root = work / "runs" / chosen["reference"]["id"]
@@ -646,13 +857,15 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
         confirmed = sha256(reference_root / "validation/validation-predictions.parquet")
         frozen_reference(work, chosen["reference"], device="cpu")
         assert sha256(reference_root / "validation/validation-predictions.parquet") == confirmed
+        second_seal = work / "runs" / four["select"]["id"] / "phase.json"
+        content = second_seal.read_bytes()
+        second_seal.unlink()
+        try:
+            with pytest.raises(ValueError, match="sello"):
+                frozen_reference(work, chosen["reference"], device="cpu")
+        finally:
+            second_seal.write_bytes(content)
         frozen_reference(work, chosen["m0_reference"], device="cpu")
-        collection = traces_api().collect(work, chosen["collect"], device="cpu")
-        assert set(collection["phases"]) == {"train", "validation"}
-        assert not (work / "runs" / chosen["collect"]["id"] / "evaluation").exists()
-        selected = policy_api().select_policy(work, chosen["select"], device="cpu")
-        assert selected["calibration_used_for_selection"] is False
-        assert selected["evaluation_used_for_selection"] is False
         selection = work / "runs" / chosen["select"]["id"] / "phase.json"
         selection_hash = sha256(selection)
         evaluated = policy_api().evaluate_selected(work, chosen["evaluate"], device="cpu")
@@ -676,6 +889,102 @@ def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
         assert sha256(output / "evaluation/predictions.parquet") == original
         table = pq.read_table(output / "calibrated-evaluation.parquet")
         assert len(table) == prepared["counts"]["fold-018"]["evaluation"]
+        for name in ("core", "m0"):
+            from benchmarks.refinement_study_controls import reference_paths
+
+            _, receipt = reference_paths(work, chosen["evaluate"])[name]
+            assert all(
+                record["metrics"]["searches"] == 0 for record in receipt["predictions"].values()
+            )
+        assert_parent_evaluation_is_excluded(work, chosen)
     assert all(
         sha256(sources / name / "manifest.json") == digest for name, digest in source_hashes.items()
+    )
+
+
+def assert_parent_evaluation_is_excluded(work, chosen):
+    """Cambiar resultados publicados de 2022 sin cambiar checkpoints ni datos de la puerta."""
+    import shutil
+
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    import torch
+
+    from benchmarks.memory_microstudy_analysis import score_table
+    from mars_titan.data.storage import atomic_json, sha256
+    from mars_titan.models.quantile_head import QUANTILE_COLUMNS
+    from mars_titan.training.mars_titan_walk_forward import run_mars_titan_window
+    from tests.training.test_titans_walk_forward import Factory
+
+    original = work / "runs" / chosen["core"]["id"]
+    altered = work / "runs/fixture/altered-core"
+    shutil.copytree(original, altered)
+    report = json.loads((altered / "run.json").read_text())
+    prediction = altered / report["predictions"]["evaluation"]["path"]
+    table = pq.read_table(prediction)
+    for column in ("prediction", *QUANTILE_COLUMNS):
+        table = table.set_column(
+            table.schema.get_field_index(column),
+            column,
+            pa.array(table[column].to_numpy() + 10000.0),
+        )
+    pq.write_table(table, prediction)
+    changed = report["predictions"]["evaluation"]
+    changed.update(sha256=sha256(prediction), bytes=prediction.stat().st_size)
+    if "metrics" in changed:
+        scores = score_table(table).summary()["point"]
+        changed["metrics"].update(session_mae=scores["mae"], session_mse=scores["mse"])
+    report["fixture_evaluation_perturbation"] = dict(partition="evaluation", shift=10000.0)
+    atomic_json(altered / "run.json", report)
+    assert report["checkpoint"] == json.loads((original / "run.json").read_text())["checkpoint"]
+    recipe = json.loads((work / "recipes/reader.json").read_text())
+    recipe["recipe"]["refinement_initialization"] = "pytorch_default"
+    recipe_path = work / "fixture-reader.json"
+    atomic_json(recipe_path, recipe)
+    selected = {}
+    for name, parent in (("original", original), ("altered", altered)):
+        reader = f"fixture/reader-{name}"
+        run_mars_titan_window(
+            work / "fold-017/view.json",
+            parent,
+            recipe_path,
+            components=traces_api().reader_components(1),
+            seed=42,
+            search_case="lr1e-3",
+            output=work / "runs" / reader,
+            device="cpu",
+            optimizer_factory=Factory(retain_gradients=False),
+        )
+        collection = dict(chosen["collect"], id=f"fixture/collect-{name}", parent=reader)
+        traces_api().collect(work, collection, device="cpu")
+        job = dict(
+            chosen["select"], id=f"fixture/select-{name}", reader=reader, parent=collection["id"]
+        )
+        selected[name] = policy_api().select_policy(work, job, device="cpu")
+    for phase in ("train", "validation"):
+        left, right = [
+            pq.read_table(work / f"runs/fixture/collect-{name}/{phase}/traces.parquet")
+            for name in ("original", "altered")
+        ]
+        for column in ("flow_id", "decision_at", "features", "predictions", "quantiles", "target"):
+            assert left[column].equals(right[column])
+    alternatives = np.asarray(left["predictions"].to_pylist())
+    assert np.any(alternatives[:, 0] != alternatives[:, 3])
+    decisions = []
+    buffers = []
+    features = torch.tensor(left["features"].to_pylist(), dtype=torch.float64)
+    for name in ("original", "altered"):
+        choice = selected[name]["selected"]
+        path = work / f"runs/fixture/select-{name}" / choice["id"] / "policy.json"
+        model = policy_api().load_policy(path, device="cpu")
+        buffers.append(json.loads(path.read_text())["buffers"])
+        decisions.append(
+            torch.cat([model(features[i : i + 256]) for i in range(0, len(features), 256)]).tolist()
+        )
+    assert buffers[0] == buffers[1] and decisions[0] == decisions[1]
+    assert selected["original"]["selected"]["id"] == selected["altered"]["selected"]["id"]
+    assert (
+        selected["original"]["prior_parent_exposure"]["core_evaluation_sha256"]
+        != selected["altered"]["prior_parent_exposure"]["core_evaluation_sha256"]
     )

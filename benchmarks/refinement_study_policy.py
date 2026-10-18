@@ -3,6 +3,7 @@
 import math
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -18,6 +19,86 @@ from mars_titan.training.learning_hold import require_learning_allowed
 
 from .refinement_study import configuration
 from .refinement_study_traces import completed_phase, reconstruct
+
+
+def selection_group(work, job):
+    """Verificar ambos lectores de un núcleo antes de abrir sus resultados posteriores."""
+    from mars_titan.posttraining.chronological_windows import _arm_parts
+
+    from .refinement_study import jobs
+    from .refinement_study_traces import reader_components
+
+    selected = [
+        item
+        for item in jobs()
+        if item["kind"] == "select"
+        and (item["projection"], item["seed"]) == (job["projection"], job["seed"])
+    ]
+    ids = [item["id"] for item in selected]
+    if {item["depth"] for item in selected} != {1, 4} or (
+        "selection_jobs" in job and job["selection_jobs"] != ids
+    ):
+        raise ValueError("El grupo necesita los sellos K1 y K4 del mismo núcleo y semilla")
+    paths = [work / "runs" / item["id"] / "phase.json" for item in selected]
+    if any(not path.is_file() for path in paths):
+        raise ValueError("Falta un sello de selección del grupo")
+    expected_core = (work / "runs" / f"{job['projection']}-{job['seed']}" / "core").resolve()
+    parent_view = work / "fold-017/view.json"
+    digests = {}
+    for item, path in zip(selected, paths, strict=True):
+        seal = read_manifest(path)[0]
+        if (
+            seal.get("status") != "completed"
+            or seal.get("selection_partition") != "validation"
+            or seal.get("calibration_used_for_selection") is not False
+            or seal.get("evaluation_used_for_selection") is not False
+            or seal["identity"]["job"] != item
+            or seal["identity"]["prepared_sha256"] != sha256(work / "prepared.json")
+        ):
+            raise ValueError("El sello no conserva la selección declarada solo con validación")
+        completed_phase(path.parent, seal["identity"])
+        arm = work / "runs" / item["reader"]
+        reader, reader_sha, _, core, parent = _arm_parts(arm, parent_view)
+        if (
+            core.resolve() != expected_core
+            or reader["request"]["seed"] != job["seed"]
+            or reader["request"]["components"] != reader_components(item["depth"])
+            or parent["request"]["seed"] != job["seed"]
+            or parent["request"]["view_sha256"] != sha256(parent_view)
+            or parent["request"]["recipe_sha256"]
+            != sha256(work / "recipes" / f"{job['projection']}.json")
+        ):
+            raise ValueError("Los sellos no comparten el núcleo, proyección y semilla esperados")
+        for partition in ("train", "validation"):
+            trace_path = work / "runs" / item["parent"] / partition / "phase.json"
+            trace = read_manifest(trace_path)[0]
+            if (
+                sha256(trace_path) != seal["identity"][f"{partition}_phase_sha256"]
+                or trace["identity"]["origin"]["reader_run_sha256"] != reader_sha
+            ):
+                raise ValueError("El sello no conserva las trazas del lector elegido")
+        digests[item["id"]] = sha256(path)
+    return dict(
+        scope="projection_and_seed",
+        projection=job["projection"],
+        seed=job["seed"],
+        core_run_sha256=sha256(expected_core / "run.json"),
+        selections=digests,
+    )
+
+
+def prior_parent_exposure(work, job):
+    """La evaluación de 2022 ya publicada por el contrato original del núcleo y lector."""
+    reader = read_manifest(work / "runs" / job["reader"] / "run.json")[0]
+    parent = read_manifest(Path(reader["request"]["parent"]["path"]) / "run.json")[0]
+    return dict(
+        parent_fold="fold-017",
+        published_evaluation_interval=["2022-01-01", "2023-01-01"],
+        core_evaluation_sha256=parent["predictions"]["evaluation"]["sha256"],
+        reader_evaluation_sha256=reader["predictions"]["evaluation"]["sha256"],
+        evaluation_reports_used_for_policy_fit_or_selection=False,
+        raw_2022_data_unread=False,
+    )
 
 
 def session_weights(times):
@@ -363,6 +444,7 @@ def select_policy(work, job, *, stop=None, device="cuda:0"):
         selection_partition="validation",
         calibration_used_for_selection=False,
         evaluation_used_for_selection=False,
+        prior_parent_exposure=prior_parent_exposure(work, job),
         artifacts=artifacts,
         final_test_opened=False,
         completed_at_utc=datetime.now(UTC).isoformat(),
@@ -462,8 +544,9 @@ def apply_calibrator(output, record, evaluation_path):
 
 
 def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
-    """Abrir calibración y desarrollo de 2023 solo tras verificar el sello de selección."""
+    """Ejecutar las fases posteriores tras verificar los dos sellos del grupo."""
     require_learning_allowed("la evaluación de desarrollo de la puerta seleccionada")
+    group = selection_group(work, job)
     selected_folder = work / "runs" / job["parent"]
     seal = read_manifest(selected_folder / "phase.json")[0]
     if (
@@ -489,7 +572,9 @@ def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
     output = work / "runs" / job["id"]
     selected_sha = sha256(selected_folder / "phase.json")
     results = {}
-    chosen_identity = dict(selection_sha256=selected_sha, policy_sha256=sha256(policy_path))
+    chosen_identity = dict(
+        selection_sha256=selected_sha, policy_sha256=sha256(policy_path), selection_group=group
+    )
     results["calibration"] = predict_phase(
         work,
         job,
@@ -534,6 +619,7 @@ def evaluate_selected(work, job, *, stop=None, device="cuda:0"):
         status="completed",
         job=job,
         selection_sha256=selected_sha,
+        selection_group=group,
         phases=results,
         calibration=calibrated,
         controls=controls,

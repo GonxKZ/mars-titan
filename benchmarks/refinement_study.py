@@ -116,20 +116,9 @@ def jobs():
             core = f"{stem}/core"
             result.append(dict(base, id=core, kind="core", fold="fold-017"))
             result.append(
-                dict(base, id=f"{stem}/reference", kind="reference", parent=core, fold="fold-018")
-            )
-            result.append(
                 dict(base, id=f"{stem}/m0-reader", kind="m0_reader", parent=core, fold="fold-017")
             )
-            result.append(
-                dict(
-                    base,
-                    id=f"{stem}/m0-reference",
-                    kind="m0_reference",
-                    parent=f"{stem}/m0-reader",
-                    fold="fold-018",
-                )
-            )
+            evaluations, selections = [], []
             for depth in config["reader_depths"]:
                 reader = f"{stem}/reader-k{depth}"
                 result.append(
@@ -146,6 +135,7 @@ def jobs():
                     )
                 )
                 selected = f"{stem}/select-k{depth}"
+                selections.append(selected)
                 result.append(
                     dict(
                         base,
@@ -157,7 +147,7 @@ def jobs():
                         fold="fold-018",
                     )
                 )
-                result.append(
+                evaluations.append(
                     dict(
                         base,
                         id=f"{stem}/evaluate-k{depth}",
@@ -168,6 +158,21 @@ def jobs():
                         fold="fold-018",
                     )
                 )
+            for name, kind, parent in (
+                ("reference", "reference", core),
+                ("m0-reference", "m0_reference", f"{stem}/m0-reader"),
+            ):
+                result.append(
+                    dict(
+                        base,
+                        id=f"{stem}/{name}",
+                        kind=kind,
+                        parent=parent,
+                        selection_jobs=list(selections),
+                        fold="fold-018",
+                    )
+                )
+            result.extend(evaluations)
     return result
 
 
@@ -181,6 +186,8 @@ def code_identity():
                 "refinement_study_traces.py",
                 "refinement_study_policy.py",
                 "refinement_study_controls.py",
+                "memory_microstudy.py",
+                "memory_microstudy_analysis.py",
             )
         ),
     ]

@@ -10,6 +10,7 @@ import time
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 import numpy as np
 import pyarrow as pa
@@ -20,9 +21,33 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.training.learning_hold import require_learning_allowed
+from mars_titan.training.mars_titan_run import MarsTitanInference
 
 MAX_ROWS = 131072
 FINAL_TEST_US = 1704067200000000
+
+
+class PerStepInference(MarsTitanInference):
+    """Contar por fila las consultas y proyecciones de valores del lector original."""
+
+    def _new_pass(self, partition):
+        if self.readout.config.episode_selection != "per_step":
+            raise ValueError("Este contador requiere selección de episodios en cada paso")
+        self._episodic_queries = 0
+        return super()._new_pass(partition)
+
+    def _predict_block(self, *args, **kwargs):
+        result = super()._predict_block(*args, **kwargs)
+        self._episodic_queries += sum(
+            len(read.values) for read in result.readout.reads if read.weights.shape[1]
+        )
+        return result
+
+    def evaluate(self, source, *, stop=None, rows=None):
+        result = super().evaluate(source, stop=stop, rows=rows)
+        return dict(
+            result, searches=self._episodic_queries, value_projections=self._episodic_queries
+        )
 
 
 class TraceSink:
@@ -216,7 +241,6 @@ def reconstruct(
 ):
     """Cargar el mejor padre y el mejor lector, sin ajustar pesos al trasladar el codec."""
     from mars_titan.posttraining.chronological_windows import _arm_parts, _best, _readout_models
-    from mars_titan.training.mars_titan_run import MarsTitanInference
     from mars_titan.training.mars_titan_walk_forward import _carried_readout, _native
     from mars_titan.training.refinement_inference import RefinementInference, _model_digest
 
@@ -252,7 +276,7 @@ def reconstruct(
         if any(value is not None for value in (trace, route, policy, schedule)):
             raise ValueError("El control por paso no admite otra política")
         readout.config = replace(readout.config, refinements=4, episode_selection="per_step")
-        engine = MarsTitanInference(frozen, readout, recipe, **arguments)
+        engine = PerStepInference(frozen, readout, recipe, **arguments)
         inference_identity = dict(
             controller="legacy_k4_per_step_without_retraining",
             predictor_sha256=_model_digest(frozen),
@@ -400,7 +424,7 @@ def remaining_seconds(work):
     from .refinement_study import configuration
 
     costs = [
-        read_manifest(path)[0]["process_seconds"]
+        attempt_cost(read_manifest(path)[0])
         for path in sorted((work / "measurements").glob("*.json"))
     ]
     if any(
@@ -408,6 +432,100 @@ def remaining_seconds(work):
     ):
         raise ValueError("El coste de un intento debe ser finito y no negativo")
     return max(0, configuration()["max_total_seconds"] - sum(costs))
+
+
+def attempt_cost(record):
+    """Cobrar la reserva completa hasta que exista un cierre verificable del intento."""
+    if "closure_confirmed" not in record:
+        return record["process_seconds"]
+    closed = record["closure_confirmed"]
+    reserved, actual, charged = (
+        record[name] for name in ("reserved_seconds", "actual_seconds", "charged_seconds")
+    )
+
+    def valid(value):
+        return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+    if (
+        type(closed) is not bool
+        or not valid(reserved)
+        or reserved <= 0
+        or not valid(charged)
+        or (
+            closed and (not valid(actual) or charged != actual or record.get("status") == "running")
+        )
+        or (
+            not closed
+            and (actual is not None or charged != reserved or record.get("status") != "running")
+        )
+    ):
+        raise ValueError("El coste no conserva una reserva o un cierre coherentes")
+    return charged
+
+
+def reserve_attempt(work, job, receipt):
+    """Reservar el saldo restante antes de inicializar CUDA. El llamador mantiene el cerrojo."""
+    remaining = remaining_seconds(work)
+    if remaining <= 0:
+        raise RuntimeError("Se agotó el presupuesto o hay una reserva pendiente de cierre")
+    limit = min(remaining, receipt["configuration"]["max_job_seconds"])
+    identifier = uuid4().hex
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    path = work / "measurements" / f"{job['id'].replace('/', '_')}-{stamp}-{identifier}.json"
+    if path.exists():
+        raise FileExistsError("El identificador del intento ya existe")
+    record = dict(
+        accounting_version=2,
+        attempt_id=identifier,
+        job=job,
+        status="running",
+        prepared_sha256=sha256(work / "prepared.json"),
+        started_at_utc=datetime.now(UTC).isoformat(),
+        reserved_seconds=remaining,
+        attempt_limit_seconds=limit,
+        actual_seconds=None,
+        charged_seconds=remaining,
+        closure_confirmed=False,
+        timing_scope="attempt_including_reservation_write_and_runtime_setup",
+        excluded_timing=[
+            "dispatcher_imports",
+            "prepared_manifest_verification",
+            "lock_acquisition",
+            "reservation_settlement",
+            "lease_release",
+        ],
+        final_test_opened=False,
+    )
+    atomic_json(path, record)
+    return path, record
+
+
+def settle_attempt(path, record, *, actual_seconds):
+    """Liberar únicamente el saldo cuyo intento tiene un tiempo real y un cierre confirmado."""
+    original = read_manifest(path)[0]
+    if original.get("closure_confirmed") is not False:
+        raise ValueError("El intento ya está cerrado")
+    fields = (
+        "attempt_id",
+        "job",
+        "prepared_sha256",
+        "reserved_seconds",
+        "attempt_limit_seconds",
+        "started_at_utc",
+    )
+    if any(original.get(name) != record.get(name) for name in fields):
+        raise ValueError("El cierre no corresponde a la reserva de este intento")
+    result = dict(
+        record,
+        actual_seconds=actual_seconds,
+        charged_seconds=actual_seconds,
+        closure_confirmed=True,
+        closed_at_utc=datetime.now(UTC).isoformat(),
+        cooperative_limit_overrun_seconds=max(0, actual_seconds - record["attempt_limit_seconds"]),
+    )
+    attempt_cost(result)
+    atomic_json(path, result)
+    return result
 
 
 def execute_job(work, job_id):
@@ -429,39 +547,40 @@ def execute_job(work, job_id):
 
 
 def _measured(work, job, receipt):
-    import torch
-    from torch.optim.optimizer import (
-        register_optimizer_step_post_hook,
-        register_optimizer_step_pre_hook,
-    )
+    started = time.monotonic()
+    path, report = reserve_attempt(work, job, receipt)
+    report["status"] = "failed"
+    before = after = budget = lease = None
+    torch = None
+    try:
+        import torch
+        from torch.optim.optimizer import (
+            register_optimizer_step_post_hook,
+            register_optimizer_step_pre_hook,
+        )
 
-    from .memory_microstudy import Budget
+        from mars_titan.training.experiment_resources import GpuLease
 
-    remaining = remaining_seconds(work)
-    if remaining <= 0:
-        raise RuntimeError("Se agotó el presupuesto local de seis horas")
-    if not torch.cuda.is_available():
-        raise RuntimeError("El estudio requiere cuda:0 y no admite fallback silencioso a CPU")
-    torch.cuda.set_device(0)
-    torch.cuda.set_per_process_memory_fraction(0.75, 0)
-    torch.set_num_threads(2)
-    torch.set_num_interop_threads(1)
-    torch.backends.cuda.matmul.allow_tf32 = False
-    torch.backends.cudnn.allow_tf32 = False
-    torch.set_float32_matmul_precision("highest")
-    torch.cuda.reset_peak_memory_stats(0)
-    config = dict(receipt["configuration"])
-    config["max_job_seconds"] = min(remaining, config["max_job_seconds"])
-    budget = Budget(config)
-    before = register_optimizer_step_pre_hook(budget.before)
-    after = register_optimizer_step_post_hook(budget.after)
-    report = dict(
-        job=job,
-        status="failed",
-        prepared_sha256=sha256(work / "prepared.json"),
-        started_at_utc=datetime.now(UTC).isoformat(),
-        final_test_opened=False,
-        runtime=dict(
+        from .memory_microstudy import Budget
+
+        lease = GpuLease(max_ram=6 * 1024**3, max_vram=6 * 1024**3)
+        lease.__enter__()
+        report["admission"] = dict(lease.record)
+        torch.cuda.set_device(0)
+        torch.cuda.set_per_process_memory_fraction(0.75, 0)
+        torch.set_num_threads(2)
+        if torch.get_num_interop_threads() != 1:
+            torch.set_num_interop_threads(1)
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        torch.set_float32_matmul_precision("highest")
+        torch.cuda.reset_peak_memory_stats(0)
+        config = dict(receipt["configuration"], max_job_seconds=report["attempt_limit_seconds"])
+        budget = Budget(config)
+        budget.started = started
+        before = register_optimizer_step_pre_hook(budget.before)
+        after = register_optimizer_step_post_hook(budget.after)
+        report["runtime"] = dict(
             python=platform.python_version(),
             torch=str(torch.__version__),
             cuda=torch.version.cuda,
@@ -469,24 +588,29 @@ def _measured(work, job, receipt):
             device="cuda:0",
             precision="fp32_strict",
             cpu_threads=2,
-        ),
-    )
-    try:
+        )
         result = dispatch(work, job, budget)
+        lease.check()
         report["status"] = result["status"]
         return result
     except BaseException as error:
         report["error"] = f"{type(error).__name__}: {error}"
         raise
     finally:
-        before.remove()
-        after.remove()
+        for hook in (before, after):
+            if hook is not None:
+                hook.remove()
         report.update(
-            process_seconds=time.monotonic() - budget.started,
-            optimizer_steps=budget.steps,
+            optimizer_steps=budget.steps if budget is not None else 0,
             peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
-            peak_cuda_allocated_bytes=torch.cuda.max_memory_allocated(0),
-            peak_cuda_reserved_bytes=torch.cuda.max_memory_reserved(0),
         )
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
-        atomic_json(work / "measurements" / f"{job['id'].replace('/', '_')}-{stamp}.json", report)
+        try:
+            if torch is not None and torch.cuda.is_initialized():
+                report.update(
+                    peak_cuda_allocated_bytes=torch.cuda.max_memory_allocated(0),
+                    peak_cuda_reserved_bytes=torch.cuda.max_memory_reserved(0),
+                )
+            settle_attempt(path, report, actual_seconds=time.monotonic() - started)
+        finally:
+            if lease is not None:
+                lease.__exit__()

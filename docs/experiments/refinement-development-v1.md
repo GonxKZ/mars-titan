@@ -41,6 +41,22 @@ solo con entradas. El test final de 2024 permanece cerrado. El año 2023 ya ha
 participado en desarrollo, por lo que sus resultados no serán una confirmación
 final independiente.
 
+Los recorridos originales del núcleo y del lector de `fold-017` publican
+predicciones de evaluación de 2022 antes de confirmar su `run.json`. Sus pesos
+se eligen con la validación de 2021, pero esa evaluación ya recorre fechas que
+después pertenecen al ajuste, selección y calibración de la puerta. Se conserva
+ese contrato y se registra esta exposición previa. Los valores de esos
+informes de evaluación no entran en el ajuste ni en la selección de la puerta.
+No se afirma que las etiquetas de calibración de 2022 sigan sin leer.
+
+El sello del estudio controla el cálculo y la publicación de las fases
+posteriores, por proyección y semilla. Requiere que estén confirmadas las
+selecciones de los lectores K1 y K4, vinculadas al mismo núcleo. Se comprueba
+antes de generar o reutilizar las referencias de `fold-018` y sus resultados
+posteriores. No es un sello global entre semillas ni entre estudios. Tampoco
+es un control físico de acceso a los Parquet, que contienen varios tramos y
+se leen para verificar hashes y contratos.
+
 ## Comparación fijada
 
 Hay dos referencias del núcleo, `linear_v1` y `mac_paper`, con identidades
@@ -73,9 +89,11 @@ etiqueta. La selección de M1 no depende del error financiero de una alternativa
 
 La puerta usa ridge para estimar cinco diferencias firmadas de MAE respecto
 a K1. También aprende ganancias negativas. Las sesiones tienen el mismo peso,
-repartido entre sus activos. La normalización y los límites del soporte se
-ajustan solo con las trazas de enero a marzo de 2022. Fuera de esos límites se
-devuelve K1. Ridge no produce una garantía de confianza.
+repartido entre sus activos. La normalización y los rangos marginales de cada
+rasgo se ajustan solo con las trazas de enero a marzo de 2022. Fuera de esos
+rangos se devuelve K1. Estar dentro no acredita pertenecer al soporte conjunto
+de los datos. La comprobación no es un detector OOD calibrado y ridge no produce
+una garantía de confianza.
 
 El catálogo de regularización, ganancia mínima y costes está cerrado en el
 JSON. Los costes de continuación se expresan en unidades de MAE, no en
@@ -83,7 +101,7 @@ milisegundos. Cada candidato se ejecuta realmente sobre validación, incluyendo
 la agrupación de filas por ruta. Se elige primero por MAE por sesión, después
 por el menor número medio de refinamientos y finalmente por el orden declarado.
 La calibración nunca elige la puerta. El registro de selección y sus huellas
-se confirman antes de abrir las fases posteriores.
+se confirman antes de ejecutar las fases posteriores del grupo.
 
 Los controles interpretativos incorporados son las seis rutas fijas, K4 con una
 consulta por paso, un lector M0 propio, el predictor congelado sin lector,
@@ -135,12 +153,29 @@ rasgos disponibles, seis predicciones, cuantiles y resultado maduro. La
 comprobación exige todas las filas y objetivos esperados, sin omisiones ni
 duplicados. Los Parquet se publican de forma atómica al completar la fase.
 
-La ronda inicial fija un máximo acumulado de seis horas locales, con un límite
-de treinta minutos por intento. La primera semilla sirve para medir el coste
-antes de continuar con las restantes. Los intentos fallidos también descuentan
-tiempo. La ejecución exige `cuda:0`, FP32 estricto para el predictor y una
-autorización acotada compatible con la protección vigente. El ejecutor no
-modifica esa protección ni permite la campaña completa.
+La ronda inicial fija un presupuesto acumulado de seis horas locales, con un
+límite cooperativo de treinta minutos por intento. La primera semilla sirve
+para medir el coste antes de continuar con las restantes. Antes de inicializar
+CUDA se reserva en disco todo el saldo disponible. Al cerrar el intento se
+registra el tiempo real y se libera el resto. Si el proceso muere sin confirmar
+su cierre, la reserva sigue cargada e impide reanudar automáticamente. Esa
+reserva es una medida contable conservadora, no tiempo de cómputo observado.
+
+El cronómetro del intento incluye la escritura de la reserva y la preparación
+del runtime CUDA. Excluye las importaciones del lanzador, la verificación del
+manifiesto preparado, la adquisición del cerrojo, la escritura final de la
+liquidación y la liberación de la lease. No mide el tiempo total del proceso.
+Los límites de treinta minutos y seis horas son cooperativos. Puede haber un
+exceso hasta alcanzar la siguiente barrera, registrado en
+`cooperative_limit_overrun_seconds`. Los intentos fallidos que cierran también
+descuentan su tiempo medido.
+
+La ejecución exige `cuda:0`, FP32 estricto para el predictor y una autorización
+acotada compatible con la protección vigente. `GpuLease` se adquiere dentro
+del proceso científico. Comprueba la carga de cómputo ajena y la memoria libre,
+con un máximo de 6 GiB de VRAM y al menos 1 GiB de margen. El supervisor puede
+consultar `nvidia-smi` sin inicializar CUDA. El ejecutor no modifica la protección
+de aprendizaje ni permite la campaña completa.
 
 ## Métricas y evidencia necesaria
 
@@ -160,6 +195,9 @@ RAM y memoria CUDA registrada por el asignador de PyTorch. La latencia por
 solicitud y sus percentiles requieren además una
 medición del recorrido efectivo con calentamiento y sincronización adecuados.
 No se deducen de dividir el tiempo de fase por el número de filas.
+Las búsquedas y proyecciones se cuentan por fila. El control por paso observa
+sus lecturas no vacías. M0 y el predictor sin lector registran cero operaciones
+episódicas. Estos recuentos no son números de kernels ni equivalen a latencia.
 
 El estudio estará ejecutado solo en las fases que tengan recibos completos.
 La implementación y las comprobaciones con fixtures no acreditan una mejora

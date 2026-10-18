@@ -22,6 +22,7 @@ from .refinement_study_policy import (
     fit_calibrator,
     load_policy,
     predict_phase,
+    selection_group,
 )
 from .refinement_study_traces import completed_phase
 
@@ -43,6 +44,7 @@ def frozen_reference(work, job, *, device="cuda:0", stop=None):
     from mars_titan.training.titans_walk_forward import KIND, PredictionRows, _verify, case_recipe
 
     require_learning_allowed("la referencia congelada del estudio de refinamientos")
+    group = selection_group(work, job)
     parent, output = work / "runs" / job["parent"], work / "runs" / job["id"]
     parent_view, view = work / "fold-017/view.json", work / "fold-018/view.json"
     path = output / "frozen.json"
@@ -52,6 +54,7 @@ def frozen_reference(work, job, *, device="cuda:0", stop=None):
             result.get("final_test_opened") is not False
             or result["view_sha256"] != sha256(view)
             or result["parent"]["run_sha256"] != sha256(parent / "run.json")
+            or result.get("selection_group") != group
         ):
             raise ValueError("La referencia congelada no conserva su padre y ventana")
         _verify(output, result)
@@ -120,6 +123,7 @@ def frozen_reference(work, job, *, device="cuda:0", stop=None):
             job=job,
             source=source.identity,
             models=list(model_digests),
+            selection_group=group,
         )
         receipt = completed_phase(local, identity)
         if receipt is None:
@@ -131,6 +135,9 @@ def frozen_reference(work, job, *, device="cuda:0", stop=None):
                 if job["kind"] == "reference"
                 else inference.evaluate(source, rows=rows, stop=stop)
             )
+            metrics = dict(metrics, searches=0, value_projections=0)
+            if job["kind"] == "reference":
+                metrics["refinements"] = 0
             elapsed = time.perf_counter() - started
             if model_digests != tuple(_model_digest(model) for model in models):
                 raise ValueError("La referencia modificó sus parámetros")
@@ -158,12 +165,14 @@ def frozen_reference(work, job, *, device="cuda:0", stop=None):
         view_sha256=sha256(view),
         final_test_opened=False,
         shared_parameters_unchanged=True,
+        selection_group=group,
     )
     atomic_json(path, result)
     return dict(result, status="completed")
 
 
 def reference_paths(work, job):
+    group = selection_group(work, job)
     stem = f"{job['projection']}-{job['seed']}"
     result = {}
     for name, directory in (("core", "reference"), ("m0", "m0-reference")):
@@ -175,6 +184,7 @@ def reference_paths(work, job):
             or receipt["view_sha256"] != sha256(work / "fold-018/view.json")
             or receipt["parent"]["path"] != str(parent.resolve())
             or receipt["parent"]["run_sha256"] != sha256(parent / "run.json")
+            or receipt.get("selection_group") != group
         ):
             raise ValueError("La referencia no conserva el padre, semilla o vista declarados")
         for record in receipt["predictions"].values():
