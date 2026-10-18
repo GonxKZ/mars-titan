@@ -148,6 +148,11 @@ def test_capacity_counts_unresolved_rows_and_emits_before_maturity():
     assert result["observations"] == 4
     assert result["mature_labels"] == 2
     assert result["max_pending"] == 3
+    assert result["pending_measure"] == "conservative_upper_bound"
+    assert result["runtime_event_order"] == "mature_then_emit"
+    assert result["exact_pending_peak_measured"] is False
+    # En esta fixture, resolver antes de emitir tiene pico 2. La admisión usa la cota 3.
+    assert result["max_pending"] > 2
     assert result["unresolved_at_close"] == 2
     assert result["max_decision_rows"] == 2
     assert (
@@ -180,6 +185,23 @@ def test_capacity_does_not_apply_trace_queue_limit_to_noncollection_phases():
     capacity_api().require_capacity(
         dict(max_pending=32769, mature_labels=10, max_decision_rows=256), collection=False
     )
+
+
+def test_capacity_audit_identifies_the_bound_without_changing_runner_order(monkeypatch):
+    from types import SimpleNamespace
+
+    module = capacity_api()
+    monkeypatch.setattr(module, "dataset_capacity", lambda *args, **kwargs: {"fixture": True})
+    result = module.capacity_audit(
+        SimpleNamespace(identity="parent"),
+        SimpleNamespace(identity="policy"),
+        parent_fold=source()["temporal_view"]["fold"],
+        policy_phases={},
+    )
+    assert result["pending_measure"] == "conservative_upper_bound"
+    assert result["bound_event_order"] == "emit_then_mature"
+    assert result["runtime_event_order"] == "mature_then_emit"
+    assert result["exact_pending_peak_measured"] is False
 
 
 def test_256_routed_states_match_four_batches_and_reject_overflow():
