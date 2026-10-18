@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "memory_microstudy",
+  "window": "fold-000",
+  "market": "US",
+  "assets": 4,
+  "asset_order_salt": "micro-20261018/US/",
+  "seeds": [42, 43, 44],
+  "epochs": 1,
+  "search_case": "lr1e-3",
+  "bank_capacity": 32,
+  "precision": "fp32_strict",
+  "max_job_seconds": 420,
+  "max_total_seconds": 3600,
+  "max_optimizer_steps": 512,
+  "final_test_access": false,
+  "bootstrap": {"block_length": 16, "replicates": 2000, "seed": 20261018, "confidence": 0.95}
+}

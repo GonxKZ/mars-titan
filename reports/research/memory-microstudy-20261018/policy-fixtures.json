@@ -1,0 +1,642 @@
+{
+  "schema_version": 1,
+  "kind": "synthetic_policy_pipeline_microcheck",
+  "origin": "generated_fixture",
+  "scientific_financial_result": false,
+  "source_files": {
+    "tests/simulation/policy_tape_fixture.py": "5ff1226daa5360e0e6f8c46a0cda2d0d851c68dc1ac571fc0a13d551146bb3bd",
+    "tests/simulation/unadjusted_edition_fixture.py": "a89e5404e4d73375ed001549209b2ade35e590ddb2258130930db4ad6e4e71aa"
+  },
+  "declaration": {
+    "kind": "synthetic_policy_pipeline_microcheck",
+    "seed": 42,
+    "arms": [
+      "ppo_clip_full_kl",
+      "ppo_kl_penalty_adaptive",
+      "ppo_clip_kl_epoch_stop",
+      "double_dqn",
+      "klpo_terminal",
+      "grpo_outcome",
+      "dr_grpo_outcome",
+      "gspo_outcome"
+    ],
+    "data": "tests.simulation.policy_tape_fixture.write_policy_tapes, US",
+    "budget": {
+      "transitions": 960,
+      "environments": 16,
+      "rollout_transitions": 64,
+      "evaluation_transitions": 320
+    },
+    "hyperparameters": {
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip": 0.2,
+      "entropy": 0.01,
+      "value_weight": 0.5,
+      "gradient_norm": 1.0,
+      "epochs": 2,
+      "minibatch_size": 16
+    },
+    "created_at_utc": "2026-10-18T01:23:03.735474+00:00",
+    "max_total_seconds": 240,
+    "max_case_seconds": 30,
+    "financial_result": false
+  },
+  "policies": [
+    {
+      "arm": "ppo_clip_full_kl",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 120,
+      "wall_seconds": 2.563052056997549,
+      "peak_rss_bytes": 1380937728,
+      "gradient_norm_range": [
+        0.4625166803598404,
+        0.678822573274374
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 4,
+        "training": {
+          "total_transitions": 960,
+          "rollout_transitions": 64,
+          "workers": 1,
+          "seed": 42,
+          "rollout_bytes": 134217728
+        },
+        "environments": 16,
+        "hyperparameters": {
+          "learning_rate": 0.0003,
+          "gamma": 0.99,
+          "gae_lambda": 0.95,
+          "clip": 0.2,
+          "entropy": 0.01,
+          "value_weight": 0.5,
+          "gradient_norm": 1.0,
+          "epochs": 2,
+          "minibatch_size": 16
+        },
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "checkpoint_transitions": 320,
+        "selection": {
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false,
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_transitions": 0
+        },
+        "final_test_opened": false,
+        "evaluation_transitions": 320,
+        "agent": {
+          "variant": "ppo",
+          "trading_field": null,
+          "markov_fields": [],
+          "hmm_file": null
+        },
+        "policy_objective": {
+          "schema_version": 1,
+          "id": "ppo_clip_full_kl_v1"
+        }
+      },
+      "configuration_sha256": "d3f1354e8471028a1ec1e5d74b63239206373c769651ad33c86de88e2a527a8e",
+      "binary_sha256": "3308d9835d78b45fdf37150faee80c8bf4d824896691f4430ac8f57427baa8e2",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "c253ad3d775d43c195d9e6a633510f275ad30d7dd93ebbd830f539f3170b7927",
+      "trace_manifest_sha256": "0f5c00341000a780156686b5e116152fd786dc96c465e0766d99cb1500d41692",
+      "initial_audit_sha256": "260db5f0ad87075b677ae69643daa2162162ed3c1265e43ba213115a8c47859f",
+      "selected_audit_sha256": "15133ade87330acc571650c25c1054b52dfafc6089b839e7b9a26ce12bc55c65"
+    },
+    {
+      "arm": "ppo_kl_penalty_adaptive",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 120,
+      "wall_seconds": 3.4634685970377177,
+      "peak_rss_bytes": 1325793280,
+      "gradient_norm_range": [
+        0.46136418730020523,
+        0.6540543958544731
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 4,
+        "training": {
+          "total_transitions": 960,
+          "rollout_transitions": 64,
+          "workers": 1,
+          "seed": 42,
+          "rollout_bytes": 134217728
+        },
+        "environments": 16,
+        "hyperparameters": {
+          "learning_rate": 0.0003,
+          "gamma": 0.99,
+          "gae_lambda": 0.95,
+          "clip": 0.2,
+          "entropy": 0.01,
+          "value_weight": 0.5,
+          "gradient_norm": 1.0,
+          "epochs": 2,
+          "minibatch_size": 16
+        },
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "checkpoint_transitions": 320,
+        "selection": {
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false,
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_transitions": 0
+        },
+        "final_test_opened": false,
+        "evaluation_transitions": 320,
+        "agent": {
+          "variant": "ppo",
+          "trading_field": null,
+          "markov_fields": [],
+          "hmm_file": null
+        },
+        "policy_objective": {
+          "schema_version": 1,
+          "id": "ppo_kl_penalty_adaptive_v1",
+          "target_kl": 0.01,
+          "beta_initial": 1.0,
+          "beta_min": 1e-06,
+          "beta_max": 1000000.0
+        }
+      },
+      "configuration_sha256": "862ff6085b0cc54dd44600922d7fc71e8493ba28a09e77e16601a5f3ffadab5e",
+      "binary_sha256": "3308d9835d78b45fdf37150faee80c8bf4d824896691f4430ac8f57427baa8e2",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "f45b2dc2cee98ae4f676ce7cd346406d14582819594b75ceb5df537ca08c1d71",
+      "trace_manifest_sha256": "f0e015e2a4cd2d4b2cb316af8a32696ebcd70f51c5a58e8c5a73215ee8786981",
+      "initial_audit_sha256": "4df5242ca7f111ed1925b53fe1ac867be9557efb9f0009e14d90037a08c25c2a",
+      "selected_audit_sha256": "96e59c1e369362a98345eb9c9659c0ccfc9bf3ea0d7c09d9ef1f849ae336496c"
+    },
+    {
+      "arm": "ppo_clip_kl_epoch_stop",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 120,
+      "wall_seconds": 2.8866152480477467,
+      "peak_rss_bytes": 1381777408,
+      "gradient_norm_range": [
+        0.4625166803598404,
+        0.678822573274374
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 4,
+        "training": {
+          "total_transitions": 960,
+          "rollout_transitions": 64,
+          "workers": 1,
+          "seed": 42,
+          "rollout_bytes": 134217728
+        },
+        "environments": 16,
+        "hyperparameters": {
+          "learning_rate": 0.0003,
+          "gamma": 0.99,
+          "gae_lambda": 0.95,
+          "clip": 0.2,
+          "entropy": 0.01,
+          "value_weight": 0.5,
+          "gradient_norm": 1.0,
+          "epochs": 2,
+          "minibatch_size": 16
+        },
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "checkpoint_transitions": 320,
+        "selection": {
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false,
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_transitions": 0
+        },
+        "final_test_opened": false,
+        "evaluation_transitions": 320,
+        "agent": {
+          "variant": "ppo",
+          "trading_field": null,
+          "markov_fields": [],
+          "hmm_file": null
+        },
+        "policy_objective": {
+          "schema_version": 1,
+          "id": "ppo_clip_kl_epoch_stop_v1",
+          "target_kl": 0.01
+        }
+      },
+      "configuration_sha256": "6125978c5cee6c0079dcdb08063e7789df58e44e46f4384fd9c663ff968ccc7b",
+      "binary_sha256": "3308d9835d78b45fdf37150faee80c8bf4d824896691f4430ac8f57427baa8e2",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "aa8120a9157d7c8880ade713b59934fe38e59d09fe043b09b3a92eff8e651d6a",
+      "trace_manifest_sha256": "b504db4f3399656dfb137a740dfb77f1ed0ecb55d3ff94408469c01134af275b",
+      "initial_audit_sha256": "8512ea26b41904d30ac5cc04f5da81d812392660948b574b32d278d8fb1dde94",
+      "selected_audit_sha256": "da40873c6c2e3a3344659af41586cb6cf8b0967931a1c741f620bd9ad3a23d1b"
+    },
+    {
+      "arm": "double_dqn",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 705,
+      "wall_seconds": 3.670286995009519,
+      "peak_rss_bytes": 1268932608,
+      "gradient_norm_range": [
+        0.0010990567971020937,
+        0.0959576964378357
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 4,
+        "training": {
+          "total_transitions": 960,
+          "rollout_transitions": 64,
+          "workers": 1,
+          "seed": 42,
+          "rollout_bytes": 134217728
+        },
+        "environments": 16,
+        "hyperparameters": {
+          "learning_rate": 0.0003,
+          "gamma": 0.99,
+          "gae_lambda": 0.95,
+          "clip": 0.2,
+          "entropy": 0.01,
+          "value_weight": 0.5,
+          "gradient_norm": 1.0,
+          "epochs": 2,
+          "minibatch_size": 16
+        },
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "checkpoint_transitions": 320,
+        "selection": {
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false,
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_transitions": 0
+        },
+        "final_test_opened": false,
+        "evaluation_transitions": 320,
+        "agent": {
+          "variant": "double_dqn",
+          "trading_field": null,
+          "markov_fields": [],
+          "hmm_file": null
+        }
+      },
+      "configuration_sha256": "5b203f63e438baa6176bfbf38341be62d475c27eb3b6325e3a1fb8f4b8146c4f",
+      "binary_sha256": "3308d9835d78b45fdf37150faee80c8bf4d824896691f4430ac8f57427baa8e2",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "96683e76a0f6e061c828919ec995f56280810f88057ad1f87fe0487a15eeb8fb",
+      "trace_manifest_sha256": "bb5ae40c728e26b18d8cc1ee46508bfbe01e9a56c0b6204de461d11b0acb6125",
+      "initial_audit_sha256": "6403f058201555fda236bdf37cf832912caba7a44e28778811c54d8640f02c5d",
+      "selected_audit_sha256": "de3dadc22106f58c140a98833b1211466fab350076a3939385720cb3707064ac"
+    },
+    {
+      "arm": "klpo_terminal",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 3,
+      "wall_seconds": 2.160617634013761,
+      "peak_rss_bytes": 1274781696,
+      "gradient_norm_range": [
+        0.030947382436450788,
+        0.0909477854793501
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 1,
+        "kind": "native_klpo_terminal",
+        "objective": "klpo_terminal_token_full_v1",
+        "controller": "klpo_full_fresh_waves_v1",
+        "training": {
+          "total_transitions": 960,
+          "seed": 42,
+          "workers": 1
+        },
+        "environments": 16,
+        "adam": {
+          "learning_rate": 0.0003,
+          "gradient_norm": 1.0
+        },
+        "terminal": {
+          "beta": 1.0,
+          "gamma": 1.0
+        },
+        "confirmed_updates_per_reference": 2,
+        "gradient_block_episodes": 8,
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "evaluation_transitions": 320,
+        "selection": {
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false
+        },
+        "final_test_opened": false
+      },
+      "configuration_sha256": "0f370871c32c320ac3d03b9826bc63dc724337641960431833d314cc7784e3e3",
+      "binary_sha256": "6b285853d8379e15cc2731f9d540f0f5e7c23a084b3de4447291902672d7456b",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "f96a8ba6ee389bf25ea60116797ae0c4e9d77cedb0f9fce6ef6f34d0a2caabd2",
+      "trace_manifest_sha256": "8440a3a22a9341870f81ae4120653d91db4b7368fc1628f2ee1a27375b152d18",
+      "initial_audit_sha256": "a279ee35b0fdc790167f0fa4f67a41acab84a65331da2810d88827ac4c1869e0",
+      "selected_audit_sha256": "3ed00772a58b9ff67b411a7600a132ba1a245ea0c47c7cd1dc4f8b65ffa49001"
+    },
+    {
+      "arm": "grpo_outcome",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 3,
+      "wall_seconds": 2.585880003985949,
+      "peak_rss_bytes": 1329868800,
+      "gradient_norm_range": [
+        0.09425315692001228,
+        0.1653813913040169
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 1,
+        "kind": "native_group_relative",
+        "objective": "grpo_outcome_v1",
+        "controller": "group_relative_fresh_waves_v1",
+        "training": {
+          "total_transitions": 960,
+          "seed": 42,
+          "workers": 1
+        },
+        "environments": 16,
+        "adam": {
+          "learning_rate": 0.0003,
+          "gradient_norm": 1.0
+        },
+        "terminal": {
+          "beta": 1.0,
+          "gamma": 1.0
+        },
+        "confirmed_updates_per_reference": 2,
+        "gradient_block_episodes": 8,
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "evaluation_transitions": 320,
+        "selection": {
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false
+        },
+        "final_test_opened": false
+      },
+      "configuration_sha256": "a5eb484afbf38d557dc3c087e31b92b1a5e4ca6c8ef0908b8bd0530e10a3e7be",
+      "binary_sha256": "6b285853d8379e15cc2731f9d540f0f5e7c23a084b3de4447291902672d7456b",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "acf51649946d91b790351f21190e49ceeb2be683d128cc591a15cc583019937f",
+      "trace_manifest_sha256": "ba6751bcdc6029464af45e1bf39f29727df534ea4473f7e10ae6778b52f8890f",
+      "initial_audit_sha256": "ce8c7112d4df2cd234a33b7104792d140eda655c8d281b0513a664984c132eb6",
+      "selected_audit_sha256": "7f275e5b9ec54a00b48bd045eee1996b012defc9d229233d31506009c44ffa6b"
+    },
+    {
+      "arm": "dr_grpo_outcome",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 3,
+      "wall_seconds": 2.479785696021281,
+      "peak_rss_bytes": 1330343936,
+      "gradient_norm_range": [
+        3.6302259389330516e-05,
+        7.176995038815237e-05
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 1,
+        "kind": "native_group_relative",
+        "objective": "dr_grpo_outcome_v1",
+        "controller": "group_relative_fresh_waves_v1",
+        "training": {
+          "total_transitions": 960,
+          "seed": 42,
+          "workers": 1
+        },
+        "environments": 16,
+        "adam": {
+          "learning_rate": 0.0003,
+          "gradient_norm": 1.0
+        },
+        "terminal": {
+          "beta": 1.0,
+          "gamma": 1.0
+        },
+        "confirmed_updates_per_reference": 2,
+        "gradient_block_episodes": 8,
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "evaluation_transitions": 320,
+        "selection": {
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false
+        },
+        "final_test_opened": false
+      },
+      "configuration_sha256": "d9cc65a896a8ca53ca95c2e1805b05a22b7c035746aea7b2deb7cea8af222895",
+      "binary_sha256": "6b285853d8379e15cc2731f9d540f0f5e7c23a084b3de4447291902672d7456b",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "ea670dde506daac7cc4747304fb69d60f1ac09409716b371a50dc880177e0c71",
+      "trace_manifest_sha256": "b603e2e4307f3007bd8c51849eb0a2cf6ca2bdecd928c83de9173c6528bd7ffa",
+      "initial_audit_sha256": "2d54e362eee01c519db45fc535c5fc7650d79f8413312119139325e88d94f19a",
+      "selected_audit_sha256": "f6ce466021b966fe7a45555a5c6c723eb17e0a0584f887586c844dfec9d3d011"
+    },
+    {
+      "arm": "gspo_outcome",
+      "device": "cuda:0",
+      "transitions": 960,
+      "optimizer_steps": 3,
+      "wall_seconds": 2.477171378035564,
+      "peak_rss_bytes": 1330606080,
+      "gradient_norm_range": [
+        0.06959568397782412,
+        0.13865225708433374
+      ],
+      "all_trace_values_finite": true,
+      "best_transitions": 0,
+      "selected_parameters_equal_initial": true,
+      "selected_decisions_equal_initial": true,
+      "audit_costs_bps": [
+        0.0,
+        10.0,
+        25.0
+      ],
+      "declaration": {
+        "schema_version": 1,
+        "kind": "native_group_relative",
+        "objective": "gspo_outcome_v1",
+        "controller": "group_relative_fresh_waves_v1",
+        "training": {
+          "total_transitions": 960,
+          "seed": 42,
+          "workers": 1
+        },
+        "environments": 16,
+        "adam": {
+          "learning_rate": 0.0003,
+          "gradient_norm": 1.0
+        },
+        "terminal": {
+          "beta": 1.0,
+          "gamma": 1.0
+        },
+        "confirmed_updates_per_reference": 2,
+        "gradient_block_episodes": 8,
+        "environment": {
+          "capital": 1000000,
+          "cost_bps": 10,
+          "participation": 0.01,
+          "score_scale": 0.01,
+          "ruin_penalty": -20
+        },
+        "evaluation_transitions": 320,
+        "selection": {
+          "metric": "ruin_count_then_mean_liquidated_log_growth",
+          "min_delta": 0.0001,
+          "patience": 5,
+          "early_stopping": false
+        },
+        "final_test_opened": false
+      },
+      "configuration_sha256": "875776b07de64e1b7e9294722397e9b3a6ba72d62eb8ca6cec2bbec26a26836a",
+      "binary_sha256": "6b285853d8379e15cc2731f9d540f0f5e7c23a084b3de4447291902672d7456b",
+      "native_build_sha256": "454fca9d7bbd453e48b5703f1710655d48d22926561ce7060bb47cbff63401c0",
+      "native_source_sha256": "bec5eb989d63370e5a804a07dfa7053e083447136143ca87d5bb3500e3d645bd",
+      "run_sha256": "4c6bbc9ab6251b26dd5dde3c9bbc42fcf1d293956b960d5aaf6af80b1e3f9c3b",
+      "trace_manifest_sha256": "9af42a77bd2fb2a57c40c3c2fcab4daeb59b1ca0f382e9a26204cf21666c774c",
+      "initial_audit_sha256": "bf8f5b8cdac13b7e2b3337a2b0298d336e36646528b54dd57eca618affe11a07",
+      "selected_audit_sha256": "6cd0d90c9b7863550c973020baf6d5c19c456c586151b1fa50dc742b4a3611f8"
+    }
+  ],
+  "native_domain_label": "real",
+  "native_domain_note": "El campo del binario identifica el camino de cinta reconstruida. Los datos y puntuaciones de esta comprobación son sintéticos y se clasifican aquí por su procedencia real.",
+  "prior_attempts": [
+    {
+      "version": "v1",
+      "reason": "La configuración de dos entornos fue rechazada antes de aprender."
+    },
+    {
+      "version": "v2",
+      "reason": "La cota de 1024 produjo 1024 transiciones PPO/DQN y 960 terminales. Antes de interpretar recompensas se fijaron 960 transiciones y validaciones cada 320."
+    }
+  ],
+  "final_test_opened": false,
+  "limits": [
+    "Una fixture y una semilla no permiten ordenar algoritmos para datos financieros.",
+    "La misma exposición no iguala las actualizaciones de algoritmos distintos. Todos conservaron la política inicial seleccionada."
+  ]
+}
