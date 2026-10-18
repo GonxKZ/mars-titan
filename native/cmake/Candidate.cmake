@@ -89,6 +89,34 @@ if(BUILD_TESTING)
     set_property(TEST candidate APPEND PROPERTY ENVIRONMENT
         "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
     if(MARS_TITAN_TORCH_HAS_CUDA)
+        add_executable(cuda_lifetime_options_tests tests/cuda_lifetime_options_tests.cpp)
+        mars_titan_configure_target(cuda_lifetime_options_tests)
+        add_test(NAME cuda_lifetime_options COMMAND cuda_lifetime_options_tests)
+        set_tests_properties(cuda_lifetime_options PROPERTIES TIMEOUT 30 LABELS "unit;diagnostics")
+        mars_titan_sanitizer_test_environment(cuda_lifetime_options)
+        # El diagnóstico de direcciones necesita cabeceras completas, sin cambiar el runtime de Torch.
+        find_package(CUDAToolkit QUIET)
+        string(REGEX MATCH "^[0-9]+" candidate_cuda_major "${MARS_TITAN_TORCH_CUDA_VERSION}")
+        if(CUDAToolkit_FOUND AND CUDAToolkit_VERSION_MAJOR STREQUAL candidate_cuda_major)
+            add_executable(mars-titan-cuda-lifetimes benchmarks/cuda_lifetimes.cpp)
+            target_include_directories(mars-titan-cuda-lifetimes SYSTEM BEFORE PRIVATE
+                ${CUDAToolkit_INCLUDE_DIRS})
+            target_link_libraries(mars-titan-cuda-lifetimes PRIVATE mars_titan_candidate)
+            mars_titan_configure_target(mars-titan-cuda-lifetimes)
+            add_test(NAME cuda_lifetimes_gemm COMMAND mars-titan-cuda-lifetimes gemm 1 keep)
+            set_tests_properties(cuda_lifetimes_gemm PROPERTIES TIMEOUT 120
+                LABELS "integration;diagnostics;cuda")
+            mars_titan_sanitizer_test_environment(cuda_lifetimes_gemm)
+            set_property(TEST cuda_lifetimes_gemm APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=0" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1"
+                "CUBLAS_WORKSPACE_CONFIG=:4096:8" "PYTORCH_ALLOC_CONF=per_process_memory_fraction:0.0625")
+            add_test(NAME cuda_lifetimes_invalid
+                COMMAND mars-titan-cuda-lifetimes gemm 301 keep)
+            set_tests_properties(cuda_lifetimes_invalid PROPERTIES TIMEOUT 30 WILL_FAIL TRUE
+                LABELS "unit;diagnostics" ENVIRONMENT "CUDA_VISIBLE_DEVICES=-1")
+        else()
+            message(STATUS "Sin cabeceras CUDA completas de la misma versión mayor que Torch: el diagnóstico de direcciones no se compila")
+        endif()
         add_executable(mars-titan-torch-allocation-check benchmarks/torch_cuda_allocation.cpp)
         target_link_libraries(mars-titan-torch-allocation-check PRIVATE mars_titan::torch)
         mars_titan_configure_target(mars-titan-torch-allocation-check)
@@ -129,6 +157,11 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_main.cpp")
     if(TARGET _episodic_native)
         list(APPEND candidate_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_python.cpp")
+    endif()
+    if(TARGET mars-titan-cuda-lifetimes)
+        list(APPEND candidate_analysis_sources
+            "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/cuda_lifetimes.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_lifetime_options_tests.cpp")
     endif()
     add_custom_target(candidate-analysis
         COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
