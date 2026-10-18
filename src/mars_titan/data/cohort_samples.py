@@ -18,6 +18,7 @@ import pyarrow.parquet as pq
 
 from .accounting_catalog import historical_accounting_context
 from .batches import atomic_parquet_batches, read_bounded_table
+from .candle_geometry import GeometryEncoders
 from .charts import chart_png
 from .china_sources import CONCEPTS as CHINESE_CONCEPTS
 from .china_sources import _day, _number
@@ -236,6 +237,18 @@ def _text_window(rows, cohort, encoder_hash, encoders, cache, hits, misses):
     )
 
 
+def _chart_input(encoders, ohlc, index, context, ordering_rtol, slots):
+    if isinstance(encoders, GeometryEncoders):
+        content, vector = encoders.chart(
+            ohlc, end_index=index, context=context, ordering_rtol=ordering_rtol, present=slots
+        )
+        return content, lambda: vector
+    png = chart_png(
+        ohlc, end_index=index, context=context, ordering_rtol=ordering_rtol, present=slots
+    )
+    return hashlib.sha256(png).hexdigest(), lambda: encoders.images([png])[0]
+
+
 def _rows(
     prices,
     facts,
@@ -386,14 +399,13 @@ def _rows(
             else admission_errors(available, cutoff)
         ):
             raise ValueError("Las modalidades contienen información futura o ausente")
-        png = chart_png(
-            ohlc, end_index=index, context=context, ordering_rtol=ordering_rtol, present=slots
+        chart_hash, calculate_image = _chart_input(
+            encoders, ohlc, index, context, ordering_rtol, slots
         )
-        chart_hash = hashlib.sha256(png).hexdigest()
         image = _vector(
             dict(encoder=encoder_hash, kind="chart", content=chart_hash),
             512,
-            lambda png=png: encoders.images([png])[0],
+            calculate_image,
             cache,
             hits,
             misses,
@@ -485,6 +497,8 @@ def materialize_cohort_asset(
 
     Con `price_window`, las ventanas siguen el contrato de presencia por sesión de la v3.1.
     """
+    if isinstance(encoders, GeometryEncoders) and context != 64:
+        raise ValueError("La representación geométrica requiere 64 sesiones")
     masked = masked_inputs(input_policy)
     if price_window is not None:
         check_price_window_contract(price_window)

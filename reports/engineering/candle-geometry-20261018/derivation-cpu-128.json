@@ -1,0 +1,127 @@
+{
+  "measured_at": "2026-10-18T18:53:27.176198+00:00",
+  "device": "cpu",
+  "learned_models_loaded": 0,
+  "benchmark_code_sha256": "9b3baed99961f19f7b1957a5c2f4664d87cabb381faf23995da173999b0def70",
+  "derivation_code": {
+    "candle_geometry_edition.py": "9c1248a461f8ee4fa0ee0106a99ac7fce991134096716bbc316405ebdbd78124",
+    "candle_geometry.py": "ece9220089bb083e23eaa04c3503ae5c503dbf93642b5149275e800be0184571",
+    "price_windows.py": "cb3a39c076a9333d5979a3f286025a908a63c6659b7e3528637a9450a13363aa",
+    "prices.py": "4fcc8bd817fe1e385770a441ec947fe78f56902e6449d422a30af22923ba7cf4",
+    "batches.py": "ef261c2e67e7296008c4a49632c63befd845ec7514c00ac8c3c39bc1c63c1b13",
+    "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "fixture": {
+    "kind": "synthetic_technical_fixture",
+    "samples": 128,
+    "missing_calendar_slot": 10,
+    "macro_indicators": 140,
+    "fundamental_concepts": 26,
+    "optional_modalities": "absent",
+    "source_samples_sha256": "d1e93914acd9514d190b51ba7686cd157e8dfb188d228455f8edadf793d8ba3f",
+    "preparation_seconds": 2.537158177001402
+  },
+  "warmup": 1,
+  "batch_rows": 128,
+  "runs": [
+    {
+      "samples": 128,
+      "total_seconds": 0.11593682697275653,
+      "timing_seconds": {
+        "read": 0.005589363980107009,
+        "price_preparation": 0.0036604389897547662,
+        "geometry": 0.01487900095526129,
+        "write": 0.04263556405203417,
+        "factor_copy": 0.0,
+        "comparison": 0.011552461015526205,
+        "final_source_verification": 0.00237756798742339
+      },
+      "unique_input_file_bytes": 63242,
+      "samples_output_bytes": 22211
+    },
+    {
+      "samples": 128,
+      "total_seconds": 0.0867267629946582,
+      "timing_seconds": {
+        "read": 0.005777828046120703,
+        "price_preparation": 0.00392262201057747,
+        "geometry": 0.017167662968859076,
+        "write": 0.01200622203759849,
+        "factor_copy": 0.0,
+        "comparison": 0.012572647945489734,
+        "final_source_verification": 0.0028248289600014687
+      },
+      "unique_input_file_bytes": 63242,
+      "samples_output_bytes": 22211
+    },
+    {
+      "samples": 128,
+      "total_seconds": 0.0938186600105837,
+      "timing_seconds": {
+        "read": 0.0070850649499334395,
+        "price_preparation": 0.005830526992212981,
+        "geometry": 0.01635197998257354,
+        "write": 0.012444385036360472,
+        "factor_copy": 0.0,
+        "comparison": 0.013192081009037793,
+        "final_source_verification": 0.0033678889740258455
+      },
+      "unique_input_file_bytes": 63242,
+      "samples_output_bytes": 22211
+    },
+    {
+      "samples": 128,
+      "total_seconds": 0.08623272500699386,
+      "timing_seconds": {
+        "read": 0.006663693056907505,
+        "price_preparation": 0.00463149300776422,
+        "geometry": 0.015702900011092424,
+        "write": 0.01182061294093728,
+        "factor_copy": 0.0,
+        "comparison": 0.0112254359992221,
+        "final_source_verification": 0.002195895998738706
+      },
+      "unique_input_file_bytes": 63242,
+      "samples_output_bytes": 22211
+    },
+    {
+      "samples": 128,
+      "total_seconds": 0.09262586903059855,
+      "timing_seconds": {
+        "read": 0.009004321997053921,
+        "price_preparation": 0.006921157008036971,
+        "geometry": 0.018446656002197415,
+        "write": 0.011351422988809645,
+        "factor_copy": 0.0,
+        "comparison": 0.011070093954913318,
+        "final_source_verification": 0.002203140000347048
+      },
+      "unique_input_file_bytes": 63242,
+      "samples_output_bytes": 22211
+    }
+  ],
+  "total_seconds": {
+    "mean": 0.09506816880311816,
+    "p50": 0.09262586903059855,
+    "p95": 0.11151319358032197,
+    "p99": 0.11505210029426963
+  },
+  "process_peak_rss_bytes": 227180544,
+  "process_seconds": 3.13837042695377,
+  "limits": [
+    "No usa corpus real ni mide inferencia o calidad predictiva.",
+    "Las modalidades opcionales ausentes comprimen m\u00e1s que vectores reales.",
+    "La RAM incluye la creaci\u00f3n del fixture y el proceso completo.",
+    "No mide energ\u00eda, VRAM, coste monetario ni una aceleraci\u00f3n equivalente."
+  ]
+}

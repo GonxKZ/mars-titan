@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-18T22:38:00.172776",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "benchmarks/candle_geometry.py"
+ ],
+ "totals": {
+  "statements": 163,
+  "covered_statements": 143,
+  "branches": 54,
+  "covered_branches": 42
+ },
+ "files": [
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "source_sha256": "78c76d40a3c7f3a83137681714f7b14ee308420612c91486f9914ea083e118bf",
+   "statements": 163,
+   "covered_statements": 143,
+   "branches": 54,
+   "covered_branches": 42
+  }
+ ],
+ "functions": [
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "windows",
+   "start_line": 50,
+   "end_line": 113,
+   "cyclomatic_complexity": 22,
+   "statements": 37,
+   "covered_statements": 32,
+   "coverage_fraction": 0.8648648648648649,
+   "branches": 16,
+   "covered_branches": 11,
+   "crap": 23.1944011213551
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "measure",
+   "start_line": 181,
+   "end_line": 262,
+   "cyclomatic_complexity": 12,
+   "statements": 31,
+   "covered_statements": 21,
+   "coverage_fraction": 0.6774193548387096,
+   "branches": 10,
+   "covered_branches": 8,
+   "crap": 16.833674599711323
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "_measure",
+   "start_line": 148,
+   "end_line": 178,
+   "cyclomatic_complexity": 12,
+   "statements": 18,
+   "covered_statements": 15,
+   "coverage_fraction": 0.8333333333333334,
+   "branches": 14,
+   "covered_branches": 11,
+   "crap": 12.666666666666666
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "_fingerprint",
+   "start_line": 138,
+   "end_line": 145,
+   "cyclomatic_complexity": 5,
+   "statements": 7,
+   "covered_statements": 6,
+   "coverage_fraction": 0.8571428571428571,
+   "branches": 4,
+   "covered_branches": 3,
+   "crap": 5.072886297376093
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "_images",
+   "start_line": 123,
+   "end_line": 135,
+   "cyclomatic_complexity": 5,
+   "statements": 6,
+   "covered_statements": 6,
+   "coverage_fraction": 1.0,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 5.0
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "main",
+   "start_line": 265,
+   "end_line": 301,
+   "cyclomatic_complexity": 5,
+   "statements": 28,
+   "covered_statements": 28,
+   "coverage_fraction": 1.0,
+   "branches": 6,
+   "covered_branches": 6,
+   "crap": 5.0
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "code_identity",
+   "start_line": 36,
+   "end_line": 47,
+   "cyclomatic_complexity": 2,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/candle_geometry.py",
+   "function": "_geometry",
+   "start_line": 116,
+   "end_line": 120,
+   "cyclomatic_complexity": 2,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 2.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "3252d3a3a30f0faeaad5c5dbaf78e6b3a627538d55fdca26660903e1365cecc3",
+ "functions_measured": 8
+}

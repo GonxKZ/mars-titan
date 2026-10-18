@@ -1,0 +1,46 @@
+{
+  "started_at_utc": "2026-10-18T20:27:46.378542+00:00",
+  "command": [
+    "uv",
+    "run",
+    "--no-sync",
+    "pytest",
+    "-q",
+    "tests/data/test_candle_geometry_benchmark.py"
+  ],
+  "source_sha256": "78c76d40a3c7f3a83137681714f7b14ee308420612c91486f9914ea083e118bf",
+  "mutants": [
+    {
+      "name": "lose_geometry_tolerance",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "394167513cd349b23751fba7f0982ca511966ca93805f17f2112cf7bfa244293"
+    },
+    {
+      "name": "lose_image_tolerance",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "507c8f95aaee52b232ac781adc30099e363bdb1ade277d873dbeb2c364f3c2a9"
+    },
+    {
+      "name": "lose_strict_precision",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "7e4153e2b41adfd05d3b818c9bff9561613d210a32c3836619a86feeb4450364"
+    },
+    {
+      "name": "overwrite_previous_measurement",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "c5c5d10f4ff8c7e5c28c51afa359315bbacfa5d21d464a3fbc64fb83f422dc38"
+    },
+    {
+      "name": "ignore_source_change",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "11e67558ec8429804775d6c0f375eccde29939d0f2583411e91d79401a239d52"
+    }
+  ],
+  "restored": true,
+  "finished_at_utc": "2026-10-18T20:28:20.033669+00:00"
+}

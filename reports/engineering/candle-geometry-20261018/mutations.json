@@ -1,0 +1,101 @@
+{
+  "measured_at": "2026-10-18T18:19:20.584130+00:00",
+  "scope": "targeted_mutation_no_training_cpu",
+  "mutations": [
+    {
+      "mutation": "wrong_window",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_only_the_selected_past_window_affects_values_and_source_hash",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.1142934540403076,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "a2bcf409d442ccb3021e3bade3a5c16357a7ead5069d2046d990671c40acbad2"
+    },
+    {
+      "mutation": "observed_absences",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_absences_keep_calendar_slots_without_creating_observations",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 2.8994988740305416,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "a0b9cd6be11699d7bcba9f5097aa34fda8957456caa795cacc83714406a6a5d1"
+    },
+    {
+      "mutation": "zero_range",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_zero_range_keeps_observed_mask_and_finite_zero_geometry",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 2.942522543016821,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "002c833e924dd19833a75fdb66522c32219f8c452b62841a33880ae5a22188af"
+    },
+    {
+      "mutation": "price_hash",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_input_hash_distinguishes_values_hidden_by_pixel_rounding",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.4484260880271904,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "3baaf053f7a753ff477288f9ac9ff466eb099734e350146fe8d6068823a8ca14"
+    },
+    {
+      "mutation": "accept_disorder",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_admitted_rounding_is_kept_without_repairing_prices",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.344592312001623,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "dcdc4c227f5bc3ff455e2312f8cf17d21f4c4ade963dc3551600eeb8ed12f829"
+    },
+    {
+      "mutation": "repair_wick",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_admitted_rounding_is_kept_without_repairing_prices",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 2.7134168680058792,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "2e01270a0cdbddf33820cb52087c9255688f494f26eec08eb354249e06e18693"
+    },
+    {
+      "mutation": "mutable_identity",
+      "source": "src/mars_titan/data/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry.py::test_geometry_identity_cannot_be_relabelled_after_construction",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.054912702005822,
+      "original_sha256": "46014387d0cf30ba577ad8cf94d5a32c8a83428547eae889c7ae8d6c39a284ae",
+      "log_sha256": "80bc5489d6aca9549ba03e2a21dfdc535ce61e5ad7abc66f769f9a527f81af76"
+    },
+    {
+      "mutation": "rasterize_geometry",
+      "source": "src/mars_titan/data/cohort_samples.py",
+      "test": "tests/data/test_candle_geometry_integration.py::test_materialization_keeps_rows_masks_and_other_inputs_without_rasterizing",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.627640467020683,
+      "original_sha256": "e9883602f99f114f66038be568f0089ecd25e52e5152780846dcc7fe61b5d60a",
+      "log_sha256": "f945ee0a104be3d446c0449cb1c3a3b7a6271e3e8a91844479b9dec1528e1b65"
+    },
+    {
+      "mutation": "ignore_macro_change",
+      "source": "benchmarks/candle_geometry.py",
+      "test": "tests/data/test_candle_geometry_integration.py::test_comparison_rejects_changes_outside_the_chart_representation[macro]",
+      "outcome": "killed",
+      "exit_code": 1,
+      "seconds": 3.6331182660069317,
+      "original_sha256": "8af6e96574464535fa98846105edc2444f8faa16dc98af61390cce340d33cec5",
+      "log_sha256": "e60c05554c76f6938d3092d22c1e747239e9c2a2fefdba31ea0a0be4a4c35b23"
+    }
+  ],
+  "killed": 9,
+  "total": 9,
+  "limits": [
+    "No es una exploración exhaustiva de mutantes ni garantía de ausencia de errores."
+  ]
+}
