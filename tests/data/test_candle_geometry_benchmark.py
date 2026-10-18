@@ -44,6 +44,8 @@ def test_cpu_benchmark_identifies_equal_inputs_and_real_timings(tmp_path):
     assert result["workload"]["context_sessions"] == 64
     assert result["optimizer_steps"] == 0
     assert result["cuda"] is None
+    assert result["encoder"] is None
+    assert "mars_titan.data.embeddings" in result["source_sha256"]
     assert set(result["results"]) == {"geometry", "ink"}
     assert result["output_bytes_per_row"] == 512 * 4
     for measured in result["results"].values():
@@ -97,3 +99,58 @@ def test_cuda_request_cannot_fall_back_when_gpu_admission_fails(monkeypatch):
     monkeypatch.setattr(GpuLease, "__enter__", unavailable)
     with pytest.raises(RuntimeError, match="GPU no preparada"):
         benchmark().measure(samples=1, repeats=1, warmup=0, device="cuda")
+
+
+def test_benchmark_preserves_the_declared_ohlc_tolerance_in_every_representation(tmp_path):
+    path = tmp_path / "rounded.npz"
+    values = np.tile([10.0, 10.0, 9.0, 10.0 + 1e-10], (1, 64, 1))
+    np.savez(path, windows=values, presence=np.ones((1, 64), dtype=bool))
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="tolerancia"):
+        benchmark().measure(windows_path=path, repeats=2, warmup=0)
+    result = benchmark().measure(windows_path=path, repeats=2, warmup=0, ordering_rtol=1e-9)
+    assert result["workload"]["ordering_rtol"] == 1e-9
+    assert set(result["results"]) == {"geometry", "ink"}
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("tolerance", [True, -1.0, 1e-5, float("nan")])
+def test_benchmark_rejects_invalid_ordering_tolerance_before_loading(tolerance, monkeypatch):
+    monkeypatch.setattr(benchmark(), "windows", lambda *_: pytest.fail("No debe abrir ventanas"))
+    with pytest.raises(ValueError):
+        benchmark().measure(ordering_rtol=tolerance)
+
+
+def test_cuda_cli_sets_strict_fp32_before_the_measurement(tmp_path, monkeypatch):
+    import torch
+
+    from mars_titan.data.embeddings import _strict_precision
+
+    before = (
+        torch.get_float32_matmul_precision(),
+        torch.backends.cuda.matmul.allow_tf32,
+        torch.backends.cudnn.allow_tf32,
+    )
+
+    def measured(**kwargs):
+        assert kwargs["device"] == "cuda"
+        return {"runtime_precision": _strict_precision()}
+
+    monkeypatch.setattr(benchmark(), "measure", measured)
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        destination = tmp_path / "cuda.json"
+        benchmark().main(["measure", "--device", "cuda", "--output", str(destination)])
+        assert json.loads(destination.read_text())["runtime_precision"]["cudnn_tf32"] is False
+    finally:
+        torch.set_float32_matmul_precision(before[0])
+        torch.backends.cuda.matmul.allow_tf32 = before[1]
+        torch.backends.cudnn.allow_tf32 = before[2]
+
+
+def test_changed_implementation_invalidates_the_benchmark(monkeypatch):
+    values = iter(({"source": "a" * 64}, {"source": "b" * 64}))
+    monkeypatch.setattr(benchmark(), "code_identity", lambda: next(values))
+    with pytest.raises(ValueError, match="código cambió"):
+        benchmark().measure(samples=1, repeats=1, warmup=0)

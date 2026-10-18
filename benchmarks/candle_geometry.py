@@ -7,6 +7,7 @@ restantes, incluida la máscara por sesión. No prepara objetivos ni inicia ajus
 
 import argparse
 import hashlib
+import importlib
 import io
 import json
 import platform
@@ -25,14 +26,30 @@ from mars_titan.data.candle_geometry import geometry_chart, geometry_spec
 from mars_titan.data.candle_geometry_edition import compare_representations
 from mars_titan.data.charts import chart_png
 from mars_titan.data.pretraining_free_encoders import chart_vectors
+from mars_titan.data.prices import check_ordering_rtol
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.hardware.platform_identity import cpu_name
 
 MAX_BYTES = 16 * 1024**2
 
 
-def windows(samples, path=None):
+def code_identity():
+    names = (
+        "mars_titan.data.candle_geometry",
+        "mars_titan.data.charts",
+        "mars_titan.data.pretraining_free_encoders",
+        "mars_titan.data.embeddings",
+        "mars_titan.data.prices",
+    )
+    return dict(
+        benchmark=sha256(Path(__file__)),
+        **{name: sha256(Path(importlib.import_module(name).__file__)) for name in names},
+    )
+
+
+def windows(samples, path=None, *, ordering_rtol=0.0):
     """Hasta 256 ventanas y 16 MiB sin comprimir. El archivo no acredita disponibilidad."""
+    check_ordering_rtol(ordering_rtol)
     if type(samples) is not int or not 1 <= samples <= 256:
         raise ValueError("El número de ventanas debe pertenecer a [1, 256]")
     if path is None:
@@ -81,7 +98,9 @@ def windows(samples, path=None):
     records = [(value[mask], mask) for value, mask in zip(values, present, strict=True)]
     digest = hashlib.sha256()
     for value, mask in records:
-        content, _ = geometry_chart(value, end_index=len(value) - 1, present=mask)
+        content, _ = geometry_chart(
+            value, end_index=len(value) - 1, present=mask, ordering_rtol=ordering_rtol
+        )
         digest.update(content.encode())
     return records, dict(
         **source,
@@ -90,20 +109,22 @@ def windows(samples, path=None):
         absent_slots=int((~present).sum()),
         input_bytes=values.nbytes + present.nbytes,
         inputs_sha256=digest.hexdigest(),
+        ordering_rtol=ordering_rtol,
     )
 
 
-def _geometry(records):
+def _geometry(records, *, ordering_rtol=0.0):
     return [
-        geometry_chart(value, end_index=len(value) - 1, present=mask) for value, mask in records
+        geometry_chart(value, end_index=len(value) - 1, present=mask, ordering_rtol=ordering_rtol)
+        for value, mask in records
     ]
 
 
-def _images(records, encoder=None):
+def _images(records, encoder=None, *, ordering_rtol=0.0):
     results = []
     for offset in range(0, len(records), 8):
         pngs = [
-            chart_png(value, end_index=len(value) - 1, present=mask)
+            chart_png(value, end_index=len(value) - 1, present=mask, ordering_rtol=ordering_rtol)
             for value, mask in records[offset : offset + 8]
         ]
         vectors = chart_vectors(pngs) if encoder is None else encoder.images(pngs)
@@ -157,8 +178,9 @@ def _measure(variants, records, repeats, warmup, synchronize):
     }
 
 
-def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None):
+def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None, ordering_rtol=0.0):
     """Tiempo incluye dibujo, representación y hash de entrada. El hash de salida queda fuera."""
+    check_ordering_rtol(ordering_rtol)
     if (
         type(samples) is not int
         or not 1 <= samples <= 256
@@ -172,9 +194,14 @@ def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None)
             "El lote, las repeticiones, el calentamiento o el dispositivo no son válidos"
         )
     started = time.perf_counter()
-    records, workload = windows(samples, windows_path)
-    variants = {"geometry": _geometry, "ink": _images}
+    sources = code_identity()
+    records, workload = windows(samples, windows_path, ordering_rtol=ordering_rtol)
+    variants = {
+        "geometry": partial(_geometry, ordering_rtol=ordering_rtol),
+        "ink": partial(_images, ordering_rtol=ordering_rtol),
+    }
     gpu, peak = None, None
+    encoder_identity = None
     synchronize = None
     lease = nullcontext()
     if device == "cuda":
@@ -189,7 +216,8 @@ def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None)
 
             torch.cuda.reset_peak_memory_stats(0)
             encoder = FrozenEncoders(image_batch_size=8, word_embedding_placement="cpu")
-            variants["resnet"] = partial(_images, encoder=encoder)
+            encoder_identity = encoder.spec
+            variants["resnet"] = partial(_images, encoder=encoder, ordering_rtol=ordering_rtol)
             synchronize = partial(torch.cuda.synchronize, 0)
             gpu = admitted.record
         results = _measure(variants, records, repeats, warmup, synchronize)
@@ -199,6 +227,8 @@ def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None)
                 allocated=torch.cuda.max_memory_allocated(0),
                 reserved=torch.cuda.max_memory_reserved(0),
             )
+    if code_identity() != sources:
+        raise ValueError("El código cambió durante la medida")
     return dict(
         schema_version=1,
         measured_at=datetime.now(UTC).isoformat(),
@@ -217,6 +247,8 @@ def measure(*, samples=64, repeats=9, warmup=2, device="cpu", windows_path=None)
         results=results,
         cuda=gpu,
         cuda_framework_peak_bytes=peak,
+        encoder=encoder_identity,
+        source_sha256=sources,
         process_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
         measure_total_seconds=time.perf_counter() - started,
         benchmark_sha256=sha256(Path(__file__)),
@@ -239,6 +271,7 @@ def main(argv=None):
     cost.add_argument("--repeats", type=int, default=9)
     cost.add_argument("--warmup", type=int, default=2)
     cost.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    cost.add_argument("--ordering-rtol", type=float, default=0.0)
     cost.add_argument("--output", type=Path, required=True)
     comparison = commands.add_parser("compare")
     comparison.add_argument("--previous", type=Path, required=True)
@@ -246,12 +279,17 @@ def main(argv=None):
     comparison.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "measure":
+        if args.device == "cuda":
+            from mars_titan.data.embeddings import strict_fp32
+
+            strict_fp32()
         result = measure(
             samples=args.samples,
             repeats=args.repeats,
             warmup=args.warmup,
             device=args.device,
             windows_path=args.windows,
+            ordering_rtol=args.ordering_rtol,
         )
         atomic_json(args.output, result)
         print(json.dumps(result, ensure_ascii=False))
