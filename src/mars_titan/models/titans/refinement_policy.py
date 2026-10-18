@@ -9,20 +9,9 @@ from torch import nn
 from ..quantile_head import QuantileHead, median
 from .config import require_identity
 from .episodic_readout import EpisodeRead, _SelectedEpisodes
+from .refinement_controls import FEATURES, ThresholdRoutePolicy
 from .refinement_routes import _ACTIONS, ROUTES, RouteResult, _checked_base, _Decision, _Node
 from .state import check_finite, deferred_checks, require_true
-
-FEATURES = (
-    "base_prediction",
-    "first_prediction",
-    "first_prediction_change",
-    "first_interval_width",
-    "attention_entropy",
-    "attention_maximum",
-    "read_rms",
-    "state_change_rms",
-    "memory_present",
-)
 
 
 class RoutePolicy(nn.Module):
@@ -227,16 +216,21 @@ def apply_routes(
     """
     if (policy is None) == (choices is None):
         raise ValueError("Se necesita una política o rutas explícitas, pero no ambas")
-    if policy is not None and type(policy) is not RoutePolicy:
+    if policy is not None and type(policy) not in (RoutePolicy, ThresholdRoutePolicy):
         raise ValueError("La política no tiene una identidad admitida")
     with deferred_checks(), torch.no_grad():
         base = _checked_base(base)
         codes = None if choices is None else _route_codes(choices, base)
+        explicit = (
+            torch.tensor(codes, dtype=torch.int64, device=base.device)
+            if type(choices) is tuple
+            else choices
+        )
         maximum = 1 if codes is None else max(int(ROUTES[code][1]) for code in codes)
         decision = _Decision(model, base.detach(), snapshot, context_id, cutoff, maximum)
         first = decision.extend()
         features, predictions, quantiles = route_features(base, first.result, head)
-        chosen = policy(features) if policy is not None else choices
+        chosen = policy(features) if policy is not None else explicit
         if codes is None:
             codes = _route_codes(chosen, base)
             maximum = max(int(ROUTES[code][1]) for code in codes)
@@ -275,15 +269,21 @@ def apply_routes(
 
 
 def _route_codes(chosen, base):
-    if (
-        not isinstance(chosen, torch.Tensor)
-        or chosen.shape != (len(base),)
-        or chosen.dtype != torch.int64
-        or chosen.device != base.device
-        or not 1 <= len(base) <= 256
+    if base.ndim != 2 or not 1 <= len(base) <= 256:
+        raise ValueError("Las rutas necesitan un lote de entre 1 y 256 estados de trabajo")
+    if type(chosen) is tuple:
+        if len(chosen) != len(base) or any(type(code) is not int for code in chosen):
+            raise ValueError("Las rutas host deben ser códigos enteros alineados con las filas")
+        codes = chosen
+    elif (
+        isinstance(chosen, torch.Tensor)
+        and chosen.shape == (len(base),)
+        and chosen.dtype == torch.int64
+        and chosen.device == base.device
     ):
-        raise ValueError("Las rutas deben ser códigos int64 alineados en el mismo dispositivo")
-    codes = chosen.cpu().tolist()
+        codes = tuple(chosen.cpu().tolist())
+    else:
+        raise ValueError("Las rutas deben ser una tupla host o códigos int64 en el dispositivo")
     if any(code < 0 or code >= len(ROUTES) for code in codes):
-        raise ValueError("El código de ruta no está admitido")
+        raise ValueError("El lote o código de ruta no está admitido")
     return codes

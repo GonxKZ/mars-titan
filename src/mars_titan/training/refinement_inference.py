@@ -8,6 +8,7 @@ import torch
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicPrediction
 from mars_titan.models.titans.frozen_financial import _numerics
+from mars_titan.models.titans.refinement_controls import HashedRoutes, ThresholdRoutePolicy
 from mars_titan.models.titans.refinement_policy import (
     RoutePolicy,
     _output,
@@ -44,13 +45,21 @@ class RefinementInference(MarsTitanInference):
     madurar. El recorrido base conserva calendario, admisión y reinicio de fases.
     """
 
-    def __init__(self, *args, mode, route=None, policy=None, trace=None, **kwargs):
-        if mode not in ("collect", "fixed", "policy"):
-            raise ValueError("El modo debe ser collect, fixed o policy")
+    def __init__(self, *args, mode, route=None, policy=None, schedule=None, trace=None, **kwargs):
+        if mode not in ("collect", "fixed", "policy", "hashed"):
+            raise ValueError("El modo debe ser collect, fixed, policy o hashed")
         if (mode == "fixed" and route not in ROUTES) or (mode != "fixed" and route is not None):
             raise ValueError("La ruta fija no corresponde al modo declarado")
-        if (mode == "policy") != (type(policy) is RoutePolicy):
+        if mode == "policy":
+            valid_policy = type(policy) in (RoutePolicy, ThresholdRoutePolicy)
+        else:
+            valid_policy = policy is None
+        if not valid_policy:
             raise ValueError("El modo de política necesita un controlador identificado")
+        if (mode == "hashed" and type(schedule) is not HashedRoutes) or (
+            mode != "hashed" and schedule is not None
+        ):
+            raise ValueError("La asignación por hash no corresponde al modo declarado")
         if mode == "collect" and not callable(trace):
             raise ValueError("La colección necesita un destino explícito para las trazas maduras")
         if mode != "collect" and trace is not None:
@@ -59,7 +68,8 @@ class RefinementInference(MarsTitanInference):
         if self.admission not in ("m0", "m1"):
             raise ValueError("Las rutas compartidas requieren M0 o M1, sin admisión por error")
         self.mode, self.route, self.policy, self.trace = mode, route, policy, trace
-        if policy is not None and policy.mean.device != self.device:
+        self.schedule = schedule
+        if type(policy) is RoutePolicy and policy.mean.device != self.device:
             raise ValueError("La política debe estar en el dispositivo del predictor")
         self.pending_traces = {}
         self._models = (self.predictor, self.readout, policy)
@@ -70,6 +80,13 @@ class RefinementInference(MarsTitanInference):
         self._contract_json = canonical(self.identity())
 
     def _verify_frozen(self):
+        if any(
+            before is not after
+            for before, after in zip(
+                self._models, (self.predictor, self.readout, self.policy), strict=True
+            )
+        ):
+            raise ValueError("Los módulos cambiaron desde la selección")
         for model in self._models:
             if model is not None and (
                 any(module.training for module in model.modules())
@@ -80,7 +97,7 @@ class RefinementInference(MarsTitanInference):
                 raise ValueError("El núcleo, lector y política deben permanecer congelados")
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             family="bounded_refinement_routes_v1",
             mode=self.mode,
@@ -97,6 +114,9 @@ class RefinementInference(MarsTitanInference):
             max_pending_traces=32768,
             phase_state="restart_with_past_inputs_only_warmup",
         )
+        if self.schedule is not None:
+            result["schedule"] = self.schedule.identity()
+        return result
 
     def _new_pass(self, partition):
         if self.pending_traces:
@@ -165,12 +185,17 @@ class RefinementInference(MarsTitanInference):
             result = EpisodicPrediction(point, work, quantiles)
             self._route_counts[self.route] += size
         else:
+            selection = (
+                dict(choices=self.schedule.choices(batch.flow_ids, batch.prediction_at))
+                if self.mode == "hashed"
+                else dict(policy=self.policy)
+            )
             chosen = apply_routes(
                 self.readout,
                 prepared.working_state,
                 self.predictor.head,
                 snapshot,
-                policy=self.policy,
+                **selection,
                 **options,
             )
             routes = [ROUTES[code] for code in chosen.route_codes]
