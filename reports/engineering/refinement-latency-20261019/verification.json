@@ -1,0 +1,57 @@
+{
+  "recorded_at_utc": "2026-10-18T23:10:09.237614+00:00",
+  "source_commit": "2efdc5c2419595ece63461424fd4027bb676bad6",
+  "scientific_dependencies_commit": "6b037a7262d4c2d97105b194a137f8b2f5767b01",
+  "sources": {
+    "benchmarks/refinement_latency.py": "330f4030454b35a2ae2e8f44e08a752a252fda0a3bfa425140d65286cad7a119",
+    "benchmarks/refinement_latency_study.py": "bb32fcba0cf29d3bb81750dda83cac9e1bcbe24683ffdff49a309cb7853a8898",
+    "tests/tooling/test_refinement_latency.py": "90530e9210266c7d3c7851ee0c7cea9569e1568acc142e8ca4ca57faa4357652",
+    "tests/tooling/test_refinement_latency_study.py": "6973ed10b4baa69ecabdfe37073bc5827c77a0a97c4933a699ad8122943a5f60"
+  },
+  "artifact_sha256": {
+    "latency-quality-v1/cpu.xml": "3a53450673d55364c930c9770fea19d01903d28d5b99b2e9df10e3184b8b6f87",
+    "latency-quality-v1/cpu.log": "b05e316a5fa174086d676594b69e238844f3291d1994f68bc0850f5a21bbfaaa",
+    "latency-quality-v1/coverage.json": "e9b3d73feea2fdc36f2fee26cc039f466decbc1c936fdf33d543e32ff35c74a9",
+    "latency-cuda.xml": "c9e2841aa6ad4df187763262b5ee32fa08e8dbdb921560380206c329ed1d788f",
+    "latency-cuda.log": "abc540c2578e2b6afa9a1a33d5a25fcfd5a49164c64244e5c4cdac10d7d9a3ed",
+    "latency-cuda-cases.json": "7785a91ebcd8ba95ed96c8fd9a8ff0c805e79e100aa08c29d1d088bdfe74b332",
+    "latency-mutations-v1/mutations.json": "f7768e39423ec8256c95c4710f89be17a7953aa069a9e5ac38224a95dd8f3f7e",
+    "frozen-latency-protocol.md": "06d698390263ddc458d7558e842bf2570e92a4ba939335b9d8ca1e0da372e6b3"
+  },
+  "cpu_tests": {
+    "tests": "47",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "22.346"
+  },
+  "cuda_tests": {
+    "tests": "3",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "7.626"
+  },
+  "cuda_nodeids": [
+    "tests/tooling/test_refinement_latency.py::test_cuda_instrumentation_preserves_bits_and_records_allocator_peaks",
+    "tests/tooling/test_refinement_latency.py::test_real_cuda_reader_keeps_predictions_and_states_when_timed[dtype0]",
+    "tests/tooling/test_refinement_latency.py::test_real_cuda_reader_keeps_predictions_and_states_when_timed[dtype1]"
+  ],
+  "cuda_device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "precision": [
+    "FP32",
+    "FP64"
+  ],
+  "coverage_scope": "Solo la invocación CPU. Las pruebas CUDA se informan aparte.",
+  "mutation_scope": "14 fallos dirigidos. No es cobertura de mutación global.",
+  "optimizer_steps": 0,
+  "scientific_data_used": false,
+  "real_selected_checkpoint_replay": "pending",
+  "final_test_opened": false,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "No hay un resultado de calidad predictiva.",
+    "La latencia de los checkpoints seleccionados sigue sin medir.",
+    "El recorrido completo satisfactorio de la CLI CUDA y la carga real de evaluación necesitan los checkpoints seleccionados y sellados."
+  ]
+}
