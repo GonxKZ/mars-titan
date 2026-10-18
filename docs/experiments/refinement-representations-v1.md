@@ -84,7 +84,9 @@ que ese coste quede fuera del total conjunto.
 La supervisión solicita la parada de su propio árbol de procesos antes de
 agotar el saldo conjunto y limita la espera de cierre a cinco segundos. El
 comando `timeout`, ejecutado como proceso independiente, conserva ese límite
-si el supervisor termina abruptamente.
+si el supervisor termina abruptamente. El límite externo utiliza el menor
+saldo disponible entre el conjunto y el estudio. Al incluir el arranque del
+hijo, puede detenerse antes que el cronómetro interno del estudio.
 Registra cualquier exceso observado durante el cierre. Una parada forzada
 conserva el último estado confirmado y puede dejar una reserva pública sin
 cerrar. Ese caso requiere revisar los recibos antes de reanudar. No se
@@ -122,3 +124,8 @@ con otra que incluya lectura y transferencias sin desglosar esa diferencia.
 
 Este documento fija el contraste y las medidas pendientes. No contiene
 resultados de entrenamientos ni latencias de checkpoints reales.
+
+La [ampliación a 64 y 256 activos](refinement-scaling-v1.md) fija el presupuesto
+de dieciséis horas para cuatro estudios y compara el escalado también sobre
+los 64 activos comunes. El límite de ocho horas de este documento corresponde
+a una pareja de representaciones del mismo tamaño.

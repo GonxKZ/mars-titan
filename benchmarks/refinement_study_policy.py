@@ -18,6 +18,7 @@ from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS
 from mars_titan.training.learning_hold import require_learning_allowed
 
 from .refinement_study import configuration
+from .refinement_study_capacity import MAX_TRACE_ROWS
 from .refinement_study_traces import completed_phase, reconstruct
 
 
@@ -200,7 +201,7 @@ def _traces(folder, partition):
     if receipt.get("status") != "completed" or receipt["identity"]["partition"] != partition:
         raise ValueError("La colección no ha confirmado la fase solicitada")
     completed_phase(folder / partition, receipt["identity"])
-    table = read_bounded_table(folder / partition / "traces.parquet", max_rows=131072)
+    table = read_bounded_table(folder / partition / "traces.parquet", max_rows=MAX_TRACE_ROWS)
     if len(table) != receipt["rows"]:
         raise ValueError("Las trazas no conservan su número de filas")
     return table, receipt
@@ -507,7 +508,7 @@ def select_thresholds(work, job, output, train, dataset, source, *, stop, device
 def fit_calibrator(output, calibration_path):
     from mars_titan.calibration.conformal_quantiles import fit_conformal_quantiles
 
-    calibration = read_bounded_table(calibration_path, max_rows=131072)
+    calibration = read_bounded_table(calibration_path, max_rows=MAX_TRACE_ROWS)
     spec = configuration()["calibration"]
     q = np.column_stack([calibration[name].to_numpy() for name in QUANTILE_COLUMNS])
     record = fit_conformal_quantiles(
@@ -530,7 +531,7 @@ def fit_calibrator(output, calibration_path):
 def apply_calibrator(output, record, evaluation_path):
     from mars_titan.calibration.conformal_quantiles import apply_conformal_quantiles
 
-    evaluation = read_bounded_table(evaluation_path, max_rows=131072)
+    evaluation = read_bounded_table(evaluation_path, max_rows=MAX_TRACE_ROWS)
     q_eval = np.column_stack([evaluation[name].to_numpy() for name in QUANTILE_COLUMNS])
     calibrated, widened = apply_conformal_quantiles(
         record, q_eval, np.asarray(evaluation["market"].to_pylist())

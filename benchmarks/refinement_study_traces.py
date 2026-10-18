@@ -23,7 +23,9 @@ from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.mars_titan_run import MarsTitanInference
 
-MAX_ROWS = 131072
+from .refinement_study_capacity import MAX_TRACE_ROWS
+
+MAX_ROWS = MAX_TRACE_ROWS
 FINAL_TEST_US = 1704067200000000
 
 

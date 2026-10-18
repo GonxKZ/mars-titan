@@ -19,8 +19,40 @@ CONFIG = ROOT / "configs/experiments/refinement-development-v1.json"
 FOLDS = {"fold-017": 2022, "fold-018": 2023}
 
 
-def configuration():
-    return read_manifest(CONFIG)[0]
+def configuration(*, cohort_size=None):
+    """Elegir una cohorte declarada sin modificar el catálogo compartido."""
+    result = read_manifest(CONFIG)[0]
+    size = result["cohort_size"] if cohort_size is None else cohort_size
+    if type(size) is not int or size not in result["cohort_sizes"]:
+        raise ValueError("El tamaño de cohorte debe ser uno de los declarados")
+    result["cohort_size"] = size
+    return result
+
+
+def _rank(symbol, salt):
+    return hashlib.sha256(f"{salt}/US/{symbol}".encode()).digest(), symbol
+
+
+def cohort_contract(assets):
+    """Identificar la cohorte y el prefijo común de hasta 64 activos del mismo ranking."""
+    if not assets or len(assets) != len(set(assets)) or len(assets) > 256:
+        raise ValueError("La identidad de cohorte necesita activos únicos y acotados")
+    ordered = sorted(assets)
+    salt = configuration()["cohort_salt"]
+    common = sorted(sorted(assets, key=lambda symbol: _rank(symbol, salt))[:64])
+
+    def fingerprint(values):
+        return hashlib.sha256(
+            json.dumps([["US", symbol] for symbol in values], separators=(",", ":")).encode()
+        ).hexdigest()
+
+    return dict(
+        id=f"historical_hash_n{len(ordered)}_v2",
+        size=len(ordered),
+        assets_sha256=fingerprint(ordered),
+        common_assets=common,
+        common_assets_sha256=fingerprint(common),
+    )
 
 
 def _window(source, fold):
@@ -65,12 +97,10 @@ def choose_assets(source, count):
     ):
         raise ValueError("Los activos necesitan recuentos de ajuste enteros y no negativos")
     candidates = [symbol for symbol, a in assets.items() if a["counts"]["train"] > 0]
-    if type(count) is not int or not 1 <= count <= min(64, len(candidates)):
+    if type(count) is not int or not 1 <= count <= min(256, len(candidates)):
         raise ValueError("No hay un número válido y suficiente de activos")
     salt = configuration()["cohort_salt"]
-    candidates.sort(
-        key=lambda symbol: (hashlib.sha256(f"{salt}/US/{symbol}".encode()).digest(), symbol)
-    )
+    candidates.sort(key=lambda symbol: _rank(symbol, salt))
     return tuple(sorted(candidates[:count]))
 
 
@@ -105,10 +135,10 @@ def project_view(source, symbols, fold, epochs):
     return result
 
 
-def jobs():
+def jobs(config=None):
     """Catálogo finito. La primera semilla completa permite estimar coste antes de ampliar."""
     result = []
-    config = configuration()
+    config = configuration() if config is None else config
     for seed in config["seeds"]:
         for projection in config["projections"]:
             stem = f"{projection}-{seed}"
@@ -186,6 +216,7 @@ def code_identity():
                 "refinement_study_traces.py",
                 "refinement_study_policy.py",
                 "refinement_study_controls.py",
+                "refinement_study_capacity.py",
                 "memory_microstudy.py",
                 "memory_microstudy_analysis.py",
             )
@@ -221,6 +252,8 @@ def _recipes(work, config):
             0
         ]
         core["recipe"].update(epochs=config["epochs"], accumulation_rows=None)
+        core["recipe"]["block_rows"] = config["max_decision_batch"]
+        core["predictor"]["max_batch"] = config["max_decision_batch"]
         core["predictor"]["attention_layout"] = config["attention_layout"]
         if name == "mac_paper":
             core["predictor"]["memory_projections"] = "titans_mac_paper_projections_v2"
@@ -233,6 +266,7 @@ def _recipes(work, config):
         epochs=config["epochs"],
         bank_capacity=config["bank_capacity"],
         refinement_initialization="zero_refinement",
+        block_rows=config["max_decision_batch"],
     )
     reader["pending"] = ["Lector M1 elegido antes del ajuste de la política de rutas."]
     path = work / "recipes/reader.json"
@@ -240,19 +274,21 @@ def _recipes(work, config):
     return paths + [path]
 
 
-def prepare(sources, work):
+def prepare(sources, work, *, cohort_size=None):
     """Preparar dos vistas de la misma cohorte y acreditar la disjunción de las filas de puerta."""
     from mars_titan.posttraining.chronological_windows import staged_window
     from mars_titan.posttraining.staged_rows import fit_rows_proof
     from mars_titan.training.corpus_inputs import CorpusDataset
     from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 
+    from .refinement_study_capacity import capacity_audit
+
     sources, work = Path(sources), Path(work)
     safe_destination(work)
     outside_source(sources, work)
     if work.exists():
         raise FileExistsError("El estudio necesita un directorio nuevo")
-    config = configuration()
+    config = configuration(cohort_size=cohort_size)
     originals = {name: read_manifest(sources / name / "manifest.json")[0] for name in FOLDS}
     selected = choose_assets(originals["fold-017"], config["cohort_size"])
     views = {
@@ -292,12 +328,21 @@ def prepare(sources, work):
     path = work / "staged.json"
     atomic_json(path, dict(fold=fold, phases=phases, placement=placement, fit_rows_proof=proof))
     artifacts.extend([path, *_recipes(work, config)])
+    path = work / "capacity.json"
+    capacity = capacity_audit(
+        datasets["fold-017"],
+        datasets["fold-018"],
+        parent_fold=views["fold-017"]["temporal_view"]["fold"],
+        policy_phases=phases,
+    )
+    atomic_json(path, capacity)
+    artifacts.append(path)
     receipt = dict(
-        schema_version=1,
+        schema_version=2,
         kind=config["kind"],
         configuration=config,
         configuration_sha256=sha256(CONFIG),
-        jobs=jobs(),
+        jobs=jobs(config),
         code=code_identity(),
         environment=environment_identity(),
         artifacts={str(p.relative_to(work)): sha256(p) for p in artifacts},
@@ -309,6 +354,8 @@ def prepare(sources, work):
             for name in FOLDS
         },
         assets=list(selected),
+        cohort=cohort_contract(selected),
+        capacity_sha256=sha256(path),
         counts={name: value["counts"] for name, value in views.items()},
         cohort_selection=dict(
             rule="sha256_among_parent_train_positive",
@@ -323,17 +370,29 @@ def prepare(sources, work):
     return receipt
 
 
-def verify_prepared(work):
+def verify_prepared(work, *, cohort_size=None):
     work = Path(work).resolve()
     receipt = read_manifest(work / "prepared.json")[0]
+    size = receipt["configuration"]["cohort_size"]
+    if cohort_size is not None:
+        configuration(cohort_size=cohort_size)
+        if cohort_size != size:
+            raise ValueError("La preparación pertenece a otra cohorte")
+    config = configuration(cohort_size=size)
     if (
         receipt["configuration_sha256"] != sha256(CONFIG)
-        or receipt["configuration"] != configuration()
-        or receipt["jobs"] != jobs()
+        or receipt["configuration"] != config
+        or receipt["jobs"] != jobs(config)
         or receipt["code"] != code_identity()
         or receipt["environment"] != environment_identity()
+        or len(receipt["assets"]) != size
+        or receipt["cohort"] != cohort_contract(receipt["assets"])
     ):
         raise ValueError("La configuración, código o catálogo cambió después de preparar")
+    if receipt.get("capacity_sha256") != receipt["artifacts"].get("capacity.json") or receipt.get(
+        "capacity_sha256"
+    ) != sha256(work / "capacity.json"):
+        raise ValueError("La auditoría de capacidad cambió después de preparar")
     for name, digest in receipt["artifacts"].items():
         path = work / name
         safe_destination(path)
@@ -358,18 +417,19 @@ def main():
     parser.add_argument("--work", required=True, type=Path)
     parser.add_argument("--sources", type=Path)
     parser.add_argument("--job")
+    parser.add_argument("--cohort-size", type=int, choices=(64, 256))
     args = parser.parse_args()
     if args.command == "prepare":
         if args.sources is None or args.job is not None:
             parser.error("prepare necesita --sources y no admite --job")
-        result = prepare(args.sources, args.work)
+        result = prepare(args.sources, args.work, cohort_size=args.cohort_size)
     elif args.command == "verify":
         if args.sources is not None or args.job is not None:
             parser.error("verify solo necesita --work")
-        result = verify_prepared(args.work)
+        result = verify_prepared(args.work, cohort_size=args.cohort_size)
     else:
-        if args.job is None or args.sources is not None:
-            parser.error("run necesita --job y no admite --sources")
+        if args.job is None or args.sources is not None or args.cohort_size is not None:
+            parser.error("run necesita --job y usa la cohorte ya fijada, sin --sources")
         result = run_job(args.work, args.job)
     print(json.dumps(result, ensure_ascii=False))
 
