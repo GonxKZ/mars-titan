@@ -279,11 +279,14 @@ def execute(work, job, budget):
             )
         if job["kind"] == "readout":
             recipe = "zero-readout" if job["initialization"] == "zero_refinement" else "readout"
+            components = dict(episodic_bank=job["admission"])
+            if job["refinements"] != 1:
+                components["refinements"] = job["refinements"]
             return mars.run_mars_titan_window(
                 view,
                 parent,
                 folder / f"{recipe}.json",
-                components=dict(episodic_bank=job["admission"], refinements=job["refinements"]),
+                components=components,
                 **common,
             )
         from mars_titan.posttraining import (

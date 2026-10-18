@@ -1,0 +1,13 @@
+{
+  "name": "send_default_refinement_as_enabled_component",
+  "source": "benchmarks/combined_memory_study.py",
+  "source_sha256": "d0596562d636c5cb42471a46358b4347eb0d225d454a7145d9079d7c2765f528",
+  "old": "if job[\"refinements\"] != 1:",
+  "new": "if True:",
+  "detected": true,
+  "source_restored": true,
+  "logs": {
+    "baseline": "8be822fefd7f125954ffc8893a92dda65508beafee2cfc5e689cb139c6181ee9",
+    "mutation": "7be7d017525a4cee38c566f3df040efb56a7fa4ff40279d5a2747c6e0ef87256"
+  }
+}

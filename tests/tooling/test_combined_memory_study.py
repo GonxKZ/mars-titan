@@ -133,6 +133,8 @@ def test_prepare_and_dispatch_every_case_with_valid_recipes(tmp_path, monkeypatc
 
         assert not torch.backends.mha.get_fastpath_enabled()
         assert kwargs["device"] == "cuda:0"
+        if "components" in kwargs:
+            mars_titan_walk_forward._components(kwargs["components"])
         called.append(kwargs)
         return dict(status="prepared")
 
