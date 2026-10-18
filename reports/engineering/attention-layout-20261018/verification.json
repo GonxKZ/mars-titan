@@ -1,0 +1,39 @@
+{
+  "recorded_at_utc": "2026-10-18T17:54:32.148019+00:00",
+  "invocations": [
+    {
+      "log": "layout-tests.log",
+      "passed": 122,
+      "seconds": 8.71,
+      "log_sha256": "804658fad0f21ef01274311bef411e6904a18a315aedcd0d141d58d51b6421f0"
+    },
+    {
+      "log": "layout-integration.log",
+      "passed": 1,
+      "seconds": 21.52,
+      "log_sha256": "9f9e238328c028d469739fed8965460c2564378f6b79ed1d5ec1daac844737a4"
+    },
+    {
+      "log": "quality-baseline.log",
+      "passed": 57,
+      "seconds": 10.64,
+      "log_sha256": "1c6873f28b6506b744dc9b512af90aba54c140b88869385505becf4d231e5c72"
+    },
+    {
+      "log": "layout-final-integration.log",
+      "passed": 30,
+      "seconds": 56.2,
+      "log_sha256": "b3b7dee5413432908907bb674738a3ed0f339c541522c3db6f66bb8de311ad54"
+    }
+  ],
+  "overlapping_invocations": true,
+  "skipped_in_successful_invocations": 0,
+  "warning": "El diagnóstico de sincronización CUDA de PyTorch es experimental.",
+  "mutation_detected": 9,
+  "mutation_total": 9,
+  "limits": [
+    "No se ha repetido aquí toda la suite del repositorio.",
+    "La cobertura publicada corresponde a los cinco módulos seleccionados.",
+    "No hay cambios C++/CUDA propios ni afirmación de estabilidad global."
+  ]
+}

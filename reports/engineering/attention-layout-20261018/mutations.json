@@ -1,0 +1,219 @@
+{
+  "recorded_at_utc": "2026-10-18T17:31:49.694407+00:00",
+  "tool": "Mutación textual dirigida con pytest",
+  "baseline": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "coverage",
+      "run",
+      "--branch",
+      "--source=src/mars_titan,benchmarks",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/models/titans/test_attention_layout.py",
+      "tests/training/test_predictor_extension_composition.py",
+      "tests/tooling/test_combined_memory_numerics.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "1c6873f28b6506b744dc9b512af90aba54c140b88869385505becf4d231e5c72"
+  },
+  "restored": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/models/titans/test_attention_layout.py",
+      "tests/training/test_predictor_extension_composition.py",
+      "tests/tooling/test_combined_memory_numerics.py"
+    ],
+    "exit_code": 0,
+    "log_sha256": "27df2a096cc7abbc31c61a9098b8485fb3eecb6789e1b158166df847cbfd9d99"
+  },
+  "mutants": [
+    {
+      "name": "disable_layout",
+      "source": "src/mars_titan/models/titans/mac.py",
+      "source_sha256": "977b34671c25585bff266168c29be001887c6f40478de43740d0e4fbb5f74667",
+      "old": "if self.config.attention_layout == \"sequence_contiguous_v1\":",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "ed8388b566ddd632424b0b93c0e57b801b171a274257cd3ce8bae1edd5e4f9a2"
+    },
+    {
+      "name": "keep_batch_first",
+      "source": "src/mars_titan/models/titans/mac.py",
+      "source_sha256": "977b34671c25585bff266168c29be001887c6f40478de43740d0e4fbb5f74667",
+      "old": "packed = packed.transpose(0, 1).contiguous().transpose(0, 1)",
+      "new": "packed = packed.contiguous()",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "849ee3fab5812638e0e7d9e0cc2ab62197985b3c464aa3215f59a7ac2a8618d1"
+    },
+    {
+      "name": "change_legacy_route",
+      "source": "src/mars_titan/models/titans/mac.py",
+      "source_sha256": "977b34671c25585bff266168c29be001887c6f40478de43740d0e4fbb5f74667",
+      "old": "if self.config.attention_layout == \"sequence_contiguous_v1\":",
+      "new": "if True:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "975939d77d7224cbd3353bbc2d794ea118e075cdfbf70da9a58e50dec45c6fab"
+    },
+    {
+      "name": "lose_layout_identity",
+      "source": "src/mars_titan/models/titans/config.py",
+      "source_sha256": "233f0ee29652b5e102f706186e44be08f602eeb11c2a8b29e2d1878380dbc000",
+      "old": "if self.attention_layout == \"batch_first_v1\":",
+      "new": "if True:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "c6e886f47661d23ca36c7b278f78ec7a911de6705bd33fe9d318e7a0f1aec2df"
+    },
+    {
+      "name": "change_legacy_identity",
+      "source": "src/mars_titan/models/titans/config.py",
+      "source_sha256": "233f0ee29652b5e102f706186e44be08f602eeb11c2a8b29e2d1878380dbc000",
+      "old": "if self.attention_layout == \"batch_first_v1\":",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "01844f320a81b132c42934812c224efed0bc924c3b4cfa4c73227bb57d44a587"
+    },
+    {
+      "name": "accept_unknown_layout",
+      "source": "src/mars_titan/models/titans/config.py",
+      "source_sha256": "233f0ee29652b5e102f706186e44be08f602eeb11c2a8b29e2d1878380dbc000",
+      "old": "if self.attention_layout not in ATTENTION_LAYOUTS:",
+      "new": "if False:",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "ba48c84ff08ea61309b73e7c283e6b29b6b3fdf8b828ebc99d1309e812ffd196"
+    },
+    {
+      "name": "ignore_financial_layout",
+      "source": "src/mars_titan/models/titans/financial.py",
+      "source_sha256": "7f98ea1d879f763f1cbab39ec8ebe15e70c7eda390e22cb408ed9bd6fd14144a",
+      "old": "attention_layout=config.attention_layout,",
+      "new": "attention_layout=\"batch_first_v1\",",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "25f3226dadeb564c11ba717ef4792202e2a765a4844df20489b92a3e01d51801"
+    },
+    {
+      "name": "ignore_search_layout",
+      "source": "src/mars_titan/training/search_cases.py",
+      "source_sha256": "3245d5371411f24b817116061fdec00c61fd8c021a518634261f3f452ba3c0a2",
+      "old": "if name in (\"presence_modulation\", \"attention_layout\")",
+      "new": "if name == \"presence_modulation\"",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "541f3909bf307ba80d248a682d2242c13d2257ed0a8d689450a5d54d5f157e56"
+    },
+    {
+      "name": "misidentify_diagnostic",
+      "source": "benchmarks/combined_memory_numerics.py",
+      "source_sha256": "8cdc96bac93cd75871289cec979321da2460875902bacea3abd249191ccfc82a",
+      "old": "model._seal_parameters()",
+      "new": "pass",
+      "outcome": "detected",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_attention_layout.py",
+        "tests/training/test_predictor_extension_composition.py",
+        "tests/tooling/test_combined_memory_numerics.py"
+      ],
+      "exit_code": 1,
+      "log_sha256": "0920ce607c6c36b8dfc8bc3b32479fe95c61d06ff3cf7a4e38407b884b28ba15"
+    }
+  ]
+}

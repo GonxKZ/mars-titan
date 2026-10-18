@@ -14,6 +14,7 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.models.titans.config import ATTENTION_LAYOUTS
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.neural_memory import NeuralMemory
 from mars_titan.training import mars_titan_walk_forward as mars
@@ -79,10 +80,12 @@ def projection_local_graph(model):
             stack.pop().__exit__(None, None, None)
 
 
-def replay(work, parent_id, route, output):
+def replay(work, parent_id, route, output, *, attention_layout=None):
     require_learning_allowed("el diagnóstico numérico acotado")
     if route not in ROUTES or parent_id not in ("fold-018/cell0-42", "fold-018/cell7-42"):
         raise ValueError("El diagnóstico solo admite las referencias declaradas")
+    if attention_layout is not None and attention_layout not in ATTENTION_LAYOUTS:
+        raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
     linear_setting = os.environ.get("TORCH_LINEAR_FLATTEN_3D")
     if ("_flat_" in route and linear_setting != "1") or (
         "_flat_" not in route and linear_setting not in (None, "0")
@@ -114,6 +117,12 @@ def replay(work, parent_id, route, output):
         model = mars._frozen_parent(
             document, sources["train"].specification(), 42, "cuda:0", parent, report
         )
+        if attention_layout is not None:
+            # Intervención explícita sobre un checkpoint ya cargado. Se conserva su valor,
+            # se identifica la disposición nueva y el recorrido crea estados rápidos nuevos.
+            model.config = replace(model.config, attention_layout=attention_layout)
+            model.mac.config = replace(model.mac.config, attention_layout=attention_layout)
+            model._seal_parameters()
         model.requires_grad_(not route.endswith("_frozen"))
         recipe = window.case_recipe(document, report["request"].get("search_case"))
         if route.startswith("fp64"):
@@ -174,6 +183,8 @@ def replay(work, parent_id, route, output):
             target_metrics_included=False,
             final_test_opened=False,
         )
+        if attention_layout is not None:
+            record["diagnostic_attention_layout"] = attention_layout
         atomic_json(output / "run.json", record)
         return record
 
@@ -184,8 +195,14 @@ def main():
     parser.add_argument("--parent", required=True)
     parser.add_argument("--route", choices=ROUTES, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--attention-layout", choices=ATTENTION_LAYOUTS)
     args = parser.parse_args()
-    print(json.dumps(replay(args.work, args.parent, args.route, args.output), ensure_ascii=False))
+    options = {} if args.attention_layout is None else dict(attention_layout=args.attention_layout)
+    print(
+        json.dumps(
+            replay(args.work, args.parent, args.route, args.output, **options), ensure_ascii=False
+        )
+    )
 
 
 if __name__ == "__main__":
