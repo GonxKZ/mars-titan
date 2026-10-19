@@ -62,6 +62,7 @@ conservan sus demás controles y métricas.
 La CLI acepta `--n64-original`, `--n64-geometry`, `--n256-original`,
 `--n256-geometry` y `--output`. La
 [verificación inicial](../../reports/engineering/refinement-scaling-analysis-20261019/README.md)
-cubre fixtures y el contraste de metadatos de las cuatro preparaciones. Los
-resultados numéricos de los modelos se publicarán al disponer de los grupos
-completos.
+cubre fixtures y el contraste de metadatos de las cuatro preparaciones. El
+[primer corte numérico](../../reports/research/refinement-development-20261019/README.md)
+incluye ocho grupos completos. Los cuatro grupos de la tercera semilla y la
+media de las tres semillas siguen pendientes.

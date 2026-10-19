@@ -1,0 +1,63 @@
+{
+  "recorded_at_utc": "2026-10-19T14:20:24.317803+00:00",
+  "original_limits_seconds": {
+    "joint": 57600,
+    "cohort": 28800,
+    "study": 21600
+  },
+  "continuation_limits_seconds": {
+    "joint": 64800,
+    "cohort": 43200,
+    "study": 21600
+  },
+  "original_plan_sha256": "eacf232edb92f4b13c7fe48d8ee6bb2060d06aa6336aedd0c7d87ca72ebab133",
+  "continuation_sha256": "7fb7361a9f92633e7685c82fda65bf8fbca0baceaaeee0b3ecb2f6a8a7949fbb",
+  "initial_extension_sha256": "7a7a8c8bfe8e63e70eff13112dacc47ebf87c3b86805d9e56acf834965fe3be8",
+  "carried_attempts": 212,
+  "correction": {
+    "reason": "La reserva interna quedó abierta tras el cierre externo por presupuesto.",
+    "status": "interrupted",
+    "internal_reserved_seconds": 7321.170795854123,
+    "charged_seconds": 222.20085190306418,
+    "accounting_source": "outer_attempt_wall_time_upper_bound",
+    "original_receipts_preserved": true,
+    "numerical_outputs_reconstructed": false,
+    "outer_remaining_unchanged": true,
+    "decision_sha256": "1e2abca5712719873eefe9a8360716857faf4da916a79e8b26d64cc8192882db",
+    "external_before_sha256": "ce5f82f5ee5f66579e377f82e026bf33757276089f991b2be552cb43e91b262e",
+    "public_before_sha256": "3b3e8b2e5c34c7fe82addc830361d5ed39463fab26d71d5a87abf874d726dc31",
+    "external_after_sha256": "ba7fff05e9c0caf915fd1c22d357a191795e8d53140825b4a7d65ed6af371628",
+    "public_after_sha256": "b04b0203ea040fc57fcafad5b499e9453287ca3b252dc2118a28d4e36c739822"
+  },
+  "recovery_validation": {
+    "cpu_tests": 17,
+    "targeted_mutants": 12,
+    "killed_mutants": 12,
+    "coverage": {
+      "statements": 206,
+      "covered_statements": 187,
+      "branches": 66,
+      "covered_branches": 51
+    },
+    "max_crap": 18.049813228862973,
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "scope": "Procedimientos locales de supervisión y cierre contable. Sin modelos ni GPU."
+  },
+  "observed_date_metadata": {
+    "cpu_tests": 28,
+    "targeted_mutants": 1,
+    "killed_mutants": 1,
+    "numerical_results_identical": true,
+    "previous_results_sha256": "d29e2ad1ca0df6c9036cb32c1be363da0d0b864900f474aeb51bf04e32bdd058",
+    "corrected_results_sha256": "c8a40a57736951db96affd65cba4df970bbef9c35b68d647cb7bed349468f8cc"
+  },
+  "global_hold_unchanged": true,
+  "final_test_opened": false,
+  "scientific_scope": "Continuación de los mismos trabajos y actualizaciones preregistrados. Sin nuevos candidatos ni cambios de selección."
+}

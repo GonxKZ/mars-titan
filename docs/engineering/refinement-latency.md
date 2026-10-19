@@ -54,5 +54,6 @@ registros por defecto. Una excepción restaura los métodos instrumentados y
 conserva un recibo de fallo si la ejecución ya había creado su salida.
 
 La [verificación inicial](../../reports/engineering/refinement-latency-20261019/README.md)
-cubre el medidor y la repetición con fixtures. La medición de los checkpoints
-reales seleccionados sigue pendiente.
+cubre el medidor y la repetición con fixtures. La
+[medición posterior sobre checkpoints seleccionados](../../reports/engineering/refinement-selected-latency-20261019/README.md)
+completó los 12 casos previstos con predicciones idénticas a sus referencias.
