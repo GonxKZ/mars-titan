@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "issue": 672,
+  "source_commit": "d4e4712b0e02a90303d567c10329e741e47ed194",
+  "recorded_at_utc": "2026-10-18T21:38:41.878091+00:00",
+  "changed_files": [
+    "tests/training/test_reference_run.py",
+    "tests/training/test_titans_campaign.py"
+  ],
+  "implementation_changed": false,
+  "device": "cpu",
+  "runtime_932d8ab02_unchanged": true,
+  "baseline": {
+    "snapshot_932d8ab02": {
+      "passed": 2,
+      "failed": 6
+    },
+    "develop_b2ff48135": {
+      "passed": 1,
+      "failed": 6
+    }
+  },
+  "validation": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 5.21,
+    "selection": [
+      "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+      "tests/training/test_titans_campaign.py::test_core_extensions_reject_declarations_that_change_more_than_the_extension[foreign]",
+      "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty]",
+      "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[foreign]",
+      "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[empty-option]",
+      "tests/training/test_titans_campaign.py::test_predictor_changes_outside_the_extensions_are_rejected[scalar]",
+      "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+      "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty]",
+      "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[foreign]",
+      "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[empty-option]",
+      "tests/training/test_titans_campaign.py::test_parent_rejects_changes_outside_the_declared_extensions[scalar]",
+      "tests/training/test_titans_campaign.py::test_the_frozen_parent_of_the_chain_rebuilds_the_predictor_changes_of_its_request"
+    ],
+    "cublas_absent_outside_test": {
+      "passed": 1,
+      "receipt_sha256": "623019123b8a9a19d5f510d8c394f9104ef2809afc3ee8d3c6d9dd78ef8a759a"
+    },
+    "boundary_retest_counted_once": true
+  },
+  "renamed_case": {
+    "original": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_cannot_be_the_mars_titan_parent",
+    "current": "tests/training/test_titans_campaign.py::test_a_core_with_predictor_changes_keeps_its_identity_and_checkpoint_as_parent",
+    "reason": "El contrato de 41d3d0b96 admite padres ampliados y reconstruye sus opciones y parámetros."
+  },
+  "quality": {
+    "tests": {
+      "statements": 60,
+      "covered_statements": 60,
+      "branches": 4,
+      "covered_branches": 4
+    },
+    "parent_and_extension_contracts": {
+      "statements": 28,
+      "covered_statements": 24,
+      "branches": 8,
+      "covered_branches": 6
+    },
+    "max_crap": 11.0,
+    "mutants_detected": 9,
+    "mutants_total": 9
+  },
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  },
+  "limits": [
+    "Las ejecuciones entre revisiones se concilian por nodeid. No se ha repetido toda la batería sobre el commit de esta corrección.",
+    "La reconciliación conserva separado el fallo NVTX. No hay cambios científicos ni afirmaciones predictivas."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "source_commit": "932d8ab02095c4bc9530ee5e3b97cbb8097a3171",
+  "source_receipt_sha256": "83f4e30da729db760bac9e538de82036faa1359b2edfe5f45263b43d32a887d5",
+  "scope": "Extracto de los dos casos superados. La misma repetición conserva seis fallos de contratos anteriores.",
+  "confirmed_nodeids": [
+    "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
+    "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run"
+  ],
+  "phases": [
+    {
+      "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+      "when": "setup",
+      "outcome": "passed",
+      "seconds": 0.0009900150471366942,
+      "detail": null
+    },
+    {
+      "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+      "when": "call",
+      "outcome": "passed",
+      "seconds": 0.054337347974069417,
+      "detail": null
+    },
+    {
+      "nodeid": "tests/training/test_reference_run.py::test_missing_cuda_fails_before_creating_run",
+      "when": "teardown",
+      "outcome": "passed",
+      "seconds": 0.0003314209752716124,
+      "detail": null
+    },
+    {
+      "nodeid": "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
+      "when": "setup",
+      "outcome": "passed",
+      "seconds": 0.3631430029636249,
+      "detail": null
+    },
+    {
+      "nodeid": "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
+      "when": "call",
+      "outcome": "passed",
+      "seconds": 4.748356457974296,
+      "detail": null
+    },
+    {
+      "nodeid": "tests/training/test_candidate_accumulation.py::test_variant_gradient_matches_the_segment_gradient[options1-dtype0]",
+      "when": "teardown",
+      "outcome": "passed",
+      "seconds": 0.0003242769744247198,
+      "detail": null
+    }
+  ]
+}
