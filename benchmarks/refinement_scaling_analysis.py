@@ -215,7 +215,7 @@ def write_population(output, populations, config):
         result[name] = dict(
             comparison=compare_population(series, config),
             sessions=dict(path=artifact.name, sha256=sha256(artifact)),
-            day_index_scope="utc_calendar_day_index_from_the_first_observed_day_of_this_population",
+            day_index_scope="index_of_sorted_observed_utc_dates",
         )
     return result
 
