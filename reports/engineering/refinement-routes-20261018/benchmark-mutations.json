@@ -1,0 +1,40 @@
+{
+  "started_at_utc": "2026-10-18T20:14:37.851166+00:00",
+  "command": [
+    "uv",
+    "run",
+    "--no-sync",
+    "pytest",
+    "-q",
+    "tests/tooling/test_refinement_routes_benchmark.py"
+  ],
+  "source_sha256": "a5a97418dc0085edac911756b9fbd4d3656dff29c89f8882cf9c41ea7a68c00c",
+  "mutants": [
+    {
+      "name": "ignore_deferred_checks",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "71b3cc751354037b1433cba286c4923373fd351cf5e934587e542df0e1509c92"
+    },
+    {
+      "name": "ignore_cached_parity",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "4488411998d0b85789e41a457ec1b857792a5f6880bc4d4afa8974c51a58c959"
+    },
+    {
+      "name": "ignore_repeatability",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "8e9a0c642101f351c1152283a1bf7ffd41da838a738eb470e02e2b6b39b6a2d8"
+    },
+    {
+      "name": "ignore_source_change",
+      "exit_code": 1,
+      "detected": true,
+      "log_sha256": "38cb86c4c0a4a8dde5655eaa70b9734e10ff93361792ef5328afc27f800de89e"
+    }
+  ],
+  "restored": true,
+  "finished_at_utc": "2026-10-18T20:15:00.469509+00:00"
+}

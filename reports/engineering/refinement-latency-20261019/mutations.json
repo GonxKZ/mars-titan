@@ -1,0 +1,198 @@
+{
+  "started_at_utc": "2026-10-18T23:06:57.605182+00:00",
+  "finished_at_utc": "2026-10-18T23:08:00.064854+00:00",
+  "source_hashes": {
+    "refinement_latency": "330f4030454b35a2ae2e8f44e08a752a252fda0a3bfa425140d65286cad7a119",
+    "refinement_latency_study": "bb32fcba0cf29d3bb81750dda83cac9e1bcbe24683ffdff49a309cb7853a8898"
+  },
+  "sources_unchanged": true,
+  "mutants": [
+    {
+      "name": "parameter_change",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_parameter_mutation_is_not_published_as_a_valid_measurement",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "187bb5553c93613bfb45d9b5bf8467d0bd13e8f4c01aeb6bb4bca940770d8e94",
+      "log_sha256": "0fabbd594cf59a007ae3e93caad9acf9d6d3b2cdfbd16aa7c9b32d95d46d88de",
+      "replacement": {
+        "before": "before != tuple(_model_digest(model) for model in models)",
+        "after": "False"
+      }
+    },
+    {
+      "name": "reported_updates",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_reported_updates_are_rejected_even_when_parameters_match",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "5f6627400eb15c3faa70fcd6804c09233dc142cc43dd51fc2689304a7afa3c6d",
+      "log_sha256": "dc423a327a587fd3ce670939158cd06448ba5e22d9ec2aa7ace407706c6cd7c1",
+      "replacement": {
+        "before": "or metrics[\"updates\"] != 0",
+        "after": "or False"
+      }
+    },
+    {
+      "name": "shared_rng",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_random_work_is_rejected_instead_of_being_presented_as_a_replay",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "e328798813b3e4d2ce82720e3a8615512f5f793f29eaa8231de5afca901674de",
+      "log_sha256": "34cff09f250cb1a798e4c10dfd47874892e5155ceddb1bbcb159cbb0b617db75",
+      "replacement": {
+        "before": "if not torch.equal(cpu_rng, torch.random.get_rng_state()) or (",
+        "after": "if False and ("
+      }
+    },
+    {
+      "name": "restore_override",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_failed_measurement_restores_instance_overrides",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "f6e4bf124285091f196b9cd01c7a593ea073f57d50626234c3783616c2e87297",
+      "log_sha256": "0ed8f5d74d38d82e9902930a650c98f1a75abb0720da2e245bf982cac945584e",
+      "replacement": {
+        "before": "setattr(engine, attribute, original)",
+        "after": "pass"
+      }
+    },
+    {
+      "name": "bounded_events",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_event_limit_rejects_instead_of_dropping_timings",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "e134be4b75f34c678769ec490f359265b0e15555214f9a07acd306f6154f3c10",
+      "log_sha256": "6b70589c78fe1f4f1c729a389b24b4bfe7ced2ecf2e5f07980b977c0a66046b5",
+      "replacement": {
+        "before": "if len(records) + len(stack) >= maximum:",
+        "after": "if False:"
+      }
+    },
+    {
+      "name": "warmup_nan",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_bad_warmup_timing_is_not_hidden_by_its_exclusion",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "c8cacffb4bf6f6e4bd9f56ae853701710b104af83eec1de72c1936eb3d92084c",
+      "log_sha256": "7248065f09c27eda51f9d2627b893470592fbde879833e4af8791f688b3f6390",
+      "replacement": {
+        "before": "    _quantiles(records)\n",
+        "after": ""
+      }
+    },
+    {
+      "name": "technical_warmup",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_instrumentation_preserves_predictions_parameters_rng_and_methods",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "830f843b7111a9a2663339fa9005cca432d31c5972e6d8100225dab4d01eec31",
+      "log_sha256": "4acb33c34afe4afd545593dc3a7fd1d6c3175d6bc717b77fde39f1298e6ba311",
+      "replacement": {
+        "before": "steady = eligible[warmup_decisions:]",
+        "after": "steady = eligible"
+      }
+    },
+    {
+      "name": "nested_time",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_nested_measurements_are_not_counted_twice",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "33b2824ae493ba26cca46067ee865fe7365542164fe9cfc556f5bce49a384d8c",
+      "log_sha256": "270aba108761aac61308b3525e83e336b4b0ddcdb8fe74dde87d74ac57f6db63",
+      "replacement": {
+        "before": "stack[-1][\"children\"] += elapsed",
+        "after": "stack[-1][\"children\"] += 0.0"
+      }
+    },
+    {
+      "name": "amortized_assets",
+      "module": "refinement_latency",
+      "test": "tests/tooling/test_refinement_latency.py::test_amortized_cost_is_not_reported_as_an_individual_request_latency",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "9a12b81779920c966e25d666f6786da59da480a8582e13063541347febd45f1c",
+      "log_sha256": "3e28669a6666e9ce48a0b391964c3f9e4758b34c06daff0552eecfb18ba4c67a",
+      "replacement": {
+        "before": "seconds=row[\"seconds\"] / row[\"rows\"]",
+        "after": "seconds=row[\"seconds\"]"
+      }
+    },
+    {
+      "name": "checkpoint_origin",
+      "module": "refinement_latency_study",
+      "test": "tests/tooling/test_refinement_latency_study.py::test_measurement_recreates_each_pass_and_checks_original_predictions[k1-origin]",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "897fd9e56c7ac44fbc9efda321176e7c5b5b2825cf8d11b1a97f57595b2fa0e4",
+      "log_sha256": "2e8b651561f4d051e78984da8f79b56ed82fd42ee4d276dcd91d01af93ce9f77",
+      "replacement": {
+        "before": "if origin != request[\"phase\"][\"identity\"][\"origin\"]:",
+        "after": "if False:"
+      }
+    },
+    {
+      "name": "selection_group",
+      "module": "refinement_latency_study",
+      "test": "tests/tooling/test_refinement_latency_study.py::test_incomplete_or_changed_evidence_is_rejected[group]",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "5b4a522c71683e3f7a37ff45d05cdf8ae777cb3cd6371f11eea8209eb5836ca2",
+      "log_sha256": "11f3aaf17f2d7c22c0e456e3198f84749dd9b7d78f14957a07af6e7abf9b4610",
+      "replacement": {
+        "before": "or report[\"selection_group\"] != group",
+        "after": "or False"
+      }
+    },
+    {
+      "name": "original_predictions",
+      "module": "refinement_latency_study",
+      "test": "tests/tooling/test_refinement_latency_study.py::test_measurement_recreates_each_pass_and_checks_original_predictions[k1-saved_prediction]",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "ffb19068d2bd24ef4a46b05d5ee2e8f04f7264924ee7fd74a7242d389018f22d",
+      "log_sha256": "aecca31a1709331e5ed0c13eee394539b6cb55526e3f43fa0a475dab9c098e4b",
+      "replacement": {
+        "before": "refinement_latency.prediction_digest(rows) != expected_digest",
+        "after": "False"
+      }
+    },
+    {
+      "name": "learning_hold",
+      "module": "refinement_latency_study",
+      "test": "tests/tooling/test_refinement_latency_study.py::test_learning_hold_precedes_sources_and_output",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "6a1cfda6464fe11e492d536b7dff0cac3b0e06741f0de24fa7ad7c9aaeba37ab",
+      "log_sha256": "27699e30950daa7674fddc33fad9ffb55dde16542994c7d71f8f84769f3af387",
+      "replacement": {
+        "before": "    require_learning_allowed(\"la medición de desarrollo de los modelos seleccionados\")",
+        "after": "    pass"
+      }
+    },
+    {
+      "name": "budget_limit",
+      "module": "refinement_latency_study",
+      "test": "tests/tooling/test_refinement_latency_study.py::test_invalid_latency_budgets_fail_before_creating_output",
+      "killed": true,
+      "exit_code": 1,
+      "source_sha256": "d55d11624d6795c01ff1a085f45ac5e3539fa26d5a62f49eb549a474f82043cd",
+      "log_sha256": "088e9ae632eee9e7b7705e5c4f13c8f73d0235979435c3cca270501aabecc627",
+      "replacement": {
+        "before": "or not 0 < max_seconds <= 1200",
+        "after": "or max_seconds < 0"
+      }
+    }
+  ],
+  "killed": 14,
+  "total": 14,
+  "scope": "targeted_faults_only",
+  "gpu_used": false,
+  "real_data": false
+}

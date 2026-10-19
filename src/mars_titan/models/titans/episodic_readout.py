@@ -96,6 +96,13 @@ class EpisodeRead:
 
 
 @dataclass(frozen=True)
+class _SelectedEpisodes:
+    keys: torch.Tensor
+    projected: torch.Tensor
+    ids: torch.Tensor
+
+
+@dataclass(frozen=True)
 class ReadoutResult:
     state: torch.Tensor
     reads: tuple[EpisodeRead, ...]
@@ -179,8 +186,10 @@ class EpisodicReadout(nn.Module):
         bounded_integer(len(value), "lote", 1, self.config.max_batch)
         check_finite(value, "El estado de trabajo")
 
-    def estimated_bytes(self, batch, episodes, *, differentiable=False):
+    def estimated_bytes(self, batch, episodes, *, differentiable=False, refinements=None):
         check_differentiable(differentiable)
+        refinements = self.config.refinements if refinements is None else refinements
+        bounded_integer(refinements, "refinamientos estimados", 1, 9)
         bounded_integer(batch, "lote", 1, self.config.max_batch)
         bounded_integer(episodes, "episodios", 0, 1024)
         width, neighbors, size = (
@@ -192,7 +201,7 @@ class EpisodicReadout(nn.Module):
         per_step = batch * (
             neighbors * (64 * (8 + size) + (65 + width) * size + 32) + (12 * width + 128) * size
         )
-        return 65536 + selection + per_step * self.config.refinements * (4 if differentiable else 1)
+        return 65536 + selection + per_step * refinements * (4 if differentiable else 1)
 
     def read(self, state, snapshot=None, *, context_id=None, cutoff=None):
         return self._read(state, snapshot, context_id, cutoff)[0]
@@ -205,19 +214,47 @@ class EpisodicReadout(nn.Module):
         presupuesto, que no cambian entre pasos, y el estado sale del refinamiento anterior,
         que conserva su forma, precisión y dispositivo y ya se comprobó finito.
         """
+        read, indices, _ = self._read_parts(
+            state, snapshot, context_id, cutoff, positions, repeated=repeated
+        )
+        return read, indices
+
+    def _read_parts(
+        self, state, snapshot, context_id, cutoff, positions=None, *, repeated=False, cached=None
+    ):
+        """Conservar proyecciones solo durante una decisión con pesos e instantánea fijos."""
         if not repeated:
             self._validate_read(state, snapshot, context_id, cutoff)
         count = 0 if snapshot is None else min(snapshot.count, self.config.neighbors)
         if count == 0:
-            return EpisodeRead(
-                torch.zeros_like(state),
-                state.new_empty((len(state), 0)),
-                torch.empty((len(state), 0), dtype=torch.int64, device=state.device),
-                torch.zeros((len(state), 1), dtype=torch.bool, device=state.device),
-            ), None
+            return (
+                EpisodeRead(
+                    torch.zeros_like(state),
+                    state.new_empty((len(state), 0)),
+                    torch.empty((len(state), 0), dtype=torch.int64, device=state.device),
+                    torch.zeros((len(state), 1), dtype=torch.bool, device=state.device),
+                ),
+                None,
+                None,
+            )
         raw = self.query_projection(state)
         check_finite(raw, "La consulta episódica")
         query = _normalize(raw)
+        if cached is not None:
+            logits = (cached.keys * query.unsqueeze(1)).sum(-1) / self.config.temperature
+            weights = logits.softmax(-1)
+            read = (cached.projected * weights.unsqueeze(-1)).sum(1)
+            check_finite(read, "La lectura episódica")
+            return (
+                EpisodeRead(
+                    read,
+                    weights,
+                    cached.ids,
+                    torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
+                ),
+                None,
+                cached,
+            )
         keys, values, labels, ids = snapshot._values[:4]
         if positions is None:
             with torch.no_grad():
@@ -250,18 +287,28 @@ class EpisodicReadout(nn.Module):
         check_finite(projected, "Los valores proyectados")
         read = (projected * weights.unsqueeze(-1)).sum(1)
         check_finite(read, "La lectura episódica")
-        return EpisodeRead(
-            read,
-            weights,
-            ids.index_select(0, flat).reshape(len(state), count),
-            torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
-        ), indices
+        selected_ids = ids.index_select(0, flat).reshape(len(state), count)
+        return (
+            EpisodeRead(
+                read,
+                weights,
+                selected_ids,
+                torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
+            ),
+            indices,
+            _SelectedEpisodes(selected_keys, projected, selected_ids),
+        )
 
-    def _validate_read(self, state, snapshot, context_id, cutoff):
+    def _validate_read(self, state, snapshot, context_id, cutoff, *, refinements=None):
         self._state(state)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
         if (
-            self.estimated_bytes(len(state), episodes, differentiable=torch.is_grad_enabled())
+            self.estimated_bytes(
+                len(state),
+                episodes,
+                differentiable=torch.is_grad_enabled(),
+                refinements=refinements,
+            )
             > self.config.max_working_bytes
         ):
             raise ValueError("La lectura supera el presupuesto de trabajo estimado")

@@ -1,0 +1,189 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-18T22:21:33.097733",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "benchmarks/refinement_routes.py"
+ ],
+ "totals": {
+  "statements": 150,
+  "covered_statements": 147,
+  "branches": 40,
+  "covered_branches": 37
+ },
+ "files": [
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "source_sha256": "a5a97418dc0085edac911756b9fbd4d3656dff29c89f8882cf9c41ea7a68c00c",
+   "statements": 150,
+   "covered_statements": 147,
+   "branches": 40,
+   "covered_branches": 37
+  }
+ ],
+ "functions": [
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "measure",
+   "start_line": 212,
+   "end_line": 290,
+   "cyclomatic_complexity": 25,
+   "statements": 22,
+   "covered_statements": 22,
+   "coverage_fraction": 1.0,
+   "branches": 14,
+   "covered_branches": 14,
+   "crap": 25.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "_case",
+   "start_line": 150,
+   "end_line": 209,
+   "cyclomatic_complexity": 18,
+   "statements": 38,
+   "covered_statements": 35,
+   "coverage_fraction": 0.9210526315789473,
+   "branches": 20,
+   "covered_branches": 17,
+   "crap": 18.159425572240853
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "source_identity",
+   "start_line": 29,
+   "end_line": 44,
+   "cyclomatic_complexity": 2,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "calls",
+   "start_line": 96,
+   "end_line": 134,
+   "cyclomatic_complexity": 2,
+   "statements": 11,
+   "covered_statements": 11,
+   "coverage_fraction": 1.0,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "_case.checked.run",
+   "start_line": 155,
+   "end_line": 157,
+   "cyclomatic_complexity": 2,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "main",
+   "start_line": 293,
+   "end_line": 324,
+   "cyclomatic_complexity": 2,
+   "statements": 15,
+   "covered_statements": 15,
+   "coverage_fraction": 1.0,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "strict_numerics",
+   "start_line": 48,
+   "end_line": 59,
+   "cyclomatic_complexity": 1,
+   "statements": 10,
+   "covered_statements": 10,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "fixture",
+   "start_line": 62,
+   "end_line": 93,
+   "cyclomatic_complexity": 1,
+   "statements": 11,
+   "covered_statements": 11,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "calls.first_with_head",
+   "start_line": 117,
+   "end_line": 120,
+   "cyclomatic_complexity": 1,
+   "statements": 3,
+   "covered_statements": 3,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "_statistics",
+   "start_line": 137,
+   "end_line": 147,
+   "cyclomatic_complexity": 1,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "benchmarks/refinement_routes.py",
+   "function": "_case.checked",
+   "start_line": 154,
+   "end_line": 159,
+   "cyclomatic_complexity": 1,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "77a6080c89b8c2a9bd17421e0161d1c654e61c5ec00b9e25d810d4a934433cdc",
+ "functions_measured": 11
+}
