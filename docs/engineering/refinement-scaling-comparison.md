@@ -63,6 +63,6 @@ La CLI acepta `--n64-original`, `--n64-geometry`, `--n256-original`,
 `--n256-geometry` y `--output`. La
 [verificación inicial](../../reports/engineering/refinement-scaling-analysis-20261019/README.md)
 cubre fixtures y el contraste de metadatos de las cuatro preparaciones. El
-[primer corte numérico](../../reports/research/refinement-development-20261019/README.md)
-incluye ocho grupos completos. Los cuatro grupos de la tercera semilla y la
-media de las tres semillas siguen pendientes.
+[resultado completo](../../reports/research/refinement-development-20261019/completed-v1/README.md)
+reúne las tres semillas, las medias de pérdidas por sesión y el cierre de las
+288 tareas. Ninguno de los 48 selectores supera al control residual cero.

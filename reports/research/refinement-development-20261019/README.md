@@ -1,5 +1,9 @@
 # Resultado provisional del estudio de refinamientos
 
+Este corte conserva las dos primeras semillas. La ronda de 288 tareas terminó
+después y su [resultado completo de tres semillas](completed-v1/README.md)
+incluye las medias, la variabilidad y el cierre de costes.
+
 Ninguno de los 32 selectores de rutas completos tiene menor MAE observado que el
 predictor de retorno residual cero. Esto ocurre tanto en las poblaciones
 completas de cada cohorte como al puntuar los mismos 64 activos comunes. Hay
