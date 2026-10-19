@@ -25,9 +25,10 @@ completa. Un delta negativo indica menor MAE de la variante respecto a la base. 
 mejora relativa conserva la convención del motor estadístico, positiva cuando
 disminuye el error y no definida si el error de la base es cero.
 
-El MAE se calcula primero por sesión. El bootstrap circular remuestrea días UTC
-con todos sus activos juntos, usando 2.000 réplicas, semilla 20261018, bloques de
-16 días y sensibilidad con 8 y 32. Los intervalos simultáneos se calculan dentro
+El MAE se calcula primero por sesión. El bootstrap circular remuestrea las fechas
+UTC observadas, con todos sus activos juntos, usando 2.000 réplicas, semilla
+20261018, bloques de 16 fechas y sensibilidad con 8 y 32. Los días sin observaciones
+no ocupan una posición del índice. Los intervalos simultáneos se calculan dentro
 de cada familia. Esa corrección no cubre conjuntamente todas las proyecciones,
 lectores y semillas del estudio.
 
@@ -46,8 +47,10 @@ está limitada a 131.072 filas y 64 MiB. Los cálculos estadísticos usan las
 implementaciones CPU existentes.
 
 La salida incluye contrastes por semilla, medias completas, grupos pendientes y
-tablas de MAE por sesión. `utc_day_index` cuenta días UTC desde el primer día
-observado de cada población. Las huellas enlazan estas tablas con las
+tablas de MAE por sesión. `utc_day_index` es la posición, empezando en cero, de
+cada fecha UTC en la lista ordenada de fechas observadas de esa población.
+Un viernes y el lunes siguiente tienen índices consecutivos si no hay datos del
+fin de semana. Las huellas enlazan estas tablas con las
 predicciones originales, que conservan sus fechas absolutas.
 
 Ampliar la cohorte cambia los datos de ajuste y la composición del banco

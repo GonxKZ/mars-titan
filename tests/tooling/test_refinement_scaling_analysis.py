@@ -82,6 +82,30 @@ def test_common_assets_use_equal_sessions_and_correct_factorial_sign():
     assert populations["full256"]["n256-original:policy"].values[0] > 20
 
 
+def test_day_indexes_count_observed_dates_across_a_weekend(tmp_path):
+    import pyarrow.parquet as pq
+
+    inputs = tables()
+    for cases in inputs.values():
+        for route, values in cases.items():
+            dates = [
+                value.replace(day=6 if value.day == 3 else 9)
+                for value in values["prediction_at"].to_pylist()
+            ]
+            cases[route] = values.set_column(
+                values.schema.get_field_index("prediction_at"),
+                values.schema.field("prediction_at"),
+                pa.array(dates, type=pa.timestamp("us", tz="UTC")),
+            )
+    populations = api().score_populations(inputs, ["A", "B"])
+    report = api().write_population(tmp_path, populations, OPTIONS)
+    common = report["common64"]
+    assert common["comparison"]["resampling"]["periods"] == 2
+    rows = pq.read_table(tmp_path / common["sessions"]["path"])
+    assert sorted(set(rows["utc_day_index"].to_pylist())) == [0, 1]
+    assert common["day_index_scope"] == "index_of_sorted_observed_utc_dates"
+
+
 @pytest.mark.parametrize("change", ["row", "target", "duplicate", "missing_route"])
 def test_mismatched_rows_or_targets_are_not_silently_intersected(change):
     inputs = tables()
