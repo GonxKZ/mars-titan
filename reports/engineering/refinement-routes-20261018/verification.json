@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "source_commit": "89a0d07d86f14f994058286faf7f20e8e95d8044",
+  "scope": "Rutas, política de ganancia y recorrido cronológico sobre fixtures",
+  "cpu_regression": {
+    "passed": 237,
+    "cuda_deselected": 8,
+    "seconds": 225.43
+  },
+  "mutations": {
+    "detected": 14,
+    "total": 14,
+    "restored_passed": 83,
+    "cuda_deselected": 3
+  },
+  "cuda_status": "pending",
+  "scientific_evaluation_status": "not_executed",
+  "counts_are_overlapping": true,
+  "benchmark_tests": {
+    "passed": 7,
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/tooling/test_refinement_routes_benchmark.py"
+    ],
+    "log_sha256": "68f91d007f9e55d5f1848b1c8bc90de5788ef77fadebb3ff5b1638e361b7fe3b",
+    "source_sha256": "cbcd422694e89ee40ace52e0917e1878ae3d1a48c58ea5b39234ff7d2501a3b3"
+  }
+}

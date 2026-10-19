@@ -1,0 +1,171 @@
+{
+  "recorded_at_utc": "2026-10-18T22:33:38.524366+00:00",
+  "scope": "initial_core_pairs_cost_review",
+  "source_commit": "6b037a7262d4c2d97105b194a137f8b2f5767b01",
+  "plan_sha256": "eacf232edb92f4b13c7fe48d8ee6bb2060d06aa6336aedd0c7d87ca72ebab133",
+  "supervisor_sha256": "4407f133bbbe4c41b4e39fae9545c58fc4b4914f6c0097936a58ac0b3e097bdd",
+  "cases": [
+    {
+      "study": "n64-original",
+      "cohort_size": 64,
+      "job": {
+        "projection": "linear_v1",
+        "seed": 42,
+        "id": "linear_v1-42/core",
+        "kind": "core",
+        "fold": "fold-017"
+      },
+      "external_seconds": 193.11293331999332,
+      "internal_seconds": 190.28336257801857,
+      "optimizer_steps": 1308,
+      "peak_rss_bytes": 2069573632,
+      "peak_cuda_allocated_bytes": 204235776,
+      "peak_cuda_reserved_bytes": 232783872,
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "device": "cuda:0",
+        "precision": "fp32_strict",
+        "cpu_threads": 2
+      },
+      "prepared_sha256": "e20a6e89c55bac8c93941026e59438b0cc2be3d30266ca785aa5907b178b87b1",
+      "run_sha256": "b10f2e3cb50f319fce1d2136d4e2fcdd5c96ea4dc462ac3226ebcdf161b2ab60",
+      "checkpoint_sha256": "5f3bfdafe4414cb13b94fec9878942b597a08ae1c9ff034d929bb32e8b2f6955",
+      "measurement_sha256": "1c8ddcf0f6302c3ca2f747bd10f34c07ae7e902685d4cd6117b2cc2c5fd7d92a"
+    },
+    {
+      "study": "n64-geometry",
+      "cohort_size": 64,
+      "job": {
+        "projection": "linear_v1",
+        "seed": 42,
+        "id": "linear_v1-42/core",
+        "kind": "core",
+        "fold": "fold-017"
+      },
+      "external_seconds": 189.9911416269606,
+      "internal_seconds": 186.8994368609856,
+      "optimizer_steps": 1308,
+      "peak_rss_bytes": 2056114176,
+      "peak_cuda_allocated_bytes": 204235776,
+      "peak_cuda_reserved_bytes": 232783872,
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "device": "cuda:0",
+        "precision": "fp32_strict",
+        "cpu_threads": 2
+      },
+      "prepared_sha256": "f6cbff2b100f728214c77b1d17ac90e256909bdcf641ff6fa1602add69aec946",
+      "run_sha256": "52590a2f346b6f9bb7befc5ccb4d05a52dcbb066bbbdc2c26e3b77ac8d7a90da",
+      "checkpoint_sha256": "cf50b903147eb51fb26d955204df5bca13054de43148f9a7d9c027cbe41d191a",
+      "measurement_sha256": "bf9bb5bf670847a46a635c38d8a943244cecd636db32e7753bc1ac8297d60234"
+    },
+    {
+      "study": "n256-original",
+      "cohort_size": 256,
+      "job": {
+        "projection": "linear_v1",
+        "seed": 42,
+        "id": "linear_v1-42/core",
+        "kind": "core",
+        "fold": "fold-017"
+      },
+      "external_seconds": 366.1111957600224,
+      "internal_seconds": 362.82317004399374,
+      "optimizer_steps": 1308,
+      "peak_rss_bytes": 2807558144,
+      "peak_cuda_allocated_bytes": 624705024,
+      "peak_cuda_reserved_bytes": 664797184,
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "device": "cuda:0",
+        "precision": "fp32_strict",
+        "cpu_threads": 2
+      },
+      "prepared_sha256": "96a9d07b7676b9fec3f30bbcb8757ab36f3e48912331fb8f6cb76a5d51c13a87",
+      "run_sha256": "897b65f095d4fa375da11fecfbd0336dea3206b59de69c0142216ed20827f106",
+      "checkpoint_sha256": "a92c2b3d2c0c115d19630202a9bff1ae159ed9b005efcae4bf1b237cbb6182fa",
+      "measurement_sha256": "954bd5d3ca8833e53fd343782bcb640632aa095960e91fa05938ad7839a14333"
+    },
+    {
+      "study": "n256-geometry",
+      "cohort_size": 256,
+      "job": {
+        "projection": "linear_v1",
+        "seed": 42,
+        "id": "linear_v1-42/core",
+        "kind": "core",
+        "fold": "fold-017"
+      },
+      "external_seconds": 360.05620428698603,
+      "internal_seconds": 356.80921076296363,
+      "optimizer_steps": 1308,
+      "peak_rss_bytes": 2822623232,
+      "peak_cuda_allocated_bytes": 624705024,
+      "peak_cuda_reserved_bytes": 664797184,
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "device": "cuda:0",
+        "precision": "fp32_strict",
+        "cpu_threads": 2
+      },
+      "prepared_sha256": "a7db78a96968b5ca80e6885d82f53f5883a0894be3815411caa5adaf58fb79e4",
+      "run_sha256": "2904f04d1cd3c73f31426a611e1714e5eeab7ff613aec56e8bc68943f7022a6f",
+      "checkpoint_sha256": "5ec4be0951fcd7e4374e0f3f2e36c52564100697a2f48e4fc2514681d859bc0f",
+      "measurement_sha256": "562cf3c840c60e52c65e9c51ca406d68097f1016fa3434eb0440d357f9f73404"
+    }
+  ],
+  "remaining_joint_seconds": 56490.72852500604,
+  "cohort_remaining_seconds": {
+    "64": 28416.895925053046,
+    "256": 28073.83259995299
+  },
+  "pilots": {
+    "64": {
+      "plan_sha256": "eacf232edb92f4b13c7fe48d8ee6bb2060d06aa6336aedd0c7d87ca72ebab133",
+      "completed_core_pair": true,
+      "first_core_seconds": {
+        "original": 193.11293331999332,
+        "geometry": 189.9911416269606
+      },
+      "estimated_all_core_seconds": 2298.6244496817235,
+      "assumption": "coste constante por representación entre proyecciones y semillas",
+      "other_stage_seconds": null,
+      "estimate_is_not_an_execution_budget": true,
+      "estimate_does_not_use_predictive_metrics": true
+    },
+    "256": {
+      "plan_sha256": "eacf232edb92f4b13c7fe48d8ee6bb2060d06aa6336aedd0c7d87ca72ebab133",
+      "completed_core_pair": true,
+      "first_core_seconds": {
+        "original": 366.1111957600224,
+        "geometry": 360.05620428698603
+      },
+      "estimated_all_core_seconds": 4357.0044002820505,
+      "assumption": "coste constante por representación entre proyecciones y semillas",
+      "other_stage_seconds": null,
+      "estimate_is_not_an_execution_budget": true,
+      "estimate_does_not_use_predictive_metrics": true
+    }
+  },
+  "shared_controller_study_completed": false,
+  "scientific_level": "exploratory_development",
+  "final_test_opened": false,
+  "reason_to_continue": "Ambas parejas completaron sus recibos y conservaron los presupuestos y las filas. No se cambian candidatos, épocas, semillas o protocolo por sus métricas predictivas.",
+  "limits": [
+    "Una ejecución por tamaño y representación, sin intervalo de incertidumbre de rendimiento.",
+    "Los picos CUDA son del asignador de PyTorch, no del contexto completo del controlador.",
+    "La estimación del resto solo cubre núcleos y supone coste constante entre proyecciones y semillas."
+  ]
+}

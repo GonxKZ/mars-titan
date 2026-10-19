@@ -1,0 +1,55 @@
+{
+  "started_at_utc": "2026-10-19T19:31:12.577739+00:00",
+  "scope": "Tres mutaciones de los contratos incorporados desde develop, ejecutadas en una copia privada. Sin cambios del runtime científico.",
+  "mutants": [
+    {
+      "name": "paired_identity",
+      "file": "src/mars_titan/models/titans/financial.py",
+      "source_sha256": "6426a18736474cdc0323d121e618cb6f7bd8c98d0fe161e214351f50d99992c7",
+      "mutation": {
+        "before": "if \"disabled\" in (left_config.mode, right_config.mode):",
+        "after": "if False:"
+      },
+      "test": "tests/models/titans/test_financial_control.py::test_pairing_keeps_each_control_identity",
+      "killed": true,
+      "returncode": 1,
+      "failures": 4,
+      "seconds": 3.623979602009058,
+      "log_sha256": "e20ef0e26bc7a0610eb7ddeeb3fef4ceb7fb012ceef54c67fbd707d57f167cbb"
+    },
+    {
+      "name": "historical_disabled",
+      "file": "src/mars_titan/models/titans/local_control.py",
+      "source_sha256": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "mutation": {
+        "before": "if self.mode != \"disabled\":",
+        "after": "if True:"
+      },
+      "test": "tests/models/titans/test_local_control.py::test_disabled_loads_historical_state_and_preserves_its_identity_and_transition",
+      "killed": true,
+      "returncode": 1,
+      "failures": 1,
+      "seconds": 2.9218360650120303,
+      "log_sha256": "269f1b77073d9fc62642c17089b21a304aa9f6ebc4ea230ab752d0cbee15040a"
+    },
+    {
+      "name": "jvp_threads",
+      "file": "src/mars_titan/models/titans/local_control.py",
+      "source_sha256": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "mutation": {
+        "before": "with torch.autograd.set_multithreading_enabled(False):",
+        "after": "with torch.autograd.set_multithreading_enabled(True):"
+      },
+      "test": "tests/models/titans/test_local_control.py::test_jvp_runs_in_calling_thread_and_restores_autograd_mode",
+      "killed": true,
+      "returncode": 1,
+      "failures": 8,
+      "seconds": 3.1226442119805142,
+      "log_sha256": "60cdd22d471c74b04809e7efc0a647e6c88fc4924e3f57e14762300704ddca8b"
+    }
+  ],
+  "restored_returncode": 0,
+  "finished_at_utc": "2026-10-19T19:31:26.078136+00:00",
+  "restored_passed": 15,
+  "restored_deselected_cuda_cases": 8
+}

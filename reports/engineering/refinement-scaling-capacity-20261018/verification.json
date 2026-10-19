@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "observation_queue_capacity_without_model_execution",
+  "recorded_at_utc": "2026-10-18T21:21:50.555140+00:00",
+  "cohort_size": 256,
+  "selection_sha256": "2c1fcc7185a995d256ff5b3237c6c8214923a9c979462be63e28258d6368b17a",
+  "parent_view_sha256": "bf7d280a6bff6634e754847d429c8dcec8d6cb8afbd3d9d69d1f78c9eb2238fa",
+  "policy_view_sha256": "421fd47e870d843fe5bcd13693d81c0830b37e34dacc5bb02838bc41dab8119c",
+  "capacity_module_sha256": "68b9e8885b47d94bd266f1985dd5bfb7fe8444ed5855b68872a49140e2bf6329",
+  "parent": {
+    "train": {
+      "observations": 766884,
+      "mature_labels": 750751,
+      "max_pending": 16389,
+      "unresolved_at_close": 16133,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    },
+    "validation": {
+      "observations": 32320,
+      "mature_labels": 32061,
+      "max_pending": 515,
+      "unresolved_at_close": 259,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    },
+    "calibration": {
+      "observations": 16384,
+      "mature_labels": 16128,
+      "max_pending": 512,
+      "unresolved_at_close": 256,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    },
+    "evaluation": {
+      "observations": 64256,
+      "mature_labels": 64000,
+      "max_pending": 512,
+      "unresolved_at_close": 256,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    }
+  },
+  "policy": {
+    "train": {
+      "observations": 15872,
+      "mature_labels": 15616,
+      "max_pending": 512,
+      "unresolved_at_close": 256,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": true
+    },
+    "validation": {
+      "observations": 32256,
+      "mature_labels": 32000,
+      "max_pending": 512,
+      "unresolved_at_close": 256,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": true
+    },
+    "calibration": {
+      "observations": 16128,
+      "mature_labels": 15872,
+      "max_pending": 512,
+      "unresolved_at_close": 256,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    },
+    "evaluation": {
+      "observations": 63936,
+      "mature_labels": 63679,
+      "max_pending": 513,
+      "unresolved_at_close": 257,
+      "max_decision_rows": 256,
+      "order": "emit_then_mature",
+      "values_used": false,
+      "collection": false
+    }
+  },
+  "limits": {
+    "max_decision_rows": 256,
+    "max_scored_rows": 131072,
+    "max_pending_collection_traces": 32768
+  },
+  "audit_process": {
+    "elapsed_seconds": 14.521752062020823,
+    "peak_rss_bytes": 829190144,
+    "scope": "cpu_metadata_capacity_audit_not_prediction",
+    "python": "3.12.14",
+    "machine": "x86_64",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "source_cache_bytes": 8388608,
+    "ram_scope_limit_bytes": 3221225472
+  },
+  "model_executed": false,
+  "model_memory_measured": false,
+  "final_test_opened": false,
+  "sources_modified": false
+}

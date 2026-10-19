@@ -474,6 +474,20 @@ class MarsTitanInference:
         """Lo que la repetición necesita además del estado de trabajo emitido."""
         return {}
 
+    def _predict_block(self, prepared, batch, phase, snapshot, context):
+        """Aplicar el lector al estado ya preparado, sin repetir el núcleo."""
+        return apply_episodic_readout(
+            prepared,
+            self.predictor.head,
+            self.readout,
+            snapshot,
+            context_id=context,
+            cutoff=batch.prediction_at[0],
+        )
+
+    def _refinement_work(self, result, size):
+        return size * self.readout.config.refinements
+
     # El contexto de una instantánea no cambia el cálculo. Solo la vincula a su evento.
     def _context(self, partition, at):
         return hashlib.sha256(
@@ -558,14 +572,7 @@ class MarsTitanInference:
                 ):
                     raise ValueError("La repetición diferenciable supera el presupuesto del lector")
                 with nvtx_ranges.phase("readout.apply"), torch.no_grad():
-                    result = apply_episodic_readout(
-                        slim,
-                        predictor.head,
-                        self.readout,
-                        snapshot,
-                        context_id=context,
-                        cutoff=event.at,
-                    )
+                    result = self._predict_block(slim, batch, phase, snapshot, context)
                 issued = result.point_predictions.detach()
                 with nvtx_ranges.phase("readout.emit"):
                     values = issued.cpu().tolist()
@@ -610,7 +617,7 @@ class MarsTitanInference:
                             ("prediction", phase.partition, flow, at, values[row], seen)
                         )
                 run.counters["predictions"] += size
-                run.counters["refinements"] += size * self.readout.config.refinements
+                run.counters["refinements"] += self._refinement_work(result, size)
             if self.uses_context:
                 # Todos los bloques leen el mismo pasado. La escritura llega tras emitirlos.
                 with torch.no_grad():

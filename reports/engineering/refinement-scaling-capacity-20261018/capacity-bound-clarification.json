@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-18T21:47:35.644327+00:00",
+  "prior_report": "verification.json",
+  "prior_report_sha256": "432bd784a16ae3bdedc360a6b41e9f72e765b7560d6f9de0dc0b086cf4eff71c",
+  "applies_to_fields": [
+    "parent.*.max_pending",
+    "policy.*.max_pending"
+  ],
+  "pending_measure": "conservative_upper_bound",
+  "bound_event_order": "emit_then_mature",
+  "runtime_event_order": "mature_then_emit",
+  "exact_pending_peak_measured": false,
+  "numeric_values_unchanged": true,
+  "unchanged_exact_counts": [
+    "observations",
+    "mature_labels",
+    "unresolved_at_close",
+    "max_decision_rows"
+  ],
+  "derivation": "Con q pendientes, a emisiones y m maduraciones v\u00e1lidas, q+a acota el pico del orden que resuelve primero m etiquetas. Ambos \u00f3rdenes terminan en q+a-m.",
+  "model_executed": false,
+  "final_test_opened": false
+}
