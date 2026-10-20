@@ -23,12 +23,14 @@ class MemoryPlasticity:
     write_constant: float = 0.5
     capture_constant: float = 0.5
     gradient_contract: str = "row_broadcast_v1"
+    capture_scope: str = "population_mean"
 
     def __post_init__(self) -> None:
         for name, choices in (
             ("write", ("none", "coherence", "constant")),
             ("capture", ("none", "eligibility", "constant")),
             ("gradient_contract", ("row_broadcast_v1", "scalar_controls_v2")),
+            ("capture_scope", ("population_mean", "row_local")),
         ):
             value = getattr(self, name)
             if type(value) is not str or value not in choices:
@@ -57,16 +59,28 @@ class MemoryPlasticity:
             if not valid:
                 raise ValueError(f"{name} está fuera del dominio de la regla de plasticidad")
             object.__setattr__(self, name, value)
+        if self.capture_scope == "row_local" and (
+            self.capture != "eligibility" or self.gradient_contract != "scalar_controls_v2"
+        ):
+            raise ValueError("La captura local necesita elegibilidad y controles escalares v2")
 
     def configuration(self) -> dict:
         """Conservar los nueve campos históricos al serializar el contrato original."""
         result = asdict(self)
+        if self.capture_scope == "population_mean":
+            result.pop("capture_scope")
         if self.gradient_contract == "row_broadcast_v1":
             result.pop("gradient_contract")
         return result
 
     def identity(self) -> dict:
-        version = 1 if self.gradient_contract == "row_broadcast_v1" else 2
+        version = (
+            3
+            if self.capture_scope == "row_local"
+            else 1
+            if self.gradient_contract == "row_broadcast_v1"
+            else 2
+        )
         return dict(
             **self.configuration(),
             schema_version=version,
@@ -74,7 +88,11 @@ class MemoryPlasticity:
             statistics="per_flow_layer_row_after_associative_gradient_clipping",
             history="gradient_mean_energy_eligibility",
             coherence="bounded_bias_corrected_squared_mean_over_energy",
-            capture_signal="local_eligibility_times_mean_row_coherence",
+            capture_signal=(
+                "local_eligibility_times_row_coherence"
+                if self.capture_scope == "row_local"
+                else "local_eligibility_times_mean_row_coherence"
+            ),
             coupling="first_cascade_interface_both_directions",
             financial_labels_used=False,
             differentiation="full_when_differentiable_detached_otherwise",

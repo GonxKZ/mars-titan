@@ -169,7 +169,8 @@ class FinancialConfig:
             raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
         if isinstance(self.memory_plasticity, dict):
             expected = {field.name for field in fields(MemoryPlasticity)}
-            if set(self.memory_plasticity) not in (expected, expected - {"gradient_contract"}):
+            required = expected - {"gradient_contract", "capture_scope"}
+            if not required <= set(self.memory_plasticity) <= expected:
                 raise ValueError("memory_plasticity debe declarar todos sus campos identificados")
             object.__setattr__(
                 self, "memory_plasticity", MemoryPlasticity(**self.memory_plasticity)

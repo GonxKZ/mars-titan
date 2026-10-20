@@ -1,0 +1,1005 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{cmap}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\usepackage{csquotes}
+\usepackage[margin=2.8cm]{geometry}
+\usepackage[backend=biber,style=apa]{biblatex}
+\addbibresource{../docs/references/finance.bib}
+\addbibresource{../docs/references/neural.bib}
+\addbibresource{../docs/references/books.bib}
+\addbibresource{../docs/references/brain.bib}
+\addbibresource{../docs/references/macro.bib}
+\addbibresource{../docs/references/systems.bib}
+\addbibresource{../docs/references/frontier.bib}
+\addbibresource{../docs/references/deepseek.bib}
+\addbibresource{../docs/references/adversarial.bib}
+\addbibresource{../docs/references/markov.bib}
+\addbibresource{../docs/references/neuroarchitecture.bib}
+\addbibresource{../docs/references/attention-replay.bib}
+\addbibresource{../docs/references/post-titans.bib}
+% Las URL largas de la bibliografía pueden partirse en números y letras y el
+% espaciado de la lista admite algo más de holgura, sin cajas desbordadas.
+\setcounter{biburlnumpenalty}{9000}
+\setcounter{biburllcpenalty}{7000}
+\setcounter{biburlucpenalty}{8000}
+\appto{\bibsetup}{\emergencystretch=2em}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={MARS-TITAN: memoria causal adaptativa para predicción bursátil multimodal},
+  pdfauthor={Gonzalo García Lama},
+  pdfsubject={Datos, estudios de desarrollo y límites de evaluación}
+}
+
+\title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
+\author{Gonzalo García Lama}
+\date{Revisión de desarrollo, 20 de octubre de 2026}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+MARS-TITAN plantea una comparación experimental de modelos para predecir el
+retorno residual diario de acciones de Estados Unidos y China a partir de
+precios, noticias, gráficos, fundamentales y contexto macroeconómico. La
+pregunta es si una memoria adaptativa aporta información útil frente a
+referencias comparables cuando se respeta el orden en que la información está
+disponible y se iguala el presupuesto de búsqueda. La comparación reúne
+referencias sencillas, un Transformer compacto, una adaptación identificable
+de Titans-MAC y MARS-TITAN, que añade sobre ese núcleo un banco episódico y
+otras ampliaciones desactivables. La edición histórica v3.1 reúne 18.698.976
+muestras de 5.008 activos desde 2000 con ausencias explícitas, y la edición y
+sus objetivos residuales se verificaron el 11 de octubre de 2026. Los estudios
+de desarrollo ya incluyen ajustes y resultados exploratorios con cohortes de
+cuatro, 64 y 256 activos. La ronda de refinamientos completó 288 tareas con
+tres semillas, pero ninguno de sus 48 selectores superó al predictor de retorno
+residual cero. Los pilotos posteriores de plasticidad y competencia de claves
+tampoco justificaron promover sus variantes. Un contraste posterior de rutas
+de cuantiles con cinco semillas reduce el error de la combinación frente al
+original, pero pierde frente al residual cero y frente a uno de sus
+componentes. El contraste posterior frente a una pérdida de solo mediana
+resulta inconcluyente, y todos sus modelos pierden frente al residual cero.
+Sus poblaciones, controles y costes se informan por separado.
+Estos resultados no completan la campaña del
+universo histórico ni resuelven sus limitaciones de procedencia. El año 2023
+utilizado en las últimas rondas es desarrollo reutilizado y el test final de
+2024 permanece cerrado.
+\end{abstract}
+\tableofcontents
+
+\chapter{Introducción y objetivos}
+
+\section{Contexto y motivación}
+Predecir la rentabilidad diaria de una acción es un problema con muy poca señal.
+En la comparativa más cercana a este trabajo, con 18,1 millones de
+rentabilidades diarias de Estados Unidos, el mejor $R^2$ fuera de muestra queda
+entre $-0{,}03$~\% y $+0{,}01$~\%, y los árboles superan a las redes y a los
+modelos fundacionales de series temporales en $R^2$
+\parencite{rahimikia2025tsfmfinance}.
+Con una señal de ese tamaño, la mediana condicional óptima está muy cerca de
+cero y cualquier diferencia entre arquitecturas será pequeña. El debate sobre
+modelos muy parametrizados sigue abierto. \textcite{kelly2024virtue} defienden
+que la complejidad puede ser una virtud en la predicción de rentabilidades y
+\textcite{nagel2025seemingly} advierte que un Sharpe positivo con un $R^2$
+negativo puede deberse a la construcción de la estrategia y no a una señal
+aprendida. Por eso el trabajo se plantea como una comparación con referencias
+sencillas y no como la búsqueda de un modelo ganador.
+
+La segunda dificultad es temporal. Las fuentes multimodales mezclan precios
+diarios, noticias con fecha y hora, cuentas trimestrales que se publican
+semanas después del periodo al que se refieren y series macroeconómicas que se
+revisan. Un conjunto de datos alineado por periodos puede introducir
+información que no estaba disponible al decidir. La fecha de cierre de un
+trimestre no es la fecha en que se conocieron sus cifras
+\parencite{sec_edgar_timestamps}, y una serie revisada no equivale a la que se
+publicó en su momento \parencite{alfred_vintages}. Un resultado favorable con
+una fuga de este tipo no respalda ninguna hipótesis.
+
+La tercera dificultad es el cambio. Los mercados atraviesan regímenes distintos
+y un modelo ajustado con el pasado puede perder precisión. La literatura
+reciente propone memorias neuronales que se actualizan durante la inferencia
+\parencite{behrouz2025titans,sun2025ttt} y, en finanzas, modelos que adaptan
+sus rutas o sus parámetros a patrones cambiantes
+\parencite{lin2021tra,zhao2023doubleadapt}. Al mismo tiempo, varias
+propuestas de adaptación en línea para series temporales usaban la etiqueta
+del paso actual antes de que estuviera disponible, y su error crece de forma
+clara al imponer el retraso real \parencite{zhao2025proceed,lau2025dsof}.
+La pregunta de si una memoria adaptativa ayuda solo se puede contestar con un
+protocolo que controle esa fuga y con controles que separen la memoria del
+resto de cambios.
+
+\section{Pregunta de investigación e hipótesis}
+La pregunta principal es la siguiente: \emph{¿mejora una memoria adaptativa de
+eventos la predicción de retornos residuales fuera de muestra, con un
+presupuesto de cómputo comparable y después de controlar la fuga temporal?}
+Una respuesta negativa bien medida también contesta la pregunta. La métrica
+primaria propuesta es el MAE del retorno residual por sesión y la secundaria
+prioritaria es el Rank IC medio por sesión. Los resultados económicos de las
+simulaciones son secundarios y no sustituyen a la pregunta predictiva.
+
+El protocolo del proyecto registra cuatro hipótesis antes de cualquier
+resultado:
+\begin{description}
+\item[H1.] La memoria aporta señal adicional. Se contrasta el modelo completo
+frente al mismo codificador sin memoria, con la diferencia de MAE fuera de
+muestra, su intervalo por bloques temporales y su consistencia entre ventanas.
+\item[H2.] La escritura selectiva importa. Se contrasta la escritura por
+sorpresa frente a la uniforme y frente a la basada solo en el error, con una
+mejora que no se explique por más parámetros, actualizaciones o cómputo.
+\item[H3.] La representación multimodal afecta al resultado. Se comparan
+codificadores y formas de fusión con las mismas muestras y modalidades.
+\item[H4.] La incertidumbre ayuda a abstenerse. Se mide el riesgo frente a la
+cobertura y la calibración con las mismas coberturas.
+\end{description}
+
+\section{Objetivos}
+Los seis objetivos son hitos de investigación. La tabla~\ref{tab:objetivos} relaciona
+cada objetivo con la evidencia que permitirá discutir su cumplimiento y con su
+estado a 20 de octubre de 2026. Se distingue entre implementación, verificación
+de datos, resultados exploratorios y comparación confirmatoria pendiente.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Objetivos, evidencia prevista y estado a 20 de octubre de 2026.}
+\label{tab:objetivos}
+\begin{tabular}{L{3.2cm}L{5.2cm}L{4.6cm}}
+\toprule
+Objetivo & Evidencia que permitirá responderlo & Estado \\
+\midrule
+O1. Datos y disponibilidad temporal & Inventario, procedencia, reglas de
+disponibilidad, exclusiones y verificaciones de fuga de cada modalidad &
+Edición v3.1 y vistas A v2 verificadas. Persisten límites de procedencia histórica
+\\
+O2. Objetivo residual & Fórmula, horizonte, estimación temporal de alfa y beta
+y comprobación de la madurez de cada etiqueta & Objetivos v3.1 generados,
+recalculados y diagnosticados. El factor sectorial no se admite \\
+O3. Memoria e incertidumbre & Especificación implementable de la memoria, la
+escritura por sorpresa, el régimen y la calibración & Núcleo y ampliaciones
+comprobados, con pilotos. Comparación confirmatoria pendiente \\
+O4. Referencias y ablaciones & Modelos clásicos y neuronales y variantes sin
+memoria, con memoria global y sin sorpresa, con el mismo presupuesto & Declarado
+en la campaña A v2, aún sin ejecutar. Los pilotos tienen alcance propio \\
+O5. Evaluación & Error, dirección, calibración, Rank IC y simulación con
+costes en validación walk-forward, con incertidumbre por bloques &
+Aplicada a predicciones reales de desarrollo, incluida CQR. Falta la campaña \\
+O6. Análisis crítico & Fallos, aportación de modalidades y coste con 8~GB de
+VRAM & Resultados negativos y costes de pilotos publicados. Falta el análisis
+de la campaña completa \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Alcance y limitaciones}
+El estudio usa la copia local de FinMultiTime y fuentes adicionales
+verificables, con frecuencia diaria y un único horizonte principal de una
+sesión. El equipo disponible es un portátil con una GPU RTX 4070 Max-Q de
+8~GB y 32~GB de RAM. Ese límite condiciona el tamaño de los modelos y obliga
+a medir la memoria antes de fijar las recetas. Quedan fuera las operaciones
+reales, la conexión a un bróker, las recomendaciones de inversión, la
+autoedición de modelos y el entrenamiento de grandes codificadores
+multimodales. La etapa de políticas financieras es una ampliación separada y
+su criterio no sustituye al error predictivo.
+
+En este documento, «causal» significa respetar el orden de la información. La
+residualización, las máscaras temporales y las ablaciones no identifican
+efectos económicos causales. La población desde 2000 está condicionada a la
+supervivencia, porque casi todos los activos preparados siguen cotizando en
+marzo de 2025 y no hay una fuente libre y verificable de retornos de salida
+para las bajas estadounidenses \parencite{shumway1997delisting}. El año 2024
+es el test final y permanece sellado durante toda la selección de modelos.
+
+\section{Estructura del documento}
+El capítulo~\ref{cap:estado} revisa los antecedentes y explica qué toma el
+proyecto de cada uno. El capítulo~\ref{cap:datos} describe la edición
+histórica, el objetivo residual y el protocolo temporal. El
+capítulo~\ref{cap:diseno} presenta los modelos comparados y el estado técnico
+de la campaña. Los capítulos de resultados y conclusiones recogen los estudios
+de desarrollo y los distinguen de la comparación confirmatoria pendiente.
+
+\chapter{Estado del arte}
+\label{cap:estado}
+Esta revisión está dirigida a las decisiones del proyecto y no pretende ser
+exhaustiva. Las fichas de cada fuente, con la versión consultada, el acceso y
+lo que se leyó realmente, están en los catálogos de la biblioteca del
+repositorio. Las cifras de otros trabajos se transcriben como evidencia de su
+dominio y ninguna se traslada a este proyecto como resultado esperado.
+
+\section{Datos financieros multimodales y disponibilidad temporal}
+FinMultiTime reúne precios, noticias, gráficos y tablas financieras de
+valores estadounidenses y chinos \parencite{xu2025finmultitime}. Es un
+preprint en revisión y es la fuente principal de los datos. Su descripción
+contiene detalles que obligan a una auditoría propia. El artículo elimina
+fechas de anuncio de algunas tablas, propaga cifras contables dentro de su
+ventana de reporte, genera gráficos por semestres y describe un universo
+referido mayoritariamente a abril de 2025. Los recuentos tampoco coinciden
+entre el PDF, la ficha de arXiv y la ficha del repositorio de datos. Por eso el
+proyecto no usa la alineación del conjunto como prueba de disponibilidad y
+reconstruye cada modalidad con su propia regla.
+
+Los antecedentes de predicción multimodal muestran que combinar fuentes puede
+ayudar en tareas concretas. StockNet combina mensajes de Twitter e historial de
+precios para predecir la dirección del movimiento \parencite{xu2018stocknet},
+y \textcite{koval2024financial} predicen la sorpresa de beneficios con
+documentos, variables financieras y contexto macroeconómico. Ninguna de esas
+tareas es el retorno residual diario y sus magnitudes no se trasladan. Los
+codificadores de texto financiero, como FinBERT \parencite{araci2019finbert},
+se evaluaron en sentimiento, lo que no prueba que predigan rentabilidades.
+Además, un codificador publicado después del periodo evaluado puede aportar
+conocimiento retrospectivo, y eso debe declararse.
+
+La disponibilidad se trata como una propiedad de cada dato. La SEC distingue el
+periodo del informe, su aceptación y su difusión pública
+\parencite{sec_edgar_timestamps}. Las bases macroeconómicas con versiones
+históricas conservan cada publicación y sus revisiones
+\parencite{alfred_vintages,mccracken2016fredmd}. El sesgo de supervivencia es
+otra fuente conocida de error, porque omitir los retornos de las empresas que
+dejan de cotizar sesga los resultados \parencite{shumway1997delisting}.
+
+\section{Objetivo residual y predicción de rentabilidades}
+Los modelos factoriales separan la exposición al mercado de la parte propia
+del activo \parencite{fama1993risk,fama2015five,cochrane2005asset}. El
+proyecto usa el factor de mercado y deja el sectorial condicionado a contar
+con una pertenencia sectorial histórica verificable. Restar el mercado no
+convierte la predicción en una cartera neutral ni identifica el efecto de un
+evento.
+
+Con aprendizaje automático, \textcite{gu2020assetpricing} comparan
+regresiones, árboles y redes para predecir rentabilidades. Su principio de
+comparar familias distintas con los mismos cortes y el mismo presupuesto de
+selección es el que adopta este trabajo, aunque sus conclusiones pertenecen a
+su universo y frecuencia. En rentabilidades diarias, los árboles superan a las
+redes y a los modelos fundacionales en $R^2$, y el Sharpe de las carteras por
+deciles se vuelve negativo con 20 puntos básicos de coste
+\parencite{rahimikia2025tsfmfinance}. \textcite{guijarro2026statarb}
+muestran que trabajar con residuos frente a factores eleva el Sharpe antes de
+costes y que las fricciones reducen buena parte de esa ganancia. La
+predictibilidad publicada también se deteriora fuera de muestra y tras su
+publicación \parencite{mclean2016predictability}, lo que impide tratar un
+efecto retrospectivo como una rentabilidad estable.
+
+\section{Modelos de series temporales y referencias sencillas}
+Varias comparativas independientes muestran que los modelos sencillos son
+difíciles de superar. DLinear compite con Transformers de series temporales en
+sus pruebas \parencite{zeng2023dlinear}, una regresión por mínimos cuadrados
+resuelta en forma cerrada gana en el 72~\% de los casos estudiados por
+\textcite{toner2024linear}, y en el banco de pruebas TFB ganan VAR y NLinear en
+las series de NASDAQ y NYSE \parencite{qiu2024tfb}. Quitar el modelo de
+lenguaje no empeora a Time-LLM \parencite{tan2024llmts}. Mamba no incluye
+experimentos de series temporales \parencite{gu2023mamba} y S-Mamba pierde
+frente a DLinear en la serie de tipos de cambio \parencite{wang2025smamba}.
+
+De estas fuentes salen las referencias mínimas del estudio: predicción nula,
+Ridge, XGBoost, DLinear, redes recurrentes compactas (RNN, LSTM y GRU) y un
+Transformer compacto. Ninguna arquitectura recurrente o de
+espacio de estados tiene evidencia de ventaja en rentabilidades de acciones
+en la revisión realizada, así que la comparación no presupone que la más
+compleja gane.
+
+\section{Memoria neuronal y aprendizaje en tiempo de prueba}
+Titans combina atención sobre un contexto cercano con una memoria neuronal de
+largo plazo que se actualiza durante la inferencia \parencite{behrouz2025titans}.
+La memoria es una red cuyos pesos guardan asociaciones clave-valor. Se
+actualiza por gradiente de una pérdida asociativa, con momentum y una puerta de
+olvido que dependen de la entrada, y la variante MAC incorpora su lectura y
+unos parámetros persistentes aprendidos al contexto de la atención. TTT trata
+el estado recurrente como un modelo que se ajusta con una tarea
+autosupervisada \parencite{sun2025ttt}. MIRAS organiza estas memorias según su
+objetivo interno, su retención y su algoritmo de actualización
+\parencite{behrouz2026miras}, y ATLAS y Nested Learning extienden la
+actualización a ventanas de contexto y a varias frecuencias
+\parencite{behrouz2025atlas,behrouz2025nested}.
+
+La familia es más amplia que el grupo de Titans. La regla delta y sus
+variantes con decaimiento o varios pasos internos son memorias lineales del
+mismo tipo \parencite{yang2024deltanet,yang2024gateddelta,siems2025deltaproduct},
+y \textcite{wang2026testtimeregression} las ordenan como regresión en tiempo
+de prueba, donde cada capa elige pesos sobre el pasado, una clase de
+funciones y un optimizador. MDN analiza la memoria lineal de Titans como un
+sistema de segundo orden y restringe el espectro de cada paso
+\parencite{huang2026mdn}.
+
+La evidencia disponible pide cautela. Una reimplementación independiente de
+Titans no alcanza las cifras originales y observa que actualizar solo la
+memoria no produce un aprendizaje útil en texto
+\parencite{dinepi2025titansrevisited}. En LaCT, otra memoria de esta familia, cambiar el
+descenso interno por ascenso apenas altera la perplejidad, lo que sugiere que
+parte del efecto puede ser el de una atención lineal aprendida, aunque los
+autores no lo comprobaron en Titans \parencite{liu2026tttla}. MesaNet considera
+sesgadas las comparaciones de Titans y ATLAS por usar una sola tasa de
+aprendizaje para todos los modelos \parencite{vonoswald2026mesanet}. En series temporales los ensayos con bloques
+TTT dan resultados mixtos según el horizonte \parencite{christou2024ttlts}, y
+la revisión no encontró ninguna publicación revisada que aplique TTT, la regla
+delta o la memoria de Titans a la predicción de rentabilidades con un
+protocolo temporal comparable. Esa ausencia se limita al alcance y la fecha de
+la búsqueda y no se presenta como prueba de novedad.
+
+\section{Adaptación en línea, memoria episódica y olvido}
+La idea de combinar un aprendizaje lento con un almacén rápido de episodios
+procede de los sistemas de aprendizaje complementarios
+\parencite{mcclelland1995cls}. En aprendizaje continuo, la repetición de
+ejemplos guardados y la regularización de los pesos importantes reducen el
+olvido \parencite{rolnick2019replay,chaudhry2019replay,buzzega2020der,kirkpatrick2017ewc}.
+Estas fuentes impiden presentar la combinación de memoria rápida y lenta como
+una idea nueva.
+
+En finanzas, SFM separa los estados de una memoria recurrente en componentes
+de distinta frecuencia para predecir precios \parencite{zhang2017sfm}, TRA
+enruta cada muestra entre varios predictores con ayuda de sus errores
+históricos \parencite{lin2021tra} y DoubleAdapt aprende a adaptar datos y
+parámetros para la actualización incremental \parencite{zhao2023doubleadapt}.
+Tampoco «memoria para bolsa», «varias escalas» o «adaptación continua» son
+aportaciones nuevas por sí solas.
+TRA ya usa errores pasados para elegir una ruta, así que el uso de errores
+históricos no es por sí mismo una aportación. Los agentes con memoria basados
+en modelos de lenguaje \parencite{yu2024finmem} persiguen otra tarea y quedan
+fuera del núcleo.
+
+La adaptación en línea de series temporales tiene un problema documentado de
+fuga. Los protocolos de FSNet y OneNet \parencite{pham2023fsnet,zhang2023onenet}
+usaban la verdad del paso actual. Con la estrategia sin fuga el error medio
+se duplica en Proceed \parencite{zhao2025proceed}, y DSOF separa los flujos
+rápido y lento para evitarlo \parencite{lau2025dsof}. Un preprint reciente
+impone el retraso causal en el código de cuatro métodos y encuentra que un
+banco de filtros RLS sin hiperparámetros supera a tres de ellos
+\parencite{fentazi2026delayaudit}. En recuperación de episodios, las mejoras
+publicadas son pequeñas cuando el control iguala parámetros
+\parencite{lyu2026tsmemory,han2025raft}.
+
+\section{Incertidumbre y calibración}
+Los conjuntos de redes y el dropout en inferencia dan estimaciones prácticas de
+incertidumbre \parencite{lakshminarayanan2017ensembles,gal2016dropout}, pero el
+desacuerdo entre modelos no asegura una buena calibración tras un cambio de
+régimen. La regresión cuantílica conformalizada ajusta los intervalos de un
+predictor de cuantiles con un tramo de calibración separado
+\parencite{romano2019cqr}. ACI adapta el nivel según se observan errores, con
+una garantía de frecuencia a largo plazo que no equivale a cobertura
+condicional en cada activo o fecha \parencite{gibbs2021aci}, y la pérdida de
+intercambiabilidad tiene un coste de cobertura que se puede acotar
+\parencite{barber2023exchangeability}. EnbPI separa la calidad del predictor
+de la del intervalo en series dinámicas \parencite{xu2021enbpi}. Con
+retroalimentación retrasada, como la de una etiqueta que madura al día
+siguiente, solo dos trabajos encontrados dan garantías explícitas y ambos son
+preprints \parencite{wang2024multistepcp,halabi2026delayedaci}.
+
+\section{Evaluación, selección y sobreajuste}
+La validación con origen móvil es la forma estándar de evaluar predicciones
+temporales \parencite{hyndman2021fpp3}. Cuando las etiquetas se solapan con el
+tramo siguiente hay que purgarlas \parencite{lopez2018afml}. Probar muchas
+configuraciones sobre los mismos datos altera la interpretación de cualquier
+mejora. \textcite{white2000realitycheck} propone un contraste que tiene en
+cuenta toda la búsqueda al comparar el mejor modelo con una referencia, \textcite{harvey2016multiple}
+explican cómo la búsqueda repetida de factores cambia la significación, y la
+probabilidad de sobreajuste del backtest y el Sharpe deflactado lo cuantifican
+\parencite{bailey2017pbo,bailey2014dsr}. El Sharpe tiene un error de
+estimación que depende de la dependencia temporal \parencite{lo2002sharpe} y
+los costes de negociación cambian el resultado neto \parencite{frazzini2018costs}.
+
+\section{Síntesis}
+De la revisión se deducen cuatro decisiones. La primera es auditar la
+disponibilidad de cada modalidad en lugar de confiar en la alineación del
+conjunto. La segunda es comparar con referencias sencillas y con el mismo
+presupuesto de búsqueda, porque la señal es pequeña y los modelos complejos no
+tienen ventaja demostrada en rentabilidades. La tercera es separar en los
+controles el cambio de codificador, la memoria neuronal de Titans y el banco
+episódico, porque cada uno tiene antecedentes propios. La cuarta es que
+cualquier adaptación con resultados debe esperar a que madure la etiqueta. Lo
+que el proyecto puede aportar es una comparación reproducible de estas piezas
+sobre retornos residuales, incluida la posibilidad de que ninguna mejore a una
+referencia sencilla.
+
+\chapter{Datos y metodología}
+\label{cap:datos}
+
+\section{Reloj de decisión y objetivo residual}
+Cada muestra relaciona un activo con un instante de decisión, las modalidades
+disponibles en ese instante y una etiqueta que solo puede usarse cuando
+madura. La predicción se construye después del cierre de la sesión $t$, y la
+simulación entra en la apertura de la sesión siguiente y sale en su cierre.
+Para esa convención, el retorno residual se define como
+\begin{equation}
+y_{i,t} = r^{OC}_{i,t+1} - \hat\alpha_{i,t}
+          - \hat\beta_{i,t} r^{OC}_{m,t+1}.
+\end{equation}
+Los coeficientes se estiman por mínimos cuadrados con las 252 sesiones
+anteriores y un mínimo de 126 pares cuyo cierre se conoce en la decisión. El
+factor es SPY en Estados Unidos y el CSI 300 en China. El retorno futuro del
+mercado pertenece a la etiqueta y nunca a las entradas.
+
+\section{Edición histórica v3.1}
+La edición histórica desde 2000 conserva todos los datos utilizables de la
+copia con sus ausencias explícitas y usa las mismas filas para todos los
+modelos. La versión vigente es la v3.1, que parte de la v3 y corrige tres
+aspectos de la lectura de precios. Convierte el texto numérico de los CSV con
+redondeo correcto, porque el lector anterior devolvía en un 8 a 9~\% de los
+valores un número vecino del escrito. Admite las filas cuyo único defecto es
+un desorden OHLC por redondeo de la fuente. Y conserva con máscara las
+ventanas que contienen sesiones sin ninguna fila en todo el mercado, como el
+29 y el 30 de abril de 2019 en China. Además, todos los vectores se calculan
+en FP32 estricto, sin TF32. Las noticias, los fundamentales, el contexto macro
+y la política de máscaras no cambian.
+
+La codificación recorrió 5.676 candidatos entre el 10 y el 11 de octubre de
+2026. De ellos, 653 no tienen los precios requeridos y 5.023 se codificaron
+(4.213 de Estados Unidos y 810 de China). Quince activos estadounidenses
+codificados no tienen ninguna muestra. La edición reúne 18.698.976 muestras de
+64 sesiones (15.874.289 en Estados Unidos y 2.824.687 en China), 1.622.952 más
+que la v3, sin perder ninguna sesión. Cada muestra conserva posiciones para
+precios, noticias, gráficos, fundamentales y 140 indicadores macroeconómicos
+con nivel, presencia y antigüedad, además de cinco bits de presencia por
+modalidad. Precios, gráficos y macro están en todas las muestras. Las noticias
+aparecen en el 16,9~\% (17,5~\% en Estados Unidos y 13,1~\% en China) y los
+fundamentales en el 32,5~\% (38,1~\% y 0,7~\%). Las cinco modalidades juntas
+solo coinciden en el 10,0~\% de las muestras. Los textos se codifican con
+MiniLM multilingüe y los gráficos con ResNet18, ambos congelados.
+
+La verificación del 11 de octubre comprobó la edición completa sin fallos. Los
+5.023 activos se compararon con la v3 antes de sustituirla. Las 17.076.024
+muestras de la v3 conservan su sesión. Por la conversión exacta, 125.460
+ventanas cambian como mucho $7{,}5 \times 10^{-9}$ y 70.255 gráficos cambian
+algún píxel. En las 17.005.769 sesiones comunes con el mismo gráfico, ningún
+vector coincide bit a bit con el de la v3, con una diferencia relativa por
+norma de como mucho $1{,}82 \times 10^{-3}$, que es el efecto de haber
+calculado la v3 con TF32. Los textos de la v3 se heredaron tras un contraste por activo, con
+74.748 textos comparados y ninguna diferencia. Una muestra aleatoria de 512
+gráficos y 256 textos, recalculados en la GPU de uno en uno, coincidió bit a
+bit con los vectores guardados.
+
+\section{Objetivos residuales v3.1}
+Los objetivos de la v3.1 se generaron el 11 de octubre y se verificaron ese
+mismo día. La tabla~\ref{tab:objetivos-v31} resume su cobertura. Una
+verificación independiente recalculó 223.459 etiquetas de 60 activos con una
+referencia en pandas, distinta del motor que las generó, y la diferencia
+máxima fue cero. El diagnóstico de la etiqueta, repetido el 13 de octubre con
+el mismo código y la misma declaración que en la v3, vuelve a calcular las
+18.377.972 etiquetas aceptadas y todas coinciden bit a bit.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Cobertura de los objetivos residuales v3.1. Entrenamiento hasta 2022 y
+validación en 2023. Ninguna fila de 2024.}
+\label{tab:objetivos-v31}
+\begin{tabular}{lrrr}
+\toprule
+Categoría & China & EE.~UU. & Total \\
+\midrule
+Entrenamiento & 2.577.040 & 14.565.147 & 17.142.187 \\
+Validación & 195.144 & 1.040.641 & 1.235.785 \\
+Historia insuficiente & 49.829 & 260.009 & 309.838 \\
+Sesión siguiente ausente & 1.056 & 126 & 1.182 \\
+Objetivo posterior al corte & 810 & 4.185 & 4.995 \\
+Purgada por cruzar la partición & 808 & 4.181 & 4.989 \\
+\midrule
+Muestras de la edición & 2.824.687 & 15.874.289 & 18.698.976 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La exclusión principal es estructural. Cada activo pierde sus primeras
+muestras hasta reunir 126 retornos conocidos, y ningún activo pierde más de
+127 filas. Con las dos sesiones de SPY de 2000 recuperadas desaparecen las
+exclusiones que dependían del factor. De las 1.056 sesiones siguientes
+ausentes en China, 750 son decisiones del 26 de abril de 2019, cuya sesión
+siguiente falta en todo el mercado, y no reciben un precio inventado. El
+residual reduce la varianza un 30~\% en el entrenamiento chino y entre un 4 y
+un 12~\% en los demás grupos, y conserva la mayor parte de la variación del
+activo, con correlaciones entre bruto y residual de 0,832 a 0,955. Las colas
+apenas cambian. Los mayores residuales de Estados Unidos son casi todos de
+valores que abren por debajo de 1~USD o negocian menos de 1.000 acciones en la
+sesión, y unas pocas filas dominan la suma de cuadrados de algunos años. Por eso la métrica principal es el MAE por
+sesión y no el RMSE.
+
+\section{Población y supervivencia}
+La población desde 2000 está condicionada a la supervivencia. Casi todos los
+activos preparados siguen cotizando en marzo de 2025 y no hay una fuente libre
+y verificable de retornos de salida para las bajas estadounidenses. Mientras
+no se incorporen, los resultados predictivos y financieros se declararán
+condicionados a esa supervivencia y se acompañarán de un análisis de
+sensibilidad. Los precios negociados se reconstruyen invirtiendo el ajuste del
+proveedor y se contrastan con fuentes independientes. Sus acciones
+corporativas siguen incompletas.
+
+\section{Protocolo temporal}
+El protocolo walk-forward evalúa cada año con un modelo ajustado con todo el
+pasado desde 2000 hasta abril del año anterior, seleccionado con los seis
+meses siguientes y calibrado con los tres últimos meses de ese año. La purga se
+deriva del intervalo real de cada etiqueta. La regla común de parada usa un
+presupuesto fijo de 30 épocas y conserva el mejor estado según el MAE residual
+de validación, con una mejora mínima declarada de 0,00001.
+
+La campaña elegida, A v2, entrena un único modelo conjunto de Estados Unidos y
+China con un protocolo que empieza como el estadounidense, con la primera
+validación en abril de 2004 y 19 ventanas hasta 2023. China entra en el ajuste
+en cuanto tiene filas, pero sus métricas solo cuentan desde 2011, cuando
+reúne su historia mínima. El Transformer compacto, Titans-MAC con memoria
+activa y MARS-TITAN con M1 se entrenan además por separado en cada mercado
+como controles del efecto de agrupar. Cada ventana se reentrena desde cero.
+
+El walk-forward es por etapas. En la ventana $k$, el postentrenamiento parte
+del estado elegido de la base en $k-1$ y solo ajusta con filas que ese padre
+no usó. El predictor de la cadena se elige con la validación de $k$ entre el
+padre congelado, los adaptadores y la continuación, y solo sustituye al padre
+con una mejora estricta. Las políticas financieras ajustan con las cintas de
+las tres evaluaciones anteriores a su validación. Ninguna etapa ve el año
+evaluado antes de su test.
+
+\chapter{Diseño de la comparativa}
+\label{cap:diseno}
+La comparación conserva el candidato GRU con banco episódico y añade una
+referencia Transformer compacta, una adaptación de Titans-MAC y MARS-TITAN con
+ampliaciones desactivables sobre ese núcleo. Las referencias ingenuas, lineales
+y de árboles mantienen sus propias identidades. El cambio de codificador,
+la memoria neuronal y el banco episódico requieren controles separados.
+
+Titans-MAC combina atención cercana, memoria neuronal con pérdida asociativa,
+gradientes, momentum y olvido dependientes de la entrada, y parámetros
+persistentes aprendidos independientes de ella. Los pesos rápidos y su momentum
+son distintos de los parámetros compartidos, de la memoria persistente del
+artículo, de los episodios y del estado de trabajo. La actualización asociativa
+utiliza entradas disponibles. El error financiero de escritura episódica espera
+a que madure el resultado de la predicción emitida. K cuenta los refinamientos
+del proyecto, no las actualizaciones internas de Titans.
+
+La receta histórica de A v2 conserva las proyecciones \texttt{linear\_v1}.
+Se han añadido dos declaraciones independientes: \texttt{sequence} aplica la
+disposición temporal contigua con esas mismas proyecciones y \texttt{paper}
+cambia únicamente las proyecciones por las del artículo. Cada declaración
+tiene su receta, identidad y factorial CM, con las mismas muestras, cortes y
+presupuestos pertinentes. Sus etapas de adaptadores, ablación, políticas y
+publicación se vinculan a la huella de su propia campaña. Las comprobaciones
+de metadatos y disjunción temporal pasan, pero sus recibos de campaña y
+selecciones siguen vacíos. Estas declaraciones no cambian A v2 por defecto
+ni acreditan ejecutar la campaña o reproducir los resultados de Titans.
+
+CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
+fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
+Los datos, filas, cortes y presupuestos pertinentes se mantienen comparables.
+No se presuponen superioridad ni reproducción de los resultados del artículo.
+La edición histórica y sus objetivos residuales tienen recibos de verificación.
+Los pilotos de memoria, refinamientos y plasticidad ya han ejecutado ajustes y
+evaluaciones de desarrollo. Sus resultados se describen en el
+capítulo~\ref{cap:resultados}. La campaña completa y el test final siguen
+cerrados, con la protección global del aprendizaje activa.
+
+La revisión técnica del 9 de octubre recoge comprobaciones CPU/CUDA de la referencia GRU,
+el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
+Este último utiliza una compresión del Jacobiano conjunto de pesos rápidos
+y momentum y puede omitir direcciones expansivas. El codec episódico conserva
+una representación fija de las entradas y sus máscaras. El consumidor
+cronológico conecta el banco, la lectura y los estados por bloques con
+parámetros compartidos congelados. M0/M1 y la recuperación conjunta están
+comprobados en CPU/CUDA. M2 añade tres índices con cupos 50/25/25 y error de la
+emisión original. Su comprobación CUDA focal comprende FP32/FP64, $K=1$,
+$B_{\mathrm{mem}}=4$ y C desactivado, y pasa en \texttt{cuda:0} con el binario
+nativo realmente cargado. M3 conserva esos índices y ordena el selectivo con
+el error maduro, una anomalía del último rendimiento y una relevancia según la
+frescura contable y la presencia de noticias, normalizados con escalas del
+tramo de entrenamiento de cada ventana y con pesos fijos de un tercio. Sus
+comprobaciones coinciden en CPU y CUDA. La consolidación M sobre M2 y la
+aceptación de las fases históricas completas siguen pendientes. La corrección
+asociativa B6 suma a la predicción de Titans-MAC una memoria lineal escrita
+solo con resultados maduros y se emite ya en las ventanas walk-forward con las
+mismas emisiones que la sesión. Su control es un corrector de sesgo con las
+mismas etiquetas. Otro modelo repite $K=4$ con los episodios de la primera
+lectura, de modo que el cálculo adicional no examina más episodios. La
+representación de régimen de la campaña reparte la memoria de B6 en cinco
+compartimentos según una regla observable de volatilidad y tendencia, sin
+ajuste, con un control que reparte la misma memoria por mes. El régimen
+filtrado con un HMM, la vista reducida, la selección de documentos y el replay
+programado quedan fuera de la campaña A, porque cambian las entradas o el ajuste del
+núcleo y cada uno exigiría otra familia Titans-MAC. No hay una mejora
+predictiva medida de estas variantes.
+
+La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
+controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
+parada por KL. KLPO conserva su objetivo terminal y un colector de episodios
+completos, con política de recogida, reloj e historia GRU identificados. La
+orden nativa \texttt{mars-titan-klpo} recoge oleadas sobre cintas reconstruidas,
+selecciona en validación y separa la evaluación.
+
+Las primeras comprobaciones no ejecutaban actualizaciones. El
+\href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/memory-microstudy-20261018/README.md}{recibo del 18 de octubre}
+añade ocho microajustes CUDA con fixtures sintéticos y 960 transiciones por
+algoritmo. Registran gradientes finitos y no nulos y seleccionan el estado
+inicial en los ocho casos. No son resultados financieros ni ordenan los
+algoritmos por utilidad real. La comparación financiera necesita tres ventanas
+previas de predicciones fuera del ajuste y sigue pendiente. El ajuste de una
+predicción y la política secuencial conservan objetivos distintos.
+
+Los benchmarks Silencio, Faro, Eco, Giro, Retorno, Contraste, Tormenta y Umbral
+reutilizan ocho mecanismos sintéticos existentes. Se han preparado 240 mundos,
+con ocho activos, perfiles de 64 y 256 sesiones y semillas separadas. Sus contratos
+se han comprobado sin ajustar modelos. La dificultad empírica y la comparación
+de algoritmos siguen pendientes. Su contexto técnico no sustituye las cuatro
+modalidades históricas de FinMultiTime.
+
+Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
+retornos de activos y un registro de operaciones con costes de apertura y cierre.
+El protocolo fijará las comparaciones principales antes de abrir el conjunto final.
+
+\section{Estado técnico de la campaña desde 2000}
+La campaña reentrenará desde cero todos los modelos con las mismas filas de la
+edición v3.1. La edición, sus objetivos residuales y sus verificaciones se
+describen en el capítulo~\ref{cap:datos}. Las vistas de la campaña A original
+se prepararon y verificaron el 9 de octubre sobre la edición v3, con 19
+ventanas en Estados Unidos y 13 en China y en la unión de ambos mercados. La
+v3.1 las sustituye. Las vistas de la campaña A v2 se prepararon sobre
+\texttt{targets-v3.1} el 13 y el 14 de octubre con sus tres ámbitos: la unión
+desde 2004, con 19 ventanas y China elegible desde la séptima, y los controles
+de Estados Unidos (19 ventanas) y China (13). Un verificador independiente
+recalculó fronteras, purga, objetivos y elegibilidad en los 5.008 activos y
+comparó cada ventana conjunta con su gemela por mercado, sin encontrar
+diferencias.
+
+La campaña A v2 se declaró el 9 de octubre, antes de cualquier resultado. Los
+casos de búsqueda se ajustan con la semilla 42 y el caso elegido en validación
+se repite con 43 y 44. Ridge y XGBoost son deterministas y tienen una sola
+semilla. Toda la campaña exige FP32 estricto y solo datos reales de la
+edición, sin condiciones sintéticas, remuestreadas ni aumentadas. Las
+referencias y los modelos propios reciben el mismo presupuesto de búsqueda y
+selección: dos casos por modelo neuronal en cada ventana y la misma regla de
+parada. La GRU candidata recibió su segundo caso el 10 de octubre para igualar
+esa búsqueda.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Estado de las etapas de la campaña A v2 a 20 de octubre de 2026.
+La campaña completa no se ha lanzado. Los pilotos tienen protocolos separados.
+Los recuentos son límites declarados en las configuraciones y fijados por
+pruebas.}
+\label{tab:estado}
+\begin{tabular}{L{2.6cm}L{5.6cm}L{4.8cm}}
+\toprule
+Etapa & Implementación y evidencia & Pendiente \\
+\midrule
+Edición y objetivos & Edición v3.1 y \texttt{targets-v3.1} generadas y
+verificadas el 11 de octubre. Diagnóstico de la etiqueta repetido el 13 de
+octubre & Límites de procedencia y disponibilidad histórica \\
+Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
+regla de parada común y walk-forward por etapas. Vistas de A v2 sobre la v3.1
+preparadas y verificadas el 14 de octubre. Retención v3, que libera las tablas
+de los adaptadores tras regenerarlas idénticas & Regenerar los resultados de
+la campaña cuando existan sus modelos ajustados \\
+Campaña base & 3.177 ajustes de referencias, Titans-MAC, GRU candidata,
+MARS-TITAN y CM-v1, 2.056 mesetas de la parada conjunta y 133 trabajos del
+control en línea. Opciones de memoria, recibos por trabajo y reanudación
+definidos & Ejecutar la campaña completa y medir su coste \\
+Adaptadores & 8.694 ajustes en las 18 ventanas con padre (270 de la continuación
+anclada y 1.620 de los objetivos lineales de \#128, solo como contraste), 1.710 predicciones
+del padre congelado y 1.805 selecciones de la cadena. Pruebas CUDA de
+adaptadores y cuantiles superadas & Comparación real de la etapa completa \\
+Políticas & 3.384 ajustes y 3.663 ejecuciones de referencia sobre cintas de
+precios reconstruidos, con GRPO, Dr. GRPO y GSPO en el nivel de algoritmos.
+Ejecutores nativos de PPO, Double DQN, KLPO y los objetivos de grupo compilados
+con LibTorch CUDA. Microajustes técnicos con fixtures publicados & Ajustar y
+comparar políticas sobre datos reales y medir su coste \\
+Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
+común por mercado, estratos por presencia de noticias y fundamentales, cartera
+larga y corta, matriz de 356 contrastes con atribución por componentes, banco
+de integridad e informe de integridad que bloquea la publicación & Completar la
+evaluación de la campaña, separada de los pilotos \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La declaración original de A, con modelos separados por mercado, sumaba 5.985
+ajustes en la campaña base, 10.962 en la etapa de adaptadores y 2.664 en la de
+políticas. Se conserva con sus pruebas, pero la campaña elegida es A v2.
+
+Las referencias neuronales (RNN, LSTM, GRU, DLinear y Transformer compacto),
+Ridge, XGBoost y los cuatro controles de Titans-MAC
+(\texttt{transformer\_direct}, \texttt{mac\_disabled}, \texttt{mac\_frozen} y
+\texttt{mac\_online}) tienen entrenador por ventana. La receta de Titans-MAC
+activa puertas con bias declarados y la memoria con residual y LayerNorm, con
+dos casos de búsqueda de la tasa de aprendizaje como las referencias. La GRU
+episódica tiene entrenador cronológico, memoria acotada y ventana
+walk-forward. MARS-TITAN ajusta el lector episódico sobre el padre
+\texttt{mac\_online} congelado y, con todas las ampliaciones apagadas,
+reproduce bit a bit la sesión de ese padre. El factorial de CM-v1 ajusta dos
+núcleos \texttt{mac\_online} auxiliares, uno con C desactivado y otro con C
+como penalización, y aplica M como retención con centros fijos del banco del
+lector, de modo que B, B+C, B+M y B+C+M tienen identidades propias. La
+campaña A v2 declara las referencias, Titans-MAC, la GRU candidata,
+MARS-TITAN con M0 a M3, con $K=2$ y $K=4$, con la primera lectura y con las
+ocho correcciones B6, y CM-v1. El control
+\texttt{transformer\_compact\_online} parte del Transformer compacto elegido y
+actualiza sus pesos con las mismas etiquetas maduras que escribe el banco de
+MARS-TITAN, para descartar que una mejora de la memoria se deba solo a seguir
+aprendiendo.
+
+Estas comprobaciones recorren el ajuste hasta el paso del optimizador sin
+aplicarlo, casi siempre en CPU. El 9 de octubre se repitieron en
+\texttt{cuda:0}, también sin pasos de optimizador, 21 comprobaciones de estas
+rutas, y pasaron 20. La de M2 fallaba porque fijaba la huella de una
+compilación anterior. Tras sustituir esa huella por la del binario realmente
+cargado, M2 y M3 pasan con el enlace nativo de la rama de integración. Según
+las medidas de memoria en \texttt{cuda:0}, un tramo de
+\texttt{mac\_online} con 5.023 flujos necesitaría unos 14,7~GiB sin acumulación
+y 1,24~GiB con bloques de 128 filas, así que la campaña necesitará esa
+acumulación en una GPU de 8~GB. Estas sondas técnicas conservan su código y su
+carga. Los estudios posteriores publican por separado el coste de sus ajustes
+y no convierten esta estimación en una medida del universo completo.
+
+La evaluación se acompaña de un banco de integridad que recalcula las métricas
+con una segunda implementación, exige la misma huella de filas en todos los
+modelos de cada ventana, comprueba que ninguna fila llega a 2024, registra los
+análisis en una cadena de huellas antes de ver resultados, busca entradas que
+contengan el objetivo y acota el rendimiento de las políticas con una política de
+un paso que conoce el futuro y queda fuera de toda comparación. La matriz de comparaciones fija
+47 familias y 356 contrastes antes de los resultados y separa la aportación de
+cada componente de MARS-TITAN con escalera acumulada, dejar uno fuera,
+interacciones y valores de Shapley, declarando como limitación los efectos que
+ningún modelo del plan permite identificar. Ambos se han comprobado con datos
+escritos en las pruebas, sin predicciones reales.
+
+Desde el 14 de octubre, publicar una campaña exige un informe de integridad
+que repite las comparaciones con la segunda implementación, vuelve a planificar
+los trabajos declarados y comprueba la selección, el presupuesto de cada
+modelo, la abstención con su cobertura y que ningún preprocesado use datos
+posteriores a su corte. Además reconstruye cada resumen desde un registro de
+métricas declarado. Si alguna comprobación falla, la campaña no se publica. El
+escaneo de fugas sobre la matriz tabular real de las 19 ventanas de la unión
+marcó dos grupos de columnas: noticias de ETF en una validación de 2009 y
+fundamentales chinos en otra de 2022. La revisión las explica como exposición
+a la clase de activo y al tamaño de la empresa, que se conocen antes de
+decidir. Los controles de cada mercado repiten esas marcas y el de China añade
+el volumen relativo de las dos últimas sesiones en la validación de 2015, que
+la unión diluía al promediar con las sesiones de Estados Unidos. Su revisión
+lo explica como una exposición al volumen reciente, con un signo que cambia de
+una sesión a otra y una relación aún mayor con el objetivo pasado. La regla
+declarada sigue sin pasar en los tres ámbitos y sus umbrales no se han
+cambiado.
+
+\chapter{Resultados y discusión}
+\label{cap:resultados}
+Los informes enlazados fijan datos, configuración, revisión de código,
+predicciones y costes de cada estudio. Este capítulo resume evidencia ya
+publicada, sin recalcular métricas ni ejecutar nuevos ajustes. Los ensayos
+anteriores de referencias conservan su edición y su alcance en el
+\href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/baselines/reference-variants.md}{informe de variantes}.
+No se mezclan con los estudios posteriores de la edición v3.1.
+
+\section{Memoria y controles episódicos}
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/memory-microstudy-20261018/README.md}{microensayo del 18 de octubre}
+completó 28 ajustes de una época sobre cuatro activos, con evaluación de
+desarrollo en 251 sesiones de 2005. Ninguna configuración superó al retorno
+residual cero. C+M redujo el error frente a su propio B, pero ese resultado no
+permite elegir la arquitectura para todo el universo. Las filas de esta
+cohorte no tenían noticias ni fundamentales observados. La existencia de sus
+canales y máscaras no equivale a aprender de cuatro modalidades presentes.
+
+La \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/combined-memory-20261018/README.md}{ronda combinada}
+completó 44 de 83 trabajos sobre 64 instrumentos, con dos épocas y 249 sesiones
+de 2023. Un trabajo quedó interrumpido y 38 no se iniciaron. El factorial
+PT1/PT5/PT6 dispone de tres semillas por celda. La mezcla completa reduce el
+MAE medio frente al núcleo, pero su intervalo incluye cero. PT5+PT6 obtiene
+menor error que el núcleo en esta ronda y sigue perdiendo frente al predictor
+residual cero. No hay una mejora general del banco episódico frente al
+refinador ajustado sin banco.
+
+CM-v1 tiene una semilla en esa ronda. M reduce el error observado frente a B,
+mientras C+M frente a B y la interacción son inconcluyentes. Las cuatro
+variantes pierden frente al cero. Se conservan la medición de una compresión
+del Jacobiano y la selección heurística de representantes como mecanismos de
+alcance limitado. Estos resultados no certifican estabilidad global ni
+heredan las garantías del algoritmo publicado de \emph{metric k-median}.
+
+\section{Refinamientos, tamaño de cohorte y representación}
+La \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/refinement-development-20261019/completed-v1/README.md}{ronda del 19 de octubre}
+terminó sus 288 tareas. Comparó las semillas 42, 43 y 44, proyecciones
+\texttt{linear\_v1} y \texttt{mac\_paper}, lectores ajustados con K1 y K4,
+cohortes de 64 y 256 y representaciones gráficas original y geométrica.
+El contraste de escalado conserva los mismos 64 activos y sus 15.936 filas.
+Las poblaciones completas de 256 tienen 63.679 filas y se presentan aparte.
+Ambas se puntúan sobre 249 sesiones de 2023.
+
+Ninguno de los 48 selectores ni de las 16 medias de tres semillas supera al
+retorno residual cero. Sobre los 64 activos comunes, las medias tienen entre
+un 2,24~\% y un 6,58~\% más error. Algunos selectores reducen el MAE frente a
+K1, pero la ventaja frente a un K4 aplicado a pesos ajustados con K1 no basta
+para justificarlos. Entre las ocho medias de lectores ajustados con K4, el
+selector empeora frente a K4cc en seis, mejora en una y coincide en otra.
+Se conservan los controles con pesos propios de K4, el umbral sencillo, la
+asignación por hash, M0, el núcleo y la contracción escalar.
+
+Los intervalos usan bloques temporales y conservan juntos los activos de cada
+fecha. La corrección simultánea actúa dentro de cada familia declarada, no
+sobre todos los estudios. Las tres semillas no convierten 249 sesiones en
+747 observaciones temporales independientes. La geometría de velas tampoco
+aporta una mejora uniforme y no es numéricamente equivalente a ResNet.
+
+\section{Plasticidad y competencia de claves}
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/neural-plasticity-20261020/development-v2/README.md}{piloto de plasticidad v2}
+completó once configuraciones con una época, semilla 42 y 64 activos
+estadounidenses. La combinación de escritura por coherencia y captura por
+elegibilidad reduce el error frente a PT5, pero no mejora de forma concluyente
+frente a dos ganancias constantes. Las modulaciones individuales pierden
+frente a sus controles constantes y todas las configuraciones pierden frente
+al residual cero. El intento v1 que falló la paridad se conserva separado.
+El piloto mide error y coste, no retención a largo plazo ni tiempo de
+reaprendizaje.
+
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/key-competition-20261020/development-v1/README.md}{piloto de centrado y competencia}
+completó siete configuraciones con el mismo alcance de cohorte, una época y
+una semilla. La combinación aumenta el MAE un 36,00~\% frente a su referencia.
+La competencia sin centrado tiene un error algo menor que la referencia, con
+intervalo inconcluyente, y pierde frente al cero. El control que conserva
+todas las componentes reproduce exactamente los parámetros y predicciones
+de la referencia después de 685 actualizaciones. Esa paridad permite
+interpretar el contraste, pero no convierte su resultado negativo en una
+mejora. No se promueve ninguna de estas variantes.
+
+\section{Separación de señales de cuantiles}
+La separación de señales ascendentes y de realimentación mediante
+compartimentos dendríticos de \textcite{guerguiev2017segregated} motiva una
+analogía limitada: aislar vías de aprendizaje en la cabeza de cuantiles.
+La variante puede impedir que las colas actualicen la ubicación y, por
+separado, que los incrementos de dispersión envíen gradientes al codificador.
+Los valores emitidos para pesos fijos no cambian, pero sí el gradiente
+declarado. Se trata de un gradiente sustituto, no de una reproducción
+neuronal ni de una demostración de descenso de la pérdida conjunta.
+
+El \href{https://github.com/GonxKZ/mars-titan/blob/004fca53d/reports/research/quantile-multiseed-20261020/development-v1/README.md}{contraste multisemilla}
+completó 25 ajustes, con cinco configuraciones, semillas 42--46, una época y
+685 actualizaciones por modelo. Conserva los 64 activos estadounidenses,
+203.350 filas de ajuste admisibles desde 2000 con máscaras y las mismas
+15.936 filas de desarrollo de 2023. Primero se calcula el error de cada
+semilla por sesión y después se promedian esos errores. No se promedian
+predicciones ni se convierten las semillas en fechas nuevas.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Configuración & MAE medio & Desviación entre semillas \\
+\midrule
+Original y control completo & 0,02161406 & 0,00484225 \\
+Ubicación aislada & 0,02738391 & 0,00272702 \\
+Dispersión aislada hacia el codificador & 0,01661728 & 0,00072115 \\
+Ambas vías aisladas & 0,01700958 & 0,00086600 \\
+Residual cero & 0,01584945 & No depende de la semilla \\
+\bottomrule
+\end{tabular}
+\caption{MAE por sesión, promediado entre las cinco semillas. La desviación
+es muestral. Las 249 sesiones permanecen como unidades temporales.}
+\end{table}
+
+La combinación reduce el MAE medio un 21,30~\% frente al original.
+La diferencia es $-0{,}00460448$, con intervalo temporal del 95~\%
+$[-0{,}00527537,\,-0{,}00400560]$. Mantiene fijas las cinco semillas y utiliza
+2.000 réplicas de bloques de 16 sesiones, con sensibilidad predefinida a 8 y
+32. La combinación mejora en cuatro semillas y empeora ligeramente en una.
+El intervalo no incluye una población de nuevas inicializaciones ni corrige
+la reutilización acumulada del desarrollo.
+
+Todas las configuraciones pierden frente al residual cero. La combinación
+tiene un 7,32~\% más error y el aislamiento hacia el codificador, un 4,84~\%.
+La combinación también empeora frente a este componente. La diferencia es
+$+0{,}00039230$ y su intervalo simultáneo va de $0{,}00020076$ a
+$0{,}00058384$, dentro de los doce secundarios.
+La interacción negativa no implica que la combinación
+supere a sus dos componentes. No se cambia el contraste principal ni se
+promueve una variante por esta clasificación.
+
+Los controles reproducen exactamente los 45 tensores compartidos y las
+predicciones de las tres fases dentro de cada semilla. La repetición de 42
+reproduce también los cinco casos de la ronda anterior. Una época no permite
+decidir la convergencia de estos mecanismos. La analogía dendrítica y la
+reducción frente al original no acreditan una mejora del estado del arte.
+
+\section{Controles del objetivo puntual}
+El \href{https://github.com/GonxKZ/mars-titan/tree/develop/reports/research/point-loss-controls-20261020/development-v1}{contraste posterior}
+completó otros 25 ajustes con las mismas cinco semillas, filas, cortes y
+presupuesto por modelo. Conserva la cabeza de cinco salidas y compara la
+combinación con dos pérdidas que solo ajustan la mediana: L1/10, equivalente
+al término central de la pinball común, y L1. Las colas de estos controles
+no reciben gradiente de la tarea y no se presentan como cuantiles aprendidos.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Configuración & MAE medio & Desviación entre semillas \\
+\midrule
+Ambas vías aisladas & 0,01700958 & 0,00086600 \\
+Solo mediana, L1/10 & 0,01707936 & 0,00166101 \\
+Solo mediana, L1 & 0,01704668 & 0,00100554 \\
+\bottomrule
+\end{tabular}
+\caption{Controles del objetivo puntual sobre las mismas 249 sesiones.
+Se promedian errores, sin construir un ensemble.}
+\end{table}
+
+El contraste principal, combinación menos L1/10, da $-0{,}000069779$,
+una reducción media del 0,41~\%. El intervalo temporal del 95~\% es
+$[-0{,}000153996,\,+0{,}000020706]$ e incluye cero. El resultado es
+inconcluyente, también con las longitudes de bloque 8 y 32 predefinidas.
+La combinación mejora en dos semillas, empeora en dos y empata en MAE en una.
+La desviación muestral de las diferencias es 0,00132338. Este intervalo
+mantiene fijas las cinco inicializaciones y no estima una población de
+nuevas semillas.
+
+L1/10 y L1 también reducen el error frente al original, un 20,98~\% y un
+21,13~\%, respectivamente. Todas las configuraciones pierden frente al
+residual cero. Los doce secundarios tienen intervalos simultáneos y no se
+reinterpreta este contraste como un factorial. La mejora frente al original
+no acredita una aportación adicional demostrada de las vías separadas.
+Se conservan las variantes desactivadas, sin afirmar superioridad general
+ni equivalencia dentro del margen mínimo de 0,00001.
+
+\section{Costes medidos y límites comunes}
+La ronda de refinamientos conserva 289 intentos para 288 tareas completas,
+incluido el intento interrumpido y repetido. Sus recibos externos suman
+57.855,338 segundos, unas 16,071 horas. Incluyen preparación, cálculo y E/S
+de cada intento, con los candidatos descartados. Excluyen pausas entre
+continuaciones, análisis estadístico y comprobaciones técnicas separadas.
+Los tiempos de fase incluidos en esos totales no se suman otra vez.
+
+Las \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/engineering/refinement-selected-latency-20261019/README.md}{medidas de latencia}
+reconstruyen doce casos, cada uno con una pasada de referencia y tres
+instrumentadas. Se conservan predicciones y contadores exactamente. Para
+decisiones con hasta 256 activos, el p50 está entre 16,557 y 19,918 ms.
+La medida se limita a \texttt{linear\_v1}, semilla 42 y lector ajustado con K1,
+con entradas precodificadas. Los percentiles incluyen preparación del lote,
+transferencia, núcleo, consulta, selección, refinamiento y registro de
+pendientes. La lectura externa al método y la maduración forman parte del
+coste completo de fase, pero no de esos percentiles. No es latencia por activo
+ni incluye producir los embeddings.
+
+Los 26 intentos del contraste multisemilla de cuantiles, incluidos los
+25 completados y un fallo de admisión sin recibo interno, suman
+3.559,714 segundos externos y 17.125 actualizaciones confirmadas. El fallo
+conserva su tiempo externo y deja como desconocidos sus pasos y memoria.
+Con las rondas anteriores de plasticidad, claves y cuantiles, los 64 intentos
+suman 8.478,750 segundos, unas 2,355 horas. Los tiempos internos están
+incluidos en esos totales. El análisis de esta ampliación añade
+5,428 segundos de proceso y las pruebas técnicas se registran aparte.
+
+El contraste del objetivo puntual añade 25 ajustes completos,
+3.094,613 segundos externos y 17.125 actualizaciones. Al cerrarlo, los
+89 intentos acumulados suman 11.573,363 segundos, dentro del límite
+predeclarado de 14.400. Su análisis añade 6,281 segundos de proceso.
+Los controles completos conservan por bytes los 45 tensores compartidos
+y las predicciones de las tres fases en cada semilla. Las tres configuraciones
+repetidas también reproducen sus resultados anteriores en las cinco semillas.
+Esas repeticiones no añaden fechas independientes.
+
+El RSS de proceso, la memoria asignada y reservada por PyTorch y el uso total
+del dispositivo son medidas distintas. Los estudios no midieron energía y
+sus picos del asignador no representan toda la VRAM. Hubo trabajo de CPU
+concurrente en algunas rondas. Los costes no prueban una aceleración causal
+entre arquitecturas ni permiten extrapolar sin contraste al universo
+completo.
+
+Los estudios reutilizan desarrollo, tienen pocas ventanas y distintos
+presupuestos. Las variantes, semillas y filas de una cohorte no son mercados
+independientes. La comparación confirmatoria, la verificación histórica
+adicional, las políticas financieras reales y el test final conservan sus
+criterios pendientes.
+
+\chapter{Conclusiones y limitaciones}
+La implementación y los estudios acotados permiten contrastar mecanismos y
+conservar resultados negativos. En los ensayos descritos, combinar memorias,
+añadir refinamientos, modular las claves o separar las señales de cuantiles
+no proporciona una mejora general
+frente al retorno residual cero. Las reducciones frente a una referencia
+interna deben interpretarse junto a ese control y a las alternativas
+sencillas, con sus filas y presupuestos.
+
+Estos resultados no responden todavía a la comparación confirmatoria de todo
+el universo. La procedencia temporal incompleta, el sesgo de supervivencia,
+las modalidades ausentes y la reutilización de desarrollo limitan la
+interpretación. Los estados iniciales, fallos, intentos descartados y costes
+forman parte de la evidencia. Las ampliaciones permanecen separadas y
+desactivadas por defecto, y el test final de 2024 sigue cerrado.
+
+\printbibliography
+\end{document}

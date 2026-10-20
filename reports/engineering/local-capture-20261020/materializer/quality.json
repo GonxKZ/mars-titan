@@ -1,0 +1,189 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-20T23:53:14.568526",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "benchmarks/titans_paper_projections_cost.py"
+ ],
+ "totals": {
+  "statements": 220,
+  "covered_statements": 86,
+  "branches": 72,
+  "covered_branches": 25
+ },
+ "files": [
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "source_sha256": "ba10b1d23bbb471d84f65b633aa1c8a3cf719d89c82b541413b00b6a83e25178",
+   "statements": 220,
+   "covered_statements": 86,
+   "branches": 72,
+   "covered_branches": 25
+  }
+ ],
+ "functions": [
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "measure",
+   "start_line": 298,
+   "end_line": 408,
+   "cyclomatic_complexity": 19,
+   "statements": 33,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 14,
+   "covered_branches": 0,
+   "crap": 380.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_case",
+   "start_line": 214,
+   "end_line": 281,
+   "cyclomatic_complexity": 14,
+   "statements": 52,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 16,
+   "covered_branches": 0,
+   "crap": 210.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_view_fold",
+   "start_line": 51,
+   "end_line": 61,
+   "cyclomatic_complexity": 5,
+   "statements": 5,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 2,
+   "covered_branches": 0,
+   "crap": 30.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "materialize",
+   "start_line": 82,
+   "end_line": 168,
+   "cyclomatic_complexity": 22,
+   "statements": 45,
+   "covered_statements": 43,
+   "coverage_fraction": 0.9555555555555556,
+   "branches": 26,
+   "covered_branches": 22,
+   "crap": 22.042491083676268
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_raw_batches",
+   "start_line": 171,
+   "end_line": 196,
+   "cyclomatic_complexity": 4,
+   "statements": 10,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 4,
+   "covered_branches": 0,
+   "crap": 20.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "main",
+   "start_line": 411,
+   "end_line": 445,
+   "cyclomatic_complexity": 3,
+   "statements": 20,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 2,
+   "covered_branches": 0,
+   "crap": 12.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_synchronize",
+   "start_line": 199,
+   "end_line": 201,
+   "cyclomatic_complexity": 2,
+   "statements": 2,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 2,
+   "covered_branches": 0,
+   "crap": 6.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_nvidia_smi",
+   "start_line": 284,
+   "end_line": 295,
+   "cyclomatic_complexity": 2,
+   "statements": 5,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 6.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_location",
+   "start_line": 70,
+   "end_line": 79,
+   "cyclomatic_complexity": 3,
+   "statements": 8,
+   "covered_statements": 6,
+   "coverage_fraction": 0.75,
+   "branches": 4,
+   "covered_branches": 2,
+   "crap": 3.140625
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_summary",
+   "start_line": 204,
+   "end_line": 211,
+   "cyclomatic_complexity": 1,
+   "statements": 2,
+   "covered_statements": 0,
+   "coverage_fraction": 0.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 2.0
+  },
+  {
+   "path": "benchmarks/titans_paper_projections_cost.py",
+   "function": "_stamps",
+   "start_line": 64,
+   "end_line": 67,
+   "cyclomatic_complexity": 1,
+   "statements": 2,
+   "covered_statements": 2,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "c6d999435ba5466fd2fe11a23b4d07e75132dd9e434c2640a5ec3300120aca6e",
+ "functions_measured": 11
+}

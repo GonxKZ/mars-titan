@@ -1,0 +1,34 @@
+{
+  "producer_commit": "2e8fc538c622bdf44fc3c8d17c079e576f97a53e",
+  "analysis_commit": "2e8fc538c622bdf44fc3c8d17c079e576f97a53e",
+  "prepared_sha256": "8c797f25ed6a1d6b1f5ac42751cbe1c3f36be9a34faa88f00784aba230d31711",
+  "analysis_main_sha256": "f10eafded2b9a8b415acb34e8868e1934f9fe1b7d8836558cacf97650eb6be04",
+  "cost_reader_sha256": "1e96fced92b28219b0b3a9c924f056b441ea7ccc043238dd188e39b00ef6e799",
+  "receipt": {
+    "started_at_utc": "2026-10-20T22:12:38.807303+00:00",
+    "scope": "Análisis del piloto acotado y completado, sin ajustes.",
+    "final_test_opened": false,
+    "exit_code": 0,
+    "wrapper_seconds": 6.878216870944016,
+    "finished_at_utc": "2026-10-20T22:12:45.685843+00:00",
+    "global_hold_unchanged": true
+  },
+  "result_sha256": "e68b83817082b78b683dd51832329cc6e1dc7d8e00da1a545cd0391efc6f8ea1",
+  "scope": "Análisis del contraste predeclarado de captura local y global, desde el mismo commit congelado del productor y sin ajustes adicionales.",
+  "command_form": [
+    "uv",
+    "run",
+    "--no-sync",
+    "coverage",
+    "run",
+    "--branch",
+    "--source=benchmarks",
+    "-m",
+    "benchmarks.quantile_multiseed_analysis",
+    "--work",
+    "pilot-v1",
+    "--output",
+    "analysis-v1"
+  ],
+  "command_scope": "Forma con rutas relativas al directorio de artefactos. El manifiesto externo conserva el comando exacto con rutas absolutas."
+}

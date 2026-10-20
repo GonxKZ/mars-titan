@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "local_capture_financial_cost_controls",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/key-competition-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "arms": {
+    "capture_global": {
+      "role": "Captura histórica con coherencia media entre filas",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        },
+        "memory_plasticity": {
+          "write": "none",
+          "capture": "eligibility",
+          "beta": 0.9,
+          "trace_decay": 0.95,
+          "epsilon": 1e-08,
+          "write_floor": 0.1,
+          "capture_floor": 0.1,
+          "write_constant": 0.5,
+          "capture_constant": 0.5,
+          "gradient_contract": "scalar_controls_v2"
+        },
+        "max_batch": 256
+      }
+    },
+    "capture_local": {
+      "role": "Captura por coherencia de la misma fila",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        },
+        "memory_plasticity": {
+          "write": "none",
+          "capture": "eligibility",
+          "beta": 0.9,
+          "trace_decay": 0.95,
+          "epsilon": 1e-08,
+          "write_floor": 0.1,
+          "capture_floor": 0.1,
+          "write_constant": 0.5,
+          "capture_constant": 0.5,
+          "gradient_contract": "scalar_controls_v2",
+          "capture_scope": "row_local"
+        },
+        "max_batch": 256
+      }
+    },
+    "capture_constant": {
+      "role": "Control de captura con multiplicador constante 0,5",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        },
+        "memory_plasticity": {
+          "write": "none",
+          "capture": "constant",
+          "beta": 0.9,
+          "trace_decay": 0.95,
+          "epsilon": 1e-08,
+          "write_floor": 0.1,
+          "capture_floor": 0.1,
+          "write_constant": 0.5,
+          "capture_constant": 0.5,
+          "gradient_contract": "scalar_controls_v2"
+        },
+        "max_batch": 256
+      }
+    },
+    "cascade_original": {
+      "role": "Referencia PT5 con intercambio fijo",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        },
+        "max_batch": 256
+      }
+    },
+    "cascade_unity": {
+      "role": "Control de cálculo auxiliar con ganancias unitarias",
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "cascade",
+          "coupling": 0.0625
+        },
+        "memory_plasticity": {
+          "write": "constant",
+          "capture": "constant",
+          "beta": 0.9,
+          "trace_decay": 0.95,
+          "epsilon": 1e-08,
+          "write_floor": 0.1,
+          "capture_floor": 0.1,
+          "write_constant": 1.0,
+          "capture_constant": 1.0,
+          "gradient_contract": "scalar_controls_v2"
+        },
+        "max_batch": 256
+      }
+    }
+  },
+  "cost_kind": "local_capture_financial_cuda_cost",
+  "unity_control": [
+    "cascade_original",
+    "cascade_unity"
+  ]
+}

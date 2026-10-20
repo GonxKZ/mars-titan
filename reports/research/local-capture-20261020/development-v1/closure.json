@@ -1,0 +1,20 @@
+{
+  "recorded_at_utc": "2026-10-20T22:16:18.178439+00:00",
+  "global_hold_unchanged": true,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_attempts": 15,
+  "completed_jobs": 15,
+  "cumulative_closed_attempts": 104,
+  "all_attempts_closed": true,
+  "local_authorizations_closed": true,
+  "final_test_opened": false,
+  "analysis": {
+    "started_at_utc": "2026-10-20T22:12:38.807303+00:00",
+    "scope": "Análisis del piloto acotado y completado, sin ajustes.",
+    "final_test_opened": false,
+    "exit_code": 0,
+    "wrapper_seconds": 6.878216870944016,
+    "finished_at_utc": "2026-10-20T22:12:45.685843+00:00",
+    "global_hold_unchanged": true
+  }
+}

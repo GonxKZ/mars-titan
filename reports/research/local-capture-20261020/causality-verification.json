@@ -1,0 +1,24 @@
+{
+  "recorded_at_utc": "2026-10-20T22:35:34.104120+00:00",
+  "test_runs": [
+    {
+      "receipt": "causality-v3-all.xml",
+      "sha256": "41300d1fc0460103150b1796ccce753e638900a6c8bcb09f500a1448f6e4c4f0",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "cuda_cases": 3,
+  "mutants_detected": 5,
+  "mutants_total": 5,
+  "predecessor": "causality-verification-v1.json",
+  "initial_row_mutations": "causality-initial-row-mutations.json",
+  "sources": {
+    "tests/models/titans/test_local_capture_causality.py": "304fc0335a582c83305323252d1fe6e1350b9398e45b770bbf64bb92011e3bca",
+    "src/mars_titan/models/titans/state.py": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+    "src/mars_titan/models/titans/plasticity.py": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
+  },
+  "scope": "Permutaciones de flujos del MAC, causalidad del prefijo y equivariancia de las estadísticas por filas internas. El último caso no afirma equivariancia de toda la red. Sin pasos de optimizador."
+}

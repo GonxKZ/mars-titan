@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "price_channels_materializer_regression",
+  "recorded_at_utc": "2026-10-20T21:55:04.847317+00:00",
+  "base_commit": "2e8fc538c622bdf44fc3c8d17c079e576f97a53e",
+  "sources": {
+    "benchmarks/titans_paper_projections_cost.py": "ba10b1d23bbb471d84f65b633aa1c8a3cf719d89c82b541413b00b6a83e25178",
+    "tests/tooling/test_cost_materialization_channels.py": "cd06c8afd818bf9164582216fdbf1a08e11d367035406e989cf11ba351544ac8"
+  },
+  "tests": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "junit_sha256": "6093c4b04c818729eebfc5d646bc0d3192e46ba5f10249e47aaa344af37a9c58",
+  "mutants_detected": 3,
+  "mutants_total": 3,
+  "optimizer_steps": 0,
+  "final_test_opened": false,
+  "scope": "Prueba de los canales declarados por el dataset, con fixtures de cinco y seis canales. No valida un resultado predictivo."
+}

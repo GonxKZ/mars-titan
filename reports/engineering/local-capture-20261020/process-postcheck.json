@@ -1,0 +1,8 @@
+{
+  "original_postcheck_error": "KeyError: final_test_opened. El informe existente usa final_test_access.",
+  "child_exit_code": 0,
+  "numerical_workload_completed": true,
+  "correct_schema_postcheck_passed": true,
+  "repeated_workload": false,
+  "final_test_access": false
+}

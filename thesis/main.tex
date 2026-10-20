@@ -63,6 +63,8 @@ de cuantiles con cinco semillas reduce el error de la combinación frente al
 original, pero pierde frente al residual cero y frente a uno de sus
 componentes. El contraste posterior frente a una pérdida de solo mediana
 resulta inconcluyente, y todos sus modelos pierden frente al residual cero.
+Un nuevo contraste de captura local de plasticidad, también con cinco
+semillas, aumenta el MAE medio frente a la captura global y a la constante.
 Sus poblaciones, controles y costes se informan por separado.
 Estos resultados no completan la campaña del
 universo histórico ni resuelven sus limitaciones de procedencia. El año 2023
@@ -935,6 +937,47 @@ no acredita una aportación adicional demostrada de las vías separadas.
 Se conservan las variantes desactivadas, sin afirmar superioridad general
 ni equivalencia dentro del margen mínimo de 0,00001.
 
+\section{Captura local de plasticidad}
+El \href{https://github.com/GonxKZ/mars-titan/tree/develop/reports/research/local-capture-20261020/development-v1}{contraste de captura}
+completó 15 ajustes, con tres configuraciones y semillas 42--46. La nueva
+regla combina elegibilidad y coherencia de la propia fila, frente a la media
+entre filas usada antes. Se compara también con un multiplicador constante
+de 0,5. Las tres mantienen la misma cascada, escritura sin modulación,
+receta, parámetros iniciales, 685 actualizaciones y filas de la cohorte
+de 64 activos. No se añadió otro factor de pérdida o memoria episódica.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Captura & MAE medio & Desviación entre semillas \\
+\midrule
+Global & 0,02754553 & 0,00893650 \\
+Local & 0,02952824 & 0,01109670 \\
+Constante de 0,5 & 0,02391955 & 0,00683233 \\
+Residual cero & 0,01584945 & No depende de la semilla \\
+\bottomrule
+\end{tabular}
+\caption{Captura de plasticidad en las mismas 249 sesiones de desarrollo.
+Se promedian los errores de cinco semillas, sin multiplicar las fechas.}
+\end{table}
+
+La diferencia principal, local menos global, es $+0{,}001982704$, un
+7,20~\% más MAE. El intervalo temporal del 95~\% es
+$[+0{,}000757315,\,+0{,}003231229]$. Las sensibilidades predefinidas a
+bloques de 8 y 32 sesiones conservan el signo positivo. El resultado
+es mayor error en el promedio fijo de estas semillas. No estima el
+comportamiento de otras inicializaciones.
+
+La local mejora en dos semillas y empeora en tres. La desviación muestral
+de las diferencias es 0,00870379. Frente a la constante, la diferencia
+local es $+0{,}005608685$ y la global $+0{,}003625982$, con intervalos
+simultáneos positivos. Las tres pierden frente al residual cero.
+Evitar la dilución entre filas no aporta una mejora predictiva en este
+contraste y tampoco identifica la causa interna del mayor error. La
+variante conserva identidad propia y permanece desactivada.
+
 \section{Costes medidos y límites comunes}
 La ronda de refinamientos conserva 289 intentos para 288 tareas completas,
 incluido el intento interrumpido y repetido. Sus recibos externos suman
@@ -972,6 +1015,22 @@ y las predicciones de las tres fases en cada semilla. Las tres configuraciones
 repetidas también reproducen sus resultados anteriores en las cinco semillas.
 Esas repeticiones no añaden fechas independientes.
 
+La comparación de captura añade 15 ajustes completos, 2.220,473 segundos
+externos y 10.275 actualizaciones. El acumulado de 104 intentos suma
+13.793,837 segundos de los 14.400 declarados. Su análisis añade 6,878
+segundos. Los picos observados son 2.138.718.208 bytes de RSS,
+267.316.224 bytes CUDA asignados y 297.795.584 reservados.
+
+La \href{https://github.com/GonxKZ/mars-titan/tree/develop/reports/engineering/local-capture-20261020}{medida técnica del predictor}
+usa además 256 activos reales y ocho sesiones del ajuste, sin objetivos
+financieros ni optimizador. Conserva entrada residente y separa su
+preparación y transferencia. La captura local obtiene p50 de 8,622 ms
+con 64 activos FP32 y 8,329 ms con 256. En el último caso, su p99 es
+13,814 ms frente a 11,773 ms de la global. No hay una ventaja de tiempo
+uniforme. Los tres modelos conservan los mismos bytes persistentes de
+tensores por flujo. Es otra configuración y recorrido respecto a las
+medidas anteriores, sin una atribución causal de aceleración.
+
 El RSS de proceso, la memoria asignada y reservada por PyTorch y el uso total
 del dispositivo son medidas distintas. Los estudios no midieron energía y
 sus picos del asignador no representan toda la VRAM. Hubo trabajo de CPU
@@ -988,7 +1047,8 @@ criterios pendientes.
 \chapter{Conclusiones y limitaciones}
 La implementación y los estudios acotados permiten contrastar mecanismos y
 conservar resultados negativos. En los ensayos descritos, combinar memorias,
-añadir refinamientos, modular las claves o separar las señales de cuantiles
+añadir refinamientos, modular las claves, separar las señales de cuantiles
+o sustituir la captura global por la local
 no proporciona una mejora general
 frente al retorno residual cero. Las reducciones frente a una referencia
 interna deben interpretarse junto a ese control y a las alternativas

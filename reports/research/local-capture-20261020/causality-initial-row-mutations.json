@@ -1,0 +1,87 @@
+{
+  "recorded_at_utc": "2026-10-20T22:33:58.165244+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.6226615170016885,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 3.472397988080047,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_plasticity_rows_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "modulation=tuple(transform(value) for value in state.modulation)",
+      "after": "modulation=state.modulation",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.9723629530053586,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_key_value_windows_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "steps=transform(state.steps),\n        convolution=tuple(transform(value) for value in state.convolution)",
+      "after": "steps=transform(state.steps),\n        convolution=state.convolution",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.1229571499861777,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_query_window_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "memory=map_memory_rows(state.memory, transform),\n        convolution=tuple(transform(value) for value in state.convolution)",
+      "after": "memory=map_memory_rows(state.memory, transform),\n        convolution=state.convolution",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.5236470029922202,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "broadcast_first_internal_row",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "before": "coherence if config.capture_scope == \"row_local\" else coherence.mean(dim=1, keepdim=True)",
+      "after": "coherence[:, :1].expand_as(coherence) if config.capture_scope == \"row_local\" else coherence.mean(dim=1, keepdim=True)",
+      "source_sha256": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
+    },
+    {
+      "exit_code": 0,
+      "seconds": 3.273016117978841,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "reverse_capture_internal_rows",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "before": "return PlasticityStep((mean, energy, tag), write_gain, capture_gain, coherence)",
+      "after": "return PlasticityStep((mean, energy, tag), write_gain, capture_gain.flip(1), coherence)",
+      "source_sha256": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 3.0223406850127503,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": "8855a08ebc7c161356ba7c178d87421ffac9bf611d9461aec1aea6933bbb172c"
+}

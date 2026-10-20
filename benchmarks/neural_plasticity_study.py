@@ -53,9 +53,14 @@ def study_files(version):
             ROOT / "configs/experiments/quantile-point-study-v1.json",
             ROOT / "configs/experiments/quantile-point-v1.json",
         )
+    if version == "local_capture_v1":
+        return (
+            ROOT / "configs/experiments/local-capture-study-v1.json",
+            ROOT / "configs/experiments/local-capture-v1.json",
+        )
     raise ValueError(
         "La versión del piloto debe ser v1, v2, key_competition_v1, quantile_routing_v1 "
-        "o quantile_routing_v2 o quantile_point_v1"
+        "o quantile_routing_v2, quantile_point_v1 o local_capture_v1"
     )
 
 
@@ -68,7 +73,7 @@ def sources(version="v1"):
     config, variants = study_files(version)
     extra = (
         (ROOT / "benchmarks/quantile_multiseed_analysis.py",)
-        if version in ("quantile_routing_v2", "quantile_point_v1")
+        if version in ("quantile_routing_v2", "quantile_point_v1", "local_capture_v1")
         else ()
     )
     return code_identity() | {
@@ -161,7 +166,7 @@ def prepare(source, work, *, version="v1"):
     variants = json.loads(catalog.read_text())
     jobs = study_jobs(config, variants)
     view = project_view(json.loads(source.read_text()), config)
-    if version in ("quantile_routing_v2", "quantile_point_v1"):
+    if version in ("quantile_routing_v2", "quantile_point_v1", "local_capture_v1"):
         view["temporal_view"]["protocol"]["seeds"] = config["seeds"]
     recipe = json.loads((ROOT / variants["base_recipe"]).read_text())
     recipe["recipe"].update(
@@ -351,6 +356,7 @@ def main():
             "quantile_routing_v1",
             "quantile_routing_v2",
             "quantile_point_v1",
+            "local_capture_v1",
         ),
     )
     args = parser.parse_args()

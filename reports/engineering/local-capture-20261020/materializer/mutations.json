@@ -1,0 +1,60 @@
+{
+  "recorded_at_utc": "2026-10-20T21:53:56.171442+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.8752517859684303,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 3.473966308985837,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "force_five_channels",
+      "file": "benchmarks/titans_paper_projections_cost.py",
+      "before": "channels=dataset.price_channels,",
+      "after": "channels=5,",
+      "source_sha256": "ba10b1d23bbb471d84f65b633aa1c8a3cf719d89c82b541413b00b6a83e25178"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.0729633959708735,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "force_six_channels",
+      "file": "benchmarks/titans_paper_projections_cost.py",
+      "before": "channels=dataset.price_channels,",
+      "after": "channels=6,",
+      "source_sha256": "ba10b1d23bbb471d84f65b633aa1c8a3cf719d89c82b541413b00b6a83e25178"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.4241493600420654,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "misreport_price_width",
+      "file": "benchmarks/titans_paper_projections_cost.py",
+      "before": "widths = {name: value.shape[-1] for name, value in batches[0][\"inputs\"].items()}",
+      "after": "widths = {name: value.shape[-1] for name, value in batches[0][\"inputs\"].items()}\n    widths[\"prices\"] = 5",
+      "source_sha256": "ba10b1d23bbb471d84f65b633aa1c8a3cf719d89c82b541413b00b6a83e25178"
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 3.4231174669694155,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
