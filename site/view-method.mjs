@@ -1,13 +1,13 @@
 // Recorrido animado del esquema de método. Un punto sigue el orden de la información
 // una sola vez por pulsación: entradas, codificadores, núcleo, predicción, etiqueta
-// madura y, solo después, escritura en memoria. Con movimiento reducido el punto no se
+// madura y registro episódico. Con movimiento reducido el punto no se
 // desplaza y los pasos se iluminan uno tras otro.
 
 // Recorrido en coordenadas del viewBox del SVG. El número indica el paso que se ilumina
 // al llegar a cada punto.
 const ROUTE = [
   [140, 148, 1], [236, 148, 2], [392, 148, 3], [632, 148, 3], [696, 148, 4], [804, 148, 5],
-  [804, 100, 6], [650, 100, 6], [650, 156, 6], [622, 156, 6],
+  [804, 104, 6],
 ];
 const SPEED = 140;
 let running = null;

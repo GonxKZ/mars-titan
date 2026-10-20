@@ -4,6 +4,8 @@
 \usepackage[spanish,es-tabla,es-noshorthands]{babel}
 \usepackage{amsmath}
 \usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{csquotes}
 \usepackage[margin=2.8cm]{geometry}
 \usepackage[backend=biber,style=apa]{biblatex}
@@ -27,10 +29,15 @@
 \setcounter{biburlucpenalty}{8000}
 \appto{\bibsetup}{\emergencystretch=2em}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={MARS-TITAN: memoria causal adaptativa para predicción bursátil multimodal},
+  pdfauthor={Gonzalo García Lama},
+  pdfsubject={Datos, estudios de desarrollo y límites de evaluación}
+}
 
 \title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
 \author{Gonzalo García Lama}
-\date{Revisión técnica, 13 de octubre de 2026}
+\date{Revisión de desarrollo, 20 de octubre de 2026}
 
 \begin{document}
 \maketitle
@@ -45,10 +52,16 @@ referencias sencillas, un Transformer compacto, una adaptación identificable
 de Titans-MAC y MARS-TITAN, que añade sobre ese núcleo un banco episódico y
 otras ampliaciones desactivables. La edición histórica v3.1 reúne 18.698.976
 muestras de 5.008 activos desde 2000 con ausencias explícitas, y la edición y
-sus objetivos residuales se verificaron el 11 de octubre de 2026. Las etapas de
-la campaña están implementadas y comprobadas sin aprendizaje. Ningún modelo se
-ha entrenado todavía sobre esta edición, así que el documento no contiene
-resultados predictivos de la comparación.
+sus objetivos residuales se verificaron el 11 de octubre de 2026. Los estudios
+de desarrollo ya incluyen ajustes y resultados exploratorios con cohortes de
+cuatro, 64 y 256 activos. La ronda de refinamientos completó 288 tareas con
+tres semillas, pero ninguno de sus 48 selectores superó al predictor de retorno
+residual cero. Los pilotos posteriores de plasticidad y competencia de claves
+tampoco justificaron promover sus variantes. Sus poblaciones, controles y
+costes se informan por separado. Estos resultados no completan la campaña del
+universo histórico ni resuelven sus limitaciones de procedencia. El año 2023
+utilizado en las últimas rondas es desarrollo reutilizado y el test final de
+2024 permanece cerrado.
 \end{abstract}
 \tableofcontents
 
@@ -118,42 +131,39 @@ cobertura y la calibración con las mismas coberturas.
 \end{description}
 
 \section{Objetivos}
-El trabajo es individual y de tipo comparativa de soluciones. Sus seis
-objetivos son hitos de investigación. La tabla~\ref{tab:objetivos} relaciona
+Los seis objetivos son hitos de investigación. La tabla~\ref{tab:objetivos} relaciona
 cada objetivo con la evidencia que permitirá discutir su cumplimiento y con su
-estado a 13 de octubre de 2026. Se distingue entre lo implementado y
-comprobado técnicamente, lo ejecutado sin aprendizaje (la preparación de datos
-y objetivos) y lo que todavía no se ha ejecutado.
+estado a 20 de octubre de 2026. Se distingue entre implementación, verificación
+de datos, resultados exploratorios y comparación confirmatoria pendiente.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Objetivos, evidencia prevista y estado a 13 de octubre de 2026.}
+\caption{Objetivos, evidencia prevista y estado a 20 de octubre de 2026.}
 \label{tab:objetivos}
-\begin{tabular}{p{3.2cm}p{5.2cm}p{4.6cm}}
+\begin{tabular}{L{3.2cm}L{5.2cm}L{4.6cm}}
 \toprule
 Objetivo & Evidencia que permitirá responderlo & Estado \\
 \midrule
 O1. Datos y disponibilidad temporal & Inventario, procedencia, reglas de
 disponibilidad, exclusiones y verificaciones de fuga de cada modalidad &
-Edición v3.1 generada y verificada. Faltan las vistas de la campaña sobre ella
+Edición v3.1 y vistas A v2 verificadas. Persisten límites de procedencia histórica
 \\
 O2. Objetivo residual & Fórmula, horizonte, estimación temporal de alfa y beta
 y comprobación de la madurez de cada etiqueta & Objetivos v3.1 generados,
 recalculados y diagnosticados. El factor sectorial no se admite \\
 O3. Memoria e incertidumbre & Especificación implementable de la memoria, la
-escritura por sorpresa, el régimen y la calibración & Implementado y
-comprobado sin aprendizaje. Sin entrenar \\
+escritura por sorpresa, el régimen y la calibración & Núcleo y ampliaciones
+comprobados, con pilotos. Comparación confirmatoria pendiente \\
 O4. Referencias y ablaciones & Modelos clásicos y neuronales y variantes sin
 memoria, con memoria global y sin sorpresa, con el mismo presupuesto & Declarado
-en la campaña A v2. Sin ejecutar \\
+en la campaña A v2, aún sin ejecutar. Los pilotos tienen alcance propio \\
 O5. Evaluación & Error, dirección, calibración, Rank IC y simulación con
 costes en validación walk-forward, con incertidumbre por bloques &
-Implementada y comprobada con predicciones sintéticas. Sin aplicar a
-predicciones reales \\
+Aplicada a predicciones reales de desarrollo, incluida CQR. Falta la campaña \\
 O6. Análisis crítico & Fallos, aportación de modalidades y coste con 8~GB de
-VRAM & Medidas técnicas de memoria y caudal. El análisis depende de la
-campaña \\
+VRAM & Resultados negativos y costes de pilotos publicados. Falta el análisis
+de la campaña completa \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -182,8 +192,8 @@ El capítulo~\ref{cap:estado} revisa los antecedentes y explica qué toma el
 proyecto de cada uno. El capítulo~\ref{cap:datos} describe la edición
 histórica, el objetivo residual y el protocolo temporal. El
 capítulo~\ref{cap:diseno} presenta los modelos comparados y el estado técnico
-de la campaña. Los capítulos de resultados y conclusiones quedan pendientes de
-la ejecución y así se indica en ellos.
+de la campaña. Los capítulos de resultados y conclusiones recogen los estudios
+de desarrollo y los distinguen de la comparación confirmatoria pendiente.
 
 \chapter{Estado del arte}
 \label{cap:estado}
@@ -529,13 +539,20 @@ utiliza entradas disponibles. El error financiero de escritura episódica espera
 a que madure el resultado de la predicción emitida. K cuenta los refinamientos
 del proyecto, no las actualizaciones internas de Titans.
 
+La receta de A v2 usa las proyecciones \texttt{linear\_v1}. La referencia
+\texttt{mac\_paper}, con las proyecciones del artículo, conserva otra identidad
+y aparece por separado en los pilotos. Esos resultados no cambian la receta de
+campaña ni acreditan reproducir los resultados publicados de Titans.
+
 CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
 fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
 Los datos, filas, cortes y presupuestos pertinentes se mantienen comparables.
 No se presuponen superioridad ni reproducción de los resultados del artículo.
-La edición histórica y sus objetivos residuales ya están verificados. Los
-entrenamientos y evaluaciones científicas siguen sin ejecutarse y la protección
-del aprendizaje continúa activa. Las pruebas técnicas no la levantan.
+La edición histórica y sus objetivos residuales tienen recibos de verificación.
+Los pilotos de memoria, refinamientos y plasticidad ya han ejecutado ajustes y
+evaluaciones de desarrollo. Sus resultados se describen en el
+capítulo~\ref{cap:resultados}. La campaña completa y el test final siguen
+cerrados, con la protección global del aprendizaje activa.
 
 La revisión técnica del 9 de octubre recoge comprobaciones CPU/CUDA de la referencia GRU,
 el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
@@ -568,19 +585,19 @@ predictiva medida de estas variantes.
 
 La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
 controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
-parada por KL. Sus comprobaciones CPU/CUDA no ejecutan pasos de optimizador.
-La recuperación posterior a una actualización real sigue pendiente. KLPO tiene
-prioridad como candidato separado. Su objetivo terminal y sus gradientes están
-comprobados. El colector conserva episodios completos, la política de recogida,
-el reloj original y la historia GRU, con recuperación contrastada. Un
-controlador optativo separa actor, optimizador y referencia, sin haber
-ejecutado ninguna actualización. La orden nativa \texttt{mars-titan-klpo}
-recoge oleadas completas sobre cintas de precios reconstruidos y selecciona en
-validación, comprobada sin pasos de optimizador. La alternancia entre referencias ajustadas
-sigue pendiente.
-El ajuste de una predicción y la política financiera secuencial necesitan
-objetivos distintos. La comparación científica sigue bloqueada y no hay un
-algoritmo ganador seleccionado.
+parada por KL. KLPO conserva su objetivo terminal y un colector de episodios
+completos, con política de recogida, reloj e historia GRU identificados. La
+orden nativa \texttt{mars-titan-klpo} recoge oleadas sobre cintas reconstruidas,
+selecciona en validación y separa la evaluación.
+
+Las primeras comprobaciones no ejecutaban actualizaciones. El
+\href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/memory-microstudy-20261018/README.md}{recibo del 18 de octubre}
+añade ocho microajustes CUDA con fixtures sintéticos y 960 transiciones por
+algoritmo. Registran gradientes finitos y no nulos y seleccionan el estado
+inicial en los ocho casos. No son resultados financieros ni ordenan los
+algoritmos por utilidad real. La comparación financiera necesita tres ventanas
+previas de predicciones fuera del ajuste y sigue pendiente. El ajuste de una
+predicción y la política secuencial conservan objetivos distintos.
 
 Los benchmarks Silencio, Faro, Eco, Giro, Retorno, Contraste, Tormenta y Umbral
 reutilizan ocho mecanismos sintéticos existentes. Se han preparado 240 mundos,
@@ -620,41 +637,41 @@ esa búsqueda.
 \begin{table}[htbp]
 \centering
 \small
-\caption{Estado de las etapas de la campaña A v2 a 14 de octubre de 2026.
-Ninguna etapa se ha ejecutado con aprendizaje y la campaña no se ha lanzado.
+\caption{Estado de las etapas de la campaña A v2 a 20 de octubre de 2026.
+La campaña completa no se ha lanzado. Los pilotos tienen protocolos separados.
 Los recuentos son límites declarados en las configuraciones y fijados por
 pruebas.}
 \label{tab:estado}
-\begin{tabular}{p{2.6cm}p{5.6cm}p{4.8cm}}
+\begin{tabular}{L{2.6cm}L{5.6cm}L{4.8cm}}
 \toprule
-Etapa & Implementado y comprobado sin aprendizaje & Pendiente \\
+Etapa & Implementación y evidencia & Pendiente \\
 \midrule
 Edición y objetivos & Edición v3.1 y \texttt{targets-v3.1} generadas y
 verificadas el 11 de octubre. Diagnóstico de la etiqueta repetido el 13 de
-octubre & Ninguno \\
+octubre & Límites de procedencia y disponibilidad histórica \\
 Protocolo & Ventanas v2, protocolo conjunto desde 2004, purga por intervalo,
 regla de parada común y walk-forward por etapas. Vistas de A v2 sobre la v3.1
 preparadas y verificadas el 14 de octubre. Retención v3, que libera las tablas
-de los adaptadores tras regenerarlas idénticas & Comprobar en \texttt{cuda:0}
-las regeneraciones bit a bit \\
+de los adaptadores tras regenerarlas idénticas & Regenerar los resultados de
+la campaña cuando existan sus modelos ajustados \\
 Campaña base & 3.177 ajustes de referencias, Titans-MAC, GRU candidata,
 MARS-TITAN y CM-v1, 2.056 mesetas de la parada conjunta y 133 trabajos del
-control en línea. Recibos por trabajo y reanudación & Fijar las opciones de memoria y lanzar \\
+control en línea. Opciones de memoria, recibos por trabajo y reanudación
+definidos & Ejecutar la campaña completa y medir su coste \\
 Adaptadores & 8.694 ajustes en las 18 ventanas con padre (270 de la continuación
 anclada y 1.620 de los objetivos lineales de \#128, solo como contraste), 1.710 predicciones
 del padre congelado y 1.805 selecciones de la cadena. Pruebas CUDA de
-adaptadores y cuantiles superadas & Recorrido de la etapa en \texttt{cuda:0} y
-ejecución \\
+adaptadores y cuantiles superadas & Comparación real de la etapa completa \\
 Políticas & 3.384 ajustes y 3.663 ejecuciones de referencia sobre cintas de
 precios reconstruidos, con GRPO, Dr. GRPO y GSPO en el nivel de algoritmos.
 Ejecutores nativos de PPO, Double DQN, KLPO y los objetivos de grupo compilados
-con LibTorch CUDA y perfilados sin pasos de Adam & Medir el coste de la
-actualización. Ningún ajuste ejecutado \\
+con LibTorch CUDA. Microajustes técnicos con fixtures publicados & Ajustar y
+comparar políticas sobre datos reales y medir su coste \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
 común por mercado, estratos por presencia de noticias y fundamentales, cartera
 larga y corta, matriz de 356 contrastes con atribución por componentes, banco
-de integridad e informe de integridad que bloquea la publicación & Aplicarla a
-predicciones reales \\
+de integridad e informe de integridad que bloquea la publicación & Completar la
+evaluación de la campaña, separada de los pilotos \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -678,7 +695,7 @@ como penalización, y aplica M como retención con centros fijos del banco del
 lector, de modo que B, B+C, B+M y B+C+M tienen identidades propias. La
 campaña A v2 declara las referencias, Titans-MAC, la GRU candidata,
 MARS-TITAN con M0 a M3, con $K=2$ y $K=4$, con la primera lectura y con las
-seis correcciones B6, y CM-v1. El control
+ocho correcciones B6, y CM-v1. El control
 \texttt{transformer\_compact\_online} parte del Transformer compacto elegido y
 actualiza sus pesos con las mismas etiquetas maduras que escribe el banco de
 MARS-TITAN, para descartar que una mejora de la memoria se deba solo a seguir
@@ -693,8 +710,9 @@ cargado, M2 y M3 pasan con el enlace nativo de la rama de integración. Según
 las medidas de memoria en \texttt{cuda:0}, un tramo de
 \texttt{mac\_online} con 5.023 flujos necesitaría unos 14,7~GiB sin acumulación
 y 1,24~GiB con bloques de 128 filas, así que la campaña necesitará esa
-acumulación en una GPU de 8~GB. Ninguna cifra de este apartado procede de un
-entrenamiento ni de una evaluación.
+acumulación en una GPU de 8~GB. Estas sondas técnicas conservan su código y su
+carga. Los estudios posteriores publican por separado el coste de sus ajustes
+y no convierten esta estimación en una medida del universo completo.
 
 La evaluación se acompaña de un banco de integridad que recalcula las métricas
 con una segunda implementación, exige la misma huella de filas en todos los
@@ -727,18 +745,130 @@ declarada sigue sin pasar en los tres ámbitos y sus umbrales no se han
 cambiado.
 
 \chapter{Resultados y discusión}
-Los ensayos de GRU y DLinear están documentados en el informe de variantes del
-repositorio. Sus resultados pertenecen a una muestra dirigida de desarrollo,
-no a la comparación confirmatoria. Este capítulo integrará predicciones,
-métricas y artefactos identificados por configuración y revisión de código.
-Se informarán diferencias, incertidumbre, fallos y costes computacionales.
-Las figuras conceptuales no se utilizarán como evidencia de rendimiento.
+\label{cap:resultados}
+Los informes enlazados fijan datos, configuración, revisión de código,
+predicciones y costes de cada estudio. Este capítulo resume evidencia ya
+publicada, sin recalcular métricas ni ejecutar nuevos ajustes. Los ensayos
+anteriores de referencias conservan su edición y su alcance en el
+\href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/baselines/reference-variants.md}{informe de variantes}.
+No se mezclan con los estudios posteriores de la edición v3.1.
+
+\section{Memoria y controles episódicos}
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/memory-microstudy-20261018/README.md}{microensayo del 18 de octubre}
+completó 28 ajustes de una época sobre cuatro activos, con evaluación de
+desarrollo en 251 sesiones de 2005. Ninguna configuración superó al retorno
+residual cero. C+M redujo el error frente a su propio B, pero ese resultado no
+permite elegir la arquitectura para todo el universo. Las filas de esta
+cohorte no tenían noticias ni fundamentales observados. La existencia de sus
+canales y máscaras no equivale a aprender de cuatro modalidades presentes.
+
+La \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/combined-memory-20261018/README.md}{ronda combinada}
+completó 44 de 83 trabajos sobre 64 instrumentos, con dos épocas y 249 sesiones
+de 2023. Un trabajo quedó interrumpido y 38 no se iniciaron. El factorial
+PT1/PT5/PT6 dispone de tres semillas por celda. La mezcla completa reduce el
+MAE medio frente al núcleo, pero su intervalo incluye cero. PT5+PT6 obtiene
+menor error que el núcleo en esta ronda y sigue perdiendo frente al predictor
+residual cero. No hay una mejora general del banco episódico frente al
+refinador ajustado sin banco.
+
+CM-v1 tiene una semilla en esa ronda. M reduce el error observado frente a B,
+mientras C+M frente a B y la interacción son inconcluyentes. Las cuatro
+variantes pierden frente al cero. Se conservan la medición de una compresión
+del Jacobiano y la selección heurística de representantes como mecanismos de
+alcance limitado. Estos resultados no certifican estabilidad global ni
+heredan las garantías del algoritmo publicado de \emph{metric k-median}.
+
+\section{Refinamientos, tamaño de cohorte y representación}
+La \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/refinement-development-20261019/completed-v1/README.md}{ronda del 19 de octubre}
+terminó sus 288 tareas. Comparó las semillas 42, 43 y 44, proyecciones
+\texttt{linear\_v1} y \texttt{mac\_paper}, lectores ajustados con K1 y K4,
+cohortes de 64 y 256 y representaciones gráficas original y geométrica.
+El contraste de escalado conserva los mismos 64 activos y sus 15.936 filas.
+Las poblaciones completas de 256 tienen 63.679 filas y se presentan aparte.
+Ambas se puntúan sobre 249 sesiones de 2023.
+
+Ninguno de los 48 selectores ni de las 16 medias de tres semillas supera al
+retorno residual cero. Sobre los 64 activos comunes, las medias tienen entre
+un 2,24~\% y un 6,58~\% más error. Algunos selectores reducen el MAE frente a
+K1, pero la ventaja frente a un K4 aplicado a pesos ajustados con K1 no basta
+para justificarlos. Entre las ocho medias de lectores ajustados con K4, el
+selector empeora frente a K4cc en seis, mejora en una y coincide en otra.
+Se conservan los controles con pesos propios de K4, el umbral sencillo, la
+asignación por hash, M0, el núcleo y la contracción escalar.
+
+Los intervalos usan bloques temporales y conservan juntos los activos de cada
+fecha. La corrección simultánea actúa dentro de cada familia declarada, no
+sobre todos los estudios. Las tres semillas no convierten 249 sesiones en
+747 observaciones temporales independientes. La geometría de velas tampoco
+aporta una mejora uniforme y no es numéricamente equivalente a ResNet.
+
+\section{Plasticidad y competencia de claves}
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/neural-plasticity-20261020/development-v2/README.md}{piloto de plasticidad v2}
+completó once configuraciones con una época, semilla 42 y 64 activos
+estadounidenses. La combinación de escritura por coherencia y captura por
+elegibilidad reduce el error frente a PT5, pero no mejora de forma concluyente
+frente a dos ganancias constantes. Las modulaciones individuales pierden
+frente a sus controles constantes y todas las configuraciones pierden frente
+al residual cero. El intento v1 que falló la paridad se conserva separado.
+El piloto mide error y coste, no retención a largo plazo ni tiempo de
+reaprendizaje.
+
+El \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/research/key-competition-20261020/development-v1/README.md}{piloto de centrado y competencia}
+completó siete configuraciones con el mismo alcance de cohorte, una época y
+una semilla. La combinación aumenta el MAE un 36,00~\% frente a su referencia.
+La competencia sin centrado tiene un error algo menor que la referencia, con
+intervalo inconcluyente, y pierde frente al cero. El control que conserva
+todas las componentes reproduce exactamente los parámetros y predicciones
+de la referencia después de 685 actualizaciones. Esa paridad permite
+interpretar el contraste, pero no convierte su resultado negativo en una
+mejora. No se promueve ninguna de estas variantes.
+
+\section{Costes medidos y límites comunes}
+La ronda de refinamientos conserva 289 intentos para 288 tareas completas,
+incluido el intento interrumpido y repetido. Sus recibos externos suman
+57.855,338 segundos, unas 16,071 horas. Incluyen preparación, cálculo y E/S
+de cada intento, con los candidatos descartados. Excluyen pausas entre
+continuaciones, análisis estadístico y comprobaciones técnicas separadas.
+Los tiempos de fase incluidos en esos totales no se suman otra vez.
+
+Las \href{https://github.com/GonxKZ/mars-titan/blob/8b7e2a5600be568cc1299f2a661da15b5090c45e/reports/engineering/refinement-selected-latency-20261019/README.md}{medidas de latencia}
+reconstruyen doce casos, cada uno con una pasada de referencia y tres
+instrumentadas. Se conservan predicciones y contadores exactamente. Para
+decisiones con hasta 256 activos, el p50 está entre 16,557 y 19,918 ms.
+La medida se limita a \texttt{linear\_v1}, semilla 42 y lector ajustado con K1,
+con entradas precodificadas. Los percentiles incluyen preparación del lote,
+transferencia, núcleo, consulta, selección, refinamiento y registro de
+pendientes. La lectura externa al método y la maduración forman parte del
+coste completo de fase, pero no de esos percentiles. No es latencia por activo
+ni incluye producir los embeddings.
+
+El RSS de proceso, la memoria asignada y reservada por PyTorch y el uso total
+del dispositivo son medidas distintas. Los estudios no midieron energía y
+sus picos del asignador no representan toda la VRAM. Hubo trabajo de CPU
+concurrente en algunas rondas. Los costes no prueban una aceleración causal
+entre arquitecturas ni permiten extrapolar sin contraste al universo
+completo.
+
+Los estudios reutilizan desarrollo, tienen pocas ventanas y distintos
+presupuestos. Las variantes, semillas y filas de una cohorte no son mercados
+independientes. La comparación confirmatoria, la verificación histórica
+adicional, las políticas financieras reales y el test final conservan sus
+criterios pendientes.
 
 \chapter{Conclusiones y limitaciones}
-Las conclusiones quedan pendientes de la ejecución. Cada objetivo tendrá una
-respuesta apoyada en evidencia, o una limitación explícita cuando no pueda
-resolverse. El análisis distinguirá mejora observada, resultado inconcluso y
-ausencia de mejora, y justificará el trabajo futuro a partir de los límites medidos.
+La implementación y los estudios acotados permiten contrastar mecanismos y
+conservar resultados negativos. En los ensayos descritos, combinar memorias,
+añadir refinamientos o modular las claves no proporciona una mejora general
+frente al retorno residual cero. Las reducciones frente a una referencia
+interna deben interpretarse junto a ese control y a las alternativas
+sencillas, con sus filas y presupuestos.
+
+Estos resultados no responden todavía a la comparación confirmatoria de todo
+el universo. La procedencia temporal incompleta, el sesgo de supervivencia,
+las modalidades ausentes y la reutilización de desarrollo limitan la
+interpretación. Los estados iniciales, fallos, intentos descartados y costes
+forman parte de la evidencia. Las ampliaciones permanecen separadas y
+desactivadas por defecto, y el test final de 2024 sigue cerrado.
 
 \printbibliography
 \end{document}
