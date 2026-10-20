@@ -1,0 +1,70 @@
+{
+  "recorded_at_utc": "2026-10-20T22:37:27.303503+00:00",
+  "feature_commit": "b67806b5a5fb864fc4c5d8d0f350c2420ed6a979",
+  "develop_commit": "13f135ee8fd645ecc9c2a3dd15edd49d9337d000",
+  "preview_tree": "f78ec4fd314a869d429bb18d40d78877d8c5aa2c",
+  "receipt": "integration-preview-20261021.xml",
+  "receipt_sha256": "e5e105e65f7be0309c279cbdc5e088f24522787c7907a6928bf802432558f4ca",
+  "tests": 57,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_cases": 10,
+  "junit_seconds": 4.159,
+  "python": "3.12.14",
+  "pytorch": "2.14.0+cu130",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "cublas_workspace_config": ":4096:8",
+  "commands": [
+    [
+      "uv",
+      "run",
+      "--no-sync",
+      "pytest",
+      "-q",
+      "tests/models/titans/test_local_capture.py",
+      "tests/models/titans/test_local_capture_causality.py",
+      "tests/tooling/test_local_capture_study.py",
+      "tests/tooling/test_cost_materialization_channels.py"
+    ],
+    [
+      "uv",
+      "run",
+      "--no-sync",
+      "ruff",
+      "check",
+      "."
+    ],
+    [
+      "uv",
+      "run",
+      "--no-sync",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "scripts/check_repository.py"
+    ]
+  ],
+  "ruff_passed": true,
+  "format_passed": true,
+  "formatted_files_checked": 1673,
+  "repository_check": {
+    "passed": true,
+    "files": 3167,
+    "references": 361,
+    "tasks": 64,
+    "macro_concepts": 140
+  },
+  "optimizer_steps": 0,
+  "final_test_opened": false,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scope": "Repetición de integración de casos ya incluidos en los 369 distintos. No aumenta el tamaño de la selección ni mide calidad predictiva."
+}
