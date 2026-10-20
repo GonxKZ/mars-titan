@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "storage": "Artefactos locales fuera de Git. Rutas relativas al directorio de la ejecución.",
+  "artifacts": [
+    {
+      "variant": "mac_original",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/mac_original-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790"
+    },
+    {
+      "variant": "mac_original",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/mac_original-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b"
+    },
+    {
+      "variant": "mac_original",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/mac_original-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+    },
+    {
+      "variant": "write_coherence",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/write_coherence-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "f0197aaa1991422a632d54e60456ac1936232656e2eca7302ebc4d4215e02dc3"
+    },
+    {
+      "variant": "write_coherence",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/write_coherence-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "d8e77765c4f798328b34435952aa2fd2980448f91ef3ecadcf5b87b2a37891c8"
+    },
+    {
+      "variant": "write_coherence",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/write_coherence-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "8bed9e3731131c60900ee30e3ee05d63944714efc60cab232b520e85db2787f2"
+    },
+    {
+      "variant": "cascade_original",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_original-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "fbb253d949bb74e809d5c1590f8c2b5f7b4a18cfe5ef92ecce11c93c1479dbdc"
+    },
+    {
+      "variant": "cascade_original",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_original-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "9e1692a27f90ca872851ef38723e6976ee8199bfe03f6ed4a11dfddfb5c9320d"
+    },
+    {
+      "variant": "cascade_original",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_original-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "a0fc85aa8df766c8e4c99920e8fe37fc261b993c4ffe1efc1ce58e7aa4294945"
+    },
+    {
+      "variant": "cascade_unity",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_unity-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "fbb253d949bb74e809d5c1590f8c2b5f7b4a18cfe5ef92ecce11c93c1479dbdc"
+    },
+    {
+      "variant": "cascade_unity",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_unity-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "9e1692a27f90ca872851ef38723e6976ee8199bfe03f6ed4a11dfddfb5c9320d"
+    },
+    {
+      "variant": "cascade_unity",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_unity-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "a0fc85aa8df766c8e4c99920e8fe37fc261b993c4ffe1efc1ce58e7aa4294945"
+    },
+    {
+      "variant": "cascade_write",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_write-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "9cb8f09c0822aee1e04cd049647c41304bb9570ac1eccffccc06d99baf89a72a"
+    },
+    {
+      "variant": "cascade_write",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_write-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "bec9354ce79c6a2f0bd07509963d1b7fcf433d174393708b6cff543a14257917"
+    },
+    {
+      "variant": "cascade_write",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_write-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "90e0bff2e74a66a7e10764a1ee19a594843787cd1bc4134b21fcb62d2a6afc93"
+    },
+    {
+      "variant": "cascade_capture",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_capture-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "633306f1f96e2d3637b823541160372a1cfd7bf2076127da07ae0fca48cb918d"
+    },
+    {
+      "variant": "cascade_capture",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_capture-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "13d384af235661e41d418246d62aa93750fa84e0d353d309df4407ba360f6167"
+    },
+    {
+      "variant": "cascade_capture",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_capture-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "39315c0aa4c67c6fee5a436cbb9e341820539149ad8a3cbf34ac31a262994612"
+    },
+    {
+      "variant": "cascade_combined",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_combined-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "bda1bf49d819b61c8f8007b4c6c3ce88b127d67f04b81619c136f5710129c2b0"
+    },
+    {
+      "variant": "cascade_combined",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_combined-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "ef00d55cd6f7c7a8083a2824bc02088cb62388975e016f89b1a851d371f7a756"
+    },
+    {
+      "variant": "cascade_combined",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_combined-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "564f34291ff41d6c6a62c02094893b09f0b003d06ab9be0924b7e15cb8d397e4"
+    },
+    {
+      "variant": "cascade_fixed_write",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_write-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "6ae854690ea01647256af75ebde256f0002132d75f025e3b3427a35cc81e1244"
+    },
+    {
+      "variant": "cascade_fixed_write",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_write-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "dc699efb01bc5b9a811c8c0b8b4029cb06a00ed4956532c275bfd12d809bd567"
+    },
+    {
+      "variant": "cascade_fixed_write",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_write-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "ba7fdbd5520cdf10a56c5ed901d1de0b1f191bb3b62bb0d59495a35de4b0efc2"
+    },
+    {
+      "variant": "cascade_fixed_capture",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_capture-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "913a187f7bbb25d1e4f26b6e7533d86094b9143749b7dae14c0698ec5bdf7cb7"
+    },
+    {
+      "variant": "cascade_fixed_capture",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_capture-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "9416c0ac4d1c06f2a044e3b6ca3db9f62986a7a65e3d9b205c5a8db86cc4638d"
+    },
+    {
+      "variant": "cascade_fixed_capture",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_capture-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "7870d642061a91d3eff53e03887520344828cff747968425ab2d5c2e800bc799"
+    },
+    {
+      "variant": "cascade_fixed_both",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_both-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "cee81778b85bbf1720de771b6f72ac8b5b8de7fc424b4c9384113b20a2ea4316"
+    },
+    {
+      "variant": "cascade_fixed_both",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_both-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "d6c7e99b7438076925d38436f540eace198d86fe070bdc0394fca0ce2450a5c0"
+    },
+    {
+      "variant": "cascade_fixed_both",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/cascade_fixed_both-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "c5525e7510d633c190a4738ca40d07821e61b0e53de8f7587639c77bf038648a"
+    },
+    {
+      "variant": "fixed_write",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/fixed_write-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "3bce6441cf4407abb3b8f69cd853743ec3ce6f06657358e56bab512a9f4bc228"
+    },
+    {
+      "variant": "fixed_write",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/fixed_write-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "9fa011267c4571b63fa5f276d79324544e428102337fb3b2badafb195a289af2"
+    },
+    {
+      "variant": "fixed_write",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v4/runs/fixed_write-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "e987b818343cf1f98095796927fa7a7eedaef28d6be8224b00e0f3d9f9ee70c9"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_capture-sessions.parquet",
+      "sha256": "5236a9ca239f891272a960d19515b6577b629a4bdc2c968f30ce4712858c6b3d"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_combined-sessions.parquet",
+      "sha256": "14528b9d8eeeeb2109bf74352289418fd8837fd35a2ec9e362c87bce9cc844fa"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_fixed_both-sessions.parquet",
+      "sha256": "64a6032e2bcd84a69ac9db37ae9d256a946a7d5ffbdc1cd6fca8e2a9907711c6"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_fixed_capture-sessions.parquet",
+      "sha256": "d618914c0ff6fe1cdca042e87ada7a89bd6e997e1959b30e928d145b57af9339"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_fixed_write-sessions.parquet",
+      "sha256": "d532bd74d7d003825c2c5d1253b5b25c6bf5787bb55d125873570700b4cdb7a8"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_original-sessions.parquet",
+      "sha256": "87417674776fd032c83cb333b6ffd7ab993cba5de7072826b8a19cbee6fae3f3"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_unity-sessions.parquet",
+      "sha256": "87417674776fd032c83cb333b6ffd7ab993cba5de7072826b8a19cbee6fae3f3"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/cascade_write-sessions.parquet",
+      "sha256": "9aa05a39ec0ab4334921278841e8778910180f192ea2f1d8e2f1ec5fdf855403"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/fixed_write-sessions.parquet",
+      "sha256": "9a0b8da0512f3a3e008cf63c75a1a8cdcee54a8b94da7cc0c6bcda66cb671aec"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/mac_original-sessions.parquet",
+      "sha256": "779a436579042962fe9456cbc01c55bf5f8c300e406dbbe7a9d253cc25cf7d7d"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/write_coherence-sessions.parquet",
+      "sha256": "01dbc6e582493d519f9fac58bc9354386ce4ab5c9db5020cef1d46d9c617eb8e"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v4/zero-sessions.parquet",
+      "sha256": "3104dd7dd71c9bfe0f2be7d66ba9f0e75c7584c7ec80ab7e5a0189c35d8e6f52"
+    }
+  ]
+}

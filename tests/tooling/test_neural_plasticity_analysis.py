@@ -2,6 +2,7 @@
 
 import importlib
 import json
+from copy import deepcopy
 
 import numpy as np
 import pyarrow as pa
@@ -281,6 +282,110 @@ def test_unity_control_requires_identical_predictions_and_shared_tensors():
     other["state"]["model"]["weights"] = payload["state"]["model"]["weights"].clone()
     other["identity"] = dict(initial_parameters_sha256="b" * 64)
     assert not api().unity_control(panel(), panel(), payload, other)["passed"]
+
+
+def complete_fixture(tmp_path, fault):
+    """Archivos mínimos de once ejecuciones simuladas, sin modelos entrenados."""
+    import torch
+
+    from benchmarks.neural_plasticity_study import VARIANTS
+    from mars_titan.data.storage import atomic_json, sha256
+
+    prepared, _, template, _ = run_fixture(tmp_path)
+    prepared["configuration"].update(
+        seeds=[42],
+        primary_reference="cascade_original",
+        primary_candidate="cascade_combined",
+        minimum_relevant_mae=1e-5,
+        bootstrap=dict(block_length=1, replicates=100, seed=7, confidence=0.95),
+        sensitivity_block_lengths=[],
+    )
+    names = list(json.loads(VARIANTS.read_text())["arms"])
+    prepared["jobs"] = [dict(id=f"{name}-42", arm=name, seed=42, changes={}) for name in names]
+    atomic_json(tmp_path / "prepared.json", prepared)
+    digest = sha256(tmp_path / "prepared.json")
+    atomic_json(tmp_path / "execution-plan.json", dict(prepared_sha256=digest, prior_receipts=[]))
+    for job in prepared["jobs"]:
+        name = job["arm"]
+        folder = tmp_path / "runs" / job["id"]
+        folder.mkdir()
+        report = deepcopy(template)
+        report.update(fit=dict(best_epoch=1, global_step=2))
+        payload = dict(
+            identity=dict(initial_parameters_sha256="a" * 64),
+            state=dict(model={"weights": torch.tensor([1.0])}),
+        )
+        torch.save(payload, folder / "checkpoint.fixture")
+        report["checkpoint"]["sha256"] = sha256(folder / "checkpoint.fixture")
+        for phase in ("validation", "calibration", "evaluation"):
+            start = int(
+                np.datetime64(prepared["configuration"]["window"][phase][0], "us").astype(np.int64)
+            )
+            table = panel().set_column(
+                3,
+                "prediction_at",
+                pa.array([start, start, start + 86_400_000_000], type=pa.timestamp("us", tz="UTC")),
+            )
+            if name == "cascade_combined":
+                table = table.set_column(5, "prediction", table["target"])
+            if fault == "unit_calibration" and name == "cascade_unity" and phase == "calibration":
+                table = table.set_column(5, "prediction", pa.array([2.0, 0.0, 0.0]))
+            path = folder / f"{phase}.parquet"
+            pq.write_table(table, path)
+            report["predictions"][phase] = dict(
+                path=path.name,
+                sha256=sha256(path),
+                metrics=dict(session_mae=0.0 if name == "cascade_combined" else 5.5),
+            )
+        if fault == "updates" and name == "cascade_unity":
+            report["fit"]["global_step"] = 3
+        atomic_json(folder / "run.json", report)
+        receipt = dict(
+            id=job["id"],
+            job=job,
+            closed=True,
+            status="completed",
+            global_hold_unchanged=True,
+            final_test_opened=False,
+            wrapper_seconds=2.0,
+            prepared_sha256=digest,
+            source_commit="a" * 40,
+            internal=dict(
+                closure_confirmed=True, actual_seconds=1.0, optimizer_steps=2, peak_rss_bytes=1
+            ),
+        )
+        atomic_json(tmp_path / "launches" / f"{job['id']}.json", receipt)
+    return prepared
+
+
+@pytest.mark.parametrize("fault", ["none", "unit_calibration", "updates"])
+def test_complete_analysis_keeps_control_failures_and_known_session_contrasts(
+    tmp_path, monkeypatch, learning_doubles, fault
+):
+    work = tmp_path / "input"
+    work.mkdir()
+    prepared = complete_fixture(work, fault)
+    # Se sustituye solo la auditoría del productor. Lecturas, hashes y análisis son reales.
+    monkeypatch.setattr(api(), "verify_prepared", lambda path: prepared)
+    output = tmp_path / "output"
+    if fault == "updates":
+        with pytest.raises(ValueError, match="actualizaciones"):
+            api().analyze(work, output)
+        assert not output.exists()
+        return
+    result = api().analyze(work, output)
+    assert result["primary"]["contrasts"][0]["estimate"] == -5.5
+    assert result["costs"]["total_wrapper_seconds"] == 22.0
+    assert len(list(output.glob("*-sessions.parquet"))) == 12
+    assert result["unity_control"]["passed"] is (fault == "none")
+    expected = (
+        "menor_error_en_desarrollo"
+        if fault == "none"
+        else "atribucion_bloqueada_por_control_unitario"
+    )
+    assert result["primary_interpretation"] == expected
+    assert result["final_test_opened"] is False
+    assert json.loads((output / "results.json").read_text()) == result
 
 
 @pytest.mark.parametrize("fault", ["unclosed", "duplicate", "missing_model"])

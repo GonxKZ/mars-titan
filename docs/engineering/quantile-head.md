@@ -1,6 +1,6 @@
 # Cabeza común de cuantiles `quantile_head_v1`
 
-Implementación de la opción B adoptada el 9 de octubre de 2026 en [#22](https://github.com/GonxKZ/mars-titan/issues/22), con la justificación de la [propuesta](../research/quantile-head-decision.md). Este documento describe el código y sus comprobaciones técnicas. No se ha entrenado ni evaluado ningún modelo con esta cabeza y el bloqueo de aprendizaje sigue vigente.
+Implementación de la opción B adoptada el 9 de octubre de 2026 en [#22](https://github.com/GonxKZ/mars-titan/issues/22), con la justificación de la [propuesta](../research/quantile-head-decision.md). La cabeza y la calibración CQR ya se han utilizado en la [ronda acotada de refinamientos](../../reports/research/refinement-development-20261019/completed-v1/README.md), que conserva sus métricas por configuración. Ese uso no sustituye el control emparejado frente a la cabeza escalar L1 descrito aquí, todavía sin ejecutar. La campaña completa y el test final siguen cerrados.
 
 ## Especificación
 

@@ -1,6 +1,6 @@
 # Plasticidad de la memoria neuronal
 
-Se han implementado dos modulaciones opcionales sobre los pesos rápidos de Titans-MAC: escritura por coherencia de gradientes y captura por elegibilidad en la cascada PT5. También se admite su combinación. No añaden parámetros compartidos y permanecen desactivadas cuando `memory_plasticity` es `null`. El piloto v1 produjo resultados de desarrollo, pero falló la paridad de su control unitario durante el ajuste. La repetición con [controles escalares identificados](neural-plasticity-protocol.md#repetición-con-controles-escalares) debe resolver esa limitación antes de atribuir efectos al mecanismo.
+Se han implementado dos modulaciones opcionales sobre los pesos rápidos de Titans-MAC: escritura por coherencia de gradientes y captura por elegibilidad en la cascada PT5. También se admite su combinación. No añaden parámetros compartidos y permanecen desactivadas cuando `memory_plasticity` es `null`. El piloto v1 falló la paridad del control unitario durante el ajuste. La repetición con controles escalares identificados resolvió esa diferencia y completó las once configuraciones. Sus [resultados](../../reports/research/neural-plasticity-20261020/development-v2/README.md) no respaldan una ventaja frente a las alternativas constantes ni frente al residual cero.
 
 La motivación es comprobar si resulta útil distinguir una asociación que reaparece de una sucesión de correcciones contradictorias. La hipótesis puede fallar. Una asociación falsa pero persistente también produce gradientes coherentes, y reducir la escritura puede retrasar la adaptación a un cambio real. Los [contratos y ecuaciones](../engineering/neural-plasticity.md) permiten comprobar el mecanismo por separado de esa hipótesis.
 
@@ -34,8 +34,16 @@ La escritura por coherencia se compara con la misma memoria sin modulación y co
 
 No basta con bajar las normas de los estados. Se contrastarán error posterior al ajuste, tiempo, memoria, respuesta a cambios y retención de asociaciones poco frecuentes. La reducción de paso por sí sola puede explicar cualquier efecto favorable. El control constante permite examinar esa explicación.
 
+El piloto ejecutado mide error y coste en una ventana con una semilla. La respuesta a cambios, la retención de asociaciones raras y la variabilidad entre semillas necesitan otros experimentos. Una ganancia entre configuraciones del piloto no sustituye esas comprobaciones.
+
 Los casos adversos incluyen gradientes alternantes, gradientes nulos, una asociación incorrecta persistente, un cambio brusco tras una historia estable y una asociación rara. La pérdida asociativa de Titans es interna a las entradas disponibles. Su valor no es el error financiero de una predicción emitida. Ninguna traza usa etiquetas futuras.
 
 La constante epsilon también importa: con gradientes muy pequeños reduce la coherencia calculada aunque su dirección sea constante. Las proyecciones aprendidas pueden alterar la escala de esos gradientes. Tampoco toda alternancia es ruido, pues puede corresponder a una secuencia predecible. Son límites de la regla, no fallos que deban ocultarse cambiando el protocolo tras observar resultados.
+
+Dos contraejemplos concretan esos límites. Para un gradiente escalar determinista `g_t=(-1)^(t−1)`, la media exponencial entra en un ciclo con magnitud límite `(1−beta)/(1+beta)` y la energía tiende a uno. La coherencia tiende a `((1−beta)/(1+beta))²/(1+epsilon)`. Con beta=0,5 y epsilon=0,25 vale 4/45, de modo que un suelo de escritura de 0,1 produce una ganancia límite de 0,18. La secuencia es predecible y recibe una escritura reducida. La coherencia baja no identifica ruido.
+
+La captura también depende de la distribución entre filas. Con ocho filas, beta=0, trace_decay=0 y epsilon=1, se comparan una matriz de unos y otra que solo conserva su primera fila de unos. Esa primera fila tiene el mismo gradiente y la misma ganancia de escritura en ambos casos. Con suelo de captura 0,1, su ganancia de captura es 73/90 en el caso denso y 17/90 en el caso disperso. El promedio entre filas divide por ocho la señal por encima del suelo. Este efecto puede perjudicar una asociación aislada y no demuestra que las filas inactivas carezcan de información relevante.
+
+`tests/models/titans/test_plasticity_hypotheses.py` contrasta estas derivaciones con la implementación. Son fixtures del mecanismo sin etiquetas financieras ni optimizador. Los resultados del piloto no se utilizan para cambiar retroactivamente la regla o descartar esas situaciones.
 
 Estas variantes no cambian las identidades de la GRU, el Transformer compacto, Titans-MAC, las ampliaciones episódicas ni CM-v1. La consolidación de pesos rápidos aquí propuesta es distinta del factor M, que conserva representantes de episodios maduros. El diagnóstico C debe incluir los estados auxiliares cuando se aplique a esta arquitectura.
