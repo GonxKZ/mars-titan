@@ -228,11 +228,11 @@
         <p class="lede">MARS-TITAN compara modelos con y sin memoria sobre las mismas filas de la edición histórica desde 2000, con ausencias explícitas en noticias, fundamentales y macro.</p>
       </header>
       <figure class="flow">
-        <figcaption><h2 class="h3">Recorrido de una predicción</h2><p class="caption">Esquema conceptual del orden de la información. La memoria solo se escribe cuando madura la etiqueta de la predicción emitida.</p></figcaption>
+        <figcaption><h2 class="h3">Recorrido de una predicción</h2><p class="caption">Titans actualiza su memoria neuronal con las entradas y una pérdida asociativa. El banco episódico opcional registra el error de la predicción emitida solo cuando madura su etiqueta. Son estados y objetivos distintos.</p></figcaption>
         <svg viewBox="0 0 960 330" role="img" aria-labelledby="flow-title flow-desc" id="flow-diagram">
-          <title id="flow-title">De las cinco modalidades a la predicción y a la escritura en memoria</title>
+          <title id="flow-title">De las cinco modalidades a la predicción y al registro episódico</title>
           <defs><marker id="flow-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L8 4L0 8z"/></marker></defs>
-          <desc id="flow-desc">Precios, noticias, gráficos, fundamentales y macro, cada uno con su bit de presencia, pasan por sus codificadores y se fusionan. El núcleo Titans-MAC combina atención sobre el contexto cercano, lectura de la memoria neuronal y memoria persistente. Al cierre de la sesión t se emite la predicción. En el cierre de t más uno madura la etiqueta residual y solo entonces se actualiza la memoria para decisiones posteriores.</desc>
+          <desc id="flow-desc">Precios, noticias, gráficos, fundamentales y macro, cada uno con su bit de presencia, pasan por sus codificadores y se fusionan. Titans-MAC combina atención cercana, memoria neuronal que se actualiza con las entradas y memoria persistente. Tras emitir la predicción se espera a la disponibilidad de su etiqueta. El error maduro puede registrarse en el banco episódico externo para decisiones posteriores. La etiqueta financiera no interviene en la pérdida asociativa de Titans.</desc>
           <g class="flow-inputs">
             <g data-step="1"><rect x="8" y="20" width="148" height="40" rx="3"/><text x="22" y="45">Precios</text><circle cx="140" cy="40" r="4"/></g>
             <g data-step="1"><rect x="8" y="74" width="148" height="40" rx="3"/><text x="22" y="99">Noticias</text><circle cx="140" cy="94" r="4"/></g>
@@ -248,15 +248,15 @@
             <rect x="392" y="40" width="240" height="216" rx="3"/>
             <text x="408" y="64">Titans-MAC</text>
             <rect class="flow-part" x="408" y="80" width="208" height="44" rx="2"/><text class="flow-small" x="420" y="100">Atención sobre el contexto</text><text class="flow-small" x="420" y="116">de las últimas sesiones</text>
-            <rect class="flow-part" x="408" y="134" width="208" height="44" rx="2"/><text class="flow-small" x="420" y="154">Lectura de la memoria</text><text class="flow-small" x="420" y="170">neuronal de largo plazo</text>
+            <rect class="flow-part" x="408" y="134" width="208" height="44" rx="2"/><text class="flow-small" x="420" y="154">Memoria neuronal</text><text class="flow-small" x="420" y="170">lectura y escritura asociativa</text>
             <rect class="flow-part" x="408" y="188" width="208" height="44" rx="2"/><text class="flow-small" x="420" y="208">Memoria persistente</text><text class="flow-small" x="420" y="224">aprendida, fija en inferencia</text>
           </g>
           <path class="flow-link" d="M632 148H676"/>
           <g data-step="4"><circle class="flow-event" cx="696" cy="148" r="12"/><text x="696" y="186" text-anchor="middle">Predicción</text><text class="flow-small" x="696" y="204" text-anchor="middle">cierre de t</text></g>
           <path class="flow-link flow-time" d="M716 148H784"/>
-          <g data-step="5"><circle class="flow-event flow-hollow" cx="804" cy="148" r="12"/><text x="804" y="186" text-anchor="middle">Etiqueta madura</text><text class="flow-small" x="804" y="204" text-anchor="middle">cierre de t + 1</text></g>
-          <path class="flow-link flow-return" d="M804 134V100H650V156H622" marker-end="url(#flow-arrow)"/>
-          <g data-step="6"><text x="727" y="72" text-anchor="middle">Actualización de la memoria</text><text class="flow-small" x="727" y="90" text-anchor="middle">solo con la etiqueta madura</text></g>
+          <g data-step="5"><circle class="flow-event flow-hollow" cx="804" cy="148" r="12"/><text x="804" y="186" text-anchor="middle">Etiqueta madura</text><text class="flow-small" x="804" y="204" text-anchor="middle">según la fuente</text></g>
+          <path class="flow-link flow-return" d="M804 134V104" marker-end="url(#flow-arrow)"/>
+          <g data-step="6"><rect x="660" y="40" width="284" height="64" rx="3"/><text x="802" y="64" text-anchor="middle">Banco episódico opcional</text><text class="flow-small" x="802" y="86" text-anchor="middle">registro con etiqueta madura</text></g>
           <circle class="flow-token" id="flow-token" r="5" cx="696" cy="148"/>
         </svg>
         <button class="button" id="flow-play" type="button">Recorrer el orden</button>
@@ -266,7 +266,9 @@
         <article><h2 class="h3">MAE por sesión</h2><p class="formula">MAE = (1/D) Σ<sub>d</sub> (1/n<sub>d</sub>) Σ<sub>i</sub> |y<sub>i,d</sub> − ŷ<sub>i,d</sub>|</p><p>Cada sesión pesa lo mismo. El MAE por fila, que también se publica, pesa más las sesiones con más activos.</p></article>
         <article><h2 class="h3">Qué no muestra esta página</h2><p>La prueba final de 2024 sigue sellada. Las fases reservadas no publican métricas, curvas ni recursos. Las comprobaciones técnicas y los mundos sintéticos se separan del corpus real.</p></article>
       </div>
-      <p class="caption">Protocolo completo en <a href="https://github.com/GonxKZ/mars-titan/blob/main/docs/research/protocol.md">docs/research/protocol.md</a>. Se ha ejecutado un <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/memory-microstudy-20261018/README.md">microensayo de cuatro activos y una época</a>. Ninguna configuración supera el MAE del residual cero. La campaña completa y el test final siguen cerrados.</p>
+      <p class="caption">El <a href="https://github.com/GonxKZ/mars-titan/blob/main/docs/research/protocol.md">protocolo</a> distingue los estudios de desarrollo de la campaña completa y del test final de 2024, que siguen cerrados. Los informes conservan poblaciones, controles, fallos y costes propios. Sus configuraciones no se suman como réplicas independientes.</p>
+      <p class="caption">El <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/memory-microstudy-20261018/README.md">microensayo</a> completó 28 ajustes con cuatro activos. La <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/combined-memory-20261018/README.md">ronda combinada</a> completó 44 de 83 trabajos sobre 64 instrumentos. Ninguna de sus configuraciones supera al residual cero. Los 39 trabajos restantes de esa ronda conservan su estado interrumpido o no iniciado.</p>
+      <p class="caption">La <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/refinement-development-20261019/completed-v1/README.md">ronda de refinamientos</a> terminó 288 tareas con tres semillas y cohortes de 64 y 256 activos. Ninguno de sus 48 selectores supera al residual cero. Los pilotos de <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/neural-plasticity-20261020/development-v2/README.md">plasticidad</a> y <a href="https://github.com/GonxKZ/mars-titan/blob/main/reports/research/key-competition-20261020/development-v1/README.md">competencia de claves</a>, con once y siete configuraciones, tampoco justifican promover las variantes. Estos estudios reutilizan desarrollo de 2023.</p>
     </section>
   </main>
 
