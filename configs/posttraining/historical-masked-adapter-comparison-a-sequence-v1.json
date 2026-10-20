@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_stage_comparison",
+  "status": "declared_before_evaluation",
+  "name": "historical-masked-2000-adapters-a-sequence-v1",
+  "stage": "historical-masked-adapter-stage-a-sequence-v1.json",
+  "use": "secondary_contrasts_not_for_selecting_the_base_architecture",
+  "families": {
+    "versus_frozen_parent": {
+      "base": "frozen_parent",
+      "variants": [
+        "adapted",
+        "full_continuation",
+        "anchored_continuation",
+        "chain"
+      ]
+    },
+    "versus_full_continuation": {
+      "base": "full_continuation",
+      "variants": [
+        "adapted",
+        "chain"
+      ]
+    },
+    "versus_anchored_continuation": {
+      "base": "anchored_continuation",
+      "variants": [
+        "adapted",
+        "full_continuation"
+      ]
+    },
+    "versus_repeat_new_rows": {
+      "base": "repeat_new_rows",
+      "variants": [
+        "replay_uniform",
+        "replay_regime_balanced"
+      ]
+    },
+    "versus_expected_loss": {
+      "base": "objective_expected",
+      "variants": [
+        "objective_reinforce",
+        "objective_mae",
+        "objective_klpo_full",
+        "objective_klpo_mc",
+        "objective_klpo_exact"
+      ]
+    },
+    "objectives_versus_frozen_parent": {
+      "base": "frozen_parent",
+      "variants": [
+        "objective_reinforce",
+        "objective_expected",
+        "objective_mae",
+        "objective_klpo_full",
+        "objective_klpo_mc",
+        "objective_klpo_exact"
+      ]
+    },
+    "versus_base_retrain": {
+      "base": "base_retrain",
+      "variants": [
+        "chain"
+      ]
+    }
+  }
+}

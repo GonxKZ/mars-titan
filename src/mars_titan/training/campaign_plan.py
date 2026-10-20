@@ -209,6 +209,7 @@ EXTENSION_POINTS = {
 # confirmada. Se ejecutan con su propia orden (`run_masked_campaign.py posttraining`).
 # `stages` son las de las campañas A y B de tres ámbitos y `joint_stage`, la de la campaña
 # A v2 con el modelo conjunto y los controles separados.
+# `additional_stages` registra las declaraciones propias sin reemplazar las históricas.
 LATER_STAGES = {
     # A declara la matriz v3, con los casos de Titans-MAC y la variedad de adaptadores. B
     # conserva la v2 porque no se ejecuta, y sus casos de las redes están en la v3 salvo por
@@ -220,6 +221,10 @@ LATER_STAGES = {
             B="configs/posttraining/historical-masked-adapter-stage-b.json",
         ),
         joint_stage="configs/posttraining/historical-masked-adapter-stage-a-v2.json",
+        additional_stages=dict(
+            sequence="configs/posttraining/historical-masked-adapter-stage-a-sequence-v1.json",
+            paper="configs/posttraining/historical-masked-adapter-stage-a-paper-v1.json",
+        ),
         entry="mars_titan.posttraining.campaign_stage:run_stage",
         issue=364,
         pending=[],
@@ -233,6 +238,10 @@ LATER_STAGES = {
             B="configs/simulation/historical-masked-rl-stage-b.json",
         ),
         joint_stage="configs/simulation/historical-masked-rl-stage-a-v2.json",
+        additional_stages=dict(
+            sequence="configs/simulation/historical-masked-rl-stage-a-sequence-v1.json",
+            paper="configs/simulation/historical-masked-rl-stage-a-paper-v1.json",
+        ),
         entry="mars_titan.simulation.campaign_stage:run_stage",
         issue=137,
         pending=[],
@@ -246,6 +255,10 @@ LATER_STAGES = {
             B="configs/evaluation/historical-masked-ablation-stage-b.json",
         ),
         joint_stage="configs/evaluation/historical-masked-ablation-stage-a-v2.json",
+        additional_stages=dict(
+            sequence="configs/evaluation/historical-masked-ablation-stage-a-sequence-v1.json",
+            paper="configs/evaluation/historical-masked-ablation-stage-a-paper-v1.json",
+        ),
         entry="mars_titan.training.modality_ablation_stage:run_stage",
         issue=414,
         pending=[],
@@ -257,6 +270,10 @@ LATER_STAGES = {
         config="configs/evaluation/comparison-matrix-a.json",
         stages=dict(A="configs/evaluation/historical-masked-publication-a.json"),
         joint_stage="configs/evaluation/historical-masked-publication-a-v2.json",
+        additional_stages=dict(
+            sequence="configs/evaluation/historical-masked-publication-a-sequence-v1.json",
+            paper="configs/evaluation/historical-masked-publication-a-paper-v1.json",
+        ),
         entry="mars_titan.training.campaign_publication:run_publication",
         issue=28,
         pending=[],

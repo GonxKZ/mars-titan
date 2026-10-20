@@ -1,0 +1,139 @@
+{
+  "recorded_at_utc": "2026-10-20T18:13:50.057126+00:00",
+  "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 7.584631489007734,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "adapter_uses_old_campaign",
+      "file": "configs/posttraining/historical-masked-adapter-stage-a-paper-v1.json",
+      "before": "historical-masked-campaign-a-paper-v1.json",
+      "after": "historical-masked-campaign-a-v2.json",
+      "source_sha256": "07e2f49ff913a98d56c110498011c237061b87e0f51e500e12c76589fb8b9d04"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 8.034538009087555,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "ablation_uses_old_campaign",
+      "file": "configs/evaluation/historical-masked-ablation-stage-a-paper-v1.json",
+      "before": "historical-masked-campaign-a-paper-v1.json",
+      "after": "historical-masked-campaign-a-v2.json",
+      "source_sha256": "91ea9879db010a376009760f3494b735046288edc2db1712548be7c3cab88924"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 7.632675695000216,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "rl_uses_old_campaign",
+      "file": "configs/simulation/historical-masked-rl-stage-a-paper-v1.json",
+      "before": "historical-masked-campaign-a-paper-v1.json",
+      "after": "historical-masked-campaign-a-v2.json",
+      "source_sha256": "47f7c15eb73f9f27a92665905b37e5576ef9d48acbad2c0ac7360d576239f4e6"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 10.440296632004902,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "comparison_uses_old_adapter",
+      "file": "configs/posttraining/historical-masked-adapter-comparison-a-paper-v1.json",
+      "before": "historical-masked-adapter-stage-a-paper-v1.json",
+      "after": "historical-masked-adapter-stage-a-v2.json",
+      "source_sha256": "33586e77c5f222ef4c4b4ea753bf5864e09d00464e6924235e10b2d4ea4e145d"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 13.998944159946404,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "publication_uses_old_comparison",
+      "file": "configs/evaluation/historical-masked-publication-a-paper-v1.json",
+      "before": "historical-masked-adapter-comparison-a-paper-v1.json",
+      "after": "historical-masked-adapter-comparison-a-v2.json",
+      "source_sha256": "3c9997b5f793c75ea520ac791dc62f2193677811689d7acf111e8b046e49fe30"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 7.833180002053268,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "name": "omit_extra_stages_from_data_audit",
+      "file": "src/mars_titan/training/campaign_data_policy.py",
+      "before": "*entry.get(\"additional_stages\", {}).values(),",
+      "after": "*{}.values(),",
+      "source_sha256": "b5edaa8469fe9f563846605081cd4f9f3bf2ac97504d29a6975331468f2c6ce6"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 30.744715910055675,
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "name": "omit_campaign_guard_in_schedule",
+      "file": "src/mars_titan/training/campaign_schedule_command.py",
+      "before": "stage[\"campaign\"][\"sha256\"] == campaign[\"sha256\"],",
+      "after": "True,",
+      "source_sha256": "abff46d45059c1f62e2b81cb9fead0af781d811a4446dde9f8f18f9961f7b585"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 22.269050450995564,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "omit_campaign_guard_in_retention",
+      "file": "src/mars_titan/training/rolling_retention.py",
+      "before": "document.get(\"campaign\") == campaign[\"sha256\"]",
+      "after": "True",
+      "source_sha256": "2fac2892e9ee06c2a94029297c8deac9f698c760ecf5bf9c05e0733b844f915b"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 5.779880166053772,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "downgrade_adapter_matrix",
+      "file": "configs/posttraining/historical-masked-adapter-stage-a-paper-v1.json",
+      "before": "adapter-matrix-v3.json",
+      "after": "adapter-matrix-v2.json",
+      "source_sha256": "07e2f49ff913a98d56c110498011c237061b87e0f51e500e12c76589fb8b9d04"
+    }
+  ],
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 30.539147039991803,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "restored": {
+    "exit_code": 0,
+    "seconds": 21.119938337011263,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
