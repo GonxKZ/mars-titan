@@ -1,4 +1,4 @@
-"""Piloto de plasticidad con recetas selladas, costes recuperables y bloqueo por defecto."""
+"""Pilotos neuronales con recetas selladas, costes recuperables y bloqueo por defecto."""
 
 import argparse
 import copy
@@ -31,7 +31,12 @@ def study_files(version):
             ROOT / "configs/experiments/neural-plasticity-study-v2.json",
             ROOT / "configs/experiments/neural-plasticity-v2.json",
         )
-    raise ValueError("La versión del piloto debe ser v1 o v2")
+    if version == "key_competition_v1":
+        return (
+            ROOT / "configs/experiments/key-competition-study-v1.json",
+            ROOT / "configs/experiments/key-competition-v1.json",
+        )
+    raise ValueError("La versión del piloto debe ser v1, v2 o key_competition_v1")
 
 
 def configuration(version="v1"):
@@ -273,7 +278,7 @@ def main():
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--view", type=Path)
     parser.add_argument("--job")
-    parser.add_argument("--version", choices=("v1", "v2"))
+    parser.add_argument("--version", choices=("v1", "v2", "key_competition_v1"))
     args = parser.parse_args()
     if args.command == "prepare":
         if args.view is None or args.job is not None:

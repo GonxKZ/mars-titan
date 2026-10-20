@@ -8,6 +8,7 @@ from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import MACConfig, require_identity
+from .key_competition import competitive_normalize
 from .neural_memory import NeuralMemory
 from .state import (
     MACState,
@@ -107,7 +108,9 @@ class TitansMAC(nn.Module):
                     windows[0] if windows else None,
                 )
                 windows = () if window is None else (window,)
-                if self.config.memory.normalize_qk:
+                if self.config.memory.key_competition is not None:
+                    queries = competitive_normalize(queries, self.config.memory.key_competition)
+                elif self.config.memory.normalize_qk:
                     queries = F.normalize(queries, dim=-1, eps=1e-12)
                 retrieved = self.memory.read(queries, state.memory)
                 prefix = self.persistent.unsqueeze(0).expand(batch, -1, -1)

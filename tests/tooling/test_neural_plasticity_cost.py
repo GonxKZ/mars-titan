@@ -57,3 +57,19 @@ def test_protected_materializations_are_rejected_before_opening_arrays(tmp_path,
     data.with_suffix(".json").write_text(json.dumps(metadata))
     with pytest.raises(ValueError):
         api().load_inputs(data)
+
+
+def test_another_variant_catalogue_cannot_overwrite_a_completed_measurement(tmp_path):
+    output = tmp_path / "complete.json"
+    output.write_text("completed measurement")
+    with pytest.raises(FileExistsError):
+        api().measure(
+            tmp_path / "missing.npz",
+            output,
+            sizes=[1],
+            repetitions=2,
+            warmup=1,
+            dtype="float32",
+            declaration_path=tmp_path / "catalogue.json",
+        )
+    assert output.read_text() == "completed measurement"

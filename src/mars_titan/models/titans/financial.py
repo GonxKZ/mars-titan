@@ -45,6 +45,7 @@ from .financial_inputs import (
     DecisionBatch,
     FinancialInputSpec,
 )
+from .key_competition_config import KeyCompetition
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .presence_modulation import (
@@ -108,6 +109,7 @@ class FinancialConfig:
     memory_multiscale: MemoryMultiscale | None = None
     # Modulación de escritura y captura neuronal, desactivada sin configuración.
     memory_plasticity: MemoryPlasticity | None = None
+    memory_key_competition: KeyCompetition | None = None
     # PT4, memoria de mercado compartida o su control sectorial. Solo con mac_online. El
     # control necesita el reparto de sectores, como SectorMap o {"source": carpeta}.
     session_context: str | None = None
@@ -167,6 +169,20 @@ class FinancialConfig:
                 self.memory_multiscale is None or self.memory_multiscale.form != "cascade"
             ):
                 raise ValueError("La captura neuronal necesita la cascada multiescala")
+        if isinstance(self.memory_key_competition, dict):
+            if set(self.memory_key_competition) != {field.name for field in fields(KeyCompetition)}:
+                raise ValueError("memory_key_competition necesita center, retained y selection")
+            object.__setattr__(
+                self, "memory_key_competition", KeyCompetition(**self.memory_key_competition)
+            )
+        if self.memory_key_competition is not None:
+            if not isinstance(self.memory_key_competition, KeyCompetition):
+                raise ValueError(
+                    "memory_key_competition necesita KeyCompetition, sus valores o None"
+                )
+            retained = self.memory_key_competition.retained
+            if retained is not None and retained > self.hidden_size:
+                raise ValueError("retained supera hidden_size")
         if isinstance(self.sector_map, dict):
             if set(self.sector_map) != {"source"}:
                 raise ValueError("sector_map declara solo la carpeta de las fichas en source")
@@ -257,6 +273,8 @@ class FinancialConfig:
             result.update(memory_multiscale=asdict(self.memory_multiscale))
         if self.memory_plasticity is not None:
             result.update(memory_plasticity=self.memory_plasticity.configuration())
+        if self.memory_key_competition is not None:
+            result.update(memory_key_competition=asdict(self.memory_key_competition))
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -382,6 +400,7 @@ class FinancialPredictor(nn.Module):
                 memory_options=dict(
                     gate_bias=config.gate_bias,
                     residual_layer_norm=config.memory_residual_layer_norm,
+                    key_competition=config.memory_key_competition,
                 ),
                 sector_map=config.sector_map,
             )
@@ -407,6 +426,7 @@ class FinancialPredictor(nn.Module):
                         stability=config.memory_stability,
                         multiscale=config.memory_multiscale,
                         plasticity=config.memory_plasticity,
+                        key_competition=config.memory_key_competition,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
