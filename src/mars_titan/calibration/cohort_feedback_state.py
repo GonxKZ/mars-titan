@@ -29,6 +29,11 @@ FIELDS = {
 ROW_FIELDS = {"sample_id", "matures_at", "available_at", "value", "status", "evidence_sha256"}
 
 
+def copy_cohorts(cohorts):
+    """Copiar contenedores de filas ya validadas, cuyos campos son escalares inmutables."""
+    return [dict(item, rows=[dict(row) for row in item["rows"]]) for item in cohorts]
+
+
 def identifier(value):
     _require(
         type(value) is str

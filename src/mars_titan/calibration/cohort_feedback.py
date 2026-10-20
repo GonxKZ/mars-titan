@@ -5,7 +5,6 @@ de sesión. Este componente comprueba identidades, formatos, tiempos y presupues
 No calcula pérdidas de etiquetas ausentes ni garantiza cobertura de una selección.
 """
 
-import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -14,6 +13,7 @@ from .cohort_feedback_state import (
     KIND,
     MAX_ROWS,
     POLICY,
+    copy_cohorts,
     identifier,
     limits,
     packed_calibrator,
@@ -87,7 +87,7 @@ class CohortFeedback:
     def _fork(self):
         return type(self)(
             OnlineConformal.restore(self._calibrator.export()),
-            copy.deepcopy(self._cohorts),
+            copy_cohorts(self._cohorts),
             max_rows=self._max_rows,
             max_bytes=self._max_bytes,
             clock=self._clock,
@@ -227,8 +227,8 @@ class CohortFeedback:
             settlements.append(
                 dict(
                     record,
-                    labels=copy.deepcopy(labels),
-                    exclusions=copy.deepcopy(exclusions),
+                    labels=[dict(row) for row in labels],
+                    exclusions=[dict(row) for row in exclusions],
                     unresolved_ids=unresolved,
                 )
             )
@@ -247,7 +247,7 @@ class CohortFeedback:
                 clock=self._clock,
                 cancelled_cohorts=self._cancelled,
                 calibrator=packed_calibrator(self._calibrator),
-                cohorts=copy.deepcopy(self._cohorts),
+                cohorts=copy_cohorts(self._cohorts),
             )
         )
 
@@ -259,7 +259,7 @@ class CohortFeedback:
         calibrator = restore_payload(payload)
         return cls(
             calibrator,
-            copy.deepcopy(payload["cohorts"]),
+            copy_cohorts(payload["cohorts"]),
             max_rows=payload["max_rows"],
             max_bytes=payload["max_bytes"],
             clock=payload["clock"],
