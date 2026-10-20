@@ -316,6 +316,8 @@ La [revisión de la memoria posterior a Titans](docs/research/post-titans-memory
 
 - **PT3, regla de Kalman con ruido de cohorte correlacionado en B6** ([#455](https://github.com/GonxKZ/mars-titan/issues/455)): implementada y comprobada sin entrenar ([documento](docs/engineering/kalman-associative-memory.md)). La ventana B6 estima σ² y ϱ con los últimos meses del ajuste y la campaña A v2 la declara con su alternativa ϱ = 0, frente a B6 proximal. Cada predicción lleva su varianza y la de una memoria que recibe las etiquetas una sesión más tarde, y la comparación aplica con ellas los criterios de cobertura y de retraso de la regla. En las vistas reales de US+CN cada cohorte de escritura es exactamente una sesión, así que ϱ se aplica a la misma agrupación con la que se estima. Resultado experimental pendiente.
 
+El [acumulador de feedback de PT2](docs/engineering/mechanism-controller.md) conserva resultados parciales, rechaza etiquetas futuras y registra las cohortes canceladas sin inventar pérdidas. Sus [pruebas y medidas de CPU](reports/engineering/cohort-feedback-20261021/README.md) no completan la integración del controlador ni la publicación atómica, pendientes en [#701](https://github.com/GonxKZ/mars-titan/issues/701).
+
 Una predicción solo puede usar datos disponibles en su instante de decisión. La actualización asociativa de Titans utiliza entradas observadas bajo una política explícita. El error financiero de escritura episódica solo se calcula cuando madura la etiqueta de la predicción realmente emitida. Las tablas contables necesitan fechas de publicación y los gráficos se construyen exclusivamente con ventanas pasadas.
 
 ## Objetivos y evidencias
