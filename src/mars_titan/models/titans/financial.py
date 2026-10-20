@@ -813,6 +813,7 @@ class FinancialPredictor(nn.Module):
         control_selection=None,
         control_context_id=None,
         context=None,
+        context_selection=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -827,10 +828,19 @@ class FinancialPredictor(nn.Module):
                 control_selection=control_selection,
                 control_context_id=control_context_id,
                 context=context,
+                context_selection=context_selection,
             )
 
     def _prepare(
-        self, batch, state, *, differentiable, control_selection, control_context_id, context
+        self,
+        batch,
+        state,
+        *,
+        differentiable,
+        control_selection,
+        control_context_id,
+        context,
+        context_selection=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -868,6 +878,17 @@ class FinancialPredictor(nn.Module):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
             self.session_context.validate(context, self._parameter_id)
+        if context_selection is not None:
+            if context is None:
+                raise ValueError("La selección de contexto necesita un padre con PT4")
+            if (
+                type(context_selection) is not tuple
+                or len(context_selection) != len(batch.flow_ids)
+                or any(type(value) is not bool for value in context_selection)
+            ):
+                raise ValueError(
+                    "La selección de contexto debe ser una tupla de booleanos por fila"
+                )
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
         local_result = None
         with torch.set_grad_enabled(differentiable), backend:
@@ -889,12 +910,23 @@ class FinancialPredictor(nn.Module):
                 branch=self.fusion_branch,
             )
             check_finite(token, "El token fusionado")
-            observed, next_context = token, None
-            if context is not None:
+            observed, next_context = token, context
+            if context is not None and (context_selection is None or any(context_selection)):
                 # La lectura solo usa sesiones ya confirmadas y deja este bloque pendiente.
-                extra, next_context = self.session_context.read(
-                    token, batch.flow_ids, batch.prediction_at, context
-                )
+                if context_selection is None or all(context_selection):
+                    extra, next_context = self.session_context.read(
+                        token, batch.flow_ids, batch.prediction_at, context
+                    )
+                else:
+                    selected = [i for i, value in enumerate(context_selection) if value]
+                    positions = torch.tensor(selected, dtype=torch.int64, device=token.device)
+                    part, next_context = self.session_context.read(
+                        token.index_select(0, positions),
+                        tuple(batch.flow_ids[i] for i in selected),
+                        tuple(batch.prediction_at[i] for i in selected),
+                        context,
+                    )
+                    extra = torch.zeros_like(token).index_copy(0, positions, part)
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
             if self.mac:
