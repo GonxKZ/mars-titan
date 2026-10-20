@@ -7,6 +7,7 @@ from test_local_capture import DEVICES, local
 from mars_titan.models.titans.config import MACConfig, MemoryConfig, MemoryMultiscale
 from mars_titan.models.titans.financial import MEMORY_PROJECTIONS, PAPER_PROJECTIONS
 from mars_titan.models.titans.mac import TitansMAC
+from mars_titan.models.titans.plasticity import advance, initial_history
 from mars_titan.models.titans.state import mac_tensors, map_mac_rows
 
 
@@ -28,6 +29,33 @@ def configured(device):
         device=device,
         dtype=torch.float64,
     )
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_local_statistics_follow_joint_internal_row_permutation(device):
+    config = local(beta=0.7, trace_decay=0.6, epsilon=0.5)
+    generator = torch.Generator(device=device).manual_seed(842)
+    first, gradient = (
+        torch.randn(2, 4, 4, device=device, dtype=torch.float64, generator=generator)
+        for _ in range(2)
+    )
+    steps = torch.zeros(2, dtype=torch.int64, device=device)
+    history = advance(config, first, initial_history(first), steps).history
+    expected = advance(config, gradient, history, steps + 1)
+    order = torch.tensor([2, 0, 1, 3], device=device)
+    inverse = order.argsort()
+    actual = advance(
+        config,
+        gradient.index_select(1, order),
+        tuple(value.index_select(1, order) for value in history),
+        steps + 1,
+    )
+    for left, right in zip(
+        (*expected.history, expected.write_gain, expected.capture_gain, expected.coherence),
+        (*actual.history, actual.write_gain, actual.capture_gain, actual.coherence),
+        strict=True,
+    ):
+        torch.testing.assert_close(left, right.index_select(1, inverse), rtol=0, atol=0)
 
 
 @pytest.mark.parametrize("device", DEVICES)

@@ -1,0 +1,30 @@
+{
+  "recorded_at_utc": "2026-10-20T22:20:07.286568+00:00",
+  "test_runs": [
+    {
+      "receipt": "causality-cpu.xml",
+      "sha256": "fb87a6fbd4184ab12f3b252bdd3f95cfeb21ec54d08a5efd22245139d00aaaf4",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "receipt": "causality-cuda.xml",
+      "sha256": "f75ca534fdbba62b68872f3dbd9422ff8de0a6178dbdcec4d9dc2074504ed924",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "cuda_cases": 2,
+  "mutants_detected": 3,
+  "mutants_total": 3,
+  "sources": {
+    "tests/models/titans/test_local_capture_causality.py": "1ce44dc1817b4555038db365c89d64f89e298bd37fecbb7f116ed58b66ebaac5",
+    "src/mars_titan/models/titans/state.py": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+    "src/mars_titan/models/titans/plasticity.py": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
+  },
+  "scope": "Comprobaciones adicionales de la variante local, sin nuevos ajustes ni cambios del núcleo."
+}

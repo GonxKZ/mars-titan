@@ -1,9 +1,9 @@
 {
-  "recorded_at_utc": "2026-10-20T21:50:26.777249+00:00",
+  "recorded_at_utc": "2026-10-20T22:34:46.757437+00:00",
   "baseline": {
     "exit_code": 0,
-    "seconds": 4.024157676962204,
-    "tests": 2,
+    "seconds": 3.5243886309908703,
+    "tests": 3,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -11,7 +11,7 @@
   "mutations": [
     {
       "exit_code": 1,
-      "seconds": 3.7241071129683405,
+      "seconds": 3.173091653967276,
       "tests": 1,
       "failures": 1,
       "errors": 0,
@@ -24,7 +24,7 @@
     },
     {
       "exit_code": 1,
-      "seconds": 3.524316390044987,
+      "seconds": 3.1726939670043066,
       "tests": 1,
       "failures": 1,
       "errors": 0,
@@ -37,7 +37,7 @@
     },
     {
       "exit_code": 1,
-      "seconds": 3.6745851800078526,
+      "seconds": 3.4241754700196907,
       "tests": 1,
       "failures": 1,
       "errors": 0,
@@ -47,14 +47,41 @@
       "before": "memory=map_memory_rows(state.memory, transform),\n        convolution=tuple(transform(value) for value in state.convolution)",
       "after": "memory=map_memory_rows(state.memory, transform),\n        convolution=state.convolution",
       "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.172598852077499,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "broadcast_first_internal_row",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "before": "coherence if config.capture_scope == \"row_local\" else coherence.mean(dim=1, keepdim=True)",
+      "after": "coherence[:, :1].expand_as(coherence) if config.capture_scope == \"row_local\" else coherence.mean(dim=1, keepdim=True)",
+      "source_sha256": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.7722271969541907,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "reverse_capture_internal_rows",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "before": "return PlasticityStep((mean, energy, tag), write_gain, capture_gain, coherence)",
+      "after": "return PlasticityStep((mean, energy, tag), write_gain, capture_gain.flip(1), coherence)",
+      "source_sha256": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3"
     }
   ],
   "restored": {
     "exit_code": 0,
-    "seconds": 4.024908646009862,
-    "tests": 2,
+    "seconds": 2.972092680982314,
+    "tests": 3,
     "failures": 0,
     "errors": 0,
     "skipped": 0
-  }
+  },
+  "test_source_sha256": "304fc0335a582c83305323252d1fe6e1350b9398e45b770bbf64bb92011e3bca"
 }

@@ -1,0 +1,60 @@
+{
+  "recorded_at_utc": "2026-10-20T21:50:26.777249+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 4.024157676962204,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 3.7241071129683405,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_plasticity_rows_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "modulation=tuple(transform(value) for value in state.modulation)",
+      "after": "modulation=state.modulation",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.524316390044987,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_key_value_windows_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "steps=transform(state.steps),\n        convolution=tuple(transform(value) for value in state.convolution)",
+      "after": "steps=transform(state.steps),\n        convolution=state.convolution",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 3.6745851800078526,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "leave_query_window_unpermuted",
+      "file": "src/mars_titan/models/titans/state.py",
+      "before": "memory=map_memory_rows(state.memory, transform),\n        convolution=tuple(transform(value) for value in state.convolution)",
+      "after": "memory=map_memory_rows(state.memory, transform),\n        convolution=state.convolution",
+      "source_sha256": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec"
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 4.024908646009862,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
