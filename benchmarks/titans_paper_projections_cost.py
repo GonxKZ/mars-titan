@@ -121,7 +121,12 @@ def materialize(view, output, *, flows, instants, warmup_months):
             block = _observation(dataset, asset, decoded, local, at, prices)
             if batches[index] is None:
                 batches[index] = _new_batch(
-                    decoded[2], dataset.context, flows, masked=True, supervised=False
+                    decoded[2],
+                    dataset.context,
+                    flows,
+                    masked=True,
+                    supervised=False,
+                    channels=dataset.price_channels,
                 )
             _fill_batch(batches[index], filled, block, 0, 1)
     arrays = {}
