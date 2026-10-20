@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "quantile_point_objective_controls",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/key-competition-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "unity_control": [
+    "original",
+    "all_feedback"
+  ],
+  "cost_kind": "quantile_point_objective_cuda_cost",
+  "arms": {
+    "original": {
+      "role": "Referencia de cuantiles original",
+      "predictor_changes": {}
+    },
+    "all_feedback": {
+      "role": "Control de las dos vías originales",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": true,
+          "encoder_from_spreads": true
+        }
+      }
+    },
+    "both_isolated": {
+      "role": "Ambas vías separadas",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": false,
+          "encoder_from_spreads": false
+        }
+      }
+    },
+    "point_component": {
+      "role": "Control de solo mediana, L1/10, sin cambiar la cabeza",
+      "predictor_changes": {},
+      "recipe_loss": "quantile_point_component_v1"
+    },
+    "point_l1": {
+      "role": "Control de solo mediana, L1, sin cambiar la cabeza",
+      "predictor_changes": {},
+      "recipe_loss": "quantile_point_mae_v1"
+    }
+  }
+}

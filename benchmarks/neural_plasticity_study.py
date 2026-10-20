@@ -16,6 +16,8 @@ from benchmarks.refinement_study import code_identity, environment_identity
 from benchmarks.refinement_study_traces import attempt_cost, settle_attempt
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.training.learning_hold import require_learning_allowed
+from mars_titan.training.quantile_objectives import POINT_OBJECTIVES
+from mars_titan.training.search_cases import CASE_NAME
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/experiments/neural-plasticity-study-v1.json"
@@ -46,9 +48,14 @@ def study_files(version):
             ROOT / "configs/experiments/quantile-routing-study-v2.json",
             ROOT / "configs/experiments/quantile-routing-v1.json",
         )
+    if version == "quantile_point_v1":
+        return (
+            ROOT / "configs/experiments/quantile-point-study-v1.json",
+            ROOT / "configs/experiments/quantile-point-v1.json",
+        )
     raise ValueError(
         "La versión del piloto debe ser v1, v2, key_competition_v1, quantile_routing_v1 "
-        "o quantile_routing_v2"
+        "o quantile_routing_v2 o quantile_point_v1"
     )
 
 
@@ -61,7 +68,7 @@ def sources(version="v1"):
     config, variants = study_files(version)
     extra = (
         (ROOT / "benchmarks/quantile_multiseed_analysis.py",)
-        if version == "quantile_routing_v2"
+        if version in ("quantile_routing_v2", "quantile_point_v1")
         else ()
     )
     return code_identity() | {
@@ -74,6 +81,43 @@ def sources(version="v1"):
             *sorted((ROOT / "src/mars_titan").rglob("*.py")),
         )
     }
+
+
+def study_jobs(config, variants):
+    """Enumerar objetivos por modelo, con nombres locales y controles explícitos."""
+    for arm, value in variants["arms"].items():
+        if not isinstance(arm, str) or not CASE_NAME.fullmatch(arm):
+            raise ValueError("El nombre de un modelo no es un identificador local válido")
+        if "recipe_loss" in value and (
+            variants.get("kind") != "quantile_point_objective_controls"
+            or value["recipe_loss"] not in POINT_OBJECTIVES
+        ):
+            raise ValueError("El modelo necesita un objetivo puntual de control reconocido")
+    return [
+        dict(
+            id=f"{arm}-{seed}",
+            arm=arm,
+            seed=seed,
+            changes=value["predictor_changes"],
+            **({"recipe": f"recipes/{arm}.json"} if "recipe_loss" in value else {}),
+        )
+        for seed in config["seeds"]
+        for arm, value in variants["arms"].items()
+    ]
+
+
+def recipe_name(job):
+    """Resolver solo la receta común o la receta identificada del propio modelo."""
+    if "recipe" not in job:
+        return FILES["recipe"]
+    arm = job.get("arm")
+    if (
+        not isinstance(arm, str)
+        or not CASE_NAME.fullmatch(arm)
+        or job["recipe"] != f"recipes/{arm}.json"
+    ):
+        raise ValueError("La receta no pertenece al modelo declarado")
+    return job["recipe"]
 
 
 def project_view(original, config):
@@ -115,8 +159,9 @@ def prepare(source, work, *, version="v1"):
     config = configuration(version)
     _, catalog = study_files(version)
     variants = json.loads(catalog.read_text())
+    jobs = study_jobs(config, variants)
     view = project_view(json.loads(source.read_text()), config)
-    if version == "quantile_routing_v2":
+    if version in ("quantile_routing_v2", "quantile_point_v1"):
         view["temporal_view"]["protocol"]["seeds"] = config["seeds"]
     recipe = json.loads((ROOT / variants["base_recipe"]).read_text())
     recipe["recipe"].update(
@@ -128,18 +173,19 @@ def prepare(source, work, *, version="v1"):
         attention_layout=config["attention_layout"],
     )
     recipe["pending"] = ["Receta propia del piloto neuronal. No sustituye la campaña histórica."]
+    documents = {
+        FILES["view"]: view,
+        FILES["protocol"]: view["temporal_view"]["protocol"],
+        FILES["recipe"]: recipe,
+    }
+    for arm, value in variants["arms"].items():
+        if "recipe_loss" in value:
+            controlled = copy.deepcopy(recipe)
+            controlled["recipe"]["loss"] = value["recipe_loss"]
+            documents[f"recipes/{arm}.json"] = controlled
     work.mkdir(parents=True)
-    for name, value in (
-        (FILES["view"], view),
-        (FILES["protocol"], view["temporal_view"]["protocol"]),
-        (FILES["recipe"], recipe),
-    ):
+    for name, value in documents.items():
         atomic_json(work / name, value)
-    jobs = [
-        dict(id=f"{arm}-{seed}", arm=arm, seed=seed, changes=value["predictor_changes"])
-        for seed in config["seeds"]
-        for arm, value in variants["arms"].items()
-    ]
     receipt = dict(
         schema_version=2,
         study_version=version,
@@ -147,7 +193,7 @@ def prepare(source, work, *, version="v1"):
         jobs=jobs,
         prepared_at_utc=datetime.now(UTC).isoformat(),
         original_view_sha256=sha256(source),
-        artifacts={name: sha256(work / name) for name in FILES.values()},
+        artifacts={name: sha256(work / name) for name in documents},
         code=sources(version),
         environment=environment_identity(),
         counts=view["counts"],
@@ -162,25 +208,22 @@ def verify_prepared(work):
     receipt = json.loads((work / "prepared.json").read_text())
     version = receipt.get("study_version", "v1")
     _, catalog = study_files(version)
+    config = configuration(version)
+    variants = json.loads(catalog.read_text())
+    expected_jobs = study_jobs(config, variants)
+    artifact_names = set(FILES.values()) | {recipe_name(job) for job in expected_jobs}
     if (
         receipt.get("schema_version") != 2
         or receipt["configuration"] != configuration(version)
         or receipt["code"] != sources(version)
         or receipt["environment"] != environment_identity()
         or receipt.get("final_test_access") is not False
-        or set(receipt["artifacts"]) != set(FILES.values())
+        or set(receipt["artifacts"]) != artifact_names
     ):
         raise ValueError("La configuración, el código o el entorno del piloto han cambiado")
     for name, expected in receipt["artifacts"].items():
-        if name not in FILES.values() or sha256(work / name) != expected:
+        if name not in artifact_names or sha256(work / name) != expected:
             raise ValueError("Un artefacto preparado ha cambiado")
-    config = configuration(version)
-    variants = json.loads(catalog.read_text())
-    expected_jobs = [
-        dict(id=f"{arm}-{seed}", arm=arm, seed=seed, changes=value["predictor_changes"])
-        for seed in config["seeds"]
-        for arm, value in variants["arms"].items()
-    ]
     if receipt["jobs"] != expected_jobs:
         raise ValueError("El catálogo de trabajos ha cambiado")
     return receipt
@@ -261,7 +304,7 @@ def _run(work, receipt, job):
                 work / FILES["view"],
                 work / FILES["protocol"],
                 receipt["configuration"]["fold"],
-                work / FILES["recipe"],
+                work / recipe_name(job),
                 variant="mac_online",
                 seed=job["seed"],
                 output=work / "runs" / job["id"],
@@ -301,7 +344,14 @@ def main():
     parser.add_argument("--job")
     parser.add_argument(
         "--version",
-        choices=("v1", "v2", "key_competition_v1", "quantile_routing_v1", "quantile_routing_v2"),
+        choices=(
+            "v1",
+            "v2",
+            "key_competition_v1",
+            "quantile_routing_v1",
+            "quantile_routing_v2",
+            "quantile_point_v1",
+        ),
     )
     args = parser.parse_args()
     if args.command == "prepare":

@@ -1,0 +1,78 @@
+{
+  "recorded_at_utc": "2026-10-20T19:22:58.498049+00:00",
+  "scope": "Revisión dirigida. No es una búsqueda exhaustiva ni una demostración de novedad.",
+  "sources": [
+    {
+      "title": "Human hippocampal ripples tune cortical responses based on predicted uncertainty",
+      "authors": "Darya Frank et al.",
+      "doi": "10.1038/s41593-026-02345-6",
+      "url": "https://doi.org/10.1038/s41593-026-02345-6",
+      "published": "2026-06-25",
+      "version": "Version of record",
+      "inspected_sections": [
+        "Introducción",
+        "Resultados de respuestas moduladas por ripples",
+        "Discusión"
+      ],
+      "reproduced": false,
+      "implemented_from_source": false
+    },
+    {
+      "title": "Duration between rewards controls the rate of behavioral and dopaminergic learning",
+      "authors": "Dennis A. Burke et al.",
+      "doi": "10.1038/s41593-026-02206-2",
+      "url": "https://doi.org/10.1038/s41593-026-02206-2",
+      "published": "2026-02-12",
+      "inspected_sections": [
+        "Resumen",
+        "Disponibilidad de código",
+        "Corrección editorial"
+      ],
+      "correction": {
+        "url": "https://doi.org/10.1038/s41593-026-02425-7",
+        "published": "2026-08-03",
+        "scope": "Alineación de ráster en la figura 4b"
+      },
+      "code": {
+        "repository": "https://github.com/namboodirilab/duration_between_rewards_controls_learning_rate",
+        "commit": "b7687eba02128049eb50f8a13a7201443e180a21",
+        "file": "CODE_simulations/models/calculateANCCR.m",
+        "sha256": "8f06482c116ef257471dbba78fd613a293cdb8618ca98826406fc30c3a5b9940",
+        "lines_inspected": 236,
+        "github_license_field": null,
+        "copied_into_project": false,
+        "executed": false
+      },
+      "reproduced": false,
+      "implemented_from_source": false
+    },
+    {
+      "title": "Meta-reinforcement learning via orbitofrontal cortex",
+      "authors": "Ryoma Hattori et al.",
+      "doi": "10.1038/s41593-023-01485-3",
+      "url": "https://doi.org/10.1038/s41593-023-01485-3",
+      "published": "2023-11-13",
+      "version": "Versión editorial con corrección de 2024",
+      "inspected_sections": [
+        "Resumen",
+        "Resultados sobre aprendizaje entre sesiones e interno",
+        "Disponibilidad de código"
+      ],
+      "correction": {
+        "url": "https://doi.org/10.1038/s41593-024-01718-z",
+        "published": "2024-07-02",
+        "scope": "Coordenada lateral de imagen y registro, corregida de aproximadamente 2,45 a 1,45 mm"
+      },
+      "code": {
+        "repository": "https://github.com/ryhattori/MetaRL-PRL",
+        "inspected": false,
+        "executed": false,
+        "copied_into_project": false
+      },
+      "reproduced": false,
+      "implemented_from_source": false,
+      "scope": "Tarea de inversión probabilística. No demuestra beneficio financiero ni equivalencia biológica del selector existente."
+    }
+  ],
+  "updated_at_utc": "2026-10-20T20:12:33.166221+00:00"
+}
