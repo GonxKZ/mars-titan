@@ -1,6 +1,6 @@
 # Presupuesto de latencia, RAM y VRAM
 
-MARS-TITAN busca reducir el error bajo límites de tiempo y memoria en un equipo con 32 GB de RAM y RTX 4070 Max-Q de 8 GB. Todavía no existen mediciones de latencia del modelo. Los límites siguientes son propuestas de diseño que el piloto deberá aceptar o revisar antes de la comparación confirmatoria. El perfil térmico y de potencia del portátil forma parte de la medida. No se extrapola el rendimiento de una RTX 4070 de sobremesa.
+MARS-TITAN busca reducir el error bajo límites de tiempo y memoria en el equipo local. Las [mediciones del 19 de octubre](../../reports/engineering/refinement-selected-latency-20261019/README.md) incluyen doce casos con 64 y 256 activos en una RTX 4070 Laptop de 8 GiB. Parten del corpus codificado y no cubren todavía el recorrido desde noticias y datos sin preparar. Los límites siguientes siguen siendo propuestas de diseño para contrastar antes de la comparación confirmatoria. No se extrapola el rendimiento de una RTX 4070 de sobremesa.
 
 ## Qué tiempo se medirá
 
@@ -42,7 +42,7 @@ Un límite duro K = 4 no garantiza por sí solo una latencia máxima de extremo 
 
 El presupuesto contiene pesos, estados, activaciones, gradientes, optimizador, cachés, tensores temporales y margen del asignador. La inferencia y el entrenamiento tienen perfiles distintos. No se estima la VRAM multiplicando solo parámetros por dos bytes.
 
-Una actualización con doble buffer puede mantener dos juegos de estados o parámetros. Debe incluirse ese pico. Con una sola GPU, consolidar en segundo plano puede aumentar p99 aunque el proceso use otro stream. Se medirán tres escenarios: inferencia aislada, inferencia con carga de datos y consolidación simultánea, e inferencia bajo ráfagas de publicaciones. Si la coexistencia incumple el presupuesto, se programará la consolidación fuera de la ventana de predicción.
+Una actualización con doble buffer puede mantener dos juegos de estados o parámetros. Debe incluirse ese pico. Con una sola GPU, consolidar en segundo plano puede aumentar p99 aunque el proceso use otro stream. La [decisión del 20 de octubre](../../reports/resources/concurrency-decision.md) mantiene esa extensión desactivada. Si se reabre, deberá medir inferencia aislada, inferencia con carga de datos y consolidación simultánea, e inferencia bajo ráfagas de publicaciones. La actualización no podrá ocultarse fuera del cronómetro ni publicar un estado incoherente.
 
 La [semántica CUDA de PyTorch](https://docs.pytorch.org/docs/2.14/notes/cuda.html) guía las dependencias entre streams y la sincronización. La [guía de NVIDIA](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html) orienta la reducción de transferencias y el acceso a memoria. Usar más streams no multiplica los recursos físicos.
 
