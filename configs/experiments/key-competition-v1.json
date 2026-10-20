@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "key_competition_variants",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/key-competition-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "unity_control": [
+    "original",
+    "all_components"
+  ],
+  "cost_kind": "key_competition_cuda_cost",
+  "arms": {
+    "original": {
+      "role": "Núcleo sin transformación adicional",
+      "predictor_changes": {}
+    },
+    "all_components": {
+      "role": "Control con todas las componentes",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": false,
+          "retained": 64,
+          "selection": "magnitude"
+        }
+      }
+    },
+    "centered": {
+      "role": "Centrado por vector",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": true,
+          "retained": null,
+          "selection": "magnitude"
+        }
+      }
+    },
+    "competitive": {
+      "role": "Competencia por magnitud",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": false,
+          "retained": 16,
+          "selection": "magnitude"
+        }
+      }
+    },
+    "centered_competitive": {
+      "role": "Centrado y competencia",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": true,
+          "retained": 16,
+          "selection": "magnitude"
+        }
+      }
+    },
+    "fixed": {
+      "role": "Selección fija de igual tamaño",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": false,
+          "retained": 16,
+          "selection": "fixed"
+        }
+      }
+    },
+    "centered_fixed": {
+      "role": "Centrado y selección fija",
+      "predictor_changes": {
+        "memory_key_competition": {
+          "center": true,
+          "retained": 16,
+          "selection": "fixed"
+        }
+      }
+    }
+  }
+}

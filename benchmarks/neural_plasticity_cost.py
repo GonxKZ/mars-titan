@@ -129,7 +129,7 @@ def passage(model, batches, *, graph):
     ), prediction
 
 
-def measure(data, output, *, sizes, repetitions, warmup, dtype):
+def measure(data, output, *, sizes, repetitions, warmup, dtype, declaration_path=None):
     if output.exists():
         raise FileExistsError("La medida necesita un archivo nuevo")
     if (
@@ -139,6 +139,19 @@ def measure(data, output, *, sizes, repetitions, warmup, dtype):
         or len(set(sizes)) != len(sizes)
     ):
         raise ValueError("Se necesitan repeticiones y calentamiento acotados y tamaños únicos")
+    declaration_path = DECLARATION if declaration_path is None else Path(declaration_path)
+    declaration = json.loads(declaration_path.read_text())
+    parity = declaration.get("unity_control", ["cascade_original", "cascade_unity"])
+    if (
+        not isinstance(parity, list)
+        or len(parity) != 2
+        or parity[0] == parity[1]
+        or any(name not in declaration["arms"] for name in parity)
+        or not 1 <= len(declaration["arms"]) <= 16
+    ):
+        raise ValueError(
+            "El catálogo necesita dos controles distintos y entre una y dieciséis configuraciones"
+        )
     if not torch.cuda.is_available():
         raise RuntimeError("Se requiere cuda:0. No hay dispositivo CUDA disponible")
     torch.cuda.set_device("cuda:0")
@@ -148,7 +161,6 @@ def measure(data, output, *, sizes, repetitions, warmup, dtype):
     torch.backends.cudnn.allow_tf32 = False
     started = time.perf_counter()
     metadata, specification, raws = load_inputs(data)
-    declaration = json.loads(DECLARATION.read_text())
     recipe_path = ROOT / declaration["base_recipe"]
     recipe = json.loads(recipe_path.read_text())
     base = {key: value for key, value in recipe["predictor"].items() if key != "dtype"}
@@ -189,15 +201,9 @@ def measure(data, output, *, sizes, repetitions, warmup, dtype):
                         record, prediction = passage(built[name][0], batches, graph=mode == "graph")
                         if repeat >= warmup:
                             records[name][mode].append(record)
-                        if (
-                            repeat == warmup
-                            and mode == "inference"
-                            and name in ("cascade_original", "cascade_unity")
-                        ):
+                        if repeat == warmup and mode == "inference" and name in parity:
                             unity[name] = prediction
-        torch.testing.assert_close(
-            unity["cascade_original"], unity["cascade_unity"], rtol=0, atol=0
-        )
+        torch.testing.assert_close(unity[parity[0]], unity[parity[1]], rtol=0, atol=0)
         for name, (model, before) in built.items():
             if before != _model_digest(model):
                 raise RuntimeError("La medida cambió parámetros compartidos")
@@ -228,11 +234,11 @@ def measure(data, output, *, sizes, repetitions, warmup, dtype):
         torch.cuda.empty_cache()
     receipt = dict(
         schema_version=1,
-        kind="neural_plasticity_cuda_cost",
+        kind=declaration.get("cost_kind", "neural_plasticity_cuda_cost"),
         measured_at_utc=datetime.now(UTC).isoformat(),
         code_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         benchmark_sha256=sha256(Path(__file__)),
-        declaration_sha256=sha256(DECLARATION),
+        declaration_sha256=sha256(declaration_path),
         recipe_sha256=sha256(recipe_path),
         inputs=dict(
             data_sha256=sha256(data),
@@ -283,6 +289,7 @@ def main():
     parser.add_argument("--repetitions", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--dtype", choices=["float32", "float64"], default="float32")
+    parser.add_argument("--declaration", type=Path)
     args = parser.parse_args()
     measure(
         args.data,
@@ -291,6 +298,7 @@ def main():
         repetitions=args.repetitions,
         warmup=args.warmup,
         dtype=args.dtype,
+        declaration_path=args.declaration,
     )
 
 

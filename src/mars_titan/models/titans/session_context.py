@@ -25,6 +25,7 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 from .config import MemoryConfig, canonical
+from .key_competition import competitive_normalize
 from .neural_memory import MAX_SHARED_ROWS, NeuralMemory
 from .state import NeuralMemoryState, check_finite, map_memory_rows
 
@@ -203,7 +204,12 @@ class SessionContext(nn.Module):
 
     def _read(self, tokens, flows, market, state):
         if self.kind == MARKET_MEMORY:
-            query = F.normalize(tokens @ self.query.T, dim=-1, eps=1e-12)
+            projected = tokens @ self.query.T
+            query = (
+                F.normalize(projected, dim=-1, eps=1e-12)
+                if self.memory.config.key_competition is None
+                else competitive_normalize(projected, self.memory.config.key_competition)
+            )
             return self.memory.read_shared(query, state.memory[market])
         groups = torch.tensor([self.sector_map.group(flow) for flow in flows], device=tokens.device)
         return state.means.index_select(0, groups)

@@ -84,6 +84,8 @@ _CODE = (
     "mars_titan.models.titans.mac",
     "mars_titan.models.titans.neural_memory",
     "mars_titan.models.titans.causal_convolution",
+    "mars_titan.models.titans.key_competition",
+    "mars_titan.models.titans.key_competition_config",
 )
 
 
