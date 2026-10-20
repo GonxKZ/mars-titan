@@ -103,11 +103,17 @@ def test_analysis_requires_the_learning_scope_before_opening_files(tmp_path, lea
 
 def run_fixture(tmp_path):
     from mars_titan.data.storage import sha256
+    from mars_titan.training.titans_walk_forward import _protocol
+    from tests.training.test_titans_walk_forward import PROTOCOL
 
     module = api()
+    protocol_path = tmp_path / module.FILES["protocol"]
+    protocol_path.parent.mkdir(parents=True)
+    protocol_path.write_text(json.dumps(PROTOCOL, indent=2))
+    _, protocol_hash, _, fold = _protocol(protocol_path, "fold-000", 42)
     folder = tmp_path / "runs" / "fixture-42"
     folder.mkdir(parents=True)
-    start = 1_672_531_200_000_000
+    start = int(np.datetime64(fold["evaluation"][0], "us").astype(np.int64))
     table = panel().set_column(
         3,
         "prediction_at",
@@ -119,18 +125,20 @@ def run_fixture(tmp_path):
         artifacts={name: str(i) * 64 for i, name in enumerate(module.FILES.values())},
         code={"src/example.py": "e" * 64},
         counts=dict(evaluation=3),
-        configuration=dict(window=dict(evaluation=["2023-01-01", "2024-01-01"])),
+        configuration=dict(fold="fold-000", window={k: v for k, v in fold.items() if k != "id"}),
     )
+    prepared["artifacts"][module.FILES["protocol"]] = sha256(protocol_path)
     report = dict(
         status="completed",
         final_test_opened=False,
         request=dict(
             seed=42,
+            window="fold-000",
             device="cuda:0",
             variant="mac_online",
             code={"example": "e" * 64},
             view_sha256=prepared["artifacts"][module.FILES["view"]],
-            protocol_sha256=prepared["artifacts"][module.FILES["protocol"]],
+            protocol_sha256=protocol_hash,
             recipe_sha256=prepared["artifacts"][module.FILES["recipe"]],
         ),
         checkpoint=dict(path="checkpoint.fixture", sha256=sha256(folder / "checkpoint.fixture")),

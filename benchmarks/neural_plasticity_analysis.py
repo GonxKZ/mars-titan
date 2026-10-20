@@ -15,7 +15,7 @@ from benchmarks.neural_plasticity_study import FILES, verify_prepared
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction
 from mars_titan.training.learning_hold import require_learning_allowed
-from mars_titan.training.titans_walk_forward import CHANGES, _verify
+from mars_titan.training.titans_walk_forward import CHANGES, _protocol, _verify
 
 
 def checked_scores(table, cohort=None):
@@ -72,18 +72,24 @@ def read_run(work, prepared, job):
     path = folder / "run.json"
     report = json.loads(path.read_text())
     request = report["request"]
+    _, protocol_digest, _, fold = _protocol(
+        work / FILES["protocol"], prepared["configuration"]["fold"], job["seed"]
+    )
     if (
         report.get("status") != "completed"
         or report.get("final_test_opened") is not False
         or request["seed"] != job["seed"]
         or request["device"] != "cuda:0"
         or request["variant"] != "mac_online"
+        or request["window"] != prepared["configuration"]["fold"]
         or request.get(CHANGES) != (job["changes"] or None)
         or request["view_sha256"] != prepared["artifacts"][FILES["view"]]
-        or request["protocol_sha256"] != prepared["artifacts"][FILES["protocol"]]
+        or request["protocol_sha256"] != protocol_digest
         or request["recipe_sha256"] != prepared["artifacts"][FILES["recipe"]]
     ):
         raise ValueError(f"La ejecución {job['id']} no corresponde al piloto completado")
+    if fold != dict(id=prepared["configuration"]["fold"], **prepared["configuration"]["window"]):
+        raise ValueError("El protocolo no conserva los intervalos declarados")
     for module, digest in request["code"].items():
         if prepared["code"].get("src/" + module.replace(".", "/") + ".py") != digest:
             raise ValueError("La ejecución tiene otra revisión de código")
