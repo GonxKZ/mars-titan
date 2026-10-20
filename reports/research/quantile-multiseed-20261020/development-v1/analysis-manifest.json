@@ -1,0 +1,34 @@
+{
+  "producer_commit": "828d7a9d40f5696d53536b0a6455655d167ad788",
+  "analysis_commit": "270ff4bcd65406819e07aaaa8de65aace938e16d",
+  "prepared_sha256": "8fbb1eb114e33ffaf3e27fc9603674fd2a94244a357274ed8bc95f657df0c8dc",
+  "analysis_main_sha256": "f8c72488fad2e6122dd61f13db36e38b15ec0952371d21f8cd8ba1a79bb1685c",
+  "cost_reader_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb",
+  "receipt": {
+    "started_at_utc": "2026-10-20T18:30:16.893419+00:00",
+    "scope": "Análisis del piloto acotado y completado, sin ajustes.",
+    "final_test_opened": false,
+    "exit_code": 0,
+    "wrapper_seconds": 5.428415375994518,
+    "finished_at_utc": "2026-10-20T18:30:22.322164+00:00",
+    "global_hold_unchanged": true
+  },
+  "result_sha256": "d157f4d9456bd01c2fc5f7c3796cb8a89e992b4a395dd5af8261cf485ebde5ab",
+  "scope": "Consumidor corregido para costes, con productor numérico intacto y preparación validada sin excepciones.",
+  "command_form": [
+    "uv",
+    "run",
+    "--no-sync",
+    "coverage",
+    "run",
+    "--branch",
+    "--source=benchmarks",
+    "-m",
+    "benchmarks.quantile_multiseed_analysis",
+    "--work",
+    "pilot-v1",
+    "--output",
+    "analysis-v1"
+  ],
+  "command_scope": "Forma con rutas relativas al directorio de artefactos. El manifiesto externo conserva el comando exacto con rutas absolutas."
+}

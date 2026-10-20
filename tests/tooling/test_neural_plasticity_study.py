@@ -173,6 +173,24 @@ def test_quantile_routing_keeps_its_own_controls_and_common_data(tmp_path):
     assert receipt["counts"] == view()["counts"]
 
 
+def test_multiseed_routing_seals_all_five_arms_and_seeds_before_execution(tmp_path):
+    source = tmp_path / "source/view.json"
+    source.parent.mkdir()
+    source.write_text(json.dumps(view()))
+    work = tmp_path / "multiseed"
+    receipt = api().prepare(source, work, version="quantile_routing_v2")
+    assert api().verify_prepared(work) == receipt
+    assert receipt["configuration"]["seeds"] == [42, 43, 44, 45, 46]
+    assert len(receipt["jobs"]) == 25
+    assert len({job["id"] for job in receipt["jobs"]}) == 25
+    assert receipt["configuration"]["epochs"] == 1
+    assert receipt["counts"] == view()["counts"]
+    assert receipt["code"]["benchmarks/quantile_multiseed_analysis.py"]
+    assert json.loads((work / api().FILES["protocol"]).read_text())["seeds"] == [42, 43, 44, 45, 46]
+    for seed in receipt["configuration"]["seeds"]:
+        assert len([job for job in receipt["jobs"] if job["seed"] == seed]) == 5
+
+
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -1])
 def test_corrupt_historical_cost_is_rejected(tmp_path, value):
     work, receipt = prepared(tmp_path)
@@ -306,7 +324,8 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
             "encoder_isolated",
             "both_isolated",
         ]
-    ],
+    ]
+    + [("quantile_routing_v2", name) for name in ["original", "both_isolated"]],
 )
 def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updates(
     tmp_path, monkeypatch, learning_doubles, version, arm
@@ -334,7 +353,8 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
     view_path = work / next(name for name in artifacts if name.endswith("view.json"))
     protocol_path = work / next(name for name in artifacts if name.endswith("protocol.json"))
     recipe_path = work / next(name for name in artifacts if name.endswith("recipe.json"))
-    job = next(row for row in receipt["jobs"] if row["arm"] == arm)
+    seed = 43 if version == "quantile_routing_v2" else 42
+    job = next(row for row in receipt["jobs"] if row["arm"] == arm and row["seed"] == seed)
     optimizer = fixtures.Factory(retain_gradients=False)
     with unfused_attention():
         report = run_titans_window(
@@ -343,7 +363,7 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
             config["fold"],
             recipe_path,
             variant="mac_online",
-            seed=42,
+            seed=seed,
             device="cuda:0",
             output=work / "runs" / job["id"],
             indices=work / "indices",

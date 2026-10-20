@@ -211,8 +211,15 @@ def execution_cost(work, prepared):
         ):
             raise ValueError("Los costes no conservan intentos cerrados y distintos")
         identifiers.add(raw["id"])
-        internal = raw["internal"]
-        if internal.get("closure_confirmed") is not True:
+        internal = raw.get("internal")
+        if internal is None:
+            if (
+                raw["status"] != "failed"
+                or not isinstance(raw.get("error"), str)
+                or not raw["error"]
+            ):
+                raise ValueError("Un lanzamiento sin recibo interno necesita un fallo explícito")
+        elif not isinstance(internal, dict) or internal.get("closure_confirmed") is not True:
             raise ValueError("Un intento interno no tiene cierre confirmado")
         if current and raw["status"] == "completed":
             if raw["prepared_sha256"] != plan["prepared_sha256"]:
@@ -226,11 +233,12 @@ def execution_cost(work, prepared):
                 current_study=current,
                 source_commit=raw["source_commit"],
                 wrapper_seconds=value,
-                internal_seconds=internal["actual_seconds"],
-                optimizer_steps=internal["optimizer_steps"],
-                peak_rss_bytes=internal["peak_rss_bytes"],
-                peak_cuda_allocated_bytes=internal.get("peak_cuda_allocated_bytes"),
-                peak_cuda_reserved_bytes=internal.get("peak_cuda_reserved_bytes"),
+                internal_receipt_available=internal is not None,
+                internal_seconds=internal["actual_seconds"] if internal is not None else None,
+                optimizer_steps=internal["optimizer_steps"] if internal is not None else None,
+                peak_rss_bytes=internal["peak_rss_bytes"] if internal is not None else None,
+                peak_cuda_allocated_bytes=(internal or {}).get("peak_cuda_allocated_bytes"),
+                peak_cuda_reserved_bytes=(internal or {}).get("peak_cuda_reserved_bytes"),
                 receipt_sha256=sha256(path),
             )
         )

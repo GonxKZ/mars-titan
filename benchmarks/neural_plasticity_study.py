@@ -41,8 +41,14 @@ def study_files(version):
             ROOT / "configs/experiments/quantile-routing-study-v1.json",
             ROOT / "configs/experiments/quantile-routing-v1.json",
         )
+    if version == "quantile_routing_v2":
+        return (
+            ROOT / "configs/experiments/quantile-routing-study-v2.json",
+            ROOT / "configs/experiments/quantile-routing-v1.json",
+        )
     raise ValueError(
-        "La versión del piloto debe ser v1, v2, key_competition_v1 o quantile_routing_v1"
+        "La versión del piloto debe ser v1, v2, key_competition_v1, quantile_routing_v1 "
+        "o quantile_routing_v2"
     )
 
 
@@ -53,12 +59,18 @@ def configuration(version="v1"):
 
 def sources(version="v1"):
     config, variants = study_files(version)
+    extra = (
+        (ROOT / "benchmarks/quantile_multiseed_analysis.py",)
+        if version == "quantile_routing_v2"
+        else ()
+    )
     return code_identity() | {
         str(path.relative_to(ROOT)): sha256(path)
         for path in (
             Path(__file__),
             config,
             variants,
+            *extra,
             *sorted((ROOT / "src/mars_titan").rglob("*.py")),
         )
     }
@@ -104,6 +116,8 @@ def prepare(source, work, *, version="v1"):
     _, catalog = study_files(version)
     variants = json.loads(catalog.read_text())
     view = project_view(json.loads(source.read_text()), config)
+    if version == "quantile_routing_v2":
+        view["temporal_view"]["protocol"]["seeds"] = config["seeds"]
     recipe = json.loads((ROOT / variants["base_recipe"]).read_text())
     recipe["recipe"].update(
         epochs=config["epochs"], block_rows=config["cohort_size"], accumulation_rows=None
@@ -286,7 +300,8 @@ def main():
     parser.add_argument("--view", type=Path)
     parser.add_argument("--job")
     parser.add_argument(
-        "--version", choices=("v1", "v2", "key_competition_v1", "quantile_routing_v1")
+        "--version",
+        choices=("v1", "v2", "key_competition_v1", "quantile_routing_v1", "quantile_routing_v2"),
     )
     args = parser.parse_args()
     if args.command == "prepare":
