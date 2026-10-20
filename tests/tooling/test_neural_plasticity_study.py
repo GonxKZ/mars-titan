@@ -35,13 +35,13 @@ def view():
     )
 
 
-def prepared(tmp_path):
+def prepared(tmp_path, version="v1"):
     folder = tmp_path / "source"
     folder.mkdir()
     source = folder / "view.json"
     source.write_text(json.dumps(view()))
     work = tmp_path / "study"
-    return work, api().prepare(source, work)
+    return work, api().prepare(source, work, version=version)
 
 
 def test_projection_keeps_every_asset_and_row_and_leaves_the_source_untouched():
@@ -210,9 +210,11 @@ def test_learning_hold_precedes_any_view_or_recipe_read(tmp_path, learning_hold)
 
 
 @pytest.mark.parametrize("fails", [False, True])
-@pytest.mark.parametrize("job_index", [0, 1])
+@pytest.mark.parametrize(
+    "version,job_index", [("v1", 0), ("v1", 1), ("quantile_point_v1", 3), ("quantile_point_v1", 4)]
+)
 def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fails(
-    tmp_path, monkeypatch, fails, job_index
+    tmp_path, monkeypatch, fails, version, job_index
 ):
     import torch
     from torch.optim import optimizer
@@ -221,7 +223,7 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
     from mars_titan.training import experiment_resources, titans_walk_forward
     from mars_titan.training.search_cases import checked_predictor_changes
 
-    work, receipt = prepared(tmp_path)
+    work, receipt = prepared(tmp_path, version)
     job = receipt["jobs"][job_index]
     calls = []
 
@@ -242,7 +244,7 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
             calls.append("exit")
 
     def executor(view, protocol, fold, recipe, **kwargs):
-        assert view == work / api().FILES["view"] and recipe == work / api().FILES["recipe"]
+        assert view == work / api().FILES["view"] and recipe == work / api().recipe_name(job)
         assert protocol == work / api().FILES["protocol"] and fold == "fold-018"
         assert kwargs["device"] == "cuda:0"
         outside_source(view.parent, kwargs["output"])
@@ -325,7 +327,8 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
             "both_isolated",
         ]
     ]
-    + [("quantile_routing_v2", name) for name in ["original", "both_isolated"]],
+    + [("quantile_routing_v2", name) for name in ["original", "both_isolated"]]
+    + [("quantile_point_v1", name) for name in ["original", "point_component", "point_l1"]],
 )
 def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updates(
     tmp_path, monkeypatch, learning_doubles, version, arm
@@ -352,9 +355,9 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
     artifacts = receipt["artifacts"]
     view_path = work / next(name for name in artifacts if name.endswith("view.json"))
     protocol_path = work / next(name for name in artifacts if name.endswith("protocol.json"))
-    recipe_path = work / next(name for name in artifacts if name.endswith("recipe.json"))
-    seed = 43 if version == "quantile_routing_v2" else 42
+    seed = 43 if version in ("quantile_routing_v2", "quantile_point_v1") else 42
     job = next(row for row in receipt["jobs"] if row["arm"] == arm and row["seed"] == seed)
+    recipe_path = work / api().recipe_name(job)
     optimizer = fixtures.Factory(retain_gradients=False)
     with unfused_attention():
         report = run_titans_window(

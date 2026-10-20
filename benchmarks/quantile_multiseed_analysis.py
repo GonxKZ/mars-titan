@@ -16,6 +16,7 @@ from benchmarks.neural_plasticity_analysis import (
     checked_scores,
     execution_cost,
     interpret,
+    point_objective_contrasts,
     quantile_routing_contrasts,
     read_run,
     unity_control,
@@ -99,8 +100,11 @@ def analyze(work, output):
     if output.exists():
         raise FileExistsError("El análisis necesita un directorio nuevo")
     prepared = verify_prepared(work)
-    if prepared.get("study_version") != "quantile_routing_v2":
-        raise ValueError("El analizador requiere el protocolo multisemilla de cuantiles v2")
+    if prepared.get("study_version") not in ("quantile_routing_v2", "quantile_point_v1"):
+        raise ValueError(
+            "El analizador requiere un protocolo multisemilla de cuantiles identificado"
+        )
+    point_control = prepared["study_version"] == "quantile_point_v1"
     config = prepared["configuration"]
     seeds = config["seeds"]
     arms = list(dict.fromkeys(job["arm"] for job in prepared["jobs"]))
@@ -163,7 +167,10 @@ def analyze(work, output):
         {"primary": delta(config["primary_reference"], config["primary_candidate"])},
         **options,
     )
-    secondary = compare_series(series, quantile_routing_contrasts(arms), **options)
+    contrasts = (
+        point_objective_contrasts(arms) if point_control else quantile_routing_contrasts(arms)
+    )
+    secondary = compare_series(series, contrasts, **options)
     costs = execution_cost(work, prepared)
     paired = {
         str(seed): (
@@ -174,7 +181,11 @@ def analyze(work, output):
     }
     result = dict(
         schema_version=1,
-        kind="quantile_routing_multiseed_development_results",
+        kind=(
+            "quantile_point_objective_multiseed_development_results"
+            if point_control
+            else "quantile_routing_multiseed_development_results"
+        ),
         scientific_level="multi_seed_reused_development_pilot",
         recorded_at_utc=datetime.now(UTC).isoformat(),
         script_sha256=sha256(Path(__file__)),
@@ -211,6 +222,12 @@ def analyze(work, output):
             "Se igualan actualizaciones, no tiempo. Los secundarios tienen intervalos simultáneos.",
         ],
     )
+    if point_control:
+        result["objective_controls"] = config["uncertainty_training"]
+        result["limits"].append(
+            "Las colas de los controles puntuales no se ajustan. Sus valores no constituyen "
+            "cuantiles aprendidos y no permiten atribuir una mejora de incertidumbre."
+        )
     output.mkdir(parents=True)
     for (arm, seed), values in scores.items():
         pq.write_table(

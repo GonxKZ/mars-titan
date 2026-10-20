@@ -1,0 +1,17 @@
+# Controles del objetivo puntual de la cabeza de cuantiles
+
+Los resultados de [separación de señales](../research/quantile-routing.md) necesitan distinguir el efecto de sus vías de gradiente del efecto de ajustar solo la mediana. Estos controles conservan el predictor, la cabeza de cinco salidas, sus parámetros, inicialización y recorrido de inferencia. Cambia el objetivo de ajuste, identificado en la receta. No son cabezas escalares nuevas ni sustituyen el contraste Transformer de #22.
+
+`quantile_point_mae_v1` calcula la media de `abs(y − q_0.5)`. `quantile_point_component_v1` divide esa pérdida entre diez. Esta última es la contribución central de la media de cinco pinball: la pinball de nivel 0,5 equivale a L1/2 y su peso entre los cinco niveles es 1/5. En el empate se conserva el subgradiente cero. Las cuatro colas no reciben gradiente de estos objetivos. Sus valores no se interpretan como cuantiles aprendidos.
+
+La función [`point_objective`](../../src/mars_titan/training/quantile_objectives.py) exige cinco salidas por fila, etiquetas no vacías y el mismo dtype real y dispositivo. Rechaza objetivos no identificados. No corrige NaN o Inf. Los datos y gradientes inválidos deben detectarse en sus fronteras y el recorte del entrenador conserva `error_if_nonfinite=True`.
+
+El [entrenador cronológico](../../src/mars_titan/training/financial_run.py) valida conjuntamente cabeza y objetivo, incluye la fuente nueva en su identidad y conserva los nombres históricos de pérdida. No añade campos a sus recetas ni estados de optimización. La ruta de pinball continúa llamando a la misma función. No se permiten estos controles junto a destilación, pues su señal sobre las colas invalidaría el aislamiento. El rechazo ocurre al construir la receta.
+
+El contrato nominal de la cabeza conserva sus niveles y parametrización. La pérdida efectiva es la identificada en la receta de entrenamiento. Tener cinco salidas ordenadas no basta para afirmar que se ajustaron con pinball ni que sus intervalos sean fiables.
+
+La igualdad local de gradientes no implica igualdad de trayectorias. Con ambas vías aisladas, el codificador recibe la contribución L1/10, pero los parámetros de dispersión siguen teniendo gradientes. Estos participan en la norma global del clipping. El optimizador y su epsilon también pueden romper una invariancia ideal frente a escalar la pérdida. Las pruebas del predictor completo contrastan la igualdad antes del recorte y su posible diferencia después. No demuestran qué efecto domina en los datos financieros.
+
+El [estudio independiente](../experiments/quantile-point-objectives-v1.md) mantiene controles originales y compara ambos objetivos puntuales con la combinación. Sus recetas por modelo se guardan y sellan por separado. El consumidor exige la huella de la receta de ese modelo, en vez de aceptar siempre la receta común. El catálogo anterior y sus runtimes se conservan. Las salidas históricas no se reinterpretan con el código nuevo.
+
+Estos cambios preparan un contraste de atribución. Por sí solos no acreditan una mejora predictiva, un mecanismo cerebral reproducido ni una ventaja del estado del arte. El estudio real adicional todavía no se ha ejecutado. Las pruebas técnicas utilizan fixtures identificados, sin modificar pesos. La campaña completa y el test final permanecen cerrados.

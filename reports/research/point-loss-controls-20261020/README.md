@@ -1,0 +1,15 @@
+# Verificación de controles puntuales de cuantiles
+
+Se implementan los objetivos L1 y L1/10 de solo mediana sobre la misma cabeza de cinco salidas. El [contrato](../../../docs/engineering/quantile-point-objectives.md) conserva la arquitectura y distingue sus colas sin ajustar de cuantiles aprendidos. Estos controles permiten contrastar la atribución de la variante de separación de señales. No son una nueva cabeza escalar ni completan la comparación original del Transformer de #22.
+
+La [verificación](verification.json) cubre 291 casos distintos de la colección actual, incluidos 42 CUDA, en una única pasada final. No hay fallos ni omisiones en esa selección. Se comprueban valores y gradientes calculables, escala, empates, entrada vacía, formas, precisión, dispositivos, valores no finitos, pérdida y cabeza compatibles, rechazo de destilación, integridad de fuentes, recuperación, recetas por modelo y contratos históricos. La pasada final completó los 291 casos en 387,97 segundos. No es toda la batería del repositorio.
+
+Un caso del predictor completo conserva los gradientes del codificador antes del clipping y muestra que pueden diferir después al incluir los gradientes auxiliares en la norma global. Las nuevas pruebas de recorrido registran gradientes sin actualizar pesos y recuperan las siguientes predicciones, gradientes y selección exactamente. Son fixtures técnicos, no resultados de rentabilidad ni evidencia de utilidad predictiva.
+
+Los [16 mutantes dirigidos](mutations.json) se detectaron en una copia separada. La referencia inicial y la restauración pasan. Incluyen cambiar la mediana, escala o reducción, desconectar el gradiente, admitir datos incompatibles, volver a pinball, reintroducir destilación, omitir la fuente del objetivo, ejecutar o aceptar otra receta y utilizar los contrastes anteriores. Su alcance no comprende todos los fallos posibles.
+
+La [cobertura y CRAP](quality.json) se calculan con coverage.py 7.16.1 y Radon 6.0.1, con ramas y la convención `C² × (1 − cobertura de sentencias)³ + C`. Los cinco módulos medidos cubren 1.122 de 1.227 sentencias y 406 de 484 ramas. El módulo nuevo cubre sus 16 sentencias y seis ramas, y `point_objective` tiene complejidad y CRAP 13. La CLI reutilizada conserva zonas sin ejecutar en esta selección y un CRAP máximo de 72. Las cifras son diagnósticas.
+
+El [protocolo](../../../docs/experiments/quantile-point-objectives-v1.md) y la preparación real enumeran 25 ajustes, cinco semillas y todas las filas admisibles de la misma cohorte de 64 activos desde 2000 con máscaras. Este informe de verificación no contiene ningún ajuste científico nuevo. La preparación no abre la campaña completa ni el test final y no reinicia el presupuesto acumulado.
+
+La [revisión de precisión y tiempo](../../../docs/research/predictive-precision-and-time.md) incorpora dos fuentes de neurociencia con la [auditoría del alcance leído](sources.json), una corrección editorial y el commit exacto del código inspeccionado. No se ejecutó MATLAB, no se reprodujeron sus experimentos y no se integró su código. No se atribuye novedad ni una mejora SOTA a esta implementación de controles.
