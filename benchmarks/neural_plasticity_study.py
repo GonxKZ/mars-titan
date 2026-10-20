@@ -20,6 +20,7 @@ from mars_titan.training.learning_hold import require_learning_allowed
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/experiments/neural-plasticity-study-v1.json"
 VARIANTS = ROOT / "configs/experiments/neural-plasticity-v1.json"
+FILES = dict(view="input/view.json", protocol="recipes/protocol.json", recipe="recipes/recipe.json")
 
 
 def configuration():
@@ -89,9 +90,9 @@ def prepare(source, work):
     recipe["pending"] = ["Receta propia del piloto neuronal. No sustituye la campaña histórica."]
     work.mkdir(parents=True)
     for name, value in (
-        ("view.json", view),
-        ("protocol.json", view["temporal_view"]["protocol"]),
-        ("recipe.json", recipe),
+        (FILES["view"], view),
+        (FILES["protocol"], view["temporal_view"]["protocol"]),
+        (FILES["recipe"], recipe),
     ):
         atomic_json(work / name, value)
     jobs = [
@@ -100,14 +101,12 @@ def prepare(source, work):
         for arm, value in variants["arms"].items()
     ]
     receipt = dict(
-        schema_version=1,
+        schema_version=2,
         configuration=config,
         jobs=jobs,
         prepared_at_utc=datetime.now(UTC).isoformat(),
         original_view_sha256=sha256(source),
-        artifacts={
-            name: sha256(work / name) for name in ("view.json", "protocol.json", "recipe.json")
-        },
+        artifacts={name: sha256(work / name) for name in FILES.values()},
         code=sources(),
         environment=environment_identity(),
         counts=view["counts"],
@@ -121,18 +120,16 @@ def prepare(source, work):
 def verify_prepared(work):
     receipt = json.loads((work / "prepared.json").read_text())
     if (
-        receipt["configuration"] != configuration()
+        receipt.get("schema_version") != 2
+        or receipt["configuration"] != configuration()
         or receipt["code"] != sources()
         or receipt["environment"] != environment_identity()
         or receipt.get("final_test_access") is not False
-        or set(receipt["artifacts"]) != {"view.json", "protocol.json", "recipe.json"}
+        or set(receipt["artifacts"]) != set(FILES.values())
     ):
         raise ValueError("La configuración, el código o el entorno del piloto han cambiado")
     for name, expected in receipt["artifacts"].items():
-        if (
-            name not in {"view.json", "protocol.json", "recipe.json"}
-            or sha256(work / name) != expected
-        ):
+        if name not in FILES.values() or sha256(work / name) != expected:
             raise ValueError("Un artefacto preparado ha cambiado")
     config = configuration()
     variants = json.loads(VARIANTS.read_text())
@@ -218,10 +215,10 @@ def _run(work, receipt, job):
         after = register_optimizer_step_post_hook(budget.after)
         with unfused_attention():
             result = run_titans_window(
-                work / "view.json",
-                work / "protocol.json",
+                work / FILES["view"],
+                work / FILES["protocol"],
                 receipt["configuration"]["fold"],
-                work / "recipe.json",
+                work / FILES["recipe"],
                 variant="mac_online",
                 seed=job["seed"],
                 output=work / "runs" / job["id"],

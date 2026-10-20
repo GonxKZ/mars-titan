@@ -330,6 +330,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/tooling/test_neural_plasticity_study.py": (
+        1,
+        "prepara un corpus técnico, conecta el entrenador real con un optimizador registrador "
+        "y solicita pausa antes de cualquier actualización",
+    ),
     "tests/tooling/test_refinement_study.py": (
         3,
         "comprueba sellos, reconstrucción congelada y un recorrido de fixtures con "

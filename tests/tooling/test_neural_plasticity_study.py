@@ -80,10 +80,10 @@ def test_prepared_catalogue_and_artifacts_are_sealed(tmp_path):
     assert api().verify_prepared(work) == receipt
     assert len(receipt["jobs"]) == 11
     assert len({job["id"] for job in receipt["jobs"]}) == 11
-    recipe = json.loads((work / "recipe.json").read_text())
+    recipe = json.loads((work / api().FILES["recipe"]).read_text())
     assert recipe["predictor"]["memory_projections"] == "titans_mac_paper_projections_v2"
     assert recipe["recipe"]["epochs"] == 1
-    receipt["artifacts"].pop("recipe.json")
+    receipt["artifacts"].pop(api().FILES["recipe"])
     (work / "prepared.json").write_text(json.dumps(receipt))
     with pytest.raises(ValueError):
         api().verify_prepared(work)
@@ -127,6 +127,7 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
     import torch
     from torch.optim import optimizer
 
+    from mars_titan.data.storage import outside_source
     from mars_titan.training import experiment_resources, titans_walk_forward
     from mars_titan.training.search_cases import checked_predictor_changes
 
@@ -151,9 +152,10 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
             calls.append("exit")
 
     def executor(view, protocol, fold, recipe, **kwargs):
-        assert view == work / "view.json" and recipe == work / "recipe.json"
-        assert protocol == work / "protocol.json" and fold == "fold-018"
+        assert view == work / api().FILES["view"] and recipe == work / api().FILES["recipe"]
+        assert protocol == work / api().FILES["protocol"] and fold == "fold-018"
         assert kwargs["device"] == "cuda:0"
+        outside_source(view.parent, kwargs["output"])
         accepted = checked_predictor_changes(kwargs["predictor_changes"])
         assert accepted == (job["changes"] or None)
         assert kwargs["seed"] == 42 and kwargs["search_case"] == "lr1e-3"
@@ -190,3 +192,68 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
         len(optimizer._global_optimizer_pre_hooks),
         len(optimizer._global_optimizer_post_hooks),
     )
+
+
+@pytest.mark.cuda
+@pytest.mark.parametrize(
+    "arm",
+    [
+        "mac_original",
+        "write_coherence",
+        "cascade_original",
+        "cascade_unity",
+        "cascade_write",
+        "cascade_capture",
+        "cascade_combined",
+        "cascade_fixed_write",
+        "cascade_fixed_capture",
+        "cascade_fixed_both",
+        "fixed_write",
+    ],
+)
+def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updates(
+    tmp_path, monkeypatch, learning_doubles, arm
+):
+    from types import SimpleNamespace
+
+    from mars_titan.training.titans_walk_forward import run_titans_window, unfused_attention
+    from tests.training import test_titans_walk_forward as fixtures
+
+    protocol = copy.deepcopy(fixtures.PROTOCOL)
+    protocol["selection"]["patience"] = 5
+    monkeypatch.setattr(fixtures, "PROTOCOL", protocol)
+    source, _ = fixtures.views(tmp_path / "data")
+    original = json.loads(source.read_text())
+    config = api().configuration()
+    config.update(
+        cohort_size=3,
+        fold=original["temporal_view"]["fold"]["id"],
+        window={k: v for k, v in original["temporal_view"]["fold"].items() if k != "id"},
+    )
+    monkeypatch.setattr(api(), "configuration", lambda: copy.deepcopy(config))
+    work = tmp_path / "study"
+    receipt = api().prepare(source, work)
+    artifacts = receipt["artifacts"]
+    view_path = work / next(name for name in artifacts if name.endswith("view.json"))
+    protocol_path = work / next(name for name in artifacts if name.endswith("protocol.json"))
+    recipe_path = work / next(name for name in artifacts if name.endswith("recipe.json"))
+    job = next(row for row in receipt["jobs"] if row["arm"] == arm)
+    optimizer = fixtures.Factory(retain_gradients=False)
+    with unfused_attention():
+        report = run_titans_window(
+            view_path,
+            protocol_path,
+            config["fold"],
+            recipe_path,
+            variant="mac_online",
+            seed=42,
+            device="cuda:0",
+            output=work / "runs" / job["id"],
+            indices=work / "indices",
+            search_case=config["search_case"],
+            predictor_changes=job["changes"] or None,
+            optimizer_factory=optimizer,
+            stop=SimpleNamespace(requested=True),
+        )
+    assert report["status"] == "paused"
+    assert optimizer.instances and all(item.calls == 0 for item in optimizer.instances)

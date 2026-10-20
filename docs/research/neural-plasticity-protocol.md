@@ -41,4 +41,6 @@ El presupuesto acumulado es de 14.400 segundos locales, con 1.800 segundos por i
 
 La selección incluye todos los modelos declarados. Si el presupuesto no permite completarlos, el informe identificará los pendientes y no sustituirá el contraste por un subconjunto más favorable. Los estados del entrenador conservan pesos, optimizador, RNG, memoria neuronal, cursores y selección conforme al contrato de recuperación existente. El código, las recetas y la vista se sellan antes de ejecutar. Una modificación exige otro manifiesto.
 
+El esquema 2 de preparación separa `input/view.json`, las declaraciones de `recipes/` y las salidas de `runs/`. Los resultados nunca se escriben dentro de una carpeta protegida de entradas. Los intentos fallidos de integración anteriores a cualquier actualización conservan su código, recibo y coste.
+
 No se ejecutan postentrenamientos, políticas RL, búsquedas masivas ni cómputo externo como parte de este piloto. Una mejora de su error sería un resultado de desarrollo. La confirmación multisemilla, otras ventanas y cualquier acceso al test final requieren sus propios protocolos y las condiciones de acceso vigentes.

@@ -18,7 +18,26 @@
       "scoped_authorization_closed": true,
       "final_test_opened": false,
       "receipt_sha256": "1e27b81b7828ab76db67da18295b71382cb00b50c3e792b7ae8cd4ec0dd2d602"
+    },
+    {
+      "job_id": "mac_original-42",
+      "source_commit": "3e5a0dd9684365eaf7e2d7c37a3229e2d1b89030",
+      "prepared_sha256": "92778a76c3a8cfe9d4c0a25c9a546fecb9317c999479082132bf3c54501d5712",
+      "started_at_utc": "2026-10-20T12:09:54.042432+00:00",
+      "finished_at_utc": "2026-10-20T12:09:58.351299+00:00",
+      "status": "failed_before_fit",
+      "returncode": 1,
+      "optimizer_steps": 0,
+      "wrapper_seconds": 4.371983102988452,
+      "internal_seconds": 1.0948710220400244,
+      "timing_relation": "El tiempo interno está incluido en el externo. No sumarlos.",
+      "error": "ValueError: La salida debe estar fuera del directorio de origen",
+      "global_hold_unchanged": true,
+      "scoped_authorization_closed": true,
+      "final_test_opened": false,
+      "receipt_sha256": "4aeeaf6c3e37459aa1da3e0da38ff63fb80c8c1b311b1bc444d99104ecfda9b7"
     }
   ],
-  "correction": "Representar ausencia de cambios con None al llamar a run_titans_window. Datos, épocas, semillas e hipótesis no cambian."
+  "correction": "Ausencia de cambios como None y entradas en input/, recetas en recipes/ y resultados en runs/. No cambia el protocolo numérico ni los datos.",
+  "total_external_seconds": 8.860438653966412
 }
