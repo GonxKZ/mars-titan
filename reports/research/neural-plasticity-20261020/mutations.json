@@ -1,0 +1,116 @@
+{
+  "started_at_utc": "2026-10-20T09:03:54.651322+00:00",
+  "mutants": [
+    {
+      "name": "reverse_coherence",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "source_sha256": "ed3368a635bd6a0b5f502207b6a280b93c44655f2e7ee50fdab79f0d91c42eda",
+      "before": "coherence = raw_coherence.clamp(0, 1)",
+      "after": "coherence = 1 - raw_coherence.clamp(0, 1)",
+      "node": "tests/models/titans/test_plasticity.py::test_persistent_and_alternating_gradients_have_different_coherence",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.0199910779483616,
+      "log_sha256": "9816f3562615a5956b45e27b82f6b06f7b3d6faa2add6249d71123e0b7efbc6f"
+    },
+    {
+      "name": "erase_eligibility",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "source_sha256": "ed3368a635bd6a0b5f502207b6a280b93c44655f2e7ee50fdab79f0d91c42eda",
+      "before": "config.trace_decay * previous_tag",
+      "after": "0 * previous_tag",
+      "node": "tests/models/titans/test_plasticity.py::test_tag_persists_and_decays_when_the_next_gradient_is_zero",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.8225795900216326,
+      "log_sha256": "5e51fa975618906091f3803c1e2a0ed15ee187044884c55f3666fedb023d1ea7"
+    },
+    {
+      "name": "ignore_local_tag",
+      "file": "src/mars_titan/models/titans/plasticity.py",
+      "source_sha256": "ed3368a635bd6a0b5f502207b6a280b93c44655f2e7ee50fdab79f0d91c42eda",
+      "before": "tag * coherence.mean(dim=1, keepdim=True)",
+      "after": "torch.ones_like(tag) * coherence.mean(dim=1, keepdim=True)",
+      "node": "tests/models/titans/test_plasticity.py::test_first_update_matches_weighted_moments_and_local_eligibility",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.872376019018702,
+      "log_sha256": "79ff926ed0f21a180d6e0c5021a2d7ab51b4639247c8270ad96f305c120685ca"
+    },
+    {
+      "name": "ignore_write_gain",
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "source_sha256": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+      "before": "(theta * update.write_gain) * gradient",
+      "after": "theta * gradient",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_write_coherence_scales_the_actual_momentum_and_weight_update",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.7216621870175004,
+      "log_sha256": "f6314e161c4620dc4781a36f0bf9fcb4d33eec7b92b5644b3eb0312b9c64b39e"
+    },
+    {
+      "name": "asymmetric_capture",
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "source_sha256": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+      "before": "exchange * (first - second)",
+      "after": "g12 * (first - second)",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_capture_scales_both_sides_of_the_first_cascade_interface",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.772359948954545,
+      "log_sha256": "97323879a0bd7df3e4d047156a0124d2493b8467ec6c77cf137d7792666efbd6"
+    },
+    {
+      "name": "drop_state",
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "source_sha256": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+      "before": "payload[\"modulation\"] = copied.modulation",
+      "after": "payload[\"modulation\"] = ()",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_sequence_partition_and_state_recovery_keep_the_next_update",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.120741702034138,
+      "log_sha256": "44188f953e516ab5b01d42e9e89c99cc17de2123e4798c71f250973eafbdf47e"
+    },
+    {
+      "name": "reuse_bias_age",
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "source_sha256": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+      "before": "state.steps + index if self.config.plasticity is not None else None",
+      "after": "state.steps if self.config.plasticity is not None else None",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_sequence_partition_and_state_recovery_keep_the_next_update",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 3.123082051984966,
+      "log_sha256": "2c4cbdf9ebec0fdcb361207618dd6c675ecc66d7b5fa86354d3164a8d0ce4030"
+    },
+    {
+      "name": "undercount_state",
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "source_sha256": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+      "before": "required += batch_size * self.config.modulation_elements * element_size",
+      "after": "required += 0",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_auxiliary_storage_is_included_before_allocating_a_batch",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.3711947900010273,
+      "log_sha256": "b405b4759774e9edb38cb18f001ed907768e4d9cbde23b252665d83d01a667e4"
+    },
+    {
+      "name": "truncate_jacobian",
+      "file": "src/mars_titan/models/titans/transition_jacobian.py",
+      "source_sha256": "b05545cda66adf25defacf351a71b6f27d5b694c596ad7e6db295fded618f927",
+      "before": "+ memory.modulation_elements",
+      "after": "+ 0",
+      "node": "tests/models/titans/test_plasticity_integration.py::test_mac_split_join_and_full_jacobian_include_every_auxiliary_value",
+      "returncode": 1,
+      "killed": true,
+      "seconds": 2.8721479529049248,
+      "log_sha256": "dfbb975ba79c849636186848af33144ee54a422861f5b210e288a23d1e653c8b"
+    }
+  ],
+  "scope": "Mutaciones CPU dirigidas en copia privada. Sin datos reales ni GPU.",
+  "restored_returncode": 0,
+  "finished_at_utc": "2026-10-20T09:04:21.097934+00:00"
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "verified_at_utc": "2026-10-20T09:18:47.878926+00:00",
+  "kind": "neural_plasticity_component_bounds",
+  "lean_version": "Lean (version 4.35.0, x86_64-unknown-linux-gnu, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
+  "mathlib_commit": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "source_sha256": {
+    "NeuralPlasticity.lean": "c42559d48f34e29513b34bbed3e8b076772242738e7f975cc4d719b8691283c3",
+    "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c",
+    "lakefile.toml": "341891c34ddd9deeec59406357a9aab8a5b5eacb423794c4a7f9fa94e3ef5441",
+    "lake-manifest.json": "f34fa18ca44ea4bd22ac7fdd0db89df37fa38a1e08c3059b7c2881e4d6bbe612"
+  },
+  "compiled_olean_sha256": "9e09b6fe803f6e97c555c5aaddd933ec1b4eb12652d95e393a1f9fcbc52740b0",
+  "compile": {
+    "command": [
+      "lean",
+      "-j2",
+      "-M2048",
+      "-o",
+      "NeuralPlasticity.olean",
+      "NeuralPlasticity.lean"
+    ],
+    "exit_code": 0,
+    "seconds": 1.9027410680428147,
+    "output": "'MarsTitan.NeuralPlasticity.gain_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.eligibility_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.capture_signal_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.exchange_energy_identity' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.exchange_energy_nonincrease' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+  },
+  "negative_control": {
+    "change": "Ampliar el intervalo del intercambio de 4/3 a 2",
+    "command": [
+      "lean",
+      "-j2",
+      "-M2048",
+      "NeuralPlasticity.lean"
+    ],
+    "exit_code": 1,
+    "seconds": 1.9785738419741392,
+    "output": "NeuralPlasticity.lean:54:65: error: linarith failed to find a contradiction\nx y coupling : ℝ\nhc : 0 ≤ coupling ∧ coupling ≤ 2\na✝ : 2 * coupling - 3 * coupling ^ 2 / 2 < 0\n⊢ False\nfailed\n'MarsTitan.NeuralPlasticity.gain_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.eligibility_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.capture_signal_range' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.exchange_energy_identity' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.NeuralPlasticity.exchange_energy_nonincrease' depends on axioms: [propext,\n sorryAx,\n Classical.choice,\n Quot.sound]\n"
+  },
+  "axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "custom_axioms": [],
+  "native_evaluation": false,
+  "independent_checker_executed": false,
+  "dependencies": "Imports precompilados locales de las versiones fijadas. Sin descargar dependencias ni reconstruir compiladores.",
+  "scope": "Ganancias y elegibilidad escalares e intercambio pasivo de capacidades 1 y 2 sobre los reales",
+  "limits": [
+    "No comprueba redondeo ni código PyTorch",
+    "No formaliza la desigualdad vectorial de momentos exponenciales",
+    "No demuestra contracción del MAC, aprendizaje, novedad ni mejora financiera"
+  ]
+}

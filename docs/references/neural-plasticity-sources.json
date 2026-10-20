@@ -1,0 +1,179 @@
+[
+  {
+    "id": "aitchison2021synaptic",
+    "title": "Synaptic plasticity as Bayesian inference",
+    "authors": [
+      "Laurence Aitchison",
+      "Jannes Jegminat",
+      "Jorge Aurelio Menendez",
+      "Jean-Pascal Pfister",
+      "Alexandre Pouget",
+      "Peter E. Latham"
+    ],
+    "year": 2021,
+    "url": "https://doi.org/10.1038/s41593-021-00809-5",
+    "doi": "10.1038/s41593-021-00809-5",
+    "access": "Publicación revisada por pares. Inspeccionadas las ecuaciones 1–4 y su marco normativo en la copia pública de los autores. No se reprodujeron sus experimentos.",
+    "relevance": "Distinguir incertidumbre del peso y ruido de la señal. La coherencia implementada no es un posterior.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "farashahi2017metaplasticity",
+    "title": "Metaplasticity as a Neural Substrate for Adaptive Learning and Choice under Uncertainty",
+    "authors": [
+      "Shiva Farashahi",
+      "C. H. Donahue",
+      "Peyman Khorsand",
+      "Hyojung Seo",
+      "Daeyeol Lee",
+      "Alireza Soltani"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.1016/j.neuron.2017.03.044",
+    "doi": "10.1016/j.neuron.2017.03.044",
+    "access": "Publicación revisada por pares. Revisados el mecanismo y los resultados del modelo en PMC. Metadatos contrastados con PubMed y la editorial. Sin reproducción.",
+    "relevance": "Antecedente de estados metaplásticos dependientes de la historia en elección con recompensas variables.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "zhuang2020adabelief",
+    "title": "AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients",
+    "authors": [
+      "Juntang Zhuang",
+      "Tommy Tang",
+      "Yifan Ding",
+      "Sekhar Tatikonda",
+      "Nicha Dvornek",
+      "Xenophon Papademetris",
+      "James S. Duncan"
+    ],
+    "year": 2020,
+    "url": "https://proceedings.neurips.cc/paper/2020/file/d9d4f495e875a2e075a1a4a6e1b9770f-Paper.pdf",
+    "access": "Algoritmo 2 del artículo publicado en NeurIPS 2020. También se contrastaron los metadatos de arXiv:2010.07468v5. Sin ejecutar su código.",
+    "relevance": "Antecedente de momentos de gradientes y adaptación del paso. Se conserva el optimizador externo de la referencia.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "bonnet2025mesu",
+    "title": "Bayesian continual learning and forgetting in neural networks",
+    "authors": [
+      "Djohan Bonnet",
+      "Kellian Cottart",
+      "Tifenn Hirtzlin",
+      "Tarcisius Januel",
+      "Thomas Dalgaty",
+      "Elisa Vianello",
+      "Damien Querlioz"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2504.13569v1",
+    "access": "Versión inspeccionada arXiv:2504.13569v1. Derivación y discusión de resultados del HTML. No se inspeccionó ni ejecutó el código enlazado.",
+    "relevance": "Incertidumbre paramétrica y olvido variacional. No equiparar estos conceptos con el cociente de coherencia.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "aguilar2026syngap",
+    "title": "Metaplasticity as adaptive gradient preconditioning for incremental learning",
+    "authors": [
+      "Isabelle Aguilar",
+      "Zayn Andre Zainal",
+      "Omid Kavehei"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.14634v1",
+    "access": "Preprint arXiv:2608.14634v1. Inspeccionadas las ecuaciones 4–7 y el contexto experimental en HTML. Sin reproducción.",
+    "relevance": "Antecedente directo de modulación metaplástica acotada mediante una aproximación diagonal de Fisher.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "jiang2026neuroplastic",
+    "title": "NeuroPlastic: A Plasticity-Modulated Optimizer for Biologically Inspired Learning Dynamics",
+    "authors": [
+      "Douglas Jiang",
+      "Yuechen Wang",
+      "Jiayi Wang",
+      "Jiaying Geng",
+      "Qinglong Wang",
+      "Feng Tian"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2604.26297v1",
+    "access": "Preprint arXiv:2604.26297v1. Revisadas las secciones 3.2–3.6, sus señales, modulación y estabilización. Sin ejecutar código ni repetir sus resultados.",
+    "relevance": "Antecedente próximo de trazas de actividad y momentos para modular actualizaciones. Impide presentar la combinación general como nueva.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "joo2026magma",
+    "title": "On Surprising Effectiveness of Masking Updates in Adaptive Optimizers",
+    "authors": [
+      "Taejong Joo",
+      "Wenhan Xia",
+      "Cheolmin Kim",
+      "Ming Zhang",
+      "Eugene Ie"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2602.15322v1",
+    "access": "Preprint arXiv:2602.15322v1. Inspeccionada la modulación por alineamiento de la sección 3 y su contexto de entrenamiento de lenguaje. Sin reproducción.",
+    "relevance": "Antecedente de selección por alineamiento entre gradiente y momentum. Su máscara estocástica no se incorpora a este piloto.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "wen2026mols",
+    "title": "Revealing Modular Gradient Noise Imbalance in LLMs: Calibrating Adam via Signal-to-Noise Ratio",
+    "authors": [
+      "Ziqing Wen",
+      "Zhouyang Liu",
+      "Jiahuan Wang",
+      "Ping Luo",
+      "Li Shen",
+      "Dongsheng Li",
+      "Tao Sun"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.05794v1",
+    "access": "Preprint arXiv:2605.05794v1. Inspeccionadas motivación, ecuaciones 1–4 y descripción de calibración de tasas por módulo. Sin reproducción.",
+    "relevance": "Antecedente de interpretación de momentos mediante SNR. No identifica el ruido financiero ni valida nuestra regla por fila.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  }
+]

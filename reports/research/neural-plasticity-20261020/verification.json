@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-20T09:20:34.154530+00:00",
+  "issue": 680,
+  "base_commit": "54f799fc6c9a10fa09f30c065664478cb90e1b03",
+  "source_sha256": {
+    "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+    "src/mars_titan/models/titans/state.py": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+    "src/mars_titan/models/titans/session_context.py": "2db712e25b3eaf789bc1f9bed8ad6e3fe5ba47008f23829547484fd63a9f111a",
+    "src/mars_titan/models/titans/financial_inputs.py": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+    "src/mars_titan/models/titans/__init__.py": "e93589731b0b2bc53f9fa326560da4a873725703b11aae965790dee4b46fba7a",
+    "src/mars_titan/models/titans/financial_blocks.py": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+    "src/mars_titan/models/titans/causal_convolution.py": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+    "src/mars_titan/models/titans/refinement_policy.py": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+    "src/mars_titan/models/titans/presence_modulation.py": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+    "src/mars_titan/models/titans/config.py": "46dce1e44874c211e5101ab7fe33c6945c4f7138e9087db79f0283da884930b7",
+    "src/mars_titan/models/titans/plasticity.py": "ed3368a635bd6a0b5f502207b6a280b93c44655f2e7ee50fdab79f0d91c42eda",
+    "src/mars_titan/models/titans/transition_jacobian.py": "b05545cda66adf25defacf351a71b6f27d5b694c596ad7e6db295fded618f927",
+    "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "src/mars_titan/models/titans/mac.py": "d6e7d335f5e18fe32e5a8b50c8237a3ae620f14a6f96c3f0ea0ebf569ac9ebec",
+    "src/mars_titan/models/titans/plasticity_config.py": "f589e31914b3020e03bb359e946a0130eb085eaa9d8b1cda6119d5909b234082",
+    "src/mars_titan/models/titans/refinement_routes.py": "f063907a446e8f210b826154c20dda4cc4e990d10350cdbdae3976bb0fd7bd06",
+    "src/mars_titan/models/titans/refinement_controls.py": "91e236519815d478e46dbc87318d262756aa6386c6463e5b17ff5fe418caf689",
+    "src/mars_titan/models/titans/neural_memory.py": "ce1b933d7b204fc2ca6b05cc243d43b15aae37d4a5afc58e773c48b0c95a9cba",
+    "src/mars_titan/models/titans/frozen_financial.py": "7e82f0a57703460225a314677f2925e5bc93534aa6735b0a428ba552fc304d4a",
+    "src/mars_titan/models/titans/financial.py": "5b3f64876105710b8c25592414be82c1571c449d5f095c09aa184a26f9283d70",
+    "src/mars_titan/models/titans/episodic_readout.py": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38"
+  },
+  "tests": [
+    {
+      "name": "regresión del núcleo y frontera financiera",
+      "passed": 577,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 33.949162777047604,
+      "started_at_utc": "2026-10-20T08:57:11.570957+00:00",
+      "test_files": [
+        "tests/models/titans/test_plasticity.py",
+        "tests/models/titans/test_plasticity_integration.py",
+        "tests/models/titans/test_financial_plasticity.py",
+        "tests/models/titans/test_neural_memory.py",
+        "tests/models/titans/test_mac.py",
+        "tests/models/titans/test_multiscale_memory.py",
+        "tests/models/titans/test_memory_stability.py",
+        "tests/models/titans/test_gate_bias.py",
+        "tests/models/titans/test_financial_adapter.py",
+        "tests/models/titans/test_financial_blocks.py",
+        "tests/models/titans/test_financial_control.py",
+        "tests/models/titans/test_local_control.py",
+        "tests/models/titans/test_transition_jacobian.py",
+        "tests/models/titans/test_market_memory.py",
+        "tests/models/titans/test_state_metadata_size.py",
+        "tests/models/titans/test_memory_residual_norm.py",
+        "tests/models/titans/test_paper_projections.py"
+      ],
+      "test_sha256": {
+        "tests/models/titans/test_plasticity.py": "bba194e37baa25677ea5321a20cb47b047223ef3e115d0c89208824fcdca47fe",
+        "tests/models/titans/test_plasticity_integration.py": "072c170346a9d7c313111cd25ab73d135ffc6dd7928e363cd1616daa8d46be7d",
+        "tests/models/titans/test_financial_plasticity.py": "a71db4f656c938be3eb3340d3f8affd6bdc7c7d85da77e59d555a6548598de38",
+        "tests/models/titans/test_neural_memory.py": "1cd1a90ecaa2ea8a02b67d19e033958239cf2123ff4d716488bc4de0d28cc369",
+        "tests/models/titans/test_mac.py": "2f063d6c573ca45ea7eae6260e82302c529860cad165ccfcc8a55e3ec3e1bc90",
+        "tests/models/titans/test_multiscale_memory.py": "fd35f7b6dc0a772d11e6a06bdecc3c04bcba240d2d4ba71e94e476a4fa52faa9",
+        "tests/models/titans/test_memory_stability.py": "c46b9129b5803cc4b0697a4866eff8e3105d2d7eea01b630f229896199b864c8",
+        "tests/models/titans/test_gate_bias.py": "eed7d4fa61a800c2f337ee2eb05ead27f6f0868ed36062948e19518cbc972d42",
+        "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17",
+        "tests/models/titans/test_financial_blocks.py": "c8db854e7bfc06b0fc39c1cf543f80f621730d4e5d88c4f427f35c0184de4cc5",
+        "tests/models/titans/test_financial_control.py": "6c9af105a86b2fa47228d23d92fe7150868e89718afdec65d1edae666def93a7",
+        "tests/models/titans/test_local_control.py": "fed4692a24d8def42ca023da0c6abcf508c942a0221a8280197e5eeeda513b1a",
+        "tests/models/titans/test_transition_jacobian.py": "29763b74d2433b1255d6e876c63406b4882376fa1b8e506b5b4af6a23743b0c7",
+        "tests/models/titans/test_market_memory.py": "d024d19350e2ebcbb90601b1480a449ff17624633a08aeb5d37040eefeef8400",
+        "tests/models/titans/test_state_metadata_size.py": "e57e997e4c88bf42a3671d1681d982fbaef2defdf396944888401292d4432b1c",
+        "tests/models/titans/test_memory_residual_norm.py": "bbeedebc5247f088d4ec9c7c68d3284f02a87824604c9206f2a43b100b6e1647",
+        "tests/models/titans/test_paper_projections.py": "18396229c0d6ec770bdb31ec902395a6902b908d7e1810f79dadca2bf32612f6"
+      },
+      "receipt_sha256": "379531ed8ba3ad2a4c55de4b98f75e8c5328b3039fd8cb4e73a1c670e596f5e6"
+    },
+    {
+      "name": "ampliación de ecuaciones reales y presupuesto previo a asignación",
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0,
+      "deselected_cuda": 8
+    },
+    {
+      "name": "fronteras de entrada y catálogo",
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0,
+      "junit_sha256": "879ac3b9eae84a2f110fe0438541d52529026149495c41cad2a480b44b0fae53"
+    }
+  ],
+  "coverage_scope": "Unión de las tres ejecuciones con fuentes de producción idénticas. Los casos repetidos no son comprobaciones independientes.",
+  "coverage_totals": {
+    "statements": 656,
+    "covered_statements": 641,
+    "branches": 224,
+    "covered_branches": 210
+  },
+  "max_crap": {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "function": "NeuralMemory.validate_state",
+    "start_line": 192,
+    "end_line": 260,
+    "cyclomatic_complexity": 32,
+    "statements": 42,
+    "covered_statements": 40,
+    "coverage_fraction": 0.9523809523809523,
+    "branches": 22,
+    "covered_branches": 20,
+    "crap": 32.11057121261203
+  },
+  "mutation_tested": 9,
+  "mutation_killed": 9,
+  "mutation_scope": "Operadores dirigidos de las funciones críticas, no todo el espacio de mutantes del repositorio.",
+  "cuda": {
+    "device": "cuda:0",
+    "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda_runtime": "13.0",
+    "dedicated_plasticity_cases": 8,
+    "precisions": [
+      "float32",
+      "float64"
+    ]
+  },
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_opened": false,
+  "final_new_tests": {
+    "passed": 67,
+    "failed": 0,
+    "skipped": 0,
+    "cuda_cases": 8,
+    "pytest_seconds": 3.56,
+    "junit_sha256": "1591cf2ba1d1bc2e7b5f635f754cad28cb85c2f044c4893881a2a13871ff79a6"
+  }
+}

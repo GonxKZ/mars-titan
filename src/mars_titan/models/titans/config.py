@@ -5,6 +5,8 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+from .plasticity_config import MemoryPlasticity
+
 ATTENTION_LAYOUTS = ("batch_first_v1", "sequence_contiguous_v1")
 
 
@@ -322,6 +324,8 @@ class MemoryConfig(FingerprintOnce):
     stability: MemoryStability | None = None
     # PT5, con la misma regla: sin declararla nada cambia.
     multiscale: MemoryMultiscale | None = None
+    # Estadísticas de plasticidad separadas de los pesos rápidos y de su momentum.
+    plasticity: MemoryPlasticity | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -353,6 +357,13 @@ class MemoryConfig(FingerprintOnce):
             raise ValueError("stability debe ser MemoryStability o None")
         if self.multiscale is not None and not isinstance(self.multiscale, MemoryMultiscale):
             raise ValueError("multiscale debe ser MemoryMultiscale o None")
+        if self.plasticity is not None:
+            if not isinstance(self.plasticity, MemoryPlasticity):
+                raise ValueError("plasticity debe ser MemoryPlasticity o None")
+            if self.plasticity.capture != "none" and (
+                self.multiscale is None or self.multiscale.form != "cascade"
+            ):
+                raise ValueError("La captura de plasticidad necesita la cascada multiescala")
         if self.gate_bias is not None:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias o None")
@@ -362,6 +373,11 @@ class MemoryConfig(FingerprintOnce):
     def hidden_levels(self) -> int:
         """Copias adicionales de cada matriz de pesos que guarda PT5, o 0 sin ella."""
         return 0 if self.multiscale is None else len(MULTISCALE_CAPACITIES) - 1
+
+    @property
+    def modulation_elements(self) -> int:
+        """Elementos auxiliares por flujo: una matriz y dos escalares por fila y capa."""
+        return 0 if self.plasticity is None else self.depth * (self.dim**2 + 2 * self.dim)
 
     @property
     def window(self) -> int:
@@ -376,6 +392,7 @@ class MemoryConfig(FingerprintOnce):
         kernel = fields.pop("qkv_convolution")
         fields.pop("stability")
         fields.pop("multiscale")
+        fields.pop("plasticity")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -417,6 +434,8 @@ class MemoryConfig(FingerprintOnce):
             extension["stability"] = self.stability.identity()
         if self.multiscale is not None:
             extension["multiscale"] = self.multiscale.identity()
+        if self.plasticity is not None:
+            extension["plasticity"] = self.plasticity.identity()
         return {
             **fields,
             **extension,
