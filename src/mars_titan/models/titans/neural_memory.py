@@ -8,7 +8,7 @@ from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
-from .plasticity import advance as advance_plasticity
+from .plasticity import _advance_validated as advance_plasticity
 from .plasticity import initial_history, validate_history
 from .state import (
     NeuralMemoryState,

@@ -1,0 +1,2396 @@
+{
+  "schema_version": 1,
+  "scope": "Coste técnico sobre entradas históricas precodificadas. Pesos compartidos iniciales. Sin optimizador ni etiquetas financieras.",
+  "records": [
+    {
+      "code_commit": "c2c491c2ba3f19d7b542cdf750f0deebb76c1e77",
+      "benchmark_sha256": "c1baad9d305a068746860b4fd1bd86c399d694d40e7a762e2e9c5fb88c31eb0e",
+      "declaration_sha256": "8109c93320376843d94eae6ce2008fbfb71b7e4b83b193ab6cabd08f31eeef5f",
+      "recipe_sha256": "4a56ec8d5c42c43885fbf4c4f4270750b2013bc784a4f98bb5664f9a416c76bf",
+      "inputs": {
+        "data_sha256": "275365fa237cd78b2dcae50fd7e24a6e2f00a5f894889c976176519f4de0b436",
+        "dimensions": {
+          "news": 384,
+          "charts": 512,
+          "fundamentals": 78,
+          "macro": 420,
+          "prices": 5
+        },
+        "view_manifest_sha256": "2371878b94b01162a6c60566d3e1c9e152fbbfd589f4036fe4c2d973dddd421d",
+        "decisions": 8,
+        "targets_read": false
+      },
+      "device": "cuda:0",
+      "precision": "float32",
+      "tf32": false,
+      "versions": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0"
+      },
+      "gpu_at_start": "Tue Oct 20 11:28:05 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GeForce RTX 4070 ...    Off |   00000000:01:00.0  On |                  N/A |\n| N/A   37C    P8              5W /   80W |     594MiB /   8188MiB |      4%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2987      G   /usr/bin/gnome-shell                     99MiB |\n|    0   N/A  N/A            4270      G   /usr/bin/Xwayland                         2MiB |\n|    0   N/A  N/A            8862      G   ...rack-uuid=3190708988185955192        154MiB |\n|    0   N/A  N/A           17860    C+G   /usr/bin/nautilus                        51MiB |\n|    0   N/A  N/A         2425872      C   ...ime-20261001/.venv/bin/python        128MiB |\n+-----------------------------------------------------------------------------------------+\n",
+      "threads": 2,
+      "load_average": [
+        1.23486328125,
+        1.078125,
+        1.03857421875
+      ],
+      "warmup": 2,
+      "repetitions": 10,
+      "percentile_method": "numpy.quantile, linear",
+      "resident_models": 10,
+      "timing_scope": "DecisionBatch residente, prepare con validaciones y actualización neuronal. Inicialización y transferencia separadas.",
+      "order": "Alternancia de modelos con rotación por repetición",
+      "process_seconds": 62.019539000000805,
+      "process_peak_rss_bytes": 1566023680,
+      "unmeasured": [
+        "Lectura Parquet por decisión y codificadores anteriores al corpus",
+        "Energía",
+        "Contadores internos de kernels y bytes físicos transferidos"
+      ],
+      "optimizer_steps": 0,
+      "scientific_evaluation": false,
+      "final_test_access": false,
+      "raw_receipt": "cost-fp32-v1.json",
+      "raw_receipt_sha256": "41cc0ac9a1d5d916696dd72c676269abebbd29b0e9474561380b66fd846b999e",
+      "measured_at_utc": "2026-10-20T09:29:07.821342+00:00",
+      "cases": {
+        "mac_original/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 65552,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 4.877069499343634,
+            "p95_ms": 6.03611699771136,
+            "p99_ms": 7.479869495145958,
+            "minimum_ms": 3.3538429997861385,
+            "maximum_ms": 9.820193983614445,
+            "observations": 80,
+            "rows_per_second": 207.63222155218523
+          },
+          "forward_with_graph": {
+            "p50_ms": 5.1678919699043036,
+            "p95_ms": 6.4859661739319545,
+            "p99_ms": 7.267350055044514,
+            "minimum_ms": 3.4016530262306333,
+            "maximum_ms": 7.5789750553667545,
+            "observations": 80,
+            "rows_per_second": 196.52059360071524
+          },
+          "backward_including_loss": {
+            "p50_ms": 41.760438471101224,
+            "p95_ms": 44.98230144381523,
+            "p99_ms": 45.02990746870637,
+            "minimum_ms": 34.57651101052761,
+            "maximum_ms": 45.041808974929154,
+            "observations": 80,
+            "rows_per_second": 199.1881544253891
+          },
+          "peak_inference_allocated_bytes": 75136512,
+          "peak_graph_allocated_bytes": 77716992,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0023031700402498245,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 99344,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 6.861495028715581,
+            "p95_ms": 8.285042556235565,
+            "p99_ms": 8.698084830539297,
+            "minimum_ms": 5.083127995021641,
+            "maximum_ms": 9.179246961139143,
+            "observations": 80,
+            "rows_per_second": 145.84133259732673
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.160257489886135,
+            "p95_ms": 8.662780612939969,
+            "p99_ms": 9.204787703929464,
+            "minimum_ms": 5.249549984000623,
+            "maximum_ms": 9.749341057613492,
+            "observations": 80,
+            "rows_per_second": 138.79115701987
+          },
+          "backward_including_loss": {
+            "p50_ms": 44.31123350514099,
+            "p95_ms": 56.8369546032045,
+            "p99_ms": 60.40998051059432,
+            "minimum_ms": 37.37693198490888,
+            "maximum_ms": 61.30323698744178,
+            "observations": 80,
+            "rows_per_second": 175.96426543338458
+          },
+          "peak_inference_allocated_bytes": 75244544,
+          "peak_graph_allocated_bytes": 78083584,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0024602659977972507,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 5.010731518268585,
+            "p95_ms": 6.3693057687487435,
+            "p99_ms": 7.208615336567162,
+            "minimum_ms": 4.018503939732909,
+            "maximum_ms": 7.357478956691921,
+            "observations": 80,
+            "rows_per_second": 193.27875725933905
+          },
+          "forward_with_graph": {
+            "p50_ms": 5.001979530788958,
+            "p95_ms": 6.409405858721583,
+            "p99_ms": 7.06786071532405,
+            "minimum_ms": 3.825749969109893,
+            "maximum_ms": 8.118010009638965,
+            "observations": 80,
+            "rows_per_second": 198.05899860671784
+          },
+          "backward_including_loss": {
+            "p50_ms": 39.707012998405844,
+            "p95_ms": 54.679112037410945,
+            "p99_ms": 59.69802001374774,
+            "minimum_ms": 34.576950944028795,
+            "maximum_ms": 60.95274700783193,
+            "observations": 80,
+            "rows_per_second": 192.03452738237766
+          },
+          "peak_inference_allocated_bytes": 75286016,
+          "peak_graph_allocated_bytes": 77880832,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.00218484754441306,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 7.329476531594992,
+            "p95_ms": 9.13973042042926,
+            "p99_ms": 9.54873810173012,
+            "minimum_ms": 5.421273992396891,
+            "maximum_ms": 9.972280007787049,
+            "observations": 80,
+            "rows_per_second": 137.21904855750557
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.458348525688052,
+            "p95_ms": 9.09997932612896,
+            "p99_ms": 9.90057873772457,
+            "minimum_ms": 5.606943974271417,
+            "maximum_ms": 10.05252089817077,
+            "observations": 80,
+            "rows_per_second": 134.45985774434754
+          },
+          "backward_including_loss": {
+            "p50_ms": 41.35248507373035,
+            "p95_ms": 49.099945125635706,
+            "p99_ms": 49.73393141059205,
+            "minimum_ms": 34.319808008149266,
+            "maximum_ms": 49.89242798183113,
+            "observations": 80,
+            "rows_per_second": 192.99797730344815
+          },
+          "peak_inference_allocated_bytes": 75394560,
+          "peak_graph_allocated_bytes": 78000128,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.002720636432059109,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 7.281585538294166,
+            "p95_ms": 9.678321267710997,
+            "p99_ms": 19.146119159413498,
+            "minimum_ms": 5.524809006601572,
+            "maximum_ms": 19.43878806196153,
+            "observations": 80,
+            "rows_per_second": 132.84607733230672
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.145393989048898,
+            "p95_ms": 21.890720119699836,
+            "p99_ms": 22.515896824188527,
+            "minimum_ms": 5.501925945281982,
+            "maximum_ms": 22.912306943908334,
+            "observations": 80,
+            "rows_per_second": 119.98006842823737
+          },
+          "backward_including_loss": {
+            "p50_ms": 41.798559948801994,
+            "p95_ms": 55.3113475558348,
+            "p99_ms": 56.372786259744316,
+            "minimum_ms": 38.20553200785071,
+            "maximum_ms": 56.638145935721695,
+            "observations": 80,
+            "rows_per_second": 178.55318830122565
+          },
+          "peak_inference_allocated_bytes": 75394048,
+          "peak_graph_allocated_bytes": 78247424,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0025253884959965944,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 6.923851964529604,
+            "p95_ms": 8.53992440388538,
+            "p99_ms": 8.971891814144325,
+            "minimum_ms": 5.159851047210395,
+            "maximum_ms": 9.559722966514528,
+            "observations": 80,
+            "rows_per_second": 143.7379296197719
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.139623514376581,
+            "p95_ms": 8.528100408148019,
+            "p99_ms": 9.257488349685444,
+            "minimum_ms": 5.510703078471124,
+            "maximum_ms": 9.443275048397481,
+            "observations": 80,
+            "rows_per_second": 142.14776557132947
+          },
+          "backward_including_loss": {
+            "p50_ms": 48.2896565226838,
+            "p95_ms": 56.45045222481713,
+            "p99_ms": 57.05595277948305,
+            "minimum_ms": 41.678979992866516,
+            "maximum_ms": 57.20732791814953,
+            "observations": 80,
+            "rows_per_second": 164.00527084305625
+          },
+          "peak_inference_allocated_bytes": 75394560,
+          "peak_graph_allocated_bytes": 78723072,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0025931205018423498,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 7.092239509802312,
+            "p95_ms": 8.591431990498677,
+            "p99_ms": 10.903068491024893,
+            "minimum_ms": 5.426294053904712,
+            "maximum_ms": 11.386392056010664,
+            "observations": 80,
+            "rows_per_second": 139.3678050082567
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.659008970018476,
+            "p95_ms": 8.33444471936673,
+            "p99_ms": 8.784045708598565,
+            "minimum_ms": 5.553783033974469,
+            "maximum_ms": 9.150063036940992,
+            "observations": 80,
+            "rows_per_second": 142.9750563432484
+          },
+          "backward_including_loss": {
+            "p50_ms": 46.67019844055176,
+            "p95_ms": 55.28024493250996,
+            "p99_ms": 55.43872341979295,
+            "minimum_ms": 42.59018402080983,
+            "maximum_ms": 55.4783430416137,
+            "observations": 80,
+            "rows_per_second": 165.29279801333246
+          },
+          "peak_inference_allocated_bytes": 75394560,
+          "peak_graph_allocated_bytes": 78726656,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.00253072299528867,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 6.704459025058895,
+            "p95_ms": 8.399263891624287,
+            "p99_ms": 9.264258672483262,
+            "minimum_ms": 5.398071021772921,
+            "maximum_ms": 9.780349093489349,
+            "observations": 80,
+            "rows_per_second": 145.93073190344208
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.345170481130481,
+            "p95_ms": 8.514020050643012,
+            "p99_ms": 9.224547418998553,
+            "minimum_ms": 5.604167934507132,
+            "maximum_ms": 9.532002033665776,
+            "observations": 80,
+            "rows_per_second": 137.77043948217707
+          },
+          "backward_including_loss": {
+            "p50_ms": 41.36873543029651,
+            "p95_ms": 50.337373261572786,
+            "p99_ms": 52.76172337704338,
+            "minimum_ms": 35.02810001373291,
+            "maximum_ms": 53.36781090591103,
+            "observations": 80,
+            "rows_per_second": 191.65423994576685
+          },
+          "peak_inference_allocated_bytes": 75394048,
+          "peak_graph_allocated_bytes": 77991936,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0027008940232917666,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 7.4136845651082695,
+            "p95_ms": 9.166809858288616,
+            "p99_ms": 9.344382298877461,
+            "minimum_ms": 5.346113000996411,
+            "maximum_ms": 9.649612940847874,
+            "observations": 80,
+            "rows_per_second": 137.60592111157112
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.318715506698936,
+            "p95_ms": 8.912153815617785,
+            "p99_ms": 9.262889503734186,
+            "minimum_ms": 5.495324032381177,
+            "maximum_ms": 9.382158983498812,
+            "observations": 80,
+            "rows_per_second": 137.78319049912352
+          },
+          "backward_including_loss": {
+            "p50_ms": 44.72901555709541,
+            "p95_ms": 47.2905591246672,
+            "p99_ms": 47.807246206793934,
+            "minimum_ms": 34.500167006626725,
+            "maximum_ms": 47.93641797732562,
+            "observations": 80,
+            "rows_per_second": 189.0773855906177
+          },
+          "peak_inference_allocated_bytes": 75394560,
+          "peak_graph_allocated_bytes": 78000128,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0025178994983434677,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.005604760022833943,
+          "inference": {
+            "p50_ms": 7.556923490483314,
+            "p95_ms": 8.848993154242633,
+            "p99_ms": 9.802041701041157,
+            "minimum_ms": 5.48275001347065,
+            "maximum_ms": 10.43316803406924,
+            "observations": 80,
+            "rows_per_second": 136.00839931094714
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.620938937179744,
+            "p95_ms": 9.32633964694105,
+            "p99_ms": 9.74108563736081,
+            "minimum_ms": 5.566408042795956,
+            "maximum_ms": 9.895315044559538,
+            "observations": 80,
+            "rows_per_second": 134.50147280615843
+          },
+          "backward_including_loss": {
+            "p50_ms": 45.98042549332604,
+            "p95_ms": 52.114547183737145,
+            "p99_ms": 54.622455863282084,
+            "minimum_ms": 37.32505301013589,
+            "maximum_ms": 55.249433033168316,
+            "observations": 80,
+            "rows_per_second": 179.71805096524093
+          },
+          "peak_inference_allocated_bytes": 75394560,
+          "peak_graph_allocated_bytes": 78000128,
+          "peak_graph_reserved_bytes": 79691776,
+          "initialization_median_seconds": 0.0027567640063352883,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "mac_original/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 65552,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 4.566966032143682,
+            "p95_ms": 8.222291397396473,
+            "p99_ms": 10.148013959405938,
+            "minimum_ms": 3.482384025119245,
+            "maximum_ms": 10.776884038932621,
+            "observations": 5120,
+            "rows_per_second": 13239.017145689046
+          },
+          "forward_with_graph": {
+            "p50_ms": 4.656114033423364,
+            "p95_ms": 6.699745397781952,
+            "p99_ms": 7.381232947809616,
+            "minimum_ms": 3.6294820019975305,
+            "maximum_ms": 8.108310983516276,
+            "observations": 5120,
+            "rows_per_second": 13499.700057529417
+          },
+          "backward_including_loss": {
+            "p50_ms": 38.690773013513535,
+            "p95_ms": 45.988262858008966,
+            "p99_ms": 46.43009011517279,
+            "minimum_ms": 34.51416199095547,
+            "maximum_ms": 46.540546929463744,
+            "observations": 5120,
+            "rows_per_second": 12856.020982497432
+          },
+          "peak_inference_allocated_bytes": 92395008,
+          "peak_graph_allocated_bytes": 209577472,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0022398605360649526,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 99344,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 6.587880081497133,
+            "p95_ms": 8.285948191769421,
+            "p99_ms": 8.778252165066077,
+            "minimum_ms": 5.34027093090117,
+            "maximum_ms": 8.886005030944943,
+            "observations": 5120,
+            "rows_per_second": 9669.22971807583
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.604185502510518,
+            "p95_ms": 8.21175771416165,
+            "p99_ms": 9.196582338772712,
+            "minimum_ms": 5.399473011493683,
+            "maximum_ms": 9.412215906195343,
+            "observations": 5120,
+            "rows_per_second": 9525.51988236006
+          },
+          "backward_including_loss": {
+            "p50_ms": 46.977531048469245,
+            "p95_ms": 50.93176419031806,
+            "p99_ms": 51.05715037905611,
+            "minimum_ms": 39.69685698393732,
+            "maximum_ms": 51.08849692624062,
+            "observations": 5120,
+            "rows_per_second": 11146.089514069688
+          },
+          "peak_inference_allocated_bytes": 97044480,
+          "peak_graph_allocated_bytes": 230491648,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0026743034832179546,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 5.160773464012891,
+            "p95_ms": 5.9776714886538675,
+            "p99_ms": 6.326983064645901,
+            "minimum_ms": 3.929997095838189,
+            "maximum_ms": 6.364688975736499,
+            "observations": 5120,
+            "rows_per_second": 12803.004264221376
+          },
+          "forward_with_graph": {
+            "p50_ms": 5.263721919618547,
+            "p95_ms": 6.408451695460825,
+            "p99_ms": 7.211900065885856,
+            "minimum_ms": 3.9986460469663143,
+            "maximum_ms": 7.309578009881079,
+            "observations": 5120,
+            "rows_per_second": 12313.94203397741
+          },
+          "backward_including_loss": {
+            "p50_ms": 46.75960401073098,
+            "p95_ms": 48.138215782819316,
+            "p99_ms": 48.43784237629734,
+            "minimum_ms": 36.46075597498566,
+            "maximum_ms": 48.512749024666846,
+            "observations": 5120,
+            "rows_per_second": 11722.910532433727
+          },
+          "peak_inference_allocated_bytes": 101834240,
+          "peak_graph_allocated_bytes": 220063232,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.00252473697764799,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.792517018970102,
+            "p95_ms": 9.249768138397485,
+            "p99_ms": 9.424518921878187,
+            "minimum_ms": 5.71430497802794,
+            "maximum_ms": 9.635697002522647,
+            "observations": 5120,
+            "rows_per_second": 8344.159122331725
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.784406538121402,
+            "p95_ms": 9.037395555060357,
+            "p99_ms": 9.41685619531199,
+            "minimum_ms": 5.823059938848019,
+            "maximum_ms": 9.76952794007957,
+            "observations": 5120,
+            "rows_per_second": 8455.739697490548
+          },
+          "backward_including_loss": {
+            "p50_ms": 47.65389749081805,
+            "p95_ms": 50.119230459677055,
+            "p99_ms": 50.90119325206615,
+            "minimum_ms": 37.12759097106755,
+            "maximum_ms": 51.096683950163424,
+            "observations": 5120,
+            "rows_per_second": 11303.140580593847
+          },
+          "peak_inference_allocated_bytes": 106500096,
+          "peak_graph_allocated_bytes": 225835008,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0029595805099233985,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.602684490848333,
+            "p95_ms": 9.254560561385004,
+            "p99_ms": 9.441330748377366,
+            "minimum_ms": 5.748971016146243,
+            "maximum_ms": 9.585120948031545,
+            "observations": 5120,
+            "rows_per_second": 8531.742979170844
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.734838000033051,
+            "p95_ms": 9.141029679449275,
+            "p99_ms": 9.536746289813891,
+            "minimum_ms": 5.781691987067461,
+            "maximum_ms": 9.599789045751095,
+            "observations": 5120,
+            "rows_per_second": 8425.855629361027
+          },
+          "backward_including_loss": {
+            "p50_ms": 51.6698369756341,
+            "p95_ms": 54.81095005525276,
+            "p99_ms": 54.895071589853615,
+            "minimum_ms": 40.07656092289835,
+            "maximum_ms": 54.91610197350383,
+            "observations": 5120,
+            "rows_per_second": 10432.901023467584
+          },
+          "peak_inference_allocated_bytes": 106483712,
+          "peak_graph_allocated_bytes": 240977408,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0029393875156529248,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.657131471205503,
+            "p95_ms": 8.708433917490765,
+            "p99_ms": 9.017525619128717,
+            "minimum_ms": 5.788785056211054,
+            "maximum_ms": 9.259358048439026,
+            "observations": 5120,
+            "rows_per_second": 8613.17123564019
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.737403444480151,
+            "p95_ms": 16.572272166376933,
+            "p99_ms": 28.25156039558351,
+            "minimum_ms": 5.767054040916264,
+            "maximum_ms": 28.284406987950206,
+            "observations": 5120,
+            "rows_per_second": 7297.61198138136
+          },
+          "backward_including_loss": {
+            "p50_ms": 56.11105100251734,
+            "p95_ms": 89.04266846366221,
+            "p99_ms": 107.58595201186837,
+            "minimum_ms": 44.71150599420071,
+            "maximum_ms": 112.22177289891988,
+            "observations": 5120,
+            "rows_per_second": 8841.978371706207
+          },
+          "peak_inference_allocated_bytes": 106500096,
+          "peak_graph_allocated_bytes": 270798848,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0029507040162570775,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.599648961331695,
+            "p95_ms": 8.597281289985403,
+            "p99_ms": 9.699102124432086,
+            "minimum_ms": 5.3680440178141,
+            "maximum_ms": 11.818284983746707,
+            "observations": 5120,
+            "rows_per_second": 8614.301452628786
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.730850484222174,
+            "p95_ms": 8.832470240304247,
+            "p99_ms": 9.369721662951632,
+            "minimum_ms": 5.806800094433129,
+            "maximum_ms": 9.530266979709268,
+            "observations": 5120,
+            "rows_per_second": 8529.391336383744
+          },
+          "backward_including_loss": {
+            "p50_ms": 55.68968300940469,
+            "p95_ms": 57.82440974144265,
+            "p99_ms": 58.020391629543155,
+            "minimum_ms": 45.636206050403416,
+            "maximum_ms": 58.06938710156828,
+            "observations": 5120,
+            "rows_per_second": 9726.792721450305
+          },
+          "peak_inference_allocated_bytes": 106500096,
+          "peak_graph_allocated_bytes": 270802432,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.002973552036564797,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.569587498437613,
+            "p95_ms": 10.810210416093467,
+            "p99_ms": 12.046390029136091,
+            "minimum_ms": 5.730447010137141,
+            "maximum_ms": 12.121003936044872,
+            "observations": 5120,
+            "rows_per_second": 8492.199631229416
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.6726769912056625,
+            "p95_ms": 8.983138907933608,
+            "p99_ms": 9.228332478087395,
+            "minimum_ms": 5.852625938132405,
+            "maximum_ms": 9.30410297587514,
+            "observations": 5120,
+            "rows_per_second": 8512.19860575931
+          },
+          "backward_including_loss": {
+            "p50_ms": 47.57554648676887,
+            "p95_ms": 49.60848923656158,
+            "p99_ms": 49.94227946153842,
+            "minimum_ms": 36.53935401234776,
+            "maximum_ms": 50.02572701778263,
+            "observations": 5120,
+            "rows_per_second": 11497.840836699726
+          },
+          "peak_inference_allocated_bytes": 106483712,
+          "peak_graph_allocated_bytes": 225572864,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.002872085548005998,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 7.513025484513491,
+            "p95_ms": 8.752650435781106,
+            "p99_ms": 9.271791067440063,
+            "minimum_ms": 5.784468026831746,
+            "maximum_ms": 9.474602993577719,
+            "observations": 5120,
+            "rows_per_second": 8696.478879632934
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.3529944638721645,
+            "p95_ms": 8.715191471856087,
+            "p99_ms": 9.02386137167923,
+            "minimum_ms": 5.769058014266193,
+            "maximum_ms": 9.200126980431378,
+            "observations": 5120,
+            "rows_per_second": 8912.090306732065
+          },
+          "backward_including_loss": {
+            "p50_ms": 39.2191075370647,
+            "p95_ms": 49.454744573449716,
+            "p99_ms": 49.92533366079442,
+            "minimum_ms": 38.51449105422944,
+            "maximum_ms": 50.0429809326306,
+            "observations": 5120,
+            "rows_per_second": 11954.843407603234
+          },
+          "peak_inference_allocated_bytes": 106500096,
+          "peak_graph_allocated_bytes": 225835008,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0029224909958429635,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.008932693977840245,
+          "inference": {
+            "p50_ms": 6.8994255270808935,
+            "p95_ms": 8.999300835421309,
+            "p99_ms": 9.31252070586197,
+            "minimum_ms": 5.708583979867399,
+            "maximum_ms": 9.398389025591314,
+            "observations": 5120,
+            "rows_per_second": 9086.205323485206
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.832900573499501,
+            "p95_ms": 9.27470488823019,
+            "p99_ms": 11.828177167335525,
+            "minimum_ms": 5.771043011918664,
+            "maximum_ms": 11.9130730163306,
+            "observations": 5120,
+            "rows_per_second": 8896.250400467112
+          },
+          "backward_including_loss": {
+            "p50_ms": 40.60400347225368,
+            "p95_ms": 65.08925559464838,
+            "p99_ms": 76.05328634846956,
+            "minimum_ms": 37.246294086799026,
+            "maximum_ms": 78.79429403692484,
+            "observations": 5120,
+            "rows_per_second": 11278.055932644289
+          },
+          "peak_inference_allocated_bytes": 106500096,
+          "peak_graph_allocated_bytes": 225835008,
+          "peak_graph_reserved_bytes": 297795584,
+          "initialization_median_seconds": 0.0025906814844347537,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "mac_original/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 65552,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 4.684130486566573,
+            "p95_ms": 6.026630831183866,
+            "p99_ms": 6.490809486713258,
+            "minimum_ms": 3.607588936574757,
+            "maximum_ms": 6.865120958536863,
+            "observations": 10240,
+            "rows_per_second": 27390.676963629587
+          },
+          "forward_with_graph": {
+            "p50_ms": 4.863213514909148,
+            "p95_ms": 6.485347117995843,
+            "p99_ms": 6.844136150320985,
+            "minimum_ms": 3.692951053380966,
+            "maximum_ms": 7.735899998806417,
+            "observations": 10240,
+            "rows_per_second": 26222.290475863458
+          },
+          "backward_including_loss": {
+            "p50_ms": 40.14868050580844,
+            "p95_ms": 45.18492845236324,
+            "p99_ms": 45.68969122949056,
+            "minimum_ms": 33.693465986289084,
+            "maximum_ms": 45.815881923772395,
+            "observations": 10240,
+            "rows_per_second": 25540.91441923164
+          },
+          "peak_inference_allocated_bytes": 109941760,
+          "peak_graph_allocated_bytes": 344168448,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002245827519800514,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 99344,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 7.080416544340551,
+            "p95_ms": 9.65501524042338,
+            "p99_ms": 10.58126212912611,
+            "minimum_ms": 5.539154983125627,
+            "maximum_ms": 11.320085963234305,
+            "observations": 10240,
+            "rows_per_second": 17912.412245960095
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.1339470450766385,
+            "p95_ms": 9.102158475434408,
+            "p99_ms": 9.95751151116564,
+            "minimum_ms": 5.48314000479877,
+            "maximum_ms": 11.006986955180764,
+            "observations": 10240,
+            "rows_per_second": 18028.175695577298
+          },
+          "backward_including_loss": {
+            "p50_ms": 46.860663511324674,
+            "p95_ms": 62.251441355328986,
+            "p99_ms": 69.1711730672978,
+            "minimum_ms": 40.26815097313374,
+            "maximum_ms": 70.90110599528998,
+            "observations": 10240,
+            "rows_per_second": 21236.660914332686
+          },
+          "peak_inference_allocated_bytes": 119212032,
+          "peak_graph_allocated_bytes": 385988608,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002707571431528777,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 5.1422034739516675,
+            "p95_ms": 6.508841435424983,
+            "p99_ms": 7.30874138185754,
+            "minimum_ms": 3.9771449519321322,
+            "maximum_ms": 7.833254057914019,
+            "observations": 10240,
+            "rows_per_second": 25194.21786065518
+          },
+          "forward_with_graph": {
+            "p50_ms": 5.338908056728542,
+            "p95_ms": 6.401358504081145,
+            "p99_ms": 7.001142379594965,
+            "minimum_ms": 4.1295819683000445,
+            "maximum_ms": 7.22873501945287,
+            "observations": 10240,
+            "rows_per_second": 24503.693521555007
+          },
+          "backward_including_loss": {
+            "p50_ms": 42.56353050004691,
+            "p95_ms": 48.23329683276825,
+            "p99_ms": 48.34557615569793,
+            "minimum_ms": 36.86063701752573,
+            "maximum_ms": 48.37364598643035,
+            "observations": 10240,
+            "rows_per_second": 24014.98876726069
+          },
+          "peak_inference_allocated_bytes": 128818176,
+          "peak_graph_allocated_bytes": 365139968,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.0024665925302542746,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 7.496539503335953,
+            "p95_ms": 9.991842560702935,
+            "p99_ms": 11.733809115830782,
+            "minimum_ms": 5.7471259497106075,
+            "maximum_ms": 15.167157049290836,
+            "observations": 10240,
+            "rows_per_second": 16943.97953872834
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.6752210152335465,
+            "p95_ms": 10.494665853912007,
+            "p99_ms": 14.957218647468817,
+            "minimum_ms": 5.883974954485893,
+            "maximum_ms": 17.06641202326864,
+            "observations": 10240,
+            "rows_per_second": 16439.305401448924
+          },
+          "backward_including_loss": {
+            "p50_ms": 44.464348000474274,
+            "p95_ms": 49.62371868896298,
+            "p99_ms": 49.8042349179741,
+            "minimum_ms": 37.07747592125088,
+            "maximum_ms": 49.84936397522688,
+            "observations": 10240,
+            "rows_per_second": 23347.145088292527
+          },
+          "peak_inference_allocated_bytes": 138121216,
+          "peak_graph_allocated_bytes": 376678912,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002932704519480467,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 7.500852516386658,
+            "p95_ms": 9.07739329850301,
+            "p99_ms": 9.842385444790125,
+            "minimum_ms": 5.746566108427942,
+            "maximum_ms": 9.845550986938179,
+            "observations": 10240,
+            "rows_per_second": 17563.505191708045
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.708693447057158,
+            "p95_ms": 9.137335210107267,
+            "p99_ms": 10.348811442963775,
+            "minimum_ms": 5.777513957582414,
+            "maximum_ms": 10.67507197149098,
+            "observations": 10240,
+            "rows_per_second": 17050.14381416067
+          },
+          "backward_including_loss": {
+            "p50_ms": 43.69090200634673,
+            "p95_ms": 54.90030033397488,
+            "p99_ms": 56.11239767051302,
+            "minimum_ms": 40.49957694951445,
+            "maximum_ms": 56.41542200464755,
+            "observations": 10240,
+            "rows_per_second": 21960.715289863187
+          },
+          "peak_inference_allocated_bytes": 138088448,
+          "peak_graph_allocated_bytes": 406960128,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002839218534063548,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 6.707569526042789,
+            "p95_ms": 8.462653280002995,
+            "p99_ms": 9.170972789870573,
+            "minimum_ms": 5.78171294182539,
+            "maximum_ms": 9.399119997397065,
+            "observations": 10240,
+            "rows_per_second": 18476.044537383717
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.459648022428155,
+            "p95_ms": 8.901454543229192,
+            "p99_ms": 9.376132889883591,
+            "minimum_ms": 5.794566939584911,
+            "maximum_ms": 9.642438031733036,
+            "observations": 10240,
+            "rows_per_second": 18442.625465712386
+          },
+          "backward_including_loss": {
+            "p50_ms": 45.7021975889802,
+            "p95_ms": 57.82490822602995,
+            "p99_ms": 58.005525624612346,
+            "minimum_ms": 44.03322795405984,
+            "maximum_ms": 58.050679974257946,
+            "observations": 10240,
+            "rows_per_second": 21076.351434932858
+          },
+          "peak_inference_allocated_bytes": 138121216,
+          "peak_graph_allocated_bytes": 466600448,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002524796931538731,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 6.584312533959746,
+            "p95_ms": 10.421489126747456,
+            "p99_ms": 22.523394486634032,
+            "minimum_ms": 5.752647062763572,
+            "maximum_ms": 25.966080953367054,
+            "observations": 10240,
+            "rows_per_second": 16561.677939764297
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.261466991622001,
+            "p95_ms": 10.108874866273252,
+            "p99_ms": 10.300213575828819,
+            "minimum_ms": 5.833629984408617,
+            "maximum_ms": 10.497658979147673,
+            "observations": 10240,
+            "rows_per_second": 16955.041168882486
+          },
+          "backward_including_loss": {
+            "p50_ms": 48.42843400547281,
+            "p95_ms": 61.12613251898438,
+            "p99_ms": 61.34624733123928,
+            "minimum_ms": 43.6144300037995,
+            "maximum_ms": 61.40127603430301,
+            "observations": 10240,
+            "rows_per_second": 19835.2893015658
+          },
+          "peak_inference_allocated_bytes": 138121216,
+          "peak_graph_allocated_bytes": 466604032,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.0025450705434195697,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 7.299898948986083,
+            "p95_ms": 9.31694140890613,
+            "p99_ms": 10.93057908117771,
+            "minimum_ms": 5.741015076637268,
+            "maximum_ms": 11.21312496252358,
+            "observations": 10240,
+            "rows_per_second": 17574.46062269145
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.058946473989636,
+            "p95_ms": 9.100732073420659,
+            "p99_ms": 9.887775818351647,
+            "minimum_ms": 5.869806976988912,
+            "maximum_ms": 11.188138043507934,
+            "observations": 10240,
+            "rows_per_second": 17684.643859585627
+          },
+          "backward_including_loss": {
+            "p50_ms": 40.52491404581815,
+            "p95_ms": 48.31112608080729,
+            "p99_ms": 49.03427318437025,
+            "minimum_ms": 36.82449797634035,
+            "maximum_ms": 49.21505996026099,
+            "observations": 10240,
+            "rows_per_second": 24472.622277477978
+          },
+          "peak_inference_allocated_bytes": 138088448,
+          "peak_graph_allocated_bytes": 376154624,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.002766096033155918,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 6.572540500201285,
+            "p95_ms": 9.356208972167224,
+            "p99_ms": 13.763395949499666,
+            "minimum_ms": 5.731297074817121,
+            "maximum_ms": 15.65630710683763,
+            "observations": 10240,
+            "rows_per_second": 17807.6132503835
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.7918384447693825,
+            "p95_ms": 9.634066111175343,
+            "p99_ms": 12.221245386172084,
+            "minimum_ms": 5.765641923062503,
+            "maximum_ms": 12.355734943412244,
+            "observations": 10240,
+            "rows_per_second": 17612.385939946405
+          },
+          "backward_including_loss": {
+            "p50_ms": 39.31807697517797,
+            "p95_ms": 53.311713843140744,
+            "p99_ms": 55.73471074225382,
+            "minimum_ms": 37.57475095335394,
+            "maximum_ms": 56.340459967032075,
+            "observations": 10240,
+            "rows_per_second": 23616.890754727392
+          },
+          "peak_inference_allocated_bytes": 138121216,
+          "peak_graph_allocated_bytes": 376678912,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.0027853675419464707,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 164880,
+          "input_preparation_and_transfer_seconds": 0.01732571003958583,
+          "inference": {
+            "p50_ms": 7.636527996510267,
+            "p95_ms": 10.695563827175647,
+            "p99_ms": 11.7076184216421,
+            "minimum_ms": 5.751896067522466,
+            "maximum_ms": 12.82103091944009,
+            "observations": 10240,
+            "rows_per_second": 16546.952899134103
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.541959988884628,
+            "p95_ms": 9.635817405069247,
+            "p99_ms": 9.932814792264253,
+            "minimum_ms": 5.871541099622846,
+            "maximum_ms": 9.994550957344472,
+            "observations": 10240,
+            "rows_per_second": 17242.883622133402
+          },
+          "backward_including_loss": {
+            "p50_ms": 43.621682038065046,
+            "p95_ms": 51.592528627952554,
+            "p99_ms": 52.49011047068052,
+            "minimum_ms": 36.68462601490319,
+            "maximum_ms": 52.71450593136251,
+            "observations": 10240,
+            "rows_per_second": 23233.58148479454
+          },
+          "peak_inference_allocated_bytes": 138121216,
+          "peak_graph_allocated_bytes": 376678912,
+          "peak_graph_reserved_bytes": 490733568,
+          "initialization_median_seconds": 0.0028620469383895397,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        }
+      }
+    },
+    {
+      "code_commit": "c2c491c2ba3f19d7b542cdf750f0deebb76c1e77",
+      "benchmark_sha256": "c1baad9d305a068746860b4fd1bd86c399d694d40e7a762e2e9c5fb88c31eb0e",
+      "declaration_sha256": "8109c93320376843d94eae6ce2008fbfb71b7e4b83b193ab6cabd08f31eeef5f",
+      "recipe_sha256": "4a56ec8d5c42c43885fbf4c4f4270750b2013bc784a4f98bb5664f9a416c76bf",
+      "inputs": {
+        "data_sha256": "275365fa237cd78b2dcae50fd7e24a6e2f00a5f894889c976176519f4de0b436",
+        "dimensions": {
+          "news": 384,
+          "charts": 512,
+          "fundamentals": 78,
+          "macro": 420,
+          "prices": 5
+        },
+        "view_manifest_sha256": "2371878b94b01162a6c60566d3e1c9e152fbbfd589f4036fe4c2d973dddd421d",
+        "decisions": 8,
+        "targets_read": false
+      },
+      "device": "cuda:0",
+      "precision": "float64",
+      "tf32": false,
+      "versions": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0"
+      },
+      "gpu_at_start": "Tue Oct 20 11:30:21 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GeForce RTX 4070 ...    Off |   00000000:01:00.0  On |                  N/A |\n| N/A   39C    P8              5W /   80W |     594MiB /   8188MiB |      9%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2987      G   /usr/bin/gnome-shell                     99MiB |\n|    0   N/A  N/A            4270      G   /usr/bin/Xwayland                         2MiB |\n|    0   N/A  N/A            8862      G   ...rack-uuid=3190708988185955192        154MiB |\n|    0   N/A  N/A           17860    C+G   /usr/bin/nautilus                        51MiB |\n|    0   N/A  N/A         2428483      C   ...ime-20261001/.venv/bin/python        128MiB |\n+-----------------------------------------------------------------------------------------+\n",
+      "threads": 2,
+      "load_average": [
+        3.08349609375,
+        1.77587890625,
+        1.29638671875
+      ],
+      "warmup": 2,
+      "repetitions": 10,
+      "percentile_method": "numpy.quantile, linear",
+      "resident_models": 10,
+      "timing_scope": "DecisionBatch residente, prepare con validaciones y actualización neuronal. Inicialización y transferencia separadas.",
+      "order": "Alternancia de modelos con rotación por repetición",
+      "process_seconds": 86.93448308703955,
+      "process_peak_rss_bytes": 1589014528,
+      "unmeasured": [
+        "Lectura Parquet por decisión y codificadores anteriores al corpus",
+        "Energía",
+        "Contadores internos de kernels y bytes físicos transferidos"
+      ],
+      "optimizer_steps": 0,
+      "scientific_evaluation": false,
+      "final_test_access": false,
+      "raw_receipt": "cost-fp64-v1.json",
+      "raw_receipt_sha256": "8c7d47820aeec48574228ab7e60dca481a99f46e6345739468e314e5cd05553c",
+      "measured_at_utc": "2026-10-20T09:31:47.859310+00:00",
+      "cases": {
+        "mac_original/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 7.030642009340227,
+            "p95_ms": 12.348521413514389,
+            "p99_ms": 13.784748952602957,
+            "minimum_ms": 4.899469902738929,
+            "maximum_ms": 15.130494954064488,
+            "observations": 80,
+            "rows_per_second": 134.48113914902612
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.777084083296359,
+            "p95_ms": 10.614554956555367,
+            "p99_ms": 11.603556290501718,
+            "minimum_ms": 4.928525071591139,
+            "maximum_ms": 12.926656985655427,
+            "observations": 80,
+            "rows_per_second": 142.39890400846068
+          },
+          "backward_including_loss": {
+            "p50_ms": 54.51817094581202,
+            "p95_ms": 69.33520523598418,
+            "p99_ms": 70.28258987469599,
+            "minimum_ms": 47.28842503391206,
+            "maximum_ms": 70.51943603437394,
+            "observations": 80,
+            "rows_per_second": 141.79671608623516
+          },
+          "peak_inference_allocated_bytes": 82957824,
+          "peak_graph_allocated_bytes": 88165376,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.003950374491978437,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 198672,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.061944496352226,
+            "p95_ms": 12.410226353676988,
+            "p99_ms": 14.610748217673965,
+            "minimum_ms": 7.032574969343841,
+            "maximum_ms": 15.407366096042097,
+            "observations": 80,
+            "rows_per_second": 106.30134522519614
+          },
+          "forward_with_graph": {
+            "p50_ms": 8.934539509937167,
+            "p95_ms": 12.245233851717785,
+            "p99_ms": 12.852183993672949,
+            "minimum_ms": 7.22533802036196,
+            "maximum_ms": 13.169744983315468,
+            "observations": 80,
+            "rows_per_second": 107.40921267279421
+          },
+          "backward_including_loss": {
+            "p50_ms": 57.15627601603046,
+            "p95_ms": 67.99356717965566,
+            "p99_ms": 69.65619583497755,
+            "minimum_ms": 53.140418021939695,
+            "maximum_ms": 70.07185299880803,
+            "observations": 80,
+            "rows_per_second": 135.52920873533787
+          },
+          "peak_inference_allocated_bytes": 83131392,
+          "peak_graph_allocated_bytes": 88826880,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0037001934833824635,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 262160,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 6.420468504074961,
+            "p95_ms": 9.531737060751764,
+            "p99_ms": 11.670511089032505,
+            "minimum_ms": 5.113954073749483,
+            "maximum_ms": 12.942877947352827,
+            "observations": 80,
+            "rows_per_second": 144.61817885685375
+          },
+          "forward_with_graph": {
+            "p50_ms": 6.898142455611378,
+            "p95_ms": 11.741589801385999,
+            "p99_ms": 13.246506591094649,
+            "minimum_ms": 5.327195045538247,
+            "maximum_ms": 14.419407001696527,
+            "observations": 80,
+            "rows_per_second": 133.55939425958755
+          },
+          "backward_including_loss": {
+            "p50_ms": 55.801812442950904,
+            "p95_ms": 75.16095875180326,
+            "p99_ms": 77.37107974360698,
+            "minimum_ms": 50.75631104409695,
+            "maximum_ms": 77.9236099915579,
+            "observations": 80,
+            "rows_per_second": 135.1657232276817
+          },
+          "peak_inference_allocated_bytes": 83254784,
+          "peak_graph_allocated_bytes": 88493056,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0038257049745880067,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 8.844128984492272,
+            "p95_ms": 15.739166643470526,
+            "p99_ms": 17.088907362194718,
+            "minimum_ms": 7.531394017860293,
+            "maximum_ms": 18.583983997814357,
+            "observations": 80,
+            "rows_per_second": 106.20292482093154
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.101563540752977,
+            "p95_ms": 11.973539885366336,
+            "p99_ms": 13.175334397237746,
+            "minimum_ms": 7.448968011885881,
+            "maximum_ms": 13.36347998585552,
+            "observations": 80,
+            "rows_per_second": 104.9480826670778
+          },
+          "backward_including_loss": {
+            "p50_ms": 55.80865452066064,
+            "p95_ms": 70.70598276332018,
+            "p99_ms": 76.37330617755651,
+            "minimum_ms": 50.19707791507244,
+            "maximum_ms": 77.79013703111559,
+            "observations": 80,
+            "rows_per_second": 138.03700453649375
+          },
+          "peak_inference_allocated_bytes": 83428864,
+          "peak_graph_allocated_bytes": 88697344,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0037735115038231015,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.05044301180169,
+            "p95_ms": 15.432185941608621,
+            "p99_ms": 16.947161467978727,
+            "minimum_ms": 7.311739958822727,
+            "maximum_ms": 17.40399398840964,
+            "observations": 80,
+            "rows_per_second": 106.2714069491572
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.464992501307279,
+            "p95_ms": 12.45367919327691,
+            "p99_ms": 13.256573402322815,
+            "minimum_ms": 7.480086991563439,
+            "maximum_ms": 15.11489599943161,
+            "observations": 80,
+            "rows_per_second": 104.03662348723877
+          },
+          "backward_including_loss": {
+            "p50_ms": 61.307849013246596,
+            "p95_ms": 85.54156952304763,
+            "p99_ms": 95.27870582183823,
+            "minimum_ms": 55.72804901748896,
+            "maximum_ms": 97.71298989653587,
+            "observations": 80,
+            "rows_per_second": 123.25142031188277
+          },
+          "peak_inference_allocated_bytes": 83428352,
+          "peak_graph_allocated_bytes": 89154560,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.003805556974839419,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 8.940600499045104,
+            "p95_ms": 12.003112770617008,
+            "p99_ms": 12.503745090216388,
+            "minimum_ms": 7.2250369703397155,
+            "maximum_ms": 13.81744397804141,
+            "observations": 80,
+            "rows_per_second": 107.97758028465113
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.296744003426284,
+            "p95_ms": 16.053795360494405,
+            "p99_ms": 19.494041104335334,
+            "minimum_ms": 7.317470968700945,
+            "maximum_ms": 19.711486995220184,
+            "observations": 80,
+            "rows_per_second": 94.16085888733842
+          },
+          "backward_including_loss": {
+            "p50_ms": 66.8125880183652,
+            "p95_ms": 88.71959925163534,
+            "p99_ms": 97.64270145911725,
+            "minimum_ms": 59.21429896261543,
+            "maximum_ms": 99.8734770109877,
+            "observations": 80,
+            "rows_per_second": 115.47187752855638
+          },
+          "peak_inference_allocated_bytes": 83428864,
+          "peak_graph_allocated_bytes": 90088960,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0039832209586165845,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.288495464716107,
+            "p95_ms": 13.696057972265406,
+            "p99_ms": 14.524757572216911,
+            "minimum_ms": 7.562512066215277,
+            "maximum_ms": 14.60048696026206,
+            "observations": 80,
+            "rows_per_second": 102.59462007565368
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.381906071212143,
+            "p95_ms": 11.156589363235977,
+            "p99_ms": 16.52137074735946,
+            "minimum_ms": 7.759243017062545,
+            "maximum_ms": 17.685983912087977,
+            "observations": 80,
+            "rows_per_second": 104.27639694268161
+          },
+          "backward_including_loss": {
+            "p50_ms": 63.92595655051991,
+            "p95_ms": 74.29200134356506,
+            "p99_ms": 75.86392984376289,
+            "minimum_ms": 59.479376999661326,
+            "maximum_ms": 76.25691196881235,
+            "observations": 80,
+            "rows_per_second": 122.05300205079679
+          },
+          "peak_inference_allocated_bytes": 83428864,
+          "peak_graph_allocated_bytes": 90092544,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0037416369887068868,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.350897569674999,
+            "p95_ms": 12.042825925163925,
+            "p99_ms": 12.723332040477544,
+            "minimum_ms": 7.359910989180207,
+            "maximum_ms": 12.793536996468902,
+            "observations": 80,
+            "rows_per_second": 104.82516152618709
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.999317990150303,
+            "p95_ms": 13.790279859676955,
+            "p99_ms": 16.099980986909937,
+            "minimum_ms": 7.421747082844377,
+            "maximum_ms": 16.257195034995675,
+            "observations": 80,
+            "rows_per_second": 97.9580545576664
+          },
+          "backward_including_loss": {
+            "p50_ms": 59.718288481235504,
+            "p95_ms": 70.95203712233342,
+            "p99_ms": 71.9607434712816,
+            "minimum_ms": 50.79779902007431,
+            "maximum_ms": 72.21292005851865,
+            "observations": 80,
+            "rows_per_second": 130.75528564286176
+          },
+          "peak_inference_allocated_bytes": 83428352,
+          "peak_graph_allocated_bytes": 88690176,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.003851678513456136,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.337447525467724,
+            "p95_ms": 13.985107874032108,
+            "p99_ms": 14.795880115125321,
+            "minimum_ms": 7.3598099406808615,
+            "maximum_ms": 15.630546025931835,
+            "observations": 80,
+            "rows_per_second": 103.92820150582634
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.68046294292435,
+            "p95_ms": 12.55171109805815,
+            "p99_ms": 13.857118113664903,
+            "minimum_ms": 7.629988947883248,
+            "maximum_ms": 14.696056954562664,
+            "observations": 80,
+            "rows_per_second": 101.03146050763702
+          },
+          "backward_including_loss": {
+            "p50_ms": 54.993295460008085,
+            "p95_ms": 66.69164465274662,
+            "p99_ms": 67.97955290880054,
+            "minimum_ms": 49.571010982617736,
+            "maximum_ms": 68.30152997281402,
+            "observations": 80,
+            "rows_per_second": 140.65724027513482
+          },
+          "peak_inference_allocated_bytes": 83428864,
+          "peak_graph_allocated_bytes": 88697344,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.0041849405388347805,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/1": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.02795999008230865,
+          "inference": {
+            "p50_ms": 9.376335481647402,
+            "p95_ms": 12.84289939212612,
+            "p99_ms": 17.123220596695287,
+            "minimum_ms": 7.440402987413108,
+            "maximum_ms": 21.116120042279363,
+            "observations": 80,
+            "rows_per_second": 101.74524153447864
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.016525920946151,
+            "p95_ms": 17.435980954905958,
+            "p99_ms": 24.228383176960026,
+            "minimum_ms": 7.6020670821890235,
+            "maximum_ms": 27.409141999669373,
+            "observations": 80,
+            "rows_per_second": 90.532326598186
+          },
+          "backward_including_loss": {
+            "p50_ms": 66.07424945104867,
+            "p95_ms": 87.63271291973068,
+            "p99_ms": 90.75747225666419,
+            "minimum_ms": 51.9681409932673,
+            "maximum_ms": 91.53866209089756,
+            "observations": 80,
+            "rows_per_second": 117.82734609267489
+          },
+          "peak_inference_allocated_bytes": 83428864,
+          "peak_graph_allocated_bytes": 88697344,
+          "peak_graph_reserved_bytes": 92274688,
+          "initialization_median_seconds": 0.004233673040289432,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "mac_original/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 6.6018044599331915,
+            "p95_ms": 11.21579974424094,
+            "p99_ms": 19.191338798264038,
+            "minimum_ms": 4.942330997437239,
+            "maximum_ms": 19.979328964836895,
+            "observations": 5120,
+            "rows_per_second": 8906.475908770455
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.106032979208976,
+            "p95_ms": 9.631214739056302,
+            "p99_ms": 11.032143180491401,
+            "minimum_ms": 5.250560934655368,
+            "maximum_ms": 11.270991060882807,
+            "observations": 5120,
+            "rows_per_second": 8820.323905565969
+          },
+          "backward_including_loss": {
+            "p50_ms": 52.40268702618778,
+            "p95_ms": 62.69964120001532,
+            "p99_ms": 63.72606421005912,
+            "minimum_ms": 48.35856694262475,
+            "maximum_ms": 63.98266996257007,
+            "observations": 5120,
+            "rows_per_second": 9378.295464518269
+          },
+          "peak_inference_allocated_bytes": 117489152,
+          "peak_graph_allocated_bytes": 353710080,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.0036052099894732237,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 198672,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 8.931397984270006,
+            "p95_ms": 15.1269105495885,
+            "p99_ms": 18.277949390467256,
+            "minimum_ms": 7.419823901727796,
+            "maximum_ms": 18.28300708439201,
+            "observations": 5120,
+            "rows_per_second": 6616.988181469436
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.69745998736471,
+            "p95_ms": 13.142807880649343,
+            "p99_ms": 14.098087485181166,
+            "minimum_ms": 7.542084087617695,
+            "maximum_ms": 14.284902019426227,
+            "observations": 5120,
+            "rows_per_second": 6408.268280378029
+          },
+          "backward_including_loss": {
+            "p50_ms": 60.1888305391185,
+            "p95_ms": 71.69359413092025,
+            "p99_ms": 71.9331068044994,
+            "minimum_ms": 54.09293994307518,
+            "maximum_ms": 71.99298497289419,
+            "observations": 5120,
+            "rows_per_second": 8224.656520253222
+          },
+          "peak_inference_allocated_bytes": 126758912,
+          "peak_graph_allocated_bytes": 395530240,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.0036656190059147775,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 262160,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 6.969701498746872,
+            "p95_ms": 8.45406712614931,
+            "p99_ms": 8.830370017094538,
+            "minimum_ms": 5.624626064673066,
+            "maximum_ms": 8.854423998855054,
+            "observations": 5120,
+            "rows_per_second": 9075.23899357467
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.6140440069139,
+            "p95_ms": 9.889477083925158,
+            "p99_ms": 10.680640412028875,
+            "minimum_ms": 5.997417028993368,
+            "maximum_ms": 11.206530034542084,
+            "observations": 5120,
+            "rows_per_second": 8315.736096598937
+          },
+          "backward_including_loss": {
+            "p50_ms": 56.81331851519644,
+            "p95_ms": 81.94023337564427,
+            "p99_ms": 96.40694030444139,
+            "minimum_ms": 51.92866607103497,
+            "maximum_ms": 100.02361703664064,
+            "observations": 5120,
+            "rows_per_second": 8530.006043263056
+          },
+          "peak_inference_allocated_bytes": 136365568,
+          "peak_graph_allocated_bytes": 374681600,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.0034855595440603793,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.57849103724584,
+            "p95_ms": 12.390561948996035,
+            "p99_ms": 14.864768882980554,
+            "minimum_ms": 7.806601002812386,
+            "maximum_ms": 16.910183941945434,
+            "observations": 5120,
+            "rows_per_second": 6516.646807892904
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.73878795048222,
+            "p95_ms": 13.48530609393492,
+            "p99_ms": 16.78289564675651,
+            "minimum_ms": 8.110794005915523,
+            "maximum_ms": 17.173368949443102,
+            "observations": 5120,
+            "rows_per_second": 6261.531928443811
+          },
+          "backward_including_loss": {
+            "p50_ms": 54.86556747928262,
+            "p95_ms": 69.23744771047495,
+            "p99_ms": 71.91590636852197,
+            "minimum_ms": 52.06120596267283,
+            "maximum_ms": 72.58552103303373,
+            "observations": 5120,
+            "rows_per_second": 8778.108607100323
+          },
+          "peak_inference_allocated_bytes": 145668096,
+          "peak_graph_allocated_bytes": 386220544,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.0040239180088974535,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.76112944772467,
+            "p95_ms": 16.296964132925496,
+            "p99_ms": 17.06946462392807,
+            "minimum_ms": 7.801441941410303,
+            "maximum_ms": 17.210808931849897,
+            "observations": 5120,
+            "rows_per_second": 5964.4955735392095
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.686799952760339,
+            "p95_ms": 15.61311655095778,
+            "p99_ms": 19.100381352473047,
+            "minimum_ms": 8.05292499717325,
+            "maximum_ms": 19.689082982949913,
+            "observations": 5120,
+            "rows_per_second": 6109.613200341913
+          },
+          "backward_including_loss": {
+            "p50_ms": 65.32243092078716,
+            "p95_ms": 86.39340528170577,
+            "p99_ms": 92.97903144150041,
+            "minimum_ms": 58.38610895443708,
+            "maximum_ms": 94.62543798144907,
+            "observations": 5120,
+            "rows_per_second": 7501.50885652533
+          },
+          "peak_inference_allocated_bytes": 145635328,
+          "peak_graph_allocated_bytes": 416501760,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.004347216512542218,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.74593049613759,
+            "p95_ms": 16.49193565244786,
+            "p99_ms": 17.914419415174052,
+            "minimum_ms": 7.853880058974028,
+            "maximum_ms": 17.95062201563269,
+            "observations": 5120,
+            "rows_per_second": 6038.042198954255
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.417339508421719,
+            "p95_ms": 15.491639630636199,
+            "p99_ms": 17.337002451531582,
+            "minimum_ms": 8.033648948185146,
+            "maximum_ms": 18.39309500064701,
+            "observations": 5120,
+            "rows_per_second": 5960.211230058979
+          },
+          "backward_including_loss": {
+            "p50_ms": 69.5593694690615,
+            "p95_ms": 107.96885655145157,
+            "p99_ms": 123.2072321639862,
+            "minimum_ms": 61.21147493831813,
+            "maximum_ms": 127.01682606711984,
+            "observations": 5120,
+            "rows_per_second": 6695.361881079361
+          },
+          "peak_inference_allocated_bytes": 145668096,
+          "peak_graph_allocated_bytes": 476142080,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.004294947953894734,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.719576453790069,
+            "p95_ms": 16.16170900524594,
+            "p99_ms": 18.75900182523764,
+            "minimum_ms": 7.91463500354439,
+            "maximum_ms": 19.862710032612085,
+            "observations": 5120,
+            "rows_per_second": 6029.14996845611
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.456914023961872,
+            "p95_ms": 17.070631356909868,
+            "p99_ms": 17.917921236949034,
+            "minimum_ms": 8.09116696473211,
+            "maximum_ms": 19.034832017496228,
+            "observations": 5120,
+            "rows_per_second": 5687.9855744268425
+          },
+          "backward_including_loss": {
+            "p50_ms": 69.21813252847642,
+            "p95_ms": 100.58785314322446,
+            "p99_ms": 107.57398901623674,
+            "minimum_ms": 62.12698796298355,
+            "maximum_ms": 109.3205229844898,
+            "observations": 5120,
+            "rows_per_second": 6797.149763410696
+          },
+          "peak_inference_allocated_bytes": 145668096,
+          "peak_graph_allocated_bytes": 476145664,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.004447435028851032,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.62446752237156,
+            "p95_ms": 12.40912202047184,
+            "p99_ms": 13.89264877187087,
+            "minimum_ms": 7.785140071064234,
+            "maximum_ms": 15.337734948843718,
+            "observations": 5120,
+            "rows_per_second": 6388.899975839972
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.630760982166976,
+            "p95_ms": 12.781199940945953,
+            "p99_ms": 13.450811469228936,
+            "minimum_ms": 8.133535971865058,
+            "maximum_ms": 13.649095897562802,
+            "observations": 5120,
+            "rows_per_second": 6065.6994534213545
+          },
+          "backward_including_loss": {
+            "p50_ms": 60.60845544561744,
+            "p95_ms": 71.95676403935067,
+            "p99_ms": 73.42403048067355,
+            "minimum_ms": 53.55369404423982,
+            "maximum_ms": 73.79084709100425,
+            "observations": 5120,
+            "rows_per_second": 8272.506148186445
+          },
+          "peak_inference_allocated_bytes": 145635328,
+          "peak_graph_allocated_bytes": 385696256,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.004000563523732126,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.740405483171344,
+            "p95_ms": 13.265899365069345,
+            "p99_ms": 16.22282906784676,
+            "minimum_ms": 7.787053938955069,
+            "maximum_ms": 16.361561021767557,
+            "observations": 5120,
+            "rows_per_second": 6339.113781639943
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.799778974615037,
+            "p95_ms": 15.311301045585422,
+            "p99_ms": 17.857487328583368,
+            "minimum_ms": 7.188268005847931,
+            "maximum_ms": 18.617397057823837,
+            "observations": 5120,
+            "rows_per_second": 5944.553485123444
+          },
+          "backward_including_loss": {
+            "p50_ms": 57.28013103362173,
+            "p95_ms": 84.09707908867856,
+            "p99_ms": 91.01237740251236,
+            "minimum_ms": 53.60663402825594,
+            "maximum_ms": 92.7412019809708,
+            "observations": 5120,
+            "rows_per_second": 8104.280590027718
+          },
+          "peak_inference_allocated_bytes": 145668096,
+          "peak_graph_allocated_bytes": 386220544,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.00418818200705573,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/64": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.010157024953514338,
+          "inference": {
+            "p50_ms": 9.956802998203784,
+            "p95_ms": 20.30026857391931,
+            "p99_ms": 22.87768733920529,
+            "minimum_ms": 7.889447035267949,
+            "maximum_ms": 23.271785932593048,
+            "observations": 5120,
+            "rows_per_second": 5944.5101726882085
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.120687016751617,
+            "p95_ms": 13.177888974314556,
+            "p99_ms": 13.863915661349889,
+            "minimum_ms": 7.973075029440224,
+            "maximum_ms": 14.298008056357503,
+            "observations": 5120,
+            "rows_per_second": 6243.192380115685
+          },
+          "backward_including_loss": {
+            "p50_ms": 56.4477855223231,
+            "p95_ms": 73.27298361924477,
+            "p99_ms": 74.2376871558372,
+            "minimum_ms": 52.25906695704907,
+            "maximum_ms": 74.4788630399853,
+            "observations": 5120,
+            "rows_per_second": 8553.78570553564
+          },
+          "peak_inference_allocated_bytes": 145668096,
+          "peak_graph_allocated_bytes": 386220544,
+          "peak_graph_reserved_bytes": 501219328,
+          "initialization_median_seconds": 0.004026778449770063,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "mac_original/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 131088,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 7.284443534445018,
+            "p95_ms": 11.075152171542868,
+            "p99_ms": 11.291364418575538,
+            "minimum_ms": 5.273733986541629,
+            "maximum_ms": 11.420060996897519,
+            "observations": 10240,
+            "rows_per_second": 16202.2882373615
+          },
+          "forward_with_graph": {
+            "p50_ms": 7.757874496746808,
+            "p95_ms": 11.85806990833953,
+            "p99_ms": 12.528744866140183,
+            "minimum_ms": 5.335721070878208,
+            "maximum_ms": 12.964466935954988,
+            "observations": 10240,
+            "rows_per_second": 15514.38243365918
+          },
+          "backward_including_loss": {
+            "p50_ms": 65.0041300104931,
+            "p95_ms": 96.87459379201755,
+            "p99_ms": 97.74609152926132,
+            "minimum_ms": 53.00110101234168,
+            "maximum_ms": 97.96396596357226,
+            "observations": 10240,
+            "rows_per_second": 14980.08246615766
+          },
+          "peak_inference_allocated_bytes": 152585216,
+          "peak_graph_allocated_bytes": 626965504,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.004102189501281828,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "write_coherence/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 198672,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 10.221885982900858,
+            "p95_ms": 17.26762963226065,
+            "p99_ms": 17.91011968860402,
+            "minimum_ms": 7.592108100652695,
+            "maximum_ms": 18.884388031437993,
+            "observations": 10240,
+            "rows_per_second": 11415.990790356107
+          },
+          "forward_with_graph": {
+            "p50_ms": 11.707601952366531,
+            "p95_ms": 16.51832606876269,
+            "p99_ms": 19.915314879035552,
+            "minimum_ms": 7.995896972715855,
+            "maximum_ms": 22.943165968172252,
+            "observations": 10240,
+            "rows_per_second": 10712.700763543167
+          },
+          "backward_including_loss": {
+            "p50_ms": 82.87930797087029,
+            "p95_ms": 100.87549939053132,
+            "p99_ms": 103.93246388295665,
+            "minimum_ms": 57.25043802522123,
+            "maximum_ms": 104.69670500606298,
+            "observations": 10240,
+            "rows_per_second": 12890.93005952428
+          },
+          "peak_inference_allocated_bytes": 171096064,
+          "peak_graph_allocated_bytes": 710605824,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.004411386966239661,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_original/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 262160,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 8.223185548558831,
+            "p95_ms": 12.604500394081697,
+            "p99_ms": 13.825589108746492,
+            "minimum_ms": 5.842605023644865,
+            "maximum_ms": 14.71371902152896,
+            "observations": 10240,
+            "rows_per_second": 14148.680721767163
+          },
+          "forward_with_graph": {
+            "p50_ms": 8.566666452679783,
+            "p95_ms": 12.339863303350285,
+            "p99_ms": 12.879718573531129,
+            "minimum_ms": 6.076594931073487,
+            "maximum_ms": 13.795812032185495,
+            "observations": 10240,
+            "rows_per_second": 14296.296304182977
+          },
+          "backward_including_loss": {
+            "p50_ms": 62.146066047716886,
+            "p95_ms": 98.2619576563593,
+            "p99_ms": 101.28896434674971,
+            "minimum_ms": 55.224564974196255,
+            "maximum_ms": 102.04571601934731,
+            "observations": 10240,
+            "rows_per_second": 14721.60257432489
+          },
+          "peak_inference_allocated_bytes": 190336000,
+          "peak_graph_allocated_bytes": 668908544,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.0045093209482729435,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_unity/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 10.13296953169629,
+            "p95_ms": 16.699490806786343,
+            "p99_ms": 17.248585587367415,
+            "minimum_ms": 8.10565403662622,
+            "maximum_ms": 17.28799392003566,
+            "observations": 10240,
+            "rows_per_second": 11901.410186870708
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.627128591295332,
+            "p95_ms": 23.03138776333071,
+            "p99_ms": 26.079002012265835,
+            "minimum_ms": 8.1187590258196,
+            "maximum_ms": 27.4090199964121,
+            "observations": 10240,
+            "rows_per_second": 10916.37318803275
+          },
+          "backward_including_loss": {
+            "p50_ms": 61.662520514801145,
+            "p95_ms": 97.4523954617325,
+            "p99_ms": 106.28247509826906,
+            "minimum_ms": 53.282840992324054,
+            "maximum_ms": 108.4899950074032,
+            "observations": 10240,
+            "rows_per_second": 15139.26192248437
+          },
+          "peak_inference_allocated_bytes": 208912384,
+          "peak_graph_allocated_bytes": 691986432,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.004494317981880158,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_write/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 10.129783069714904,
+            "p95_ms": 12.543565570376813,
+            "p99_ms": 13.769744946621358,
+            "minimum_ms": 7.726569892838597,
+            "maximum_ms": 13.805370079353452,
+            "observations": 10240,
+            "rows_per_second": 12496.849421380603
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.01931051723659,
+            "p95_ms": 12.39464568789117,
+            "p99_ms": 13.90515044215135,
+            "minimum_ms": 8.265204029157758,
+            "maximum_ms": 14.31677199434489,
+            "observations": 10240,
+            "rows_per_second": 12487.055449472056
+          },
+          "backward_including_loss": {
+            "p50_ms": 62.6539170043543,
+            "p95_ms": 89.62073614820837,
+            "p99_ms": 94.44979917258024,
+            "minimum_ms": 58.847452979534864,
+            "maximum_ms": 95.65706492867321,
+            "observations": 10240,
+            "rows_per_second": 14949.956609557625
+          },
+          "peak_inference_allocated_bytes": 208846848,
+          "peak_graph_allocated_bytes": 752548864,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.004266728996299207,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_capture/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 9.611623012460768,
+            "p95_ms": 12.164414743892847,
+            "p99_ms": 13.589685738552353,
+            "minimum_ms": 7.890318986028433,
+            "maximum_ms": 14.653114951215684,
+            "observations": 10240,
+            "rows_per_second": 13029.218500495386
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.258384980261326,
+            "p95_ms": 13.676162279443815,
+            "p99_ms": 15.062021560734138,
+            "minimum_ms": 8.181035984307528,
+            "maximum_ms": 15.12401201762259,
+            "observations": 10240,
+            "rows_per_second": 12175.76377700025
+          },
+          "backward_including_loss": {
+            "p50_ms": 67.19812948722392,
+            "p95_ms": 91.4099616522435,
+            "p99_ms": 96.0608099505771,
+            "minimum_ms": 61.07527494896203,
+            "maximum_ms": 97.22352202516049,
+            "observations": 10240,
+            "rows_per_second": 14041.12093689296
+          },
+          "peak_inference_allocated_bytes": 208912384,
+          "peak_graph_allocated_bytes": 871829504,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.0043027474894188344,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_combined/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 9.646162507124245,
+            "p95_ms": 13.033790758345276,
+            "p99_ms": 13.39787227101624,
+            "minimum_ms": 7.98041804227978,
+            "maximum_ms": 13.404686003923416,
+            "observations": 10240,
+            "rows_per_second": 12887.019210783605
+          },
+          "forward_with_graph": {
+            "p50_ms": 9.773517493158579,
+            "p95_ms": 13.221613806672394,
+            "p99_ms": 13.906406697351485,
+            "minimum_ms": 8.150768931955099,
+            "maximum_ms": 13.910426991060376,
+            "observations": 10240,
+            "rows_per_second": 12461.540359335095
+          },
+          "backward_including_loss": {
+            "p50_ms": 67.25112796993926,
+            "p95_ms": 91.06745064491406,
+            "p99_ms": 91.58432531403378,
+            "minimum_ms": 63.06822597980499,
+            "maximum_ms": 91.7135439813137,
+            "observations": 10240,
+            "rows_per_second": 14177.774586216881
+          },
+          "peak_inference_allocated_bytes": 208912384,
+          "peak_graph_allocated_bytes": 871836672,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.0047927984851412475,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_write/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 9.728437522426248,
+            "p95_ms": 13.815518608316777,
+            "p99_ms": 19.275319706648578,
+            "minimum_ms": 7.95861694496125,
+            "maximum_ms": 20.5907589988783,
+            "observations": 10240,
+            "rows_per_second": 12250.516713047842
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.553309984970838,
+            "p95_ms": 13.483752601314334,
+            "p99_ms": 16.373117212206115,
+            "minimum_ms": 8.196323993615806,
+            "maximum_ms": 18.018229049630463,
+            "observations": 10240,
+            "rows_per_second": 11903.48030526651
+          },
+          "backward_including_loss": {
+            "p50_ms": 72.42705801036209,
+            "p95_ms": 92.25966357626018,
+            "p99_ms": 102.41560627706349,
+            "minimum_ms": 55.19310606177896,
+            "maximum_ms": 104.95459195226431,
+            "observations": 10240,
+            "rows_per_second": 14477.917198125097
+          },
+          "peak_inference_allocated_bytes": 208846848,
+          "peak_graph_allocated_bytes": 690937856,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.00429993198486045,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_capture/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 10.98069449653849,
+            "p95_ms": 16.546813526656475,
+            "p99_ms": 17.894826158881177,
+            "minimum_ms": 8.207365055568516,
+            "maximum_ms": 19.13637202233076,
+            "observations": 10240,
+            "rows_per_second": 10976.352685803138
+          },
+          "forward_with_graph": {
+            "p50_ms": 11.100729985628277,
+            "p95_ms": 13.29519315622747,
+            "p99_ms": 14.131430829875166,
+            "minimum_ms": 8.456344017758965,
+            "maximum_ms": 14.904479030519724,
+            "observations": 10240,
+            "rows_per_second": 11481.6120896799
+          },
+          "backward_including_loss": {
+            "p50_ms": 70.64436801010743,
+            "p95_ms": 76.80841712281106,
+            "p99_ms": 77.68705867230892,
+            "minimum_ms": 53.980433964170516,
+            "maximum_ms": 77.90671905968338,
+            "observations": 10240,
+            "rows_per_second": 15143.659756269553
+          },
+          "peak_inference_allocated_bytes": 208912384,
+          "peak_graph_allocated_bytes": 691986432,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.0055245665134862065,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        },
+        "cascade_fixed_both/128": {
+          "shared_parameters": 186055,
+          "state_tensor_bytes_per_flow": 329744,
+          "input_preparation_and_transfer_seconds": 0.017143272096291184,
+          "inference": {
+            "p50_ms": 10.768559528514743,
+            "p95_ms": 14.136066270293668,
+            "p99_ms": 15.381657225079824,
+            "minimum_ms": 7.928611012175679,
+            "maximum_ms": 16.569460975006223,
+            "observations": 10240,
+            "rows_per_second": 11803.522019885871
+          },
+          "forward_with_graph": {
+            "p50_ms": 10.714868956711143,
+            "p95_ms": 13.970874791266395,
+            "p99_ms": 16.407706203171983,
+            "minimum_ms": 8.551873965188861,
+            "maximum_ms": 16.54346298892051,
+            "observations": 10240,
+            "rows_per_second": 11629.317897820954
+          },
+          "backward_including_loss": {
+            "p50_ms": 69.79179399786517,
+            "p95_ms": 101.98423053370787,
+            "p99_ms": 105.69860613206401,
+            "minimum_ms": 56.21664202772081,
+            "maximum_ms": 106.62720003165305,
+            "observations": 10240,
+            "rows_per_second": 13889.517464732764
+          },
+          "peak_inference_allocated_bytes": 208912384,
+          "peak_graph_allocated_bytes": 691986432,
+          "peak_graph_reserved_bytes": 895483904,
+          "initialization_median_seconds": 0.004924532491713762,
+          "parameters_unchanged": true,
+          "unity_control_bitwise_parity": true
+        }
+      }
+    }
+  ]
+}

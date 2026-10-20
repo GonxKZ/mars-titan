@@ -91,3 +91,56 @@ def test_catalogue_variants_share_parameters_and_keep_unity_prediction_parity():
     )
     assert declaration["default_enabled"] is False
     assert declaration["final_test_access"] is False
+
+
+@pytest.mark.cuda
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+@pytest.mark.parametrize("kind", ["write", "capture", "combined"])
+def test_paper_projections_keep_cuda_gradients_and_next_prediction_after_recovery(dtype, kind):
+    from mars_titan.models.titans.config import PAPER_PROJECTIONS
+
+    base, _ = setup()
+    config = replace(
+        base.config,
+        memory_projections=PAPER_PROJECTIONS,
+        attention_layout="sequence_contiguous_v1",
+        memory_multiscale=MemoryMultiscale() if kind != "write" else None,
+        memory_plasticity=MemoryPlasticity(
+            write="none" if kind == "capture" else "coherence",
+            capture="none" if kind == "write" else "eligibility",
+        ),
+    )
+    model = api().FinancialPredictor(config, device="cuda:0", dtype=dtype)
+    reference = api().FinancialPredictor(config, dtype=dtype)
+    initial_at = 1_609_459_200_000_000
+    state = control = None
+    for index in range(3):
+        raw = raw_batch(at=initial_at + index * 10)
+        batch = api().DecisionBatch.from_corpus(raw, config.inputs, device="cuda:0", dtype=dtype)
+        cpu_batch = api().DecisionBatch.from_corpus(raw, config.inputs, dtype=dtype)
+        if state is None:
+            state = model.initial_state(batch.flow_ids, differentiable=True)
+            control = reference.initial_state(batch.flow_ids, differentiable=True)
+        actual = model.prepare(batch, state, differentiable=True)
+        expected = reference.prepare(cpu_batch, control, differentiable=True)
+        tolerance = 2e-5 if dtype == torch.float32 else 2e-12
+        torch.testing.assert_close(
+            actual.point_predictions.cpu(),
+            expected.point_predictions,
+            rtol=tolerance,
+            atol=tolerance,
+        )
+        state, control = actual.next_state, expected.next_state
+    actual.point_predictions.square().sum().backward()
+    gradients = [p.grad for p in model.parameters() if p.grad is not None]
+    assert gradients and all(torch.isfinite(g).all() for g in gradients)
+    assert model.mac.memory.key_projection.weight.grad.abs().sum() > 0
+    restored = model.restore_state(model.export_state_cpu(state), device="cuda:0")
+    batch = api().DecisionBatch.from_corpus(
+        raw_batch(at=initial_at + 30), config.inputs, device="cuda:0", dtype=dtype
+    )
+    following = model.prepare(batch, state)
+    recovered = model.prepare(batch, restored)
+    torch.testing.assert_close(
+        following.point_predictions, recovered.point_predictions, rtol=0, atol=0
+    )

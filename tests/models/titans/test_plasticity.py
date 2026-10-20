@@ -225,3 +225,30 @@ def test_autocast_cannot_silently_change_plasticity_precision():
     gradient = torch.ones(1, 2, 2)
     with torch.autocast("cpu", dtype=torch.bfloat16), pytest.raises(ValueError, match="autocast"):
         api().advance(configuration(), gradient, api().initial_history(gradient), torch.tensor([0]))
+
+
+def test_row_statistics_are_invariant_to_a_common_orthogonal_rotation():
+    gradient = torch.tensor([[[1.0, 2.0], [-3.0, 0.5]]], dtype=torch.float64)
+    mean = gradient / 3
+    energy = torch.full((1, 2, 1), 8.0, dtype=torch.float64)
+    tag = torch.full((1, 2, 1), 0.25, dtype=torch.float64)
+    rotation = torch.tensor([[1.0, -1.0], [1.0, 1.0]], dtype=torch.float64) / (2**0.5)
+    config, steps = configuration(capture="eligibility"), torch.tensor([5])
+    direct = api().advance(config, gradient, (mean, energy, tag), steps)
+    rotated = api().advance(config, gradient @ rotation, (mean @ rotation, energy, tag), steps)
+    for name in ("coherence", "write_gain", "capture_gain"):
+        torch.testing.assert_close(
+            getattr(direct, name), getattr(rotated, name), rtol=1e-14, atol=1e-14
+        )
+    torch.testing.assert_close(direct.history[0] @ rotation, rotated.history[0])
+
+
+def test_fixed_epsilon_prevents_claiming_scale_independent_coherence():
+    config = configuration()
+    coherence = []
+    for scale in (1.0, 1e-10):
+        gradient = torch.full((1, 2, 2), scale, dtype=torch.float64)
+        result = api().advance(config, gradient, api().initial_history(gradient), torch.tensor([0]))
+        coherence.append(result.coherence)
+    assert coherence[0].min() > 0.99
+    assert coherence[1].max() < 0.01

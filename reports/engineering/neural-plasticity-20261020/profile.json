@@ -1,0 +1,277 @@
+{
+  "raw_receipt_sha256": "afa68ba16dd3e4f4e6745196bc96e6943615972d04e9299b9171cee1c4f6ce0e",
+  "description": "Un recorrido de ocho decisiones y 128 flujos por modelo, con torch.profiler e instrumentación de la validación. Sus tiempos no se mezclan con los benchmarks sin instrumentar.",
+  "models": {
+    "cascade_original": {
+      "top_self_cpu": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 1748,
+          "self_cpu_us": 15470.635999999902,
+          "cpu_us": 15470.635999999902,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "aten::linalg_vector_norm",
+          "calls": 400,
+          "self_cpu_us": 8213.804999999984,
+          "cpu_us": 13361.556999999968,
+          "self_device_us": 2685.6010000000733,
+          "device_us": 2698.5300000000916,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 204800
+        },
+        {
+          "name": "Activity Buffer Request",
+          "calls": 2,
+          "self_cpu_us": 5706.288000000002,
+          "cpu_us": 5706.288000000002,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 72,
+          "self_cpu_us": 4112.009000000027,
+          "cpu_us": 7975.438000000038,
+          "self_device_us": 361.9229999999661,
+          "device_us": 437.44199999997,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 1835008
+        },
+        {
+          "name": "aten::addmm",
+          "calls": 112,
+          "self_cpu_us": 3849.2520000001223,
+          "cpu_us": 5840.767000000051,
+          "self_device_us": 1270.3450000000812,
+          "device_us": 1270.3450000000812,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 52981760
+        },
+        {
+          "name": "aten::copy_",
+          "calls": 155,
+          "self_cpu_us": 3548.110000000015,
+          "cpu_us": 6321.099000000029,
+          "self_device_us": 498.3380000000052,
+          "device_us": 498.3380000000052,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "aten::mul",
+          "calls": 200,
+          "self_cpu_us": 2772.491999999991,
+          "cpu_us": 4314.792000000049,
+          "self_device_us": 1104.2619999999624,
+          "device_us": 1104.2619999999624,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 270278656
+        },
+        {
+          "name": "_native::bmm_triton_0",
+          "calls": 16,
+          "self_cpu_us": 2598.521000000019,
+          "cpu_us": 3089.0939999999973,
+          "self_device_us": 75.51900000000387,
+          "device_us": 75.51900000000387,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "cudaMemcpyAsync",
+          "calls": 110,
+          "self_cpu_us": 2064.122999999977,
+          "cpu_us": 2064.122999999977,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "aten::empty",
+          "calls": 294,
+          "self_cpu_us": 1971.0070000001488,
+          "cpu_us": 1971.0070000001488,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 1024,
+          "self_device_memory_bytes": 74777600
+        },
+        {
+          "name": "aten::add",
+          "calls": 166,
+          "self_cpu_us": 1950.6349999999748,
+          "cpu_us": 2951.1129999999703,
+          "self_device_us": 747.3810000001122,
+          "device_us": 747.3810000001122,
+          "self_cpu_memory_bytes": 8336,
+          "self_device_memory_bytes": 185876480
+        },
+        {
+          "name": "aten::as_strided",
+          "calls": 1797,
+          "self_cpu_us": 1892.3310000003494,
+          "cpu_us": 1892.3310000003494,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        }
+      ],
+      "plasticity_validation": []
+    },
+    "cascade_combined": {
+      "top_self_cpu": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 3348,
+          "self_cpu_us": 23250.420999999744,
+          "cpu_us": 23250.420999999744,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "aten::linalg_vector_norm",
+          "calls": 694,
+          "self_cpu_us": 11273.173000000195,
+          "cpu_us": 18302.635999999933,
+          "self_device_us": 4205.4160000003685,
+          "device_us": 4217.7990000003665,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 355328
+        },
+        {
+          "name": "aten::all",
+          "calls": 309,
+          "self_cpu_us": 4374.70700000026,
+          "cpu_us": 6569.48099999998,
+          "self_device_us": 1073.4220000000569,
+          "device_us": 1073.4220000000569,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 158208
+        },
+        {
+          "name": "aten::mul",
+          "calls": 408,
+          "self_cpu_us": 4237.921000000046,
+          "cpu_us": 6649.756999999812,
+          "self_device_us": 1638.78999999989,
+          "device_us": 1638.78999999989,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 342638592
+        },
+        {
+          "name": "aten::ge",
+          "calls": 293,
+          "self_cpu_us": 4017.384999999833,
+          "cpu_us": 6138.266000000125,
+          "self_device_us": 451.6229999999523,
+          "device_us": 451.6229999999523,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 1901056
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 72,
+          "self_cpu_us": 3715.2720000001973,
+          "cpu_us": 7172.858000000117,
+          "self_device_us": 366.3709999999628,
+          "device_us": 441.6689999999362,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 1835008
+        },
+        {
+          "name": "aten::addmm",
+          "calls": 112,
+          "self_cpu_us": 3357.2160000000003,
+          "cpu_us": 5042.9609999999975,
+          "self_device_us": 1280.2350000000806,
+          "device_us": 1280.2350000000806,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 52981760
+        },
+        {
+          "name": "aten::add",
+          "calls": 302,
+          "self_cpu_us": 3211.242000000142,
+          "cpu_us": 5011.955999999995,
+          "self_device_us": 1155.7269999999771,
+          "device_us": 1155.7269999999771,
+          "self_cpu_memory_bytes": 8336,
+          "self_device_memory_bytes": 222593024
+        },
+        {
+          "name": "Activity Buffer Request",
+          "calls": 1,
+          "self_cpu_us": 2968.275,
+          "cpu_us": 2968.275,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "plasticity.input_validation",
+          "calls": 16,
+          "self_cpu_us": 2508.9020000001074,
+          "cpu_us": 6701.409999999985,
+          "self_device_us": 0.0,
+          "device_us": 477.44299999991927,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": -548864
+        },
+        {
+          "name": "aten::unsqueeze",
+          "calls": 1146,
+          "self_cpu_us": 2361.66599999997,
+          "cpu_us": 3001.1089999999795,
+          "self_device_us": 0,
+          "device_us": 0,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        },
+        {
+          "name": "_native::bmm_triton_0",
+          "calls": 16,
+          "self_cpu_us": 2328.1820000000007,
+          "cpu_us": 2782.0149999999885,
+          "self_device_us": 75.2979999999734,
+          "device_us": 75.2979999999734,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        }
+      ],
+      "plasticity_validation": [
+        {
+          "name": "plasticity.input_validation",
+          "calls": 16,
+          "self_cpu_us": 2508.9020000001074,
+          "cpu_us": 6701.409999999985,
+          "self_device_us": 0.0,
+          "device_us": 477.44299999991927,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": -548864
+        },
+        {
+          "name": "plasticity.input_validation",
+          "calls": 16,
+          "self_cpu_us": 0,
+          "cpu_us": 0,
+          "self_device_us": 5146.993999999999,
+          "device_us": 5146.993999999999,
+          "self_cpu_memory_bytes": 0,
+          "self_device_memory_bytes": 0
+        }
+      ]
+    }
+  }
+}

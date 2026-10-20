@@ -94,6 +94,33 @@
       "accessed_on": "2026-10-20",
       "inspection": "Mecanismo de contexto y selección. No seleccionado para este contraste.",
       "experiments_reproduced": false
+    },
+    {
+      "id": "jiang2026neuroplastic",
+      "title": "NeuroPlastic: A Plasticity-Modulated Optimizer for Biologically Inspired Learning Dynamics",
+      "url": "https://arxiv.org/abs/2604.26297v1",
+      "inspected_url": "https://arxiv.org/html/2604.26297v1",
+      "accessed_on": "2026-10-20",
+      "inspection": "Preprint arXiv:2604.26297v1. Revisadas las secciones 3.2–3.6, sus señales, modulación y estabilización. Sin ejecutar código ni repetir sus resultados.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "joo2026magma",
+      "title": "On Surprising Effectiveness of Masking Updates in Adaptive Optimizers",
+      "url": "https://arxiv.org/abs/2602.15322v1",
+      "inspected_url": "https://arxiv.org/html/2602.15322v1",
+      "accessed_on": "2026-10-20",
+      "inspection": "Preprint arXiv:2602.15322v1. Inspeccionada la modulación por alineamiento de la sección 3 y su contexto de entrenamiento de lenguaje. Sin reproducción.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "wen2026mols",
+      "title": "Revealing Modular Gradient Noise Imbalance in LLMs: Calibrating Adam via Signal-to-Noise Ratio",
+      "url": "https://arxiv.org/abs/2605.05794v1",
+      "inspected_url": "https://arxiv.org/html/2605.05794v1",
+      "accessed_on": "2026-10-20",
+      "inspection": "Preprint arXiv:2605.05794v1. Inspeccionadas motivación, ecuaciones 1–4 y descripción de calibración de tasas por módulo. Sin reproducción.",
+      "experiments_reproduced": false
     }
   ],
   "scope": "Revisión dirigida. No acredita ausencia de antecedentes, novedad ni mejora predictiva.",

@@ -29,14 +29,14 @@ MAX_DENSE_ORDER = 256
 
 def fast_state_dimension(config: MACConfig) -> int:
     """Orden de z: matrices y momentum, con convolución las tres ventanas de un flujo y, con
-    PT5, los niveles ocultos de cada capa."""
+    PT5, los niveles ocultos de cada capa, y las estadísticas de plasticidad si están activas."""
     memory = config.memory
     matrices = (2 + memory.hidden_levels) * memory.depth
     return matrices * memory.dim**2 + 3 * memory.window * memory.dim + memory.modulation_elements
 
 
 def fast_state_point(state):
-    """Vector z de un estado MAC: pesos rápidos, momentum, ventanas k, v y q y niveles."""
+    """Vector z con pesos, momentum, ventanas, niveles y estadísticas de plasticidad."""
     memory = state.memory
     values = (
         *memory.weights,

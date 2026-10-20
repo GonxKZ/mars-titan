@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "verified_at_utc": "2026-10-20T11:21:30.199635+00:00",
+  "source_sha256": {
+    "benchmarks/neural_plasticity_cost.py": "3b3beb83b73a99392fdc1c2b9bab866c3e7d3260ce1dad91e9cd46867c06b8d9",
+    "benchmarks/neural_plasticity_study.py": "208d340ec3dcd3c8e171f48382bd24d96ec9bd8feeb1d6767fbe4b2596db6dd6",
+    "src/mars_titan/models/titans/neural_memory.py": "1dbc8bb10f9d8c4502f3e512664fe3a0282a8f49deac39c71a80bd3ec9de7fea",
+    "src/mars_titan/models/titans/plasticity.py": "6a6b2247f15e11e19510da8bfcce11de5431fa0a6cb982dcd8739470843f9098",
+    "src/mars_titan/models/titans/plasticity_config.py": "f589e31914b3020e03bb359e946a0130eb085eaa9d8b1cda6119d5909b234082",
+    "src/mars_titan/models/titans/state.py": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+    "src/mars_titan/models/titans/transition_jacobian.py": "f8b22086882b2ff0db28a6130fc818aeaafb24998cd78a21ccf7ba9c0e19e84f"
+  },
+  "regression": {
+    "tests": 621,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pytest_seconds": 31.87,
+    "junit_timestamp": "2026-10-20T13:12:23.575185+02:00",
+    "junit_sha256": "60a40a05e28ae5dcf49753d9b52375c674ec24b98dabf6d5b2d4ef7167fd242c",
+    "warning": "PyTorch indica que su modo de depuración de sincronizaciones es experimental",
+    "pytest_paths": [
+      "tests/models/titans/test_plasticity.py",
+      "tests/models/titans/test_plasticity_integration.py",
+      "tests/models/titans/test_financial_plasticity.py",
+      "tests/models/titans/test_neural_memory.py",
+      "tests/models/titans/test_mac.py",
+      "tests/models/titans/test_multiscale_memory.py",
+      "tests/models/titans/test_memory_stability.py",
+      "tests/models/titans/test_gate_bias.py",
+      "tests/models/titans/test_financial_adapter.py",
+      "tests/models/titans/test_financial_blocks.py",
+      "tests/models/titans/test_financial_control.py",
+      "tests/models/titans/test_local_control.py",
+      "tests/models/titans/test_transition_jacobian.py",
+      "tests/models/titans/test_market_memory.py",
+      "tests/models/titans/test_state_metadata_size.py",
+      "tests/models/titans/test_memory_residual_norm.py",
+      "tests/models/titans/test_paper_projections.py",
+      "tests/tooling/test_neural_plasticity_cost.py",
+      "tests/tooling/test_neural_plasticity_study.py"
+    ],
+    "test_sha256": {
+      "tests/models/titans/test_plasticity.py": "0d015b7e074db087b043747ae81d3b4ecb19ffe41726e7272aed4284a7a121ec",
+      "tests/models/titans/test_plasticity_integration.py": "042cc3b978f3b16dfc489c7f7f5b6336e016e9139bc48f23d775369b72833999",
+      "tests/models/titans/test_financial_plasticity.py": "66dc6f073ac6b7467e2cea86cc2ecabbe282c311b381840e13136589111afe3d",
+      "tests/models/titans/test_neural_memory.py": "1cd1a90ecaa2ea8a02b67d19e033958239cf2123ff4d716488bc4de0d28cc369",
+      "tests/models/titans/test_mac.py": "2f063d6c573ca45ea7eae6260e82302c529860cad165ccfcc8a55e3ec3e1bc90",
+      "tests/models/titans/test_multiscale_memory.py": "fd35f7b6dc0a772d11e6a06bdecc3c04bcba240d2d4ba71e94e476a4fa52faa9",
+      "tests/models/titans/test_memory_stability.py": "c46b9129b5803cc4b0697a4866eff8e3105d2d7eea01b630f229896199b864c8",
+      "tests/models/titans/test_gate_bias.py": "eed7d4fa61a800c2f337ee2eb05ead27f6f0868ed36062948e19518cbc972d42",
+      "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17",
+      "tests/models/titans/test_financial_blocks.py": "c8db854e7bfc06b0fc39c1cf543f80f621730d4e5d88c4f427f35c0184de4cc5",
+      "tests/models/titans/test_financial_control.py": "6c9af105a86b2fa47228d23d92fe7150868e89718afdec65d1edae666def93a7",
+      "tests/models/titans/test_local_control.py": "fed4692a24d8def42ca023da0c6abcf508c942a0221a8280197e5eeeda513b1a",
+      "tests/models/titans/test_transition_jacobian.py": "29763b74d2433b1255d6e876c63406b4882376fa1b8e506b5b4af6a23743b0c7",
+      "tests/models/titans/test_market_memory.py": "d024d19350e2ebcbb90601b1480a449ff17624633a08aeb5d37040eefeef8400",
+      "tests/models/titans/test_state_metadata_size.py": "e57e997e4c88bf42a3671d1681d982fbaef2defdf396944888401292d4432b1c",
+      "tests/models/titans/test_memory_residual_norm.py": "bbeedebc5247f088d4ec9c7c68d3284f02a87824604c9206f2a43b100b6e1647",
+      "tests/models/titans/test_paper_projections.py": "18396229c0d6ec770bdb31ec902395a6902b908d7e1810f79dadca2bf32612f6",
+      "tests/tooling/test_neural_plasticity_cost.py": "d711af320d693cf2aaaf57aa55b2ff944181647b6f90be80c5f5ecee59ee5fae",
+      "tests/tooling/test_neural_plasticity_study.py": "9aac194880e664c08520d15c0d8756dba93e248db9c6364a278a64d4983c9b0a"
+    }
+  },
+  "coverage": {
+    "totals": {
+      "statements": 957,
+      "covered_statements": 915,
+      "branches": 312,
+      "covered_branches": 277
+    },
+    "functions_measured": 77,
+    "maximum_crap": {
+      "path": "src/mars_titan/models/titans/neural_memory.py",
+      "function": "NeuralMemory.validate_state",
+      "start_line": 192,
+      "end_line": 260,
+      "cyclomatic_complexity": 32,
+      "statements": 42,
+      "covered_statements": 40,
+      "coverage_fraction": 0.9523809523809523,
+      "branches": 22,
+      "covered_branches": 20,
+      "crap": 32.11057121261203
+    },
+    "technical_cuda_smoke_sha256": "3432b74e19cf8d54898cd7cb54c3bf4f875da75eb1a9f5b6f0df73401a649183",
+    "pilot_manifest_preparation_sha256": "1514a0c6a0486340b543ad274e5783b13c18626d6e138eb6558d00a5b9b39636",
+    "scope": "Regresión con fixtures, recorrido CUDA instrumentado y preparación de manifiestos. Los tiempos instrumentados no son evidencia de rendimiento."
+  },
+  "mutations": {
+    "directed_tested": 20,
+    "directed_killed": 20,
+    "receipt": "mutations-v2.json",
+    "universal_mutation_coverage": false
+  },
+  "pilot_preflight": {
+    "jobs": 11,
+    "counts": {
+      "train": 203350,
+      "validation": 8000,
+      "calibration": 3968,
+      "evaluation": 15936
+    },
+    "environment": {
+      "python": "3.12.14",
+      "packages": {
+        "torch": "2.14.0+cu130",
+        "numpy": "2.5.3",
+        "pyarrow": "25.0.1"
+      }
+    },
+    "scientific_runs_started": 0
+  },
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "final_test_opened": false,
+  "limits": [
+    "No se ha medido mejora predictiva de estas variantes",
+    "Las pruebas formales son escalares sobre los reales, no certificados de la red ni de FP32/FP64",
+    "No equivale a cobertura ni mutación universal del repositorio"
+  ],
+  "intermediate_checks": "Los recibos intermedios y controles negativos se conservan localmente. La primera revisión publicada está en verification.json."
+}

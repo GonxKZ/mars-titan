@@ -19,6 +19,8 @@ z' = trace_decay·z + (1−trace_decay)·u
 
 El cociente c mide persistencia de dirección en la historia observada. Si beta=0, a=1. En los demás casos se calcula a mediante `expm1` para evitar la resta de números próximos a uno. `epsilon` tiene unidades de gradiente al cuadrado. Se exige que sea normal y representable en FP32 o FP64.
 
+Las escalas cuentan actualizaciones observadas. Con los valores iniciales 0,9 y 0,95, las semividas de los factores exponenciales son unas 6,58 y 13,51 actualizaciones. Un hueco sin observaciones no hace avanzar estos contadores. Esas semividas no describen retención semántica ni tiempos biológicos.
+
 La escritura usa `w = write_floor + (1−write_floor)·c`. Con las puertas α, η y θ del núcleo, la actualización completa del momentum es:
 
 ```text
@@ -49,6 +51,8 @@ Con inicialización nula, los pesos de la media exponencial suman a. Cauchy–Sc
 
 La saturación entre cero y uno forma parte del algoritmo numérico. Los gradientes, momentos, energías corregidas, denominadores y cocientes se comprueban antes de saturar. Un desbordamiento produce un error, no una ganancia aparentemente válida. Los resultados FP32/FP64 no son cotas numéricas certificadas.
 
+La estadística por fila conserva su valor ante una rotación ortogonal conjunta de los gradientes y su media, porque solo utiliza sus normas. Esta propiedad no implica invariancia de toda la red. Una escala multiplicativa no conserva exactamente el cociente cuando epsilon es relevante. Para una secuencia constante no nula, `c = a²·||g||²/(a²·||g||²+epsilon)`. Por eso un gradiente persistente muy pequeño puede recibir una ganancia próxima al suelo.
+
 La actualización de z es una combinación convexa, por lo que conserva [0,1] si z y u están en ese intervalo y `0≤trace_decay<1`. Las ganancias permanecen entre su suelo y uno. Un suelo positivo evita anular directamente la escritura, pero no garantiza conservar información útil ni aprender una asociación.
 
 Para el intercambio aislado entre capacidades 1 y 2, fijado e, sean `x'=x+e(y−x)` e `y'=y+e(x−y)/2`. Entonces:
@@ -60,6 +64,8 @@ Para el intercambio aislado entre capacidades 1 y 2, fijado e, sean `x'=x+e(y−
 La energía ponderada no crece para `0≤e≤4/3`. Este resultado solo describe ese intercambio pasivo con e fijado. La actualización real incluye pérdida asociativa, puertas, olvido, momentum, otras interfaces y una ganancia dependiente del estado. La desigualdad no es un certificado de contracción de Titans ni del predictor.
 
 El Jacobiano continuo incluye pesos rápidos, momentum, niveles PT5, media, energía y elegibilidad. El contador es una condición discreta del paso. `transition_jacobian.py` incluye esos elementos en su punto, dimensión y reconstrucción. Una estimación local sigue siendo un diagnóstico local.
+
+La saturación introduce puntos no diferenciables y el estado admisible exige v≥0 y z∈[0,1]. Una matriz obtenida por autodiferenciación en esas fronteras no demuestra un Jacobiano clásico en un entorno abierto ni una cota uniforme sobre el dominio.
 
 ## Fronteras de software y comprobaciones
 
@@ -77,5 +83,7 @@ Las rutas anteriores están dentro de `src/mars_titan/models/titans`, salvo el r
 Con `differentiable=True`, los gradientes externos atraviesan los momentos, ganancias y trazas. En inferencia se separan del grafo. No se retiene el historial completo. Los estados exportados incluyen `modulation` únicamente en la identidad activa. Se rechazan campos ausentes, tipos o dispositivos incompatibles, energía negativa, trazas fuera de dominio y almacenamiento compartido entre estados que deban ser independientes.
 
 La preasignación cuenta el estado auxiliar antes de crear el lote. Esta cuenta no incluye el grafo temporal ni los buffers de las bibliotecas. Los picos de RAM y VRAM necesitan una medida aparte. Una configuración con memoria auxiliar y ganancias unitarias es un control de coste, no una afirmación de memoria gratuita.
+
+El recorrido interno reutiliza la validación de configuración, precisión, estado y contador que realiza `NeuralMemory` antes de recorrer los tokens. La función pública `advance` conserva esa validación para llamadas independientes. Ambas comparten `_advance_validated`, que mantiene la comprobación de los valores intermedios. La optimización evita comprobaciones redundantes, sin quitar el rechazo de estados externos inválidos ni de desbordamientos. La [comparación emparejada](../../reports/engineering/neural-plasticity-20261020/boundary-cost.json) registra el recorrido completo y la paridad comprobada.
 
 La comprobación técnica cubre paridad exacta de la ruta desactivada y de los pesos con ganancias unitarias, partición de secuencias, recuperación, causalidad de prefijos, orden de flujos, FP32/FP64 y CUDA. Las mutaciones dirigidas alteran ganancias, captura, serialización, contador, presupuesto y dimensión del Jacobiano. Sus resultados y denominadores se registran en el informe de verificación.

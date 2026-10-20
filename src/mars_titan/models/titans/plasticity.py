@@ -106,6 +106,16 @@ def advance(
     gradiente al cuadrado y no representa una varianza inferida.
     """
     _validate(config, gradient, history, steps)
+    return _advance_validated(config, gradient, history, steps)
+
+
+def _advance_validated(config, gradient, history, steps):
+    """Paso interno tras validar configuración, precisión, estado y contador en la frontera.
+
+    NeuralMemory comprueba esa frontera antes de recorrer sus tokens. Los estados
+    siguientes proceden de esta recurrencia. Se conservan todas las comprobaciones de
+    valores intermedios, incluidos los desbordamientos de denominadores.
+    """
     previous_mean, previous_energy, previous_tag = history
     squared = gradient.square().sum(dim=-1, keepdim=True)
     mean = config.beta * previous_mean + (1 - config.beta) * gradient

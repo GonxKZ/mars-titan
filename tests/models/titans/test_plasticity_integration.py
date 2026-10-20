@@ -43,6 +43,41 @@ def same_state(left, right):
         torch.testing.assert_close(a, b, rtol=0, atol=0)
 
 
+def test_internal_steps_reuse_the_checked_boundary_and_match_the_public_reference(monkeypatch):
+    from mars_titan.models.titans import neural_memory, plasticity
+
+    model = memory(MemoryPlasticity(capture="eligibility"), cascade=True)
+    tokens = observations()
+    state = model.initial_state(2)
+    calls = []
+    validate = plasticity._validate
+
+    def counted(*args):
+        calls.append(1)
+        return validate(*args)
+
+    monkeypatch.setattr(plasticity, "_validate", counted)
+    optimized = model.update(tokens, state, differentiable=True)
+    optimized_loss = sum(x.sum() for x in (*optimized.weights, *optimized.modulation))
+    optimized_grads = torch.autograd.grad(
+        optimized_loss, tuple(model.parameters()), allow_unused=True
+    )
+    assert calls == []
+    monkeypatch.setattr(neural_memory, "advance_plasticity", plasticity.advance)
+    reference = model.update(tokens, state, differentiable=True)
+    reference_loss = sum(x.sum() for x in (*reference.weights, *reference.modulation))
+    reference_grads = torch.autograd.grad(
+        reference_loss, tuple(model.parameters()), allow_unused=True
+    )
+    same_state(optimized, reference)
+    assert len(calls) == tokens.shape[1]
+    for actual, expected in zip(optimized_grads, reference_grads, strict=True):
+        if expected is None:
+            assert actual is None
+        else:
+            torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+
 @pytest.mark.parametrize("cascade", [False, True])
 def test_unity_controls_preserve_the_original_weights_and_rng(cascade):
     base = memory(None, cascade=cascade)
@@ -96,6 +131,26 @@ def test_future_suffix_cannot_change_the_prefix_or_its_gradients():
     (gradient,) = torch.autograd.grad(loss, tokens)
     assert torch.count_nonzero(gradient[:, 2]) == 0
     assert torch.isfinite(gradient).all() and gradient[:, :2].abs().sum() > 0
+
+
+def test_inference_does_not_retain_the_graph_of_received_plasticity_history():
+    model = memory(MemoryPlasticity(capture="eligibility"), cascade=True)
+    tokens = observations()
+    with_graph = model.update(
+        tokens[:, :2].contiguous(), model.initial_state(2), differentiable=True
+    )
+    assert any(value.requires_grad for value in with_graph.modulation)
+    with torch.no_grad():
+        following = model.update(tokens[:, 2:].contiguous(), with_graph)
+    assert all(
+        not value.requires_grad and value.grad_fn is None
+        for value in (
+            *following.weights,
+            *following.momentum,
+            *following.levels,
+            *following.modulation,
+        )
+    )
 
 
 @pytest.mark.parametrize("field", ["missing", "negative_energy", "bad_tag", "alias", "dtype"])
@@ -211,12 +266,14 @@ def test_shared_memory_updates_one_history_independent_of_input_order():
     assert left.steps.tolist() == [1]
 
 
-def test_mac_split_join_and_full_jacobian_include_every_auxiliary_value():
+@pytest.mark.parametrize("kernel", [0, 2])
+def test_mac_split_join_and_full_jacobian_include_every_auxiliary_value(kernel):
     config = MemoryConfig(
         2,
         depth=1,
         plasticity=MemoryPlasticity(capture="eligibility"),
         multiscale=MemoryMultiscale(),
+        qkv_convolution=kernel,
     )
     mac = TitansMAC(MACConfig(config, heads=1, persistent_tokens=1), dtype=torch.float64)
     state = mac.initial_state(2)
@@ -226,11 +283,12 @@ def test_mac_split_join_and_full_jacobian_include_every_auxiliary_value():
     for a, b in zip(mac_tensors(state), mac_tensors(joined), strict=True):
         torch.testing.assert_close(a, b, rtol=0, atol=0)
     # W, momentum, dos niveles y m/v/z: 16+4+2+2 = 24.
-    assert fast_state_dimension(mac.config) == 24
-    assert fast_state_point(left).shape == (24,)
+    size = 24 if kernel == 0 else 30
+    assert fast_state_dimension(mac.config) == size
+    assert fast_state_point(left).shape == (size,)
     token = torch.tensor([[[0.2, -0.1]]], dtype=torch.float64)
     jacobian = fast_state_jacobian(mac, token, left)
-    assert jacobian.shape == (24, 24) and torch.isfinite(jacobian).all()
+    assert jacobian.shape == (size, size) and torch.isfinite(jacobian).all()
     _, following = mac(token, left)
     torch.testing.assert_close(
         fast_state_transition(mac, token, left)(fast_state_point(left)),
