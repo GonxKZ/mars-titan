@@ -79,6 +79,27 @@ def test_factorial_interaction_and_constant_controls_keep_their_direction():
     }
 
 
+def test_key_competition_contrasts_keep_fixed_selection_and_zero_controls():
+    names = [
+        "original",
+        "all_components",
+        "centered",
+        "competitive",
+        "centered_competitive",
+        "fixed",
+        "centered_fixed",
+    ]
+    result = api().key_competition_contrasts(names)
+    assert result["interaction"] == dict(
+        centered_competitive=1, centered=-1, competitive=-1, original=1
+    )
+    assert result["centered_competitive_minus_centered_fixed"] == dict(
+        centered_competitive=1, centered_fixed=-1
+    )
+    assert result["competitive_minus_fixed"] == dict(competitive=1, fixed=-1)
+    assert result["original_minus_zero"] == dict(original=1, zero=-1)
+
+
 @pytest.mark.parametrize(
     "interval,expected",
     [
@@ -284,23 +305,29 @@ def test_unity_control_requires_identical_predictions_and_shared_tensors():
     assert not api().unity_control(panel(), panel(), payload, other)["passed"]
 
 
-def complete_fixture(tmp_path, fault):
-    """Archivos mínimos de once ejecuciones simuladas, sin modelos entrenados."""
+def complete_fixture(tmp_path, fault, version="v1"):
+    """Archivos mínimos de un catálogo simulado, sin modelos entrenados."""
     import torch
 
-    from benchmarks.neural_plasticity_study import VARIANTS
+    from benchmarks.neural_plasticity_study import study_files
     from mars_titan.data.storage import atomic_json, sha256
 
     prepared, _, template, _ = run_fixture(tmp_path)
+    key_study = version == "key_competition_v1"
+    candidate = "centered_competitive" if key_study else "cascade_combined"
+    reference = "original" if key_study else "cascade_original"
+    unit = "all_components" if key_study else "cascade_unity"
+    prepared["study_version"] = version
     prepared["configuration"].update(
         seeds=[42],
-        primary_reference="cascade_original",
-        primary_candidate="cascade_combined",
+        primary_reference=reference,
+        primary_candidate=candidate,
+        validity_control=dict(reference=reference, unit=unit),
         minimum_relevant_mae=1e-5,
         bootstrap=dict(block_length=1, replicates=100, seed=7, confidence=0.95),
         sensitivity_block_lengths=[],
     )
-    names = list(json.loads(VARIANTS.read_text())["arms"])
+    names = list(json.loads(study_files(version)[1].read_text())["arms"])
     prepared["jobs"] = [dict(id=f"{name}-42", arm=name, seed=42, changes={}) for name in names]
     atomic_json(tmp_path / "prepared.json", prepared)
     digest = sha256(tmp_path / "prepared.json")
@@ -326,18 +353,18 @@ def complete_fixture(tmp_path, fault):
                 "prediction_at",
                 pa.array([start, start, start + 86_400_000_000], type=pa.timestamp("us", tz="UTC")),
             )
-            if name == "cascade_combined":
+            if name == candidate:
                 table = table.set_column(5, "prediction", table["target"])
-            if fault == "unit_calibration" and name == "cascade_unity" and phase == "calibration":
+            if fault == "unit_calibration" and name == unit and phase == "calibration":
                 table = table.set_column(5, "prediction", pa.array([2.0, 0.0, 0.0]))
             path = folder / f"{phase}.parquet"
             pq.write_table(table, path)
             report["predictions"][phase] = dict(
                 path=path.name,
                 sha256=sha256(path),
-                metrics=dict(session_mae=0.0 if name == "cascade_combined" else 5.5),
+                metrics=dict(session_mae=0.0 if name == candidate else 5.5),
             )
-        if fault == "updates" and name == "cascade_unity":
+        if fault == "updates" and name == unit:
             report["fit"]["global_step"] = 3
         atomic_json(folder / "run.json", report)
         receipt = dict(
@@ -359,12 +386,13 @@ def complete_fixture(tmp_path, fault):
 
 
 @pytest.mark.parametrize("fault", ["none", "unit_calibration", "updates"])
+@pytest.mark.parametrize("version", ["v1", "key_competition_v1"])
 def test_complete_analysis_keeps_control_failures_and_known_session_contrasts(
-    tmp_path, monkeypatch, learning_doubles, fault
+    tmp_path, monkeypatch, learning_doubles, fault, version
 ):
     work = tmp_path / "input"
     work.mkdir()
-    prepared = complete_fixture(work, fault)
+    prepared = complete_fixture(work, fault, version)
     # Se sustituye solo la auditoría del productor. Lecturas, hashes y análisis son reales.
     monkeypatch.setattr(api(), "verify_prepared", lambda path: prepared)
     output = tmp_path / "output"
@@ -375,8 +403,13 @@ def test_complete_analysis_keeps_control_failures_and_known_session_contrasts(
         return
     result = api().analyze(work, output)
     assert result["primary"]["contrasts"][0]["estimate"] == -5.5
-    assert result["costs"]["total_wrapper_seconds"] == 22.0
-    assert len(list(output.glob("*-sessions.parquet"))) == 12
+    assert result["costs"]["total_wrapper_seconds"] == 2.0 * len(prepared["jobs"])
+    assert len(list(output.glob("*-sessions.parquet"))) == 1 + len(prepared["jobs"])
+    assert result["kind"] == (
+        "key_competition_development_results"
+        if version == "key_competition_v1"
+        else "neural_plasticity_development_results"
+    )
     assert result["unity_control"]["passed"] is (fault == "none")
     expected = (
         "menor_error_en_desarrollo"
