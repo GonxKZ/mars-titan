@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-20T16:58:42.346841+00:00",
+  "groups": [
+    {
+      "name": "feedback-final-tests.xml",
+      "tests": 98,
+      "sha256": "fe7db68fa9e636c6468df709815a1fd50745da703f281767de0bd4f1f72857af"
+    },
+    {
+      "name": "frozen-input.xml",
+      "tests": 1,
+      "sha256": "a7153838687294314bef37e742b8871f2bc316512d93a7b525c8488517b53c1e"
+    },
+    {
+      "name": "integration-tests.xml",
+      "tests": 244,
+      "sha256": "ad3e8e1ff056ba8da3b27153253ed677af12bf78740126f829b2fb422b04a663"
+    },
+    {
+      "name": "routing-provenance.xml",
+      "tests": 2,
+      "sha256": "fc561aa8ff70a79aa82d4c52f9723bf493d4f5df05cfe80f1233c83549ad90ce"
+    },
+    {
+      "name": "frozen-route-tests.xml",
+      "tests": 42,
+      "sha256": "15cb9032c57d2b9e99545dc70131748eb63499d6832aac67f4a510eab99b5140"
+    },
+    {
+      "name": "guard-coverage.xml",
+      "tests": 4,
+      "sha256": "a8ac59e8589e67277dceb402ff59e740d4388aa946113315dbae1855806fd098"
+    },
+    {
+      "name": "financial-regression.xml",
+      "tests": 88,
+      "sha256": "dd6325163299ab9c9576dd0b1607d4cedd4f6fdfd25fdbf458acf261e4c89673"
+    },
+    {
+      "name": "adapter-cuda.xml",
+      "tests": 4,
+      "sha256": "d83a73e229ee1297b7139e51969163a44618ddb8ba279572cc7e1ed6285c5af9"
+    }
+  ],
+  "distinct_passed_cases": 378,
+  "mutations": [
+    {
+      "group": "feedback-mutations",
+      "recorded_at_utc": "2026-10-20T16:14:49.035917+00:00",
+      "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+      "mutations": [
+        {
+          "exit_code": 1,
+          "seconds": 2.5715443619992584,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_primary_scale",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "truth) / 10",
+          "after": "truth) / 5",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.4212727249832824,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "auxiliary_includes_primary",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "total - primary, local",
+          "after": "total, local",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.3204697610344738,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_total_gradient",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "autograd.grad(total, local)",
+          "after": "autograd.grad(primary, local)",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.1201034479308873,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "modify_input_flag",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "encoded.detach().requires_grad_(True)",
+          "after": "encoded.requires_grad_(True)",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.1708851730218157,
+          "tests": 6,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_gradient_finiteness",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "if any(not torch.isfinite(value).all().item() for value in result.values()):",
+          "after": "if False:",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.2206373020308092,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_derivation_context",
+          "file": "src/mars_titan/evaluation/quantile_feedback.py",
+          "before": "with torch.enable_grad():",
+          "after": "with torch.no_grad():",
+          "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+        }
+      ],
+      "restored": {
+        "exit_code": 0,
+        "seconds": 2.472063894965686,
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "group": "routing-mutations-final",
+      "recorded_at_utc": "2026-10-20T16:50:45.138462+00:00",
+      "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+      "mutations": [
+        {
+          "exit_code": 1,
+          "seconds": 2.872737723053433,
+          "tests": 8,
+          "failures": 4,
+          "errors": 0,
+          "skipped": 0,
+          "name": "restore_tail_location_feedback",
+          "file": "src/mars_titan/models/quantile_head.py",
+          "before": "point if routing.median_from_tails else point.detach()",
+          "after": "point",
+          "source_sha256": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.4216335049131885,
+          "tests": 8,
+          "failures": 4,
+          "errors": 0,
+          "skipped": 0,
+          "name": "restore_encoder_feedback",
+          "file": "src/mars_titan/models/quantile_head.py",
+          "before": "functional.linear(value.detach(), self.weight, self.bias)",
+          "after": "functional.linear(value, self.weight, self.bias)",
+          "source_sha256": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.520896972040646,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_active_routes",
+          "file": "src/mars_titan/models/quantile_head.py",
+          "before": "or not torch.is_grad_enabled()",
+          "after": "or True",
+          "source_sha256": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 1.8195138240698725,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "detach_primary_output",
+          "file": "src/mars_titan/models/quantile_head.py",
+          "before": "            median,\n",
+          "after": "            tail_location,\n",
+          "source_sha256": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.7218625280074775,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_route_identity",
+          "file": "src/mars_titan/models/titans/financial.py",
+          "before": "result.update(quantile_routing=self.quantile_routing.identity())",
+          "after": "pass",
+          "source_sha256": "355ee0bd03e93ff9cc54f01f03a7eb20f397da49d1e8dc6c338fc76ba9b4ec6f"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.922246110974811,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "disconnect_financial_route",
+          "file": "src/mars_titan/models/titans/financial.py",
+          "before": "QuantileHead(config.hidden_size, routing=config.quantile_routing)",
+          "after": "QuantileHead(config.hidden_size)",
+          "source_sha256": "355ee0bd03e93ff9cc54f01f03a7eb20f397da49d1e8dc6c338fc76ba9b4ec6f"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.971839225036092,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "allow_scalar_route",
+          "file": "src/mars_titan/models/titans/financial.py",
+          "before": "or self.head != QUANTILE_HEAD",
+          "after": "or False",
+          "source_sha256": "355ee0bd03e93ff9cc54f01f03a7eb20f397da49d1e8dc6c338fc76ba9b4ec6f"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.4708695110166445,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_producer_routing_source",
+          "file": "src/mars_titan/training/titans_walk_forward.py",
+          "before": "    \"mars_titan.models.quantile_routing\",",
+          "after": "",
+          "source_sha256": "c14cc7e8e356b09d021cd9429e88d75e80551379cbf930678b066b2c188c87e2"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.4709280090173706,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_frozen_routing_source",
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "before": "    \"mars_titan.models.quantile_routing\",",
+          "after": "",
+          "source_sha256": "261c71b15f612dd9ba0e4a6b14663c5249ef44412ac7dd9e29321ecbd6b32457"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 1.9198169199516997,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "allow_non_boolean_route",
+          "file": "src/mars_titan/models/quantile_routing.py",
+          "before": "type(self.median_from_tails) is not bool",
+          "after": "False",
+          "source_sha256": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4"
+        }
+      ],
+      "restored": {
+        "exit_code": 0,
+        "seconds": 3.4221476550446823,
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "group": "route-guard-mutations",
+      "recorded_at_utc": "2026-10-20T16:35:42.895744+00:00",
+      "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+      "mutations": [
+        {
+          "exit_code": 1,
+          "seconds": 3.2734160060063004,
+          "tests": 4,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_live_contract_guard",
+          "file": "src/mars_titan/models/titans/financial.py",
+          "before": "if self.config.head == QUANTILE_HEAD and self.head.routing != self.config.quantile_routing:",
+          "after": "if False:",
+          "source_sha256": "355ee0bd03e93ff9cc54f01f03a7eb20f397da49d1e8dc6c338fc76ba9b4ec6f"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 3.022391607053578,
+          "tests": 4,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_frozen_route_settings",
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "before": "settings[\"quantile_routing\"] = module.routing.identity()",
+          "after": "pass",
+          "source_sha256": "261c71b15f612dd9ba0e4a6b14663c5249ef44412ac7dd9e29321ecbd6b32457"
+        }
+      ],
+      "restored": {
+        "exit_code": 0,
+        "seconds": 2.4207978959893808,
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "quality": {
+    "statements": 1098,
+    "covered_statements": 926,
+    "branches": 470,
+    "covered_branches": 338
+  },
+  "coverage_source_convention": "Se combinan por archivo solo datos recogidos sobre su revisión actual. FinancialConfig y FrozenFinancialConsumer usan las ejecuciones posteriores a añadir la protección de la ruta viva.",
+  "limits": [
+    "Verificación focalizada, no toda la batería del repositorio.",
+    "Los 18 mutantes son los casos dirigidos definidos, no todos los mutantes posibles.",
+    "Las cuatro comprobaciones CUDA excluidas de la regresión CPU se ejecutaron por separado y pasaron. PyTorch emitió un aviso sobre el modo de diagnóstico de sincronización.",
+    "No se ha comprobado esta modificación con Lean. Las propiedades de derivación se contrastaron con autodiferenciación y un contraejemplo explícito.",
+    "La cobertura se informa por archivo sobre su revisión actual. No incluye la ejecución científica como si fuera cobertura de pruebas."
+  ]
+}
