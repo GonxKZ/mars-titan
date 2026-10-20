@@ -13,6 +13,7 @@ from .cohort_feedback_state import (
     KIND,
     MAX_ROWS,
     POLICY,
+    CohortCapacityError,
     copy_cohorts,
     identifier,
     limits,
@@ -84,6 +85,21 @@ class CohortFeedback:
     def corrections(self, group):
         return self._calibrator.corrections(group)
 
+    def can_emit(self, group, *, rows):
+        """Disponibilidad por recuentos sobre el snapshot actual, sin anticipar feedback.
+
+        El tamaño JSON exacto se comprueba al construir la propuesta. Esta consulta
+        no acredita ese presupuesto ni modifica el calibrador.
+        """
+        _require(
+            type(rows) is int and 1 <= rows <= MAX_ROWS, "Las filas de la cohorte no son válidas"
+        )
+        pending = self._calibrator.pending(group)
+        return (
+            rows + self.pending_rows <= self._max_rows
+            and len(pending) < self._calibrator._header["max_pending"]
+        )
+
     def _fork(self):
         return type(self)(
             OnlineConformal.restore(self._calibrator.export()),
@@ -108,10 +124,11 @@ class CohortFeedback:
         _require(
             type(sample_ids) in (tuple, list)
             and type(matures_at) in (tuple, list)
-            and 0 < len(sample_ids) == len(matures_at)
-            and len(sample_ids) + self.pending_rows <= self._max_rows,
-            "La cohorte no conserva sus filas o supera el presupuesto pendiente",
+            and 0 < len(sample_ids) == len(matures_at),
+            "La cohorte no conserva sus filas",
         )
+        if not self.can_emit(group, rows=len(sample_ids)):
+            raise CohortCapacityError("La cohorte supera el presupuesto pendiente de PT2")
         names = [identifier(name) for name in sample_ids]
         _require(len(set(names)) == len(names), "Una cohorte no puede repetir una identidad")
         due = [_instant(value, "La madurez de fila") for value in matures_at]

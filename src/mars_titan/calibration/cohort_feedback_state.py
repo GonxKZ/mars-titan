@@ -29,6 +29,10 @@ FIELDS = {
 ROW_FIELDS = {"sample_id", "matures_at", "available_at", "value", "status", "evidence_sha256"}
 
 
+class CohortCapacityError(ValueError):
+    """La propuesta válida no cabe. No indica un resultado financiero ni un error de identidad."""
+
+
 def copy_cohorts(cohorts):
     """Copiar contenedores de filas ya validadas, cuyos campos son escalares inmutables."""
     return [dict(item, rows=[dict(row) for row in item["rows"]]) for item in cohorts]
@@ -97,10 +101,8 @@ def seal(payload):
         raise ValueError("El estado necesita valores JSON finitos") from error
     digest = hashlib.sha256(canonical.encode()).hexdigest()
     result = dict(payload, state_sha256=digest)
-    _require(
-        len(_canonical(result).encode()) <= payload["max_bytes"],
-        "El estado supera su presupuesto de bytes serializados",
-    )
+    if len(_canonical(result).encode()) > payload["max_bytes"]:
+        raise CohortCapacityError("El estado supera su presupuesto de bytes serializados")
     return result
 
 
