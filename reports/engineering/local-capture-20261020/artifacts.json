@@ -1,0 +1,71 @@
+{
+  "recorded_at_utc": "2026-10-20T22:20:07.285843+00:00",
+  "storage": "Fuera de Git, rutas relativas al directorio de ejecución.",
+  "artifacts": [
+    {
+      "relative_path": "cost-inputs-256x8.npz",
+      "sha256": "adbcc0f8bd9abea8f61dff19b6442540eed116ac33941c72bebab06069a8bbb5",
+      "bytes": 14625222
+    },
+    {
+      "relative_path": "cost-inputs-256x8.json",
+      "sha256": "27e394ed2d4d2f0fc6cf796668c009685580f5fd524bfce48eba2c1663a14fd2",
+      "bytes": 157122
+    },
+    {
+      "relative_path": "cost-view-256-v1.json",
+      "sha256": "81e0baafc29490f0227a1773f5a1f29fc9b9ce2c79a8349f5b1dd978ec313d67",
+      "bytes": 390386
+    },
+    {
+      "relative_path": "cost-selection-v1.json",
+      "sha256": "78e7e59ed8855ee36a6cd43b457195ebe296c42a1f9126d2c46ffddba3d55a1c",
+      "bytes": 35201
+    },
+    {
+      "relative_path": "select-cost-view.py",
+      "sha256": "e26a8772ce1c92f03f4052fd1f64870df9de723f59176637ec8958e2db90e745",
+      "bytes": 3004
+    },
+    {
+      "relative_path": "materialize-256-v1.log",
+      "sha256": "099398c474b16fe0812822d64e80d55546ef296254dfbf5becbcd64a90306b7f",
+      "bytes": 2573
+    },
+    {
+      "relative_path": "materialize-256-v2.log",
+      "sha256": "29628d4bfd22fd21c954ca32970a5e0d45982b9c5e37017e61035f929b9b13d5",
+      "bytes": 2172
+    },
+    {
+      "relative_path": "materialize-256-v3.log",
+      "sha256": "589694fb0d569ef17944e0f885916e69a19c02164dc4f2b31e49afc6acb12706",
+      "bytes": 1340
+    },
+    {
+      "relative_path": "cost-selection-v1.log",
+      "sha256": "a28cf82e2fedb64e0b51d108b512f1d95de6e302161f8bb615341eaf2c262a96",
+      "bytes": 1097
+    },
+    {
+      "relative_path": "measure-financial-cost.py",
+      "sha256": "4e839906e0287b9a008319975551321f211cd2b9938a9d7b320835f0a19e76bb",
+      "bytes": 3527
+    },
+    {
+      "relative_path": "measure-financial-cost-v2.py",
+      "sha256": "e6ab7532ce3eb66f43ce110c8a8d44f5e09ad07353835df4cde83259331b57a5",
+      "bytes": 3518
+    },
+    {
+      "relative_path": "financial-cost-float32-v1.log",
+      "sha256": "7ccc8a3e87ca8a21b5474b17760ed4be9c6329c1d8e480bfe5b66d75a5ac8f87",
+      "bytes": 426
+    },
+    {
+      "relative_path": "financial-cost-float64-v1.log",
+      "sha256": "1ed32d5beb11aaa4ab6bf7535d05ce9a4149cd0b943d36eed33299a3bae230d8",
+      "bytes": 430
+    }
+  ]
+}

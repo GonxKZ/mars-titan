@@ -1,6 +1,6 @@
-# Verificación de captura local de plasticidad
+# Captura local de plasticidad
 
-La variante `capture_scope="row_local"` sustituye únicamente la coherencia media entre filas por la coherencia de la propia fila al modular la captura PT5. Conserva parámetros, número de estados, RNG y huellas anteriores cuando no se selecciona. El [protocolo](../../../docs/experiments/local-capture-v1.md) fija la comparación posterior con captura global y constante. Esta verificación no contiene resultados predictivos.
+La variante `capture_scope="row_local"` sustituye únicamente la coherencia media entre filas por la coherencia de la propia fila al modular la captura PT5. Conserva parámetros, número de estados, RNG y huellas anteriores cuando no se selecciona. Su [contraste de desarrollo](development-v1/README.md) completó 15 ajustes y obtuvo un 7,20 % más MAE medio que la captura global. Las tres configuraciones pierden frente al residual cero. La variante permanece desactivada.
 
 Se ejecutaron 350 casos distintos en dos selecciones, 279 y 71, con 51 casos CUDA, sin fallos, errores u omisiones. Se comprobaron gradientes FP32/FP64, contraste analítico, independencia condicionada entre filas y flujos, ambos sentidos del intercambio, paridad unitaria, bytes persistentes, RNG, recuperación y compatibilidad histórica. Los dos fixtures originales de paridad aplicaron 16 pasos de AdamW en total. No utilizaron el corpus financiero ni abrieron el test final.
 
@@ -11,3 +11,5 @@ La cobertura con ramas de coverage.py, resumida mediante Radon y las regiones de
 El máximo CRAP de la selección es 204,48 en `FinancialConfig.__post_init__`. Es un validador histórico con otras combinaciones que esta selección no cubre completamente. Esa cifra se conserva como diagnóstico. No se afirma cobertura completa del predictor ni ausencia de errores. Una prueba anterior del diagnóstico de sincronización de PyTorch emitió su advertencia sobre el carácter provisional de esa API.
 
 Pasaron Ruff, formato y el verificador del repositorio. El [recibo](verification.json) identifica las fuentes y las dos selecciones. Las salidas XML, cobertura completa e intentos intermedios se conservan fuera del repositorio. Los controles sintéticos comprueban el mecanismo y no prueban mejora financiera, estabilidad global o superioridad frente al estado del arte.
+
+Se añadieron cuatro casos específicos de permutación y causalidad local, dos CPU y dos CUDA, con proyecciones del artículo. Pasaron sin omisiones y sus tres mutantes de alineamiento de estados quedaron detectados. El [recibo adicional](causality-verification.json) y sus [mutaciones](causality-mutations.json) se conservan por separado. Junto con los 13 casos del materializador, la verificación reúne 367 casos distintos y 20 mutantes dirigidos. El [coste del predictor y de la memoria](../../engineering/local-capture-20261020/README.md) también se midió, sin ajustes adicionales.

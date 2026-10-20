@@ -25,3 +25,5 @@ Si el recurso restante impide completar el catálogo, se detiene por presupuesto
 La preparación reutiliza `benchmarks.neural_plasticity_study --version local_capture_v1`. El análisis reutiliza `benchmarks.quantile_multiseed_analysis` con identificación propia, control de inicialización y los contrastes anteriores. Se sellan código, configuración, datos y entorno antes de aprender. Las excepciones locales se cierran en todos los casos. La campaña completa y el test final de 2024 permanecen cerrados.
 
 Al registrar este protocolo no hay entrenamientos ni resultados predictivos de la variante local. Su implementación y sus pruebas técnicas no acreditan una mejora frente al estado del arte. El resultado del estudio, cuando exista, se publicará con su procedencia sin reemplazar esta declaración inicial.
+
+El [resultado posterior](../../reports/research/local-capture-20261020/development-v1/README.md) completa los 15 ajustes. La captura local empeora el MAE medio frente a la global y al control constante. Las tres configuraciones pierden frente al residual cero. La declaración anterior se conserva para distinguir lo fijado antes de ejecutar de lo observado después.

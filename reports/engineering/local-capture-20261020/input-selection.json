@@ -1,0 +1,2159 @@
+{
+  "recorded_at_utc": "2026-10-20T21:48:51.613922+00:00",
+  "source_manifest_sha256": "6c398f5a06f80fea4f3a8a263d5054cc9e7e121676eac7d671910aa6be40f904",
+  "view_sha256": "81e0baafc29490f0227a1773f5a1f29fc9b9ce2c79a8349f5b1dd978ec313d67",
+  "script_sha256": "e26a8772ce1c92f03f4052fd1f64870df9de723f59176637ec8958e2db90e745",
+  "dates_us": [
+    1297803900000000,
+    1297890300000000,
+    1297976700000000,
+    1298063100000000,
+    1298408700000000,
+    1298495100000000,
+    1298581500000000,
+    1298667900000000
+  ],
+  "selected": [
+    "A",
+    "AA",
+    "AACG",
+    "AADR",
+    "AAL",
+    "AAME",
+    "AAON",
+    "AAP",
+    "AAPL",
+    "AAXJ",
+    "AB",
+    "ABCB",
+    "ABEO",
+    "ABEV",
+    "ABG",
+    "ABM",
+    "ABR",
+    "ABT",
+    "ABUS",
+    "ACAD",
+    "ACCO",
+    "ACGL",
+    "ACHC",
+    "ACHV",
+    "ACIW",
+    "ACLS",
+    "ACM",
+    "ACN",
+    "ACNB",
+    "ACTG",
+    "ACU",
+    "ACWI",
+    "ACWX",
+    "ADBE",
+    "ADC",
+    "ADI",
+    "ADM",
+    "ADP",
+    "ADSK",
+    "ADTN",
+    "ADUS",
+    "ADX",
+    "AEE",
+    "AEF",
+    "AEG",
+    "AEHR",
+    "AEIS",
+    "AEM",
+    "AEMD",
+    "AEO",
+    "AEP",
+    "AER",
+    "AES",
+    "AFB",
+    "AFG",
+    "AFK",
+    "AFL",
+    "AG",
+    "AGCO",
+    "AGD",
+    "AGEN",
+    "AGG",
+    "AGI",
+    "AGM",
+    "AGM-A",
+    "AGNC",
+    "AGO",
+    "AGQ",
+    "AGX",
+    "AGYS",
+    "AGZ",
+    "AHT",
+    "AIA",
+    "AIG",
+    "AIM",
+    "AIN",
+    "AIR",
+    "AIRT",
+    "AIT",
+    "AIV",
+    "AIZ",
+    "AJG",
+    "AKAM",
+    "AKO-A",
+    "AKO-B",
+    "AKR",
+    "ALB",
+    "ALCO",
+    "ALE",
+    "ALG",
+    "ALGN",
+    "ALGT",
+    "ALK",
+    "ALKS",
+    "ALL",
+    "ALLT",
+    "ALNY",
+    "ALOT",
+    "ALRS",
+    "ALV",
+    "ALX",
+    "AMAT",
+    "AMD",
+    "AME",
+    "AMED",
+    "AMG",
+    "AMGN",
+    "AMJ",
+    "AMKR",
+    "AMLP",
+    "AMN",
+    "AMPE",
+    "AMRC",
+    "AMRN",
+    "AMS",
+    "AMSC",
+    "AMSF",
+    "AMT",
+    "AMTX",
+    "AMWD",
+    "AMX",
+    "AMZN",
+    "AN",
+    "ANDE",
+    "ANF",
+    "ANIK",
+    "ANIP",
+    "ANSS",
+    "ANTE",
+    "AOA",
+    "AOK",
+    "AOM",
+    "AON",
+    "AOR",
+    "AOS",
+    "AOSL",
+    "AP",
+    "APA",
+    "APD",
+    "APDN",
+    "APEI",
+    "APH",
+    "APOG",
+    "APPS",
+    "APT",
+    "APTO",
+    "APWC",
+    "ARAY",
+    "ARCB",
+    "ARCC",
+    "ARE",
+    "ARI",
+    "ARKR",
+    "ARLP",
+    "ARMP",
+    "AROC",
+    "AROW",
+    "ARR",
+    "ARTW",
+    "ARW",
+    "ARWR",
+    "ASA",
+    "ASB",
+    "ASG",
+    "ASGN",
+    "ASH",
+    "ASM",
+    "ASML",
+    "ASRT",
+    "ASRV",
+    "ASTC",
+    "ASTE",
+    "ASUR",
+    "ASX",
+    "ASYS",
+    "ATEC",
+    "ATHE",
+    "ATI",
+    "ATLO",
+    "ATNI",
+    "ATO",
+    "ATR",
+    "ATRC",
+    "ATRO",
+    "ATSG",
+    "AUB",
+    "AUBN",
+    "AUDC",
+    "AVA",
+    "AVAV",
+    "AVB",
+    "AVDL",
+    "AVGO",
+    "AVK",
+    "AVNW",
+    "AVT",
+    "AVY",
+    "AWF",
+    "AWI",
+    "AWK",
+    "AWP",
+    "AWR",
+    "AWRE",
+    "AXDX",
+    "AXGN",
+    "AXP",
+    "AXR",
+    "AXS",
+    "AYRO",
+    "AZN",
+    "AZO",
+    "AZZ",
+    "BA",
+    "BAB",
+    "BAK",
+    "BANC",
+    "BAP",
+    "BAX",
+    "BB",
+    "BBAR",
+    "BBD",
+    "BBDC",
+    "BBGI",
+    "BBH",
+    "BBN",
+    "BBSI",
+    "BBVA",
+    "BBW",
+    "BBY",
+    "BC",
+    "BCBP",
+    "BCDA",
+    "BCE",
+    "BCH",
+    "BCLI",
+    "BCML",
+    "BCO",
+    "BCPC",
+    "BCRX",
+    "BCV",
+    "BDC",
+    "BDJ",
+    "BDN",
+    "BECN",
+    "BELFA",
+    "BEN",
+    "BEP",
+    "BFC",
+    "BFIN",
+    "BFK",
+    "BFS",
+    "BFZ",
+    "BG",
+    "BGFV",
+    "BGI",
+    "BGR"
+  ],
+  "inspected": [
+    {
+      "symbol": "A",
+      "dates_available": true
+    },
+    {
+      "symbol": "AA",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAAU",
+      "dates_available": false
+    },
+    {
+      "symbol": "AACG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AADR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAL",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAME",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAOI",
+      "dates_available": false
+    },
+    {
+      "symbol": "AAON",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAP",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAPL",
+      "dates_available": true
+    },
+    {
+      "symbol": "AAT",
+      "dates_available": false
+    },
+    {
+      "symbol": "AAXJ",
+      "dates_available": true
+    },
+    {
+      "symbol": "AB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABBV",
+      "dates_available": false
+    },
+    {
+      "symbol": "ABCB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABEO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABEQ",
+      "dates_available": false
+    },
+    {
+      "symbol": "ABEV",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABG",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABM",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABT",
+      "dates_available": true
+    },
+    {
+      "symbol": "ABUS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACA",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACAD",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACB",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACCO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACEL",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACES",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACGL",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACGLO",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACHC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACHV",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACI",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACIO",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACIU",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACIW",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACLS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACM",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACMR",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACN",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACNB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACP",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACRE",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACRS",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACSI",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACTG",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACU",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACV",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACWI",
+      "dates_available": true
+    },
+    {
+      "symbol": "ACWV",
+      "dates_available": false
+    },
+    {
+      "symbol": "ACWX",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADAP",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADBE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADCT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADI",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADIL",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADM",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADMA",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADME",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADNT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADP",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADPT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADSK",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADTN",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADTX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADUS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADVM",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADX",
+      "dates_available": true
+    },
+    {
+      "symbol": "ADXN",
+      "dates_available": false
+    },
+    {
+      "symbol": "ADXS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AEE",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEF",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEFC",
+      "dates_available": false
+    },
+    {
+      "symbol": "AEG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEHR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEIS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEM",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEMD",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AEP",
+      "dates_available": true
+    },
+    {
+      "symbol": "AER",
+      "dates_available": true
+    },
+    {
+      "symbol": "AES",
+      "dates_available": true
+    },
+    {
+      "symbol": "AESR",
+      "dates_available": false
+    },
+    {
+      "symbol": "AEYE",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFB",
+      "dates_available": true
+    },
+    {
+      "symbol": "AFG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AFGB",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFGC",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFGD",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFIF",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFK",
+      "dates_available": true
+    },
+    {
+      "symbol": "AFL",
+      "dates_available": true
+    },
+    {
+      "symbol": "AFLG",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFMC",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFMD",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFSM",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFTY",
+      "dates_available": false
+    },
+    {
+      "symbol": "AFYA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGCO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGD",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGEN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGGY",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGI",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGIO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGM",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGM-A",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGMH",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGNC",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGNCM",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGNCN",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGNCO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGNCP",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGQ",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGRO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AGX",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGYS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGZ",
+      "dates_available": true
+    },
+    {
+      "symbol": "AGZD",
+      "dates_available": false
+    },
+    {
+      "symbol": "AHCO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AHH",
+      "dates_available": false
+    },
+    {
+      "symbol": "AHT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AI",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIA",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIEQ",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIHS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIM",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIQ",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIRG",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIRR",
+      "dates_available": false
+    },
+    {
+      "symbol": "AIRT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIV",
+      "dates_available": true
+    },
+    {
+      "symbol": "AIZ",
+      "dates_available": true
+    },
+    {
+      "symbol": "AJG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AJXA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AKAM",
+      "dates_available": true
+    },
+    {
+      "symbol": "AKBA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AKO-A",
+      "dates_available": true
+    },
+    {
+      "symbol": "AKO-B",
+      "dates_available": true
+    },
+    {
+      "symbol": "AKR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AKRO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AKTS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AKTX",
+      "dates_available": false
+    },
+    {
+      "symbol": "AL",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALCO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALDX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALEC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALEX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALG",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALGN",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALGT",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALK",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALKS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALL",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALLE",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALLK",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALLO",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALLT",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALNY",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALOT",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALRM",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALRS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALSN",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALTG",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALTR",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALTY",
+      "dates_available": false
+    },
+    {
+      "symbol": "ALV",
+      "dates_available": true
+    },
+    {
+      "symbol": "ALX",
+      "dates_available": true
+    },
+    {
+      "symbol": "AM",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMAL",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMAT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMBA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMBC",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMBO",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMC",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMD",
+      "dates_available": true
+    },
+    {
+      "symbol": "AME",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMED",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMG",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMGN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMH",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMJ",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMKR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMLP",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMNA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMOM",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMPE",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMPH",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMPY",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMRC",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMRK",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMRN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMSC",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMSF",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMTB",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMTD",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMTX",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMUB",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMWD",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMX",
+      "dates_available": true
+    },
+    {
+      "symbol": "AMZA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AMZN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AN",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANAB",
+      "dates_available": false
+    },
+    {
+      "symbol": "ANDE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANET",
+      "dates_available": false
+    },
+    {
+      "symbol": "ANF",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANGI",
+      "dates_available": false
+    },
+    {
+      "symbol": "ANGL",
+      "dates_available": false
+    },
+    {
+      "symbol": "ANIK",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANIP",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANSS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANTE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ANVS",
+      "dates_available": false
+    },
+    {
+      "symbol": "ANY",
+      "dates_available": false
+    },
+    {
+      "symbol": "AOA",
+      "dates_available": true
+    },
+    {
+      "symbol": "AOK",
+      "dates_available": true
+    },
+    {
+      "symbol": "AOM",
+      "dates_available": true
+    },
+    {
+      "symbol": "AON",
+      "dates_available": true
+    },
+    {
+      "symbol": "AOR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AOS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AOSL",
+      "dates_available": true
+    },
+    {
+      "symbol": "AP",
+      "dates_available": true
+    },
+    {
+      "symbol": "APA",
+      "dates_available": true
+    },
+    {
+      "symbol": "APAM",
+      "dates_available": false
+    },
+    {
+      "symbol": "APD",
+      "dates_available": true
+    },
+    {
+      "symbol": "APDN",
+      "dates_available": true
+    },
+    {
+      "symbol": "APEI",
+      "dates_available": true
+    },
+    {
+      "symbol": "APG",
+      "dates_available": false
+    },
+    {
+      "symbol": "APH",
+      "dates_available": true
+    },
+    {
+      "symbol": "API",
+      "dates_available": false
+    },
+    {
+      "symbol": "APLE",
+      "dates_available": false
+    },
+    {
+      "symbol": "APLS",
+      "dates_available": false
+    },
+    {
+      "symbol": "APLT",
+      "dates_available": false
+    },
+    {
+      "symbol": "APM",
+      "dates_available": false
+    },
+    {
+      "symbol": "APO",
+      "dates_available": false
+    },
+    {
+      "symbol": "APOG",
+      "dates_available": true
+    },
+    {
+      "symbol": "APPF",
+      "dates_available": false
+    },
+    {
+      "symbol": "APPN",
+      "dates_available": false
+    },
+    {
+      "symbol": "APPS",
+      "dates_available": true
+    },
+    {
+      "symbol": "APRE",
+      "dates_available": false
+    },
+    {
+      "symbol": "APT",
+      "dates_available": true
+    },
+    {
+      "symbol": "APTO",
+      "dates_available": true
+    },
+    {
+      "symbol": "APTV",
+      "dates_available": false
+    },
+    {
+      "symbol": "APVO",
+      "dates_available": false
+    },
+    {
+      "symbol": "APWC",
+      "dates_available": true
+    },
+    {
+      "symbol": "APYX",
+      "dates_available": false
+    },
+    {
+      "symbol": "AQB",
+      "dates_available": false
+    },
+    {
+      "symbol": "AQMS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AQNB",
+      "dates_available": false
+    },
+    {
+      "symbol": "AQST",
+      "dates_available": false
+    },
+    {
+      "symbol": "AR",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARAY",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARB",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARCB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARCC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARCO",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARCT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARDC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARDX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARE",
+      "dates_available": true
+    },
+    {
+      "symbol": "AREC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARES",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARGD",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARGT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARGX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARI",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARKF",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARKG",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARKK",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARKQ",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARKR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARLO",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARLP",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARMK",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARMP",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARMR",
+      "dates_available": false
+    },
+    {
+      "symbol": "AROC",
+      "dates_available": true
+    },
+    {
+      "symbol": "AROW",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARQT",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARTL",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARTW",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARVN",
+      "dates_available": false
+    },
+    {
+      "symbol": "ARW",
+      "dates_available": true
+    },
+    {
+      "symbol": "ARWR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASA",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASB",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASC",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASET",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASG",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASGN",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASH",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASHR",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASHS",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASHX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASIX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASM",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASML",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASPN",
+      "dates_available": false
+    },
+    {
+      "symbol": "ASRT",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASRV",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASTC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASTE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASUR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASX",
+      "dates_available": true
+    },
+    {
+      "symbol": "ASYS",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATEC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATEN",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATEX",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATHE",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATHM",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATI",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATKR",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATLO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATMP",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATNI",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATNM",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATOM",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATOS",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATR",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATRA",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATRC",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATRO",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATSG",
+      "dates_available": true
+    },
+    {
+      "symbol": "ATUS",
+      "dates_available": false
+    },
+    {
+      "symbol": "ATXI",
+      "dates_available": false
+    },
+    {
+      "symbol": "AUB",
+      "dates_available": true
+    },
+    {
+      "symbol": "AUBN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AUDC",
+      "dates_available": true
+    },
+    {
+      "symbol": "AUPH",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVA",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVAL",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVAV",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVB",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVDE",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVDL",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVDV",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVEM",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVGO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVGR",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVK",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVNS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVNW",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVT",
+      "dates_available": true
+    },
+    {
+      "symbol": "AVTR",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVUS",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVUV",
+      "dates_available": false
+    },
+    {
+      "symbol": "AVY",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWF",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWI",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWK",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWP",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AWRE",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXDX",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXGN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXP",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXR",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXS",
+      "dates_available": true
+    },
+    {
+      "symbol": "AXTA",
+      "dates_available": false
+    },
+    {
+      "symbol": "AYRO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AZEK",
+      "dates_available": false
+    },
+    {
+      "symbol": "AZN",
+      "dates_available": true
+    },
+    {
+      "symbol": "AZO",
+      "dates_available": true
+    },
+    {
+      "symbol": "AZUL",
+      "dates_available": false
+    },
+    {
+      "symbol": "AZZ",
+      "dates_available": true
+    },
+    {
+      "symbol": "BA",
+      "dates_available": true
+    },
+    {
+      "symbol": "BAB",
+      "dates_available": true
+    },
+    {
+      "symbol": "BABA",
+      "dates_available": false
+    },
+    {
+      "symbol": "BAH",
+      "dates_available": false
+    },
+    {
+      "symbol": "BAK",
+      "dates_available": true
+    },
+    {
+      "symbol": "BAM",
+      "dates_available": false
+    },
+    {
+      "symbol": "BANC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BAND",
+      "dates_available": false
+    },
+    {
+      "symbol": "BANX",
+      "dates_available": false
+    },
+    {
+      "symbol": "BAP",
+      "dates_available": true
+    },
+    {
+      "symbol": "BAR",
+      "dates_available": false
+    },
+    {
+      "symbol": "BATRA",
+      "dates_available": false
+    },
+    {
+      "symbol": "BATRK",
+      "dates_available": false
+    },
+    {
+      "symbol": "BATT",
+      "dates_available": false
+    },
+    {
+      "symbol": "BAX",
+      "dates_available": true
+    },
+    {
+      "symbol": "BB",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBAR",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBAX",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBC",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBCA",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBCP",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBD",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBDC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBDO",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBEU",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBGI",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBH",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBIO",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBJP",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBN",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBSI",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBU",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBUS",
+      "dates_available": false
+    },
+    {
+      "symbol": "BBVA",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBW",
+      "dates_available": true
+    },
+    {
+      "symbol": "BBY",
+      "dates_available": true
+    },
+    {
+      "symbol": "BC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCBP",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCDA",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCE",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCH",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCI",
+      "dates_available": false
+    },
+    {
+      "symbol": "BCLI",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCML",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCO",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCPC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCRX",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCSF",
+      "dates_available": false
+    },
+    {
+      "symbol": "BCV",
+      "dates_available": true
+    },
+    {
+      "symbol": "BCX",
+      "dates_available": false
+    },
+    {
+      "symbol": "BCYC",
+      "dates_available": false
+    },
+    {
+      "symbol": "BDC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BDJ",
+      "dates_available": true
+    },
+    {
+      "symbol": "BDN",
+      "dates_available": true
+    },
+    {
+      "symbol": "BDRY",
+      "dates_available": false
+    },
+    {
+      "symbol": "BDTX",
+      "dates_available": false
+    },
+    {
+      "symbol": "BE",
+      "dates_available": false
+    },
+    {
+      "symbol": "BEAM",
+      "dates_available": false
+    },
+    {
+      "symbol": "BEAT",
+      "dates_available": false
+    },
+    {
+      "symbol": "BECN",
+      "dates_available": true
+    },
+    {
+      "symbol": "BEDU",
+      "dates_available": false
+    },
+    {
+      "symbol": "BELFA",
+      "dates_available": true
+    },
+    {
+      "symbol": "BEN",
+      "dates_available": true
+    },
+    {
+      "symbol": "BEP",
+      "dates_available": true
+    },
+    {
+      "symbol": "BERY",
+      "dates_available": false
+    },
+    {
+      "symbol": "BEST",
+      "dates_available": false
+    },
+    {
+      "symbol": "BETZ",
+      "dates_available": false
+    },
+    {
+      "symbol": "BFAM",
+      "dates_available": false
+    },
+    {
+      "symbol": "BFC",
+      "dates_available": true
+    },
+    {
+      "symbol": "BFIN",
+      "dates_available": true
+    },
+    {
+      "symbol": "BFIT",
+      "dates_available": false
+    },
+    {
+      "symbol": "BFK",
+      "dates_available": true
+    },
+    {
+      "symbol": "BFOR",
+      "dates_available": false
+    },
+    {
+      "symbol": "BFS",
+      "dates_available": true
+    },
+    {
+      "symbol": "BFST",
+      "dates_available": false
+    },
+    {
+      "symbol": "BFZ",
+      "dates_available": true
+    },
+    {
+      "symbol": "BG",
+      "dates_available": true
+    },
+    {
+      "symbol": "BGFV",
+      "dates_available": true
+    },
+    {
+      "symbol": "BGH",
+      "dates_available": false
+    },
+    {
+      "symbol": "BGI",
+      "dates_available": true
+    },
+    {
+      "symbol": "BGR",
+      "dates_available": true
+    }
+  ],
+  "targets_read": false,
+  "final_test_opened": false,
+  "policy": "Orden alfabético y disponibilidad de las ocho sesiones del ajuste, sin filtrar modalidades ni resultados."
+}
