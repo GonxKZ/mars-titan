@@ -1,0 +1,30 @@
+{
+  "distinct_passed_cases": 99,
+  "groups": [
+    {
+      "name": "feedback-final-tests.xml",
+      "tests": 98,
+      "sha256": "fe7db68fa9e636c6468df709815a1fd50745da703f281767de0bd4f1f72857af"
+    },
+    {
+      "name": "frozen-input.xml",
+      "tests": 1,
+      "sha256": "a7153838687294314bef37e742b8871f2bc316512d93a7b525c8488517b53c1e"
+    }
+  ],
+  "mutations": 6,
+  "scope": "Selección CPU/CUDA y FP32/FP64 del diagnóstico y cabeza común, sin pasos de optimizador.",
+  "coverage": {
+    "statements": 25,
+    "covered_statements": 25,
+    "branches": 8,
+    "covered_branches": 8
+  },
+  "failed_diagnostic_attempts": [
+    {
+      "source": "inspect-feedback.py",
+      "reason": "Se usó el identificador de la vista de validación al reconstruir el modelo. La carga de su checkpoint rechazó correctamente ese contrato.",
+      "receipt_sha256": "f5f510d2eabc1f530ed4f093640f617001ead524a1a9381e8cf2c4a7e187c3fd"
+    }
+  ]
+}

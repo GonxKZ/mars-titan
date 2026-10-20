@@ -36,7 +36,14 @@ def study_files(version):
             ROOT / "configs/experiments/key-competition-study-v1.json",
             ROOT / "configs/experiments/key-competition-v1.json",
         )
-    raise ValueError("La versión del piloto debe ser v1, v2 o key_competition_v1")
+    if version == "quantile_routing_v1":
+        return (
+            ROOT / "configs/experiments/quantile-routing-study-v1.json",
+            ROOT / "configs/experiments/quantile-routing-v1.json",
+        )
+    raise ValueError(
+        "La versión del piloto debe ser v1, v2, key_competition_v1 o quantile_routing_v1"
+    )
 
 
 def configuration(version="v1"):
@@ -278,7 +285,9 @@ def main():
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--view", type=Path)
     parser.add_argument("--job")
-    parser.add_argument("--version", choices=("v1", "v2", "key_competition_v1"))
+    parser.add_argument(
+        "--version", choices=("v1", "v2", "key_competition_v1", "quantile_routing_v1")
+    )
     args = parser.parse_args()
     if args.command == "prepare":
         if args.view is None or args.job is not None:

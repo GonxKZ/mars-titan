@@ -19,6 +19,8 @@ import torch
 from torch import nn
 from torch.nn import functional
 
+from .quantile_routing import QuantileRouting
+
 QUANTILE_HEAD = "quantile_head_v1"
 PINBALL = "pinball"
 LEVELS = (0.025, 0.1, 0.5, 0.9, 0.975)
@@ -49,8 +51,13 @@ def ordered_quantiles(raw):
     if not isinstance(raw, torch.Tensor) or raw.ndim < 1 or raw.shape[-1] != len(LEVELS):
         raise ValueError("La cabeza de cuantiles necesita cinco valores por fila")
     median = raw[..., MEDIAN_INDEX]
-    lower = median - functional.softplus(raw[..., 1])
-    upper = median + functional.softplus(raw[..., 3])
+    return _assemble(raw, median, median)
+
+
+def _assemble(raw, median, tail_location):
+    """Construir los mismos valores, con vías de derivación explícitas para las colas."""
+    lower = tail_location - functional.softplus(raw[..., 1])
+    upper = tail_location + functional.softplus(raw[..., 3])
     return torch.stack(
         (
             lower - functional.softplus(raw[..., 0]),
@@ -120,10 +127,28 @@ class QuantileHead(nn.Linear):
     en el candidato nativo. La salida tiene forma [filas, 5].
     """
 
-    def __init__(self, in_features, *, device=None, dtype=None):
+    def __init__(self, in_features, *, device=None, dtype=None, routing=None):
         if type(in_features) is not int or not 1 <= in_features <= 4096:
             raise ValueError("La anchura de entrada de la cabeza no es válida")
+        if routing is not None and not isinstance(routing, QuantileRouting):
+            raise ValueError("La ruta de cuantiles necesita QuantileRouting o None")
         super().__init__(in_features, len(LEVELS), device=device, dtype=dtype)
+        self.routing = routing
 
     def forward(self, value):
-        return ordered_quantiles(super().forward(value))
+        raw = super().forward(value)
+        routing = self.routing
+        if (
+            routing is None
+            or (routing.median_from_tails and routing.encoder_from_spreads)
+            or not torch.is_grad_enabled()
+        ):
+            return ordered_quantiles(raw)
+        spreads = (
+            raw
+            if routing.encoder_from_spreads
+            else functional.linear(value.detach(), self.weight, self.bias)
+        )
+        point = raw[..., MEDIAN_INDEX]
+        location = point if routing.median_from_tails else point.detach()
+        return _assemble(spreads, point, location)

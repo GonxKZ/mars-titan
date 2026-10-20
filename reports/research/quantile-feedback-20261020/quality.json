@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-20T18:18:13.762581",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [],
+  "totals": {
+    "statements": 25,
+    "covered_statements": 25,
+    "branches": 8,
+    "covered_branches": 8
+  },
+  "files": [
+    {
+      "path": "src/mars_titan/evaluation/quantile_feedback.py",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472",
+      "statements": 25,
+      "covered_statements": 25,
+      "branches": 8,
+      "covered_branches": 8
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/evaluation/quantile_feedback.py",
+      "function": "feedback",
+      "start_line": 13,
+      "end_line": 58,
+      "cyclomatic_complexity": 22,
+      "statements": 21,
+      "covered_statements": 21,
+      "coverage_fraction": 1.0,
+      "branches": 8,
+      "covered_branches": 8,
+      "crap": 22.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "d54bff1ba1b01a3f10c03b8c88fd9c5e320c0d69ab51003646ad45f9df229742",
+  "functions_measured": 1
+}

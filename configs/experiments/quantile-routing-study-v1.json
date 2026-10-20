@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "quantile_routing_development_pilot",
+  "market": "US",
+  "fold": "fold-018",
+  "window": {
+    "train": [
+      "2000-01-01",
+      "2022-04-01"
+    ],
+    "validation": [
+      "2022-04-01",
+      "2022-10-01"
+    ],
+    "calibration": [
+      "2022-10-01",
+      "2023-01-01"
+    ],
+    "evaluation": [
+      "2023-01-01",
+      "2024-01-01"
+    ]
+  },
+  "cohort_size": 64,
+  "seeds": [
+    42
+  ],
+  "epochs": 1,
+  "search_case": "lr1e-3",
+  "memory_projections": "titans_mac_paper_projections_v2",
+  "attention_layout": "sequence_contiguous_v1",
+  "max_job_seconds": 1800,
+  "max_total_seconds": 14400,
+  "max_optimizer_steps": 4096,
+  "primary_candidate": "both_isolated",
+  "primary_reference": "original",
+  "primary_metric": "session_mae",
+  "minimum_relevant_mae": 1e-05,
+  "bootstrap": {
+    "block_length": 16,
+    "replicates": 2000,
+    "seed": 20261020,
+    "confidence": 0.95
+  },
+  "sensitivity_block_lengths": [
+    8,
+    32
+  ],
+  "final_test_access": false,
+  "classification": "piloto de una semilla sobre desarrollo reutilizado",
+  "scientific_confirmation": false,
+  "gradient_contract": "quantile_feedback_routing_v1",
+  "validity_control": {
+    "reference": "original",
+    "unit": "all_feedback",
+    "criterion": "identical_predictions_and_shared_parameters",
+    "required_before_interpretation": true
+  },
+  "baseline_id": "titans_mac_paper_qr_control_20261020",
+  "variant_id": "quantile_feedback_routing_v1"
+}
