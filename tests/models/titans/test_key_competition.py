@@ -282,6 +282,11 @@ def test_small_vectors_use_the_historical_epsilon_and_strides_preserve_values():
     )
 
 
+def test_missing_transformation_contract_is_rejected():
+    with pytest.raises(ValueError, match="KeyCompetition"):
+        api().competitive_normalize(torch.ones(4), None)
+
+
 @pytest.mark.parametrize("module_name", ["key_competition", "key_competition_config"])
 def test_the_execution_identity_changes_when_a_feature_implementation_changes(
     tmp_path, monkeypatch, module_name
