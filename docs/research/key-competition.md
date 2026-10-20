@@ -1,6 +1,6 @@
 # Centrado y competencia de claves neuronales
 
-Esta ampliación experimental de Titans-MAC transforma las claves y las consultas antes de su normalización L2. No cambia la pérdida asociativa, la memoria persistente, el banco episódico ni el número de refinamientos K. Permanece desactivada sin `memory_key_competition`. No hay mejora predictiva medida para estas variantes en esta fase.
+Esta ampliación experimental de Titans-MAC transforma las claves y las consultas antes de su normalización L2. No cambia la pérdida asociativa, la memoria persistente, el banco episódico ni el número de refinamientos K. Permanece desactivada sin `memory_key_competition`. El [piloto de siete configuraciones](../../reports/research/key-competition-20261020/development-v1/README.md) registra un empeoramiento de la combinación y ninguna configuración supera al residual cero.
 
 ## Motivación y fuentes
 
@@ -28,7 +28,7 @@ El centrado puede borrar información útil. Por ejemplo, `(1,0)` y `(0,−1)` p
 
 No hay parámetros, generadores aleatorios o estados persistentes adicionales. La ordenación estable cuesta O(D log D) por vector y sus temporales son O(D). La salida sigue siendo densa y los pesos rápidos siguen ocupando O(D²) por capa y flujo. La esparsidad de las entradas no implica ahorro de almacenamiento ni una aceleración del producto denso. El operador completo de actualización incluye estas transformaciones. No se extrapolan cotas de una matriz fija a toda la dinámica.
 
-## Comprobaciones y comparación pendiente
+## Comprobaciones y piloto
 
 Las pruebas cubren ecuaciones manuales, signos, empates, cero, entradas no finitas, overflow, dimensiones incompatibles, strides, gradientes, consultas y ambas escrituras. La paridad del control completo comprende CPU y CUDA, FP32 y FP64, parámetros, gradientes, RNG, recuperación y cuatro actualizaciones AdamW con fixtures. Las [comprobaciones publicadas](../../reports/research/key-competition-20261020/README.md) registran cobertura, CRAP y mutaciones dirigidas con sus denominadores. No sustituyen a una comparación predictiva.
 

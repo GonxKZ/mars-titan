@@ -1,0 +1,17 @@
+{
+  "global_hold_unchanged": true,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_attempts": 7,
+  "all_attempts_closed": true,
+  "local_authorizations_closed": true,
+  "final_test_opened": false,
+  "analysis": {
+    "started_at_utc": "2026-10-20T15:46:27.560851+00:00",
+    "scope": "Análisis del piloto acotado y completado, sin ajustes.",
+    "final_test_opened": false,
+    "exit_code": 0,
+    "wrapper_seconds": 4.425421508029103,
+    "finished_at_utc": "2026-10-20T15:46:31.986462+00:00",
+    "global_hold_unchanged": true
+  }
+}

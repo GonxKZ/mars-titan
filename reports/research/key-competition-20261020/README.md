@@ -1,6 +1,6 @@
 # Comprobaciones de centrado y competencia de claves
 
-La [implementación](../../../docs/research/key-competition.md) dispone de siete configuraciones independientes y desactivadas por defecto. El [protocolo](../../../docs/experiments/key-competition-v1.md) separa el piloto predictivo de estas comprobaciones técnicas. Los resultados predictivos se incorporan cuando termine el piloto, sin atribuir una mejora a estas pruebas.
+La [implementación](../../../docs/research/key-competition.md) dispone de siete configuraciones independientes y desactivadas por defecto. El [piloto completado](development-v1/README.md) muestra un empeoramiento de la combinación y ninguna configuración supera al residual cero. El [protocolo](../../../docs/experiments/key-competition-v1.md) separa ese resultado de las comprobaciones técnicas.
 
 La [verificación](verification.json) recoge 399 casos distintos aprobados. Los dos casos inicialmente omitidos se ejecutaron después con fixtures y no quedan como omisiones pendientes en esta selección. Se comprobaron CPU y CUDA, FP32 y FP64, ecuaciones de escritura y consulta, gradientes, recuperación, RNG, cuatro actualizaciones del control completo y el análisis integral con archivos simulados. No es una ejecución de toda la batería del repositorio.
 
