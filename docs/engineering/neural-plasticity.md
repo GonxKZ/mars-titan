@@ -4,6 +4,8 @@
 
 El contrato histórico `row_broadcast_v1` conserva las configuraciones de nueve campos y sus huellas. `scalar_controls_v2` es una opción explícita con otra identidad. Los pesos y estados de ambos contratos no se intercambian de forma implícita.
 
+La opción posterior `capture_scope="row_local"` tiene identidad `neural_plasticity_v3` y requiere captura por elegibilidad y controles escalares v2. El valor histórico es `population_mean`, que no se añade a las serializaciones anteriores. No cambia sus huellas ni crea parámetros, estado o RNG. La comparación propia se describe en el [protocolo de captura local](../experiments/local-capture-v1.md).
+
 En v1, la puerta θ de forma `[N,1,1]` se multiplica por una ganancia `[N,D,1]` incluso cuando esta vale uno. El resultado del forward puede coincidir exactamente con el original, pero el backward reduce primero por filas y después por flujo. Esa reorganización cambia el redondeo del gradiente de θ. El piloto detectó diferencias en las predicciones después del ajuste. Repetir cada configuración con la misma semilla reprodujo sus predicciones, sin restaurar la igualdad entre ambas.
 
 En v2, `write="none"` y el multiplicador constante uno ejecutan la expresión original `η·S−θ·g`. Las demás constantes multiplican θ como escalares, sin expandirla por filas. La captura constante conserva también un coeficiente escalar y la captura unitaria toma la ruta original. La escritura por coherencia y la captura por elegibilidad mantienen sus ganancias por fila. Las estadísticas auxiliares se siguen calculando en los controles. No cambian sus bytes persistentes.
@@ -50,6 +52,10 @@ Z3' = Z3 + (g23·(Z2−Z3) − g34·Z3)/4
 ```
 
 Todos los valores del lado derecho corresponden al estado anterior, salvo las señales recién calculadas y S'. El intercambio e se aplica en ambos sentidos. Las capacidades 1, 2 y 4, g23 y g34 proceden de PT5 y no cambian. `capture="none"` conserva g12. `constant` utiliza `capture_constant` como multiplicador. Una configuración de captura sin cascada se rechaza.
+
+Con `capture_scope="row_local"`, únicamente se sustituye `q = z'·mean_rows(c)` por `q = z'·c`. La ganancia de una fila depende entonces de su propio gradiente, momentos, traza y contador. Si esos valores se fijan, cambiar los de otras filas no altera esa ganancia. El Jacobiano de la señal respecto a esos otros gradientes es cero en puntos diferenciables. Esto no elimina dependencias entre filas del gradiente asociativo, las proyecciones o el predictor completo. Las filas son coordenadas de cada matriz de memoria y no activos de una cohorte.
+
+La regla local mantiene la complejidad O(N·L·D²) del cálculo de momentos y el mismo estado persistente que la global. Evita una reducción entre filas de coste O(N·L·D), sin prometer por ello una aceleración del recorrido completo. Un suelo de captura igual a uno desactiva su modulación y permite comprobar la paridad de pesos y gradientes frente a PT5 sin ella.
 
 No se añaden parámetros compartidos. Las estadísticas se actualizan exclusivamente con observaciones admitidas por Titans. En el modo compartido se emplea el gradiente de cohorte ya definido por PT4 y el contador avanza una vez por cohorte. No hay RNG nuevo.
 

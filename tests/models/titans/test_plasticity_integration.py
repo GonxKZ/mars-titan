@@ -300,13 +300,19 @@ def test_mac_split_join_and_full_jacobian_include_every_auxiliary_value(kernel):
 
 @pytest.mark.cuda
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-@pytest.mark.parametrize("mode", ["write", "capture", "combined", "unity"])
+@pytest.mark.parametrize("mode", ["write", "capture", "combined", "unity", "local"])
 def test_cuda_variants_preserve_recovery_gradients_and_cpu_reference(dtype, mode):
     options = MemoryPlasticity(
-        write="constant" if mode == "unity" else "none" if mode == "capture" else "coherence",
+        write="constant"
+        if mode == "unity"
+        else "none"
+        if mode in ("capture", "local")
+        else "coherence",
         capture="none" if mode == "write" else "constant" if mode == "unity" else "eligibility",
         write_constant=1,
         capture_constant=1,
+        capture_scope="row_local" if mode == "local" else "population_mean",
+        gradient_contract="scalar_controls_v2" if mode == "local" else "row_broadcast_v1",
     )
     config = MemoryConfig(
         4, depth=2, plasticity=options, multiscale=None if mode == "write" else MemoryMultiscale()

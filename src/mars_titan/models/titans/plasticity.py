@@ -145,7 +145,10 @@ def _advance_validated(config, gradient, history, steps):
     coherence = raw_coherence.clamp(0, 1)
     activity = raw_activity.clamp(0, 1)
     tag = config.trace_decay * previous_tag + (1 - config.trace_decay) * activity
-    capture_signal = tag * coherence.mean(dim=1, keepdim=True)
+    capture_coherence = (
+        coherence if config.capture_scope == "row_local" else coherence.mean(dim=1, keepdim=True)
+    )
+    capture_signal = tag * capture_coherence
     write_gain = _gain(config.write, coherence, config.write_floor, config.write_constant)
     capture_gain = _gain(
         config.capture, capture_signal, config.capture_floor, config.capture_constant

@@ -1,0 +1,38 @@
+{
+  "recorded_at_utc": "2026-10-20T22:24:27.870894+00:00",
+  "source": "thesis/main.tex",
+  "source_sha256": "f10f4c41ca5e316860cbd8d5f661f693ae9fdb684754ac60d97ea7b3eaec7dc1",
+  "previous_source_copy": "thesis/revisions/main-20261021-4eb6b4f8.tex",
+  "previous_source_git_blob": "67012ca9704c7075ae7dae4010d1516a526f5597",
+  "previous_source_sha256": "0667aa5890c8e4a8d8bca60ab871c00409606c498362cedf844e0f1f820f2a90",
+  "pdf": {
+    "bytes": 290279,
+    "sha256": "b1b268d7247fc3b99b7413d9b7409c026b1d850ce9f5ffab5b4121cb7b7e38e4",
+    "pages": 30
+  },
+  "citations": 70,
+  "bibliographic_collections": 13,
+  "final_undefined_references": false,
+  "final_overfull_boxes": 0,
+  "underfull_bibliography_warnings": 1,
+  "unicode_font_maps_all": true,
+  "unwanted_text_control_characters": 0,
+  "rendered_pages": [
+    2,
+    22,
+    23
+  ],
+  "visual_review": "Página de resumen, nueva tabla de captura y costes, sin desbordamientos observados.",
+  "command_form": [
+    "latexmk",
+    "-pdf",
+    "-interaction=nonstopmode",
+    "-halt-on-error",
+    "-outdir=pdf-v1",
+    "main.tex"
+  ],
+  "storage": "PDF y registros de compilación conservados localmente fuera de Git.",
+  "limitations": [
+    "No es una certificación PDF/UA. Se conserva el aviso de espaciado de bibliografía."
+  ]
+}

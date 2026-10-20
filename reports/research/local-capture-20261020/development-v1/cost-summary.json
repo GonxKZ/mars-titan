@@ -1,0 +1,16 @@
+{
+  "current_attempts": 15,
+  "completed_jobs": 15,
+  "optimizer_steps": 10275,
+  "wrapper_seconds": 2220.47349511378,
+  "internal_seconds": 2160.7591289049014,
+  "prior_wrapper_seconds": 11573.363255439908,
+  "cumulative_wrapper_seconds": 13793.836750553688,
+  "analysis_wrapper_seconds": 6.878216870944016,
+  "peak_rss_bytes": 2138718208,
+  "peak_cuda_allocated_bytes": 267316224,
+  "peak_cuda_reserved_bytes": 297795584,
+  "failed_attempts": [],
+  "timing_scope": "Los tiempos internos están incluidos en los externos. El total acumulado no incluye pruebas técnicas, análisis ni pausas entre lanzamientos.",
+  "concurrency_scope": "Una carga científica CUDA. El escritorio y tareas CPU técnicas concurrentes impiden tratar las duraciones como medidas aisladas de aceleración."
+}
