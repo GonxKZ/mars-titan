@@ -17,7 +17,7 @@ Son fixtures sin datos financieros, con 16 escrituras por trayectoria, tres escr
 
 Los percentiles describen 48 llamadas por condición y caso. El p50 de una cadencia de 16 pasos oculta el paso que registra y no estima su sobrecoste amortizado. Los pequeños descensos de algunas medianas no se interpretan como aceleración. Se conservan p95, p99, tiempos de los tres bloques y del volcado, bytes y pico del asignador en [cost.json](cost.json). No se extrapolan estos valores a una decisión financiera completa, al entrenamiento ni a latencias extremas.
 
-La sonda final consumió 8.895 segundos internos y alcanzó 1.304.633.344 bytes de RSS de proceso. El escritorio siguió activo. No se midieron energía ni volumen total de transferencias. La cadencia de la campaña no se activa ni se selecciona con este fixture.
+La sonda final consumió 8,895 segundos internos y alcanzó 1.304.633.344 bytes de RSS de proceso. El escritorio siguió activo. No se midieron energía ni volumen total de transferencias. La cadencia de la campaña no se activa ni se selecciona con este fixture.
 
 La primera sonda conservaba referencias de un caso al siguiente al reiniciar el contador de pico. Se preservó fuera de Git y se repitió tras corregir esas vidas. Sus comparaciones de coste no se utilizan. [cost-audit.json](cost-audit.json) identifica ambas fuentes y sus tiempos internos, sin esconder la sonda sustituida ni sumarla al presupuesto científico.
 
