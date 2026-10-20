@@ -18,6 +18,7 @@ def test_cancel_discards_only_the_oldest_cohort_without_learning_from_missing_la
     after = model.export()
     assert after["markets"]["US"]["intervals"] == before["markets"]["US"]["intervals"]
     assert after["markets"]["US"]["matured"] == 0
+    assert model.coverage_gap("US") == {"0.8": None, "0.95": None}
     assert after["markets"]["US"]["clock"] == 20
     assert after["markets"]["CN"] == before["markets"]["CN"]
     assert model.pending("US") == [(11, 21)]
