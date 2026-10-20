@@ -330,6 +330,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/tooling/test_refinement_study.py": (
+        3,
+        "comprueba sellos, reconstrucción congelada y un recorrido de fixtures con "
+        "optimizadores registradores, sin abrir fuentes de una campaña real",
+    ),
     "tests/tooling/test_combined_memory_numerics.py": (
         4,
         "comprueba rutas, publicación y rechazos con corpus e inferencia simulados, "
@@ -395,6 +400,13 @@ DOUBLES = {
 }
 REDIRECTIONS = {
     "tests/conftest.py": (3, _FIXTURES),
+    "tests/tooling/test_cuda_test_runner.py": (
+        2,
+        "pasa una protección temporal cerrada al proceso de prueba y comprueba que la hereda",
+    ),
+    "tests/tooling/test_refinement_latency_study.py": (1, _CLOSES),
+    "tests/tooling/test_refinement_scaling_analysis.py": (1, _CLOSES),
+    "tests/tooling/test_refinement_study.py": (2, _CLOSES),
     "tests/tooling/test_combined_memory_numerics.py": (1, _CLOSES),
     "tests/tooling/test_combined_memory_queue.py": (1, _CLOSES),
     "tests/tooling/test_combined_memory_study.py": (1, _CLOSES),
