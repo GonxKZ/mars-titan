@@ -1,0 +1,50 @@
+{
+  "storage": "Artefactos técnicos locales fuera de Git, relativos al directorio de esta comprobación.",
+  "artifacts": [
+    {
+      "relative_path": "baseline.log",
+      "bytes": 99,
+      "sha256": "073e8b9096fde724f8c1c7ee4afaf7bee309e12e6f2f2cd5fcfc0bf8edc4010a"
+    },
+    {
+      "relative_path": "baseline.xml",
+      "bytes": 395,
+      "sha256": "2b1be6ab2c87aa5f603718a6274759ff0287eae149e2c227ec813e015087bb27"
+    },
+    {
+      "relative_path": "mutant.log",
+      "bytes": 1177,
+      "sha256": "39035e09fd99cecea71abaf3b55a34cf6fbeadb4c1ad6d0be94b39d19c80a264"
+    },
+    {
+      "relative_path": "mutant.xml",
+      "bytes": 1231,
+      "sha256": "8ceff6981b9f9fd73a92dd7ec071a1e065afcc20ee437b40d454cb9fce8d5376"
+    },
+    {
+      "relative_path": "restored.log",
+      "bytes": 99,
+      "sha256": "cec864534236c6cd59f6edb018afb08c95882b7ad9a68379f3e4222d60ad7f45"
+    },
+    {
+      "relative_path": "restored.xml",
+      "bytes": 395,
+      "sha256": "9d51426cf37ce5f4fa6d36861bd2e5d40bb1175032710e561d23c1ccaed39a91"
+    },
+    {
+      "relative_path": "baseline.coverage",
+      "bytes": 274432,
+      "sha256": "66f0e7d19cc35dfd4b6091a2dbeb2260bc0f44c8cdf39430f4146309bff19be0"
+    },
+    {
+      "relative_path": "restored.coverage",
+      "bytes": 274432,
+      "sha256": "66f0e7d19cc35dfd4b6091a2dbeb2260bc0f44c8cdf39430f4146309bff19be0"
+    },
+    {
+      "relative_path": "verify.py",
+      "bytes": 4541,
+      "sha256": "b6e7c3ed6459a9def5249fd32ca3bf584730ab38499a1b8c5ea753b18ee02917"
+    }
+  ]
+}
