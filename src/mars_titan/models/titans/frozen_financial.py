@@ -9,6 +9,9 @@ from pathlib import Path
 
 import torch
 
+from mars_titan.models.quantile_head import QuantileHead
+from mars_titan.models.quantile_routing import QuantileRouting
+
 from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .financial import FinancialPredictor, _tensor_digest
@@ -36,6 +39,7 @@ _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_M
     "mars_titan.models.baselines.transformer",
     "mars_titan.models.baselines.multimodal",
     "mars_titan.models.quantile_head",
+    "mars_titan.models.quantile_routing",
     "mars_titan.cm.numerical_radius",
     "mars_titan.data.input_policy",
     "mars_titan.training.cohort_contract",
@@ -81,6 +85,10 @@ def _module_settings(module):
     if isinstance(module, nn.Linear):
         fields = ("in_features", "out_features")
         settings["bias"] = module.bias is not None
+        if isinstance(module, QuantileHead) and module.routing is not None:
+            if not isinstance(module.routing, QuantileRouting):
+                raise ValueError("La cabeza congelada no conserva una ruta identificada")
+            settings["quantile_routing"] = module.routing.identity()
     elif isinstance(module, nn.LayerNorm):
         fields = ("normalized_shape", "eps", "elementwise_affine")
         settings["bias"] = module.bias is not None

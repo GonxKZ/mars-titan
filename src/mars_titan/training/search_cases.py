@@ -50,6 +50,7 @@ PREDICTOR_CHANGES = (
     "memory_multiscale",
     "memory_plasticity",
     "memory_key_competition",
+    "quantile_routing",
     "presence_modulation",
     "attention_layout",
 )
@@ -72,7 +73,8 @@ def checked_predictor_changes(changes):
     ):
         raise ValueError(
             "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
-            "junto a memory_plasticity y memory_key_competition como objetos no vacíos, "
+            "junto a memory_plasticity, memory_key_competition y quantile_routing "
+            "como objetos no vacíos, "
             "y presence_modulation y attention_layout como nombres no vacíos"
         )
     return changes

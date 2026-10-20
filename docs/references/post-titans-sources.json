@@ -2,13 +2,21 @@
   {
     "id": "glovaci2026sparsification",
     "title": "Sparsification and decorrelation of granule cell activity in the dentate gyrus by noradrenaline",
-    "authors": ["Iulia Glovaci", "Anna Mihály", "Koen Vervaeke", "Hua Hu"],
+    "authors": [
+      "Iulia Glovaci",
+      "Anna Mihály",
+      "Koen Vervaeke",
+      "Hua Hu"
+    ],
     "year": 2026,
     "url": "https://doi.org/10.1038/s42003-026-09592-0",
     "access": "Metadatos, resumen, introducción y resultados iniciales consultados. Metadatos contrastados con Crossref. Una recuperación posterior de la página quedó bloqueada por la redirección de cookies del editor. No se afirma lectura completa ni reproducción.",
     "redistribution": "unknown",
     "relevance": "Motiva contrastar representaciones centradas y competitivas. La transformación de claves y consultas de MARS-TITAN es propia, sin atribuir al artículo un algoritmo financiero o una garantía de separación de patrones.",
-    "phase": [3, 6],
+    "phase": [
+      3,
+      6
+    ],
     "verification_date": "2026-10-20"
   },
   {
@@ -3408,5 +3416,89 @@
       6
     ],
     "verification_date": "2026-10-10"
+  },
+  {
+    "id": "guerguiev2017segregated",
+    "title": "Towards deep learning with segregated dendrites",
+    "authors": [
+      "Jordan Guerguiev",
+      "Timothy P. Lillicrap",
+      "Blake A. Richards"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.7554/eLife.22901",
+    "access": "Versión publicada del 5 de diciembre de 2017. Consultados resumen, introducción y apartados del modelo de compartimentos, incluidas las ecuaciones 1 y 2. No se afirma lectura completa o reproducción.",
+    "relevance": "Antecedente de separación de señales de aprendizaje. La separación entre mediana y dispersión del proyecto no reproduce las ecuaciones biológicas del artículo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "du2018auxiliary",
+    "title": "Adapting Auxiliary Losses Using Gradient Similarity",
+    "authors": [
+      "Yunshu Du",
+      "Wojciech M. Czarnecki",
+      "Siddhant M. Jayakumar",
+      "Mehrdad Farajtabar",
+      "Razvan Pascanu",
+      "Balaji Lakshminarayanan"
+    ],
+    "year": 2018,
+    "url": "https://arxiv.org/abs/1812.02224v2",
+    "access": "Metadatos y resumen de arXiv v2, revisada el 25 de noviembre de 2020. No se afirma lectura completa o reproducción.",
+    "relevance": "Antecedente de ponderar tareas auxiliares mediante similitud de gradientes. No se implementa su algoritmo ni se atribuye a la ruta fija de la cabeza su garantía de convergencia.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "yu2020gradient",
+    "title": "Gradient Surgery for Multi-Task Learning",
+    "authors": [
+      "Tianhe Yu",
+      "Saurabh Kumar",
+      "Abhishek Gupta",
+      "Sergey Levine",
+      "Karol Hausman",
+      "Chelsea Finn"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/2001.06782v4",
+    "access": "Metadatos y resumen de arXiv v4, del 22 de diciembre de 2020. La ficha identifica NeurIPS 2020. No se afirma lectura completa o reproducción.",
+    "relevance": "Antecedente de proyección de gradientes en conflicto. La ruta fija de cuantiles del proyecto no implementa PCGrad ni hereda sus resultados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
+  },
+  {
+    "id": "xia2026orbit",
+    "title": "Into the ORBIT for Time Series: Training Regimes for Foundation Models",
+    "authors": [
+      "Hongjie Xia",
+      "Yiding Liu",
+      "Yifan Hu",
+      "Peiyuan Liu",
+      "Zewei Dong"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.13262v1",
+    "access": "Metadatos y resumen de arXiv v1, del 13 de agosto de 2026. No se afirma lectura completa, revisión por pares o reproducción.",
+    "relevance": "Antecedente reciente de enseñanza entre profundidades con stop-gradient sin coste de inferencia adicional declarado por los autores. El piloto financiero no reproduce su modelo ni sus benchmarks.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-20"
   }
 ]

@@ -154,6 +154,25 @@ def test_key_competition_reuses_the_sealed_pipeline_with_its_own_catalogue(tmp_p
     assert receipt["counts"] == view()["counts"]
 
 
+def test_quantile_routing_keeps_its_own_controls_and_common_data(tmp_path):
+    source = tmp_path / "source" / "view.json"
+    source.parent.mkdir()
+    source.write_text(json.dumps(view()))
+    work = tmp_path / "routing"
+    receipt = api().prepare(source, work, version="quantile_routing_v1")
+    assert api().verify_prepared(work) == receipt
+    assert {job["arm"] for job in receipt["jobs"]} == {
+        "original",
+        "all_feedback",
+        "median_isolated",
+        "encoder_isolated",
+        "both_isolated",
+    }
+    assert receipt["configuration"]["primary_candidate"] == "both_isolated"
+    assert receipt["configuration"]["validity_control"]["unit"] == "all_feedback"
+    assert receipt["counts"] == view()["counts"]
+
+
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -1])
 def test_corrupt_historical_cost_is_rejected(tmp_path, value):
     work, receipt = prepared(tmp_path)
@@ -276,6 +295,16 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
             "centered_competitive",
             "fixed",
             "centered_fixed",
+        ]
+    ]
+    + [
+        ("quantile_routing_v1", name)
+        for name in [
+            "original",
+            "all_feedback",
+            "median_isolated",
+            "encoder_isolated",
+            "both_isolated",
         ]
     ],
 )

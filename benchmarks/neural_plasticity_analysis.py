@@ -65,6 +65,20 @@ def key_competition_contrasts(names):
     return result
 
 
+def quantile_routing_contrasts(names):
+    """Comparar cada ruta de realimentación, sus componentes y el control cero."""
+    result = {f"{name}_minus_zero": delta("zero", name) for name in names}
+    for candidate in names:
+        if candidate != "original":
+            result[f"{candidate}_minus_original"] = delta("original", candidate)
+    for base in ("median_isolated", "encoder_isolated"):
+        result[f"both_isolated_minus_{base}"] = delta(base, "both_isolated")
+    result["interaction"] = interaction(
+        "original", "median_isolated", "encoder_isolated", "both_isolated"
+    )
+    return result
+
+
 def interpret(interval, margin):
     if not math.isfinite(margin) or margin <= 0:
         raise ValueError("El margen debe ser positivo y finito")
@@ -238,7 +252,6 @@ def analyze(work, output):
         raise FileExistsError("El análisis necesita un directorio nuevo")
     prepared = verify_prepared(work)
     config = prepared["configuration"]
-    key_study = prepared.get("study_version") == "key_competition_v1"
     validity_config = config.get("validity_control", {})
     control_names = (
         validity_config.get("reference", "cascade_original"),
@@ -304,9 +317,16 @@ def analyze(work, output):
         **config["bootstrap"],
         sensitivity_block_lengths=config["sensitivity_block_lengths"],
     )
+    contrasts, result_kind = {
+        "key_competition_v1": (key_competition_contrasts, "key_competition_development_results"),
+        "quantile_routing_v1": (quantile_routing_contrasts, "quantile_routing_development_results"),
+    }.get(
+        prepared.get("study_version"),
+        (secondary_contrasts, "neural_plasticity_development_results"),
+    )
     secondary = compare_series(
         series,
-        (key_competition_contrasts if key_study else secondary_contrasts)(list(models)),
+        contrasts(list(models)),
         **config["bootstrap"],
         sensitivity_block_lengths=config["sensitivity_block_lengths"],
     )
@@ -316,11 +336,7 @@ def analyze(work, output):
         pq.write_table(values.to_table(), output / f"{name}-sessions.parquet", compression="zstd")
     report = dict(
         schema_version=1,
-        kind=(
-            "key_competition_development_results"
-            if key_study
-            else "neural_plasticity_development_results"
-        ),
+        kind=result_kind,
         scientific_level="single_seed_reused_development_pilot",
         recorded_at_utc=datetime.now(UTC).isoformat(),
         script_sha256=sha256(Path(__file__)),
