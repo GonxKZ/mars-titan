@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "declared_not_executed",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728,
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 1024,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0,
+    "accumulation_rows": 1024,
+    "precision": "fp32_strict"
+  },
+  "walk_forward": {
+    "warmup_months": 12,
+    "search_cases": {
+      "lr1e-4": {
+        "learning_rate": 0.0001
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      }
+    }
+  },
+  "pending": [
+    "Receta independiente de la campaña historical-masked-2000-a-sequence-v1. No sustituye la receta histórica ni activa aprendizaje.",
+    "Los cuatro controles conservan la disposición sequence_contiguous_v1. La referencia sequence mantiene linear_v1 y la variante paper cambia únicamente las proyecciones de memoria.",
+    "Las pérdidas, búsquedas, semillas, selección, épocas, acumulación, precisión y presupuestos conservan el contrato histórico. Su coste completo debe medirse para esta declaración antes de ejecutar la campaña.",
+    "El test final de 2024 permanece cerrado. No hay resultados predictivos de esta campaña ni promoción automática por adoptar las proyecciones."
+  ]
+}
