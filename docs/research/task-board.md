@@ -75,7 +75,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-052 · Medir retención e interferencia](https://github.com/GonxKZ/mars-titan/issues/54) | Núcleo | P1 | En revisión, análisis declarado y verificado sin modelos, ejecución pendiente de la campaña | MT-024, MT-030, MT-019 |
 | [MT-053 · Evaluar consolidación y replay](https://github.com/GonxKZ/mars-titan/issues/55) | Extensión | P2 | Pendiente | MT-019, MT-052, MT-059 |
 | [MT-059 · Comprobar compatibilidad de las versiones](https://github.com/GonxKZ/mars-titan/issues/61) | Apoyo | P0 | Pendiente | MT-010, MT-021, MT-022 |
-| [MT-063 · Medir concurrencia y antigüedad del estado](https://github.com/GonxKZ/mars-titan/issues/65) | Extensión | P2 | Pendiente | MT-053, MT-059, MT-060 |
+| [MT-063 · Decidir sobre la actualización concurrente](https://github.com/GonxKZ/mars-titan/issues/65) | Extensión | P2 | [No activar en el alcance actual](../../reports/resources/concurrency-decision.md) | MT-053, MT-059, MT-060 |
 
 ### O4 · Referencias y ablaciones
 
