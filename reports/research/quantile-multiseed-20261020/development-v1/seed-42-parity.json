@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "scope": "Repetición de la misma semilla y ventana de v1. No es una réplica temporal independiente.",
+  "by_arm": {
+    "original": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+        "calibration": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+        "evaluation": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+      }
+    },
+    "all_feedback": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+        "calibration": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+        "evaluation": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+      }
+    },
+    "median_isolated": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "c8358d00b92bb752c711afe86c6749acb51d3086e65339bcf669a8c6ead500d5",
+        "calibration": "5dc9dc5a9d497e4fa66bbf5661375f9d0a80cb0105b5ed296c035e042c24a123",
+        "evaluation": "57b880811caddb7ae52935c6a6d4c934b4475610f68f0e0fd0fd3fce6ec86922"
+      }
+    },
+    "encoder_isolated": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "d369dbb26d1fb9217fce8519dba9197ec18bbf79f4b2e135188b40c5bf0bb0fe",
+        "calibration": "fa5deb4d50cb933c89025c96ba6bc5819d248c09e2ac58fbda46b7bc3a90108a",
+        "evaluation": "6323656531d271ed9082570c023fadc713c868c35902056f30c26fba07de729f"
+      }
+    },
+    "both_isolated": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "96100e8db7e7e391e50086cfad44558baed90c882ba7f13b0c5b195627910143",
+        "calibration": "e0b0cb0974986e31d61eb0f86a209982b98336c112f5caf1d6721e29dd586497",
+        "evaluation": "b0ff01fa7bcfa886424d9eaabd51bee0b387afcb3e5ba434973ba87987019629"
+      }
+    }
+  }
+}

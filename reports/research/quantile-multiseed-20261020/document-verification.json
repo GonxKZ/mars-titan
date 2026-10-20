@@ -1,0 +1,42 @@
+{
+  "recorded_at_utc": "2026-10-20T18:41:43.449225+00:00",
+  "source": "thesis/main.tex",
+  "source_sha256": "24fcf49bb28fdda1ec083c0d69ad692450051db16f445a797a1025733310d7e8",
+  "preserved_source": "thesis/revisions/main-20261020-7b02fcf5.tex",
+  "preserved_blob": "a8f94703df3fa8c5fe715c606d95952574c30fff",
+  "pdf": {
+    "storage": "PDF local fuera de Git",
+    "relative_path": "pdf-v1/main.pdf",
+    "sha256": "38b13dd2e9b099abbf16792025b89c06cd2284897efcbd2fefabfa2f84037ae4",
+    "bytes": 284787,
+    "pages": 28
+  },
+  "cited_keys": 70,
+  "bibliography_collections": 13,
+  "command": [
+    "latexmk",
+    "-pdf",
+    "-interaction=nonstopmode",
+    "-halt-on-error",
+    "-outdir=pdf-v1",
+    "main.tex"
+  ],
+  "command_scope": "La orden real usa una ruta absoluta para el directorio externo de salida.",
+  "tools": {
+    "latexmk": "Latexmk, John Collins, 15 June 2025. Version 4.87",
+    "pdflatex": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025/Debian)",
+    "biber": "biber version: 2.21"
+  },
+  "visual_review_pdf_pages": [
+    2,
+    14,
+    20,
+    21
+  ],
+  "unresolved_references": false,
+  "overfull_boxes": 0,
+  "underfull_boxes": 1,
+  "biber_warnings": 0,
+  "log_sha256": "22a5c9c9ef0d3d45c801eebf465850497d3147ae764d8594eb63c72edee0bbe3",
+  "biber_log_sha256": "7570697084aec2a14cebfc8ed291f523999c8c85bd429a5bbceecf01e5daf9f3"
+}

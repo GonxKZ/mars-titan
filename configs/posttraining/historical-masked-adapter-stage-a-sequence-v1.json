@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_posttraining_stage",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-adapters-a-sequence-v1",
+  "campaign": "../baselines/historical-masked-campaign-a-sequence-v1.json",
+  "matrix": "adapter-matrix-v3.json",
+  "scopes": [
+    "US+CN"
+  ],
+  "arms": [
+    "rnn",
+    "lstm",
+    "gru",
+    "dlinear",
+    "transformer_compact",
+    "ridge",
+    "xgboost",
+    "gru_episodic",
+    "titans_transformer_direct",
+    "titans_mac_disabled",
+    "titans_mac_frozen",
+    "titans_mac_online",
+    "titans_mac_online_pt1_init",
+    "titans_mac_online_pt1",
+    "mars_titan_m0",
+    "mars_titan_m1",
+    "mars_titan_m2",
+    "mars_titan_m3",
+    "mars_titan_m1_k2",
+    "mars_titan_m1_k4",
+    "mars_titan_m1_k4_first_read",
+    "mars_titan_b6",
+    "mars_titan_b6_bias",
+    "mars_titan_b6_regime",
+    "mars_titan_b6_calendar",
+    "mars_titan_b6_regime_banks",
+    "mars_titan_b6_calendar_banks",
+    "mars_titan_b6_kalman",
+    "mars_titan_b6_kalman_rho0",
+    "cm_v1_b",
+    "cm_v1_bc",
+    "cm_v1_bm",
+    "cm_v1_bcm"
+  ],
+  "cohort_reading": {
+    "source": "view_blocks",
+    "max_block_bytes": 3221225472
+  },
+  "additional_controls": [
+    "anchored_continuation",
+    "predictive_objectives"
+  ],
+  "chain_rule": "chain_validation_score_v1",
+  "data_policy": "real_edition_only",
+  "limits": {
+    "max_training_jobs": 8694,
+    "max_prediction_jobs": 1710
+  },
+  "final_test_opened": false
+}

@@ -1,0 +1,109 @@
+{
+  "recorded_at_utc": "2026-10-20T18:24:00.786812+00:00",
+  "test_groups": [
+    {
+      "name": "current.xml",
+      "tests": 46,
+      "sha256": "cd5233da13a37cd4187d23b189b0801d19a201c87dd2c59cc03eb86d7ab2b36f"
+    },
+    {
+      "name": "final.xml",
+      "tests": 11,
+      "sha256": "df0cd603f75b2cee33bcb2f8fd51e35c920387d0b693ba23744d1fbdc9dfd079"
+    }
+  ],
+  "distinct_passed_cases": 47,
+  "directed_mutants": 9,
+  "mutants_detected": 9,
+  "schedules": {
+    "sequence": {
+      "windows": 19,
+      "order": [
+        "base_search",
+        "selection",
+        "selected_case_seeds",
+        "online",
+        "adapters",
+        "chain",
+        "ablation",
+        "rl",
+        "comparison",
+        "release"
+      ],
+      "jobs": {
+        "base_search": 2759,
+        "selection": 0,
+        "selected_case_seeds": 2474,
+        "online": 133,
+        "adapters": 10404,
+        "chain": 1805,
+        "ablation": 5415,
+        "rl": 7047,
+        "comparison": 0,
+        "release": 0
+      }
+    },
+    "paper": {
+      "windows": 19,
+      "order": [
+        "base_search",
+        "selection",
+        "selected_case_seeds",
+        "online",
+        "adapters",
+        "chain",
+        "ablation",
+        "rl",
+        "comparison",
+        "release"
+      ],
+      "jobs": {
+        "base_search": 2759,
+        "selection": 0,
+        "selected_case_seeds": 2474,
+        "online": 133,
+        "adapters": 10404,
+        "chain": 1805,
+        "ablation": 5415,
+        "rl": 7047,
+        "comparison": 0,
+        "release": 0
+      }
+    }
+  },
+  "scope": "Contratos y planificación CPU. Sin datos, optimizador, GPU ni ejecución científica.",
+  "training_executed": false,
+  "final_test_opened": false,
+  "artifacts": [
+    {
+      "relative_path": "schedule-sequence.json",
+      "sha256": "e2014d7551cd5ce4523f5556b62f048514c39a2c82b98c7f8e4892b8be56e147",
+      "bytes": 2095454
+    },
+    {
+      "relative_path": "schedule-sequence-summary.json",
+      "sha256": "4e2c6e4354d42095a7de351b02e87f771cd166a5af5236ad0afa441050e17a9a",
+      "bytes": 6958
+    },
+    {
+      "relative_path": "publication-sequence.json",
+      "sha256": "0f0582c4106d8e069d2a462d14e98ceb05d612bf44d6c7198e5011eb456caa64",
+      "bytes": 3534
+    },
+    {
+      "relative_path": "schedule-paper.json",
+      "sha256": "4657307cf1f92e14cd80fe780f7840e89ad4eb33a36e822fde889aa74d1cc7e1",
+      "bytes": 2095454
+    },
+    {
+      "relative_path": "schedule-paper-summary.json",
+      "sha256": "4e2c6e4354d42095a7de351b02e87f771cd166a5af5236ad0afa441050e17a9a",
+      "bytes": 6958
+    },
+    {
+      "relative_path": "publication-paper.json",
+      "sha256": "80c8a5eb514e83319eba9bf12cc672257cdef49811a0bcebee7a37b4816df295",
+      "bytes": 3525
+    }
+  ]
+}

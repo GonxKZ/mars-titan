@@ -1,0 +1,79 @@
+{
+  "recorded_at_utc": "2026-10-20T17:44:36.915188+00:00",
+  "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 7.083354295929894,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "invent_zero_updates",
+      "file": "benchmarks/neural_plasticity_analysis.py",
+      "before": "optimizer_steps=internal[\"optimizer_steps\"] if internal is not None else None",
+      "after": "optimizer_steps=internal[\"optimizer_steps\"] if internal is not None else 0",
+      "source_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 6.180683295009658,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "invent_zero_internal_time",
+      "file": "benchmarks/neural_plasticity_analysis.py",
+      "before": "internal_seconds=internal[\"actual_seconds\"] if internal is not None else None",
+      "after": "internal_seconds=internal[\"actual_seconds\"] if internal is not None else 0",
+      "source_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 6.129857231979258,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "invent_zero_memory",
+      "file": "benchmarks/neural_plasticity_analysis.py",
+      "before": "peak_rss_bytes=internal[\"peak_rss_bytes\"] if internal is not None else None",
+      "after": "peak_rss_bytes=internal[\"peak_rss_bytes\"] if internal is not None else 0",
+      "source_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 5.979141214978881,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "accept_missing_success_receipt",
+      "file": "benchmarks/neural_plasticity_analysis.py",
+      "before": "raise ValueError(\"Un lanzamiento sin recibo interno necesita un fallo expl\u00edcito\")",
+      "after": "pass",
+      "source_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 6.03213103604503,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "accept_unclosed_internal",
+      "file": "benchmarks/neural_plasticity_analysis.py",
+      "before": "raise ValueError(\"Un intento interno no tiene cierre confirmado\")",
+      "after": "pass",
+      "source_sha256": "11d2ab2dba0e447a135466c15dc735d653d09b172df272710b17d1e8b736adbb"
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 5.829193413024768,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

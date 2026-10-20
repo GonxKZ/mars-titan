@@ -19,3 +19,29 @@ Los dos factoriales usan el mismo núcleo que su campaña. C conserva la base co
 Estas declaraciones permanecen sin ejecutar. El presupuesto tensorial y los límites se conservan, pero el coste de la campaña nueva no se obtiene de copiar las mediciones históricas ni de un piloto de 64 activos. Antes de ejecutarla necesita su informe de disjunción con la huella exacta de campaña y vistas. La aceptación de fases, colas, almacenamiento y selecciones completas mantiene su ámbito propio. Un informe de vistas sin selecciones no acredita una cadena de entrenamiento ejecutada.
 
 La campaña completa y el test final de 2024 siguen cerrados. Ningún piloto anterior demuestra que estas declaraciones mejoren la predicción. Las nuevas rutas no pasan a ser el valor por defecto de los comandos existentes ni reemplazan las identidades y resultados históricos.
+
+## Etapas y publicación
+
+Las etapas tienen declaraciones propias porque sus guardas exigen la misma campaña por ruta y SHA. No se utilizan las de A v2 con otra referencia. Las matrices y políticas compartidas mantienen sus configuraciones.
+
+| Etapa | Sequence | Paper |
+| --- | --- | --- |
+| Adaptadores | [Declaración](../../configs/posttraining/historical-masked-adapter-stage-a-sequence-v1.json) | [Declaración](../../configs/posttraining/historical-masked-adapter-stage-a-paper-v1.json) |
+| Comparación postentrenada | [Declaración](../../configs/posttraining/historical-masked-adapter-comparison-a-sequence-v1.json) | [Declaración](../../configs/posttraining/historical-masked-adapter-comparison-a-paper-v1.json) |
+| Ablación | [Declaración](../../configs/evaluation/historical-masked-ablation-stage-a-sequence-v1.json) | [Declaración](../../configs/evaluation/historical-masked-ablation-stage-a-paper-v1.json) |
+| RL | [Declaración](../../configs/simulation/historical-masked-rl-stage-a-sequence-v1.json) | [Declaración](../../configs/simulation/historical-masked-rl-stage-a-paper-v1.json) |
+| Publicación | [Declaración](../../configs/evaluation/historical-masked-publication-a-sequence-v1.json) | [Declaración](../../configs/evaluation/historical-masked-publication-a-paper-v1.json) |
+
+El registro `additional_stages` añade estas rutas a la auditoría de datos sin sustituir las históricas. Los [controles de integración](../../reports/engineering/paper-stage-bindings-20261020/README.md) verifican horarios, retención, publicación y rechazo de combinaciones cruzadas. Los horarios se generan antes de ejecutar. No son recibos de aprendizaje.
+
+Estas órdenes comprobadas validan los metadatos y muestran el horario de `paper`, sin entrenar ni leer datos:
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py schedule \
+  --campaign configs/baselines/historical-masked-campaign-a-paper-v1.json \
+  --adapter-stage configs/posttraining/historical-masked-adapter-stage-a-paper-v1.json \
+  --ablation-stage configs/evaluation/historical-masked-ablation-stage-a-paper-v1.json \
+  --rl-stage configs/simulation/historical-masked-rl-stage-a-paper-v1.json
+uv run --no-sync python scripts/run_masked_campaign.py publication check \
+  --declaration configs/evaluation/historical-masked-publication-a-paper-v1.json
+```

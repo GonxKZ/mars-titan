@@ -105,7 +105,11 @@ def documents(campaign, later_stages):
         section = campaign["cm_v1"]
         paths += [Path(section["path"]), *map(Path, section["recipes"].values())]
     for entry in later_stages.values():
-        for relative in (*entry["stages"].values(), entry.get("joint_stage")):
+        for relative in (
+            *entry["stages"].values(),
+            entry.get("joint_stage"),
+            *entry.get("additional_stages", {}).values(),
+        ):
             if relative is None:
                 continue
             stage_path = REPOSITORY / relative
