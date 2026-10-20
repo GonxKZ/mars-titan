@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "name": "mars_titan_cm_v1_factorial",
+  "status": "declared_not_executed",
+  "base": {
+    "core_recipe": "chronological-training-historical-sequence-v1.json",
+    "readout_recipe": "episodic-readout-historical-masked.json",
+    "variant": "mac_online",
+    "admission": "m1",
+    "refinements": 1,
+    "episode_selection": "per_step",
+    "retention": "reservoir",
+    "control_mode": "disabled"
+  },
+  "control": {
+    "rank": 4,
+    "frequency": 16,
+    "seed": 91,
+    "grid_size": 64,
+    "threshold": 1.0,
+    "weight": 0.1,
+    "max_flows": 2,
+    "max_estimated_bytes": 134217728
+  },
+  "consolidation": {
+    "policy": "anchored",
+    "frontier": 8,
+    "new_candidates": 8,
+    "max_swaps": 8,
+    "max_distance_pairs": 50000000,
+    "max_working_bytes": 67108864
+  },
+  "cores": {
+    "cm_v1_core_b": false,
+    "cm_v1_core_c": true
+  },
+  "arms": {
+    "cm_v1_b": {
+      "control": false,
+      "consolidation": false
+    },
+    "cm_v1_bc": {
+      "control": true,
+      "consolidation": false
+    },
+    "cm_v1_bm": {
+      "control": false,
+      "consolidation": true
+    },
+    "cm_v1_bcm": {
+      "control": true,
+      "consolidation": true
+    }
+  },
+  "pending": [
+    "Factorial propio de historical-masked-2000-a-sequence-v1. B se identifica por esta declaración, sus recetas y sus huellas, sin sustituir la B histórica.",
+    "B y B+M comparten el núcleo con C desactivado y SDPA Math. B+C y B+C+M comparten su núcleo con la penalización local. Todos conservan el mismo layout y las mismas proyecciones de esta declaración.",
+    "C sigue siendo una penalización local del Jacobiano proyectado, sin certificado de estabilidad global. M sigue siendo consolidación heurística de episodios maduros, separada de la memoria neuronal.",
+    "Declaración sin ejecutar. El bloqueo global y el test final permanecen cerrados. Los costes y resultados de otros pilotos no acreditan este factorial."
+  ]
+}

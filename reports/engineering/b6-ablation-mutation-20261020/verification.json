@@ -1,0 +1,48 @@
+{
+  "recorded_at_utc": "2026-10-20T17:50:50.541245+00:00",
+  "source_sha256": "bb4bbf881e2da12554d2cd8fd9f4aacb2105d9c9a0848c92092bfc9f4f5ae517",
+  "test_sha256": "9edbaf9d1a510000b75632c92ee587c48721c9b6ed2536eeeda359306a00d8dd",
+  "source_commit": "33aaf3deae73a6e1e65a28b4e2f722de1f195719",
+  "node": "tests/training/test_modality_ablation_carry.py::test_b6_ablation_equals_the_correction_with_a_real_absence",
+  "before": "same_window=modality_ablation is not None or regenerate,",
+  "after": "same_window=regenerate,",
+  "records": [
+    {
+      "phase": "baseline",
+      "exit_code": 0,
+      "seconds": 53.34423916297965,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "2b1be6ab2c87aa5f603718a6274759ff0287eae149e2c227ec813e015087bb27"
+    },
+    {
+      "phase": "mutant",
+      "exit_code": 1,
+      "seconds": 35.701835777959786,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "8ceff6981b9f9fd73a92dd7ec071a1e065afcc20ee437b40d454cb9fce8d5376"
+    },
+    {
+      "phase": "restored",
+      "exit_code": 0,
+      "seconds": 32.24314375105314,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "9d51426cf37ce5f4fa6d36861bd2e5d40bb1175032710e561d23c1ccaed39a91"
+    }
+  ],
+  "source_restored": true,
+  "global_hold_unchanged": true,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "local_authorization_closed": true,
+  "real_data_used": false,
+  "final_test_opened": false,
+  "scope": "Tres fases CPU de un fixture con optimizador registrador que no cambia pesos. No es una campaña ni un resultado financiero."
+}

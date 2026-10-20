@@ -1,0 +1,50 @@
+{
+  "recorded_at_utc": "2026-10-20T17:53:49.150727+00:00",
+  "test_groups": [
+    {
+      "name": "cpu.xml",
+      "tests": 27,
+      "sha256": "6706ac8b4b5067e460e06796f9e0e92198997660ceb62195c1fad9e69daa94dc"
+    },
+    {
+      "name": "cpu-final.xml",
+      "tests": 10,
+      "sha256": "de1bc9e8065da43c2ce69bde06c8ea2454951c52fdf2c9f930f278f688fa6f17"
+    },
+    {
+      "name": "cuda.xml",
+      "tests": 3,
+      "sha256": "83bc5d917d43757996ccedaea49e7c2c1e7a935b7d6da1b274de2665c8096f06"
+    }
+  ],
+  "distinct_passed_cases": 34,
+  "directed_mutants": 10,
+  "mutants_detected": 10,
+  "historical_declarations_unchanged": true,
+  "disjunction": {
+    "sequence": {
+      "windows": 51,
+      "report_sha256": "da2493df8f0b77b2041b7330df23a041625ac1ff6c8bdfcb371ff2f9e822590e",
+      "workers": 2,
+      "memory_scope_limit_bytes": 4294967296,
+      "reported_rss_scope": "Proceso principal, RUSAGE_SELF. No suma los picos de los trabajadores.",
+      "elapsed_seconds": 377.01654749107547
+    },
+    "paper": {
+      "windows": 51,
+      "report_sha256": "20f6ab6c37f6bb4b3339fcf1f9f006efd8647fa0446a6a65188de0c5eb01384d",
+      "workers": 2,
+      "memory_scope_limit_bytes": 4294967296,
+      "reported_rss_scope": "Proceso principal, RUSAGE_SELF. No suma los picos de los trabajadores.",
+      "elapsed_seconds": 440.31916892004665
+    }
+  },
+  "view_reports": {
+    "US+CN": "c0c00a475840e23f8c8138da1844f4076ee9a90834b2a40ceadddb02acfba4fe",
+    "US": "cbbde2a1ce34c2393257c8ac336f5699b5446c7afe59dfa01a42180c0aa120fb",
+    "CN": "0a719627ee7da43ba3026acd20071ed2afed5472ef3a41040fd82166efe01fee"
+  },
+  "training_executed": false,
+  "final_test_opened": false,
+  "scope": "Configuraciones y contratos comprobados con fixtures CPU/CUDA, sin optimizador. Auditoría de etiquetas temporales de las vistas, sin datos de 2024. No es una campaña ejecutada."
+}
