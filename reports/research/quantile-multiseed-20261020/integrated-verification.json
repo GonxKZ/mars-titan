@@ -1,0 +1,27 @@
+{
+  "recorded_at_utc": "2026-10-20T18:41:43.425826+00:00",
+  "source_commit": "a5c019cc5bffa104501874eaaed8a53949d7d7d1",
+  "tests": 168,
+  "cuda_cases": 41,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "junit_sha256": "5a7803da0570a4ac8c367aed283b58c004ee629962747cccfc71da0916e7281c",
+  "quality_sha256": "408e02f99b84e0e7c2fd2c955c51022e36d81fb949c5c08f501d05bf6b035c6f",
+  "directed_mutations": [
+    {
+      "path": "reports/research/quantile-multiseed-20261020/mutations.json",
+      "sha256": "ee1cf02dddee41beb61e282d3693dbc3557b92f50af82feeed64ebcb5f88d4fa",
+      "detected": 11,
+      "restored_passed": true
+    },
+    {
+      "path": "reports/research/quantile-multiseed-20261020/cost-mutations.json",
+      "sha256": "3f9fca25ad92ba3e36d22a0a012c62ee04eae934bcbdd3390d03f9ba69c3f912",
+      "detected": 5,
+      "restored_passed": true
+    }
+  ],
+  "scope": "Comprobación integrada focalizada. CUDA utiliza entradas de prueba sin ajustes de pesos. Las métricas reales de desarrollo se conservan fuera de esta cobertura. No es toda la batería.",
+  "final_test_opened": false
+}

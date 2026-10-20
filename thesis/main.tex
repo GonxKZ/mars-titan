@@ -57,8 +57,11 @@ de desarrollo ya incluyen ajustes y resultados exploratorios con cohortes de
 cuatro, 64 y 256 activos. La ronda de refinamientos completó 288 tareas con
 tres semillas, pero ninguno de sus 48 selectores superó al predictor de retorno
 residual cero. Los pilotos posteriores de plasticidad y competencia de claves
-tampoco justificaron promover sus variantes. Sus poblaciones, controles y
-costes se informan por separado. Estos resultados no completan la campaña del
+tampoco justificaron promover sus variantes. Un contraste posterior de rutas
+de cuantiles con cinco semillas reduce el error de la combinación frente al
+original, pero pierde frente al residual cero y frente a uno de sus
+componentes. Sus poblaciones, controles y costes se informan por separado.
+Estos resultados no completan la campaña del
 universo histórico ni resuelven sus limitaciones de procedencia. El año 2023
 utilizado en las últimas rondas es desarrollo reutilizado y el test final de
 2024 permanece cerrado.
@@ -539,10 +542,16 @@ utiliza entradas disponibles. El error financiero de escritura episódica espera
 a que madure el resultado de la predicción emitida. K cuenta los refinamientos
 del proyecto, no las actualizaciones internas de Titans.
 
-La receta de A v2 usa las proyecciones \texttt{linear\_v1}. La referencia
-\texttt{mac\_paper}, con las proyecciones del artículo, conserva otra identidad
-y aparece por separado en los pilotos. Esos resultados no cambian la receta de
-campaña ni acreditan reproducir los resultados publicados de Titans.
+La receta histórica de A v2 conserva las proyecciones \texttt{linear\_v1}.
+Se han añadido dos declaraciones independientes: \texttt{sequence} aplica la
+disposición temporal contigua con esas mismas proyecciones y \texttt{paper}
+cambia únicamente las proyecciones por las del artículo. Cada declaración
+tiene su receta, identidad y factorial CM, con las mismas muestras, cortes y
+presupuestos pertinentes. Sus etapas de adaptadores, ablación, políticas y
+publicación se vinculan a la huella de su propia campaña. Las comprobaciones
+de metadatos y disjunción temporal pasan, pero sus recibos de campaña y
+selecciones siguen vacíos. Estas declaraciones no cambian A v2 por defecto
+ni acreditan ejecutar la campaña o reproducir los resultados de Titans.
 
 CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
 fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
@@ -823,6 +832,65 @@ de la referencia después de 685 actualizaciones. Esa paridad permite
 interpretar el contraste, pero no convierte su resultado negativo en una
 mejora. No se promueve ninguna de estas variantes.
 
+\section{Separación de señales de cuantiles}
+La separación de señales ascendentes y de realimentación mediante
+compartimentos dendríticos de \textcite{guerguiev2017segregated} motiva una
+analogía limitada: aislar vías de aprendizaje en la cabeza de cuantiles.
+La variante puede impedir que las colas actualicen la ubicación y, por
+separado, que los incrementos de dispersión envíen gradientes al codificador.
+Los valores emitidos para pesos fijos no cambian, pero sí el gradiente
+declarado. Se trata de un gradiente sustituto, no de una reproducción
+neuronal ni de una demostración de descenso de la pérdida conjunta.
+
+El \href{https://github.com/GonxKZ/mars-titan/blob/004fca53d/reports/research/quantile-multiseed-20261020/development-v1/README.md}{contraste multisemilla}
+completó 25 ajustes, con cinco configuraciones, semillas 42--46, una época y
+685 actualizaciones por modelo. Conserva los 64 activos estadounidenses,
+203.350 filas de ajuste admisibles desde 2000 con máscaras y las mismas
+15.936 filas de desarrollo de 2023. Primero se calcula el error de cada
+semilla por sesión y después se promedian esos errores. No se promedian
+predicciones ni se convierten las semillas en fechas nuevas.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Configuración & MAE medio & Desviación entre semillas \\
+\midrule
+Original y control completo & 0,02161406 & 0,00484225 \\
+Ubicación aislada & 0,02738391 & 0,00272702 \\
+Dispersión aislada hacia el codificador & 0,01661728 & 0,00072115 \\
+Ambas vías aisladas & 0,01700958 & 0,00086600 \\
+Residual cero & 0,01584945 & No depende de la semilla \\
+\bottomrule
+\end{tabular}
+\caption{MAE por sesión, promediado entre las cinco semillas. La desviación
+es muestral. Las 249 sesiones permanecen como unidades temporales.}
+\end{table}
+
+La combinación reduce el MAE medio un 21,30~\% frente al original.
+La diferencia es $-0{,}00460448$, con intervalo temporal del 95~\%
+$[-0{,}00527537,\,-0{,}00400560]$. Mantiene fijas las cinco semillas y utiliza
+2.000 réplicas de bloques de 16 sesiones, con sensibilidad predefinida a 8 y
+32. La combinación mejora en cuatro semillas y empeora ligeramente en una.
+El intervalo no incluye una población de nuevas inicializaciones ni corrige
+la reutilización acumulada del desarrollo.
+
+Todas las configuraciones pierden frente al residual cero. La combinación
+tiene un 7,32~\% más error y el aislamiento hacia el codificador, un 4,84~\%.
+La combinación también empeora frente a este componente. La diferencia es
+$+0{,}00039230$ y su intervalo simultáneo va de $0{,}00020076$ a
+$0{,}00058384$, dentro de los doce secundarios.
+La interacción negativa no implica que la combinación
+supere a sus dos componentes. No se cambia el contraste principal ni se
+promueve una variante por esta clasificación.
+
+Los controles reproducen exactamente los 45 tensores compartidos y las
+predicciones de las tres fases dentro de cada semilla. La repetición de 42
+reproduce también los cinco casos de la ronda anterior. Una época no permite
+decidir la convergencia de estos mecanismos. La analogía dendrítica y la
+reducción frente al original no acreditan una mejora del estado del arte.
+
 \section{Costes medidos y límites comunes}
 La ronda de refinamientos conserva 289 intentos para 288 tareas completas,
 incluido el intento interrumpido y repetido. Sus recibos externos suman
@@ -842,6 +910,15 @@ pendientes. La lectura externa al método y la maduración forman parte del
 coste completo de fase, pero no de esos percentiles. No es latencia por activo
 ni incluye producir los embeddings.
 
+Los 26 intentos del contraste multisemilla de cuantiles, incluidos los
+25 completados y un fallo de admisión sin recibo interno, suman
+3.559,714 segundos externos y 17.125 actualizaciones confirmadas. El fallo
+conserva su tiempo externo y deja como desconocidos sus pasos y memoria.
+Con las rondas anteriores de plasticidad, claves y cuantiles, los 64 intentos
+suman 8.478,750 segundos, unas 2,355 horas. Los tiempos internos están
+incluidos en esos totales. El análisis de esta ampliación añade
+5,428 segundos de proceso y las pruebas técnicas se registran aparte.
+
 El RSS de proceso, la memoria asignada y reservada por PyTorch y el uso total
 del dispositivo son medidas distintas. Los estudios no midieron energía y
 sus picos del asignador no representan toda la VRAM. Hubo trabajo de CPU
@@ -858,7 +935,8 @@ criterios pendientes.
 \chapter{Conclusiones y limitaciones}
 La implementación y los estudios acotados permiten contrastar mecanismos y
 conservar resultados negativos. En los ensayos descritos, combinar memorias,
-añadir refinamientos o modular las claves no proporciona una mejora general
+añadir refinamientos, modular las claves o separar las señales de cuantiles
+no proporciona una mejora general
 frente al retorno residual cero. Las reducciones frente a una referencia
 interna deben interpretarse junto a ese control y a las alternativas
 sencillas, con sus filas y presupuestos.
