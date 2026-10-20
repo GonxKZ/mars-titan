@@ -378,6 +378,7 @@ def complete_fixture(tmp_path, fault, version="v1"):
     candidate, reference, unit = {
         "key_competition_v1": ("centered_competitive", "original", "all_components"),
         "quantile_routing_v1": ("both_isolated", "original", "all_feedback"),
+        "local_capture_v1": ("capture_local", "capture_global", "capture_constant"),
     }.get(version, ("cascade_combined", "cascade_original", "cascade_unity"))
     prepared["study_version"] = version
     prepared["configuration"].update(

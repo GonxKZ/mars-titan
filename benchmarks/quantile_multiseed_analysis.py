@@ -92,19 +92,59 @@ def control_pair(work, reference, unit):
     return result
 
 
+def paired_initialization(work, records, seeds):
+    """Verificar la identidad inicial por semilla, sin afirmar paridad tras el ajuste.
+
+    Las rutas de checkpoints ya deben haber superado read_run. Solo se carga uno
+    cada vez y no se conservan sus tensores en el resultado.
+    """
+    import torch
+
+    by_seed = {}
+    for seed in seeds:
+        identities = {}
+        for (name, current_seed), (job, run, _) in records.items():
+            if current_seed != seed:
+                continue
+            path = work / "runs" / job["id"] / run["checkpoint"]["path"]
+            payload = torch.load(path, map_location="cpu", weights_only=True)
+            digest = payload.get("identity", {}).get("initial_parameters_sha256")
+            if (
+                not isinstance(digest, str)
+                or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)
+            ):
+                raise ValueError("El checkpoint no identifica sus parámetros iniciales")
+            identities[name] = digest
+            del payload
+        if len(identities) < 2:
+            raise ValueError("Faltan controles emparejados de la inicialización")
+        by_seed[str(seed)] = dict(passed=len(set(identities.values())) == 1, identities=identities)
+    return dict(
+        kind="paired_initial_parameters",
+        passed=all(value["passed"] for value in by_seed.values()),
+        by_seed=by_seed,
+    )
+
+
 def analyze(work, output):
-    require_learning_allowed("el análisis multisemilla del piloto de cuantiles")
+    require_learning_allowed("el análisis multisemilla del piloto neuronal")
     started = time.perf_counter()
     work, output = Path(work).resolve(), Path(output).resolve()
     outside_source(work, output)
     if output.exists():
         raise FileExistsError("El análisis necesita un directorio nuevo")
     prepared = verify_prepared(work)
-    if prepared.get("study_version") not in ("quantile_routing_v2", "quantile_point_v1"):
+    if prepared.get("study_version") not in (
+        "quantile_routing_v2",
+        "quantile_point_v1",
+        "local_capture_v1",
+    ):
         raise ValueError(
             "El analizador requiere un protocolo multisemilla de cuantiles identificado"
         )
     point_control = prepared["study_version"] == "quantile_point_v1"
+    local_capture = prepared["study_version"] == "local_capture_v1"
     config = prepared["configuration"]
     seeds = config["seeds"]
     arms = list(dict.fromkeys(job["arm"] for job in prepared["jobs"]))
@@ -113,7 +153,7 @@ def analyze(work, output):
     if len(actual) != len(expected) or set(actual) != expected:
         raise ValueError("El catálogo debe conservar todos los pares de configuración y semilla")
     runs, scores, controls, cohort, steps, zero = {}, {}, {}, None, set(), None
-    control_names = config["validity_control"]
+    control_names = {} if local_capture else config["validity_control"]
     for job in prepared["jobs"]:
         run, table, digest = read_run(work, prepared, job)
         current = checked_scores(table, cohort)
@@ -139,21 +179,24 @@ def analyze(work, output):
             optimizer_steps=run["fit"]["global_step"],
             summary=current.summary(),
         )
-        if job["arm"] in control_names.values():
+        if local_capture or job["arm"] in control_names.values():
             controls[job["arm"], job["seed"]] = job, run, table
         if zero is None:
             zero = score_table(table, cohort, zero=True)
     if len(steps) != 1:
         raise ValueError("Las configuraciones no conservan las mismas actualizaciones")
-    by_seed = {
-        str(seed): control_pair(
-            work,
-            controls[control_names["reference"], seed],
-            controls[control_names["unit"], seed],
-        )
-        for seed in seeds
-    }
-    validity = dict(passed=all(value["passed"] for value in by_seed.values()), by_seed=by_seed)
+    if local_capture:
+        validity = paired_initialization(work, controls, seeds)
+    else:
+        by_seed = {
+            str(seed): control_pair(
+                work,
+                controls[control_names["reference"], seed],
+                controls[control_names["unit"], seed],
+            )
+            for seed in seeds
+        }
+        validity = dict(passed=all(value["passed"] for value in by_seed.values()), by_seed=by_seed)
     models, series = {}, {"zero": zero.series("mae")}
     for arm in arms:
         series[arm], models[arm] = average_seeds(
@@ -167,9 +210,18 @@ def analyze(work, output):
         {"primary": delta(config["primary_reference"], config["primary_candidate"])},
         **options,
     )
-    contrasts = (
-        point_objective_contrasts(arms) if point_control else quantile_routing_contrasts(arms)
-    )
+    if local_capture:
+        if set(arms) != {"capture_global", "capture_local", "capture_constant"}:
+            raise ValueError("El contraste local necesita sus tres controles registrados")
+        contrasts = {f"{arm}_minus_zero": delta("zero", arm) for arm in arms}
+        contrasts.update(
+            local_minus_constant=delta("capture_constant", "capture_local"),
+            global_minus_constant=delta("capture_constant", "capture_global"),
+        )
+    else:
+        contrasts = (
+            point_objective_contrasts(arms) if point_control else quantile_routing_contrasts(arms)
+        )
     secondary = compare_series(series, contrasts, **options)
     costs = execution_cost(work, prepared)
     paired = {
@@ -182,7 +234,9 @@ def analyze(work, output):
     result = dict(
         schema_version=1,
         kind=(
-            "quantile_point_objective_multiseed_development_results"
+            "local_capture_multiseed_development_results"
+            if local_capture
+            else "quantile_point_objective_multiseed_development_results"
             if point_control
             else "quantile_routing_multiseed_development_results"
         ),
@@ -196,7 +250,7 @@ def analyze(work, output):
         zero=zero.summary(),
         primary=primary,
         secondary=secondary,
-        unity_control=validity,
+        **{("initialization_control" if local_capture else "unity_control"): validity},
         seed_variation=dict(
             paired_delta=paired,
             paired_sample_std=float(np.std(list(paired.values()), ddof=1)),
@@ -208,6 +262,8 @@ def analyze(work, output):
         primary_interpretation=(
             interpret(primary["contrasts"][0]["interval"], config["minimum_relevant_mae"])
             if validity["passed"]
+            else "atribucion_bloqueada_por_inicializacion"
+            if local_capture
             else "atribucion_bloqueada_por_control_unitario"
         ),
         costs=costs,

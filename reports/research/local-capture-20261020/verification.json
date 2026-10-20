@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "local_capture_technical_verification",
+  "recorded_at_utc": "2026-10-20T21:32:41.278717+00:00",
+  "base_commit": "13f135ee8fd645ecc9c2a3dd15edd49d9337d000",
+  "sources": {
+    "src/mars_titan/models/titans/plasticity.py": "ac23aa6ef8bd1a58a59a633c67127bab800e20d674b6b59bfc7821eafe5e5db3",
+    "src/mars_titan/models/titans/plasticity_config.py": "a89f080fb798c4cd7f080aa1f9d66132ae95448d2fdfda07b4aa893b94e7a72f",
+    "src/mars_titan/models/titans/financial.py": "b68ad1d510818b33b2141596a2eb5ec6e6071606cc98ba6408247c59f8f407bf",
+    "benchmarks/neural_plasticity_study.py": "429da7ce80f49971ffaf80ab8277853426b8105e9ece72162a00ea4658c32ee4",
+    "benchmarks/quantile_multiseed_analysis.py": "f10eafded2b9a8b415acb34e8868e1934f9fe1b7d8836558cacf97650eb6be04",
+    "tests/models/titans/test_local_capture.py": "71aff4fe8b848e19794b3805469c781c4a0c21cb07de57e6f13b872a77b7a964",
+    "tests/models/titans/test_plasticity_integration.py": "c05270b52e23556948af768f1456dcd7b364403d49bb7608696d887b1469ffd1",
+    "tests/tooling/test_local_capture_study.py": "40f535337b5e8cd22cac7b4356d32c160de062ff8fd1bfd889d6762864a61b00",
+    "tests/tooling/test_neural_plasticity_analysis.py": "1c2f46027218463a1ec6ba87a43b7ac39afc6dc12ebf80c0c08a707714013523",
+    "tests/tooling/test_quantile_multiseed_analysis.py": "7c968d1c7435d9d6c91d92c54f7ce3e46d14ae862c525c8a963a0e838c4395b8",
+    "configs/experiments/local-capture-v1.json": "d5e5bc9c64710ce9d563af8581f6b74d11905c9a87db54c06bf44637c800874d",
+    "configs/experiments/local-capture-study-v1.json": "1cd4616261feeafd641fb835597c2b6bb403548fcd5771742c620423e613b611"
+  },
+  "test_runs": [
+    {
+      "receipt": "final-v3.xml",
+      "sha256": "c6f77f8934dc9d6340b494e59821c69d8a910be526f71a3f773f829aaa2e6708",
+      "tests": 279,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 68.056
+    },
+    {
+      "receipt": "financial-regression.xml",
+      "sha256": "259fa2b14c719ce34ce5000d0f7dfe8360a43e90be88a197cb0f3da9f2a05728",
+      "tests": 71,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 3.225
+    }
+  ],
+  "distinct_cases": 350,
+  "cuda_cases": 51,
+  "cuda_collection_sha256": "53dc1de796b87e4e976ac6dcf00e3d2e1839e04d9912b0feefe045771f2bf701",
+  "mutants_detected": 14,
+  "mutants_total": 14,
+  "mutation_baseline_and_restore_pass": true,
+  "initial_mutants_detected": 13,
+  "initial_mutants_total": 14,
+  "synthetic_optimizer_steps": 16,
+  "real_optimizer_steps": 0,
+  "final_test_opened": false,
+  "hold_unchanged": true,
+  "quality_totals": {
+    "statements": 961,
+    "covered_statements": 828,
+    "branches": 404,
+    "covered_branches": 307
+  },
+  "maximum_crap": 204.47774317414564,
+  "limitations": [
+    "Selección focalizada, no toda la batería del repositorio.",
+    "La mutación es dirigida y no demuestra detección de todos los defectos posibles.",
+    "La cobertura incluye código histórico no cubierto por esta selección. CRAP es un diagnóstico.",
+    "La advertencia de PyTorch sobre el prototipo de diagnóstico de sincronización no implica detección de todas las sincronizaciones.",
+    "No hay estudio predictivo ni medida de coste de captura local en este recibo."
+  ]
+}

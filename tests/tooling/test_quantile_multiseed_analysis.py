@@ -90,19 +90,21 @@ def test_multiseed_analysis_keeps_the_hold_before_opening_inputs(tmp_path, learn
     assert not (tmp_path / "output").exists()
 
 
-def multiseed_fixture(work):
+def multiseed_fixture(work, version="quantile_routing_v1"):
     from mars_titan.data.storage import atomic_json, sha256
     from mars_titan.training.titans_walk_forward import _protocol
     from tests.tooling.test_neural_plasticity_analysis import complete_fixture
 
-    prepared = complete_fixture(work, "none", "quantile_routing_v1")
+    prepared = complete_fixture(work, "none", version)
     protocol = work / "recipes/protocol.json"
     document = json.loads(protocol.read_text())
     document["seeds"] = [42, 43]
     atomic_json(protocol, document)
     prepared["artifacts"]["recipes/protocol.json"] = sha256(protocol)
     prepared["configuration"]["seeds"] = [42, 43]
-    prepared["study_version"] = "quantile_routing_v2"
+    prepared["study_version"] = (
+        "quantile_routing_v2" if version == "quantile_routing_v1" else version
+    )
     old = deepcopy(prepared["jobs"])
     for job in old:
         new = dict(job, id=job["id"].replace("-42", "-43"), seed=43)
