@@ -11,7 +11,7 @@ import numpy as np
 import pyarrow.parquet as pq
 
 from benchmarks.memory_microstudy_analysis import score_table
-from benchmarks.neural_plasticity_study import FILES, verify_prepared
+from benchmarks.neural_plasticity_study import FILES, recipe_name, verify_prepared
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction
 from mars_titan.training.learning_hold import require_learning_allowed
@@ -76,6 +76,21 @@ def quantile_routing_contrasts(names):
     result["interaction"] = interaction(
         "original", "median_isolated", "encoder_isolated", "both_isolated"
     )
+    return result
+
+
+def point_objective_contrasts(names):
+    """Separar el objetivo puntual, su escala y las vías de gradiente, sin un factorial falso."""
+    result = {f"{name}_minus_zero": delta("zero", name) for name in names}
+    for candidate in names:
+        if candidate != "original":
+            result[f"{candidate}_minus_original"] = delta("original", candidate)
+    for base, candidate in (
+        ("point_component", "both_isolated"),
+        ("point_l1", "both_isolated"),
+        ("point_component", "point_l1"),
+    ):
+        result[f"{candidate}_minus_{base}"] = delta(base, candidate)
     return result
 
 
@@ -155,7 +170,7 @@ def read_run(work, prepared, job):
         or request.get(CHANGES) != (job["changes"] or None)
         or request["view_sha256"] != prepared["artifacts"][FILES["view"]]
         or request["protocol_sha256"] != protocol_digest
-        or request["recipe_sha256"] != prepared["artifacts"][FILES["recipe"]]
+        or request["recipe_sha256"] != prepared["artifacts"][recipe_name(job)]
     ):
         raise ValueError(f"La ejecución {job['id']} no corresponde al piloto completado")
     if fold != dict(id=prepared["configuration"]["fold"], **prepared["configuration"]["window"]):

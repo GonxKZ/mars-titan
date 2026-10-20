@@ -72,6 +72,7 @@ class _Layer:
 
     def __init__(self, name, device):
         self.name, self.device, self.tokens = name, device, 0
+        self.shared_writes = self.shared_rows = 0
         self.values = {}
 
     def running(self, key, saturation=False):
@@ -79,20 +80,48 @@ class _Layer:
             self.values[key] = _Running(self.device, saturation)
         return self.values[key]
 
-    def __call__(self, *, alpha, eta, theta, loss, weights, momentum):
-        self.tokens += 1
+    def __call__(
+        self,
+        *,
+        alpha,
+        eta,
+        theta,
+        loss,
+        weights,
+        momentum,
+        shared_rows=None,
+        plasticity=(),
+        capture_applied=False,
+    ):
+        prefix = "memory"
+        if shared_rows is None:
+            self.tokens += 1
+        else:
+            self.shared_writes += 1
+            self.shared_rows += shared_rows
+            prefix += ".shared"
+            self.running(f"{prefix}.rows_per_write").add(loss.new_tensor(shared_rows))
         for key, value in (("alpha", alpha), ("eta", eta), ("theta", theta)):
-            self.running(f"memory.{key}", saturation=key != "theta").add(value)
+            self.running(f"{prefix}.{key}", saturation=key != "theta").add(value)
         flows = weights[0].shape[0]
         # La división se hace en float64, como el resto de acumulados.
-        self.running("memory.associative_loss").add(loss.detach().to(torch.float64) / flows)
+        self.running(f"{prefix}.associative_loss").add(loss.detach().to(torch.float64) / flows)
         for index, (weight, step) in enumerate(zip(weights, momentum, strict=True)):
-            self.running(f"memory.fast_weight_l2.{index}").add(
+            self.running(f"{prefix}.fast_weight_l2.{index}").add(
                 torch.linalg.vector_norm(weight.detach(), dim=(1, 2), dtype=torch.float64)
             )
-            self.running(f"memory.momentum_l2.{index}").add(
+            self.running(f"{prefix}.momentum_l2.{index}").add(
                 torch.linalg.vector_norm(step.detach(), dim=(1, 2), dtype=torch.float64)
             )
+        for index, update in enumerate(plasticity):
+            for key, value in (
+                ("write_gain", update.write_gain),
+                ("coherence", update.coherence),
+                ("eligibility", update.history[2]),
+            ):
+                self.running(f"{prefix}.plasticity.{key}.{index}").add(value)
+            if capture_applied:
+                self.running(f"{prefix}.plasticity.capture_gain.{index}").add(update.capture_gain)
 
 
 class MemoryObserver(TraceObserver):
@@ -132,5 +161,8 @@ class MemoryObserver(TraceObserver):
         for name, layer in layers.items():
             if layer.tokens:
                 recorder.scalar("memory.tokens", float(layer.tokens), group=name)
+            if layer.shared_writes:
+                recorder.scalar("memory.shared.writes", float(layer.shared_writes), group=name)
+                recorder.scalar("memory.shared.rows", float(layer.shared_rows), group=name)
             for metric, running in layer.values.items():
                 running.record(recorder, metric, name)

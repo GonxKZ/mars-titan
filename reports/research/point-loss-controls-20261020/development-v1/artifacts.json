@@ -1,0 +1,1986 @@
+{
+  "schema_version": 1,
+  "storage": "Artefactos locales fuera de Git. Rutas relativas al directorio de la ejecución.",
+  "artifacts": [
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/original-42/run.json",
+      "bytes": 11470,
+      "sha256": "3514e17d66f85081c3bf36aa65c8a0d346dc435e573a0462084c74e6c25cb380",
+      "job_id": "original-42"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/original-42/fit/run.json",
+      "bytes": 25275,
+      "sha256": "699868d5c403547424aadaef388fb4a6b48da23f01725977a4670b1ed618281c",
+      "job_id": "original-42"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-42/validation-predictions.parquet",
+      "bytes": 370793,
+      "sha256": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+      "job_id": "original-42",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-42/calibration-predictions.parquet",
+      "bytes": 183328,
+      "sha256": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+      "job_id": "original-42",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-42/evaluation-predictions.parquet",
+      "bytes": 747665,
+      "sha256": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a",
+      "job_id": "original-42",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/original-42/fit/checkpoints/state-42f7c93243f5aed5dfa72272be8470b4dd097d7d273bbd72661a403e7448cbc4.pt",
+      "bytes": 2352337,
+      "sha256": "42f7c93243f5aed5dfa72272be8470b4dd097d7d273bbd72661a403e7448cbc4",
+      "job_id": "original-42"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-42/run.json",
+      "bytes": 11766,
+      "sha256": "6c9344676becf67f3525f281cc9f8b12a59e13341908da2d37d81eb2834ae72e",
+      "job_id": "all_feedback-42"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-42/fit/run.json",
+      "bytes": 25587,
+      "sha256": "aab518ea1e1c03183b258b6fd2c7ade790239f1e4ca9a12479986db10bf3c882",
+      "job_id": "all_feedback-42"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-42/validation-predictions.parquet",
+      "bytes": 370793,
+      "sha256": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+      "job_id": "all_feedback-42",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-42/calibration-predictions.parquet",
+      "bytes": 183328,
+      "sha256": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+      "job_id": "all_feedback-42",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-42/evaluation-predictions.parquet",
+      "bytes": 747665,
+      "sha256": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a",
+      "job_id": "all_feedback-42",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/all_feedback-42/fit/checkpoints/state-70b5501a95dfd07b27cca867df9c016cb1da21296b20dfbbc9f80716a65de261.pt",
+      "bytes": 2352977,
+      "sha256": "70b5501a95dfd07b27cca867df9c016cb1da21296b20dfbbc9f80716a65de261",
+      "job_id": "all_feedback-42"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-42/run.json",
+      "bytes": 11773,
+      "sha256": "52bef95a63d9a2b84b323ec6ed646c7716740f0b5d213ad46708e47b6e33fd62",
+      "job_id": "both_isolated-42"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-42/fit/run.json",
+      "bytes": 25593,
+      "sha256": "e107c9c8cd04e7c835f0b6aeb606f33afd5a0f1fffe6e4bc6de7f936e51b4683",
+      "job_id": "both_isolated-42"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-42/validation-predictions.parquet",
+      "bytes": 370486,
+      "sha256": "96100e8db7e7e391e50086cfad44558baed90c882ba7f13b0c5b195627910143",
+      "job_id": "both_isolated-42",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-42/calibration-predictions.parquet",
+      "bytes": 183675,
+      "sha256": "e0b0cb0974986e31d61eb0f86a209982b98336c112f5caf1d6721e29dd586497",
+      "job_id": "both_isolated-42",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-42/evaluation-predictions.parquet",
+      "bytes": 752740,
+      "sha256": "b0ff01fa7bcfa886424d9eaabd51bee0b387afcb3e5ba434973ba87987019629",
+      "job_id": "both_isolated-42",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/both_isolated-42/fit/checkpoints/state-07ae1774b67c6eebbe47e393b3ab4f158339e5d1393611fc23662cd76cdf35e1.pt",
+      "bytes": 2352913,
+      "sha256": "07ae1774b67c6eebbe47e393b3ab4f158339e5d1393611fc23662cd76cdf35e1",
+      "job_id": "both_isolated-42"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_component-42/run.json",
+      "bytes": 11491,
+      "sha256": "e68a0eae0d87a95fead391eb8620dd0c454da1711cd6a7a3c171d5340dceb732",
+      "job_id": "point_component-42"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_component-42/fit/run.json",
+      "bytes": 25294,
+      "sha256": "6bf413ef7a9b4ccd64c8e57ce6d9b17bba02186db9f36b0d8a7805e883023d52",
+      "job_id": "point_component-42"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-42/validation-predictions.parquet",
+      "bytes": 351868,
+      "sha256": "3afa475581686d6b82833d32cf00ab52070939299b068449284b409ef4b3f80a",
+      "job_id": "point_component-42",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-42/calibration-predictions.parquet",
+      "bytes": 172845,
+      "sha256": "46217d364178d2f94c03126f39308385f0e0f4a82897ace089eef22331340140",
+      "job_id": "point_component-42",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-42/evaluation-predictions.parquet",
+      "bytes": 714079,
+      "sha256": "406ecda8535f5e2668fcabfa26bd03c48f3c672d53993db978bbdc45042a495a",
+      "job_id": "point_component-42",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_component-42/fit/checkpoints/state-5961a51d0314b7e4324040e935a12640dee62bd3224632c3f38ab493662207e5.pt",
+      "bytes": 2352465,
+      "sha256": "5961a51d0314b7e4324040e935a12640dee62bd3224632c3f38ab493662207e5",
+      "job_id": "point_component-42"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-42/run.json",
+      "bytes": 11485,
+      "sha256": "4819be09edd8dc44de5c5e4f5047e5123c4e1c059c4b9f40bf0687e1fd8b31ac",
+      "job_id": "point_l1-42"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-42/fit/run.json",
+      "bytes": 25290,
+      "sha256": "03fc383924f2c8ee545e72f900a0ed833e202fe9f00701178d153b53da36ec31",
+      "job_id": "point_l1-42"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-42/validation-predictions.parquet",
+      "bytes": 357673,
+      "sha256": "05dab9ecfebb98b37d5a9d038dff008cae65b12e50b3952b8aa93a90f80e7334",
+      "job_id": "point_l1-42",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-42/calibration-predictions.parquet",
+      "bytes": 177991,
+      "sha256": "0f4815635376cf056da413272bfc7173b37b2ba29f6e9355d91e40bba7e8c720",
+      "job_id": "point_l1-42",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-42/evaluation-predictions.parquet",
+      "bytes": 725743,
+      "sha256": "29adc0f73ff2937b802db301ee013667a96a1a829d0fda6fde9af838d0630d9e",
+      "job_id": "point_l1-42",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_l1-42/fit/checkpoints/state-2f8f3e6b8d7030aae2f028341e3cf50135040f2fffe58f96ed18230584408446.pt",
+      "bytes": 2352401,
+      "sha256": "2f8f3e6b8d7030aae2f028341e3cf50135040f2fffe58f96ed18230584408446",
+      "job_id": "point_l1-42"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/original-43/run.json",
+      "bytes": 11473,
+      "sha256": "09c18a1399b5697530c64ad07d3eecc117bcbf1cbbdb1740cb0a099e97595df3",
+      "job_id": "original-43"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/original-43/fit/run.json",
+      "bytes": 25278,
+      "sha256": "0b164a2e8675ecd9a362a07e8e27c51cd10c4905344846f31ca0e14705669309",
+      "job_id": "original-43"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-43/validation-predictions.parquet",
+      "bytes": 378418,
+      "sha256": "8e5b6b988cb193fd754c2fad7af089e330a10448f687f2ecfab0f84a0f145b38",
+      "job_id": "original-43",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-43/calibration-predictions.parquet",
+      "bytes": 187520,
+      "sha256": "9ef243e803f6cb93a1e0bf13e32550f6ffc353848b3785136c5d9ea8364fee13",
+      "job_id": "original-43",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-43/evaluation-predictions.parquet",
+      "bytes": 764580,
+      "sha256": "d7231d7ca482460154b7261a107e80e185586d7aec2c06c0a7a95b41f792e305",
+      "job_id": "original-43",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/original-43/fit/checkpoints/state-6fd3a4a135aca86d88ab5f286c20af20887081158b915383ce82a8e95d9c1cab.pt",
+      "bytes": 2352401,
+      "sha256": "6fd3a4a135aca86d88ab5f286c20af20887081158b915383ce82a8e95d9c1cab",
+      "job_id": "original-43"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-43/run.json",
+      "bytes": 11769,
+      "sha256": "56c5d2ca1987edc87c597885be5c4c2588ae8b92067f7cff912b090f53379ba6",
+      "job_id": "all_feedback-43"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-43/fit/run.json",
+      "bytes": 25590,
+      "sha256": "ee9e5f286b44b228d032afa64f163705b2494c5053e8dec0258601c8b05e82ad",
+      "job_id": "all_feedback-43"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-43/validation-predictions.parquet",
+      "bytes": 378418,
+      "sha256": "8e5b6b988cb193fd754c2fad7af089e330a10448f687f2ecfab0f84a0f145b38",
+      "job_id": "all_feedback-43",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-43/calibration-predictions.parquet",
+      "bytes": 187520,
+      "sha256": "9ef243e803f6cb93a1e0bf13e32550f6ffc353848b3785136c5d9ea8364fee13",
+      "job_id": "all_feedback-43",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-43/evaluation-predictions.parquet",
+      "bytes": 764580,
+      "sha256": "d7231d7ca482460154b7261a107e80e185586d7aec2c06c0a7a95b41f792e305",
+      "job_id": "all_feedback-43",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/all_feedback-43/fit/checkpoints/state-9dace35250277e7a8e2485660d45c41b3210ea3599782bbedfb218ea0f272140.pt",
+      "bytes": 2352913,
+      "sha256": "9dace35250277e7a8e2485660d45c41b3210ea3599782bbedfb218ea0f272140",
+      "job_id": "all_feedback-43"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-43/run.json",
+      "bytes": 11768,
+      "sha256": "6ff30fbd7ba305d139e989c92f06eb617cd12840884bf94d726bb5eb63ceced4",
+      "job_id": "both_isolated-43"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-43/fit/run.json",
+      "bytes": 25589,
+      "sha256": "2d92cfeaf351bbb565a2e294bae56708b287a00361b352a1bc3429f9d4ff1100",
+      "job_id": "both_isolated-43"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-43/validation-predictions.parquet",
+      "bytes": 374118,
+      "sha256": "96f8080da0f13f8772d16464c1cbbcb760b0224defd33b4d5afb112cb8f59fc1",
+      "job_id": "both_isolated-43",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-43/calibration-predictions.parquet",
+      "bytes": 185194,
+      "sha256": "ce758f69caf3095dde230e024c2a2fc801cd29ad35ff9546f55981373e72a35c",
+      "job_id": "both_isolated-43",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-43/evaluation-predictions.parquet",
+      "bytes": 755151,
+      "sha256": "7391017a81f374b0e90f036676d61645694cd6502dd9ce4625a125eb94a133c3",
+      "job_id": "both_isolated-43",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/both_isolated-43/fit/checkpoints/state-1a9616db5e803916378dc6cdd2cc08c9f2a9b4a886ab88f44d550ee1402641e6.pt",
+      "bytes": 2352913,
+      "sha256": "1a9616db5e803916378dc6cdd2cc08c9f2a9b4a886ab88f44d550ee1402641e6",
+      "job_id": "both_isolated-43"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_component-43/run.json",
+      "bytes": 11494,
+      "sha256": "6de2fb6f18fbd8ff4cb9eed6f0ac2c8ca91997e6343991e8fe1e0c475bf3620c",
+      "job_id": "point_component-43"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_component-43/fit/run.json",
+      "bytes": 25301,
+      "sha256": "4aa6e9af3a75c81f2cc650cfedd1a96c0638af7d7de81b67d8ab99c1c72db771",
+      "job_id": "point_component-43"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-43/validation-predictions.parquet",
+      "bytes": 349752,
+      "sha256": "0d5f47347b5673b5d9c04005df263295f76e3257b1ff9638ec6d768acd819537",
+      "job_id": "point_component-43",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-43/calibration-predictions.parquet",
+      "bytes": 172026,
+      "sha256": "007b28ee850331ea16b192bf1c3f2909e4bfa4db6c38534fcbecee13c0332e60",
+      "job_id": "point_component-43",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-43/evaluation-predictions.parquet",
+      "bytes": 709478,
+      "sha256": "2e3d72b94b8c9e60f99f402445ea3a7f1d35591d2c39ce3b92f7e25935d755c2",
+      "job_id": "point_component-43",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_component-43/fit/checkpoints/state-87c946a3457ea07e5c3be2083c86f1f267e024fdf926ec5e9a7aa14febabec8a.pt",
+      "bytes": 2352401,
+      "sha256": "87c946a3457ea07e5c3be2083c86f1f267e024fdf926ec5e9a7aa14febabec8a",
+      "job_id": "point_component-43"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-43/run.json",
+      "bytes": 11484,
+      "sha256": "27769c177fe5ffb53e7c2ce8815ea5a7a31f010affd1b9472c0ca66c1c5e8845",
+      "job_id": "point_l1-43"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-43/fit/run.json",
+      "bytes": 25290,
+      "sha256": "1dcb2df6228926490abb1f6f818b2f2fb49bc7f15162f9b594bdc3b329c92f73",
+      "job_id": "point_l1-43"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-43/validation-predictions.parquet",
+      "bytes": 336734,
+      "sha256": "cad5bdefea17b7b16f794267e0bc987b79e805d65fd1abb4133e0b4941768c95",
+      "job_id": "point_l1-43",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-43/calibration-predictions.parquet",
+      "bytes": 166587,
+      "sha256": "342bb73dccb76c930952e78761e88212562ab676e569dc94b6573924c31bfde0",
+      "job_id": "point_l1-43",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-43/evaluation-predictions.parquet",
+      "bytes": 678629,
+      "sha256": "f0b2eb978b2564e9fb8f2a3bd68e8527fe2c5ea2afbe4998f3613560f9db1010",
+      "job_id": "point_l1-43",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_l1-43/fit/checkpoints/state-6d1451a66728bb04ab2c90af7bc9ddb334bec74135f31c6b5693fe30ed6958be.pt",
+      "bytes": 2352401,
+      "sha256": "6d1451a66728bb04ab2c90af7bc9ddb334bec74135f31c6b5693fe30ed6958be",
+      "job_id": "point_l1-43"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/original-44/run.json",
+      "bytes": 11475,
+      "sha256": "3ccb8ad1dacda8bc77253d69de6cc619318541b66a10edb84d4e58095158bbec",
+      "job_id": "original-44"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/original-44/fit/run.json",
+      "bytes": 25283,
+      "sha256": "202cb8175c5644333b48d30a216b0e71dde3bdf7031f8744c7217f2bd057d44c",
+      "job_id": "original-44"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-44/validation-predictions.parquet",
+      "bytes": 384398,
+      "sha256": "7ffc06b8b4751d58754005cf5d50a6640f2b6d4f1db619a4e046074de9926bea",
+      "job_id": "original-44",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-44/calibration-predictions.parquet",
+      "bytes": 191548,
+      "sha256": "04824dbacfa95b94c7c927eb5df3c6d88726467123bcb1b039c331a40ac8a447",
+      "job_id": "original-44",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-44/evaluation-predictions.parquet",
+      "bytes": 777013,
+      "sha256": "1a6bdd39767701fdc6cd40600d3614ff7b45133b7bda48081e30c82784cf53b0",
+      "job_id": "original-44",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/original-44/fit/checkpoints/state-f99dab6bced761d39e945f7292b4cc779094850f3e6ea75c0b40713868222701.pt",
+      "bytes": 2352401,
+      "sha256": "f99dab6bced761d39e945f7292b4cc779094850f3e6ea75c0b40713868222701",
+      "job_id": "original-44"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-44/run.json",
+      "bytes": 11771,
+      "sha256": "55c220e497c9db62094ce7d7207879b491a3a32f92c1acacdd01a6c8487df6fe",
+      "job_id": "all_feedback-44"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-44/fit/run.json",
+      "bytes": 25594,
+      "sha256": "66ccebfd3d3992e84199015fb0ce778f24f9a50e3328e12449443b2a8019f5f1",
+      "job_id": "all_feedback-44"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-44/validation-predictions.parquet",
+      "bytes": 384398,
+      "sha256": "7ffc06b8b4751d58754005cf5d50a6640f2b6d4f1db619a4e046074de9926bea",
+      "job_id": "all_feedback-44",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-44/calibration-predictions.parquet",
+      "bytes": 191548,
+      "sha256": "04824dbacfa95b94c7c927eb5df3c6d88726467123bcb1b039c331a40ac8a447",
+      "job_id": "all_feedback-44",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-44/evaluation-predictions.parquet",
+      "bytes": 777013,
+      "sha256": "1a6bdd39767701fdc6cd40600d3614ff7b45133b7bda48081e30c82784cf53b0",
+      "job_id": "all_feedback-44",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/all_feedback-44/fit/checkpoints/state-850bc4516d32b6e36bfe49caffd86294bb185ef1e62922443e35d72496d03072.pt",
+      "bytes": 2352913,
+      "sha256": "850bc4516d32b6e36bfe49caffd86294bb185ef1e62922443e35d72496d03072",
+      "job_id": "all_feedback-44"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-44/run.json",
+      "bytes": 11775,
+      "sha256": "340c570741a99df6b465f99b0fc221ecd6f5dbaa3b13e547ee4678263387f36d",
+      "job_id": "both_isolated-44"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-44/fit/run.json",
+      "bytes": 25595,
+      "sha256": "5f0921624487b2e62f4f6b00ab63ea3af7c6c2a7f3a92f229367112c7df114dd",
+      "job_id": "both_isolated-44"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-44/validation-predictions.parquet",
+      "bytes": 365927,
+      "sha256": "205bc60a16faa03f80313b5d1fefb4ba91a396f6057fc1ef3793edeebd11ce6a",
+      "job_id": "both_isolated-44",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-44/calibration-predictions.parquet",
+      "bytes": 179779,
+      "sha256": "70585e1a347d9d39d7b94bbf4612fa466995034c4f0487704d827ce6c8a19e8f",
+      "job_id": "both_isolated-44",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-44/evaluation-predictions.parquet",
+      "bytes": 744494,
+      "sha256": "cfbebce1f8672d0a025949beac03718a84594d92a80a19f2251394c3800f8bd7",
+      "job_id": "both_isolated-44",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/both_isolated-44/fit/checkpoints/state-f9ed06bacc55b307bff5c74ad22ebe0a025dad991c8b708a9fe2ff1f36d5d032.pt",
+      "bytes": 2352913,
+      "sha256": "f9ed06bacc55b307bff5c74ad22ebe0a025dad991c8b708a9fe2ff1f36d5d032",
+      "job_id": "both_isolated-44"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_component-44/run.json",
+      "bytes": 11493,
+      "sha256": "493207ccf9b86c22b96c638331232e31aa9f703ed4c0b04bed2dec484b1a8e8c",
+      "job_id": "point_component-44"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_component-44/fit/run.json",
+      "bytes": 25303,
+      "sha256": "3004030b19e1313e104f7a2d96435de56e3c95e49b9a84326928ea7ea338d65d",
+      "job_id": "point_component-44"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-44/validation-predictions.parquet",
+      "bytes": 352758,
+      "sha256": "dd95cd0bee48c80cd61cb9700bf484db00709e962d97388e6c41600e3bb4435b",
+      "job_id": "point_component-44",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-44/calibration-predictions.parquet",
+      "bytes": 174529,
+      "sha256": "92849149abe6bc0bf792e4ef5b0cff3bd25aa78a4ea3325fa7819e9c45d2781d",
+      "job_id": "point_component-44",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-44/evaluation-predictions.parquet",
+      "bytes": 711761,
+      "sha256": "cc6989525fc080f6c9c1df016edb18354085cc8823ebcc5e63df3e0c6cc29381",
+      "job_id": "point_component-44",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_component-44/fit/checkpoints/state-a9123635a0a5565b470d15da4568d93d199fb321f1920168e1939bba4ae89bc0.pt",
+      "bytes": 2352465,
+      "sha256": "a9123635a0a5565b470d15da4568d93d199fb321f1920168e1939bba4ae89bc0",
+      "job_id": "point_component-44"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-44/run.json",
+      "bytes": 11487,
+      "sha256": "d01ad9e7b703d2ba1f53e74a5ab12a9589f54af122317f8b4e7b18a7d8dd4b82",
+      "job_id": "point_l1-44"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-44/fit/run.json",
+      "bytes": 25293,
+      "sha256": "8ce049b7f32b3fe86e67b58350ccef74844e27a7d0fca5c07226fea347b0d562",
+      "job_id": "point_l1-44"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-44/validation-predictions.parquet",
+      "bytes": 362621,
+      "sha256": "0a648ac87be8e301d5dbdecd64a3e73025f22ef9e00122daf2a25c64d917e2c2",
+      "job_id": "point_l1-44",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-44/calibration-predictions.parquet",
+      "bytes": 178987,
+      "sha256": "1eca5f998d4e3ad29e6d89ee275441b2302796c89e075f84705672431a02469f",
+      "job_id": "point_l1-44",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-44/evaluation-predictions.parquet",
+      "bytes": 735953,
+      "sha256": "e25578b4d706ef7ff0918684d92cd8e073d4690f89dc9c92c3d9a1f94e3260dc",
+      "job_id": "point_l1-44",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_l1-44/fit/checkpoints/state-16c72aeffe0725fb2f13bf6ed4405c96a2cd87ef80fbe7d64f067acdb91aab26.pt",
+      "bytes": 2352401,
+      "sha256": "16c72aeffe0725fb2f13bf6ed4405c96a2cd87ef80fbe7d64f067acdb91aab26",
+      "job_id": "point_l1-44"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/original-45/run.json",
+      "bytes": 11469,
+      "sha256": "963e3bba367c51b7d4c8a90ba8d80e0de7820f991c5941ac7133ee98d69d159f",
+      "job_id": "original-45"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/original-45/fit/run.json",
+      "bytes": 25276,
+      "sha256": "f94d47a25e03ca2fceb9ec179bfb6686ff386d0ce34ef6829ea760b5e4a2c16f",
+      "job_id": "original-45"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-45/validation-predictions.parquet",
+      "bytes": 377890,
+      "sha256": "8502ae3bb8079d3527b3ace21e9e7f484eaf556db4384005cddd062599a2820d",
+      "job_id": "original-45",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-45/calibration-predictions.parquet",
+      "bytes": 187860,
+      "sha256": "0d8b0a4a227e21387c57f03f19d1641616df19c67b306289e3f152044b73e7b0",
+      "job_id": "original-45",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-45/evaluation-predictions.parquet",
+      "bytes": 766673,
+      "sha256": "e7079bca4ccee562a62f6525d710b107384e0d73f5ad17fe7a086c6cfc16cdd7",
+      "job_id": "original-45",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/original-45/fit/checkpoints/state-d31871bf7b2d09f2136282b5186c68d513403081a131bbf7bc21c1fb6fe5ca5d.pt",
+      "bytes": 2352401,
+      "sha256": "d31871bf7b2d09f2136282b5186c68d513403081a131bbf7bc21c1fb6fe5ca5d",
+      "job_id": "original-45"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-45/run.json",
+      "bytes": 11765,
+      "sha256": "31d5b6ac95469733251a5022b357ad97912c2b6d0467c4573a78d71c9f289f89",
+      "job_id": "all_feedback-45"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-45/fit/run.json",
+      "bytes": 25588,
+      "sha256": "e395ba3d7e5b28d5f96aa2544f2a84106357752fc9fea8d0fecea7d8a223b09e",
+      "job_id": "all_feedback-45"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-45/validation-predictions.parquet",
+      "bytes": 377890,
+      "sha256": "8502ae3bb8079d3527b3ace21e9e7f484eaf556db4384005cddd062599a2820d",
+      "job_id": "all_feedback-45",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-45/calibration-predictions.parquet",
+      "bytes": 187860,
+      "sha256": "0d8b0a4a227e21387c57f03f19d1641616df19c67b306289e3f152044b73e7b0",
+      "job_id": "all_feedback-45",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-45/evaluation-predictions.parquet",
+      "bytes": 766673,
+      "sha256": "e7079bca4ccee562a62f6525d710b107384e0d73f5ad17fe7a086c6cfc16cdd7",
+      "job_id": "all_feedback-45",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/all_feedback-45/fit/checkpoints/state-3aa833dd22ab8a17c8d335b40f25e7786275b5446a7646f99d9c092f552914ba.pt",
+      "bytes": 2352913,
+      "sha256": "3aa833dd22ab8a17c8d335b40f25e7786275b5446a7646f99d9c092f552914ba",
+      "job_id": "all_feedback-45"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-45/run.json",
+      "bytes": 11774,
+      "sha256": "2ba46a201a8c41254d939f8ec8a16dd18019b1b9aff605a132e9e5c6c0bdb7f5",
+      "job_id": "both_isolated-45"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-45/fit/run.json",
+      "bytes": 25595,
+      "sha256": "886a5a2d07b7ce3961f138473b284694b340d0a97fde3372609339dd6db83933",
+      "job_id": "both_isolated-45"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-45/validation-predictions.parquet",
+      "bytes": 353488,
+      "sha256": "d562547a0bf2a37e592eccf48b554b3d9592143e37eab149dc187b99c2b14b9e",
+      "job_id": "both_isolated-45",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-45/calibration-predictions.parquet",
+      "bytes": 170688,
+      "sha256": "0c144d63bd8b87d183b9bf01dd7c384e99eb3f7d1113aa654035ca435d7cb995",
+      "job_id": "both_isolated-45",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-45/evaluation-predictions.parquet",
+      "bytes": 714066,
+      "sha256": "1c0f8ebaad5be7bedad7c0295226a9a1b897e84382165e1e7940143ca676c3b2",
+      "job_id": "both_isolated-45",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/both_isolated-45/fit/checkpoints/state-0ce8546440037df15db781a851330a5e90d9108e945c685a2b472261b24a91a5.pt",
+      "bytes": 2352913,
+      "sha256": "0ce8546440037df15db781a851330a5e90d9108e945c685a2b472261b24a91a5",
+      "job_id": "both_isolated-45"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_component-45/run.json",
+      "bytes": 11494,
+      "sha256": "c6d57c8412f4824b061da713d3e3e6c35b9dc8e0a6ce7a3041e8c4d96beb295b",
+      "job_id": "point_component-45"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_component-45/fit/run.json",
+      "bytes": 25302,
+      "sha256": "c30e015a94b09dfe92054b5abb739acc77980e929acd443553f32f76510c9057",
+      "job_id": "point_component-45"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-45/validation-predictions.parquet",
+      "bytes": 338976,
+      "sha256": "ddb8ab3114f51a679b5d7d9cb308c4f19192ebbabd8e5c643a8d6c850e7b6286",
+      "job_id": "point_component-45",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-45/calibration-predictions.parquet",
+      "bytes": 164370,
+      "sha256": "1da0ee8fe0bfff9086d187fc6ec95a531ff2553d583826ee1720e1161293c33d",
+      "job_id": "point_component-45",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-45/evaluation-predictions.parquet",
+      "bytes": 684487,
+      "sha256": "53c89447074333e1b8ff58b4244033bb45a92481a642674c34b639adc36ebed8",
+      "job_id": "point_component-45",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_component-45/fit/checkpoints/state-55367bbbffbf3f7a8986fddafa9a9ff9d1a21b6d7c768bd47396b0216cf65fff.pt",
+      "bytes": 2352465,
+      "sha256": "55367bbbffbf3f7a8986fddafa9a9ff9d1a21b6d7c768bd47396b0216cf65fff",
+      "job_id": "point_component-45"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-45/run.json",
+      "bytes": 11484,
+      "sha256": "ed31210e90a9d0571b726a26f965a538b1a84318d3c83aeb98919b0a467bc083",
+      "job_id": "point_l1-45"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-45/fit/run.json",
+      "bytes": 25293,
+      "sha256": "c7d53c80adeb7f22e59fca736e1608ce3f4160cadfd52f1f445f89a2ae6429d1",
+      "job_id": "point_l1-45"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-45/validation-predictions.parquet",
+      "bytes": 350480,
+      "sha256": "4076b211133e007e8669f5d2af9341a4ecb57ec10332869f63d7e6b71b59c349",
+      "job_id": "point_l1-45",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-45/calibration-predictions.parquet",
+      "bytes": 171948,
+      "sha256": "553ef80d5c9ea2d671d8a78a1663b0eaff9a4d1cfd72e432bb1efa6cf5f80ebb",
+      "job_id": "point_l1-45",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-45/evaluation-predictions.parquet",
+      "bytes": 713962,
+      "sha256": "d18ee976bfaf38d980261c8dc84bb171d1f369f295efbd5b85e6e8a7ce6a463f",
+      "job_id": "point_l1-45",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_l1-45/fit/checkpoints/state-ce8314bf743519a176e929193d722e255a59fc47e163bf6a71f8a3158f08204d.pt",
+      "bytes": 2352465,
+      "sha256": "ce8314bf743519a176e929193d722e255a59fc47e163bf6a71f8a3158f08204d",
+      "job_id": "point_l1-45"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/original-46/run.json",
+      "bytes": 11469,
+      "sha256": "a70e3d154b64ee3696da91ad021cc2300ad6699105dcebac0384d449a3563d1e",
+      "job_id": "original-46"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/original-46/fit/run.json",
+      "bytes": 25278,
+      "sha256": "1c407a2b5b9f8cd19678aff5019f484cc4ead4303b7e88fa0002fbbd812af84b",
+      "job_id": "original-46"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-46/validation-predictions.parquet",
+      "bytes": 363070,
+      "sha256": "6436037782cbbc3110f2c7f3114dc40d8343730fc5bd4a67dcdc5b75bbc82dc8",
+      "job_id": "original-46",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-46/calibration-predictions.parquet",
+      "bytes": 180238,
+      "sha256": "3e73a228668c283c58bc54f3994ab36a6d116160428cc109e7c4117339f72e5a",
+      "job_id": "original-46",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/original-46/evaluation-predictions.parquet",
+      "bytes": 733026,
+      "sha256": "cdffb74d19abd3bc670bb2c182a053501bcf505f6532eaf06c2edcaa0b38bbac",
+      "job_id": "original-46",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/original-46/fit/checkpoints/state-1b2a26bc6a8655096ae63dd7f0c90e5d3b99bcdb213f4d6d128827036690917f.pt",
+      "bytes": 2352401,
+      "sha256": "1b2a26bc6a8655096ae63dd7f0c90e5d3b99bcdb213f4d6d128827036690917f",
+      "job_id": "original-46"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-46/run.json",
+      "bytes": 11766,
+      "sha256": "3b62e2435091eff16f624584a40e1dbea2bcc281805cf25ce5bc7a5a1ac8a1aa",
+      "job_id": "all_feedback-46"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/all_feedback-46/fit/run.json",
+      "bytes": 25590,
+      "sha256": "d070b075cc9a8ebedaac2ef3420668469d67de5b4fa86f0cd40d14cd99023119",
+      "job_id": "all_feedback-46"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-46/validation-predictions.parquet",
+      "bytes": 363070,
+      "sha256": "6436037782cbbc3110f2c7f3114dc40d8343730fc5bd4a67dcdc5b75bbc82dc8",
+      "job_id": "all_feedback-46",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-46/calibration-predictions.parquet",
+      "bytes": 180238,
+      "sha256": "3e73a228668c283c58bc54f3994ab36a6d116160428cc109e7c4117339f72e5a",
+      "job_id": "all_feedback-46",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/all_feedback-46/evaluation-predictions.parquet",
+      "bytes": 733026,
+      "sha256": "cdffb74d19abd3bc670bb2c182a053501bcf505f6532eaf06c2edcaa0b38bbac",
+      "job_id": "all_feedback-46",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/all_feedback-46/fit/checkpoints/state-187ecdbf27338705c12ab131c49528ebc230dbb397a62164cc5d85c51bacca04.pt",
+      "bytes": 2352913,
+      "sha256": "187ecdbf27338705c12ab131c49528ebc230dbb397a62164cc5d85c51bacca04",
+      "job_id": "all_feedback-46"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-46/run.json",
+      "bytes": 11770,
+      "sha256": "23c9a02168553cec3491735fe4865c51af13395cb9459383e87e38978336292f",
+      "job_id": "both_isolated-46"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/both_isolated-46/fit/run.json",
+      "bytes": 25590,
+      "sha256": "cf594c35e00eb1e495e292cf7c6c2f4287287ea931bc3bb1a9203e8a49e4bd85",
+      "job_id": "both_isolated-46"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-46/validation-predictions.parquet",
+      "bytes": 358581,
+      "sha256": "de829c5c9fdd08f986adc4e938648fc435b814dd4758f2a23004091add0e850d",
+      "job_id": "both_isolated-46",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-46/calibration-predictions.parquet",
+      "bytes": 175558,
+      "sha256": "21b9798ec92b443d6098c74039081a0053bee9f89744d76e18d97ceb279fc639",
+      "job_id": "both_isolated-46",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/both_isolated-46/evaluation-predictions.parquet",
+      "bytes": 729225,
+      "sha256": "c494cddb7caeadc8a0da33db8193197c5c95b401698f7a2e1cc97f0a085c02d6",
+      "job_id": "both_isolated-46",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/both_isolated-46/fit/checkpoints/state-d3fe2b828476ee9c764fc8efbf49e2133b1b6d87195e7651782ac860c3a28c28.pt",
+      "bytes": 2352913,
+      "sha256": "d3fe2b828476ee9c764fc8efbf49e2133b1b6d87195e7651782ac860c3a28c28",
+      "job_id": "both_isolated-46"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_component-46/run.json",
+      "bytes": 11494,
+      "sha256": "4de660a16732b04044d9c4c122ea8fcbf4d5e37cd492d749eae3ad06c83328e9",
+      "job_id": "point_component-46"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_component-46/fit/run.json",
+      "bytes": 25300,
+      "sha256": "af7c9895e42b30b778146d0b9869d9d5662484c78335bca6dbb4f6a9a72e04b5",
+      "job_id": "point_component-46"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-46/validation-predictions.parquet",
+      "bytes": 359858,
+      "sha256": "605e6ad335fc018509169457b51ded3dac999bd47a30aaa2971138c0dc73b300",
+      "job_id": "point_component-46",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-46/calibration-predictions.parquet",
+      "bytes": 179452,
+      "sha256": "9f561b06443007f963f83325d116ca69f95ebc1dcf1512a3d393fca4e9c2b28f",
+      "job_id": "point_component-46",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_component-46/evaluation-predictions.parquet",
+      "bytes": 729141,
+      "sha256": "c7b0504dd992a194ed0ff2d302c214df4923f3fd05457a146d7f811cef3244df",
+      "job_id": "point_component-46",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_component-46/fit/checkpoints/state-0cd493d2b7dacf0c9680b57f383c3dc77c8dbfb811d4e34ac30e0d853c519a67.pt",
+      "bytes": 2352529,
+      "sha256": "0cd493d2b7dacf0c9680b57f383c3dc77c8dbfb811d4e34ac30e0d853c519a67",
+      "job_id": "point_component-46"
+    },
+    {
+      "kind": "run_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-46/run.json",
+      "bytes": 11485,
+      "sha256": "331f6ead2faad5b24dfc452d088df12e32f249fd8a9123e5a9f69586c8351bd2",
+      "job_id": "point_l1-46"
+    },
+    {
+      "kind": "fit_manifest",
+      "relative_path": "pilot-v2/runs/point_l1-46/fit/run.json",
+      "bytes": 25290,
+      "sha256": "e452e23053541aa30a97c06b6b01f28ccb2bf2db8fde2eb4fc5c91ed59f4934d",
+      "job_id": "point_l1-46"
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-46/validation-predictions.parquet",
+      "bytes": 356337,
+      "sha256": "b63a09040d736192d4ffa48c28009b3b2628a1edfe6b9852290daf28896838c3",
+      "job_id": "point_l1-46",
+      "phase": "validation",
+      "rows": 8000
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-46/calibration-predictions.parquet",
+      "bytes": 173166,
+      "sha256": "e4c25de5f5f6b800c26f6892b4cdd2a9fb0b175e68d1569ef3deda9d7d8d8570",
+      "job_id": "point_l1-46",
+      "phase": "calibration",
+      "rows": 3968
+    },
+    {
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v2/runs/point_l1-46/evaluation-predictions.parquet",
+      "bytes": 718361,
+      "sha256": "11b69809cb3a7cf849a32ed6fdc33e283ee710104a0f95e5d7a61da1fb175ffb",
+      "job_id": "point_l1-46",
+      "phase": "evaluation",
+      "rows": 15936
+    },
+    {
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v2/runs/point_l1-46/fit/checkpoints/state-7f2c95782d0ddd19b2feed38cb3dfd1a9bd23788c7ebb82a308989c3f5e87136.pt",
+      "bytes": 2352401,
+      "sha256": "7f2c95782d0ddd19b2feed38cb3dfd1a9bd23788c7ebb82a308989c3f5e87136",
+      "job_id": "point_l1-46"
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-42-sessions.parquet",
+      "bytes": 55369,
+      "sha256": "779a436579042962fe9456cbc01c55bf5f8c300e406dbbe7a9d253cc25cf7d7d",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-43-sessions.parquet",
+      "bytes": 62280,
+      "sha256": "0777e8aebe43b18e428eca5a26b446c355638333fd9b0afcd9f9861e71e45b21",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-44-sessions.parquet",
+      "bytes": 67762,
+      "sha256": "1e3e83bcfbca39c259250bc2105d055ffd21effb2725de95c91925a756dfa14d",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-45-sessions.parquet",
+      "bytes": 60092,
+      "sha256": "30187910319ecc69618ba59999294c13de5a28819f07c0fdad698f83a3eeed89",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-46-sessions.parquet",
+      "bytes": 61947,
+      "sha256": "0e7912b5f1f64a76c59433ab3cbf7a6aa03776ed32e423da5c63e4f273281e20",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_feedback-mean-sessions.parquet",
+      "bytes": 4112,
+      "sha256": "3d022cfa791d060eb84dfe2e65df7db07cba55a482f8060acfd73c743ece6c15",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-42-sessions.parquet",
+      "bytes": 49609,
+      "sha256": "35d86f8fd8ca275f72cd0c6079ff323a15a52c57c70dffe966bafec8a5764e6d",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-43-sessions.parquet",
+      "bytes": 51325,
+      "sha256": "f402514a5ba864962506751ce556cede4b57f938fffbae8442e16d2a95fbeba0",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-44-sessions.parquet",
+      "bytes": 51113,
+      "sha256": "43e2c7934d9bf2165fb0684baa4d93be82dd377ebfe8e3e9b74d6664f4888cea",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-45-sessions.parquet",
+      "bytes": 50543,
+      "sha256": "e8482022a225cab60876255498a13bc6666a1a87e617fc4255ef9b5570faf790",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-46-sessions.parquet",
+      "bytes": 53104,
+      "sha256": "158728fb81024025c455bf86334ee91cbb3f9e8aa5f88ccd9ee7e05257593e5f",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/both_isolated-mean-sessions.parquet",
+      "bytes": 4112,
+      "sha256": "3403afe1467fa2f8ff1804a6190fbdc25d0ae08690cddde78cacfd914f4ce942",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-42-sessions.parquet",
+      "bytes": 55369,
+      "sha256": "779a436579042962fe9456cbc01c55bf5f8c300e406dbbe7a9d253cc25cf7d7d",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-43-sessions.parquet",
+      "bytes": 62280,
+      "sha256": "0777e8aebe43b18e428eca5a26b446c355638333fd9b0afcd9f9861e71e45b21",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-44-sessions.parquet",
+      "bytes": 67762,
+      "sha256": "1e3e83bcfbca39c259250bc2105d055ffd21effb2725de95c91925a756dfa14d",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-45-sessions.parquet",
+      "bytes": 60092,
+      "sha256": "30187910319ecc69618ba59999294c13de5a28819f07c0fdad698f83a3eeed89",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-46-sessions.parquet",
+      "bytes": 61947,
+      "sha256": "0e7912b5f1f64a76c59433ab3cbf7a6aa03776ed32e423da5c63e4f273281e20",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-mean-sessions.parquet",
+      "bytes": 4112,
+      "sha256": "3d022cfa791d060eb84dfe2e65df7db07cba55a482f8060acfd73c743ece6c15",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-42-sessions.parquet",
+      "bytes": 48188,
+      "sha256": "9df0de3705f7dee5fac76247ce6e54bea5492b7c3e24d9933c0869e1c5c38bfa",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-43-sessions.parquet",
+      "bytes": 48534,
+      "sha256": "a21964f7efa1ea5c612d7a5d6bcf9d132bed2573f0035b1629aa9f359b2a307a",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-44-sessions.parquet",
+      "bytes": 48607,
+      "sha256": "e7b50ac9c53330d7d09e9b814194f548b8c529c1e4e7e165fdf10ac78da01920",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-45-sessions.parquet",
+      "bytes": 48070,
+      "sha256": "991f23823cb6512124d926948e41e78b5630362d8e178e445994ab5c470221ac",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-46-sessions.parquet",
+      "bytes": 48414,
+      "sha256": "9a372de0e1e0af2b8b5bb95ac7ba575f701ddddc4003c095f7d6549b7cb3c7ed",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_component-mean-sessions.parquet",
+      "bytes": 4114,
+      "sha256": "86679d60bbb8b62fb8a0d487674d88ad19d6dd3c903acaf918ffb246aae65dd5",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-42-sessions.parquet",
+      "bytes": 48172,
+      "sha256": "98074dc198b64e2916ad82a6f5416d075ea95f56d3e89f367428487c1583e6d0",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-43-sessions.parquet",
+      "bytes": 48004,
+      "sha256": "9721f7816fd4308ec84f7a7015f0e00417f985445feb459c62aba5cb5b4ee788",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-44-sessions.parquet",
+      "bytes": 48388,
+      "sha256": "dec5a31d6a490d5e5fd23a8eecd940d1a24500729330793fd817f2853f0a2a53",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-45-sessions.parquet",
+      "bytes": 48027,
+      "sha256": "57557e224f2ed3c7bca35fce8215082e6ca6cd11b600f6d5a5c54d5602c39e41",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-46-sessions.parquet",
+      "bytes": 48443,
+      "sha256": "b4989f5b5c396662370b64340b2ff15be1a48accb7e23873a0691e7670a14298",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/point_l1-mean-sessions.parquet",
+      "bytes": 4115,
+      "sha256": "dedae65fb994446866ffedad44f659f2cd29a178c16871168d58f1777ea4cd11",
+      "rows": 249
+    },
+    {
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/zero-sessions.parquet",
+      "bytes": 12498,
+      "sha256": "3104dd7dd71c9bfe0f2be7d66ba9f0e75c7584c7ec80ab7e5a0189c35d8e6f52",
+      "rows": 249
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/0d5b08f38e554e2ab27c985f3e6ec512.json",
+      "bytes": 2854,
+      "sha256": "ef9c91f81f1b36d44699e11b9f25a6a944b0c6a275a737884deb61c4efa0c44d"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/13adf30180a34931b80edc88f1b22f9b.json",
+      "bytes": 2846,
+      "sha256": "fa28b2448e9f4371db935b2385ca6af9af70c2a70b11352bfd39ca3cca5b69f4"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/273c9b6d06934437a46688068ead91fe.json",
+      "bytes": 2588,
+      "sha256": "873790c688fb3357dc6fe09398eaa39b3a77cffd6eb9169ce75d2b5b5341c5dc"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/28f39226639b4ef09165b132663bd7c6.json",
+      "bytes": 2844,
+      "sha256": "427eb2ed9195fa456f8cfd2bf79521f4bb00f128fffac33bdd9f9320f0cd7e32"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/2c79014cbe37435b962fd4318f304f8b.json",
+      "bytes": 2846,
+      "sha256": "62533ace6b4d2f517cbe53e241b36c8a4cd39a5a30167ad7ef44234dedda8a17"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/394861b2668c4909a500f909aecf1d6e.json",
+      "bytes": 2590,
+      "sha256": "56f8f9522231c7b281b088cf28d8bda8f4caaba313fc8c545fd8ac54991a61c7"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/478a5d42869440faab001c3644c04a29.json",
+      "bytes": 2590,
+      "sha256": "d2670f079c5311c27f0905e245eb4b44f898c1015d54d866e5715a46adfae3ad"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/536a80d3774841a28c7470a54a326ec3.json",
+      "bytes": 2719,
+      "sha256": "3d6007afeed52cea447f63002855eaf8a4b5f3bd35034f9ff48c8f903d2fbb33"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/54500d29b7f74a4e8d928ccaf65a91f1.json",
+      "bytes": 2855,
+      "sha256": "a21eee25e32960bba66cfd84aa892656f2c2883eb0f84c954e7fbb51108be1f3"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/591f23670421448698a8435e4b06d6d1.json",
+      "bytes": 2855,
+      "sha256": "218aea58541e0a3ae0d80ecaf593d9448a523142e754972afbb65eb7eb3046b6"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/5d8965f39b884c43940e04f27215d44a.json",
+      "bytes": 2590,
+      "sha256": "62e2c9b6301bdf9cc642a5aa3d0d086032144fa68492bbcacdfb97db93a5dd23"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/6755371628bd4f3f8546c685b361716d.json",
+      "bytes": 2846,
+      "sha256": "c723453428aea67fd454e012220c7ec5313bbca13d45e6b8acb6069169ab21e9"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/73ad8e2b08f04ac2a8e43074d1fea365.json",
+      "bytes": 2669,
+      "sha256": "fb04bf44ec2f649919875597b3e3971389429f72f0cd0fa39f56bdabd66b7d09"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/79e53e010009476a95f7fe46922b8ea4.json",
+      "bytes": 2717,
+      "sha256": "5dab904607acc34b66446e5240cd1f8889fcb84d1c40cf282ce40dc213255628"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/862d6895fed5475695e6fe9a2e0a4e88.json",
+      "bytes": 2853,
+      "sha256": "3883568dc290cfa64ef62df777b366358be03b3c625a183df119969129d6d312"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/95ee7ca0e16e4f77beb520e981d78af2.json",
+      "bytes": 2719,
+      "sha256": "68ddc9e400e8d2979e0d785167a01531a1f7a2fd830f90da9e6d59f2fcb30ca9"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/9d9ba2b192114d3aa5ba61a92108082a.json",
+      "bytes": 2670,
+      "sha256": "7d8174bb2f3564faffaf1fcf29d1a7601833af32da18922d9bb24cc70e95c9bb"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/a18e6e71865c4d9a871354d7a29871b3.json",
+      "bytes": 2669,
+      "sha256": "883316f6dc2bd3014fcdba21c09fb9fed6a76139915fa84f10a7992eca75ac05"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/b4bb5c06eda34442a6c9aff90c6014fd.json",
+      "bytes": 2577,
+      "sha256": "ea644e76811865f82b1d00eeeb6898bdbaaf10feef7f1e6b028ed56638ecd438"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/c8ad2c91ff2f4338ae254fb60783cf56.json",
+      "bytes": 2850,
+      "sha256": "624c1dd1c8e329ace9aac2047067440b53d1189bb0d7d0dcb1f7bf77c3e1f617"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/cbe9ae08e3bf4e309ddeb465296f3550.json",
+      "bytes": 2670,
+      "sha256": "ed794a5e3fd1e8c6ed7946470b2e717368b75c6ce1cddfff5be09149823374e9"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/ce138ef42f404a2b9c6b0034ee4d7b17.json",
+      "bytes": 2719,
+      "sha256": "eeaf2a1d5ec431d1b727dbaf655cd0c0da67c57c86eac3ec82f0ff8f545789c3"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/d8b71fc33f0744ecbf6ecb4f25b86dc8.json",
+      "bytes": 2670,
+      "sha256": "90172c2c460cc2850b359ab06548357f09e639a802b2cc244495c0c5a2681f44"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/ed60e9f769f74d8292d8e533f3e7c3f9.json",
+      "bytes": 2846,
+      "sha256": "a0f3ce60ca0f584172f577f617cb82bbd1d0c41c22b6523775c9ca30119aa25e"
+    },
+    {
+      "kind": "launch_receipt",
+      "relative_path": "pilot-v2/launches/fd018bea0ed94780ad847dbff760dae9.json",
+      "bytes": 2719,
+      "sha256": "f48a641efa7a35a99d452cab4f076bd1076f1c64d5e0ca6d046ad251d70f08e7"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/1dd5876df1db49babe8e1dbfccf019f1.json",
+      "bytes": 1167,
+      "sha256": "58809747eef2927ff97db4b9c7c4766142adae1dbb159efd8984927d4af8d3fe"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/2ce35334be1940fdbd562458207510c8.json",
+      "bytes": 1292,
+      "sha256": "08ac3d3abd0748611ead3175ce80f34430719eb096dac01b63ad2ee2dba3443f"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/368cf378148d4f8684d6cf22401e16d7.json",
+      "bytes": 1208,
+      "sha256": "615832f9e513f366ac3173f0fd4d0790ccb03502c452d6e7dc04c6b55e148c8d"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/3a29b765eacc41df9d7e243926ec2a16.json",
+      "bytes": 1169,
+      "sha256": "1855fe1651124a9af40c3275f5c5f69a7a08f5f0c2a7f523dd3c5218ea516439"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/54ea834101ee47719d8bdc34a5bc206c.json",
+      "bytes": 1207,
+      "sha256": "1cace7e6f2a1db42d8fe7f49aec8c6ff55c8b2f31f610014e4b15942e85d0985"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/62a85f3f1a68446a894f21e3616c28f3.json",
+      "bytes": 1228,
+      "sha256": "11754776abde77e1ee22b2b265928731a2869cc907a1ed33b5c820d740d1e7f1"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/63d6645b7d204e82b690ecfca4de725e.json",
+      "bytes": 1169,
+      "sha256": "29d91b7b85ca475624660e1db39d725959a420812b5c2b3fa7de326f1364bb58"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/6d781854bd3342788b068d953534d4ab.json",
+      "bytes": 1208,
+      "sha256": "10f212edf9560b72595dc6af6c99654171bebd952cc49e85d863e010481c2b77"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/73444ed77f1c4b6197000118e70dbfbd.json",
+      "bytes": 1294,
+      "sha256": "bb1c7b3d6bc53b6e3cbe25a56f5fe355a86766d7c634abbe9bff71009031e233"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/75accf7ded904c76a375354f46b7f4ef.json",
+      "bytes": 1290,
+      "sha256": "e9221206c3f43d28a5c6bae85635589e0f3e76b0c12dfd0d5ccd8e494e23a567"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/7f6f4a468c224ea5848f28c1620c21a6.json",
+      "bytes": 1229,
+      "sha256": "5728ffbe42530cf8080f87e3916f83c5575cf6c29d5bd4c9a5a8bb65f08c6e7e"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/8b6d30d8915d4922a9e35c9bb23e7ec2.json",
+      "bytes": 1290,
+      "sha256": "21664d79e7e6b216dd329965ed75d80a5037a912a35eda8e1cd48e8a3d2a422d"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/8d6b5f3518ec40b5a13efcc1b3a038e5.json",
+      "bytes": 1290,
+      "sha256": "900d0b7c3d15d60fc2dd10f50bfe40ab2aa3d819f4c9b78fedba9dda4ea3c1d7"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/9434de2b789840c8a67ba2f5ac374ecd.json",
+      "bytes": 1156,
+      "sha256": "96597988260772c4c7a68821c8a3f92adb995d4caa45b530873f7a502aca13d4"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/9c0af873c4b84d88b431266fc5a37d88.json",
+      "bytes": 1208,
+      "sha256": "1b115f2ccdb509c396189721470ce0e9d7ae5eaf385325fecd0dd03c6eb27e1c"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/a474415d964f4e039aa8b629344c8c29.json",
+      "bytes": 1229,
+      "sha256": "fec22305e03c40c49c2c9f20ed062b8ba23b52f36ee375621143dc7a9ea3d8b4"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/adbc81c7051642a0a4efd5968255143e.json",
+      "bytes": 1207,
+      "sha256": "83c72479d179a9d06ab54d7ab44b513061bfa331e031413101ff4e761a7dac41"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/afd2226c29364dbb99bae0a75cf9444c.json",
+      "bytes": 1288,
+      "sha256": "354ed48a5dc6457910c273d8506a328fd9754fc2acc4ec97e81f341757adeea8"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/c2a0f39be657406ea7978f5642780fda.json",
+      "bytes": 1294,
+      "sha256": "bd41b19405d938c6bfc9e677abd9d8371d6490b8ffcc43684c5cec607049ff69"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/c5bb254008524855a4f0b6d32b5e81d0.json",
+      "bytes": 1289,
+      "sha256": "161958dda0c0141110da816a8840bdfc225b8ec06283fe47ae0689d2df71cb57"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/cf0270d4f40c4cd7a1e8e90f140d1b7e.json",
+      "bytes": 1229,
+      "sha256": "f5ddfbf77cfe4db3d71e544978f94cf7363a23052318460b7257a6381b34dab9"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/eaa2bea5e2424269b5d57ff6f1b43296.json",
+      "bytes": 1229,
+      "sha256": "10cf76e57dbe3f9c01e2bbf1267537bc19e6ea7432c2498f96e86c1f96741bfc"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/ee1aac9d9b79455fb107fd814255190d.json",
+      "bytes": 1294,
+      "sha256": "4f19082621dfadb1ad8301d4777b1782d6b89698879611ae71b158b4331ee38e"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/ee3f68e2a90f431f81fa7134e7e4e5b3.json",
+      "bytes": 1290,
+      "sha256": "8f9c6426c1dade28964056a6ecd549417c86cf6fac9896706f0df6de750baf22"
+    },
+    {
+      "kind": "internal_receipt",
+      "relative_path": "pilot-v2/measurements/ff8f3be960744a94ba21cefef7229fca.json",
+      "bytes": 1169,
+      "sha256": "20ba196ebd69f9010c29688c693e616f136af9b7492e0662af9163704bb7bd55"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/all_feedback-42.log",
+      "bytes": 10037,
+      "sha256": "30587726405845cae74a79beceda8d98ced70f81a71a23fadbf3755ad78aa68c"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/all_feedback-43.log",
+      "bytes": 10040,
+      "sha256": "98e42e0607d737cf708045f626856e6352be80b1b02949aaadcca37b69eed177"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/all_feedback-44.log",
+      "bytes": 10042,
+      "sha256": "7ea1b26928cfb9afdc3024027745a3839542f3df42a806ae7ea8e51f6db76b9e"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/all_feedback-45.log",
+      "bytes": 10036,
+      "sha256": "453de62ae6d2278fc703bb375d94144e64e4c480d6dc6d00c16b0478c604e92a"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/all_feedback-46.log",
+      "bytes": 10037,
+      "sha256": "e4250d41418e7c23043cc6a4a74f50ebd39ef8027b5efe0fd45ac7a933a79666"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/both_isolated-42.log",
+      "bytes": 10044,
+      "sha256": "2b491e2676953454be174c8f8dc52c8024aa1b0ec3498a21f99bd8ae8410c0d8"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/both_isolated-43.log",
+      "bytes": 10039,
+      "sha256": "8ff640e1daefe7ea13bab41821a77db1078a0b70be5822ae0f27dc514b8ad180"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/both_isolated-44.log",
+      "bytes": 10046,
+      "sha256": "f2a95669492959045dca4499ea4397905302aa2e73de0f505b2e2845c71d82b5"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/both_isolated-45.log",
+      "bytes": 10045,
+      "sha256": "c3a9c72f38d0cf1bc38376dd8d49d2732c8f3da59a1fb445a4cb56587d836b6b"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/both_isolated-46.log",
+      "bytes": 10041,
+      "sha256": "2702a2167806d3fd1eabf8a54e37e638a0767c6356470e760fdee3f5ecf72f10"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/original-42.log",
+      "bytes": 9833,
+      "sha256": "c568348fbaadc6a4d8743c3e76308d815f8ae7343503b4692dda5a9e6173159a"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/original-43.log",
+      "bytes": 9836,
+      "sha256": "f5d84772f52ce4dd2c820484940cc8794db3765f2d930a6d637f09cf24185b80"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/original-44.log",
+      "bytes": 9838,
+      "sha256": "0d88648cab6d657ce8cd6eb152c4b97d17d400f36cf7060e41cbcbc870572de6"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/original-45.log",
+      "bytes": 9832,
+      "sha256": "d26689afb47c73e9869239eff9388db72e2b7dac1fc518015b7d6e32ce3cabc0"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/original-46.log",
+      "bytes": 9832,
+      "sha256": "d6a6a16ce472f6d47e904269e56bd394251c9cd3c6d1c5f5f4fe419b59774899"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_component-42.log",
+      "bytes": 9854,
+      "sha256": "5cbbd3bea5957a920dfb78d2b219fd512b3ccf0ef28241aaaf66756cbc9e6f6b"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_component-43.log",
+      "bytes": 9857,
+      "sha256": "6c44270e5547d4460c76d018390fd478c589acd4e805f55570fb9770a4711a9c"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_component-44.log",
+      "bytes": 9856,
+      "sha256": "9af5418853939b1eb9ba4bfe78b8255060c8359df3b5dcac83a052c6a5ee6fb7"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_component-45.log",
+      "bytes": 9857,
+      "sha256": "0ec04beb5c7a2c3cd9f03dacc07aba875478052858fed79ea8d01d1babaddb66"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_component-46.log",
+      "bytes": 9857,
+      "sha256": "03703d2a7479fb2ca7e3b42e7a4a7ab20b2cb5873c23b1f6cb27a002319d0287"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_l1-42.log",
+      "bytes": 9848,
+      "sha256": "bc9f5c89404f03605de87e81378b345d4bf99f39f5a49360e90b4fb3cfd89c77"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_l1-43.log",
+      "bytes": 9847,
+      "sha256": "8bccb85c8804d7a9dfcd72d0be86b171d6ab5dd62dd7821f6c86c6344b2c3b05"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_l1-44.log",
+      "bytes": 9850,
+      "sha256": "644ee694ec54ac0275074bb7f2c72bab8cb9ff3cae5a2207ed904b80f86da265"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_l1-45.log",
+      "bytes": 9847,
+      "sha256": "a35465116b0a664e6ff02ef9b69159fd73e64cc73176aac6ee80e842ebae5499"
+    },
+    {
+      "kind": "execution_log",
+      "relative_path": "pilot-v2/point_l1-46.log",
+      "bytes": 9848,
+      "sha256": "23bed7e3c412bd89b5c89b1c565870f5d405f53dc3bb6c18d314cf5d7a45a1bf"
+    },
+    {
+      "kind": "raw_byte_unity_control",
+      "relative_path": "pilot-v2/unity-42.json",
+      "bytes": 474,
+      "sha256": "8bd35d3238f2b17f3af09b87dd5e222e700e1d5dc4261a55ceb5c20ca1a708b3",
+      "seed": 42
+    },
+    {
+      "kind": "raw_byte_unity_control",
+      "relative_path": "pilot-v2/unity-43.json",
+      "bytes": 474,
+      "sha256": "d89ac2d41cd8907866c6f7d88a319e0c780e7cbf363d34d4401c48d64d608242",
+      "seed": 43
+    },
+    {
+      "kind": "raw_byte_unity_control",
+      "relative_path": "pilot-v2/unity-44.json",
+      "bytes": 474,
+      "sha256": "db31bbc839d6228e3cd0ec3161599007d8701905cef743b60ff1b5c4583d0735",
+      "seed": 44
+    },
+    {
+      "kind": "raw_byte_unity_control",
+      "relative_path": "pilot-v2/unity-45.json",
+      "bytes": 474,
+      "sha256": "7849bd293cb5b22692f3f869b78d3efec9baf894541c2b21cd7a0ec0ba17c165",
+      "seed": 45
+    },
+    {
+      "kind": "raw_byte_unity_control",
+      "relative_path": "pilot-v2/unity-46.json",
+      "bytes": 474,
+      "sha256": "86a5b6942c21a78464c4136e22ff8cc57095bd989e5ae64b7da8f18d0e05f2af",
+      "seed": 46
+    },
+    {
+      "kind": "analysis_results",
+      "relative_path": "analysis-v1/results.json",
+      "bytes": 341530,
+      "sha256": "028a4964013cf9686b658f68be09da72959ddc2e3f5cfe2bcdd4f67a54647bf4"
+    },
+    {
+      "kind": "analysis_manifest",
+      "relative_path": "analysis-manifest-v1.json",
+      "bytes": 1362,
+      "sha256": "2ec586117258d77a0d12106254a9f00f9bb9409436bf292be2767ee36a0f7256"
+    },
+    {
+      "kind": "analysis_receipt",
+      "relative_path": "analysis-receipt-v1.json",
+      "bytes": 311,
+      "sha256": "e75f2c1f847cd9a1f70d244a9163952fd014b99250e32f08748e47b4ea8c0f8e"
+    },
+    {
+      "kind": "prepared_manifest",
+      "relative_path": "pilot-v2/prepared.json",
+      "bytes": 57081,
+      "sha256": "d8280f24e8b4bc5d6d0e9e2c5f5865a54a7bf10c19023329423dd04cea437f90"
+    },
+    {
+      "kind": "execution_plan",
+      "relative_path": "pilot-v2/execution-plan.json",
+      "bytes": 15618,
+      "sha256": "e819fa1bbd5f97a9c6d00a488ddde6100469892a0fe074028a82d73d71f26fb0"
+    },
+    {
+      "kind": "execution_source",
+      "relative_path": "execute.py",
+      "bytes": 4140,
+      "sha256": "62ed14bb44b4bc3ea7984059b0f24eb7ec5f81cefda624055fed30d134a84d41"
+    },
+    {
+      "kind": "execution_source",
+      "relative_path": "run-pilot.py",
+      "bytes": 10220,
+      "sha256": "8d3225b49137896d12b9f24bd56466f8d59c99279331514e6b3d43484459eef2"
+    },
+    {
+      "kind": "execution_source",
+      "relative_path": "analyze-v1.py",
+      "bytes": 3451,
+      "sha256": "47e944fad71bafbe1341ac4946c007cfbdffa859a35a8c4db1a91d5c563b6a14"
+    },
+    {
+      "kind": "prepared_component",
+      "relative_path": "pilot-v2/input/view.json",
+      "bytes": 110239,
+      "sha256": "99c07df450227f3b425a779123d3ca35526e03c427fd68521c7821c81946b2c6"
+    },
+    {
+      "kind": "prepared_component",
+      "relative_path": "pilot-v2/recipes/protocol.json",
+      "bytes": 585,
+      "sha256": "fb99849a615d49bdf9e687b95c44ad58656f9e86cbb9434d82db85f9fe03b057"
+    },
+    {
+      "kind": "prepared_component",
+      "relative_path": "pilot-v2/recipes/recipe.json",
+      "bytes": 1494,
+      "sha256": "5e145293a964b485e960295aa8b860f0ab7416a4f6570fba035ba9451639a654"
+    },
+    {
+      "kind": "prepared_component",
+      "relative_path": "pilot-v2/recipes/point_component.json",
+      "bytes": 1514,
+      "sha256": "a1f29a46e577c6994624810ab5779f026da8e2a304facebc7da8ea92dd75b998"
+    },
+    {
+      "kind": "prepared_component",
+      "relative_path": "pilot-v2/recipes/point_l1.json",
+      "bytes": 1508,
+      "sha256": "4b9cee3488c86061a784fcb17b9c8c29146e36f7f881d12e87432d82ff5252c7"
+    }
+  ]
+}

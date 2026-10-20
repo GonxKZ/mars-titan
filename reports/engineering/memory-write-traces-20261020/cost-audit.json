@@ -1,0 +1,16 @@
+{
+  "measured_source_commit": "585d4074704791ff8f87725ff56b57ac4ca42506",
+  "benchmark_program_sha256": "63da417ab93952f3fe073b8ecd4908df9ce5f29dbeb2fbf48a53ac82ae5d43c3",
+  "final_results_sha256": "db18e1634c953dc8d34d43811f4d2e8092d29a83f70465d996e070a039898fb3",
+  "superseded_probe": {
+    "results_sha256": "2964ee3edf6d9a3c68f1f5efebe0ec28211cc2821fb18b08ebbe8b6be43a6c26",
+    "review": {
+      "status": "superseded_for_cost_comparisons",
+      "numerical_parity_passed": true,
+      "reason": "Las referencias de la trayectoria y del último resultado podían seguir vivas al iniciar la siguiente condición y caso. No se interpretan sus diferencias de pico como ahorro de memoria. Se conserva el recibo y se repite con vidas explícitas antes de reiniciar el contador."
+    },
+    "internal_seconds": 8.24863698601257
+  },
+  "current_internal_seconds": 8.894589863019064,
+  "timing_scope": "El tiempo interno del proceso excluye la importación inicial. Los dos recibos externos de time se conservan fuera de Git. No es coste científico ni coste total de la investigación."
+}

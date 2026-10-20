@@ -1,0 +1,171 @@
+{
+  "passed": true,
+  "scope": "Repetición de tres configuraciones y cinco semillas ya evaluadas en la misma ventana. No añade fechas independientes.",
+  "by_job": {
+    "original-42": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+        "calibration": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+        "evaluation": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+      }
+    },
+    "original-43": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "8e5b6b988cb193fd754c2fad7af089e330a10448f687f2ecfab0f84a0f145b38",
+        "calibration": "9ef243e803f6cb93a1e0bf13e32550f6ffc353848b3785136c5d9ea8364fee13",
+        "evaluation": "d7231d7ca482460154b7261a107e80e185586d7aec2c06c0a7a95b41f792e305"
+      }
+    },
+    "original-44": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "7ffc06b8b4751d58754005cf5d50a6640f2b6d4f1db619a4e046074de9926bea",
+        "calibration": "04824dbacfa95b94c7c927eb5df3c6d88726467123bcb1b039c331a40ac8a447",
+        "evaluation": "1a6bdd39767701fdc6cd40600d3614ff7b45133b7bda48081e30c82784cf53b0"
+      }
+    },
+    "original-45": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "8502ae3bb8079d3527b3ace21e9e7f484eaf556db4384005cddd062599a2820d",
+        "calibration": "0d8b0a4a227e21387c57f03f19d1641616df19c67b306289e3f152044b73e7b0",
+        "evaluation": "e7079bca4ccee562a62f6525d710b107384e0d73f5ad17fe7a086c6cfc16cdd7"
+      }
+    },
+    "original-46": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "6436037782cbbc3110f2c7f3114dc40d8343730fc5bd4a67dcdc5b75bbc82dc8",
+        "calibration": "3e73a228668c283c58bc54f3994ab36a6d116160428cc109e7c4117339f72e5a",
+        "evaluation": "cdffb74d19abd3bc670bb2c182a053501bcf505f6532eaf06c2edcaa0b38bbac"
+      }
+    },
+    "all_feedback-42": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+        "calibration": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+        "evaluation": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+      }
+    },
+    "all_feedback-43": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "8e5b6b988cb193fd754c2fad7af089e330a10448f687f2ecfab0f84a0f145b38",
+        "calibration": "9ef243e803f6cb93a1e0bf13e32550f6ffc353848b3785136c5d9ea8364fee13",
+        "evaluation": "d7231d7ca482460154b7261a107e80e185586d7aec2c06c0a7a95b41f792e305"
+      }
+    },
+    "all_feedback-44": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "7ffc06b8b4751d58754005cf5d50a6640f2b6d4f1db619a4e046074de9926bea",
+        "calibration": "04824dbacfa95b94c7c927eb5df3c6d88726467123bcb1b039c331a40ac8a447",
+        "evaluation": "1a6bdd39767701fdc6cd40600d3614ff7b45133b7bda48081e30c82784cf53b0"
+      }
+    },
+    "all_feedback-45": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "8502ae3bb8079d3527b3ace21e9e7f484eaf556db4384005cddd062599a2820d",
+        "calibration": "0d8b0a4a227e21387c57f03f19d1641616df19c67b306289e3f152044b73e7b0",
+        "evaluation": "e7079bca4ccee562a62f6525d710b107384e0d73f5ad17fe7a086c6cfc16cdd7"
+      }
+    },
+    "all_feedback-46": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "6436037782cbbc3110f2c7f3114dc40d8343730fc5bd4a67dcdc5b75bbc82dc8",
+        "calibration": "3e73a228668c283c58bc54f3994ab36a6d116160428cc109e7c4117339f72e5a",
+        "evaluation": "cdffb74d19abd3bc670bb2c182a053501bcf505f6532eaf06c2edcaa0b38bbac"
+      }
+    },
+    "both_isolated-42": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "96100e8db7e7e391e50086cfad44558baed90c882ba7f13b0c5b195627910143",
+        "calibration": "e0b0cb0974986e31d61eb0f86a209982b98336c112f5caf1d6721e29dd586497",
+        "evaluation": "b0ff01fa7bcfa886424d9eaabd51bee0b387afcb3e5ba434973ba87987019629"
+      }
+    },
+    "both_isolated-43": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "96f8080da0f13f8772d16464c1cbbcb760b0224defd33b4d5afb112cb8f59fc1",
+        "calibration": "ce758f69caf3095dde230e024c2a2fc801cd29ad35ff9546f55981373e72a35c",
+        "evaluation": "7391017a81f374b0e90f036676d61645694cd6502dd9ce4625a125eb94a133c3"
+      }
+    },
+    "both_isolated-44": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "205bc60a16faa03f80313b5d1fefb4ba91a396f6057fc1ef3793edeebd11ce6a",
+        "calibration": "70585e1a347d9d39d7b94bbf4612fa466995034c4f0487704d827ce6c8a19e8f",
+        "evaluation": "cfbebce1f8672d0a025949beac03718a84594d92a80a19f2251394c3800f8bd7"
+      }
+    },
+    "both_isolated-45": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "d562547a0bf2a37e592eccf48b554b3d9592143e37eab149dc187b99c2b14b9e",
+        "calibration": "0c144d63bd8b87d183b9bf01dd7c384e99eb3f7d1113aa654035ca435d7cb995",
+        "evaluation": "1c0f8ebaad5be7bedad7c0295226a9a1b897e84382165e1e7940143ca676c3b2"
+      }
+    },
+    "both_isolated-46": {
+      "passed": true,
+      "shared_tensors": 45,
+      "tensor_bytes_equal": true,
+      "initialization_equal": true,
+      "phase_parquet_sha256": {
+        "validation": "de829c5c9fdd08f986adc4e938648fc435b814dd4758f2a23004091add0e850d",
+        "calibration": "21b9798ec92b443d6098c74039081a0053bee9f89744d76e18d97ceb279fc639",
+        "evaluation": "c494cddb7caeadc8a0da33db8193197c5c95b401698f7a2e1cc97f0a085c02d6"
+      }
+    }
+  }
+}

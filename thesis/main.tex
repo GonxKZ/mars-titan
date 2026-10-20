@@ -1,4 +1,5 @@
 \documentclass[11pt,a4paper]{report}
+\usepackage{cmap}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[spanish,es-tabla,es-noshorthands]{babel}
@@ -60,7 +61,9 @@ residual cero. Los pilotos posteriores de plasticidad y competencia de claves
 tampoco justificaron promover sus variantes. Un contraste posterior de rutas
 de cuantiles con cinco semillas reduce el error de la combinación frente al
 original, pero pierde frente al residual cero y frente a uno de sus
-componentes. Sus poblaciones, controles y costes se informan por separado.
+componentes. El contraste posterior frente a una pérdida de solo mediana
+resulta inconcluyente, y todos sus modelos pierden frente al residual cero.
+Sus poblaciones, controles y costes se informan por separado.
 Estos resultados no completan la campaña del
 universo histórico ni resuelven sus limitaciones de procedencia. El año 2023
 utilizado en las últimas rondas es desarrollo reutilizado y el test final de
@@ -891,6 +894,47 @@ reproduce también los cinco casos de la ronda anterior. Una época no permite
 decidir la convergencia de estos mecanismos. La analogía dendrítica y la
 reducción frente al original no acreditan una mejora del estado del arte.
 
+\section{Controles del objetivo puntual}
+El \href{https://github.com/GonxKZ/mars-titan/tree/develop/reports/research/point-loss-controls-20261020/development-v1}{contraste posterior}
+completó otros 25 ajustes con las mismas cinco semillas, filas, cortes y
+presupuesto por modelo. Conserva la cabeza de cinco salidas y compara la
+combinación con dos pérdidas que solo ajustan la mediana: L1/10, equivalente
+al término central de la pinball común, y L1. Las colas de estos controles
+no reciben gradiente de la tarea y no se presentan como cuantiles aprendidos.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Configuración & MAE medio & Desviación entre semillas \\
+\midrule
+Ambas vías aisladas & 0,01700958 & 0,00086600 \\
+Solo mediana, L1/10 & 0,01707936 & 0,00166101 \\
+Solo mediana, L1 & 0,01704668 & 0,00100554 \\
+\bottomrule
+\end{tabular}
+\caption{Controles del objetivo puntual sobre las mismas 249 sesiones.
+Se promedian errores, sin construir un ensemble.}
+\end{table}
+
+El contraste principal, combinación menos L1/10, da $-0{,}000069779$,
+una reducción media del 0,41~\%. El intervalo temporal del 95~\% es
+$[-0{,}000153996,\,+0{,}000020706]$ e incluye cero. El resultado es
+inconcluyente, también con las longitudes de bloque 8 y 32 predefinidas.
+La combinación mejora en dos semillas, empeora en dos y empata en MAE en una.
+La desviación muestral de las diferencias es 0,00132338. Este intervalo
+mantiene fijas las cinco inicializaciones y no estima una población de
+nuevas semillas.
+
+L1/10 y L1 también reducen el error frente al original, un 20,98~\% y un
+21,13~\%, respectivamente. Todas las configuraciones pierden frente al
+residual cero. Los doce secundarios tienen intervalos simultáneos y no se
+reinterpreta este contraste como un factorial. La mejora frente al original
+no acredita una aportación adicional demostrada de las vías separadas.
+Se conservan las variantes desactivadas, sin afirmar superioridad general
+ni equivalencia dentro del margen mínimo de 0,00001.
+
 \section{Costes medidos y límites comunes}
 La ronda de refinamientos conserva 289 intentos para 288 tareas completas,
 incluido el intento interrumpido y repetido. Sus recibos externos suman
@@ -918,6 +962,15 @@ Con las rondas anteriores de plasticidad, claves y cuantiles, los 64 intentos
 suman 8.478,750 segundos, unas 2,355 horas. Los tiempos internos están
 incluidos en esos totales. El análisis de esta ampliación añade
 5,428 segundos de proceso y las pruebas técnicas se registran aparte.
+
+El contraste del objetivo puntual añade 25 ajustes completos,
+3.094,613 segundos externos y 17.125 actualizaciones. Al cerrarlo, los
+89 intentos acumulados suman 11.573,363 segundos, dentro del límite
+predeclarado de 14.400. Su análisis añade 6,281 segundos de proceso.
+Los controles completos conservan por bytes los 45 tensores compartidos
+y las predicciones de las tres fases en cada semilla. Las tres configuraciones
+repetidas también reproducen sus resultados anteriores en las cinco semillas.
+Esas repeticiones no añaden fechas independientes.
 
 El RSS de proceso, la memoria asignada y reservada por PyTorch y el uso total
 del dispositivo son medidas distintas. Los estudios no midieron energía y

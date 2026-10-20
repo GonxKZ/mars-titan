@@ -4,7 +4,7 @@
 
 Esta base organiza el contenido de trabajo y no se presenta como documento final. Antes de publicar una versión completa habrá que revisar su formato y confirmar las instrucciones de citación aplicables.
 
-El estilo `biblatex-apa` se adopta como herramienta de trabajo. La edición concreta de APA deberá ajustarse a la política de citación elegida para la versión final. Para compilar se necesita una distribución LaTeX con `latexmk`, `pdflatex`, `biber`, `babel-spanish` y `biblatex-apa`.
+El estilo `biblatex-apa` se adopta como herramienta de trabajo. La edición concreta de APA deberá ajustarse a la política de citación elegida para la versión final. Para compilar se necesita una distribución LaTeX con `latexmk`, `pdflatex`, `biber`, `babel-spanish`, `biblatex-apa` y `cmap`.
 
 ```bash
 cd thesis
@@ -20,3 +20,7 @@ La compilación se comprobó el 13 de octubre de 2026, y de nuevo el 14 sin erro
 La primera revisión del 20 de octubre compila en 27 páginas y conserva las 69 claves citadas de esas 13 colecciones. No quedan citas o referencias sin resolver, avisos de biber ni cajas desbordadas. Hay un aviso `Underfull \hbox` de espaciado en la bibliografía, sin texto fuera de los márgenes. Se revisaron las tablas y las páginas de resultados renderizadas. El PDF declara título, autor y asunto en sus metadatos.
 
 `revisions/main-20261020-7b02fcf5.tex` conserva la fuente publicada en `7b02fcf52dea557027e8372f06ed1e40f51c626c`, con blob `a8f94703df3fa8c5fe715c606d95952574c30fff`. La revisión posterior incorpora los 25 ajustes de rutas de cuantiles, sus cinco semillas, el control cero y los costes completos. Describe también las declaraciones independientes `sequence` y `paper` y su conexión con las etapas, sin confundirlas con campañas ejecutadas. Compila en 28 páginas con 70 claves citadas de las 13 colecciones. No hay referencias sin resolver, avisos de biber ni cajas desbordadas. Permanece un aviso de espaciado en la bibliografía. Se revisaron visualmente el resumen, la arquitectura y las dos páginas de resultados modificadas. La [verificación](../reports/research/quantile-multiseed-20261020/document-verification.json) registra fuente, PDF, herramientas y alcance.
+
+`revisions/main-20261020-c122cee7.tex` conserva la fuente anterior al contraste de objetivos puntuales, con blob `b2d5e26b0e2489f0b092a25d574d00ccce3e66fd`. La revisión siguiente incorpora sus 25 ajustes, el resultado inconcluyente frente a L1/10 y los costes de 89 intentos acumulados. Compila en 29 páginas, con las mismas 70 claves citadas y 13 colecciones, sin citas pendientes, avisos de biber ni cajas desbordadas. Permanece un aviso de espaciado en la bibliografía. Se revisaron las páginas de resumen, resultados y costes.
+
+El paquete [cmap](https://ctan.org/pkg/cmap), ya disponible en la distribución utilizada, añade mapas Unicode a las fuentes existentes para buscar y copiar el texto. La extracción anterior contenía 199 caracteres de control asociados a ligaduras y signos. La nueva no contiene ninguno de esos caracteres. Las tres páginas renderizadas conservan exactamente sus píxeles. Esto no equivale a certificar accesibilidad PDF/UA. La [verificación del documento](../reports/research/point-loss-controls-20261020/document-verification.json) identifica las fuentes, el PDF externo y estas comprobaciones.

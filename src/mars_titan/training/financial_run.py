@@ -55,6 +55,7 @@ from .checkpoints import (
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
+from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_objective
 from .selection import (
     AWAIT,
     FINISH,
@@ -73,6 +74,7 @@ _OWN_MODULES = (
     "mars_titan.memory.financial_observations",
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
+    "mars_titan.training.quantile_objectives",
     "mars_titan.evaluation.session_metrics",
 )
 
@@ -114,10 +116,12 @@ class ChronologicalRecipe:
     distillation_weight: float | None = None
 
     def __post_init__(self):
-        # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
-        validate_loss("mae" if self.loss == PINBALL else self.loss, self.huber_delta)
+        # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
+        validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
         validate_selection(self.selection, epochs=self.epochs)
         distillation.checked_weight(self.distillation_weight)
+        if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
+            raise ValueError("El control de solo mediana no admite destilación de las colas")
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
             any(type(v) is not int or not 1 <= v <= m for v, m in self._bounded())
@@ -411,8 +415,10 @@ class ChronologicalInference:
         if self.uses_context and recipe.accumulation_rows is not None:
             raise ValueError("PT4 no se combina con la acumulación por bloques")
         self.quantiles = predictor.config.head == QUANTILE_HEAD
-        if self.quantiles != (recipe.loss == PINBALL):
-            raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
+        if self.quantiles != (recipe.loss in QUANTILE_OBJECTIVES):
+            raise ValueError(
+                "La cabeza de cuantiles requiere pinball o un control puntual identificado"
+            )
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -869,6 +875,8 @@ class ChronologicalTrainer(ChronologicalInference):
         functional = torch.nn.functional
         if self.recipe.loss == PINBALL:
             return pinball_loss(prediction, target)
+        if self.recipe.loss in POINT_OBJECTIVES:
+            return point_objective(prediction, target, self.recipe.loss)
         if self.recipe.loss == "mae":
             return functional.l1_loss(prediction, target)
         if self.recipe.loss == "mse":

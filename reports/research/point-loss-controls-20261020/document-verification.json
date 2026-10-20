@@ -1,0 +1,64 @@
+{
+  "recorded_at_utc": "2026-10-20T21:03:20.430114+00:00",
+  "source": "thesis/main.tex",
+  "source_sha256": "0667aa5890c8e4a8d8bca60ab871c00409606c498362cedf844e0f1f820f2a90",
+  "preserved_source": "thesis/revisions/main-20261020-c122cee7.tex",
+  "preserved_source_blob": "b2d5e26b0e2489f0b092a25d574d00ccce3e66fd",
+  "pdf": {
+    "relative_path": "pdf-v2/main.pdf",
+    "sha256": "451163378d711d67de66a58871a67c1163e012e9853ed6f02763a8a3b3af570d",
+    "bytes": 287458,
+    "pages": 29
+  },
+  "cited_keys": 70,
+  "bibliographic_collections": 13,
+  "undefined_references": false,
+  "biber_warnings": false,
+  "overfull_boxes": false,
+  "underfull_hboxes": 1,
+  "visual_pages": [
+    2,
+    21,
+    22
+  ],
+  "renderings": [
+    {
+      "file": "results-21.png",
+      "sha256": "342f32ee9f76b23f32757de4c81f90ccd5a5f3ae9290166797a5ca3ea6f56c0d",
+      "same_pixels_as_before_cmap": true
+    },
+    {
+      "file": "results-22.png",
+      "sha256": "b48d56714ce6f161de63c47d9b45f594e513d55e5c5164f59eca7e638f98068f",
+      "same_pixels_as_before_cmap": true
+    },
+    {
+      "file": "abstract-02.png",
+      "sha256": "edb3cfc5c81c0cc7a749337204847cd09eda54f61707855085e3fc5aa81b55a2",
+      "same_pixels_as_before_cmap": true
+    }
+  ],
+  "text_mapping": {
+    "package": "cmap",
+    "version": "1.0j,2021-02-06",
+    "url": "https://ctan.org/pkg/cmap",
+    "installed_package_sha256": "67123f5846b014963904c7395605d3521e98e11493be933aacf45e2bb3c12327",
+    "non_text_controls_before": 199,
+    "non_text_controls_after": 0,
+    "fonts_unchanged": true,
+    "scope": "Mapas Unicode para las fuentes existentes. No certifica accesibilidad PDF/UA."
+  },
+  "final_test_opened": false,
+  "limits": [
+    "Un aviso Underfull de espaciado en la bibliografía, sin desbordamiento."
+  ],
+  "command_form": [
+    "latexmk",
+    "-pdf",
+    "-interaction=nonstopmode",
+    "-halt-on-error",
+    "-outdir=pdf-v2",
+    "main.tex"
+  ],
+  "command_scope": "Opciones verificadas. El destino se expresa por su nombre de carpeta. El comando real empleó su ruta absoluta en almacenamiento externo."
+}

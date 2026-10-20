@@ -1,0 +1,169 @@
+{
+  "analysis": {
+    "passed": true,
+    "by_seed": {
+      "42": {
+        "passed": true,
+        "predictions_equal": true,
+        "shared_tensors_equal": true,
+        "initial_parameters_equal": true,
+        "shared_tensors": 45,
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "phase_predictions_equal": {
+          "validation": true,
+          "calibration": true,
+          "evaluation": true
+        }
+      },
+      "43": {
+        "passed": true,
+        "predictions_equal": true,
+        "shared_tensors_equal": true,
+        "initial_parameters_equal": true,
+        "shared_tensors": 45,
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "phase_predictions_equal": {
+          "validation": true,
+          "calibration": true,
+          "evaluation": true
+        }
+      },
+      "44": {
+        "passed": true,
+        "predictions_equal": true,
+        "shared_tensors_equal": true,
+        "initial_parameters_equal": true,
+        "shared_tensors": 45,
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "phase_predictions_equal": {
+          "validation": true,
+          "calibration": true,
+          "evaluation": true
+        }
+      },
+      "45": {
+        "passed": true,
+        "predictions_equal": true,
+        "shared_tensors_equal": true,
+        "initial_parameters_equal": true,
+        "shared_tensors": 45,
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "phase_predictions_equal": {
+          "validation": true,
+          "calibration": true,
+          "evaluation": true
+        }
+      },
+      "46": {
+        "passed": true,
+        "predictions_equal": true,
+        "shared_tensors_equal": true,
+        "initial_parameters_equal": true,
+        "shared_tensors": 45,
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "phase_predictions_equal": {
+          "validation": true,
+          "calibration": true,
+          "evaluation": true
+        }
+      }
+    }
+  },
+  "raw_bytes": {
+    "42": {
+      "passed": true,
+      "seed": 42,
+      "shared_tensors": 45,
+      "raw_tensor_bytes_equal": true,
+      "prediction_parquet_bytes_equal": true,
+      "phase_prediction_sha256": {
+        "validation": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+        "calibration": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+        "evaluation": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a"
+      },
+      "optimizer_steps": [
+        685,
+        685
+      ]
+    },
+    "43": {
+      "passed": true,
+      "seed": 43,
+      "shared_tensors": 45,
+      "raw_tensor_bytes_equal": true,
+      "prediction_parquet_bytes_equal": true,
+      "phase_prediction_sha256": {
+        "validation": "8e5b6b988cb193fd754c2fad7af089e330a10448f687f2ecfab0f84a0f145b38",
+        "calibration": "9ef243e803f6cb93a1e0bf13e32550f6ffc353848b3785136c5d9ea8364fee13",
+        "evaluation": "d7231d7ca482460154b7261a107e80e185586d7aec2c06c0a7a95b41f792e305"
+      },
+      "optimizer_steps": [
+        685,
+        685
+      ]
+    },
+    "44": {
+      "passed": true,
+      "seed": 44,
+      "shared_tensors": 45,
+      "raw_tensor_bytes_equal": true,
+      "prediction_parquet_bytes_equal": true,
+      "phase_prediction_sha256": {
+        "validation": "7ffc06b8b4751d58754005cf5d50a6640f2b6d4f1db619a4e046074de9926bea",
+        "calibration": "04824dbacfa95b94c7c927eb5df3c6d88726467123bcb1b039c331a40ac8a447",
+        "evaluation": "1a6bdd39767701fdc6cd40600d3614ff7b45133b7bda48081e30c82784cf53b0"
+      },
+      "optimizer_steps": [
+        685,
+        685
+      ]
+    },
+    "45": {
+      "passed": true,
+      "seed": 45,
+      "shared_tensors": 45,
+      "raw_tensor_bytes_equal": true,
+      "prediction_parquet_bytes_equal": true,
+      "phase_prediction_sha256": {
+        "validation": "8502ae3bb8079d3527b3ace21e9e7f484eaf556db4384005cddd062599a2820d",
+        "calibration": "0d8b0a4a227e21387c57f03f19d1641616df19c67b306289e3f152044b73e7b0",
+        "evaluation": "e7079bca4ccee562a62f6525d710b107384e0d73f5ad17fe7a086c6cfc16cdd7"
+      },
+      "optimizer_steps": [
+        685,
+        685
+      ]
+    },
+    "46": {
+      "passed": true,
+      "seed": 46,
+      "shared_tensors": 45,
+      "raw_tensor_bytes_equal": true,
+      "prediction_parquet_bytes_equal": true,
+      "phase_prediction_sha256": {
+        "validation": "6436037782cbbc3110f2c7f3114dc40d8343730fc5bd4a67dcdc5b75bbc82dc8",
+        "calibration": "3e73a228668c283c58bc54f3994ab36a6d116160428cc109e7c4117339f72e5a",
+        "evaluation": "cdffb74d19abd3bc670bb2c182a053501bcf505f6532eaf06c2edcaa0b38bbac"
+      },
+      "optimizer_steps": [
+        685,
+        685
+      ]
+    }
+  }
+}

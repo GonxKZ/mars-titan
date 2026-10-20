@@ -1,5 +1,7 @@
 # Memoria, contexto y adaptación para una variante ampliada
 
+Este documento conserva una propuesta con fecha de corte del 4 de octubre de 2026. Sus frases sobre implementación y entrenamiento describen ese estado histórico. La [arquitectura vigente](titans-mac-architecture.md) y los [estudios posteriores](../../reports/research/quantile-multiseed-20261020/development-v1/README.md) distinguen lo implementado de sus resultados de desarrollo. La [revisión de precisión y tiempo](predictive-precision-and-time.md) añade fuentes de 2026 con su alcance y límites.
+
 Fecha de corte: 4 de octubre de 2026. Estado: investigación y diseño. MARS-TITAN sigue sin implementar ni entrenar. El [candidato existente](candidate-architecture.md) se conserva como referencia. Esta revisión propone cambios separados que podrían descartarse sin alterar ese diseño ni las campañas comparativas en ejecución.
 
 La primera ampliación que merece contrastarse es una lectura contextual con utilidad medida a partir de predicciones realmente emitidas. Después se estudiaría distinguir error, ruido y cambio persistente al escribir memoria. Una actualización asociativa proximal constituye otro contraste, con condiciones matemáticas explícitas. Compresión, más especialistas y cómputo adaptativo quedan condicionados a que esos mecanismos aporten una mejora medible.

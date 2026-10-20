@@ -1,5 +1,7 @@
 # Propuesta sobre la cabeza de cuantiles
 
+Esta propuesta conserva el estado y las opciones registrados el 9 de octubre. La [guía de ingeniería](../engineering/quantile-head.md), la [ronda multisemilla posterior](../../reports/research/quantile-multiseed-20261020/development-v1/README.md) y los [controles del objetivo puntual](../engineering/quantile-point-objectives.md) describen el trabajo actual. El control de cabeza escalar y la aceptación de finalistas conservan sus criterios pendientes en #22.
+
 Estado: propuesta registrada el 9 de octubre de 2026 para [#22](https://github.com/GonxKZ/mars-titan/issues/22). Ese mismo día se adoptó la opción B con sus seis condiciones. La cabeza, la pérdida, las identidades nuevas y el control declarado están implementados según la [guía de ingeniería](../engineering/quantile-head.md). La calibración común sigue pendiente y no se ha entrenado ningún modelo. El texto siguiente conserva la propuesta tal como se registró.
 
 ## Estado comprobado en el código

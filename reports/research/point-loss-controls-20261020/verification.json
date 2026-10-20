@@ -1,0 +1,48 @@
+{
+  "recorded_at_utc": "2026-10-20T19:40:21.072755+00:00",
+  "distinct_current_tests": 291,
+  "cuda_cases": 42,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "junit": [
+    {
+      "name": "final-v2.xml",
+      "tests": 291,
+      "sha256": "d9a5d3e404579d841d93d685ab1e712d3ef345f9b42e9efccc52e8b6a4edf39f"
+    }
+  ],
+  "quality_sha256": "4e2fef0fb6cbf656ed6a63c69b3e767687cfa8801b989f36a07a27862d96daf7",
+  "directed_mutations": 16,
+  "detected_mutations": 16,
+  "mutations_sha256": "82ad8d432243070044f18f7049bb15f98e07f8d7d97f9fbeaa33a21f8e0fc968",
+  "new_scientific_fits": 0,
+  "final_test_opened": false,
+  "prepared": {
+    "study_version": "quantile_point_v1",
+    "jobs": 25,
+    "artifacts": 5,
+    "prepared_sha256": "d8280f24e8b4bc5d6d0e9e2c5f5865a54a7bf10c19023329423dd04cea437f90",
+    "counts": {
+      "train": 203350,
+      "validation": 8000,
+      "calibration": 3968,
+      "evaluation": 15936
+    },
+    "relative_path": "pilot-v2/prepared.json",
+    "superseded_preparation": "pilot-v1, sin ajustes, anterior a la revisión de terminología"
+  },
+  "red_logs": {
+    "red-unit.log": "fddc24306954c213c57b91c9c3d452cdec43a1066effc4c0ed14f1437270f050",
+    "red-integration.log": "c3411bf412e6962d230dad7d1541508575d1916f0a40c94258dadca4d6cd3f79",
+    "red-study.log": "8e4772a3591274fd06eccbee81abbf6eefccbdd46ea39bd909cc8164701d55ae",
+    "red-analysis.log": "8f99e808d2cc191311f73855a0c3eb4a7328c224b2a1b0380acfa95198a75b1b",
+    "red-distillation.log": "670dcf3802fd8dfa0c6028f9bc10e54802d558bca6c5c88eb486fa965e141307"
+  },
+  "coverage_warning": null,
+  "limits": [
+    "Selección focalizada. No es toda la batería del repositorio.",
+    "Los casos nuevos de recorrido usan un optimizador que registra gradientes sin ajustar pesos.",
+    "Las medidas de cobertura y CRAP son diagnósticas. No demuestran ausencia de errores."
+  ]
+}
