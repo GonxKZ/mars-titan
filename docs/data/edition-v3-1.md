@@ -2,7 +2,7 @@
 
 Tarea [#428](https://github.com/GonxKZ/mars-titan/issues/428), 9 y 10 de octubre de 2026. La edición v3.1 parte de la edición `encoded-history-v3-cpu-words`. Corrige tres cosas en la lectura de precios: la conversión del texto numérico de la fuente, las filas que se rechazaban por redondeo y las ventanas que contienen sesiones sin ninguna fila en todo el mercado. Además, todos sus vectores se calculan en FP32 estricto, sin TF32. Noticias, fundamentales, macro, modelos de los codificadores y política de máscaras no cambian.
 
-Este documento describe el código, una medida sobre una porción de 13 activos copiada fuera de las rutas oficiales y la [ejecución completa del 10 y 11 de octubre](#ejecución-del-10-y-11-de-octubre), que generó y verificó la edición y sus objetivos. Las muestras de la v3 se sustituyeron activo a activo durante esa ejecución. Se conservan sus manifiestos, configuraciones y factores, su `embeddings.sqlite`, `targets-v3`, `prepared-accounting-v1` y las vistas de la campaña A, que ya no pueden leerse como edición completa. No se ha entrenado ni evaluado ningún modelo.
+Este documento describe el código, una medida sobre una porción de 13 activos copiada fuera de las rutas oficiales y la [ejecución completa del 10 y 11 de octubre](#ejecución-del-10-y-11-de-octubre), que generó y verificó la edición y sus objetivos. Las muestras de la v3 se sustituyeron activo a activo durante esa ejecución. Se conservan sus manifiestos, configuraciones y factores, su `embeddings.sqlite`, `targets-v3`, `prepared-accounting-v1` y las vistas de la campaña A, que ya no pueden leerse como edición completa. La regeneración de datos no entrenó ni evaluó modelos.
 
 ## Conversión exacta del texto de la fuente
 
