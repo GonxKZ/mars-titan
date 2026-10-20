@@ -44,8 +44,9 @@
   "mutations_sha256": "be46c4c9bf7958c0fc8baa8583a1a34e1dca4937ed0171f35212c55247a75b38",
   "final_test_opened": false,
   "pending": [
-    "Medición del sobrecoste de esta ampliación.",
     "Paridad y sobrecoste completos de todas las familias de v3.1."
   ],
-  "write_count_scope": "Actualizaciones calculadas y observadas, no publicación de transacciones externas."
+  "write_count_scope": "Actualizaciones calculadas y observadas, no publicación de transacciones externas.",
+  "cost_results_sha256": "db18e1634c953dc8d34d43811f4d2e8092d29a83f70465d996e070a039898fb3",
+  "cost_audit_sha256": "04ba050633f2303604de5dae0c52c6c2a8ba6ee7540faf36ca5b5fee8e26bc63"
 }
