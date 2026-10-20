@@ -374,6 +374,7 @@ class NeuralMemory(nn.Module):
         *,
         modulation=(),
         steps=None,
+        observation=None,
     ):
         """Momentum, olvido y escritura de un paso con el gradiente asociativo ya calculado."""
         alpha, eta, theta = gates
@@ -396,6 +397,14 @@ class NeuralMemory(nn.Module):
                 advance_plasticity(plasticity, gradient, modulation[3 * i : 3 * i + 3], steps)
                 for i, gradient in enumerate(gradients)
             )
+            if observation is not None:
+                observation.update(
+                    plasticity=updates,
+                    capture_applied=(
+                        self.config.multiscale is not None
+                        and self.config.multiscale.form == "cascade"
+                    ),
+                )
             if scalar_controls and plasticity.write != "coherence":
                 # Expandir theta por filas antes de multiplicar g altera su reducción backward.
                 if plasticity.write == "constant" and plasticity.write_constant != 1:
@@ -484,6 +493,7 @@ class NeuralMemory(nn.Module):
             loss = residual.square().sum() / observed.shape[0]
             check_finite(loss, "La pérdida asociativa")
             gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+            observation = {} if self.observer is not None else None
             weights, momentum, levels, modulation = self._write(
                 state.weights,
                 state.momentum,
@@ -493,7 +503,19 @@ class NeuralMemory(nn.Module):
                 differentiable,
                 modulation=state.modulation,
                 steps=state.steps,
+                observation=observation,
             )
+            if self.observer is not None:
+                self.observer(
+                    alpha=gates[0],
+                    eta=gates[1],
+                    theta=gates[2],
+                    loss=loss,
+                    weights=weights,
+                    momentum=momentum,
+                    shared_rows=observed.shape[0],
+                    **observation,
+                )
         return NeuralMemoryState(
             weights, momentum, state.steps + 1, state.config_id, (), levels, modulation
         )
@@ -575,6 +597,7 @@ class NeuralMemory(nn.Module):
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+                observation = {} if self.observer is not None else None
                 weights, momentum, levels, modulation = self._write(
                     weights,
                     momentum,
@@ -584,6 +607,7 @@ class NeuralMemory(nn.Module):
                     differentiable,
                     modulation=modulation,
                     steps=state.steps + index if self.config.plasticity is not None else None,
+                    observation=observation,
                 )
                 if self.observer is not None:
                     self.observer(
@@ -593,6 +617,7 @@ class NeuralMemory(nn.Module):
                         loss=loss,
                         weights=weights,
                         momentum=momentum,
+                        **observation,
                     )
         windows = () if key_window is None else (key_window, value_window)
         if not differentiable:

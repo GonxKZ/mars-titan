@@ -144,17 +144,27 @@ def _titans(run):
         if not metric.startswith("memory.") or stat != "value":
             continue
         name = metric.removeprefix("memory.")
+        prefix = ""
+        if name.startswith("shared."):
+            prefix, name = "shared_", name.removeprefix("shared.")
         entry = memories.setdefault(group, {})
         values = [value for _, value in points]
         if name in (f"{gate}.mean" for gate in GATES):
-            entry[f"{name.split('.')[0]}_last_mean"] = _finite(values[-1])
+            entry[f"{prefix}{name.split('.')[0]}_last_mean"] = _finite(values[-1])
         elif name.endswith((".low_fraction", ".high_fraction")):
-            entry[f"{name.replace('.', '_')}_mean"] = _median(values)
+            entry[f"{prefix}{name.replace('.', '_')}_mean"] = _median(values)
         elif name == "associative_loss.mean":
-            entry["associative_loss_first"] = _finite(values[0])
-            entry["associative_loss_last"] = _finite(values[-1])
+            entry[f"{prefix}associative_loss_first"] = _finite(values[0])
+            entry[f"{prefix}associative_loss_last"] = _finite(values[-1])
         elif name == "tokens":
-            entry["traced_tokens"] = sum(values)
+            entry[f"{prefix}traced_tokens"] = sum(values)
+        elif prefix and name in ("writes", "rows"):
+            entry[f"{prefix}traced_{name}"] = _finite(sum(values))
+        elif name.startswith("plasticity.") and name.endswith(".mean"):
+            label = name.removesuffix(".mean").replace(".", "_")
+            entry[f"{prefix}{label}_last_mean"] = _finite(values[-1])
+        elif prefix and name == "rows_per_write.mean":
+            entry["shared_rows_per_write_last_mean"] = _finite(values[-1])
     return dict(sorted(memories.items())) or None
 
 

@@ -1,0 +1,624 @@
+{
+  "kind": "memory_write_fixture_trace_cost_v1",
+  "recorded_at_utc": "2026-10-20T20:49:05.545319+00:00",
+  "source_commit": "585d4074704791ff8f87725ff56b57ac4ca42506",
+  "source_files": {
+    "src/mars_titan/models/titans/neural_memory.py": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+    "src/mars_titan/learning_traces/memory.py": "0a8f26cecaea307ff000ce4ba9c27d8e81e1ae6f48170c9dd81b4585d2ec04bf"
+  },
+  "benchmark_sha256": "63da417ab93952f3fe073b8ecd4908df9ce5f29dbeb2fbf48a53ac82ae5d43c3",
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "dtype": "float32",
+  "tf32": false,
+  "threads": 2,
+  "concurrent_compute_processes": [
+    {
+      "pid": 17860,
+      "process_name": "nautilus",
+      "used_memory_reported": "51 MiB"
+    },
+    {
+      "pid": 3212504,
+      "process_name": "python",
+      "used_memory_reported": "128 MiB"
+    }
+  ],
+  "python": "3.12.14",
+  "deterministic_algorithms": false,
+  "peak_process_rss_bytes": 1304633344,
+  "warmup": 3,
+  "measured_steps": 16,
+  "repetitions": 3,
+  "condition_order": "rotation",
+  "results": [
+    {
+      "case": "64-flows-plain",
+      "rows": 64,
+      "shared": false,
+      "plasticity": false,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.001786625012755394,
+            "p95": 0.0022300503100268544,
+            "p99": 0.0027827606617938736
+          },
+          "total_block_seconds": [
+            0.032442841096781194,
+            0.030154193053022027,
+            0.027457938995212317
+          ],
+          "flush_seconds": [
+            4.608999006450176e-06,
+            3.4960685297846794e-06,
+            3.85800376534462e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 89332224
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.004780894028954208,
+            "p95": 0.00600764020346105,
+            "p99": 0.07701441288460047
+          },
+          "total_block_seconds": [
+            0.4398366200039163,
+            0.08183606807142496,
+            0.06901753402780741
+          ],
+          "flush_seconds": [
+            0.21694698405917734,
+            0.0029378479812294245,
+            0.0023742999183014035
+          ],
+          "trace_bytes": 15471,
+          "peak_cuda_allocated_bytes": 90676224
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.0019612779724411666,
+            "p95": 0.0036214260442648063,
+            "p99": 0.005396131093148145
+          },
+          "total_block_seconds": [
+            0.03986825700849295,
+            0.03504648199304938,
+            0.03317194094415754
+          ],
+          "flush_seconds": [
+            0.0010703910375013947,
+            0.0009853409137576818,
+            0.0009736079955473542
+          ],
+          "trace_bytes": 7179,
+          "peak_cuda_allocated_bytes": 90399744
+        }
+      }
+    },
+    {
+      "case": "64-flows-plasticity",
+      "rows": 64,
+      "shared": false,
+      "plasticity": true,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.003910138504579663,
+            "p95": 0.004615309799555689,
+            "p99": 0.005469431497622282
+          },
+          "total_block_seconds": [
+            0.0607231060275808,
+            0.06584356306120753,
+            0.06830642896238714
+          ],
+          "flush_seconds": [
+            4.088040441274643e-06,
+            4.06801700592041e-06,
+            3.9780279621481895e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 115923968
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.008215098991058767,
+            "p95": 0.009296913485741243,
+            "p99": 0.010120298070833087
+          },
+          "total_block_seconds": [
+            0.136562792933546,
+            0.13646721292752773,
+            0.143002507975325
+          ],
+          "flush_seconds": [
+            0.004142159945331514,
+            0.0042472470086067915,
+            0.00426698406226933
+          ],
+          "trace_bytes": 30519,
+          "peak_cuda_allocated_bytes": 116448256
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.00393388798693195,
+            "p95": 0.006978965125745158,
+            "p99": 0.008314737108303234
+          },
+          "total_block_seconds": [
+            0.06991800502873957,
+            0.06718385999556631,
+            0.07648662198334932
+          ],
+          "flush_seconds": [
+            0.0011092229979112744,
+            0.0010177219519391656,
+            0.0011084020370617509
+          ],
+          "trace_bytes": 8985,
+          "peak_cuda_allocated_bytes": 115926016
+        }
+      }
+    },
+    {
+      "case": "64-shared-plain",
+      "rows": 64,
+      "shared": true,
+      "plasticity": false,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.0016181289684027433,
+            "p95": 0.0018288005667272953,
+            "p99": 0.002239243803778664
+          },
+          "total_block_seconds": [
+            0.026282512000761926,
+            0.025477179093286395,
+            0.02733363606967032
+          ],
+          "flush_seconds": [
+            3.3759279176592827e-06,
+            3.2959505915641785e-06,
+            3.4569529816508293e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 67624448
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.004507150442805141,
+            "p95": 0.005112535081570968,
+            "p99": 0.005260482119629159
+          },
+          "total_block_seconds": [
+            0.07646979996934533,
+            0.07636085606645793,
+            0.07500022102613002
+          ],
+          "flush_seconds": [
+            0.0027229139814153314,
+            0.0025254529900848866,
+            0.0025658999802544713
+          ],
+          "trace_bytes": 10269,
+          "peak_cuda_allocated_bytes": 67969024
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.0016144925029948354,
+            "p95": 0.003502493910491464,
+            "p99": 0.004339066902175546
+          },
+          "total_block_seconds": [
+            0.029630420031026006,
+            0.03105086798314005,
+            0.029317932901903987
+          ],
+          "flush_seconds": [
+            0.0009534310083836317,
+            0.0009832859504967928,
+            0.0009935559937730432
+          ],
+          "trace_bytes": 7044,
+          "peak_cuda_allocated_bytes": 67661824
+        }
+      }
+    },
+    {
+      "case": "64-shared-plasticity",
+      "rows": 64,
+      "shared": true,
+      "plasticity": true,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.003656833025161177,
+            "p95": 0.004640989960171282,
+            "p99": 0.005151838465826587
+          },
+          "total_block_seconds": [
+            0.0648357899626717,
+            0.05600735801272094,
+            0.061371332965791225
+          ],
+          "flush_seconds": [
+            4.347995854914188e-06,
+            3.8070138543844223e-06,
+            3.868015483021736e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 68045824
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.008109014946967363,
+            "p95": 0.009756734792608768,
+            "p99": 0.00994450477301143
+          },
+          "total_block_seconds": [
+            0.13528359006159008,
+            0.13290052500087768,
+            0.14139990811236203
+          ],
+          "flush_seconds": [
+            0.004665251937694848,
+            0.004231167025864124,
+            0.004145776038058102
+          ],
+          "trace_bytes": 24831,
+          "peak_cuda_allocated_bytes": 68619264
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.003564790415111929,
+            "p95": 0.007031654473394153,
+            "p99": 0.007896305317990482
+          },
+          "total_block_seconds": [
+            0.06071034201886505,
+            0.06677165604196489,
+            0.06499596091452986
+          ],
+          "flush_seconds": [
+            0.0011013889452442527,
+            0.0010341620072722435,
+            0.0010952570009976625
+          ],
+          "trace_bytes": 8841,
+          "peak_cuda_allocated_bytes": 68066304
+        }
+      }
+    },
+    {
+      "case": "256-flows-plain",
+      "rows": 256,
+      "shared": false,
+      "plasticity": false,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.002225550066214055,
+            "p95": 0.0034378833719529212,
+            "p99": 0.006111570768989628
+          },
+          "total_block_seconds": [
+            0.04220873396843672,
+            0.038318677921779454,
+            0.03823722491506487
+          ],
+          "flush_seconds": [
+            1.4838064089417458e-05,
+            3.8869911804795265e-06,
+            3.677094355225563e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 155744768
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.004772964457515627,
+            "p95": 0.006338915758533403,
+            "p99": 0.007429198342142628
+          },
+          "total_block_seconds": [
+            0.08030100609175861,
+            0.09003917593508959,
+            0.07939478510525078
+          ],
+          "flush_seconds": [
+            0.002504764008335769,
+            0.0024183220230042934,
+            0.0024750890443101525
+          ],
+          "trace_bytes": 15471,
+          "peak_cuda_allocated_bytes": 160236032
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.002172790525946766,
+            "p95": 0.003996600018581374,
+            "p99": 0.00443764527910389
+          },
+          "total_block_seconds": [
+            0.04176521091721952,
+            0.03472972696181387,
+            0.038178513990715146
+          ],
+          "flush_seconds": [
+            0.0009397850371897221,
+            0.0009758620290085673,
+            0.000961716054007411
+          ],
+          "trace_bytes": 7176,
+          "peak_cuda_allocated_bytes": 159959552
+        }
+      }
+    },
+    {
+      "case": "256-flows-plasticity",
+      "rows": 256,
+      "shared": false,
+      "plasticity": true,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.005092464503832161,
+            "p95": 0.006363805697765201,
+            "p99": 0.006776377068599687
+          },
+          "total_block_seconds": [
+            0.0900024069705978,
+            0.07617197104264051,
+            0.08258290099911392
+          ],
+          "flush_seconds": [
+            4.06801700592041e-06,
+            2.795015461742878e-06,
+            3.7369318306446075e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 262111744
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.009373213979415596,
+            "p95": 0.011600938386982307,
+            "p99": 0.011764672599965706
+          },
+          "total_block_seconds": [
+            0.1571628029923886,
+            0.12913116498384625,
+            0.16881370497867465
+          ],
+          "flush_seconds": [
+            0.003464606939814985,
+            0.00307505507953465,
+            0.004610209027305245
+          ],
+          "trace_bytes": 30363,
+          "peak_cuda_allocated_bytes": 262633984
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.004723676946014166,
+            "p95": 0.007232352037681264,
+            "p99": 0.008249997376697139
+          },
+          "total_block_seconds": [
+            0.08392618398647755,
+            0.08104151696898043,
+            0.08299241098575294
+          ],
+          "flush_seconds": [
+            0.0008736809249967337,
+            0.0008585719624534249,
+            0.0009727369761094451
+          ],
+          "trace_bytes": 8982,
+          "peak_cuda_allocated_bytes": 262111744
+        }
+      }
+    },
+    {
+      "case": "256-shared-plain",
+      "rows": 256,
+      "shared": true,
+      "plasticity": false,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.0032335429568775,
+            "p95": 0.003531349072000012,
+            "p99": 0.004277754544746132
+          },
+          "total_block_seconds": [
+            0.045907660969533026,
+            0.05412070592865348,
+            0.05273369001224637
+          ],
+          "flush_seconds": [
+            6.753019988536835e-06,
+            7.25302379578352e-06,
+            7.684924639761448e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 68085248
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.007980037480592728,
+            "p95": 0.00877704653539695,
+            "p99": 0.00897927358164452
+          },
+          "total_block_seconds": [
+            0.13316636404488236,
+            0.10719606897328049,
+            0.13665020710323006
+          ],
+          "flush_seconds": [
+            0.004790487000718713,
+            0.004725784994661808,
+            0.005270838970318437
+          ],
+          "trace_bytes": 10245,
+          "peak_cuda_allocated_bytes": 68392448
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.003298119467217475,
+            "p95": 0.006744759401772165,
+            "p99": 0.010014351465506482
+          },
+          "total_block_seconds": [
+            0.06531444902066141,
+            0.05989711498841643,
+            0.05979533400386572
+          ],
+          "flush_seconds": [
+            0.0011986010940745473,
+            0.0016873190179467201,
+            0.001850995933637023
+          ],
+          "trace_bytes": 7044,
+          "peak_cuda_allocated_bytes": 68085248
+        }
+      }
+    },
+    {
+      "case": "256-shared-plasticity",
+      "rows": 256,
+      "shared": true,
+      "plasticity": true,
+      "dim": 64,
+      "depth": 2,
+      "numerically_equal": true,
+      "parameters_unchanged": true,
+      "conditions": {
+        "off": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.00670736248139292,
+            "p95": 0.007976075581973418,
+            "p99": 0.008828626372851433
+          },
+          "total_block_seconds": [
+            0.10845956206321716,
+            0.11041545495390892,
+            0.11477615498006344
+          ],
+          "flush_seconds": [
+            7.653958164155483e-06,
+            7.313909009099007e-06,
+            7.814960554242134e-06
+          ],
+          "trace_bytes": 0,
+          "peak_cuda_allocated_bytes": 68386304
+        },
+        "every_step": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.014071498007979244,
+            "p95": 0.015602796658640727,
+            "p99": 0.015888393617933615
+          },
+          "total_block_seconds": [
+            0.23320434894412756,
+            0.23323950602207333,
+            0.2356537600280717
+          ],
+          "flush_seconds": [
+            0.006905579008162022,
+            0.00718935311306268,
+            0.007218296057544649
+          ],
+          "trace_bytes": 24792,
+          "peak_cuda_allocated_bytes": 68939264
+        },
+        "every_16": {
+          "samples": 48,
+          "latency_seconds": {
+            "p50": 0.006713684007991105,
+            "p95": 0.012305433407891532,
+            "p99": 0.014800753180170432
+          },
+          "total_block_seconds": [
+            0.12051794899161905,
+            0.11947219597641379,
+            0.11964132206048816
+          ],
+          "flush_seconds": [
+            0.0018499940633773804,
+            0.0018549340311437845,
+            0.0018469180213287473
+          ],
+          "trace_bytes": 8847,
+          "peak_cuda_allocated_bytes": 68386304
+        }
+      }
+    }
+  ],
+  "process_internal_seconds": 8.894589863019064,
+  "optimizer_steps": 0,
+  "final_test_opened": false,
+  "limits": [
+    "Fixtures técnicos con parámetros iniciales, sin datos financieros.",
+    "Cada repetición recorre 16 escrituras desde el mismo estado inicial, con los mismos tokens. Se sincroniza cada llamada completa. No mide la canalización financiera completa.",
+    "Los percentiles describen 48 llamadas por condición y caso. No certifican latencia extrema.",
+    "El volcado se registra aparte y ya está incluido en los tiempos de bloque.",
+    "Los bytes de trazas suman tres repeticiones. El escritorio permanece activo.",
+    "No se miden energía, volumen total de transferencias ni memoria por asignación. No se recomienda una cadencia para toda la campaña."
+  ]
+}

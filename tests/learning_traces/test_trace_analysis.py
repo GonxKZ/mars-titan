@@ -101,6 +101,46 @@ def test_non_finite_values_are_counted_and_never_chosen(campaign):
     assert run["recorded_steps"] == 1
 
 
+def test_shared_memory_and_plasticity_remain_visible_without_mixing_their_counts(tmp_path):
+    group = "predictor.context.memory"
+    folder = write(
+        tmp_path / "traces",
+        "titans_mac",
+        scores=[],
+        losses=[],
+        extra=[
+            (1, "memory.tokens", group, 3),
+            (2, "memory.tokens", group, 4),
+            (1, "memory.shared.writes", group, 1),
+            (2, "memory.shared.writes", group, 1),
+            (1, "memory.shared.rows", group, 32),
+            (2, "memory.shared.rows", group, 64),
+            (1, "memory.shared.rows_per_write.mean", group, 32),
+            (2, "memory.shared.rows_per_write.mean", group, 64),
+            (1, "memory.shared.alpha.mean", group, 0.2),
+            (2, "memory.shared.alpha.mean", group, 0.3),
+            (1, "memory.shared.associative_loss.mean", group, 0.25),
+            (2, "memory.shared.associative_loss.mean", group, 0.5),
+            (2, "memory.shared.plasticity.write_gain.0.mean", group, 0.4),
+            (2, "memory.plasticity.coherence.1.mean", group, 0.7),
+        ],
+    )
+    report = analyze([folder], root=tmp_path)
+    memory = report["runs"]["traces"]["titans"][group]
+    assert memory["traced_tokens"] == 7
+    assert memory["shared_traced_writes"] == 2
+    assert memory["shared_traced_rows"] == 96
+    assert memory["shared_rows_per_write_last_mean"] == 64
+    assert memory["shared_alpha_last_mean"] == 0.3
+    assert memory["shared_associative_loss_first"] == 0.25
+    assert memory["shared_associative_loss_last"] == 0.5
+    assert memory["shared_plasticity_write_gain_0_last_mean"] == 0.4
+    assert memory["plasticity_coherence_1_last_mean"] == 0.7
+    rendered = markdown(report)
+    assert "shared_traced_writes 2" in rendered
+    assert "shared_plasticity_write_gain_0_last_mean 0.4" in rendered
+
+
 def test_curves_are_aligned_on_the_union_of_steps_without_interpolation(campaign):
     runs = {name: Run(campaign / f"jobs/{name}/traces") for name in ("a", "b")}
     curves = align(runs, "validation.score")
