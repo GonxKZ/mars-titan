@@ -80,6 +80,7 @@ def _decode(predictor, payload, *, device):
                     predictor.mac.memory.config.fingerprint(),
                     memory.get("convolution", ()),
                     memory.get("levels", ()),
+                    memory.get("modulation", ()),
                 ),
                 predictor.mac.config.fingerprint(),
                 mac.get("convolution", ()),
@@ -140,6 +141,8 @@ def _cpu_payload(predictor, copied):
             payload["mac"]["convolution"] = copied.mac.convolution
         if predictor.mac.config.memory.hidden_levels:
             payload["mac"]["memory"]["levels"] = copied.mac.memory.levels
+        if predictor.mac.config.memory.plasticity is not None:
+            payload["mac"]["memory"]["modulation"] = copied.mac.memory.modulation
     return payload
 
 

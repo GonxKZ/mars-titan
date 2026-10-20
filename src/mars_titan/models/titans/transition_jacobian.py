@@ -32,7 +32,7 @@ def fast_state_dimension(config: MACConfig) -> int:
     PT5, los niveles ocultos de cada capa."""
     memory = config.memory
     matrices = (2 + memory.hidden_levels) * memory.depth
-    return matrices * memory.dim**2 + 3 * memory.window * memory.dim
+    return matrices * memory.dim**2 + 3 * memory.window * memory.dim + memory.modulation_elements
 
 
 def fast_state_point(state):
@@ -44,6 +44,7 @@ def fast_state_point(state):
         *memory.convolution,
         *state.convolution,
         *memory.levels,
+        *memory.modulation,
     )
     return torch.cat([value.flatten() for value in values])
 
@@ -55,6 +56,7 @@ def fast_state_transition(mac, token, state):
     window, count = mac.config.memory.window, len(memory.convolution)
     windows_total = count + len(state.convolution)
     sizes = [dim**2] * (2 * depth) + [window * dim] * windows_total + [dim**2] * len(memory.levels)
+    sizes += [value.numel() for value in memory.modulation]
 
     def transition(value):
         pieces = value.split(sizes)
@@ -63,8 +65,14 @@ def fast_state_transition(mac, token, state):
             piece.reshape(1, window, dim).clone()
             for piece in pieces[2 * depth : 2 * depth + windows_total]
         )
+        levels_start = 2 * depth + windows_total
+        modulation_start = levels_start + len(memory.levels)
         levels = tuple(
-            piece.reshape(1, dim, dim).clone() for piece in pieces[2 * depth + windows_total :]
+            piece.reshape(1, dim, dim).clone() for piece in pieces[levels_start:modulation_start]
+        )
+        modulation = tuple(
+            piece.reshape_as(original).clone()
+            for piece, original in zip(pieces[modulation_start:], memory.modulation, strict=True)
         )
         local = replace(
             memory,
@@ -72,6 +80,7 @@ def fast_state_transition(mac, token, state):
             momentum=matrices[depth:],
             convolution=windows[:count],
             levels=levels,
+            modulation=modulation,
         )
         _, following = mac(
             token, replace(state, memory=local, convolution=windows[count:]), differentiable=True

@@ -74,6 +74,7 @@ class TitansMAC(nn.Module):
                 memory.steps,
                 *memory.convolution,
                 *memory.levels,
+                *memory.modulation,
             )
         }
         self.memory.validate_windows(

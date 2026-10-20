@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "piray_daw_2024",
+      "title": "Computational processes of simultaneous learning of stochasticity and volatility in humans",
+      "url": "https://doi.org/10.1038/s41467-024-53459-z",
+      "inspected_url": "https://www.princeton.edu/~ndaw/pd24.pdf",
+      "accessed_on": "2026-10-20",
+      "inspection": "Formulación, distinción entre volatilidad y estocasticidad, discusión. Experimentos no reproducidos.",
+      "experiments_reproduced": false,
+      "inspected_pdf_sha256": "e075192143f7a93517f7ce64b7fb8b59b4f214a450e716df8b117cff345257e9"
+    },
+    {
+      "id": "aitchison_2021",
+      "title": "Synaptic plasticity as Bayesian inference",
+      "url": "https://doi.org/10.1038/s41593-021-00809-5",
+      "inspected_url": "https://www.gatsby.ucl.ac.uk/~pel/papers/bayesian_plasticity_2021.pdf",
+      "accessed_on": "2026-10-20",
+      "inspection": "Ecuaciones 1–4 y marco normativo. No se identifica nuestra coherencia con incertidumbre paramétrica.",
+      "experiments_reproduced": false,
+      "inspected_pdf_sha256": "26a4036c52ee57415d48bf754a1220e9a15f4560cd25bf5d01a6fe5a9e4dab5a"
+    },
+    {
+      "id": "benna_fusi_2016",
+      "title": "Computational principles of synaptic memory consolidation",
+      "url": "https://doi.org/10.1038/nn.4401",
+      "inspected_url": "https://www.gatsby.ucl.ac.uk/~pel/tnlectures/papers/benna_fusi.pdf",
+      "accessed_on": "2026-10-20",
+      "inspection": "Construcción de la cascada, escalas y discusión de precisión. La implementación PT5 ya existía.",
+      "experiments_reproduced": false,
+      "inspected_pdf_sha256": "7105aa343fcfb79593b7cc347780f2d4e723cd96ec48a88d765c201f4ea2a587"
+    },
+    {
+      "id": "adabelief_2020",
+      "title": "AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients",
+      "url": "https://arxiv.org/abs/2010.07468v5",
+      "inspected_url": "https://proceedings.neurips.cc/paper/2020/file/d9d4f495e875a2e075a1a4a6e1b9770f-Paper.pdf",
+      "accessed_on": "2026-10-20",
+      "inspection": "Algoritmo 2 del artículo de NeurIPS. La revisión arXiv v5 se identifica por separado.",
+      "experiments_reproduced": false,
+      "inspected_pdf_sha256": "8da248ede8cfaafc54997262b3c1956028e89a22faf0bccb468d69fceb1c3d57"
+    },
+    {
+      "id": "farashahi_2017",
+      "title": "Metaplasticity as a Neural Substrate for Adaptive Learning and Choice under Uncertainty",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5515734/",
+      "inspected_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5515734/",
+      "accessed_on": "2026-10-20",
+      "inspection": "Resultados del modelo y elección con inversión de recompensas. Experimentos no reproducidos.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "frey_morris_1997",
+      "title": "Synaptic tagging and long-term potentiation",
+      "url": "https://doi.org/10.1038/385533a0",
+      "inspected_url": "https://doi.org/10.1038/385533a0",
+      "accessed_on": "2026-10-20",
+      "inspection": "Solo metadatos y resumen. Texto completo no inspeccionado.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "clopath_2008",
+      "title": "Tag-Trigger-Consolidation: A Model of Early and Late Long-Term-Potentiation and Depression",
+      "url": "https://doi.org/10.1371/journal.pcbi.1000248",
+      "inspected_url": "https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000248",
+      "accessed_on": "2026-10-20",
+      "inspection": "Construcción, activación y consolidación del modelo. No se reproducen los experimentos biológicos.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "mesu_2025",
+      "title": "Bayesian continual learning and forgetting in neural networks",
+      "url": "https://arxiv.org/abs/2504.13569v1",
+      "inspected_url": "https://arxiv.org/html/2504.13569v1",
+      "accessed_on": "2026-10-20",
+      "inspection": "Derivación, resultados y comienzo de métodos de v1. No se inspeccionó ni ejecutó el código enlazado.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "syngap_2026",
+      "title": "Metaplasticity as adaptive gradient preconditioning for incremental learning",
+      "url": "https://arxiv.org/abs/2608.14634v1",
+      "inspected_url": "https://arxiv.org/html/2608.14634v1",
+      "accessed_on": "2026-10-20",
+      "inspection": "Ecuaciones 4–7, motivación y contexto experimental. No se reprodujeron sus resultados.",
+      "experiments_reproduced": false
+    },
+    {
+      "id": "iyer_2022",
+      "title": "Avoiding Catastrophe: Active Dendrites Enable Multi-Task Learning in Dynamic Environments",
+      "url": "https://doi.org/10.3389/fnbot.2022.846219",
+      "inspected_url": "https://www.frontiersin.org/journals/neurorobotics/articles/10.3389/fnbot.2022.846219/full",
+      "accessed_on": "2026-10-20",
+      "inspection": "Mecanismo de contexto y selección. No seleccionado para este contraste.",
+      "experiments_reproduced": false
+    }
+  ],
+  "scope": "Revisión dirigida. No acredita ausencia de antecedentes, novedad ni mejora predictiva.",
+  "third_party_files_redistributed": false
+}

@@ -1,6 +1,6 @@
 name = "mars_titan_memory_feedback"
 version = "0.1.0"
-defaultTargets = ["MemoryFeedback", "RoutePolicyRegret"]
+defaultTargets = ["MemoryFeedback", "RoutePolicyRegret", "NeuralPlasticity"]
 
 [[require]]
 name = "mathlib"
@@ -12,3 +12,6 @@ name = "MemoryFeedback"
 
 [[lean_lib]]
 name = "RoutePolicyRegret"
+
+[[lean_lib]]
+name = "NeuralPlasticity"

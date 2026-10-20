@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "neural_plasticity_variants",
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "arms": {
+    "mac_original": {
+      "role": "Referencia neuronal sin PT5 ni modulación",
+      "predictor_changes": {}
+    },
+    "write_coherence": {
+      "role": "Escritura por coherencia sin PT5",
+      "predictor_changes": {
+        "memory_plasticity": {
+          "write": "coherence", "capture": "none", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_original": {
+      "role": "Referencia PT5 con intercambio fijo",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625}
+      }
+    },
+    "cascade_unity": {
+      "role": "Control de cálculo auxiliar con ganancias unitarias",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "constant", "capture": "constant", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 1.0, "capture_constant": 1.0
+        }
+      }
+    },
+    "cascade_write": {
+      "role": "PT5 con escritura por coherencia",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "coherence", "capture": "none", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_capture": {
+      "role": "PT5 con captura por elegibilidad",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "none", "capture": "eligibility", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_combined": {
+      "role": "PT5 con escritura y captura moduladas",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "coherence", "capture": "eligibility", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_fixed_write": {
+      "role": "Control de escritura con multiplicador constante",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "constant", "capture": "none", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_fixed_capture": {
+      "role": "Control de captura con multiplicador constante",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "none", "capture": "constant", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    },
+    "cascade_fixed_both": {
+      "role": "Control de ambas ganancias constantes",
+      "predictor_changes": {
+        "memory_multiscale": {"form": "cascade", "coupling": 0.0625},
+        "memory_plasticity": {
+          "write": "constant", "capture": "constant", "beta": 0.9,
+          "trace_decay": 0.95, "epsilon": 1e-8, "write_floor": 0.1,
+          "capture_floor": 0.1, "write_constant": 0.5, "capture_constant": 0.5
+        }
+      }
+    }
+  }
+}

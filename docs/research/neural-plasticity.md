@@ -1,0 +1,35 @@
+# Plasticidad de la memoria neuronal
+
+Se han implementado dos modulaciones opcionales sobre los pesos rápidos de Titans-MAC: escritura por coherencia de gradientes y captura por elegibilidad en la cascada PT5. También se admite su combinación. No añaden parámetros compartidos y permanecen desactivadas cuando `memory_plasticity` es `null`. Todavía no hay resultados predictivos de estas variantes.
+
+La motivación es comprobar si resulta útil distinguir una asociación que reaparece de una sucesión de correcciones contradictorias. La hipótesis puede fallar. Una asociación falsa pero persistente también produce gradientes coherentes, y reducir la escritura puede retrasar la adaptación a un cambio real. Los [contratos y ecuaciones](../engineering/neural-plasticity.md) permiten comprobar el mecanismo por separado de esa hipótesis.
+
+## Antecedentes examinados
+
+Piray y Daw distinguen la variación del estado latente de la aleatoriedad de las observaciones. Sus efectos sobre la tasa de aprendizaje pueden ser opuestos. Su modelo de inferencia conjunta utiliza hipótesis generativas y un filtro de partículas, y los resultados humanos presentan diferencias entre individuos. Esto motiva una comprobación frente a cambios persistentes y ruido, pero no identifica ninguna de esas cantidades a partir de la coherencia de gradientes. Se revisaron la formulación y la discusión de [Computational processes of simultaneous learning of stochasticity and volatility in humans](https://doi.org/10.1038/s41467-024-53459-z), con la [copia de los autores](https://www.princeton.edu/~ndaw/pd24.pdf).
+
+En [Synaptic plasticity as Bayesian inference](https://doi.org/10.1038/s41593-021-00809-5), Aitchison y colaboradores relacionan la incertidumbre del peso con la magnitud del ajuste y distinguen esa incertidumbre del ruido de la señal de aprendizaje. Se inspeccionaron las ecuaciones 1–4 y su interpretación en la [copia de los autores](https://www.gatsby.ucl.ac.uk/~pel/papers/bayesian_plasticity_2021.pdf). El cociente implementado aquí no es una varianza posterior. Las filas de la memoria tampoco equivalen a sinapsis biológicas identificadas.
+
+[Metaplasticity as a Neural Substrate for Adaptive Learning and Choice under Uncertainty](https://pmc.ncbi.nlm.nih.gov/articles/PMC5515734/) estudia reglas cuya plasticidad depende de su historia en tareas de elección e inversión de recompensas. Se revisaron los resultados del modelo y sus condiciones. Ese antecedente justifica preguntar por el estado interno de la regla de escritura. No demuestra que una regla concreta reduzca el error de retornos residuales.
+
+Frey y Morris estudian el marcado sináptico en [Synaptic tagging and long-term potentiation](https://doi.org/10.1038/385533a0). En esta revisión solo se verificaron sus metadatos y resumen, no el texto completo. El modelo posterior [Tag-Trigger-Consolidation](https://doi.org/10.1371/journal.pcbi.1000248), de Clopath y colaboradores, distingue una marca local, una señal de activación y consolidación. Se inspeccionaron sus secciones de construcción del modelo y consolidación. La variante propuesta toma esa separación funcional. No representa proteínas, potenciales de acción, tiempos biológicos ni los experimentos de potenciación a largo plazo.
+
+La cascada de escalas ya existe como PT5, inspirada en [Computational principles of synaptic memory consolidation](https://doi.org/10.1038/nn.4401), de Benna y Fusi. Se revisaron su construcción y la discusión de escalas y precisión en la [copia pública](https://www.gatsby.ucl.ac.uk/~pel/tnlectures/papers/benna_fusi.pdf). Aquí se modifica únicamente el intercambio entre sus dos primeros niveles. No se vuelve a presentar la cascada como una aportación nueva.
+
+También hay antecedentes algorítmicos próximos. [AdaBelief](https://arxiv.org/abs/2010.07468v5) adapta el paso con momentos del gradiente y de su desviación respecto a la media. Se revisó su algoritmo 2. [MESU](https://arxiv.org/html/2504.13569v1) obtiene una regla de aprendizaje y olvido mediante inferencia variacional, con incertidumbre paramétrica y una ventana de olvido. Se inspeccionaron su derivación y los experimentos de aprendizaje continuo. No se reprodujeron sus resultados ni su código. Ninguno de esos trabajos convierte la coherencia definida en esta variante en una probabilidad de utilidad financiera.
+
+La búsqueda más reciente incluyó [SynGAP](https://arxiv.org/html/2608.14634v1). Sus ecuaciones 4–7 acumulan una aproximación diagonal de Fisher y construyen una máscara multiplicativa acotada para el gradiente. Es un antecedente directo de modulación metaplástica del paso. Aquí se emplea una estadística de dirección por fila de los pesos rápidos, no Fisher por parámetro, y la segunda intervención regula un intercambio entre escalas. Esa diferencia describe el diseño, pero no acredita por sí misma novedad científica o superioridad.
+
+La selección contextual mediante dendritas activas, estudiada en [Avoiding Catastrophe](https://doi.org/10.3389/fnbot.2022.846219), exigiría otro contraste sobre contexto, capacidad y especialización. No se añade a esta comparación. El proyecto ya dispone de propuestas de contexto y memoria compartida. Tampoco se añade replay, otro optimizador global ni una nueva modalidad para favorecer a las variantes.
+
+Las fuentes se consultaron el 20 de octubre de 2026. Las versiones de arXiv quedan fijadas en sus enlaces. Las huellas de los PDF inspeccionados se conservan en el [manifiesto de fuentes](../../reports/research/neural-plasticity-20261020/sources.json). La revisión es dirigida, no una demostración de ausencia de trabajos anteriores.
+
+## Hipótesis y controles
+
+La escritura por coherencia se compara con la misma memoria sin modulación y con un multiplicador constante del paso. La captura se compara con PT5 de acoplamiento fijo y con un acoplamiento constante reducido. La combinación se compara con ambos componentes. Un control con ganancias unitarias conserva los cálculos auxiliares y debe producir los mismos pesos que la referencia.
+
+No basta con bajar las normas de los estados. Se contrastarán error posterior al ajuste, tiempo, memoria, respuesta a cambios y retención de asociaciones poco frecuentes. La reducción de paso por sí sola puede explicar cualquier efecto favorable. El control constante permite examinar esa explicación.
+
+Los casos adversos incluyen gradientes alternantes, gradientes nulos, una asociación incorrecta persistente, un cambio brusco tras una historia estable y una asociación rara. La pérdida asociativa de Titans es interna a las entradas disponibles. Su valor no es el error financiero de una predicción emitida. Ninguna traza usa etiquetas futuras.
+
+Estas variantes no cambian las identidades de la GRU, el Transformer compacto, Titans-MAC, las ampliaciones episódicas ni CM-v1. La consolidación de pesos rápidos aquí propuesta es distinta del factor M, que conserva representantes de episodios maduros. El diagnóstico C debe incluir los estados auxiliares cuando se aplique a esta arquitectura.
