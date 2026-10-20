@@ -1,0 +1,11 @@
+# Comprobación del mutante de ablación B6
+
+El mutante que había quedado sin comprobar en la repetición de #525 se detecta al ejecutar su caso pertinente. La [verificación actual](verification.json) registra una prueba CPU en tres fases: referencia aprobada, mutante detectado y fuente restaurada aprobada. Ninguna fase queda omitida. No cambia código de producción ni demuestra resultados financieros.
+
+La sustitución es `same_window=modality_ablation is not None or regenerate,` por `same_window=regenerate,` en `carry_correction`. El caso `tests/training/test_modality_ablation_carry.py::test_b6_ablation_equals_the_correction_with_a_real_absence` traslada una ablación en la misma ventana y exige que el núcleo, calentamiento, claves y errores vean la ausencia. Con el mutante se rechaza ese recorrido como una ventana no posterior al ancla. El error observado coincide con ese contrato y no procede de una omisión o un fallo de importación.
+
+La referencia pasó en 53,344 segundos, el mutante falló en 35,702 y la restauración pasó en 32,243. Son tiempos de procesos sobre fixtures, con otras tareas concurrentes. No son una medida comparativa de rendimiento. Se utilizó un optimizador registrador que no cambia pesos, sin datos reales ni GPU. La protección global se conservó y la excepción local quedó cerrada.
+
+La [cobertura y CRAP](quality.json) usa coverage.py 7.16.1 con ramas y Radon 6.0.1, con `C² × (1 − cobertura de sentencias)³ + C`. El recorrido cubre las 44 sentencias y dos ramas de `carry_correction`, con complejidad y CRAP 13. El archivo completo queda en 351 de 471 sentencias y 57 de 122 ramas. Esta prueba no comprueba todos sus casos. El denominador de mutación es un mutante dirigido, no todos los mutantes posibles.
+
+La ronda original ya había detectado la misma sustitución. La repetición posterior registró 45 aprobadas y dos omitidas, incluida esta prueba, y no acreditaba por sí sola que el mutante fuera inocuo. La medida actual resuelve esa falta de evidencia. El [inventario](artifacts.json) conserva hashes de logs, JUnit, cobertura y reproducción fuera de Git. No resuelve la aceptación de recibos base, selecciones, almacenamiento o coste completo pendiente en #437.
