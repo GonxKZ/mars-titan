@@ -1,0 +1,92 @@
+{
+  "recorded_at_utc": "2026-10-20T16:14:49.035917+00:00",
+  "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 2.5715443619992584,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "name": "wrong_primary_scale",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "truth) / 10",
+      "after": "truth) / 5",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.4212727249832824,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "name": "auxiliary_includes_primary",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "total - primary, local",
+      "after": "total, local",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.3204697610344738,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "name": "wrong_total_gradient",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "autograd.grad(total, local)",
+      "after": "autograd.grad(primary, local)",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.1201034479308873,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "modify_input_flag",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "encoded.detach().requires_grad_(True)",
+      "after": "encoded.requires_grad_(True)",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.1708851730218157,
+      "tests": 6,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "omit_gradient_finiteness",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "if any(not torch.isfinite(value).all().item() for value in result.values()):",
+      "after": "if False:",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.2206373020308092,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "omit_derivation_context",
+      "file": "src/mars_titan/evaluation/quantile_feedback.py",
+      "before": "with torch.enable_grad():",
+      "after": "with torch.no_grad():",
+      "source_sha256": "e82df1e9b5f71dfbdf8e7961145fff79c9fd74e491328293eba332b755c1d472"
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 2.472063894965686,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

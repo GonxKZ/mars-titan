@@ -1,0 +1,20 @@
+{
+  "storage": "Artefactos locales fuera de Git, relativos al directorio del diagnóstico.",
+  "artifacts": [
+    {
+      "relative_path": "validation-feedback-v2/initial-feedback.parquet",
+      "bytes": 294680,
+      "sha256": "a4f58d2af4cb6a0b6e642641b98f1c465e15c8b41a3a7618e05c888ca2aa5d33"
+    },
+    {
+      "relative_path": "validation-feedback-v2/selected-feedback.parquet",
+      "bytes": 294923,
+      "sha256": "f474d44a654bce79fb47159f23ba215c257363763170b5a72e654394c3992092"
+    },
+    {
+      "relative_path": "inspect-feedback-v2.py",
+      "bytes": 8873,
+      "sha256": "dd32d211e4e777d314cc7f373aad28547f2bf0cd65c2c0a4a4b896e86163aabe"
+    }
+  ]
+}
