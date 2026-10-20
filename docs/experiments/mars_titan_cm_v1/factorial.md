@@ -1,6 +1,8 @@
 # Factorial CM-v1 sobre Titans-MAC
 
-Este documento describe la implementación del factorial B, B+C, B+M y B+C+M sobre el núcleo Titans-MAC integrado. Nada se ha ejecutado con datos. El bloqueo de la edición histórica desde 2000 sigue vigente y las pruebas recorren los bucles hasta el paso del optimizador con un registrador que no modifica pesos. Las comprobaciones son técnicas y no aportan ningún resultado predictivo.
+Este documento describe la implementación del factorial B, B+C, B+M y B+C+M sobre el núcleo Titans-MAC integrado. Las comprobaciones iniciales sin pasos de optimizador se conservan con su alcance. El 18 de octubre se publicaron dos estudios exploratorios con datos reales y ajustes de parámetros. La campaña completa y el test final de 2024 siguen cerrados.
+
+El [microensayo](../../../reports/research/memory-microstudy-20261018/README.md) utiliza cuatro activos, una época y una semilla para CM-v1. C+M reduce el error frente a su B, pero las cuatro variantes pierden frente al residual cero. En la [ronda de 64 instrumentos](../../../reports/research/combined-memory-20261018/README.md#factorial-de-cm-v1), con dos épocas y otra ventana de desarrollo, M reduce el MAE observado frente a B y C+M es inconcluyente. Todas sus variantes también tienen mayor MAE que el cero. Los informes conservan controles, identidades, predicciones, incertidumbre y costes. No se combinan sus ventanas y configuraciones como si fueran réplicas del mismo experimento, ni se deduce una garantía de estabilidad de estos resultados.
 
 La declaración está en [`configs/titans/cm-v1-factorial.json`](../../../configs/titans/cm-v1-factorial.json) y el código en [`training/cm_v1_factorial.py`](../../../src/mars_titan/training/cm_v1_factorial.py).
 
@@ -20,7 +22,7 @@ La receta del núcleo entra como parámetro de la declaración y su huella forma
 | `cm_v1_bm` | `cm_v1_core_b` | `disabled` | `anchored` |
 | `cm_v1_bcm` | `cm_v1_core_c` | `penalty` | `anchored` |
 
-B y B+M comparten el mismo núcleo elegido, así que su diferencia se reduce al factor M. B+C y B+C+M comparten el suyo. Los dos núcleos parten de los mismos parámetros iniciales con la misma semilla y tienen la misma base de C, que se genera con su propio generador. Los cuatro lectores parten también de los mismos parámetros. Todos los modelos usan los mismos casos de búsqueda (tasas 1e-4 y 1e-3), las mismas 30 épocas con presupuesto fijo y la misma selección por `session_mae` de validación.
+B y B+M comparten el mismo núcleo elegido, así que su diferencia se reduce al factor M. B+C y B+C+M comparten el suyo. Los dos núcleos parten de los mismos parámetros iniciales con la misma semilla y tienen la misma base de C, que se genera con su propio generador. Los cuatro lectores parten también de los mismos parámetros. La [campaña A v2](../../../configs/baselines/historical-masked-campaign-a-v2.json) conserva dos casos de búsqueda y selección por MAE de validación. Su parada conjunta tiene un máximo de 30 épocas, con grupos separados para los núcleos de CM-v1 y para los lectores. Los pilotos enlazados usan sus propios presupuestos fijos y no son ejecuciones de esa campaña.
 
 Valores declarados antes de ejecutar, sin ajuste con datos:
 
@@ -72,9 +74,9 @@ La implementación sigue esa forma. Cada lote del tramo guarda el plan de C de s
 
 La igualdad no es bit a bit en general, porque cambian el orden de las sumas y el reparto de la división. En float64 y CPU, con tres flujos, dos configuraciones de C y bloques de 1, 2 (que deja un bloque incompleto) y 3 flujos, la mayor diferencia de los gradientes registrados frente al tramo completo fue 1,1·10⁻¹⁶ en absoluto y 2·10⁻¹⁴ relativa a la mayor magnitud de cada tensor. Con un único bloque coincidieron bit a bit en ese fixture. La prueba declara rtol 10⁻¹⁰ y atol 10⁻¹³, las mismas que la acumulación sin C.
 
-El coste añadido no está medido en `cuda:0`. Cada término de C se calcula dos veces, al emitir para los contadores y al repetir con grafo, igual que el forward de la tarea. Los flujos medidos sin etiquetas añaden su recorrido del tramo a la repetición, aunque con dos flujos medidos por evento y casi todos los flujos con etiquetas en cada tramo deberían ser pocos. En el fixture técnico, el mayor grafo guardado al retropropagar bajó de 6,6 MB con el tramo completo a 2,2 MB con bloques de un flujo, con tres flujos medidos por evento.
+Cada término de C se calcula dos veces, al emitir para los contadores y al repetir con grafo, igual que el forward de la tarea. Los flujos medidos sin etiquetas añaden su recorrido del tramo a la repetición. En el fixture técnico inicial, el mayor grafo guardado al retropropagar bajó de 6,6 MB con el tramo completo a 2,2 MB con bloques de un flujo, con tres flujos medidos por evento. Las [medidas posteriores de núcleos](../../../reports/engineering/campaign-kernels-20261009/vram-throughput.json) y los estudios del 18 de octubre ya registran costes en `cuda:0`, con cargas distintas. No convierten esa reducción del grafo de un fixture en un ahorro medido del universo completo.
 
-La repetición también vuelve a validar el plan del evento en cada `prepare`, que lo valida dos veces. En CPU y con 4.202 flujos por evento, cada validación de un bloque de 128 flujos costó unos 6,2 ms. La emisión ya paga ese coste en cada lote y la repetición lo paga en cada par de bloque y lote con flujos. La medida en `cuda:0` dirá si pesa lo bastante como para validar el plan una sola vez por evento.
+La medición inicial en CPU, con 4.202 flujos por evento, atribuyó unos 6,2 ms a cada validación de un bloque de 128 flujos. Ese perfil motivaba estudiar el trabajo repetido, pero no acredita por sí solo una mejora del recorrido completo. Los perfiles y recibos posteriores deben identificar el código medido antes de trasladar esa cifra a una configuración actual.
 
 ## M en el banco del lector
 
@@ -103,11 +105,11 @@ El contraejemplo de la issue pasa por las tres. A1 y A2 tienen radio numérico 0
 
 La ventana del lector es común con MARS-TITAN. `ReadoutFamily` reúne lo que distingue a cada familia: control esperado en el padre, variante, retención e identidad. MARS-TITAN rechaza ahora cualquier padre con control C.
 
-La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un modelo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de las cuatro variantes son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos modelos, nunca los núcleos auxiliares. Las configuraciones A y B no declaran todavía la sección. La campaña elegida, la A, la incluye en su [declaración ampliada](../../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 1.080 ajustes (360 de núcleos). En B añadiría 408 ajustes con 336 traslados (136 de núcleos).
+La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un modelo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de las cuatro variantes son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos modelos, nunca los núcleos auxiliares. La [configuración vigente de A v2](../../../configs/baselines/historical-masked-campaign-a-v2.json) ya declara `cm_v1` y fija `memory_options.cm_v1.accumulation_rows=1024`. Los recuentos de las declaraciones originales A y B quedan como antecedentes en el [plan de campaña](../../research/training-campaign-2000.md).
 
 ## Comprobaciones
 
-Todas en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo.
+Las comprobaciones iniciales de esta tabla se ejecutaron en CPU, con `CUDA_VISIBLE_DEVICES=-1`, dos hilos y pruebas por archivo. Las comprobaciones CUDA y los estudios posteriores tienen sus propios recibos.
 
 | Archivo | Qué comprueba |
 | --- | --- |
@@ -141,7 +143,7 @@ La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y e
 
 ## Pendiente
 
-- Ajustar y comparar las cuatro variantes en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
-- Copiar la sección a la configuración de A con la opción de memoria de la receta de Titans-MAC, `accumulation_rows=1024`. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada modelo.
+- Ajustar y comparar las cuatro variantes en la campaña A v2, con otras ventanas y semillas. Los dos estudios exploratorios no completan ese contraste.
+- Completar el presupuesto del universo de la campaña, incluyendo lectura, núcleos y lectores. Los [recibos de consolidación](../../../reports/engineering/episodic-consolidation-20261013/README.md) y los pilotos ya miden partes y recorridos acotados, sin cubrir todos los costes de A v2.
 - Una condición de contracción común a todos los Jacobianos admisibles, si se quiere una garantía para productos variables. Ninguna lectura actual la aporta.
-- La comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md).
+- Extender la comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md), a su alcance confirmatorio. Esas métricas ya están publicadas para los pilotos.

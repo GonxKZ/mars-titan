@@ -2,7 +2,9 @@
 
 M3 es la selección completa de [#19](https://github.com/GonxKZ/mars-titan/issues/19): el índice selectivo del banco episódico ordena los episodios maduros por una combinación de error maduro, anomalía de entradas y relevancia de información publicada. Comparte con [M2](mature-error-write-policy.md) la capacidad, los cupos 50/25/25, la semilla del reservorio y las ofertas a los tres índices. Solo cambia la puntuación del índice selectivo.
 
-Está implementada como `episodic_m3_three_index_v1` en `memory/write_scores.py` y `memory/write_policy.py`, conectada en `FinancialSession`, en el recorrido cronológico del lector, en la ventana walk-forward, en el traslado de la variante B y en el plan de la campaña con el modelo `mars_titan_m3`. Se ha comprobado en CPU con pruebas técnicas, sin pasos de optimizador que modifiquen pesos. No se ha ejecutado con datos, no se ha usado la GPU y no hay ningún resultado sobre su utilidad. La puntuación es una hipótesis que la comparación A11 frente a M2 puede descartar.
+Está implementada como `episodic_m3_three_index_v1` en `memory/write_scores.py` y `memory/write_policy.py`, conectada en `FinancialSession`, en el recorrido cronológico del lector, en la ventana walk-forward, en el traslado de la variante B y en el plan de la campaña con el modelo `mars_titan_m3`. Las comprobaciones CPU/CUDA se conservan en sus recibos y se distinguen de los ajustes exploratorios del 18 de octubre. La comparación A11 frente a M2 en la campaña completa sigue pendiente.
+
+El [microensayo de cuatro activos](../../reports/research/memory-microstudy-20261018/README.md) ajustó M0–M3 durante una época. Ninguno de sus lectores mejoró al padre congelado. El [estudio de 64 instrumentos](../../reports/research/combined-memory-20261018/README.md#referencias-y-lectores-episódicos) completó las cuatro políticas con inicialización original, K = 1 y capacidad 128. No encontró una mejora general del banco frente al refinador sin banco. M3 con refinador inicializado a cero terminó sus actualizaciones, pero su evaluación quedó interrumpida y no tiene una métrica parcial publicable. Estos resultados pertenecen a sus cohortes y presupuestos y no completan las ablaciones de los componentes de M3.
 
 ## Componentes
 
@@ -83,7 +85,9 @@ La anomalía y la relevancia se calculan con las entradas de la decisión. En el
 
 ## Coste
 
-Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de las edades observadas y unas pocas operaciones escalares. La selección ordena los mismos residentes y candidatos que M2. La sesión lee una vez más los artefactos de inputs retenidos en los eventos con maduraciones, y cada ajuste recorre una vez su tramo de entrenamiento para estimar las escalas. La orden de caudal de la campaña ya mide el lector M3 como los demás lectores, hasta el paso y sin cambiar pesos, y estima antes sus escalas con `window_scalers`, la misma regla que la campaña, sobre el tramo de entrenamiento de la ventana medida. Guarda su huella y la duración de ese recorrido en `write_scalers`, que no se suma a las horas, igual que los demás normalizadores. La orden no se ha ejecutado, así que estos costes siguen sin medir sobre el corpus.
+Por candidato, M3 añade la mediana de 62 rendimientos dos veces, el mínimo de las edades observadas y unas pocas operaciones escalares. La selección ordena los mismos residentes y candidatos que M2. La sesión lee una vez más los artefactos de inputs retenidos en los eventos con maduraciones, y cada ajuste recorre una vez su tramo de entrenamiento para estimar las escalas. La orden de caudal de la campaña incluye el lector M3, hasta el paso y sin cambiar pesos, y estima antes sus escalas con `window_scalers`, la misma regla que la campaña, sobre el tramo de entrenamiento de la ventana medida. Guarda su huella y la duración de ese recorrido en `write_scalers`, que no se suma a las horas, igual que los demás normalizadores.
+
+Las [sondas de cálculo del 10 de octubre](../../reports/engineering/campaign-kernels-20261009/vram-throughput.json) incluyen M3, sin lector ni pasos de optimizador. Los estudios del 18 registran el coste de sus ajustes completos. Ninguno de esos alcances equivale a medir aisladamente la puntuación M3 ni a presupuestar su recorrido sobre todo el universo. La medición completa debe incluir la preparación de escalas y la lectura, además del cálculo.
 
 ## Revisión adversarial
 
@@ -114,8 +118,8 @@ Se aplicaron de una en una 15 mutaciones dirigidas en una copia aislada, comprob
 
 ## Pendiente
 
-- Ejecutar la comparación A11 en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
-- Ejecutar en `cuda:0` la orden de caudal con `--extensions`, que ya incluye `mars_titan_m3` y necesita las vistas reales.
+- Ejecutar la comparación A11 en la campaña A v2. Los pilotos no sustituyen ese contraste y la campaña completa sigue cerrada.
+- Completar el coste del recorrido M3 de campaña sobre las vistas reales, distinguiendo lectura, escalas, cálculo y actualizaciones de las sondas y los ajustes acotados ya publicados.
 - Declarar, si se justifica, las ablaciones de un solo componente, la diversidad y la relevancia macro como identidades nuevas.
 
 ## Comprobaciones CUDA
