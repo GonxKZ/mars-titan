@@ -8,6 +8,8 @@ from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .plasticity import _advance_validated as advance_plasticity
+from .plasticity import initial_history, validate_history
 from .state import (
     NeuralMemoryState,
     check_differentiable,
@@ -54,6 +56,10 @@ class NeuralMemory(nn.Module):
             raise ValueError("Se necesita MemoryConfig")
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("La memoria admite float32 y float64")
+        if config.plasticity is not None and not (
+            torch.finfo(dtype).tiny <= config.plasticity.epsilon <= torch.finfo(dtype).max
+        ):
+            raise ValueError("epsilon no es representable como número normal en esta precisión")
         self.config = config
         # Inicializar en CPU aísla la semilla de los flujos científicos existentes.
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -99,6 +105,7 @@ class NeuralMemory(nn.Module):
         element_size = self._reference().element_size()
         matrices = (2 + self.config.hidden_levels) * self.config.depth
         required = batch_size * (matrices * self.config.dim**2 * element_size + 8)
+        required += batch_size * self.config.modulation_elements * element_size
         # Se cuentan las tres ventanas de q, k y v porque dependen de esta configuración,
         # aunque la de q viaje en el estado de MAC.
         required += batch_size * 3 * self.config.window * self.config.dim * element_size
@@ -125,6 +132,9 @@ class NeuralMemory(nn.Module):
             self.config.fingerprint(),
             self.initial_windows(batch_size, 2),
             levels,
+            tuple(value for weight in weights for value in initial_history(weight))
+            if self.config.plasticity is not None
+            else (),
         )
         self.validate_state(state)
         return state
@@ -186,9 +196,12 @@ class NeuralMemory(nn.Module):
             type(state.weights) is not tuple
             or type(state.momentum) is not tuple
             or type(state.levels) is not tuple
+            or type(state.modulation) is not tuple
             or len(state.weights) != self.config.depth
             or len(state.momentum) != self.config.depth
             or len(state.levels) != self.config.depth * self.config.hidden_levels
+            or len(state.modulation)
+            != (0 if self.config.plasticity is None else 3 * self.config.depth)
             or not isinstance(state.steps, Tensor)
             or state.steps.ndim != 1
         ):
@@ -230,6 +243,16 @@ class NeuralMemory(nn.Module):
                 require_true((value >= 0).all(), "Los pasos del estado no pueden ser negativos")
             else:
                 check_finite(value, "El estado")
+        for index in range(self.config.depth if self.config.plasticity is not None else 0):
+            history = state.modulation[3 * index : 3 * index + 3]
+            validate_history(history, state.weights[index])
+            for value in history:
+                storage = value.untyped_storage()
+                storage_id = (value.device, storage.data_ptr())
+                if storage_id in storage_ids:
+                    raise ValueError("La plasticidad no puede compartir almacenamiento mutable")
+                storage_ids.add(storage_id)
+                storage_bytes += storage.nbytes()
         storage_bytes += self.validate_windows(
             state.convolution, 2, batch, device=expected_device, storage_ids=storage_ids
         )
@@ -316,7 +339,7 @@ class NeuralMemory(nn.Module):
             for index, weight in enumerate(state.weights)
         )
 
-    def _advance_levels(self, weights, levels, momentum, alpha):
+    def _advance_levels(self, weights, levels, momentum, alpha, capture_gains=None):
         """Olvido y escritura con PT5: Euler de paso 1 con los valores del token anterior."""
         multiscale = self.config.multiscale
         g12, g23, g34 = multiscale.conductances
@@ -326,8 +349,11 @@ class NeuralMemory(nn.Module):
             second, third = levels[hidden * index], levels[hidden * index + 1]
             if multiscale.form == "cascade":
                 # Capacidades 1, 2 y 4. El primer nivel conserva el olvido α de Titans.
-                new_weights.append((1 - alpha) * first + surprise + g12 * (second - first))
-                new_levels.append(second + (g12 * (first - second) + g23 * (third - second)) / 2)
+                exchange = g12 if capture_gains is None else g12 * capture_gains[index]
+                new_weights.append((1 - alpha) * first + surprise + exchange * (second - first))
+                new_levels.append(
+                    second + (exchange * (first - second) + g23 * (third - second)) / 2
+                )
                 new_levels.append(third + (g23 * (second - third) - g34 * third) / 4)
             else:
                 decay_second, decay_third = multiscale.bank_decays
@@ -336,7 +362,18 @@ class NeuralMemory(nn.Module):
                 new_levels.append((1 - decay_third) * third + surprise)
         return tuple(new_weights), tuple(new_levels)
 
-    def _write(self, weights, momentum, levels, gradients, gates, differentiable):
+    def _write(
+        self,
+        weights,
+        momentum,
+        levels,
+        gradients,
+        gates,
+        differentiable,
+        *,
+        modulation=(),
+        steps=None,
+    ):
         """Momentum, olvido y escritura de un paso con el gradiente asociativo ya calculado."""
         alpha, eta, theta = gates
         stability = self.config.stability
@@ -345,24 +382,53 @@ class NeuralMemory(nn.Module):
             gradients = tuple(
                 clip_rows(gradient, stability.gradient_clip) for gradient in gradients
             )
-        momentum = tuple(
-            eta * previous - theta * gradient
-            for previous, gradient in zip(momentum, gradients, strict=True)
-        )
+        capture_gains = None
+        if self.config.plasticity is None:
+            momentum = tuple(
+                eta * previous - theta * gradient
+                for previous, gradient in zip(momentum, gradients, strict=True)
+            )
+        else:
+            plasticity = self.config.plasticity
+            scalar_controls = plasticity.gradient_contract == "scalar_controls_v2"
+            updates = tuple(
+                advance_plasticity(plasticity, gradient, modulation[3 * i : 3 * i + 3], steps)
+                for i, gradient in enumerate(gradients)
+            )
+            if scalar_controls and plasticity.write != "coherence":
+                # Expandir theta por filas antes de multiplicar g altera su reducción backward.
+                if plasticity.write == "constant" and plasticity.write_constant != 1:
+                    theta = theta * plasticity.write_constant
+                momentum = tuple(
+                    eta * previous - theta * gradient
+                    for previous, gradient in zip(momentum, gradients, strict=True)
+                )
+            else:
+                momentum = tuple(
+                    eta * previous - (theta * update.write_gain) * gradient
+                    for previous, gradient, update in zip(momentum, gradients, updates, strict=True)
+                )
+            modulation = tuple(value for update in updates for value in update.history)
+            if scalar_controls and plasticity.capture == "constant":
+                if plasticity.capture_constant != 1:
+                    capture_gains = (plasticity.capture_constant,) * len(updates)
+            elif plasticity.capture != "none":
+                capture_gains = tuple(update.capture_gain for update in updates)
         if self.config.multiscale is None:
             weights = tuple(
                 (1 - alpha) * weight + surprise
                 for weight, surprise in zip(weights, momentum, strict=True)
             )
         else:
-            weights, levels = self._advance_levels(weights, levels, momentum, alpha)
-        for value in (*weights, *momentum, *levels):
+            weights, levels = self._advance_levels(weights, levels, momentum, alpha, capture_gains)
+        for value in (*weights, *momentum, *levels, *modulation):
             check_finite(value, "La actualización de memoria")
         if not differentiable:
             weights = tuple(w.detach() for w in weights)
             momentum = tuple(m.detach() for m in momentum)
             levels = tuple(level.detach() for level in levels)
-        return weights, momentum, levels
+            modulation = tuple(value.detach() for value in modulation)
+        return weights, momentum, levels, modulation
 
     def read_shared(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Leer n consultas [n, dim] con un único estado compartido de lote 1 (PT4)."""
@@ -415,10 +481,19 @@ class NeuralMemory(nn.Module):
             loss = residual.square().sum() / observed.shape[0]
             check_finite(loss, "La pérdida asociativa")
             gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
-            weights, momentum, levels = self._write(
-                state.weights, state.momentum, state.levels, gradients, gates, differentiable
+            weights, momentum, levels, modulation = self._write(
+                state.weights,
+                state.momentum,
+                state.levels,
+                gradients,
+                gates,
+                differentiable,
+                modulation=state.modulation,
+                steps=state.steps,
             )
-        return NeuralMemoryState(weights, momentum, state.steps + 1, state.config_id, (), levels)
+        return NeuralMemoryState(
+            weights, momentum, state.steps + 1, state.config_id, (), levels, modulation
+        )
 
     def _check_shared(self, values: Tensor, state: NeuralMemoryState) -> None:
         self.validate_state(state)
@@ -458,9 +533,10 @@ class NeuralMemory(nn.Module):
             "El contador de pasos desbordaría int64",
         )
         weights, momentum, levels = state.weights, state.momentum, state.levels
+        modulation = state.modulation
         key_window, value_window = state.convolution or (None, None)
         with torch.enable_grad():
-            for token in observed.unbind(1):
+            for index, token in enumerate(observed.unbind(1)):
                 if not differentiable:
                     token = token.detach()
                 keys = self.key_projection(token)
@@ -494,8 +570,15 @@ class NeuralMemory(nn.Module):
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
-                weights, momentum, levels = self._write(
-                    weights, momentum, levels, gradients, (alpha, eta, theta), differentiable
+                weights, momentum, levels, modulation = self._write(
+                    weights,
+                    momentum,
+                    levels,
+                    gradients,
+                    (alpha, eta, theta),
+                    differentiable,
+                    modulation=modulation,
+                    steps=state.steps + index if self.config.plasticity is not None else None,
                 )
                 if self.observer is not None:
                     self.observer(
@@ -510,7 +593,13 @@ class NeuralMemory(nn.Module):
         if not differentiable:
             windows = tuple(w.detach() for w in windows)
         return NeuralMemoryState(
-            weights, momentum, state.steps + observed.shape[1], state.config_id, windows, levels
+            weights,
+            momentum,
+            state.steps + observed.shape[1],
+            state.config_id,
+            windows,
+            levels,
+            modulation,
         )
 
     def get_extra_state(self) -> dict:
@@ -537,6 +626,8 @@ class NeuralMemory(nn.Module):
             payload["convolution"] = copied.convolution
         if self.config.hidden_levels:
             payload["levels"] = copied.levels
+        if self.config.plasticity is not None:
+            payload["modulation"] = copied.modulation
         return payload
 
     def payload_fields(self) -> set[str]:
@@ -545,6 +636,8 @@ class NeuralMemory(nn.Module):
             fields |= {"convolution"}
         if self.config.hidden_levels:
             fields |= {"levels"}
+        if self.config.plasticity is not None:
+            fields |= {"modulation"}
         return fields
 
     def restore_state(self, payload: object) -> NeuralMemoryState:
@@ -557,6 +650,7 @@ class NeuralMemory(nn.Module):
             self.config.fingerprint(),
             value.get("convolution", ()),
             value.get("levels", ()),
+            value.get("modulation", ()),
         )
         self.validate_state(state)
         return copy_state(state, differentiable=False)

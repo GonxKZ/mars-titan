@@ -1,0 +1,203 @@
+{
+  "verified_at_utc": "2026-10-20T12:05:27.970459+00:00",
+  "change": "La referencia sin cambios transmite None y las extensiones activas conservan su diccionario.",
+  "tests": {
+    "command": "uv run --no-sync pytest -q tests/tooling/test_neural_plasticity_study.py",
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 1.77,
+    "junit_sha256": "d17d05fe36167cc6da1d64e52c4a069b74f47d798f018786be3917647af38484"
+  },
+  "mutations": {
+    "verified_at_utc": "2026-10-20T12:03:07.758609+00:00",
+    "source_sha256": "4dae2423543f166cd5a5b0b61d28ea28c12110f7785148e2b1fe3487b6b68c8b",
+    "test_sha256": "ae9db793d5bc7cf8ae2fe92f4c8e6f909eb25d235f2acdc7f6d08ee87360d5ac",
+    "mutants": [
+      {
+        "name": "empty_baseline",
+        "before": "predictor_changes=job[\"changes\"] or None,",
+        "after": "predictor_changes=job[\"changes\"],",
+        "killed": true,
+        "returncode": 1,
+        "failures": 2,
+        "errors": 0
+      },
+      {
+        "name": "drop_active_changes",
+        "before": "predictor_changes=job[\"changes\"] or None,",
+        "after": "predictor_changes=None,",
+        "killed": true,
+        "returncode": 1,
+        "failures": 2,
+        "errors": 0
+      }
+    ],
+    "restored_returncode": 0
+  },
+  "quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-20T13:58:11.092928",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [
+      "benchmarks/neural_plasticity_study.py"
+    ],
+    "totals": {
+      "statements": 149,
+      "covered_statements": 119,
+      "branches": 40,
+      "covered_branches": 24
+    },
+    "files": [
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "source_sha256": "4dae2423543f166cd5a5b0b61d28ea28c12110f7785148e2b1fe3487b6b68c8b",
+        "statements": 149,
+        "covered_statements": 119,
+        "branches": 40,
+        "covered_branches": 24
+      }
+    ],
+    "functions": [
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "main",
+        "start_line": 256,
+        "end_line": 271,
+        "cyclomatic_complexity": 6,
+        "statements": 14,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 6,
+        "covered_branches": 0,
+        "crap": 42.0
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "project_view",
+        "start_line": 41,
+        "end_line": 68,
+        "cyclomatic_complexity": 17,
+        "statements": 14,
+        "covered_statements": 13,
+        "coverage_fraction": 0.9285714285714286,
+        "branches": 6,
+        "covered_branches": 5,
+        "crap": 17.105320699708454
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "run_job",
+        "start_line": 179,
+        "end_line": 188,
+        "cyclomatic_complexity": 4,
+        "statements": 9,
+        "covered_statements": 1,
+        "coverage_fraction": 0.1111111111111111,
+        "branches": 2,
+        "covered_branches": 0,
+        "crap": 15.237311385459531
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "verify_prepared",
+        "start_line": 121,
+        "end_line": 146,
+        "cyclomatic_complexity": 12,
+        "statements": 12,
+        "covered_statements": 10,
+        "coverage_fraction": 0.8333333333333334,
+        "branches": 8,
+        "covered_branches": 6,
+        "crap": 12.666666666666666
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "_run",
+        "start_line": 191,
+        "end_line": 253,
+        "cyclomatic_complexity": 10,
+        "statements": 40,
+        "covered_statements": 37,
+        "coverage_fraction": 0.925,
+        "branches": 8,
+        "covered_branches": 5,
+        "crap": 10.0421875
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "prepare",
+        "start_line": 71,
+        "end_line": 118,
+        "cyclomatic_complexity": 7,
+        "statements": 19,
+        "covered_statements": 18,
+        "coverage_fraction": 0.9473684210526315,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 7.007143898527482
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "_reserve",
+        "start_line": 149,
+        "end_line": 176,
+        "cyclomatic_complexity": 7,
+        "statements": 10,
+        "covered_statements": 10,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 7.0
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "sources",
+        "start_line": 29,
+        "end_line": 38,
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "benchmarks/neural_plasticity_study.py",
+        "function": "configuration",
+        "start_line": 25,
+        "end_line": 26,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "ada95925683a84d084420e4f29a772fa85873fd2e5499754db4553aec7f2202f",
+    "functions_measured": 9
+  },
+  "gpu_path": "Se ejecutará con esta revisión del lanzador. La corrección no cambia operadores numéricos.",
+  "financial_result": null
+}

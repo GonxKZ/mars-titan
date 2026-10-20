@@ -11,5 +11,6 @@
   {"sources": "markov-sources.json", "bibliography": "markov.bib"},
   {"sources": "neuroarchitecture-sources.json", "bibliography": "neuroarchitecture.bib"},
   {"sources": "attention-replay-sources.json", "bibliography": "attention-replay.bib"},
-  {"sources": "post-titans-sources.json", "bibliography": "post-titans.bib"}
+  {"sources": "post-titans-sources.json", "bibliography": "post-titans.bib"},
+  {"sources": "neural-plasticity-sources.json", "bibliography": "neural-plasticity.bib"}
 ]

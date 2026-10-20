@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **348 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **356 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -59,6 +59,7 @@ y Lakens (2017) sobre los límites de equivalencia.
 | Memoria, variante ampliada y fundamentos matemáticos | [Revisión](../research/neuroarchitecture-review.md), [matemáticas](../research/memory-mathematics.md) | [neuroarchitecture-sources.json](neuroarchitecture-sources.json) | [neuroarchitecture.bib](neuroarchitecture.bib) |
 | Atención, práctica, eventos y reducción de señales | [Síntesis](../research/attention-replay-review.md), [eventos y señales](../research/event-signal-comparison.md), [matemáticas](../research/attention-replay-mathematics.md) | [attention-replay-sources.json](attention-replay-sources.json) | [attention-replay.bib](attention-replay.bib) |
 | Memoria posterior a Titans, adaptación en línea y calibración | [Revisión](../research/post-titans-memory-review.md), [propuestas](../research/post-titans-proposals.md), [certificado](../research/titans-memory-certificate.md) | [post-titans-sources.json](post-titans-sources.json) | [post-titans.bib](post-titans.bib) |
+| Plasticidad neuronal y modulación de gradientes | [Mecanismos, antecedentes y controles](../research/neural-plasticity.md) | [neural-plasticity-sources.json](neural-plasticity-sources.json) | [neural-plasticity.bib](neural-plasticity.bib) |
 | Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
 | Publicaciones aportadas | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 

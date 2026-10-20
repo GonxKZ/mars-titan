@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "neural_plasticity_development_pilot",
+  "market": "US",
+  "fold": "fold-018",
+  "window": {
+    "train": ["2000-01-01", "2022-04-01"],
+    "validation": ["2022-04-01", "2022-10-01"],
+    "calibration": ["2022-10-01", "2023-01-01"],
+    "evaluation": ["2023-01-01", "2024-01-01"]
+  },
+  "cohort_size": 64,
+  "seeds": [42],
+  "epochs": 1,
+  "search_case": "lr1e-3",
+  "memory_projections": "titans_mac_paper_projections_v2",
+  "attention_layout": "sequence_contiguous_v1",
+  "max_job_seconds": 1800,
+  "max_total_seconds": 14400,
+  "max_optimizer_steps": 4096,
+  "primary_candidate": "cascade_combined",
+  "primary_reference": "cascade_original",
+  "primary_metric": "session_mae",
+  "minimum_relevant_mae": 0.00001,
+  "bootstrap": {
+    "block_length": 16,
+    "replicates": 2000,
+    "seed": 20261020,
+    "confidence": 0.95
+  },
+  "sensitivity_block_lengths": [8, 32],
+  "final_test_access": false,
+  "classification": "piloto de una semilla sobre desarrollo reutilizado",
+  "scientific_confirmation": false
+}

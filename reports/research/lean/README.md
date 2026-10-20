@@ -10,6 +10,8 @@ La prueba no formaliza el certificado matricial de PT1, las formalizaciones de C
 
 `RoutePolicyRegret.lean` comprueba que maximizar una utilidad estimada con error uniforme como mucho δ pierde como mucho 2δ frente a cualquier alternativa. El [alcance de la política](../../../docs/engineering/refinement-policy-mathematics.md) distingue esta hipótesis de una garantía del ridge o de la regla de rangos marginales. Su [recibo separado](route-policy-verification-20261018.json) no hereda los comprobadores adicionales del contraejemplo de memoria.
 
+`NeuralPlasticity.lean` comprueba intervalos de ganancias y elegibilidad, además de la identidad de energía y su no incremento para un intercambio pasivo entre capacidades 1 y 2. El [recibo del 20 de octubre](neural-plasticity-verification-20261020.json) registra compilación y rechazo de un intervalo alterado. Se reutilizaron imports precompilados y no se ejecutó otro comprobador. El [alcance del mecanismo](../../../docs/engineering/neural-plasticity.md) separa esos lemas de la recurrencia completa y de la aritmética FP32/FP64.
+
 Con la versión de `lean-toolchain` disponible, desde esta carpeta:
 
 ```bash

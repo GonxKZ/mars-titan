@@ -1,0 +1,54 @@
+{
+  "recorded_at_utc": "2026-10-20T14:01:14.487625+00:00",
+  "source_commit": "ff755cde2f7ce3c20d4298c0d5ccd85aa418143c",
+  "prepared_sha256": "c35f50db15cbaaef9a5def01ad0ca63e33f2f50712078b27e38858b74979ed8c",
+  "run_sha256": [
+    "c7482c6b7e2a0a5c4344f3453bc3cbed6511cabee2ba35a04198564ce2539100",
+    "5761a1d1844f95e575d3a8e7b44bfdc8078dec39ce1c77893076237c3705eabb"
+  ],
+  "phases": {
+    "validation": {
+      "passed": true,
+      "predictions_equal": true,
+      "shared_tensors_equal": true,
+      "initial_parameters_equal": true,
+      "shared_tensors": 45,
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      }
+    },
+    "calibration": {
+      "passed": true,
+      "predictions_equal": true,
+      "shared_tensors_equal": true,
+      "initial_parameters_equal": true,
+      "shared_tensors": 45,
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      }
+    },
+    "evaluation": {
+      "passed": true,
+      "predictions_equal": true,
+      "shared_tensors_equal": true,
+      "initial_parameters_equal": true,
+      "shared_tensors": 45,
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      }
+    }
+  },
+  "passed": true,
+  "updates": [
+    685,
+    685
+  ],
+  "mae": [
+    0.025472091772607217,
+    0.025472091772607217
+  ],
+  "final_test_opened": false
+}

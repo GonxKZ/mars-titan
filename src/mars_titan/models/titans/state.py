@@ -22,6 +22,8 @@ class NeuralMemoryState:
     # Niveles ocultos de PT5, dos por capa en orden (capa, nivel), [lote, dim, dim]. Vacío
     # sin memoria multiescala.
     levels: tuple[Tensor, ...] = ()
+    # Por capa: media de gradiente [B,D,D], energía y elegibilidad [B,D,1].
+    modulation: tuple[Tensor, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -196,6 +198,7 @@ def copy_state(state: NeuralMemoryState, *, differentiable: bool) -> NeuralMemor
         state.config_id,
         tuple(copy(c) for c in state.convolution),
         tuple(copy(level) for level in state.levels),
+        tuple(copy(value) for value in state.modulation),
     )
 
 
@@ -210,6 +213,7 @@ def map_memory_rows(
         steps=transform(state.steps),
         convolution=tuple(transform(value) for value in state.convolution),
         levels=tuple(transform(value) for value in state.levels),
+        modulation=tuple(transform(value) for value in state.modulation),
     )
 
 
@@ -232,6 +236,7 @@ def mac_tensors(state: MACState) -> tuple[Tensor, ...]:
         *memory.convolution,
         *state.convolution,
         *memory.levels,
+        *memory.modulation,
     )
 
 
@@ -260,6 +265,9 @@ def join_mac_rows(states: Sequence[MACState]) -> MACState:
                 join(lambda s, i=i: s.memory.convolution[i]) for i in range(len(memory.convolution))
             ),
             tuple(join(lambda s, i=i: s.memory.levels[i]) for i in range(len(memory.levels))),
+            tuple(
+                join(lambda s, i=i: s.memory.modulation[i]) for i in range(len(memory.modulation))
+            ),
         ),
         first.config_id,
         tuple(join(lambda s, i=i: s.convolution[i]) for i in range(len(first.convolution))),
