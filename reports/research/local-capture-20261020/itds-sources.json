@@ -1,0 +1,67 @@
+{
+  "retrieved_at_utc": "2026-10-20T22:05:05.988087+00:00",
+  "version": 1,
+  "doi": "10.6084/m9.figshare.31146457.v1",
+  "license": {
+    "value": 7,
+    "name": "Apache 2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+  },
+  "files": [
+    {
+      "name": "BPTT1.m",
+      "file_id": 61332886,
+      "url": "https://ndownloader.figshare.com/files/61332886",
+      "size": 4760,
+      "sha256": "70a8676021ce6ac2c619b933889d0dcb828e0bd150ee291547ed31d9d44080ba",
+      "md5": "424ef5f4d9b774e285f081bdfcbc6011"
+    },
+    {
+      "name": "cifar10.py",
+      "file_id": 61332889,
+      "url": "https://ndownloader.figshare.com/files/61332889",
+      "size": 11896,
+      "sha256": "f2d1466cf49264b1251b08ff1e16db5c15cfa04b151c71c6d226f19c325e1ba0",
+      "md5": "15819bc99df21a1db184c75216a86427"
+    },
+    {
+      "name": "README.txt",
+      "file_id": 61332901,
+      "url": "https://ndownloader.figshare.com/files/61332901",
+      "size": 977,
+      "sha256": "2453ca42071b2b9411c1dad4a60a1203a8257eb8ad90369d5e4283b3008fa734",
+      "md5": "9bf2b528e2421365b1a043415700b6ed"
+    },
+    {
+      "name": "reservoir_class1.m",
+      "file_id": 61332907,
+      "url": "https://ndownloader.figshare.com/files/61332907",
+      "size": 1553,
+      "sha256": "69bcf365547c94f3165003f84a5b0c8e41fd15d85794cc4608b2ab865d031e3f",
+      "md5": "0de613e7a151f125bc506845ab3857d1"
+    },
+    {
+      "name": "reservoir1.m",
+      "file_id": 61332910,
+      "url": "https://ndownloader.figshare.com/files/61332910",
+      "size": 3180,
+      "sha256": "0ef77996bdf527ca4d0dc0e49300330db773e4ba5b4b2db5049f78cc1cd61da2",
+      "md5": "bde9d1bbfa5bbbcfc2dd7080600d1665"
+    }
+  ],
+  "executed": false,
+  "article": {
+    "doi": "10.1038/s41467-026-70920-3",
+    "url": "https://www.nature.com/articles/s41467-026-70920-3",
+    "published": "2026-03-19",
+    "read_scope": "Ecuaciones 1–7 y 12–22, resultados iniciales y disponibilidad de código. No se reprodujeron experimentos ni se auditó todo el suplemento."
+  },
+  "read_complete": [
+    "reservoir1.m",
+    "reservoir_class1.m",
+    "BPTT1.m",
+    "cifar10.py",
+    "README.txt"
+  ],
+  "external_code_copied_into_project": false
+}
