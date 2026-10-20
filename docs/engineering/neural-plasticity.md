@@ -2,6 +2,14 @@
 
 `MemoryPlasticity` configura dos intervenciones independientes sobre `NeuralMemory`. `FinancialConfig.memory_plasticity=None` conserva la identidad, los campos serializados y el recorrido anteriores. La configuración activa tiene identidad propia. No se habilita en ninguna receta histórica.
 
+El contrato histórico `row_broadcast_v1` conserva las configuraciones de nueve campos y sus huellas. `scalar_controls_v2` es una opción explícita con otra identidad. Los pesos y estados de ambos contratos no se intercambian de forma implícita.
+
+En v1, la puerta θ de forma `[N,1,1]` se multiplica por una ganancia `[N,D,1]` incluso cuando esta vale uno. El resultado del forward puede coincidir exactamente con el original, pero el backward reduce primero por filas y después por flujo. Esa reorganización cambia el redondeo del gradiente de θ. El piloto detectó diferencias en las predicciones después del ajuste. Repetir cada configuración con la misma semilla reprodujo sus predicciones, sin restaurar la igualdad entre ambas.
+
+En v2, `write="none"` y el multiplicador constante uno ejecutan la expresión original `η·S−θ·g`. Las demás constantes multiplican θ como escalares, sin expandirla por filas. La captura constante conserva también un coeficiente escalar y la captura unitaria toma la ruta original. La escritura por coherencia y la captura por elegibilidad mantienen sus ganancias por fila. Las estadísticas auxiliares se siguen calculando en los controles. No cambian sus bytes persistentes.
+
+`test_plasticity_control_contract.py` comprueba las huellas históricas, gradientes de las puertas, gradientes de todos los parámetros compartidos, recuperación y cuatro ajustes consecutivos del predictor financiero en FP32 y FP64 sobre CUDA. La paridad del forward por sí sola no basta para validar un control de entrenamiento.
+
 ## Estado y actualización
 
 Para cada flujo, capa y fila de una matriz de pesos rápidos de dimensión D, el estado añade una media vectorial m de D elementos, una energía escalar v y una traza escalar z. Se inicializan a cero. Con L capas y N flujos, se añaden exactamente N·L·(D²+2D) elementos del tipo de los pesos. El contador de observaciones existente permite corregir el arranque de los momentos.

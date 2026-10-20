@@ -23,17 +23,30 @@ VARIANTS = ROOT / "configs/experiments/neural-plasticity-v1.json"
 FILES = dict(view="input/view.json", protocol="recipes/protocol.json", recipe="recipes/recipe.json")
 
 
-def configuration():
-    return json.loads(CONFIG.read_text())
+def study_files(version):
+    if version == "v1":
+        return CONFIG, VARIANTS
+    if version == "v2":
+        return (
+            ROOT / "configs/experiments/neural-plasticity-study-v2.json",
+            ROOT / "configs/experiments/neural-plasticity-v2.json",
+        )
+    raise ValueError("La versión del piloto debe ser v1 o v2")
 
 
-def sources():
+def configuration(version="v1"):
+    config, _ = study_files(version)
+    return json.loads(config.read_text())
+
+
+def sources(version="v1"):
+    config, variants = study_files(version)
     return code_identity() | {
         str(path.relative_to(ROOT)): sha256(path)
         for path in (
             Path(__file__),
-            CONFIG,
-            VARIANTS,
+            config,
+            variants,
             *sorted((ROOT / "src/mars_titan").rglob("*.py")),
         )
     }
@@ -69,14 +82,15 @@ def project_view(original, config):
     return view
 
 
-def prepare(source, work):
+def prepare(source, work, *, version="v1"):
     source, work = Path(source).resolve(), Path(work).resolve()
     outside_source(source.parent, work)
     outside_source(work, source.parent)
     if work.exists():
         raise FileExistsError("El piloto necesita un directorio nuevo")
-    config = configuration()
-    variants = json.loads(VARIANTS.read_text())
+    config = configuration(version)
+    _, catalog = study_files(version)
+    variants = json.loads(catalog.read_text())
     view = project_view(json.loads(source.read_text()), config)
     recipe = json.loads((ROOT / variants["base_recipe"]).read_text())
     recipe["recipe"].update(
@@ -102,12 +116,13 @@ def prepare(source, work):
     ]
     receipt = dict(
         schema_version=2,
+        study_version=version,
         configuration=config,
         jobs=jobs,
         prepared_at_utc=datetime.now(UTC).isoformat(),
         original_view_sha256=sha256(source),
         artifacts={name: sha256(work / name) for name in FILES.values()},
-        code=sources(),
+        code=sources(version),
         environment=environment_identity(),
         counts=view["counts"],
         assets=[a["symbol"] for a in view["assets"]],
@@ -119,10 +134,12 @@ def prepare(source, work):
 
 def verify_prepared(work):
     receipt = json.loads((work / "prepared.json").read_text())
+    version = receipt.get("study_version", "v1")
+    _, catalog = study_files(version)
     if (
         receipt.get("schema_version") != 2
-        or receipt["configuration"] != configuration()
-        or receipt["code"] != sources()
+        or receipt["configuration"] != configuration(version)
+        or receipt["code"] != sources(version)
         or receipt["environment"] != environment_identity()
         or receipt.get("final_test_access") is not False
         or set(receipt["artifacts"]) != set(FILES.values())
@@ -131,8 +148,8 @@ def verify_prepared(work):
     for name, expected in receipt["artifacts"].items():
         if name not in FILES.values() or sha256(work / name) != expected:
             raise ValueError("Un artefacto preparado ha cambiado")
-    config = configuration()
-    variants = json.loads(VARIANTS.read_text())
+    config = configuration(version)
+    variants = json.loads(catalog.read_text())
     expected_jobs = [
         dict(id=f"{arm}-{seed}", arm=arm, seed=seed, changes=value["predictor_changes"])
         for seed in config["seeds"]
@@ -256,14 +273,15 @@ def main():
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--view", type=Path)
     parser.add_argument("--job")
+    parser.add_argument("--version", choices=("v1", "v2"))
     args = parser.parse_args()
     if args.command == "prepare":
         if args.view is None or args.job is not None:
             parser.error("prepare necesita --view y no admite --job")
-        result = prepare(args.view, args.work)
+        result = prepare(args.view, args.work, version=args.version or "v1")
     else:
-        if args.job is None or args.view is not None:
-            parser.error("run necesita --job y no admite --view")
+        if args.job is None or args.view is not None or args.version is not None:
+            parser.error("run necesita --job y toma la versión de la preparación sellada")
         result = run_job(args.work, args.job)
     print(json.dumps(result, ensure_ascii=False))
 

@@ -1,6 +1,6 @@
 # Plasticidad de la memoria neuronal
 
-Se han implementado dos modulaciones opcionales sobre los pesos rápidos de Titans-MAC: escritura por coherencia de gradientes y captura por elegibilidad en la cascada PT5. También se admite su combinación. No añaden parámetros compartidos y permanecen desactivadas cuando `memory_plasticity` es `null`. Todavía no hay resultados predictivos de estas variantes.
+Se han implementado dos modulaciones opcionales sobre los pesos rápidos de Titans-MAC: escritura por coherencia de gradientes y captura por elegibilidad en la cascada PT5. También se admite su combinación. No añaden parámetros compartidos y permanecen desactivadas cuando `memory_plasticity` es `null`. El piloto v1 produjo resultados de desarrollo, pero falló la paridad de su control unitario durante el ajuste. La repetición con [controles escalares identificados](neural-plasticity-protocol.md#repetición-con-controles-escalares) debe resolver esa limitación antes de atribuir efectos al mecanismo.
 
 La motivación es comprobar si resulta útil distinguir una asociación que reaparece de una sucesión de correcciones contradictorias. La hipótesis puede fallar. Una asociación falsa pero persistente también produce gradientes coherentes, y reducir la escritura puede retrasar la adaptación a un cambio real. Los [contratos y ecuaciones](../engineering/neural-plasticity.md) permiten comprobar el mecanismo por separado de esa hipótesis.
 

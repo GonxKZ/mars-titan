@@ -154,7 +154,8 @@ class FinancialConfig:
         ):
             raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
         if isinstance(self.memory_plasticity, dict):
-            if set(self.memory_plasticity) != {field.name for field in fields(MemoryPlasticity)}:
+            expected = {field.name for field in fields(MemoryPlasticity)}
+            if set(self.memory_plasticity) not in (expected, expected - {"gradient_contract"}):
                 raise ValueError("memory_plasticity debe declarar todos sus campos identificados")
             object.__setattr__(
                 self, "memory_plasticity", MemoryPlasticity(**self.memory_plasticity)
@@ -255,7 +256,7 @@ class FinancialConfig:
         if self.memory_multiscale is not None:
             result.update(memory_multiscale=asdict(self.memory_multiscale))
         if self.memory_plasticity is not None:
-            result.update(memory_plasticity=asdict(self.memory_plasticity))
+            result.update(memory_plasticity=self.memory_plasticity.configuration())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(

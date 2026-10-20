@@ -238,6 +238,51 @@ def test_cost_includes_failed_attempts_without_double_counting_internal_time(tmp
     assert len(costs["attempts"]) == 2
 
 
+def test_cost_keeps_completed_historical_diagnostics_without_counting_them_as_current_runs(
+    tmp_path,
+):
+    from mars_titan.data.storage import atomic_json, sha256
+
+    prepared, row, plan = cost_fixture(tmp_path)
+    historical = dict(row, id="previous", prepared_sha256="f" * 64, wrapper_seconds=3.0)
+    atomic_json(tmp_path / "previous.json", historical)
+    plan["prior_receipts"][0]["sha256"] = sha256(tmp_path / "previous.json")
+    atomic_json(tmp_path / "execution-plan.json", plan)
+    costs = api().execution_cost(tmp_path, prepared)
+    assert costs["total_wrapper_seconds"] == 5.0
+    (tmp_path / "launches/current.json").unlink()
+    with pytest.raises(ValueError):
+        api().execution_cost(tmp_path, prepared)
+
+
+def test_unity_control_requires_identical_predictions_and_shared_tensors():
+    import torch
+
+    payload = dict(
+        identity=dict(initial_parameters_sha256="a" * 64),
+        state=dict(
+            model={"weights": torch.tensor([1.0, 2.0]), "_extra_state": {"variant": "base"}}
+        ),
+    )
+    other = dict(
+        identity=payload["identity"],
+        state=dict(
+            model={"weights": torch.tensor([1.0, 2.0]), "_extra_state": {"variant": "unit"}}
+        ),
+    )
+    result = api().unity_control(panel(), panel().take([2, 0, 1]), payload, other)
+    assert result["passed"] and result["shared_tensors"] == 1
+    changed = panel().set_column(5, "prediction", pa.array([2.0, 0.0, 0.0]))
+    # El mismo MAE no acredita que las predicciones sean iguales.
+    assert api().checked_scores(changed).mae.tolist() == api().checked_scores(panel()).mae.tolist()
+    assert not api().unity_control(panel(), changed, payload, other)["passed"]
+    other["state"]["model"]["weights"][0] = 3
+    assert not api().unity_control(panel(), panel(), payload, other)["passed"]
+    other["state"]["model"]["weights"] = payload["state"]["model"]["weights"].clone()
+    other["identity"] = dict(initial_parameters_sha256="b" * 64)
+    assert not api().unity_control(panel(), panel(), payload, other)["passed"]
+
+
 @pytest.mark.parametrize("fault", ["unclosed", "duplicate", "missing_model"])
 def test_cost_does_not_hide_open_receipts_duplicates_or_incomplete_runs(tmp_path, fault):
     from mars_titan.data.storage import atomic_json

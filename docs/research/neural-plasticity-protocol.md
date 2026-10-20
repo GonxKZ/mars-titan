@@ -44,3 +44,13 @@ La selección incluye todos los modelos declarados. Si el presupuesto no permite
 El esquema 2 de preparación separa `input/view.json`, las declaraciones de `recipes/` y las salidas de `runs/`. Los resultados nunca se escriben dentro de una carpeta protegida de entradas. Los intentos fallidos de integración anteriores a cualquier actualización conservan su código, recibo y coste.
 
 No se ejecutan postentrenamientos, políticas RL, búsquedas masivas ni cómputo externo como parte de este piloto. Una mejora de su error sería un resultado de desarrollo. La confirmación multisemilla, otras ventanas y cualquier acceso al test final requieren sus propios protocolos y las condiciones de acceso vigentes.
+
+## Repetición con controles escalares
+
+El piloto v1 terminó, pero su control unitario no reprodujo la referencia después del ajuste. Dos repeticiones con la misma semilla conservaron exactamente las predicciones de cada configuración. Se identificó una diferencia en el orden de reducción del gradiente de la puerta de escritura. Los resultados de v1 se conservan como observaciones de esa implementación y no permiten atribuir al mecanismo las diferencias entre configuraciones.
+
+La [declaración v2](../../configs/experiments/neural-plasticity-study-v2.json) y su [catálogo](../../configs/experiments/neural-plasticity-v2.json) cambian únicamente el contrato numérico de los controles descrito en la documentación de implementación. Conservan las once configuraciones, los datos, los intervalos, la semilla, la época, la tasa de aprendizaje, la selección y el análisis estadístico. No se ajustan esas decisiones a los resultados de v1.
+
+Primero se ejecutan `cascade_original` y `cascade_unity`. Se exige igualdad exacta de los tensores compartidos del checkpoint seleccionado y de las predicciones de validación, calibración y desarrollo. También se comprueba que la inicialización compartida sea la misma. Si falla este control, se detiene la repetición antes de interpretar las demás configuraciones. El análisis conserva las diferencias numéricas y marca bloqueada su atribución.
+
+Los fallos, el piloto v1 y sus repeticiones siguen contando dentro del presupuesto acumulado de 14.400 segundos. No se reinicia el contador con la nueva versión. La preparación se realiza con `uv run python -m benchmarks.neural_plasticity_study prepare --version v2`, junto con las rutas `--view` y `--work`. El ejecutor toma la versión del manifiesto sellado. Preparar ese manifiesto no abre el bloqueo de aprendizaje ni el test final.

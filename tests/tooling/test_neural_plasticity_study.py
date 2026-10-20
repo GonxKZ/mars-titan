@@ -89,6 +89,37 @@ def test_prepared_catalogue_and_artifacts_are_sealed(tmp_path):
         api().verify_prepared(work)
 
 
+def test_scalar_control_study_is_separate_and_does_not_replace_the_historical_catalogue(tmp_path):
+    module = api()
+    source = tmp_path / "source" / "view.json"
+    source.parent.mkdir()
+    source.write_text(json.dumps(view()))
+    work = tmp_path / "scalar"
+    actual = module.prepare(source, work, version="v2")
+    assert actual["study_version"] == "v2"
+    assert module.verify_prepared(work) == actual
+    legacy = dict(module.configuration())
+    current = dict(actual["configuration"])
+    current.pop("gradient_contract")
+    current.pop("validity_control")
+    assert current == legacy
+    for job in actual["jobs"]:
+        if "memory_plasticity" in job["changes"]:
+            assert job["changes"]["memory_plasticity"]["gradient_contract"] == "scalar_controls_v2"
+    historical = json.loads(module.VARIANTS.read_text())
+    assert all(
+        "gradient_contract" not in arm["predictor_changes"].get("memory_plasticity", {})
+        for arm in historical["arms"].values()
+    )
+    actual["study_version"] = "v1"
+    (work / "prepared.json").write_text(json.dumps(actual))
+    with pytest.raises(ValueError):
+        module.verify_prepared(work)
+    with pytest.raises(ValueError):
+        module.prepare(source, tmp_path / "unknown", version="v3")
+    assert not (tmp_path / "unknown").exists()
+
+
 def test_pending_reservation_blocks_a_second_attempt_until_its_real_close(tmp_path):
     work, receipt = prepared(tmp_path)
     job = receipt["jobs"][0]
@@ -230,7 +261,7 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
         fold=original["temporal_view"]["fold"]["id"],
         window={k: v for k, v in original["temporal_view"]["fold"].items() if k != "id"},
     )
-    monkeypatch.setattr(api(), "configuration", lambda: copy.deepcopy(config))
+    monkeypatch.setattr(api(), "configuration", lambda version="v1": copy.deepcopy(config))
     work = tmp_path / "study"
     receipt = api().prepare(source, work)
     artifacts = receipt["artifacts"]

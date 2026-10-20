@@ -22,11 +22,13 @@ class MemoryPlasticity:
     capture_floor: float = 0.1
     write_constant: float = 0.5
     capture_constant: float = 0.5
+    gradient_contract: str = "row_broadcast_v1"
 
     def __post_init__(self) -> None:
         for name, choices in (
             ("write", ("none", "coherence", "constant")),
             ("capture", ("none", "eligibility", "constant")),
+            ("gradient_contract", ("row_broadcast_v1", "scalar_controls_v2")),
         ):
             value = getattr(self, name)
             if type(value) is not str or value not in choices:
@@ -56,11 +58,19 @@ class MemoryPlasticity:
                 raise ValueError(f"{name} está fuera del dominio de la regla de plasticidad")
             object.__setattr__(self, name, value)
 
+    def configuration(self) -> dict:
+        """Conservar los nueve campos históricos al serializar el contrato original."""
+        result = asdict(self)
+        if self.gradient_contract == "row_broadcast_v1":
+            result.pop("gradient_contract")
+        return result
+
     def identity(self) -> dict:
+        version = 1 if self.gradient_contract == "row_broadcast_v1" else 2
         return dict(
-            **asdict(self),
-            schema_version=1,
-            source="neural_plasticity_v1",
+            **self.configuration(),
+            schema_version=version,
+            source=f"neural_plasticity_v{version}",
             statistics="per_flow_layer_row_after_associative_gradient_clipping",
             history="gradient_mean_energy_eligibility",
             coherence="bounded_bias_corrected_squared_mean_over_energy",

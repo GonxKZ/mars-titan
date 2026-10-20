@@ -67,6 +67,43 @@ def interpret(interval, margin):
     return "inconcluyente"
 
 
+def unity_control(reference, candidate, reference_state, candidate_state):
+    """Comprobar el control unitario por observación y por tensor compartido."""
+    import torch
+
+    left = reference.sort_by("sample_id")
+    right = candidate.sort_by("sample_id")
+    tensors = [
+        {
+            key: value
+            for key, value in state["state"]["model"].items()
+            if isinstance(value, torch.Tensor)
+        }
+        for state in (reference_state, candidate_state)
+    ]
+    matching = (
+        bool(tensors[0])
+        and tensors[0].keys() == tensors[1].keys()
+        and all(
+            value.dtype == tensors[1][key].dtype and torch.equal(value, tensors[1][key])
+            for key, value in tensors[0].items()
+        )
+    )
+    predictions = left.equals(right, check_metadata=False)
+    initial = (
+        reference_state["identity"]["initial_parameters_sha256"]
+        == candidate_state["identity"]["initial_parameters_sha256"]
+    )
+    return dict(
+        passed=predictions and matching and initial,
+        predictions_equal=predictions,
+        shared_tensors_equal=matching,
+        initial_parameters_equal=initial,
+        shared_tensors=len(tensors[0]),
+        tolerance=dict(absolute=0, relative=0),
+    )
+
+
 def read_run(work, prepared, job):
     folder = work / "runs" / job["id"]
     path = folder / "run.json"
@@ -120,14 +157,14 @@ def execution_cost(work, prepared):
     plan = json.loads((work / "execution-plan.json").read_text())
     if plan["prepared_sha256"] != sha256(work / "prepared.json"):
         raise ValueError("El plan de ejecución no corresponde a la preparación")
-    paths = list((work / "launches").glob("*.json"))
+    paths = [(path, True) for path in (work / "launches").glob("*.json")]
     for entry in plan.get("prior_receipts", []):
         path = Path(entry["path"])
         if sha256(path) != entry["sha256"]:
             raise ValueError("Un coste histórico ha cambiado")
-        paths.append(path)
+        paths.append((path, False))
     records, identifiers, completed = [], set(), set()
-    for path in paths:
+    for path, current in paths:
         raw = json.loads(path.read_text())
         value = raw["wrapper_seconds"]
         if (
@@ -144,7 +181,7 @@ def execution_cost(work, prepared):
         internal = raw["internal"]
         if internal.get("closure_confirmed") is not True:
             raise ValueError("Un intento interno no tiene cierre confirmado")
-        if raw["status"] == "completed":
+        if current and raw["status"] == "completed":
             if raw["prepared_sha256"] != plan["prepared_sha256"]:
                 raise ValueError("Hay resultados completados de otra preparación")
             completed.add(raw["job"]["id"])
@@ -153,6 +190,7 @@ def execution_cost(work, prepared):
                 id=raw["id"],
                 job_id=raw["job"]["id"],
                 status=raw["status"],
+                current_study=current,
                 source_commit=raw["source_commit"],
                 wrapper_seconds=value,
                 internal_seconds=internal["actual_seconds"],
@@ -183,7 +221,7 @@ def analyze(work, output):
     config = prepared["configuration"]
     if len(config["seeds"]) != 1:
         raise ValueError("Este análisis describe un piloto de una semilla")
-    models, scores, series, cohort, steps = {}, {}, {}, None, set()
+    models, scores, series, controls, cohort, steps = {}, {}, {}, {}, None, set()
     for job in prepared["jobs"]:
         run, table, digest = read_run(work, prepared, job)
         name = job["arm"]
@@ -209,12 +247,32 @@ def analyze(work, output):
             optimizer_steps=run["fit"]["global_step"],
         )
         steps.add(run["fit"]["global_step"])
+        if name in ("cascade_original", "cascade_unity"):
+            controls[name] = (run, table, work / "runs" / job["id"])
         scores[name], series[name] = current, current.series("mae")
         if "zero" not in scores:
             zero = score_table(table, cohort, zero=True)
             scores["zero"], series["zero"] = zero, zero.series("mae")
     if len(steps) != 1:
         raise ValueError("Las configuraciones no conservan las mismas actualizaciones")
+    import torch
+
+    pair = [controls[name] for name in ("cascade_original", "cascade_unity")]
+    payloads = [
+        torch.load(folder / run["checkpoint"]["path"], map_location="cpu", weights_only=True)
+        for run, _, folder in pair
+    ]
+    validity = unity_control(pair[0][1], pair[1][1], *payloads)
+    validity["phase_predictions_equal"] = {}
+    for phase in ("validation", "calibration", "evaluation"):
+        tables = [
+            pq.read_table(folder / run["predictions"][phase]["path"]).sort_by("sample_id")
+            for run, _, folder in pair
+        ]
+        validity["phase_predictions_equal"][phase] = tables[0].equals(
+            tables[1], check_metadata=False
+        )
+    validity["passed"] = validity["passed"] and all(validity["phase_predictions_equal"].values())
     primary = compare_series(
         series,
         {"primary": delta(config["primary_reference"], config["primary_candidate"])},
@@ -242,8 +300,14 @@ def analyze(work, output):
         models=models,
         zero=scores["zero"].summary(),
         primary=primary,
-        primary_interpretation=interpret(
+        unity_control=validity,
+        primary_numeric_interpretation=interpret(
             primary["contrasts"][0]["interval"], config["minimum_relevant_mae"]
+        ),
+        primary_interpretation=(
+            interpret(primary["contrasts"][0]["interval"], config["minimum_relevant_mae"])
+            if validity["passed"]
+            else "atribucion_bloqueada_por_control_unitario"
         ),
         secondary=secondary,
         costs=costs,

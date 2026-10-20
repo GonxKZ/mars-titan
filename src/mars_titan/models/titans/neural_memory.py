@@ -389,18 +389,30 @@ class NeuralMemory(nn.Module):
                 for previous, gradient in zip(momentum, gradients, strict=True)
             )
         else:
+            plasticity = self.config.plasticity
+            scalar_controls = plasticity.gradient_contract == "scalar_controls_v2"
             updates = tuple(
-                advance_plasticity(
-                    self.config.plasticity, gradient, modulation[3 * i : 3 * i + 3], steps
-                )
+                advance_plasticity(plasticity, gradient, modulation[3 * i : 3 * i + 3], steps)
                 for i, gradient in enumerate(gradients)
             )
-            momentum = tuple(
-                eta * previous - (theta * update.write_gain) * gradient
-                for previous, gradient, update in zip(momentum, gradients, updates, strict=True)
-            )
+            if scalar_controls and plasticity.write != "coherence":
+                # Expandir theta por filas antes de multiplicar g altera su reducción backward.
+                if plasticity.write == "constant" and plasticity.write_constant != 1:
+                    theta = theta * plasticity.write_constant
+                momentum = tuple(
+                    eta * previous - theta * gradient
+                    for previous, gradient in zip(momentum, gradients, strict=True)
+                )
+            else:
+                momentum = tuple(
+                    eta * previous - (theta * update.write_gain) * gradient
+                    for previous, gradient, update in zip(momentum, gradients, updates, strict=True)
+                )
             modulation = tuple(value for update in updates for value in update.history)
-            if self.config.plasticity.capture != "none":
+            if scalar_controls and plasticity.capture == "constant":
+                if plasticity.capture_constant != 1:
+                    capture_gains = (plasticity.capture_constant,) * len(updates)
+            elif plasticity.capture != "none":
                 capture_gains = tuple(update.capture_gain for update in updates)
         if self.config.multiscale is None:
             weights = tuple(
