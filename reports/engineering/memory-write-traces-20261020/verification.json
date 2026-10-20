@@ -1,0 +1,51 @@
+{
+  "recorded_at_utc": "2026-10-20T20:44:25.394273+00:00",
+  "scope": "Comprobación focalizada de observación, ecuaciones y persistencia. No es toda la batería.",
+  "distinct_tests": 359,
+  "cuda_cases": 54,
+  "initial_pass": {
+    "file": "final.xml",
+    "sha256": "59afacce38bcb98e9a21ef74dbda125617c0fffa45417e743be9901127979763",
+    "tests": 359,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2
+  },
+  "authorized_followup": {
+    "file": "authorized-fixtures.xml",
+    "sha256": "bff9e23fd1935744efcc041cd9bfea4ba0727a19e79f0f8282a564a72ce9d360",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "resolved_skips": 2,
+  "unresolved_skips": 0,
+  "failures": 0,
+  "errors": 0,
+  "fit_scope": "Solo dos fixtures CUDA con cuatro actualizaciones por configuración. No hay corpus real ni test final.",
+  "local_authorization_closed": true,
+  "global_hold_unchanged": true,
+  "base_commit": "d86cecdbcc4cd3b418a0ff1783aebec42b88d087",
+  "source_files": {
+    "src/mars_titan/models/titans/neural_memory.py": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+    "src/mars_titan/learning_traces/memory.py": "0a8f26cecaea307ff000ce4ba9c27d8e81e1ae6f48170c9dd81b4585d2ec04bf",
+    "src/mars_titan/learning_traces/analysis.py": "cf8b50c3e84e4040e5c99246176bda4ac45fc08be38cbac670a99712ba926aa2"
+  },
+  "source_tests": {
+    "tests/learning_traces/test_memory_write_traces.py": "cff7bfc21bdeba65703141ee81c2e0588640809a3066ba31cb713919d49e91d4",
+    "tests/learning_traces/test_trace_analysis.py": "03eb75d88984b573fe82bbbbbaf3f8393804928902dccd96ed6822b35b6adf00"
+  },
+  "directed_mutations": 17,
+  "detected_mutations": 17,
+  "mutation_device": "cpu",
+  "mutation_program_sha256": "61ca5baef8c0abb1e64ccc961b7a24af6de88f1d20dd1c181920c965cf7a517a",
+  "quality_sha256": "14f20550f45ae098164aaf686ae063018505d11569443fd44476462b48f14dca",
+  "mutations_sha256": "be46c4c9bf7958c0fc8baa8583a1a34e1dca4937ed0171f35212c55247a75b38",
+  "final_test_opened": false,
+  "pending": [
+    "Medición del sobrecoste de esta ampliación.",
+    "Paridad y sobrecoste completos de todas las familias de v3.1."
+  ],
+  "write_count_scope": "Actualizaciones calculadas y observadas, no publicación de transacciones externas."
+}
