@@ -120,15 +120,18 @@ def test_learning_hold_precedes_any_view_or_recipe_read(tmp_path, learning_hold)
 
 
 @pytest.mark.parametrize("fails", [False, True])
+@pytest.mark.parametrize("job_index", [0, 1])
 def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fails(
-    tmp_path, monkeypatch, fails
+    tmp_path, monkeypatch, fails, job_index
 ):
     import torch
     from torch.optim import optimizer
 
     from mars_titan.training import experiment_resources, titans_walk_forward
+    from mars_titan.training.search_cases import checked_predictor_changes
 
     work, receipt = prepared(tmp_path)
+    job = receipt["jobs"][job_index]
     calls = []
 
     class Lease:
@@ -151,7 +154,8 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
         assert view == work / "view.json" and recipe == work / "recipe.json"
         assert protocol == work / "protocol.json" and fold == "fold-018"
         assert kwargs["device"] == "cuda:0"
-        assert kwargs["predictor_changes"] == receipt["jobs"][0]["changes"]
+        accepted = checked_predictor_changes(kwargs["predictor_changes"])
+        assert accepted == (job["changes"] or None)
         assert kwargs["seed"] == 42 and kwargs["search_case"] == "lr1e-3"
         assert kwargs["stop"].steps == 0
         calls.append("executor")
@@ -170,9 +174,9 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
     )
     if fails:
         with pytest.raises(RuntimeError, match="fixture"):
-            api()._run(work, receipt, receipt["jobs"][0])
+            api()._run(work, receipt, job)
     else:
-        assert api()._run(work, receipt, receipt["jobs"][0])["status"] == "paused"
+        assert api()._run(work, receipt, job)["status"] == "paused"
     costs = list((work / "measurements").glob("*.json"))
     assert len(costs) == 1
     measured = json.loads(costs[0].read_text())

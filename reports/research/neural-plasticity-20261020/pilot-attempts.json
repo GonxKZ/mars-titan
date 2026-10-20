@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "attempts": [
+    {
+      "job_id": "mac_original-42",
+      "source_commit": "bfe74195d088808c8cc2592d65c8e415404bb670",
+      "prepared_sha256": "b22d657e5c2b1105604361cff3e1afa243b831dbdbdf3274ec5cc58e25c3225d",
+      "started_at_utc": "2026-10-20T11:51:22.935381+00:00",
+      "finished_at_utc": "2026-10-20T11:51:27.317125+00:00",
+      "status": "failed_before_fit",
+      "returncode": 1,
+      "optimizer_steps": 0,
+      "wrapper_seconds": 4.48845555097796,
+      "internal_seconds": 0.440297657973133,
+      "timing_relation": "El tiempo interno está incluido en el externo. No sumarlos.",
+      "error": "ValueError: Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale junto a memory_plasticity como objetos no vacíos y presence_modulation y attention_layout como nombres no vacíos",
+      "global_hold_unchanged": true,
+      "scoped_authorization_closed": true,
+      "final_test_opened": false,
+      "receipt_sha256": "1e27b81b7828ab76db67da18295b71382cb00b50c3e792b7ae8cd4ec0dd2d602"
+    }
+  ],
+  "correction": "Representar ausencia de cambios con None al llamar a run_titans_window. Datos, épocas, semillas e hipótesis no cambian."
+}

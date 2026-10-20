@@ -229,7 +229,7 @@ def _run(work, receipt, job):
                 indices=work / "indices",
                 stop=budget,
                 search_case=receipt["configuration"]["search_case"],
-                predictor_changes=job["changes"],
+                predictor_changes=job["changes"] or None,
             )
         lease.check()
         record.update(status=result["status"], run_id=result.get("run_id"))

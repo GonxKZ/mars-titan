@@ -10,6 +10,8 @@ Se detectaron los [20 mutantes de la segunda revisión](mutations-v2.json), incl
 
 El [informe de coste](../../engineering/neural-plasticity-20261020/README.md) separa el coste añadido de las variantes de la optimización que reutiliza su frontera validada. El [protocolo del piloto](../../../docs/research/neural-plasticity-protocol.md) fija once configuraciones, una semilla y un presupuesto local. Su preparación se ha ejecutado y verificado, pero todavía no se ha iniciado ningún ajuste científico nuevo.
 
+El [primer intento](pilot-attempts.json) se detuvo antes del ajuste, con cero pasos de optimizador. El lanzador pasaba `{}` para la referencia sin cambios y el consumidor exige `None`. La corrección conserva datos, semillas, épocas y parámetros. Sus [15 comprobaciones y dos mutaciones](baseline-contract.json) utilizan ahora el validador real del consumidor en esa frontera. Los 4,488 segundos del intento se conservan en el presupuesto acumulado. No son resultados de entrenamiento.
+
 ## Primera verificación
 
 La regresión registrada ejecutó 577 casos correctos, sin fallos ni omisiones. Después se añadieron comprobaciones de las ecuaciones realmente aplicadas, presupuesto previo a asignación, fronteras inválidas y catálogo. Sus selecciones dieron 51 y 42 casos correctos. Esos conjuntos se solapan y no se suman como pruebas independientes. La selección final de los tres archivos nuevos dio 67 casos correctos. Ocho casos específicos comprobaron CUDA en FP32 y FP64, recuperación, gradientes y paridad. El [recibo](verification.json) conserva huellas y alcance.
