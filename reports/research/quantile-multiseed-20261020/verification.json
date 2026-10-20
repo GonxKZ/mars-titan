@@ -1,11 +1,16 @@
 {
-  "recorded_at_utc": "2026-10-20T17:21:34.464975+00:00",
-  "distinct_passed_cases": 104,
+  "recorded_at_utc": "2026-10-20T17:46:35.948479+00:00",
+  "distinct_passed_cases": 108,
   "junit_sha256": "7ce41126f57f096fcfc85edc741ed7b8e4d4c44c1899acd39af6a89e0f902fa3",
-  "directed_mutations": 11,
-  "mutations_detected": 11,
+  "directed_mutations": 16,
+  "mutations_detected": 16,
   "quality_sha256": "016f2159d6133593849f7ed3da5464530acd4efb1a54f25ecfe2b1d1245353ea",
   "scope": "Pruebas focalizadas del análisis multisemilla, sus contratos y del ejecutor reutilizado. Incluye CUDA sin actualizaciones en las nuevas preparaciones. No es toda la batería.",
   "final_test_opened": false,
-  "scientific_experiments_completed": false
+  "scientific_experiments_completed": false,
+  "additional_cost_tests": {
+    "tests": 64,
+    "junit_sha256": "5fabd7b438582340d86201a51da310874cb3c183c42399f796a158ec2f28a4a2",
+    "scope": "Corrección CPU del lector de costes. No cambia el productor ni las rutas CUDA."
+  }
 }

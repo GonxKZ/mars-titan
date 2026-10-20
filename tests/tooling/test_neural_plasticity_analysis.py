@@ -272,6 +272,56 @@ def test_cost_includes_failed_attempts_without_double_counting_internal_time(tmp
     assert len(costs["attempts"]) == 2
 
 
+def test_failed_launch_without_an_internal_receipt_keeps_external_cost_and_unknown_metrics(
+    tmp_path,
+):
+    from mars_titan.data.storage import atomic_json, sha256
+
+    prepared, row, plan = cost_fixture(tmp_path)
+    failed = dict(
+        row,
+        id="previous",
+        status="failed",
+        wrapper_seconds=0.5,
+        error="El supervisor cerró antes de recibir una medición interna",
+    )
+    failed.pop("internal")
+    atomic_json(tmp_path / "previous.json", failed)
+    plan["prior_receipts"][0]["sha256"] = sha256(tmp_path / "previous.json")
+    atomic_json(tmp_path / "execution-plan.json", plan)
+    costs = api().execution_cost(tmp_path, prepared)
+    assert costs["total_wrapper_seconds"] == 2.5
+    record = next(x for x in costs["attempts"] if x["id"] == "previous")
+    assert record["internal_seconds"] is None
+    assert record["optimizer_steps"] is None
+    assert record["peak_rss_bytes"] is None
+    assert record["internal_receipt_available"] is False
+
+
+@pytest.mark.parametrize("status", ["completed", "failed"])
+def test_missing_internal_receipt_cannot_confirm_a_success_or_an_unexplained_failure(
+    tmp_path, status
+):
+    from mars_titan.data.storage import atomic_json
+
+    prepared, row, _ = cost_fixture(tmp_path)
+    row.pop("internal")
+    row["status"] = status
+    atomic_json(tmp_path / "launches/current.json", row)
+    with pytest.raises(ValueError):
+        api().execution_cost(tmp_path, prepared)
+
+
+def test_an_existing_internal_receipt_still_needs_its_own_closure(tmp_path):
+    from mars_titan.data.storage import atomic_json
+
+    prepared, row, _ = cost_fixture(tmp_path)
+    row["internal"]["closure_confirmed"] = False
+    atomic_json(tmp_path / "launches/current.json", row)
+    with pytest.raises(ValueError):
+        api().execution_cost(tmp_path, prepared)
+
+
 def test_cost_keeps_completed_historical_diagnostics_without_counting_them_as_current_runs(
     tmp_path,
 ):
