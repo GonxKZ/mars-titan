@@ -1,0 +1,30 @@
+{
+  "current_attempts": 26,
+  "completed_jobs": 25,
+  "optimizer_steps": 17125,
+  "wrapper_seconds": 3559.7138352929614,
+  "internal_seconds": 3447.1412981842877,
+  "prior_wrapper_seconds": 4919.03629078716,
+  "cumulative_wrapper_seconds": 8478.750126080122,
+  "analysis_wrapper_seconds": 5.428415375994518,
+  "peak_rss_bytes": 2096893952,
+  "peak_cuda_allocated_bytes": 206327808,
+  "peak_cuda_reserved_bytes": 236978176,
+  "failed_attempt": {
+    "id": "e21b656e6d5b44bba99bc0bc2e21bc01",
+    "job_id": "original-43",
+    "status": "failed",
+    "current_study": true,
+    "source_commit": "828d7a9d40f5696d53536b0a6455655d167ad788",
+    "wrapper_seconds": 7.266089531942271,
+    "internal_receipt_available": false,
+    "internal_seconds": null,
+    "optimizer_steps": null,
+    "peak_rss_bytes": null,
+    "peak_cuda_allocated_bytes": null,
+    "peak_cuda_reserved_bytes": null,
+    "receipt_sha256": "ff16dc1d20586bdf22384ced896197725ae9b1841cd32e4172b75493282bf9ec"
+  },
+  "timing_scope": "Los tiempos internos están incluidos en los externos. El total acumulado no incluye pruebas técnicas, análisis ni pausas entre lanzamientos.",
+  "concurrency_scope": "Una carga científica CUDA. El escritorio y tareas CPU técnicas concurrentes impiden tratar las duraciones como medidas aisladas de aceleración."
+}
