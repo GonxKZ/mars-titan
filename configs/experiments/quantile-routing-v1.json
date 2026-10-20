@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "quantile_routing_variants",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/key-competition-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "unity_control": [
+    "original",
+    "all_feedback"
+  ],
+  "cost_kind": "quantile_routing_cuda_cost",
+  "arms": {
+    "original": {
+      "role": "Referencia de cuantiles original",
+      "predictor_changes": {}
+    },
+    "all_feedback": {
+      "role": "Control de las dos vías originales",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": true,
+          "encoder_from_spreads": true
+        }
+      }
+    },
+    "median_isolated": {
+      "role": "Sin realimentación de colas hacia la ubicación",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": false,
+          "encoder_from_spreads": true
+        }
+      }
+    },
+    "encoder_isolated": {
+      "role": "Sin realimentación de dispersión hacia el tronco",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": true,
+          "encoder_from_spreads": false
+        }
+      }
+    },
+    "both_isolated": {
+      "role": "Ambas vías separadas",
+      "predictor_changes": {
+        "quantile_routing": {
+          "median_from_tails": false,
+          "encoder_from_spreads": false
+        }
+      }
+    }
+  }
+}

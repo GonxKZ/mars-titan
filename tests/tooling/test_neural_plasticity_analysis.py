@@ -100,6 +100,18 @@ def test_key_competition_contrasts_keep_fixed_selection_and_zero_controls():
     assert result["original_minus_zero"] == dict(original=1, zero=-1)
 
 
+def test_quantile_routing_contrasts_keep_each_path_and_their_interaction():
+    names = ["original", "all_feedback", "median_isolated", "encoder_isolated", "both_isolated"]
+    result = api().quantile_routing_contrasts(names)
+    assert result["interaction"] == dict(
+        both_isolated=1, median_isolated=-1, encoder_isolated=-1, original=1
+    )
+    assert result["both_isolated_minus_median_isolated"] == dict(
+        both_isolated=1, median_isolated=-1
+    )
+    assert result["both_isolated_minus_zero"] == dict(both_isolated=1, zero=-1)
+
+
 @pytest.mark.parametrize(
     "interval,expected",
     [
@@ -313,10 +325,10 @@ def complete_fixture(tmp_path, fault, version="v1"):
     from mars_titan.data.storage import atomic_json, sha256
 
     prepared, _, template, _ = run_fixture(tmp_path)
-    key_study = version == "key_competition_v1"
-    candidate = "centered_competitive" if key_study else "cascade_combined"
-    reference = "original" if key_study else "cascade_original"
-    unit = "all_components" if key_study else "cascade_unity"
+    candidate, reference, unit = {
+        "key_competition_v1": ("centered_competitive", "original", "all_components"),
+        "quantile_routing_v1": ("both_isolated", "original", "all_feedback"),
+    }.get(version, ("cascade_combined", "cascade_original", "cascade_unity"))
     prepared["study_version"] = version
     prepared["configuration"].update(
         seeds=[42],
@@ -386,7 +398,7 @@ def complete_fixture(tmp_path, fault, version="v1"):
 
 
 @pytest.mark.parametrize("fault", ["none", "unit_calibration", "updates"])
-@pytest.mark.parametrize("version", ["v1", "key_competition_v1"])
+@pytest.mark.parametrize("version", ["v1", "key_competition_v1", "quantile_routing_v1"])
 def test_complete_analysis_keeps_control_failures_and_known_session_contrasts(
     tmp_path, monkeypatch, learning_doubles, fault, version
 ):
@@ -406,9 +418,10 @@ def test_complete_analysis_keeps_control_failures_and_known_session_contrasts(
     assert result["costs"]["total_wrapper_seconds"] == 2.0 * len(prepared["jobs"])
     assert len(list(output.glob("*-sessions.parquet"))) == 1 + len(prepared["jobs"])
     assert result["kind"] == (
-        "key_competition_development_results"
-        if version == "key_competition_v1"
-        else "neural_plasticity_development_results"
+        {
+            "key_competition_v1": "key_competition_development_results",
+            "quantile_routing_v1": "quantile_routing_development_results",
+        }.get(version, "neural_plasticity_development_results")
     )
     assert result["unity_control"]["passed"] is (fault == "none")
     expected = (

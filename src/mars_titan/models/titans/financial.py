@@ -21,6 +21,7 @@ from mars_titan.models.baselines.multimodal import (
     validate_architecture,
 )
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
+from mars_titan.models.quantile_routing import QuantileRouting
 
 from .config import (
     ATTENTION_LAYOUTS,
@@ -94,6 +95,7 @@ class FinancialConfig:
     bank_policy: str = "disabled"
     refinements: int = 1
     head: str = SCALAR_HEAD
+    quantile_routing: QuantileRouting | None = None
     gate_bias: GateBias | None = None
     # Memoria M(x) = x + LN(MLP(x)) de la sección 3.3 de las actas. False conserva v1.
     memory_residual_layer_norm: bool = False
@@ -121,6 +123,16 @@ class FinancialConfig:
             raise ValueError("El predictor necesita una entrada y un control identificados")
         if not isinstance(self.head, str) or self.head not in HEADS:
             raise ValueError("La cabeza de salida no pertenece al contrato del predictor")
+        if isinstance(self.quantile_routing, dict):
+            if set(self.quantile_routing) != {field.name for field in fields(QuantileRouting)}:
+                raise ValueError(
+                    "quantile_routing declara median_from_tails y encoder_from_spreads"
+                )
+            object.__setattr__(self, "quantile_routing", QuantileRouting(**self.quantile_routing))
+        if self.quantile_routing is not None and (
+            not isinstance(self.quantile_routing, QuantileRouting) or self.head != QUANTILE_HEAD
+        ):
+            raise ValueError("La ruta de cuantiles necesita QuantileRouting y quantile_head_v1")
         if self.attention_layout not in ATTENTION_LAYOUTS:
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
         if isinstance(self.gate_bias, dict):
@@ -253,6 +265,8 @@ class FinancialConfig:
         # La identidad escalar no cambia. La cabeza de cuantiles sustituye la salida.
         if self.head == QUANTILE_HEAD:
             result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
+        if self.quantile_routing is not None:
+            result.update(quantile_routing=self.quantile_routing.identity())
         # Sin bias declarado la identidad no cambia. Se registra en todas las variantes para
         # que el emparejamiento desde mac_online compare la misma configuración.
         if self.gate_bias is not None:
@@ -380,7 +394,7 @@ class FinancialPredictor(nn.Module):
             # La cabeza de cuantiles se crea al final. El tronco recibe los mismos pesos
             # iniciales que la variante escalar con la misma semilla.
             if config.head == QUANTILE_HEAD:
-                self.head = QuantileHead(config.hidden_size)
+                self.head = QuantileHead(config.hidden_size, routing=config.quantile_routing)
         # PT6 se construye después del tronco y sin el generador global, así que el resto de
         # pesos coincide con el control de la misma semilla.
         self.presence_modulation = (
@@ -487,6 +501,8 @@ class FinancialPredictor(nn.Module):
     def _check_parameters(self):
         if self._signature() != self._parameter_signature:
             raise ValueError("Los parámetros cambiaron fuera de una carga o copia identificada")
+        if self.config.head == QUANTILE_HEAD and self.head.routing != self.config.quantile_routing:
+            raise ValueError("Las vías de la cabeza cambiaron fuera de su configuración")
 
     def get_extra_state(self):
         result = dict(
