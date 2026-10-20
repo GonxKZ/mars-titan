@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "scope": "Mismo hash de parámetros iniciales dentro de cada semilla, según los cinco manifiestos de ajuste.",
+  "by_seed": {
+    "42": {
+      "original": "6aeb0039bd5fb3231e67e14152cf2623191284f2307ffa62796ebca4b3ae6863",
+      "all_feedback": "6aeb0039bd5fb3231e67e14152cf2623191284f2307ffa62796ebca4b3ae6863",
+      "both_isolated": "6aeb0039bd5fb3231e67e14152cf2623191284f2307ffa62796ebca4b3ae6863",
+      "point_component": "6aeb0039bd5fb3231e67e14152cf2623191284f2307ffa62796ebca4b3ae6863",
+      "point_l1": "6aeb0039bd5fb3231e67e14152cf2623191284f2307ffa62796ebca4b3ae6863"
+    },
+    "43": {
+      "original": "31722d4df72331a4c0472fe296680b5f9c34bf2be9d8d97ade19e57bfdcab2eb",
+      "all_feedback": "31722d4df72331a4c0472fe296680b5f9c34bf2be9d8d97ade19e57bfdcab2eb",
+      "both_isolated": "31722d4df72331a4c0472fe296680b5f9c34bf2be9d8d97ade19e57bfdcab2eb",
+      "point_component": "31722d4df72331a4c0472fe296680b5f9c34bf2be9d8d97ade19e57bfdcab2eb",
+      "point_l1": "31722d4df72331a4c0472fe296680b5f9c34bf2be9d8d97ade19e57bfdcab2eb"
+    },
+    "44": {
+      "original": "9c761aa7e19b1f6f43023f583675fbfda115e3c25719d6e63a77c608580c68b5",
+      "all_feedback": "9c761aa7e19b1f6f43023f583675fbfda115e3c25719d6e63a77c608580c68b5",
+      "both_isolated": "9c761aa7e19b1f6f43023f583675fbfda115e3c25719d6e63a77c608580c68b5",
+      "point_component": "9c761aa7e19b1f6f43023f583675fbfda115e3c25719d6e63a77c608580c68b5",
+      "point_l1": "9c761aa7e19b1f6f43023f583675fbfda115e3c25719d6e63a77c608580c68b5"
+    },
+    "45": {
+      "original": "0a36520ad00a1cdbcae2a086c05b9ef849f372e5e557f02239a5d0e48605d3fd",
+      "all_feedback": "0a36520ad00a1cdbcae2a086c05b9ef849f372e5e557f02239a5d0e48605d3fd",
+      "both_isolated": "0a36520ad00a1cdbcae2a086c05b9ef849f372e5e557f02239a5d0e48605d3fd",
+      "point_component": "0a36520ad00a1cdbcae2a086c05b9ef849f372e5e557f02239a5d0e48605d3fd",
+      "point_l1": "0a36520ad00a1cdbcae2a086c05b9ef849f372e5e557f02239a5d0e48605d3fd"
+    },
+    "46": {
+      "original": "c800e95884b103314829409a2c2ae9a8ec1526aee7011f638ccc2973cf7bed28",
+      "all_feedback": "c800e95884b103314829409a2c2ae9a8ec1526aee7011f638ccc2973cf7bed28",
+      "both_isolated": "c800e95884b103314829409a2c2ae9a8ec1526aee7011f638ccc2973cf7bed28",
+      "point_component": "c800e95884b103314829409a2c2ae9a8ec1526aee7011f638ccc2973cf7bed28",
+      "point_l1": "c800e95884b103314829409a2c2ae9a8ec1526aee7011f638ccc2973cf7bed28"
+    }
+  }
+}

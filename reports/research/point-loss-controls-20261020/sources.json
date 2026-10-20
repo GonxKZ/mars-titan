@@ -45,6 +45,34 @@
       },
       "reproduced": false,
       "implemented_from_source": false
+    },
+    {
+      "title": "Meta-reinforcement learning via orbitofrontal cortex",
+      "authors": "Ryoma Hattori et al.",
+      "doi": "10.1038/s41593-023-01485-3",
+      "url": "https://doi.org/10.1038/s41593-023-01485-3",
+      "published": "2023-11-13",
+      "version": "Versión editorial con corrección de 2024",
+      "inspected_sections": [
+        "Resumen",
+        "Resultados sobre aprendizaje entre sesiones e interno",
+        "Disponibilidad de código"
+      ],
+      "correction": {
+        "url": "https://doi.org/10.1038/s41593-024-01718-z",
+        "published": "2024-07-02",
+        "scope": "Coordenada lateral de imagen y registro, corregida de aproximadamente 2,45 a 1,45 mm"
+      },
+      "code": {
+        "repository": "https://github.com/ryhattori/MetaRL-PRL",
+        "inspected": false,
+        "executed": false,
+        "copied_into_project": false
+      },
+      "reproduced": false,
+      "implemented_from_source": false,
+      "scope": "Tarea de inversión probabilística. No demuestra beneficio financiero ni equivalencia biológica del selector existente."
     }
-  ]
+  ],
+  "updated_at_utc": "2026-10-20T20:12:33.166221+00:00"
 }
