@@ -8,6 +8,7 @@ from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
 from .plasticity import initial_history, validate_history
 from .state import (
@@ -470,7 +471,9 @@ class NeuralMemory(nn.Module):
             )
             for projected in (keys, values, *logits):
                 check_finite(projected, "Las proyecciones asociativas")
-            if self.config.normalize_qk:
+            if self.config.key_competition is not None:
+                keys = competitive_normalize(keys, self.config.key_competition)
+            elif self.config.normalize_qk:
                 keys = F.normalize(keys, dim=-1, eps=1e-12)
             gates = self._gates(*logits)
             local = tuple(
@@ -556,7 +559,9 @@ class NeuralMemory(nn.Module):
                         values.unsqueeze(1), getattr(self, "value_convolution", None), value_window
                     )
                     keys, values = keys.squeeze(1), values.squeeze(1)
-                if self.config.normalize_qk:
+                if self.config.key_competition is not None:
+                    keys = competitive_normalize(keys, self.config.key_competition)
+                elif self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
                 # La copia separa la variable de derivación interna de y(M_prev). Con el banco

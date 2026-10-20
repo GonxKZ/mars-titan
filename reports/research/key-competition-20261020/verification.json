@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-20T15:37:01.427506+00:00",
+  "groups": [
+    {
+      "name": "integration-tests.xml",
+      "tests": 313,
+      "passed": 311,
+      "skipped": 2,
+      "sha256": "0dab557a17cb5cbdbf63888e61c28cb83e9e07c83c1c2d1a3f799479b892a4d8"
+    },
+    {
+      "name": "key-fixtures.xml",
+      "tests": 41,
+      "passed": 41,
+      "skipped": 0,
+      "sha256": "3e310326b1d6348468b78df1edcc9965fc9c37b871eeaf539f4d4cf38aba953f"
+    },
+    {
+      "name": "final-unit.xml",
+      "tests": 44,
+      "passed": 44,
+      "skipped": 0,
+      "sha256": "cf740359dffee0009254ac0e1490f281bb139b2dbb6475a33646eb8b6e214c06"
+    },
+    {
+      "name": "missing-contract.xml",
+      "tests": 2,
+      "passed": 2,
+      "skipped": 0,
+      "sha256": "88134d91ab07d09eed0c4129ab8e67d94d8e805b1ccfd093a623901601bd19a6"
+    },
+    {
+      "name": "study-final-tests.xml",
+      "tests": 76,
+      "passed": 76,
+      "skipped": 0,
+      "sha256": "f1a0017a1efe34e4148aee983e3e9e7c33f966ed2ca5521a527aa38127f5103f"
+    }
+  ],
+  "distinct_passed_cases": 399,
+  "unresolved_skips": 0,
+  "mutations": [
+    {
+      "group": "key-mutations",
+      "recorded_at_utc": "2026-10-20T15:20:53.693256+00:00",
+      "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+      "mutations": [
+        {
+          "exit_code": 1,
+          "seconds": 2.5216640159487724,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "no_center",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "values = values - values.mean(dim=-1, keepdim=True)",
+          "after": "values = values",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.7713783709332347,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "signed_ranking",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "values.abs(), dim=-1",
+          "after": "values, dim=-1",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.8220977359451354,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ascending_ranking",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "descending=True",
+          "after": "descending=False",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.671855443972163,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_fixed_coordinates",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "torch.arange(retained, device=values.device) * width // retained",
+          "after": "torch.arange(retained, device=values.device)",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.3706744849914685,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "empty_mask",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "scatter_(-1, indices, True)",
+          "after": "scatter_(-1, indices, False)",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.6216783229028806,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_normalization",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "values.norm(p=2",
+          "after": "values.norm(p=1",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.42101111903321,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_epsilon",
+          "file": "src/mars_titan/models/titans/key_competition.py",
+          "before": "norm.clamp_min(1e-12)",
+          "after": "norm.clamp_min(1e-6)",
+          "source_sha256": "2eb72fc34564df2f5b12a3109fdf13e05d34e557d8688078e75301c1ab9d062e"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.220770075917244,
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "legacy_identity_leak",
+          "file": "src/mars_titan/models/titans/config.py",
+          "before": "fields.pop(\"key_competition\")",
+          "after": "pass",
+          "source_sha256": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.9223613790236413,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_sequence_key",
+          "file": "src/mars_titan/models/titans/neural_memory.py",
+          "before": "\n                if self.config.key_competition is not None:\n                    keys = competitive_normalize",
+          "after": "\n                if False:\n                    keys = competitive_normalize",
+          "source_sha256": "a650b042fe979446e278daed9317f2828dc3b0697d37280e539cba5ab55bfbf4"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.821517442003824,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_shared_key",
+          "file": "src/mars_titan/models/titans/neural_memory.py",
+          "before": "\n            if self.config.key_competition is not None:\n                keys = competitive_normalize",
+          "after": "\n            if False:\n                keys = competitive_normalize",
+          "source_sha256": "a650b042fe979446e278daed9317f2828dc3b0697d37280e539cba5ab55bfbf4"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.4214779200265184,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_mac_query",
+          "file": "src/mars_titan/models/titans/mac.py",
+          "before": "if self.config.memory.key_competition is not None:",
+          "after": "if False:",
+          "source_sha256": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.3711593659827486,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_market_query",
+          "file": "src/mars_titan/models/titans/session_context.py",
+          "before": "if self.memory.config.key_competition is None",
+          "after": "if True",
+          "source_sha256": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.621534612029791,
+          "tests": 2,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "omit_numeric_source",
+          "file": "src/mars_titan/training/titans_walk_forward.py",
+          "before": "    \"mars_titan.models.titans.key_competition\",",
+          "after": "",
+          "source_sha256": "ed3634055a8548c6fc4c99e7d3ca5736682a135d2deec3053a3ce4092e06fd4d"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.2704612620873377,
+          "tests": 3,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "allow_unnormalized_features",
+          "file": "src/mars_titan/models/titans/config.py",
+          "before": "or not self.normalize_qk",
+          "after": "or False",
+          "source_sha256": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced"
+        }
+      ],
+      "restored": {
+        "exit_code": 0,
+        "seconds": 3.6235587479313836,
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "group": "study-mutations",
+      "recorded_at_utc": "2026-10-20T15:30:09.223477+00:00",
+      "scope": "Mutaciones dirigidas CPU en copia separada. Sin optimizador ni datos reales.",
+      "mutations": [
+        {
+          "exit_code": 1,
+          "seconds": 2.7220198209397495,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "wrong_interaction",
+          "file": "benchmarks/neural_plasticity_analysis.py",
+          "before": "\"original\", \"centered\", \"competitive\", \"centered_competitive\"",
+          "after": "\"original\", \"competitive\", \"centered_competitive\", \"centered\"",
+          "source_sha256": "4ecdc1c4953803cbf59a719af94b3854777034ef71fedae3c3e3ca3934597775"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 3.7243519900366664,
+          "tests": 6,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_study_catalogue",
+          "file": "benchmarks/neural_plasticity_analysis.py",
+          "before": "key_study = prepared.get(\"study_version\") == \"key_competition_v1\"",
+          "after": "key_study = False",
+          "source_sha256": "4ecdc1c4953803cbf59a719af94b3854777034ef71fedae3c3e3ca3934597775"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 3.4741188320331275,
+          "tests": 6,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "name": "ignore_unit_control",
+          "file": "benchmarks/neural_plasticity_analysis.py",
+          "before": "validity_config.get(\"unit\", \"cascade_unity\")",
+          "after": "validity_config.get(\"reference\", \"cascade_unity\")",
+          "source_sha256": "4ecdc1c4953803cbf59a719af94b3854777034ef71fedae3c3e3ca3934597775"
+        },
+        {
+          "exit_code": 1,
+          "seconds": 2.571522874990478,
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "name": "reduce_catalogue",
+          "file": "benchmarks/neural_plasticity_study.py",
+          "before": "for arm, value in variants[\"arms\"].items()",
+          "after": "for arm, value in list(variants[\"arms\"].items())[:1]",
+          "source_sha256": "18defe6de534e4058305fc0fcfe882071b78fca172e18a02cbbb1011cc380453"
+        }
+      ],
+      "restored": {
+        "exit_code": 0,
+        "seconds": 3.022232015035115,
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "quality": {
+    "statements": 1928,
+    "covered_statements": 1597,
+    "branches": 756,
+    "covered_branches": 554
+  },
+  "lean": {
+    "source": "reports/research/lean/KeyCompetition.lean",
+    "source_sha256": "57e9af9a9e5506993160f847aab87c686076c6c9f1cf74181f0bcf55d76b444d",
+    "positive_exit_code": 0,
+    "negative_exit_code": 1,
+    "positive_output": "'MarsTitan.KeyCompetition.zero_sum' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.KeyCompetition.idempotent' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.KeyCompetition.energy_identity' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.KeyCompetition.energy_nonincrease' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.KeyCompetition.zero_sum_fixed' depends on axioms: [propext, Classical.choice, Quot.sound]\n'MarsTitan.KeyCompetition.no_uniform_half_contraction' depends on axioms: [propext, Classical.choice, Quot.sound]\n",
+    "negative_output": "FalseContraction.lean:51:2: error: linarith failed to find a contradiction\nx y : ℝ\na✝ : (x ^ 2 + y ^ 2) / 2 < ((x - y) / 2) ^ 2 + ((y - x) / 2) ^ 2\n⊢ False\nfailed\n",
+    "scope": "Seis lemas sobre centrado de pares reales. Sin selección, normalización, PyTorch o certificación de coma flotante.",
+    "version": "Lean 4.35.0",
+    "dependencies_manifest_sha256": "f34fa18ca44ea4bd22ac7fdd0db89df37fa38a1e08c3059b7c2881e4d6bbe612",
+    "trust": "Kernel y binario Lean de la distribución instalada y dependencias precompiladas con el manifiesto publicado. No se ha reconstruido el compilador ni toda Mathlib.",
+    "axioms": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "additional_axioms": false,
+    "native_decide": false,
+    "compiler_commit": "eb6cafb7290e8bd5f2937522d8d804f58f02bafc",
+    "mathlib_commit": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+    "command": [
+      "lake",
+      "env",
+      "lean",
+      "KeyCompetition.lean"
+    ],
+    "configuration_directory": "reports/research/lean"
+  },
+  "global_hold_unchanged": true,
+  "final_test_opened": false,
+  "limits": [
+    "Cobertura focalizada, no batería completa del repositorio.",
+    "18 mutantes dirigidos, no todos los mutantes posibles.",
+    "Los dos casos inicialmente omitidos se ejecutaron después con fixtures y no quedan como omisiones.",
+    "Una ejecución inicial del ejecutor falló por ausencia de CUBLAS_WORKSPACE_CONFIG. La repetición explícitamente configurada pasó.",
+    "Un caso nuevo se insertó dentro del final del anterior y produjo NameError. Se corrigió su ubicación y pasaron ambos casos."
+  ]
+}

@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "storage": "Artefactos locales fuera de Git. Rutas relativas al directorio de la ejecución.",
+  "artifacts": [
+    {
+      "variant": "original",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/original-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+      "bytes": 370793
+    },
+    {
+      "variant": "original",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/original-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+      "bytes": 183328
+    },
+    {
+      "variant": "original",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/original-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a",
+      "bytes": 747665
+    },
+    {
+      "variant": "original",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/original-42/fit/checkpoints/state-7d2d05e759717b4274c78b047bd0481db7179232d9bd9978ab4ce40ea98c2922.pt",
+      "sha256": "7d2d05e759717b4274c78b047bd0481db7179232d9bd9978ab4ce40ea98c2922",
+      "bytes": 2352145
+    },
+    {
+      "variant": "original",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/original-42/run.json",
+      "sha256": "5d1839f6cff0fc0f5f8eec027ae5a3bb521ee05ee4fc2e2c2678f9b23379d6ad",
+      "bytes": 11024
+    },
+    {
+      "variant": "all_components",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/all_components-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "af67489ad63af571758bf3eec58e7f3d21660b46491ff25989187059c7a08790",
+      "bytes": 370793
+    },
+    {
+      "variant": "all_components",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/all_components-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "f26b095be068bf903603d16edca6987516b9d43ad84d477cd1eb6414e34a123b",
+      "bytes": 183328
+    },
+    {
+      "variant": "all_components",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/all_components-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "89b7df6bca4f40584e60832d25fc2713e2cfb6e3176bd20670c8fb3f69b47b4a",
+      "bytes": 747665
+    },
+    {
+      "variant": "all_components",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/all_components-42/fit/checkpoints/state-06ecc43aa7f63e069e60dc6a680ebb30520b7f9c8d3404d34d8978933b0b9d62.pt",
+      "sha256": "06ecc43aa7f63e069e60dc6a680ebb30520b7f9c8d3404d34d8978933b0b9d62",
+      "bytes": 2352913
+    },
+    {
+      "variant": "all_components",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/all_components-42/run.json",
+      "sha256": "9fca8473a8b720262bc9230968aa2471d5cd1e4889e87408e655e7f216d00e92",
+      "bytes": 11354
+    },
+    {
+      "variant": "centered",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "21ab6f3d5af832d8a04a198cb8fed4049eeda3d4757eaebbec170149ec7e4e80",
+      "bytes": 386317
+    },
+    {
+      "variant": "centered",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "5c57817d2ec214c6062816424617c95496ad9d9385769033b970dad93cfeb706",
+      "bytes": 191073
+    },
+    {
+      "variant": "centered",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "4bce1dc4d477c073f75887d6ec83149424943a2087d531293505dbba1da30cb2",
+      "bytes": 780653
+    },
+    {
+      "variant": "centered",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/centered-42/fit/checkpoints/state-fee1ce3756ec65ed217178611276d82a44d388f513606e46ee0f6d9f0eef1eff.pt",
+      "sha256": "fee1ce3756ec65ed217178611276d82a44d388f513606e46ee0f6d9f0eef1eff",
+      "bytes": 2352913
+    },
+    {
+      "variant": "centered",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/centered-42/run.json",
+      "sha256": "f34ae61c9316fa1f2703d85ad8b3cd8c7eda2d7c79a06a7b2580fdc72792a122",
+      "bytes": 11359
+    },
+    {
+      "variant": "competitive",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/competitive-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "0dbf612153c225ae8ce22daaf3fe26e9144cbb05960febac47045043269c6de2",
+      "bytes": 384534
+    },
+    {
+      "variant": "competitive",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/competitive-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "f5463d896435c66975b3a57cec24e839f9ea614dce1334f673e30e292a7b5ad2",
+      "bytes": 190841
+    },
+    {
+      "variant": "competitive",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/competitive-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "ea397631566d7daa3a56c3cf3ddde1c6e135fa4a190cca540ff72da5b2849b21",
+      "bytes": 776184
+    },
+    {
+      "variant": "competitive",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/competitive-42/fit/checkpoints/state-476677a3d8c50f73f02b9fe7ce43cd880f29449430ac28b99f4bf16728c4c90b.pt",
+      "sha256": "476677a3d8c50f73f02b9fe7ce43cd880f29449430ac28b99f4bf16728c4c90b",
+      "bytes": 2352913
+    },
+    {
+      "variant": "competitive",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/competitive-42/run.json",
+      "sha256": "7a042638dee6265a3ca091f8192049725c2fb3b09031d3300e575ef778275b2a",
+      "bytes": 11357
+    },
+    {
+      "variant": "centered_competitive",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_competitive-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "eb0bcc8a2179e16ccc992fd32048c72e01ac2d1cdcbfa9580f78316ca69c9f39",
+      "bytes": 380408
+    },
+    {
+      "variant": "centered_competitive",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_competitive-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "86651186e6c888c0be1c3ebf524fb7134cebb2ac30192beb7ea9b06e6b4c859f",
+      "bytes": 189197
+    },
+    {
+      "variant": "centered_competitive",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_competitive-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "3614a4318761563b802a64ac817e7957f56a6a14c3295c463d030a94beeff6da",
+      "bytes": 770618
+    },
+    {
+      "variant": "centered_competitive",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/centered_competitive-42/fit/checkpoints/state-1a022f2040ecda5a52f574b2b824c6f9be7fbc1bfc2369f57255dd75efac8e88.pt",
+      "sha256": "1a022f2040ecda5a52f574b2b824c6f9be7fbc1bfc2369f57255dd75efac8e88",
+      "bytes": 2352849
+    },
+    {
+      "variant": "centered_competitive",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/centered_competitive-42/run.json",
+      "sha256": "19e9b0a73cbc324a8c573863e180b57d58b36f1ca027dd7fd60a8ee41331a6b2",
+      "bytes": 11352
+    },
+    {
+      "variant": "fixed",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/fixed-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "f44c98561c9c939844a82be0c71dc514740561192e9ba4950ff984138a60d589",
+      "bytes": 381680
+    },
+    {
+      "variant": "fixed",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/fixed-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "284819c65da5cf7a102768bcbf07f42c245713a19672a5f25477615dfbb9396d",
+      "bytes": 189372
+    },
+    {
+      "variant": "fixed",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/fixed-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "02ceddf60e64faa794b0d456ac1b8311d02d4bb0a3c74690b83dda36e2c98eb7",
+      "bytes": 771247
+    },
+    {
+      "variant": "fixed",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/fixed-42/fit/checkpoints/state-d794813c6fa60d459d7c5487a0cdaaf0fa6415c5862509e9f3c54c5453d393bf.pt",
+      "sha256": "d794813c6fa60d459d7c5487a0cdaaf0fa6415c5862509e9f3c54c5453d393bf",
+      "bytes": 2352913
+    },
+    {
+      "variant": "fixed",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/fixed-42/run.json",
+      "sha256": "120cf519a847b3eedb0e959ed4cc3bfcd830ecf2cf91a89bec0c859eaf68c400",
+      "bytes": 11347
+    },
+    {
+      "variant": "centered_fixed",
+      "phase": "validation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_fixed-42/validation-predictions.parquet",
+      "rows": 8000,
+      "sha256": "e28ea4c301e6567c254f7ec1adada5df1fdad6c2e6b9ce458333f3b6263e9ffc",
+      "bytes": 380714
+    },
+    {
+      "variant": "centered_fixed",
+      "phase": "calibration",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_fixed-42/calibration-predictions.parquet",
+      "rows": 3968,
+      "sha256": "3707127bc94f36dc14c719636c5934ba3198c3bfba227fd54df80d10821a54fd",
+      "bytes": 189347
+    },
+    {
+      "variant": "centered_fixed",
+      "phase": "evaluation",
+      "kind": "sample_predictions",
+      "relative_path": "pilot-v1/runs/centered_fixed-42/evaluation-predictions.parquet",
+      "rows": 15936,
+      "sha256": "ff8c35793219b3ad20bdbc0d79af3f047d41a29846652b654f3ec2d6ae30965e",
+      "bytes": 770177
+    },
+    {
+      "variant": "centered_fixed",
+      "kind": "selected_checkpoint",
+      "relative_path": "pilot-v1/runs/centered_fixed-42/fit/checkpoints/state-57a547784ffd081ab1f05348863380ee9d1b81a5b02555c1a91fd4cf9cb530b4.pt",
+      "sha256": "57a547784ffd081ab1f05348863380ee9d1b81a5b02555c1a91fd4cf9cb530b4",
+      "bytes": 2352913
+    },
+    {
+      "variant": "centered_fixed",
+      "kind": "run_manifest",
+      "relative_path": "pilot-v1/runs/centered_fixed-42/run.json",
+      "sha256": "061db4a4b0df98efc6915a9c1a77a0bb2b06d0d9c90509a92340053774dcb1c6",
+      "bytes": 11344
+    },
+    {
+      "variant": "all_components",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/all_components-sessions.parquet",
+      "rows": 249,
+      "sha256": "779a436579042962fe9456cbc01c55bf5f8c300e406dbbe7a9d253cc25cf7d7d",
+      "bytes": 55369
+    },
+    {
+      "variant": "centered",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/centered-sessions.parquet",
+      "rows": 249,
+      "sha256": "0acaaebc301c4e854a34188a3b6c1342392e12a247fda79e3f6b2bd0c6ad3822",
+      "bytes": 69387
+    },
+    {
+      "variant": "centered_competitive",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/centered_competitive-sessions.parquet",
+      "rows": 249,
+      "sha256": "0ad59b8f900254ad3163b2489e4b120d144eb4b527a31096cc68f62a964ad4b2",
+      "bytes": 63526
+    },
+    {
+      "variant": "centered_fixed",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/centered_fixed-sessions.parquet",
+      "rows": 249,
+      "sha256": "f2b02f6cbdf57fbd50f44205db363039ddd33af5c7e49031f5ca71ffb011a733",
+      "bytes": 62073
+    },
+    {
+      "variant": "competitive",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/competitive-sessions.parquet",
+      "rows": 249,
+      "sha256": "38cc97185bf25469393a36d6cde69b393dc35550041a863ebc7f95874c85fd81",
+      "bytes": 64690
+    },
+    {
+      "variant": "fixed",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/fixed-sessions.parquet",
+      "rows": 249,
+      "sha256": "4e12cf6f15f1ee5861c6c278cef3f7377d627cf425e4961723cd9f8aef6bab82",
+      "bytes": 65532
+    },
+    {
+      "variant": "original",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/original-sessions.parquet",
+      "rows": 249,
+      "sha256": "779a436579042962fe9456cbc01c55bf5f8c300e406dbbe7a9d253cc25cf7d7d",
+      "bytes": 55369
+    },
+    {
+      "variant": "zero",
+      "kind": "session_metrics",
+      "relative_path": "analysis-v1/zero-sessions.parquet",
+      "rows": 249,
+      "sha256": "3104dd7dd71c9bfe0f2be7d66ba9f0e75c7584c7ec80ab7e5a0189c35d8e6f52",
+      "bytes": 12498
+    }
+  ]
+}

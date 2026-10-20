@@ -1,5 +1,17 @@
 [
   {
+    "id": "glovaci2026sparsification",
+    "title": "Sparsification and decorrelation of granule cell activity in the dentate gyrus by noradrenaline",
+    "authors": ["Iulia Glovaci", "Anna Mihály", "Koen Vervaeke", "Hua Hu"],
+    "year": 2026,
+    "url": "https://doi.org/10.1038/s42003-026-09592-0",
+    "access": "Metadatos, resumen, introducción y resultados iniciales consultados. Metadatos contrastados con Crossref. Una recuperación posterior de la página quedó bloqueada por la redirección de cookies del editor. No se afirma lectura completa ni reproducción.",
+    "redistribution": "unknown",
+    "relevance": "Motiva contrastar representaciones centradas y competitivas. La transformación de claves y consultas de MARS-TITAN es propia, sin atribuir al artículo un algoritmo financiero o una garantía de separación de patrones.",
+    "phase": [3, 6],
+    "verification_date": "2026-10-20"
+  },
+  {
     "id": "abraham1996metaplasticity",
     "title": "Metaplasticity: the plasticity of synaptic plasticity",
     "authors": [

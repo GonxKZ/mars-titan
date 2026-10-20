@@ -46,6 +46,25 @@ def secondary_contrasts(names):
     return result
 
 
+def key_competition_contrasts(names):
+    """Separar centrado, selección de entrada, coordenadas fijas y referencia cero."""
+    result = {f"{name}_minus_zero": delta("zero", name) for name in names}
+    for candidate in names:
+        if candidate != "original":
+            result[f"{candidate}_minus_original"] = delta("original", candidate)
+    for base, candidate in (
+        ("fixed", "competitive"),
+        ("centered_fixed", "centered_competitive"),
+        ("centered", "centered_competitive"),
+        ("competitive", "centered_competitive"),
+    ):
+        result[f"{candidate}_minus_{base}"] = delta(base, candidate)
+    result["interaction"] = interaction(
+        "original", "centered", "competitive", "centered_competitive"
+    )
+    return result
+
+
 def interpret(interval, margin):
     if not math.isfinite(margin) or margin <= 0:
         raise ValueError("El margen debe ser positivo y finito")
@@ -219,6 +238,12 @@ def analyze(work, output):
         raise FileExistsError("El análisis necesita un directorio nuevo")
     prepared = verify_prepared(work)
     config = prepared["configuration"]
+    key_study = prepared.get("study_version") == "key_competition_v1"
+    validity_config = config.get("validity_control", {})
+    control_names = (
+        validity_config.get("reference", "cascade_original"),
+        validity_config.get("unit", "cascade_unity"),
+    )
     if len(config["seeds"]) != 1:
         raise ValueError("Este análisis describe un piloto de una semilla")
     models, scores, series, controls, cohort, steps = {}, {}, {}, {}, None, set()
@@ -247,7 +272,7 @@ def analyze(work, output):
             optimizer_steps=run["fit"]["global_step"],
         )
         steps.add(run["fit"]["global_step"])
-        if name in ("cascade_original", "cascade_unity"):
+        if name in control_names:
             controls[name] = (run, table, work / "runs" / job["id"])
         scores[name], series[name] = current, current.series("mae")
         if "zero" not in scores:
@@ -257,7 +282,7 @@ def analyze(work, output):
         raise ValueError("Las configuraciones no conservan las mismas actualizaciones")
     import torch
 
-    pair = [controls[name] for name in ("cascade_original", "cascade_unity")]
+    pair = [controls[name] for name in control_names]
     payloads = [
         torch.load(folder / run["checkpoint"]["path"], map_location="cpu", weights_only=True)
         for run, _, folder in pair
@@ -281,7 +306,7 @@ def analyze(work, output):
     )
     secondary = compare_series(
         series,
-        secondary_contrasts(list(models)),
+        (key_competition_contrasts if key_study else secondary_contrasts)(list(models)),
         **config["bootstrap"],
         sensitivity_block_lengths=config["sensitivity_block_lengths"],
     )
@@ -291,7 +316,11 @@ def analyze(work, output):
         pq.write_table(values.to_table(), output / f"{name}-sessions.parquet", compression="zstd")
     report = dict(
         schema_version=1,
-        kind="neural_plasticity_development_results",
+        kind=(
+            "key_competition_development_results"
+            if key_study
+            else "neural_plasticity_development_results"
+        ),
         scientific_level="single_seed_reused_development_pilot",
         recorded_at_utc=datetime.now(UTC).isoformat(),
         script_sha256=sha256(Path(__file__)),

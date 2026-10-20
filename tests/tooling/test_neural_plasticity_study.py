@@ -132,6 +132,28 @@ def test_pending_reservation_blocks_a_second_attempt_until_its_real_close(tmp_pa
     assert following["reserved_seconds"] == receipt["configuration"]["max_total_seconds"] - 12.5
 
 
+def test_key_competition_reuses_the_sealed_pipeline_with_its_own_catalogue(tmp_path):
+    source = tmp_path / "source" / "view.json"
+    source.parent.mkdir()
+    source.write_text(json.dumps(view()))
+    work = tmp_path / "keys"
+    receipt = api().prepare(source, work, version="key_competition_v1")
+    assert api().verify_prepared(work) == receipt
+    assert len(receipt["jobs"]) == 7
+    assert {job["arm"] for job in receipt["jobs"]} == {
+        "original",
+        "all_components",
+        "centered",
+        "competitive",
+        "centered_competitive",
+        "fixed",
+        "centered_fixed",
+    }
+    assert receipt["configuration"]["primary_candidate"] == "centered_competitive"
+    assert receipt["configuration"]["validity_control"]["unit"] == "all_components"
+    assert receipt["counts"] == view()["counts"]
+
+
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -1])
 def test_corrupt_historical_cost_is_rejected(tmp_path, value):
     work, receipt = prepared(tmp_path)
@@ -227,23 +249,38 @@ def test_attempt_closes_its_cost_and_resources_when_the_executor_returns_or_fail
 
 @pytest.mark.cuda
 @pytest.mark.parametrize(
-    "arm",
+    "version,arm",
     [
-        "mac_original",
-        "write_coherence",
-        "cascade_original",
-        "cascade_unity",
-        "cascade_write",
-        "cascade_capture",
-        "cascade_combined",
-        "cascade_fixed_write",
-        "cascade_fixed_capture",
-        "cascade_fixed_both",
-        "fixed_write",
+        ("v1", name)
+        for name in [
+            "mac_original",
+            "write_coherence",
+            "cascade_original",
+            "cascade_unity",
+            "cascade_write",
+            "cascade_capture",
+            "cascade_combined",
+            "cascade_fixed_write",
+            "cascade_fixed_capture",
+            "cascade_fixed_both",
+            "fixed_write",
+        ]
+    ]
+    + [
+        ("key_competition_v1", name)
+        for name in [
+            "original",
+            "all_components",
+            "centered",
+            "competitive",
+            "centered_competitive",
+            "fixed",
+            "centered_fixed",
+        ]
     ],
 )
 def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updates(
-    tmp_path, monkeypatch, learning_doubles, arm
+    tmp_path, monkeypatch, learning_doubles, version, arm
 ):
     from types import SimpleNamespace
 
@@ -255,7 +292,7 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
     monkeypatch.setattr(fixtures, "PROTOCOL", protocol)
     source, _ = fixtures.views(tmp_path / "data")
     original = json.loads(source.read_text())
-    config = api().configuration()
+    config = api().configuration(version)
     config.update(
         cohort_size=3,
         fold=original["temporal_view"]["fold"]["id"],
@@ -263,7 +300,7 @@ def test_real_trainer_accepts_prepared_inputs_and_pauses_without_optimizer_updat
     )
     monkeypatch.setattr(api(), "configuration", lambda version="v1": copy.deepcopy(config))
     work = tmp_path / "study"
-    receipt = api().prepare(source, work)
+    receipt = api().prepare(source, work, version=version)
     artifacts = receipt["artifacts"]
     view_path = work / next(name for name in artifacts if name.endswith("view.json"))
     protocol_path = work / next(name for name in artifacts if name.endswith("protocol.json"))

@@ -5,6 +5,7 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+from .key_competition_config import KeyCompetition
 from .plasticity_config import MemoryPlasticity
 
 ATTENTION_LAYOUTS = ("batch_first_v1", "sequence_contiguous_v1")
@@ -326,6 +327,7 @@ class MemoryConfig(FingerprintOnce):
     multiscale: MemoryMultiscale | None = None
     # Estadísticas de plasticidad separadas de los pesos rápidos y de su momentum.
     plasticity: MemoryPlasticity | None = None
+    key_competition: KeyCompetition | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -346,6 +348,14 @@ class MemoryConfig(FingerprintOnce):
         bounded_integer(self.parameter_seed, "parameter_seed", 0, 2**63 - 1)
         if type(self.normalize_qk) is not bool:
             raise ValueError("normalize_qk debe ser booleano")
+        if self.key_competition is not None:
+            if not isinstance(self.key_competition, KeyCompetition) or not self.normalize_qk:
+                raise ValueError("La competencia necesita KeyCompetition y normalize_qk=True")
+            if (
+                self.key_competition.retained is not None
+                and self.key_competition.retained > self.dim
+            ):
+                raise ValueError("retained supera dim")
         if (
             type(self.theta_max) not in (int, float)
             or not math.isfinite(self.theta_max)
@@ -393,6 +403,7 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("stability")
         fields.pop("multiscale")
         fields.pop("plasticity")
+        fields.pop("key_competition")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -436,6 +447,8 @@ class MemoryConfig(FingerprintOnce):
             extension["multiscale"] = self.multiscale.identity()
         if self.plasticity is not None:
             extension["plasticity"] = self.plasticity.identity()
+        if self.key_competition is not None:
+            extension["key_competition"] = self.key_competition.identity()
         return {
             **fields,
             **extension,

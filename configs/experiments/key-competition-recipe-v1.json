@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "declared_not_executed",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "max_batch": 128,
+    "max_state_bytes": 134217728,
+    "memory_projections": "titans_mac_paper_projections_v2",
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 1,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 64,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0,
+    "accumulation_rows": null,
+    "precision": "fp32_strict"
+  },
+  "walk_forward": {
+    "warmup_months": 12,
+    "search_cases": {
+      "lr1e-4": {
+        "learning_rate": 0.0001
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      }
+    }
+  },
+  "pending": [
+    "Receta experimental independiente. No sustituye la campaña ni abre el test final."
+  ]
+}
