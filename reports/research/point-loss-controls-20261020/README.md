@@ -1,5 +1,7 @@
 # Verificación de controles puntuales de cuantiles
 
+Esta verificación precede al aprendizaje. El [estudio posterior](development-v1/README.md) ya completó sus 25 ajustes y es inconcluyente frente a L1/10. Las cifras técnicas y el estado de preparación descritos aquí conservan su fecha de comprobación.
+
 Se implementan los objetivos L1 y L1/10 de solo mediana sobre la misma cabeza de cinco salidas. El [contrato](../../../docs/engineering/quantile-point-objectives.md) conserva la arquitectura y distingue sus colas sin ajustar de cuantiles aprendidos. Estos controles permiten contrastar la atribución de la variante de separación de señales. No son una nueva cabeza escalar ni completan la comparación original del Transformer de #22.
 
 La [verificación](verification.json) cubre 291 casos distintos de la colección actual, incluidos 42 CUDA, en una única pasada final. No hay fallos ni omisiones en esa selección. Se comprueban valores y gradientes calculables, escala, empates, entrada vacía, formas, precisión, dispositivos, valores no finitos, pérdida y cabeza compatibles, rechazo de destilación, integridad de fuentes, recuperación, recetas por modelo y contratos históricos. La pasada final completó los 291 casos en 387,97 segundos. No es toda la batería del repositorio.
@@ -12,4 +14,4 @@ La [cobertura y CRAP](quality.json) se calculan con coverage.py 7.16.1 y Radon 6
 
 El [protocolo](../../../docs/experiments/quantile-point-objectives-v1.md) y la preparación real enumeran 25 ajustes, cinco semillas y todas las filas admisibles de la misma cohorte de 64 activos desde 2000 con máscaras. Este informe de verificación no contiene ningún ajuste científico nuevo. La preparación no abre la campaña completa ni el test final y no reinicia el presupuesto acumulado.
 
-La [revisión de precisión y tiempo](../../../docs/research/predictive-precision-and-time.md) incorpora dos fuentes de neurociencia con la [auditoría del alcance leído](sources.json), una corrección editorial y el commit exacto del código inspeccionado. No se ejecutó MATLAB, no se reprodujeron sus experimentos y no se integró su código. No se atribuye novedad ni una mejora SOTA a esta implementación de controles.
+La [revisión de precisión, tiempo y control contextual](../../../docs/research/predictive-precision-and-time.md) incorpora tres fuentes de neurociencia con la [auditoría del alcance leído](sources.json), sus correcciones y el commit exacto del código realmente inspeccionado. No se ejecutó MATLAB, no se reprodujeron sus experimentos y no se integró su código. No se atribuye novedad ni una mejora SOTA a esta implementación de controles.
