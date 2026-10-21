@@ -62,7 +62,7 @@ Este cálculo mantiene fija la entrada y usa memoria lineal. No incluye la depen
 
 ## Controles e integración
 
-La [declaración de brazos](../../configs/experiments/bank-readout-v1.json) incluye la lectura anterior de matrices medias, mezclas de funciones uniforme, constante y por consulta, réplicas y dos combinaciones con el mismo grafo regional. Reutiliza la [receta cronológica](../../configs/experiments/bank-readout-recipe-v1.json). No duplica la canalización de entrenamiento. K = 1 sigue siendo el contraste principal y no cuenta bancos ni escrituras internas.
+La [declaración de configuraciones](../../configs/experiments/bank-readout-v1.json) incluye la lectura anterior de matrices medias, mezclas de funciones uniforme, constante y por consulta, réplicas y dos combinaciones con el mismo grafo regional. Reutiliza la [receta cronológica](../../configs/experiments/bank-readout-recipe-v1.json). No duplica la canalización de entrenamiento. K = 1 sigue siendo el contraste principal y no cuenta bancos ni escrituras internas.
 
 El consumidor congelado registra fuente, configuración y parámetros del módulo. Se valida el checkpoint del lector antes de copiar parámetros de sus padres. La recuperación conserva todas las matrices históricas y reproduce la siguiente lectura y actualización. Los contadores de la sesión distinguen evaluaciones de funciones, consultas de rutas y matrices actualizadas. No son FLOPs, lanzamientos CUDA ni pasos de optimizador.
 
