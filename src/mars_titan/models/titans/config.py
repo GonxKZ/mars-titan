@@ -5,6 +5,7 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+from .bank_readout import BankReadoutConfig
 from .key_competition_config import KeyCompetition
 from .plasticity_config import MemoryPlasticity
 
@@ -200,7 +201,7 @@ class MemoryStability:
 
 # Formas de PT5. La cascada acopla tres copias de los pesos rápidos en cadena y el banco
 # las deja independientes, cada una con su propio olvido.
-MULTISCALE_FORMS = ("cascade", "ema_bank")
+MULTISCALE_FORMS = ("cascade", "ema_bank", "replica_bank")
 # Capacidades C_k = 2^(k−1) de la cascada de Benna y Fusi (2016) con tres niveles.
 MULTISCALE_CAPACITIES = (1.0, 2.0, 4.0)
 
@@ -224,7 +225,7 @@ class MemoryMultiscale:
 
     def __post_init__(self) -> None:
         if not isinstance(self.form, str) or self.form not in MULTISCALE_FORMS:
-            raise ValueError("form debe ser cascade o ema_bank")
+            raise ValueError("form debe ser cascade, ema_bank o replica_bank")
         coupling = _finite_number(self.coupling, "coupling")
         # Con g ≤ 1/4 las diagonales de la transición son no negativas y la primera fila
         # admite la norma ponderada de `contraction` para cualquier α en [α_lo, 1].
@@ -241,6 +242,8 @@ class MemoryMultiscale:
     @property
     def timescales(self) -> tuple[float, float, float]:
         """C_k / g_{k,k+1}, en observaciones del flujo."""
+        if self.form == "replica_bank":
+            raise ValueError("Las réplicas usan olvido dependiente de entrada, sin escala fija")
         return tuple(
             capacity / conductance
             for capacity, conductance in zip(MULTISCALE_CAPACITIES, self.conductances, strict=True)
@@ -255,6 +258,8 @@ class MemoryMultiscale:
         """Matriz 3 × 3 de la parte homogénea de un elemento de los pesos, con olvido α."""
         g12, g23, g34 = self.conductances
         c1, c2, c3 = MULTISCALE_CAPACITIES
+        if self.form == "replica_bank":
+            return ((1 - alpha, 0.0, 0.0), (0.0, 1 - alpha, 0.0), (0.0, 0.0, 1 - alpha))
         if self.form == "ema_bank":
             d2, d3 = self.bank_decays
             return ((1 - alpha, 0.0, 0.0), (0.0, 1 - d2, 0.0), (0.0, 0.0, 1 - d3))
@@ -275,7 +280,7 @@ class MemoryMultiscale:
         floor = _finite_number(alpha_floor, "alpha_floor")
         if not 0 < floor < 1:
             raise ValueError("alpha_floor debe pertenecer a (0, 1)")
-        if self.form == "ema_bank":
+        if self.form != "cascade":
             weights = (1.0, 1.0, 1.0)
         else:
             g12, g23, g34 = self.conductances
@@ -289,6 +294,16 @@ class MemoryMultiscale:
         return rho, weights
 
     def identity(self) -> dict:
+        if self.form == "replica_bank":
+            return dict(
+                form=self.form,
+                levels=3,
+                coupling_unused=self.coupling,
+                hidden_initial="copy_of_initial_weights",
+                read="mean_of_levels",
+                dynamics="same_titans_alpha_and_write_in_all_banks",
+                source="redundancy_control_v1",
+            )
         return {
             "form": self.form,
             "coupling": self.coupling,
@@ -328,6 +343,7 @@ class MemoryConfig(FingerprintOnce):
     # Estadísticas de plasticidad separadas de los pesos rápidos y de su momentum.
     plasticity: MemoryPlasticity | None = None
     key_competition: KeyCompetition | None = None
+    bank_readout: BankReadoutConfig | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -367,6 +383,17 @@ class MemoryConfig(FingerprintOnce):
             raise ValueError("stability debe ser MemoryStability o None")
         if self.multiscale is not None and not isinstance(self.multiscale, MemoryMultiscale):
             raise ValueError("multiscale debe ser MemoryMultiscale o None")
+        if self.bank_readout is not None:
+            if (
+                type(self.bank_readout) is not BankReadoutConfig
+                or self.multiscale is None
+                or self.multiscale.form not in ("ema_bank", "replica_bank")
+            ):
+                raise ValueError("El lector necesita bancos EMA o réplicas identificados")
+            if self.plasticity is not None or self.stability is not None:
+                raise ValueError(
+                    "La combinación del lector con plasticidad o PT1 necesita otro contraste"
+                )
         if self.plasticity is not None:
             if not isinstance(self.plasticity, MemoryPlasticity):
                 raise ValueError("plasticity debe ser MemoryPlasticity o None")
@@ -404,6 +431,7 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("multiscale")
         fields.pop("plasticity")
         fields.pop("key_competition")
+        fields.pop("bank_readout")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -445,6 +473,9 @@ class MemoryConfig(FingerprintOnce):
             extension["stability"] = self.stability.identity()
         if self.multiscale is not None:
             extension["multiscale"] = self.multiscale.identity()
+        if self.bank_readout is not None:
+            extension["bank_readout"] = self.bank_readout.identity()
+            extension["multiscale"]["read"] = "bank_readout_v1"
         if self.plasticity is not None:
             extension["plasticity"] = self.plasticity.identity()
         if self.key_competition is not None:

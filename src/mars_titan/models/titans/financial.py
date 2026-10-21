@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
     MAX_BLOCK_ROWS,
@@ -120,6 +121,7 @@ class FinancialConfig:
     attention_layout: str = "batch_first_v1"
     # Grafo de evidencia con memoria de trabajo reiniciada por decisión.
     regional_fusion: RegionalFusionConfig | None = None
+    memory_bank_readout: BankReadoutConfig | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -238,6 +240,21 @@ class FinancialConfig:
                 )
             if self.presence_modulation is not None:
                 raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
+        if isinstance(self.memory_bank_readout, dict):
+            if set(self.memory_bank_readout) != {f.name for f in fields(BankReadoutConfig)}:
+                raise ValueError("memory_bank_readout debe declarar toda su configuración")
+            object.__setattr__(
+                self, "memory_bank_readout", BankReadoutConfig(**self.memory_bank_readout)
+            )
+        if self.memory_bank_readout is not None:
+            if (
+                type(self.memory_bank_readout) is not BankReadoutConfig
+                or self.memory_multiscale is None
+                or self.memory_multiscale.form not in ("ema_bank", "replica_bank")
+            ):
+                raise ValueError("El lector necesita bancos EMA o réplicas identificados")
+            if self.memory_plasticity is not None or self.memory_stability is not None:
+                raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -308,6 +325,8 @@ class FinancialConfig:
             result.update(memory_key_competition=asdict(self.memory_key_competition))
         if self.regional_fusion is not None:
             result.update(regional_fusion=self.regional_fusion.identity())
+        if self.memory_bank_readout is not None:
+            result.update(memory_bank_readout=self.memory_bank_readout.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -452,6 +471,8 @@ class FinancialPredictor(nn.Module):
         )
         if self.session_context is not None and local_control is not None:
             raise ValueError("PT4 no se combina con el control local C")
+        if config.memory_bank_readout is not None and local_control is not None:
+            raise ValueError("El lector de bancos con C local necesita otro contraste")
         self.mac = None
         if config.variant != "transformer_direct":
             self.mac = TitansMAC(
@@ -470,6 +491,7 @@ class FinancialPredictor(nn.Module):
                         multiscale=config.memory_multiscale,
                         plasticity=config.memory_plasticity,
                         key_competition=config.memory_key_competition,
+                        bank_readout=config.memory_bank_readout,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -561,6 +583,10 @@ class FinancialPredictor(nn.Module):
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         expected = self.state_dict()
+        if self.mac is not None and self.mac.memory.bank_readout is not None:
+            self.mac.memory.bank_readout.validate_payload(
+                state_dict, prefix + "mac.memory.bank_readout."
+            )
         if self.local_control is not None:
             self.local_control.validate_payload(state_dict, prefix + "local_control.")
         actual = {
@@ -599,6 +625,18 @@ class FinancialPredictor(nn.Module):
             cached = hashlib.sha256(canonical(self.get_extra_state()).encode()).hexdigest()
             self._config_ids[self.training] = cached
         return cached
+
+    def operation_counts(self, rows):
+        """Evaluaciones del grafo y de bancos con un avance MAC por fila financiera."""
+        bounded_integer(rows, "observaciones financieras", 0, 16384)
+        result = {} if self.regional_fusion is None else self.regional_fusion.operation_counts(rows)
+        if self.mac is not None and self.mac.memory.bank_readout is not None:
+            result.update(
+                self.mac.memory.bank_readout.operation_counts(
+                    rows, mode=self.mac.config.memory_mode, depth=self.mac.config.memory.depth
+                )
+            )
+        return result
 
     def _tensor_bytes_per_flow(self):
         fast = (

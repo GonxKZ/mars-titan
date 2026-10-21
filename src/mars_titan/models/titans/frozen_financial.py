@@ -12,6 +12,7 @@ import torch
 from mars_titan.models.quantile_head import QuantileHead
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .bank_readout import BankReadout
 from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .financial import FinancialPredictor, _tensor_digest
@@ -31,6 +32,7 @@ _TITANS_MODULES = (
     "financial_blocks",
     "presence_modulation",
     "regional_fusion",
+    "bank_readout",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -127,6 +129,9 @@ def _module_settings(module):
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
         settings["regional_fusion"] = module.config.identity()
+    elif type(module) is BankReadout:
+        fields = ("dim",)
+        settings["bank_readout"] = module.config.identity()
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
