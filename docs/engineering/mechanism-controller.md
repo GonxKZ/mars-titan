@@ -1,6 +1,28 @@
-# Recepción de resultados para el controlador de mecanismos
+# Catálogo y propuestas del controlador de mecanismos
 
-La integración de un controlador de mecanismos sigue en curso en [#701](https://github.com/GonxKZ/mars-titan/issues/701). Está implementado el acumulador de feedback de PT2. Todavía no existe el ejecutor común de rutas, contexto PT4 y calibración con confirmación en `FinancialSession`. Este componente no activa una política ni modifica las variantes por defecto.
+La integración de un controlador de mecanismos sigue en curso en [#701](https://github.com/GonxKZ/mars-titan/issues/701). Están implementados el acumulador de feedback de PT2, un catálogo finito y un consumidor provisional que combina contexto PT4, rutas episódicas y calibración. Las acciones son controles fijos. Faltan el selector aprendido y la confirmación de este estado auxiliar en `FinancialSession`. Las variantes por defecto no cambian.
+
+## Catálogo y momentos de ejecución
+
+[`MechanismCatalog`](../../src/mars_titan/models/titans/mechanism_catalog.py) registra 36 combinaciones. El contexto puede estar desactivado o utilizar el componente del padre. El lector conserva las seis rutas existentes, `k1`, `k2c`, `k2r`, `k4cc`, `k4cr` y `k4rc`. La calibración puede estar desactivada, usar la corrección inicial estática o recibir feedback de sus emisiones online. No se admiten comandos, código generado, acceso a red ni callbacks arbitrarios como acciones.
+
+El contexto se elige antes de MAC. Solo los tokens fusionados de las filas seleccionadas llegan a PT4 y se acumulan sin realimentar el contexto añadido. El núcleo avanza una vez por observación. Después se ejecuta la ruta episódica elegida, conservando K1 y compartiendo su prefijo con los pasos posteriores. La calibración recibe la cohorte completa de cada mercado. Estos refinamientos no son otras actualizaciones de la memoria neuronal de Titans.
+
+Los presupuestos distinguen refinamientos y búsquedas por fila, mercados con escritura de contexto y filas online. El lector se admite con el tamaño lógico del evento, limitado por el bloque declarado del padre. Dividirlo después en bloques físicos más pequeños no habilita una ruta que antes no cabía. Las unidades de trabajo no se convierten implícitamente en MAE ni en utilidad financiera.
+
+Cuando falta un mecanismo o presupuesto, se registra el motivo y se emite K1 sin calibración. Si el fallo se conoce después de elegir el contexto, se conserva ese contexto pre-MAC. No se recalcula la transición para aparentar que la decisión anterior no ocurrió. Una entrada inválida, una identidad incompatible o un valor no finito producen un error, no un retorno silencioso.
+
+## Consumidor provisional y estado
+
+[`FrozenMechanismConsumer`](../../src/mars_titan/models/titans/mechanism_consumer.py) verifica módulos, parámetros congelados, métodos, precisión y fuentes. `begin` declara identidades, corte y madurez por fila. `prepare` devuelve inmediatamente el estado rápido del bloque para su descarga por el enlace financiero. El evento conserva tokens de contexto pendientes y salidas CPU acotadas, no los estados rápidos de toda la historia. `finish` exige todas las filas, propone una escritura de contexto por mercado y aplica la calibración.
+
+La emisión lleva `publication_status="proposed_not_durable"`. Su estado en memoria no acredita publicación en disco. Las trazas separan ruta solicitada, ejecutada y emitida. Los contadores distinguen observaciones MAC, refinamientos, búsquedas, escrituras de contexto propuestas y propuestas de calibración creadas, seleccionadas o descartadas. Contabilizar un intento no lo convierte en una confirmación.
+
+Si una propuesta online supera los bytes disponibles o la reserva operativa para feedback, se descartan juntas las propuestas online de ese evento. También vuelve a K1 la primera cohorte de mercado que había cabido. Se conservan los contadores del trabajo ya realizado. La reserva usa el tamaño del JSON y un margen por fila pendiente. No es una cota de RAM, una certificación numérica ni una garantía de que todo resultado futuro quepa.
+
+La identidad declara `predict_all_then_feedback_v1`: primero se emiten todas las predicciones del evento y después se reciben resultados anteriores disponibles. El replay original de PT2 aplicaba las etiquetas maduras antes de emitir. Son políticas diferentes. Una cola llena puede provocar un retorno aunque el feedback posterior del mismo evento vaya a liberar capacidad. No se adelantan esas etiquetas.
+
+El estado auxiliar exporta contexto y calibración con versión e identidad. Un cierre administrativo conserva pendientes como archivo terminal censurado, sin inventar su madurez ni avanzar el reloj del calibrador al futuro. Ese archivo no puede continuar otra fase. Las pruebas de exportación y restauración auxiliares no sustituyen las pruebas de cortes y recuperación durable que faltan en `FinancialSession`.
 
 [`CohortFeedback`](../../src/mars_titan/calibration/cohort_feedback.py) recibe cohortes completas de los cinco cuantiles financieros y conserva sus identidades y fechas de madurez por fila. Su calibrador es el [`OnlineConformal`](../../src/mars_titan/calibration/online_conformal.py) existente. La madurez la aporta el contrato temporal que use el consumidor. El acumulador no la sustituye por un día añadido a la fecha de decisión.
 
@@ -24,7 +46,7 @@ Los límites por defecto son 32.768 filas pendientes y 8 MiB de JSON canónico. 
 
 ## Comprobación y coste
 
-Las [pruebas y medidas](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. La mutación dirigida y CRAP se registran con su alcance.
+Las [pruebas y medidas del acumulador](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. El [informe del consumidor](../../reports/engineering/mechanism-consumer-20261021/README.md) añade las 36 combinaciones en CPU y CUDA, presupuesto lógico, recuperación auxiliar, detección de cambios y coste del recorrido provisional. Ambos registran mutación dirigida y CRAP con su alcance.
 
 El acumulador y la serialización trabajan en CPU con NumPy. Se midieron propuestas completas con 64 y 256 filas y una o cuatro cohortes pendientes. La copia explícita de contenedores redujo el coste observado frente a las copias recursivas, sin cambiar los valores ni los estados exportados. No se ha medido aquí el predictor, el recorrido CUDA ni la escritura atómica en disco.
 
@@ -40,4 +62,4 @@ Para repetir la medida se necesita una ruta de salida cuyo directorio exista y c
 PYTHONPATH=src:. uv run --no-sync python reports/engineering/cohort-feedback-20261021/benchmark.py --output /tmp/mars-titan-cohort-feedback-cost.json
 ```
 
-El siguiente tramo debe conectar estos snapshots con la preparación, resolución, cierre de fase, verificación, recuperación y poda de `FinancialSession`. También faltan el catálogo cerrado de acciones y sus puntos de decisión, las trazas de intento, propuesta y confirmación, el ajuste con cortes disjuntos y los controles de utilidad. La campaña completa y el test final permanecen cerrados. No hay una mejora predictiva medida por este componente.
+El siguiente tramo debe conectar estos snapshots y sus trazas con la preparación, resolución, cierre de fase, verificación, recuperación y poda de `FinancialSession`. Faltan la confirmación durable, el ajuste del selector con cortes disjuntos y sus controles de utilidad. El acumulador y el catálogo no completan ese objetivo. La campaña completa y el test final permanecen cerrados. No hay una mejora predictiva medida por este componente.

@@ -1,0 +1,271 @@
+{
+  "scope": "21 mutaciones dirigidas. Aplicar cada receta por separado sobre su fuente identificada, en copia aislada. La repetición de introspección es un contrato de trabajo, no un cambio numérico.",
+  "recipes": [
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if type(flow_ids) not in (tuple, list):",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_unknown_flow_iterator_is_rejected_before_iteration",
+      "name": "iterate_unbounded_flows"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "or type(payload[\"schema_version\"]) is not int",
+          "after": "or False"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_restore_requires_the_exact_auxiliary_schema_version",
+      "name": "accept_boolean_schema"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if active and state.terminal is not None:",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_administrative_closure_censors_future_maturity_without_fabricating_a_mature_update",
+      "name": "forget_terminal_guard"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "planning_rows = min(len(flows), self.max_batch)",
+          "after": "planning_rows = 1"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_reader_admission_uses_the_logical_event_instead_of_physical_blocks",
+      "name": "drop_logical_reader_budget"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "online_capacity=available_online[group]",
+          "after": "online_capacity=True"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_a_full_online_queue_uses_k1_before_feedback_frees_space",
+      "name": "ignore_pre_feedback_capacity"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_calibration.py",
+      "source_sha256": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "changes": [
+        {
+          "before": "if capacity_failure:\n        work",
+          "after": "if capacity_failure:\n        calibration = proposed\n        work"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_second_market_capacity_failure_discards_the_first_market_proposal",
+      "name": "publish_first_market_on_failure"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_calibration.py",
+      "source_sha256": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "changes": [
+        {
+          "before": "point=row[\"k1_point\"]",
+          "after": "point=row[\"point\"]"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_byte_exhaustion_retains_k1_without_repeating_mac_or_undoing_the_selected_context",
+      "name": "forget_k1_point_return"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_calibration.py",
+      "source_sha256": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "changes": [
+        {
+          "before": "work[\"online_discarded_proposals\"] = work[\"online_created_proposals\"]",
+          "after": "work[\"online_discarded_proposals\"] = 0"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_second_market_capacity_failure_discards_the_first_market_proposal",
+      "name": "omit_discarded_work"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_calibration.py",
+      "source_sha256": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "changes": [
+        {
+          "before": "if not _reserve_fits(emission.state):",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_emission_that_fits_json_but_not_feedback_reserve_returns_without_losing_created_work",
+      "name": "ignore_feedback_reserve"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "_digest(self._static) != self._identity[\"static_calibration\"]",
+          "after": "False"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_changed_static_calibration_is_rejected_by_the_frozen_identity",
+      "name": "ignore_static_identity"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if type(state.calibration) is not CohortFeedback:",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_unknown_calibration_object_is_rejected_before_calling_its_methods",
+      "name": "allow_foreign_calibration"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if any(flow in processed for flow in batch.flow_ids):",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_wrong_identity_and_incomplete_or_repeated_blocks_are_contract_errors",
+      "name": "forget_repeated_rows"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if len(event.rows) != len(event.flow_ids) or set(by_flow) != set(event.flow_ids):",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_wrong_identity_and_incomplete_or_repeated_blocks_are_contract_errors",
+      "name": "forget_completeness"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "source_sha256": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "changes": [
+        {
+          "before": "if event.snapshot is not None:\n            event.snapshot.verify()",
+          "after": "if False:\n            event.snapshot.verify()"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_consumer.py::test_populated_snapshot_uses_one_route_and_detects_byte_mutation_at_the_boundary",
+      "name": "drop_source_snapshot_check"
+    },
+    {
+      "file": "src/mars_titan/models/titans/mechanism_catalog.py",
+      "source_sha256": "be754afb519676e6fc6e445797e811739ecdb16e623b26877033d46b8404af84",
+      "changes": [
+        {
+          "before": "MechanismAction(selected_context, \"k1\", \"none\") if reasons else action",
+          "after": "MechanismAction(\"off\", \"k1\", \"none\") if reasons else action"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_catalog.py::test_post_stage_return_keeps_the_context_selected_before_mac",
+      "name": "reset_context_after_mac"
+    },
+    {
+      "file": "src/mars_titan/models/titans/financial.py",
+      "source_sha256": "eb950231a91c399ef6374879f87b190235e217eac4fcbcccf4cafd6c0f5db44b",
+      "changes": [
+        {
+          "before": "if context is not None and (context_selection is None or any(context_selection)):",
+          "after": "if context is not None:"
+        }
+      ],
+      "test": "tests/models/titans/test_context_selection.py::test_context_off_matches_the_parent_without_context_and_performs_no_context_write",
+      "name": "read_disabled_context"
+    },
+    {
+      "file": "src/mars_titan/models/titans/refinement_routes.py",
+      "source_sha256": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+      "changes": [
+        {
+          "before": "return first, node.result",
+          "after": "return node.result, node.result"
+        }
+      ],
+      "test": "tests/models/titans/test_mechanism_routes.py::test_pair_keeps_k1_and_only_executes_the_requested_path",
+      "name": "lose_k1_prefix"
+    },
+    {
+      "file": "src/mars_titan/calibration/cohort_feedback_state.py",
+      "source_sha256": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+      "changes": [
+        {
+          "before": "raise CohortCapacityError(\"El estado supera su presupuesto de bytes serializados\")",
+          "after": "raise ValueError(\"El estado supera su presupuesto de bytes serializados\")"
+        }
+      ],
+      "test": "tests/calibration/test_cohort_capacity.py::test_serialized_byte_exhaustion_has_a_distinct_error_and_keeps_the_source",
+      "name": "erase_capacity_error_type"
+    },
+    {
+      "name": "cache_across_audits",
+      "file": "src/mars_titan/models/titans/frozen_financial.py",
+      "source_sha256": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+      "changes": [
+        {
+          "before": "def _execution_signature(models):",
+          "after": "_SHARED_CLASS_METHODS = {}\n\ndef _execution_signature(models):"
+        },
+        {
+          "before": "class_methods = {}",
+          "after": "class_methods = _SHARED_CLASS_METHODS"
+        }
+      ],
+      "test": "tests/models/titans/test_frozen_signature.py::test_class_methods_are_reinspected_on_the_next_audit"
+    },
+    {
+      "name": "skip_later_instance_hooks",
+      "file": "src/mars_titan/models/titans/frozen_financial.py",
+      "source_sha256": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+      "changes": [
+        {
+          "before": "if attribute.endswith(\"_hooks\") and hooks:",
+          "after": "if False:"
+        }
+      ],
+      "test": "tests/models/titans/test_frozen_signature.py::test_repeated_class_audit_still_rejects_a_hook_on_a_later_instance"
+    },
+    {
+      "name": "repeat_class_introspection",
+      "file": "src/mars_titan/models/titans/frozen_financial.py",
+      "source_sha256": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+      "changes": [
+        {
+          "before": "if kind not in class_methods:",
+          "after": "if True:"
+        }
+      ],
+      "test": "tests/models/titans/test_frozen_signature.py::test_audit_inspects_each_shared_module_class_once_and_keeps_all_instances"
+    }
+  ],
+  "pytest_arguments": [
+    "uv",
+    "run",
+    "--no-sync",
+    "pytest",
+    "-q",
+    "-m",
+    "not cuda"
+  ],
+  "not_exhaustive": true
+}
