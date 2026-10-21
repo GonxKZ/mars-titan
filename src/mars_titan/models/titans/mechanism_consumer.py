@@ -19,6 +19,7 @@ from mars_titan.calibration.cohort_feedback import CohortFeedback
 from mars_titan.calibration.online_conformal import _instant, _require
 from mars_titan.models.quantile_head import QuantileHead
 
+from . import regional_mechanism_trace, regional_routes
 from .config import bounded_integer, canonical
 from .episodic_readout import EpisodicReadout
 from .episodic_snapshot import EpisodeSnapshot
@@ -47,6 +48,8 @@ _SOURCES = (
     "mars_titan.models.titans.mechanism_catalog",
     "mars_titan.models.titans.refinement_routes",
     "mars_titan.models.titans.refinement_policy",
+    "mars_titan.models.titans.regional_routes",
+    "mars_titan.models.titans.regional_mechanism_trace",
     "mars_titan.calibration.cohort_feedback",
     "mars_titan.calibration.cohort_feedback_state",
     "mars_titan.calibration.online_conformal",
@@ -124,9 +127,11 @@ class FrozenMechanismConsumer:
         catalog = MechanismCatalog() if catalog is None else catalog
         if type(action) is not MechanismAction or type(catalog) is not MechanismCatalog:
             raise ValueError("El consumidor necesita acción y catálogo identificados")
+        regional = type(readout) is EpisodicReadout and readout.config.evidence_bridge is not None
+        if regional != (catalog.reader_contract == "shared_evidence_bridge_v1"):
+            raise ValueError("El lector regional necesita un catálogo explícito compatible")
         if readout is not None and (
             type(readout) is not EpisodicReadout
-            or readout.config.evidence_bridge is not None
             or readout.config.refinements != 1
             or readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
@@ -153,6 +158,8 @@ class FrozenMechanismConsumer:
         if policy is not None and (
             type(predictor.head) is not QuantileHead
             or policy.mean.device != predictor.head.weight.device
+            or (regional and policy.catalog_id != catalog.fingerprint())
+            or (policy.catalog_id is not None and policy.catalog_id != catalog.fingerprint())
         ):
             raise ValueError("El selector necesita cuantiles y el dispositivo del predictor")
         self.max_batch = min(
@@ -198,6 +205,8 @@ class FrozenMechanismConsumer:
         )
         if policy is not None:
             self._identity["selector"] = self._policy_identity
+        if regional:
+            self._identity.update(schema_version=2, recipe="frozen_regional_mechanism_cohort_v1")
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -371,12 +380,20 @@ class FrozenMechanismConsumer:
                 )
                 self.readout._validate_read(base, snapshot, context_id, cutoff, refinements=1)
             count = snapshot.count if snapshot is not None else 0
-            reader_limit = max(
+            admissible = tuple(
                 k
                 for k in (1, 2, 4)
                 if self.readout.estimated_bytes(planning_rows, count, refinements=k)
                 <= self.readout.config.max_working_bytes
+                and (
+                    self.readout.config.evidence_bridge is None
+                    or regional_mechanism_trace.estimated_bytes(self.readout, len(flows), count, k)
+                    <= self.readout.config.max_working_bytes
+                )
             )
+            if not admissible:
+                raise ValueError("El presupuesto no permite la traza regional del K1 antes de MAC")
+            reader_limit = max(admissible)
             populated = count > 0
         elif snapshot is not None:
             raise ValueError("No hay un lector que admita la instantánea")
@@ -500,8 +517,11 @@ class FrozenMechanismConsumer:
             base = prepared.working_state.index_select(0, index)
             first = last = base
             steps = searches = 0
+            regional = self.catalog.reader_contract != "legacy"
+            regional_rows = None
             if self.readout is not None and not event.warmup:
-                initial, final = run_route_pair(
+                runner = regional_routes.run_route_pair if regional else run_route_pair
+                initial, final = runner(
                     self.readout,
                     base,
                     event.snapshot,
@@ -515,6 +535,8 @@ class FrozenMechanismConsumer:
                     final.refinements,
                     final.searches,
                 )
+                if regional:
+                    regional_rows = regional_mechanism_trace.export(final, event.snapshot)
             if self.readout is None:
                 initial_points = prepared.point_predictions.index_select(0, index)
                 initial_quantiles = (
@@ -559,6 +581,7 @@ class FrozenMechanismConsumer:
                         reader_steps=steps,
                         reader_searches=searches,
                         discarded_reader_steps=0,
+                        **({"regional_readout": regional_rows[local]} if regional else {}),
                     )
                 )
         return MechanismBlock(
@@ -590,6 +613,12 @@ class FrozenMechanismConsumer:
             else 0,
         )
         work.update(self.predictor.operation_counts(len(rows)))
+        if self.catalog.reader_contract != "legacy":
+            work["bridge_value_projections"] = (
+                sum(row["regional_readout"]["value_projections"] for row in rows)
+                if not event.warmup
+                else 0
+            )
         context = (
             self.predictor.commit_context(event.context) if event.context is not None else None
         )

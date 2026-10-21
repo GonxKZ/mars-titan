@@ -22,7 +22,9 @@ La [cobertura y CRAP](quality.json) usan coverage.py 7.16.1, Radon 6.0.1 y el re
 
 ## Coste nativo observado
 
-El [protocolo original](cost-protocol.json) fijó 4, 64 y 256 consultas, K = 1 y 4, lector anterior y puente, dos calentamientos y cinco repeticiones. Se usaron FP64, `cuda:0`, H = 32, bloques físicos de 64 y M1 con capacidad 256. El puente usa tres regiones y dos ciclos. Los activos replican un fixture de precios, con otras modalidades ausentes, máscaras explícitas y etiquetas manuales. No son historias bursátiles independientes ni una evaluación de FinMultiTime.
+El [protocolo original](cost-protocol.json) fijó 4, 64 y 256 consultas, K = 1 y 4, lector anterior y puente, dos calentamientos y cinco repeticiones. Se usaron FP64, `cuda:0`, H = 32, bloques físicos de 64 y M1 con capacidad 256. El puente usa tres regiones y dos ciclos. Los activos replican un fixture de precios, con etiquetas manuales. El generador marca presente un canal gráfico constante de valor `3.0` y ausentes noticias, fundamentales y macro. No contiene gráficos reales ni historias bursátiles independientes y no evalúa FinMultiTime.
+
+La revisión inicial describía todas las modalidades distintas de precios como ausentes. Esa descripción se corrige tras inspeccionar `flow_source`, sin modificar protocolos, entradas, artefactos ni medidas. La [corrección de procedencia](../bridge-controller-20261021/data-description-correction.json) conserva el generador y su huella.
 
 La primera pasada alcanzó su límite de 600 segundos con diez de doce condiciones completas y salida 124. Se preservó su JSON parcial, su fuente y el registro de terminación. Una [continuación registrada antes de ejecutarse](continuation-protocol.json) midió solo las dos condiciones restantes, de 256 consultas y K = 4. Conservó el cálculo, precisión, calentamiento y repeticiones. Añadió al script únicamente filtros explícitos de tamaños y K y metadatos de la selección.
 

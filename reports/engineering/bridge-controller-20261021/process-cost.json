@@ -1,0 +1,20 @@
+{
+  "runs": [
+    {
+      "artifact": "process-cost.txt",
+      "sha256": "c216e6d81722cd1f80c699720e128bae787ff4e2138b678de968f8fdde2b9435",
+      "wall_seconds": 470.32,
+      "maximum_rss_kib": 1661412,
+      "exit_code": 1
+    },
+    {
+      "artifact": "continuation-process-cost.txt",
+      "sha256": "15263ce8859bdc961c7de07c883c7f8afb4348fc045ac87a8255aff11a519b37",
+      "wall_seconds": 278.93,
+      "maximum_rss_kib": 1657944,
+      "exit_code": 0
+    }
+  ],
+  "rss_unit": "KiB_on_this_Linux_system",
+  "energy_measured": false
+}

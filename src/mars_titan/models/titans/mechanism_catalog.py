@@ -91,10 +91,16 @@ def reader_work(route, availability):
 @dataclass(frozen=True)
 class MechanismCatalog(FingerprintOnce):
     budget: MechanismBudget = MechanismBudget()
+    reader_contract: str = "legacy"
 
     def __post_init__(self):
         if type(self.budget) is not MechanismBudget:
             raise ValueError("El catálogo necesita su presupuesto identificado")
+        if type(self.reader_contract) is not str or self.reader_contract not in (
+            "legacy",
+            "shared_evidence_bridge_v1",
+        ):
+            raise ValueError("El catálogo necesita un contrato de lector conocido")
 
     def actions(self):
         return tuple(
@@ -103,7 +109,7 @@ class MechanismCatalog(FingerprintOnce):
         )
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             kind="financial_mechanism_catalog_v1",
             actions=[asdict(action) for action in self.actions()],
@@ -116,6 +122,14 @@ class MechanismCatalog(FingerprintOnce):
             work_units="reader_steps_and_searches_per_row_context_writes_per_market",
             utility_conversion="none_no_implicit_conversion_of_time_to_prediction_error",
         )
+        if self.reader_contract != "legacy":
+            result.update(
+                schema_version=2,
+                reader_contract=self.reader_contract,
+                reader_route_semantics="c_reuses_positions_r_reselects_values_reprojected_each_step",
+                regional_trace="common_ids_separate_regional_weights_and_derived_views",
+            )
+        return result
 
     def resolve(self, action, availability, *, rows):
         """Resolver disponibilidad antes de ejecutar. Un contrato inválido no es un retorno."""

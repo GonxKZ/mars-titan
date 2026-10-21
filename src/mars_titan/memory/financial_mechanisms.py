@@ -11,6 +11,7 @@ import numpy as np
 from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.calibration.cohort_feedback import CohortOutcome
 from mars_titan.models.quantile_head import LEVELS
+from mars_titan.models.titans import regional_mechanism_trace
 from mars_titan.models.titans.config import bounded_integer, canonical
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.mechanism_selection import check_trace
@@ -498,6 +499,27 @@ class MechanismBinding(TitansBinding):
             ):
                 raise ValueError("El punto archivado no es la predicción nativa emitida")
         self._check_quantiles(control)
+        if self.consumer.catalog.reader_contract != "legacy":
+            projections = 0
+            for row in rows:
+                if warmup:
+                    if "regional_readout" in row:
+                        raise ValueError("El calentamiento no debe inventar una lectura regional")
+                    continue
+                regional_mechanism_trace.verify(
+                    row.get("regional_readout"),
+                    self.consumer.readout,
+                    snapshot_sha256=control["snapshot_sha256"],
+                    steps=row["reader_steps"],
+                    searches=row["reader_searches"],
+                    route=row["executed_route"],
+                )
+                projections += row["regional_readout"]["value_projections"]
+            if rows and (
+                type(control["work"].get("bridge_value_projections")) is not int
+                or control["work"]["bridge_value_projections"] != projections
+            ):
+                raise ValueError("Las proyecciones regionales no concilian con su trabajo")
         if self.consumer.policy is not None:
             trace = control.get("selection")
             if warmup or not rows:

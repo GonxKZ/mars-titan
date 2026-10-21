@@ -82,6 +82,7 @@ class MechanismPolicy(nn.Module):
         min_gain,
         action_mask=None,
         fit_receipt_sha256=None,
+        catalog_id=None,
     ):
         super().__init__()
         self.interval_weight, self.min_gain = (
@@ -91,6 +92,9 @@ class MechanismPolicy(nn.Module):
         if fit_receipt_sha256 is not None:
             _digest_id(fit_receipt_sha256, "El recibo declarado del ajuste")
         self.fit_receipt_sha256 = fit_receipt_sha256
+        if catalog_id is not None:
+            _digest_id(catalog_id, "El catálogo declarado del selector")
+        self.catalog_id = catalog_id
         for name, value in (
             ("mean", mean),
             ("scale", scale),
@@ -119,6 +123,8 @@ class MechanismPolicy(nn.Module):
         self.eval()
 
     def validate(self):
+        if self.catalog_id is not None:
+            _digest_id(self.catalog_id, "El catálogo declarado del selector")
         _utility_scalar(self.interval_weight)
         _utility_scalar(self.min_gain)
         if self.fit_receipt_sha256 is not None:
@@ -177,6 +183,8 @@ class MechanismPolicy(nn.Module):
             support="marginal_feature_ranges_not_joint_or_calibrated_ood",
             costs="incremental_declared_utility_units_not_raw_milliseconds",
         )
+        if self.catalog_id is not None:
+            result["catalog_id"] = self.catalog_id
         if self.action_mask is not None:
             result["action_support"] = "declared_boolean_mask_not_fit_attestation"
         if self.fit_receipt_sha256 is not None:
@@ -211,6 +219,7 @@ class MechanismPolicy(nn.Module):
             interval_weight=self.interval_weight,
             min_gain=self.min_gain,
             fit_receipt_sha256=self.fit_receipt_sha256,
+            catalog_id=self.catalog_id,
         )
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
