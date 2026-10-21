@@ -1,0 +1,8 @@
+{
+  "external_elapsed": "0:25.61",
+  "external_max_rss_kib": 1614336,
+  "external_max_rss_bytes": 1653080064,
+  "internal_process_seconds": 21.837871599011123,
+  "python_peak_rss_bytes": 1547751424,
+  "note": "La medida externa incluye el arranque del proceso. Los picos incluyen creación de fixtures y predictor residente. No se midió energía ni VRAM total del sistema."
+}

@@ -130,7 +130,10 @@ def test_invalid_or_exhausted_view_keeps_confirmed_state(
         assert run.snapshot() == before
 
 
-def test_changed_native_feedback_is_rejected_by_trace_hash(native, four_flow_source, tmp_path):
+@pytest.mark.parametrize("field", ["target", "schema_version"])
+def test_changed_native_feedback_is_rejected_by_trace_hash(
+    native, four_flow_source, tmp_path, field
+):
     data = engines(four_flow_source, "cpu")
     output = tmp_path / "changed"
     with session(native, output, data) as run:
@@ -144,7 +147,10 @@ def test_changed_native_feedback_is_rejected_by_trace_hash(native, four_flow_sou
         path = output / "record-2.json"
         original = path.read_bytes()
         record = json.loads(original)
-        record["feedback"][0]["target"] = 300.0
+        if field == "target":
+            record["feedback"][0]["target"] = 300.0
+        else:
+            record["schema_version"] = 3
         try:
             path.write_text(json.dumps(record))
             with pytest.raises(ValueError, match="huella|nativo|traza|registro"):
@@ -302,3 +308,25 @@ def test_same_assets_at_another_decision_do_not_share_results(
         ]
         assert [r["generation"] for r in receipt["as_of"]["native_records"]] == [2, 3]
         assert receipt["as_of"]["resolutions"][0]["row_indices"] == [0, 1]
+
+
+def test_changing_confirmed_head_during_a_view_rejects_the_result(
+    native, four_flow_source, tmp_path, monkeypatch
+):
+    import mars_titan.memory.mechanism_collection_asof as api
+
+    data = engines(four_flow_source, "cpu")
+    with session(native, tmp_path / "concurrent", data) as run:
+        run.step(four_flow_source["batches"][126], [])
+        run.step([], [], kind="settlement", cutoff=moment(127))
+        original = api.collection_at
+
+        def advance(*args, **kwargs):
+            result = original(*args, **kwargs)
+            run.step([], [], kind="settlement", cutoff=moment(128))
+            return result
+
+        monkeypatch.setattr(api, "collection_at", advance)
+        with pytest.raises(ValueError, match="cambió durante"):
+            view(run)
+        assert run.snapshot()["cursor"] == 3

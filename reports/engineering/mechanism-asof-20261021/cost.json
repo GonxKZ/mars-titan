@@ -1,0 +1,487 @@
+{
+  "recorded_at_utc": "2026-10-21T12:10:35.015321+00:00",
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "numpy": "2.5.3",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "cpu_threads": 2,
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "warmup": 3,
+  "repetitions": 20,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "process_seconds": 21.837871599011123,
+  "process_peak_rss_bytes": 1547751424,
+  "source_sha256": {
+    "reports/engineering/mechanism-asof-20261021/benchmark.py": "716575e07069d19f50e6ea3cbd7f3c84f675750454b519c63d6e686e824244b3",
+    "src/mars_titan/memory/mechanism_collection_asof.py": "7709cd573ad327c8579674704a06164d1ff365d6d9ecafc33fa035b5a69103dd",
+    "src/mars_titan/memory/financial_mechanisms.py": "54ee54bc67cacd39d61d835b7b3583bda0dce26cc9a882bc765b4a6727736a72",
+    "src/mars_titan/memory/financial_session.py": "4f6adf1c9355504b80ea3480e83835f0df15a1d10c32389722841b0b5b4bbdfc"
+  },
+  "registration": {
+    "registered_at_utc": "2026-10-21T12:10:32.123929+00:00",
+    "protocol_sha256": "4a8ef2d6f50fce318356babb8120b5841a91ab3698b7cca589d5469fcd136c46",
+    "benchmark_sha256": "716575e07069d19f50e6ea3cbd7f3c84f675750454b519c63d6e686e824244b3",
+    "git_commit": "ee5603ecc5e675f08482709490616e64a1fdb541",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "device": "cuda:0",
+    "torch": "2.14.0+cu130",
+    "torch_git": "08187d9e0fba026dc8217405802ab5381dc88d90",
+    "cuda": "13.0",
+    "cpu_threads": 2,
+    "python": "3.12.14",
+    "nvidia_smi": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7366 MiB, 4 %",
+    "reason": "Añadir identidades de fuentes, parámetros, colección y registros al manifiesto, sin cambios en la implementación medida."
+  },
+  "raw_sha256": "13d1773ea5585c228fc9a2ee0df50886931b305025947c5cc3404df9cdde5e02",
+  "cases": [
+    {
+      "rows": 4,
+      "mode": "receipt_latest",
+      "p50_ms": 8.5136245,
+      "p95_ms": 9.5431275,
+      "p99_ms": 10.580003099999997,
+      "calls_per_second": 115.45201249511732,
+      "packet_and_native_bytes": null,
+      "setup_seconds": 1.6426977280061692,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 69206016,
+      "provenance": {
+        "contract_id": "7b9d826ade6a184845df30fee1d6b93ac16e1fc8aeb7398e8429780ef1606e5e",
+        "model_id": "75d3dfae03f6beaf04ad077724faba7573a00ce72f1fe87b0a1825da6dc6771b",
+        "consumer_id": "95830f0ad0d7a066efadef07a5941543969fa11d02fdba3fb1a39f4a24c85b61",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "197401d5eee70b4c350366ad2cfcb049482621727a42c53ab15d31e6cef08b96",
+        "collection_sha256": "b0842cdd3674329e6509485c829fd9c434a743da70daf6535f1c9bba3980c213",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "e484bf207ca560ea0139cf5b598baba3a39cf32fde5ff0e08dec6c9fa7df1708",
+            "bytes": 1442
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "d93cbdd84b0f4bb2d1286d3e09abfb005088ed7c5fb94ca842d28737f2be2b33",
+            "bytes": 1466
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "964771fb9b5b6b4b2f4c1b4272faf2f7863c06a7491def21ae8c6c07563313d6",
+            "bytes": 1465
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 4,
+      "mode": "asof_complete",
+      "p50_ms": 13.185543500000001,
+      "p95_ms": 20.596220850000083,
+      "p99_ms": 108.82271856999985,
+      "calls_per_second": 51.5796538495104,
+      "packet_and_native_bytes": 22658,
+      "setup_seconds": 1.6426977280061692,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 69206016,
+      "provenance": {
+        "contract_id": "7b9d826ade6a184845df30fee1d6b93ac16e1fc8aeb7398e8429780ef1606e5e",
+        "model_id": "75d3dfae03f6beaf04ad077724faba7573a00ce72f1fe87b0a1825da6dc6771b",
+        "consumer_id": "95830f0ad0d7a066efadef07a5941543969fa11d02fdba3fb1a39f4a24c85b61",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "197401d5eee70b4c350366ad2cfcb049482621727a42c53ab15d31e6cef08b96",
+        "collection_sha256": "b0842cdd3674329e6509485c829fd9c434a743da70daf6535f1c9bba3980c213",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "e484bf207ca560ea0139cf5b598baba3a39cf32fde5ff0e08dec6c9fa7df1708",
+            "bytes": 1442
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "d93cbdd84b0f4bb2d1286d3e09abfb005088ed7c5fb94ca842d28737f2be2b33",
+            "bytes": 1466
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "964771fb9b5b6b4b2f4c1b4272faf2f7863c06a7491def21ae8c6c07563313d6",
+            "bytes": 1465
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 4,
+      "mode": "asof_partial",
+      "p50_ms": 12.1803525,
+      "p95_ms": 13.594837250000001,
+      "p99_ms": 14.261786649999998,
+      "calls_per_second": 80.24079234701196,
+      "packet_and_native_bytes": 21193,
+      "setup_seconds": 1.6426977280061692,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 69206016,
+      "provenance": {
+        "contract_id": "7b9d826ade6a184845df30fee1d6b93ac16e1fc8aeb7398e8429780ef1606e5e",
+        "model_id": "75d3dfae03f6beaf04ad077724faba7573a00ce72f1fe87b0a1825da6dc6771b",
+        "consumer_id": "95830f0ad0d7a066efadef07a5941543969fa11d02fdba3fb1a39f4a24c85b61",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "197401d5eee70b4c350366ad2cfcb049482621727a42c53ab15d31e6cef08b96",
+        "collection_sha256": "b0842cdd3674329e6509485c829fd9c434a743da70daf6535f1c9bba3980c213",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "e484bf207ca560ea0139cf5b598baba3a39cf32fde5ff0e08dec6c9fa7df1708",
+            "bytes": 1442
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "d93cbdd84b0f4bb2d1286d3e09abfb005088ed7c5fb94ca842d28737f2be2b33",
+            "bytes": 1466
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "964771fb9b5b6b4b2f4c1b4272faf2f7863c06a7491def21ae8c6c07563313d6",
+            "bytes": 1465
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 64,
+      "mode": "receipt_latest",
+      "p50_ms": 22.9665055,
+      "p95_ms": 24.82407865,
+      "p99_ms": 25.07662133,
+      "calls_per_second": 43.24511694896981,
+      "packet_and_native_bytes": null,
+      "setup_seconds": 2.3851205829996616,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 98566144,
+      "provenance": {
+        "contract_id": "2370a123eb82ad94d26d73a87c4d8b15720c1bf5c8835e0dc9643f2306bc38e8",
+        "model_id": "c4e52e318e2382a0f5edddcd27542f24ce4bd4a66342a6c166f30aac74839cca",
+        "consumer_id": "c5769062baf76eddeb7032be1158bb3b7b42054d0e264586581ae15c53d0d8ee",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "c92d2fb18064e5dd0fbb5ea9881471b6ad87d7682ecec9a0028ad3b4c4c03f89",
+        "collection_sha256": "5c0df931c68deb50a06b0b46770c5eef12a4beca1417c6ba52ab83bd8c32be6b",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "61cf8671aebb03ad00730154f457169b7cfcdd11a5ca9712eb3a7d5b7bce6557",
+            "bytes": 13265
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "b7d7a3460f77019ae2459cfc14ce377f279385f240ca287e62e3de858c0fba4b",
+            "bytes": 12659
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "7a16692f79c03e33b91f52bb993cdd23cc114ae9ca5c64454dd0b1da84368eef",
+            "bytes": 12658
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 64,
+      "mode": "asof_complete",
+      "p50_ms": 32.046328,
+      "p95_ms": 32.970049550000006,
+      "p99_ms": 37.92945310999999,
+      "calls_per_second": 31.102043496941835,
+      "packet_and_native_bytes": 107299,
+      "setup_seconds": 2.3851205829996616,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 98566144,
+      "provenance": {
+        "contract_id": "2370a123eb82ad94d26d73a87c4d8b15720c1bf5c8835e0dc9643f2306bc38e8",
+        "model_id": "c4e52e318e2382a0f5edddcd27542f24ce4bd4a66342a6c166f30aac74839cca",
+        "consumer_id": "c5769062baf76eddeb7032be1158bb3b7b42054d0e264586581ae15c53d0d8ee",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "c92d2fb18064e5dd0fbb5ea9881471b6ad87d7682ecec9a0028ad3b4c4c03f89",
+        "collection_sha256": "5c0df931c68deb50a06b0b46770c5eef12a4beca1417c6ba52ab83bd8c32be6b",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "61cf8671aebb03ad00730154f457169b7cfcdd11a5ca9712eb3a7d5b7bce6557",
+            "bytes": 13265
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "b7d7a3460f77019ae2459cfc14ce377f279385f240ca287e62e3de858c0fba4b",
+            "bytes": 12659
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "7a16692f79c03e33b91f52bb993cdd23cc114ae9ca5c64454dd0b1da84368eef",
+            "bytes": 12658
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 64,
+      "mode": "asof_partial",
+      "p50_ms": 27.8874365,
+      "p95_ms": 29.7566621,
+      "p99_ms": 30.34501002,
+      "calls_per_second": 35.657896444198485,
+      "packet_and_native_bytes": 94641,
+      "setup_seconds": 2.3851205829996616,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 98566144,
+      "provenance": {
+        "contract_id": "2370a123eb82ad94d26d73a87c4d8b15720c1bf5c8835e0dc9643f2306bc38e8",
+        "model_id": "c4e52e318e2382a0f5edddcd27542f24ce4bd4a66342a6c166f30aac74839cca",
+        "consumer_id": "c5769062baf76eddeb7032be1158bb3b7b42054d0e264586581ae15c53d0d8ee",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "c92d2fb18064e5dd0fbb5ea9881471b6ad87d7682ecec9a0028ad3b4c4c03f89",
+        "collection_sha256": "5c0df931c68deb50a06b0b46770c5eef12a4beca1417c6ba52ab83bd8c32be6b",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "61cf8671aebb03ad00730154f457169b7cfcdd11a5ca9712eb3a7d5b7bce6557",
+            "bytes": 13265
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "b7d7a3460f77019ae2459cfc14ce377f279385f240ca287e62e3de858c0fba4b",
+            "bytes": 12659
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "7a16692f79c03e33b91f52bb993cdd23cc114ae9ca5c64454dd0b1da84368eef",
+            "bytes": 12658
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 256,
+      "mode": "receipt_latest",
+      "p50_ms": 51.3293555,
+      "p95_ms": 61.07795335,
+      "p99_ms": 62.263953869999995,
+      "calls_per_second": 18.459059341712344,
+      "packet_and_native_bytes": null,
+      "setup_seconds": 8.193092747940682,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 102760448,
+      "provenance": {
+        "contract_id": "2087ee663021d90afc7d17fa7dfc8992417c42a0a90c710ecdcfb1c2a05efc41",
+        "model_id": "62d4ed6078af5333ba5ddc78427a298b287226c6707a51edbb5e2ee62b8e891b",
+        "consumer_id": "c2d24409944e3b426c6a9239dc66c9cae1028a9ef092384384c251b5fa3ec76d",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "272d5a18ce44622a57c192609009b916ab3ccffa3603922b49363982a1263287",
+        "collection_sha256": "c63f3bb705ef81d4b1da3faf1e20b97bf96e16bb6b9c36d14acef5d9159999ff",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "f53ea8cfa788e062e51e959297eee45393007e359a67fa7fea1c68714331a414",
+            "bytes": 51092
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "813444984ce203678cc14df22e25d8651550fcc5fd2f2ab151a342b41c1682dd",
+            "bytes": 48470
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "c163b171084e887063246b23546a8394a49aa0e05159b7cb5d661fa8496671f2",
+            "bytes": 48469
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 256,
+      "mode": "asof_complete",
+      "p50_ms": 68.49120350000001,
+      "p95_ms": 85.44515500000007,
+      "p99_ms": 164.74933099999987,
+      "calls_per_second": 13.276797710423669,
+      "packet_and_native_bytes": 378284,
+      "setup_seconds": 8.193092747940682,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 102760448,
+      "provenance": {
+        "contract_id": "2087ee663021d90afc7d17fa7dfc8992417c42a0a90c710ecdcfb1c2a05efc41",
+        "model_id": "62d4ed6078af5333ba5ddc78427a298b287226c6707a51edbb5e2ee62b8e891b",
+        "consumer_id": "c2d24409944e3b426c6a9239dc66c9cae1028a9ef092384384c251b5fa3ec76d",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "272d5a18ce44622a57c192609009b916ab3ccffa3603922b49363982a1263287",
+        "collection_sha256": "c63f3bb705ef81d4b1da3faf1e20b97bf96e16bb6b9c36d14acef5d9159999ff",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "f53ea8cfa788e062e51e959297eee45393007e359a67fa7fea1c68714331a414",
+            "bytes": 51092
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "813444984ce203678cc14df22e25d8651550fcc5fd2f2ab151a342b41c1682dd",
+            "bytes": 48470
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "c163b171084e887063246b23546a8394a49aa0e05159b7cb5d661fa8496671f2",
+            "bytes": 48469
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    },
+    {
+      "rows": 256,
+      "mode": "asof_partial",
+      "p50_ms": 54.682019999999994,
+      "p95_ms": 66.33376805,
+      "p99_ms": 67.72803440999999,
+      "calls_per_second": 17.378116956218157,
+      "packet_and_native_bytes": 329815,
+      "setup_seconds": 8.193092747940682,
+      "allocated_resident_bytes": 67395072,
+      "allocated_peak_bytes": 67395072,
+      "reserved_peak_bytes": 102760448,
+      "provenance": {
+        "contract_id": "2087ee663021d90afc7d17fa7dfc8992417c42a0a90c710ecdcfb1c2a05efc41",
+        "model_id": "62d4ed6078af5333ba5ddc78427a298b287226c6707a51edbb5e2ee62b8e891b",
+        "consumer_id": "c2d24409944e3b426c6a9239dc66c9cae1028a9ef092384384c251b5fa3ec76d",
+        "parameter_id": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "input_spec_id": "272d5a18ce44622a57c192609009b916ab3ccffa3603922b49363982a1263287",
+        "collection_sha256": "c63f3bb705ef81d4b1da3faf1e20b97bf96e16bb6b9c36d14acef5d9159999ff",
+        "native_records": [
+          {
+            "generation": 1,
+            "cutoff": 1625601900000000,
+            "sha256": "f53ea8cfa788e062e51e959297eee45393007e359a67fa7fea1c68714331a414",
+            "bytes": 51092
+          },
+          {
+            "generation": 2,
+            "cutoff": 1625688300000000,
+            "sha256": "813444984ce203678cc14df22e25d8651550fcc5fd2f2ab151a342b41c1682dd",
+            "bytes": 48470
+          },
+          {
+            "generation": 3,
+            "cutoff": 1626206700000000,
+            "sha256": "c163b171084e887063246b23546a8394a49aa0e05159b7cb5d661fa8496671f2",
+            "bytes": 48469
+          }
+        ],
+        "phase": {
+          "partition": "validation",
+          "warmup_start": 1625256300000000,
+          "decision_start": 1625601900000000,
+          "decision_end": 1626120300000000,
+          "close_at": 1626206700000000
+        },
+        "supervision_origin": "manual_fixture_no_estimation"
+      }
+    }
+  ],
+  "prior_run": {
+    "raw_sha256": "e0200082b5729bf5ff2d52fbff9f2a6fbd1dbf14853362d1a856880e77859e5e",
+    "reason": "Primera medida retenida. Se repitió al añadir procedencia al manifiesto, sin modificar el código medido ni seleccionar la repetición más rápida."
+  }
+}
