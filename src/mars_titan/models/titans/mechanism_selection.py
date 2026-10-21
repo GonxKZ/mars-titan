@@ -134,7 +134,63 @@ def select(consumer, observation, *, state, flows, cutoff, context_id, snapshot,
     return tuple(plans), canonical(trace)
 
 
-def check_trace(consumer, trace, *, rows, cutoff, context_id, snapshot_sha256):
+def _calibration_failed(work, actions):
+    names = (
+        "online_attempts",
+        "online_failures",
+        "online_created_proposals",
+        "online_selected_proposals",
+        "online_discarded_proposals",
+    )
+    if any(type(work.get(name)) is not int or work[name] < 0 for name in names):
+        raise ValueError("La traza no conserva el trabajo de calibración")
+    attempts, failures, created, selected, discarded = (work[name] for name in names)
+    online = sum(action.calibration == "online" for action in actions)
+    if failures == 0:
+        valid = attempts == created == selected == online and discarded == 0
+    else:
+        valid = (
+            failures == 1
+            and 1 <= attempts <= online
+            and created <= attempts
+            and selected == 0
+            and discarded == created
+        )
+    if not valid:
+        raise ValueError("La selección no concilia las propuestas publicadas o descartadas")
+    return failures == 1
+
+
+def _execution_matches(row, resolved, failed):
+    action = resolved.applied
+    fallback = failed and action.calibration == "online"
+    common = (
+        row["requested"] == action.key
+        and row["context"] == action.context
+        and row["executed_route"] == action.route
+        and row["reader_steps"] == resolved.reader_steps
+        and row["reader_searches"] == resolved.reader_searches
+    )
+    if fallback:
+        return (
+            common
+            and row["emitted_route"] == "k1"
+            and row["calibration"] == "none"
+            and tuple(row["reasons"]) == ("pending_calibration_bytes",)
+            and row["point"] == row["k1_point"]
+            and row["raw_quantiles"] == row["k1_quantiles"]
+            and row["discarded_reader_steps"] == max(0, resolved.reader_steps - 1)
+        )
+    return (
+        common
+        and row["emitted_route"] == action.route
+        and row["calibration"] == action.calibration
+        and not row["reasons"]
+        and row["discarded_reader_steps"] == 0
+    )
+
+
+def check_trace(consumer, trace, *, rows, cutoff, context_id, snapshot_sha256, work):
     """Conciliar el recibo con las filas emitidas y recalcular utilidades congeladas.
 
     La verificación no autentica un host capaz de modificar el registro y el código.
@@ -200,8 +256,13 @@ def check_trace(consumer, trace, *, rows, cutoff, context_id, snapshot_sha256):
         available=choice.available,
     )
     actual = {key: value.detach().cpu().tolist() for key, value in actual.items()}
+    actions = [MechanismAction(*ACTIONS[index].split("/")) for index in actual["action_id"]]
+    failed = _calibration_failed(work, actions)
     for i, (group, source) in enumerate(zip(trace["groups"], body["groups"], strict=True)):
-        action = MechanismAction(*ACTIONS[actual["action_id"][i]].split("/"))
+        action = actions[i]
+        resolved = consumer.catalog.resolve(
+            action, MechanismAvailability(**group["availability"]), rows=source["rows"]
+        )
         subset = [row for row in rows if row["flow_id"].startswith(source["market"] + "/")]
         if (
             set(group) != {"market", "action", "availability", *actual}
@@ -210,14 +271,6 @@ def check_trace(consumer, trace, *, rows, cutoff, context_id, snapshot_sha256):
             or canonical({key: group[key] for key in actual})
             != canonical({key: value[i] for key, value in actual.items()})
             or group["action"] != action.key
-            or any(
-                row["requested"] != action.key
-                or row["context"] != action.context
-                or row["executed_route"] != action.route
-                or row["emitted_route"] != action.route
-                or row["calibration"] != action.calibration
-                or row["reasons"]
-                for row in subset
-            )
+            or any(not _execution_matches(row, resolved, failed) for row in subset)
         ):
             raise ValueError("La elección, admisibilidad o utilidad no reproduce la emisión")

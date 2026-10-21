@@ -7,13 +7,14 @@ import pytest
 import torch
 from test_episodic_readout import CONTEXT
 from test_financial_adapter import raw_batch
-from test_financial_mechanisms import engines, session
+from test_financial_mechanisms import assert_same, engines, session
 from test_financial_session import moment
+from test_financial_session_controls import flow_source
 from test_financial_session_controls import four_flow_source as four_flow_source
 from test_financial_session_controls import no_target_estimation as no_target_estimation
 from test_frozen_financial import frozen_backend as frozen_backend
 from test_market_memory import KINDS
-from test_mechanism_consumer import consumer
+from test_mechanism_consumer import calibration, consumer
 from test_mechanism_observations import AT, extract, observation_rows
 from test_mechanism_policy import policy
 from test_native_episode_backend import native as native
@@ -457,3 +458,109 @@ def test_incompatible_selector_cannot_resume_or_replace_the_head(
     with pytest.raises(ValueError):
         session(native, output, other, resume=True)
     assert (output / "latest.json").read_bytes() == head
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_selected_online_byte_fallback_publishes_k1_and_recovers_without_pending_labels(
+    native, tmp_path, device
+):
+    source = flow_source(tmp_path / "source", flows=tuple(f"US/T{i:04d}" for i in range(8)))
+    data = selected_data(source, device)
+    engine = FrozenMechanismConsumer(
+        data[3].predictor, calibration=calibration(max_bytes=4096), policy=data[3].policy
+    )
+    data = (*data[:3], engine, data[4])
+    output = tmp_path / "bounded-online"
+    with session(native, output, data) as run:
+        issued = run.step(source["batches"][126], [])
+        event = run.mechanism_event(1)
+        payload = event["payload"]
+        assert payload["selection"]["groups"][0]["action"] == "parent/k1/online"
+        assert len(issued.predictions) == 8
+        assert payload["work"]["online_failures"] == 1
+        assert payload["work"]["online_selected_proposals"] == 0
+        for row in payload["rows"]:
+            assert row["requested"] == "parent/k1/online"
+            assert row["reasons"] == ["pending_calibration_bytes"]
+            assert row["emitted_route"] == "k1" and row["calibration"] == "none"
+            assert row["point"] == row["k1_point"]
+        state = run.mechanism_state()
+        assert state["calibration"]["cohorts"] == []
+    with session(native, output, data, resume=True) as restored:
+        assert restored.mechanism_event(1) == event
+        assert_same(restored.mechanism_state(), state)
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_selected_k4_online_byte_fallback_keeps_execution_and_emission_distinct(
+    native, tmp_path, device
+):
+    from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+
+    source = flow_source(tmp_path / "source", flows=tuple(f"US/T{i:04d}" for i in range(8)))
+    data = selected_data(source, device)
+    selector = policy(device=device)
+    selector.point_coefficients.zero_()
+    selector.interval_coefficients.zero_()
+    selector.point_coefficients[-1, 9] = 2
+    selector.interval_coefficients[-1, 29] = 1
+    reader = (
+        EpisodicReadout(
+            EpisodicReadoutConfig(source["codec"].fingerprint(), hidden_size=32),
+            device=device,
+            dtype=torch.float64,
+        )
+        .eval()
+        .requires_grad_(False)
+    )
+    engine = FrozenMechanismConsumer(
+        data[3].predictor,
+        readout=reader,
+        calibration=calibration(max_bytes=4096),
+        policy=selector,
+    )
+    data = (*data[:3], engine, data[4])
+    with session(native, tmp_path / "k4", data) as run:
+        run.step(source["batches"][126], [])
+        payload = run.mechanism_event(1)["payload"]
+        assert payload["selection"]["groups"][0]["action"] == "parent/k4cc/online"
+        assert payload["work"]["mac_online_observations"] == 8
+        for row in payload["rows"]:
+            assert row["executed_route"] == "k4cc"
+            assert row["emitted_route"] == "k1"
+            assert row["reader_steps"] == 4 and row["discarded_reader_steps"] == 3
+            assert row["point"] == row["k1_point"]
+            assert row["quantiles"] == row["raw_quantiles"] == row["k1_quantiles"]
+
+
+@pytest.mark.parametrize(
+    "field", ["reason", "k1", "emitted_route", "discarded", "failed", "selected"]
+)
+def test_online_fallback_does_not_allow_forged_emission_or_work(native, tmp_path, field):
+    source = flow_source(tmp_path / "source", flows=tuple(f"US/T{i:04d}" for i in range(8)))
+    data = selected_data(source)
+    engine = FrozenMechanismConsumer(
+        data[3].predictor, calibration=calibration(max_bytes=4096), policy=data[3].policy
+    )
+    data = (*data[:3], engine, data[4])
+    with session(native, tmp_path / "forged", data) as run:
+        run.step(source["batches"][126], [])
+        event = run.mechanism_event(1)
+        control = copy.deepcopy(event["payload"])
+        control["observations"] = 8
+        if field == "reason":
+            control["rows"][0]["reasons"] = ["unavailable_readout"]
+        elif field == "k1":
+            control["rows"][0]["k1_point"] += 1
+        elif field == "emitted_route":
+            control["rows"][0]["emitted_route"] = "k2c"
+        elif field == "discarded":
+            control["rows"][0]["discarded_reader_steps"] = 1
+        else:
+            control["work"][
+                "online_failures" if field == "failed" else "online_selected_proposals"
+            ] = 0 if field == "failed" else 1
+        with pytest.raises(ValueError):
+            run._binding._check_record(
+                control, json.loads(run._executor.record_json(1)), cutoff=event["cutoff"]
+            )

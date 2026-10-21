@@ -435,6 +435,7 @@ class MechanismBinding(TitansBinding):
                     cutoff=cutoff,
                     context_id=control["context_id"],
                     snapshot_sha256=control["snapshot_sha256"],
+                    work=control["work"],
                 )
                 if (
                     trace["observation"]["observation"]["producer_sha256"]
