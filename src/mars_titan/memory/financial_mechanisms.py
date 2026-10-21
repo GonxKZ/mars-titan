@@ -15,9 +15,17 @@ from mars_titan.models.titans.config import bounded_integer, canonical
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.mechanism_selection import check_trace
 
-from . import mechanism_history, mechanism_observations
+from . import (
+    mechanism_collection,
+    mechanism_collection_record,
+    mechanism_history,
+    mechanism_observations,
+    mechanism_supervision,
+    native_mechanism_collection,
+)
 from .financial_consumers import TitansBinding
 from .mechanism_history import MechanismHistory, MechanismHistoryConfig
+from .native_mechanism_collection import MechanismCollectionConfig, NativeMechanismCollections
 
 KIND = "titans_mechanisms_v1"
 FIELDS = ("mechanisms", "mechanism_history")
@@ -69,6 +77,16 @@ class MechanismBinding(TitansBinding):
         if control is not None and control.config.mode != "disabled":
             raise ValueError("La combinación durable con control local C aún no está comprobada")
         self.max_batch = consumer.max_batch
+        self.collections = None
+
+    def configure_collection(self, config):
+        if config is not None:
+            if type(config) is not MechanismCollectionConfig:
+                raise ValueError("La recogida necesita una configuración explícita")
+            self.collections = NativeMechanismCollections(config)
+
+    def bundle_fields(self):
+        return FIELDS + (("mechanism_collections",) if self.collections is not None else ())
 
     def code(self):
         result = dict(
@@ -81,10 +99,25 @@ class MechanismBinding(TitansBinding):
             result["mechanism_observations"] = hashlib.sha256(
                 Path(mechanism_observations.__file__).read_bytes()
             ).hexdigest()
+        if self.collections is not None:
+            for module in (
+                mechanism_collection,
+                mechanism_collection_record,
+                mechanism_supervision,
+                native_mechanism_collection,
+                mechanism_observations,
+            ):
+                result[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
+                    Path(module.__file__).read_bytes()
+                ).hexdigest()
         return result
 
     def _trace_fields(self):
-        return TRACE_FIELDS + (("selection",) if self.consumer.policy is not None else ())
+        return (
+            TRACE_FIELDS
+            + (("selection",) if self.consumer.policy is not None else ())
+            + (("collection_packet",) if self.collections is not None else ())
+        )
 
     @staticmethod
     def configuration(config):
@@ -109,7 +142,7 @@ class MechanismBinding(TitansBinding):
         )
 
     def previous(self, session, bundle):
-        return dict(
+        result = dict(
             mechanisms=session._stage(
                 self.consumer.export_state(self.restore(session, bundle)), "mechanisms"
             )
@@ -119,6 +152,11 @@ class MechanismBinding(TitansBinding):
             if bundle is None
             else bundle["mechanism_history"],
         )
+        if self.collections is not None:
+            result["mechanism_collections"] = (
+                self.collections.empty() if bundle is None else bundle["mechanism_collections"]
+            )
+        return result
 
     def settlement_control(self):
         result = dict(
@@ -144,6 +182,8 @@ class MechanismBinding(TitansBinding):
         )
         if self.consumer.policy is not None:
             result["selection"] = None
+        if self.collections is not None:
+            result["collection_packet"] = None
         return result
 
     def prepare_event(
@@ -158,6 +198,17 @@ class MechanismBinding(TitansBinding):
             )
         )
         selection = {}
+        collector = None
+        if self.collections is not None and not warmup:
+            collector = mechanism_collection.MechanismCollector(
+                self.consumer,
+                auxiliary,
+                rows=rows,
+                cutoff=rows[0].prediction_at,
+                context_id=context_id,
+                matures_at=maturity,
+                snapshot=snapshot,
+            )
         if self.consumer.policy is not None and not warmup:
             selection["observation"] = mechanism_observations.extract_observation(
                 rows,
@@ -184,6 +235,8 @@ class MechanismBinding(TitansBinding):
             unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
             initial = model.initial_state(unknown) if unknown else None
             previous = session._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
+            if collector is not None:
+                collector.add(rows[start : start + batch_rows], previous)
             prepared = self.consumer.prepare(batch, previous, event)
             fast = session._fast_store.replace(fast, previous, prepared.next_state)
             event = prepared.event
@@ -236,6 +289,15 @@ class MechanismBinding(TitansBinding):
         if self.consumer.policy is not None:
             control["selection"] = (
                 json.loads(emission.selection_json) if emission.selection_json is not None else None
+            )
+        if self.collections is not None:
+            packet = collector.finish() if collector is not None else None
+            if packet is not None:
+                self.collections.check_anchor(packet, control)
+            control["collection_packet"] = (
+                session._stage(packet.record(), native_mechanism_collection.PACKET)
+                if packet is not None
+                else None
             )
         aligned = (
             dict(zip(emission.flow_ids, emission.point_predictions, strict=True))
@@ -381,11 +443,23 @@ class MechanismBinding(TitansBinding):
             native_record_sha256=digest,
             payload=payload,
         )
-        return dict(
+        result = dict(
             bundle,
             mechanisms=reference,
             mechanism_history=self.history.append(bundle["mechanism_history"], event),
         )
+        if self.collections is not None:
+            result["mechanism_collections"] = self.collections.resolve(
+                session,
+                result,
+                record=record,
+                record_sha256=digest,
+                packet_reference=control["collection_packet"],
+                outcomes=outcomes,
+                excluded=excluded,
+                finalized=finalized,
+            )
+        return result
 
     def _check_record(self, control, record, *, cutoff):
         rows = control["rows"]
@@ -477,7 +551,7 @@ class MechanismBinding(TitansBinding):
                 raise ValueError("La ruta sin calibración cambió sus cuantiles")
 
     def _check_payload(self, payload, record):
-        fields = PAYLOAD_FIELDS | ({"selection"} if self.consumer.policy is not None else set())
+        fields = PAYLOAD_FIELDS | (set(self._trace_fields()) - set(TRACE_FIELDS))
         if type(payload) is not dict or set(payload) != fields:
             raise ValueError("El archivo no conserva el esquema de la traza financiera")
         expected_watermark = (
@@ -523,6 +597,8 @@ class MechanismBinding(TitansBinding):
         fields = ("flow_id", "sample_id", "prediction_at", "input_available_at", "input_sha256")
         if [{name: row[name] for name in fields} for row in control["rows"]] != observations:
             raise ValueError("La traza no conserva las observaciones verificadas de la generación")
+        if self.collections is not None:
+            self.collections.verify(session, bundle)
 
     def read_event(self, session, bundle, generation):
         if bundle is None:
