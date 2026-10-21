@@ -1,0 +1,22 @@
+{
+  "observed_at_utc": "2026-10-21T10:27:29.509128+00:00",
+  "timing": "Comprobación posterior al coste, versiones coincidentes con las verificadas al inicio",
+  "system": "Linux",
+  "kernel": "7.0.0-38-generic",
+  "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "physical_ram_bytes": 32313376768,
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "compute_capability": [
+    8,
+    9
+  ],
+  "gpu_total_bytes": 8183676928,
+  "driver": "595.91.07",
+  "uv": "uv 0.12.16 (x86_64-unknown-linux-gnu)",
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "cuda_runtime": "13.0",
+  "torch_cuda_available": true,
+  "device": "cuda:0",
+  "cpu_threads": 2
+}
