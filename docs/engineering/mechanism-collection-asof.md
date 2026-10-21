@@ -18,10 +18,22 @@ Por defecto admite hasta 256 registros y 64 MiB de paquete y registros nativos. 
 
 Los bloques de trazas tienen sus propios límites del archivo y no se incluyen en `source_bytes`. Su validación puede cargar un bloque que también contiene trazas posteriores. Esos bytes se usan para comprobar integridad. No se toman resultados posteriores para construir la supervisión. Por tanto, `source_bytes` no representa todos los bytes físicos leídos ni el pico de memoria del proceso.
 
-La reconstrucción recorre registros de forma secuencial y conserva el paquete, un registro actual y resultados de sus filas. Pedir muchas vistas por separado repite parte de ese trabajo. Todavía no hay un lector conjunto de ventanas largas que amortice el recorrido entre todas sus colecciones. No se ha sustituido el límite por un escaneo sin cota.
+La reconstrucción individual recorre registros de forma secuencial y conserva el paquete, un registro actual y resultados de sus filas. Pedir muchas vistas por separado repite parte de ese trabajo.
+
+## Lectura conjunta
+
+`FinancialSession.mechanism_collections_at(generations, through_generation=..., before=...)` reconstruye varias colecciones con un único recorrido de registros nativos. `generations` es una tupla explícita, ordenada y sin repeticiones, con entre una y 256 generaciones de decisión. No tiene que ser consecutiva. Las generaciones de liquidación no contienen una colección y se rechazan si se solicitan como tal.
+
+Cada registro nativo entre la primera generación elegida y `through_generation` se lee una vez. Un índice de flujo y fecha dirige cada resultado a la colección que lo emitió. El lector comprueba por separado el ancla de cada paquete. Conserva una sola lista de procedencia de registros, en lugar de repetirla para cada colección. Los recibos actuales y los paquetes no seleccionados no se leen. Los bloques del historial siguen sujetos a la comprobación de integridad descrita antes.
+
+La salida contiene `collections` y `as_of`. Cada elemento de `collections` incluye `generation`, `collection`, `supervision`, `censored`, `resolutions` y `packet_reference`. `as_of` identifica el contrato, el modelo, las generaciones, el corte exclusivo, los registros y la huella `window_sha256`. La huella enlaza los paquetes y los resultados reconstruidos con ese prefijo. No acredita que un selector se haya ajustado, ni autentica a un equipo capaz de reescribir código y artefactos.
+
+Los límites de registros y bytes se aplican al conjunto, con los mismos valores por defecto y máximos que la vista individual. `source_bytes` cuenta cada paquete seleccionado y cada registro nativo una sola vez. No incluye los bloques de trazas ni equivale a bytes físicos leídos del almacenamiento. Agotar un límite rechaza toda la vista. No se devuelve una selección truncada.
+
+El lector conserva todos los paquetes seleccionados y sus resultados porque debe devolverlos juntos. Esto puede aumentar el pico de memoria frente a consumir y liberar vistas individuales de una en una. Mantiene solo un registro nativo completo a la vez. La lista de procedencia común contiene metadatos y no copia su contenido. La comprobación de cabeza se realiza después del recorrido completo, antes de devolver la ventana. Las dos APIs usan el mismo motor de recepción y la vista individual conserva su esquema.
 
 ## Comprobación y uso posterior
 
-Las pruebas técnicas están en `tests/memory/test_mechanism_collection_asof.py`. Cubren recepciones tardías, límite exclusivo, disponibilidades desordenadas, identidad por fecha, pérdidas sobre las mismas filas maduras, exclusiones, censuras, agotamiento, integridad y recuperación en CPU y CUDA. Los datos y resultados financieros empleados son fixtures identificados. No hay ajuste del predictor ni de un selector.
+Las pruebas técnicas están en `tests/memory/test_mechanism_collection_asof.py` y `tests/memory/test_mechanism_collection_window.py`. Cubren recepciones tardías, límite exclusivo, disponibilidades desordenadas, identidad por fecha, pérdidas sobre las mismas filas maduras, exclusiones, censuras, agotamiento, integridad y recuperación en CPU y CUDA. La ventana añade selección no consecutiva, igualdad con vistas individuales, lectura única de cada registro y procedencia común. Los datos y resultados financieros empleados son fixtures identificados. No hay ajuste del predictor ni de un selector.
 
 El [informe de lectura histórica](../../reports/engineering/mechanism-asof-20261021/README.md) recoge las ejecuciones y sus límites. El [ajuste preparado](mechanism-policy-fitting.md) sigue exigiendo sesiones completas cerradas dentro del tramo. Incorporar esta vista a aquel lector exige un contrato de fuentes y ventanas propio, además de probar su recorrido positivo cuando se permita. La nueva API no acredita que ese ajuste se haya ejecutado ni que mejore las predicciones.

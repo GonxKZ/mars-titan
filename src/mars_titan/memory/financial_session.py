@@ -538,6 +538,30 @@ class FinancialSession(EpisodicSession):
             raise ValueError("La sesión fuente cambió durante la lectura histórica")
         return result
 
+    def mechanism_collections_at(
+        self, generations, *, through_generation, before, max_records=256, max_bytes=64 * 1024**2
+    ):
+        """Leer colecciones con el mismo prefijo y una procedencia de recepción común."""
+        from .mechanism_collection_asof import collections_at
+
+        _check_callbacks(self)
+        if type(self._binding) is not MechanismBinding or self._binding.collections is None:
+            raise ValueError("Esta sesión no tiene una recogida de alternativas")
+        self.consumer.verify()
+        snapshot = self.snapshot()
+        result = collections_at(
+            self,
+            self._bundle(snapshot["state"]),
+            generations,
+            through_generation=through_generation,
+            before=before,
+            max_records=max_records,
+            max_bytes=max_bytes,
+        )
+        if self.snapshot() != snapshot:
+            raise ValueError("La sesión fuente cambió durante la lectura histórica")
+        return result
+
     def mechanism_collection_metrics(self, generation, *, device):
         """Pérdidas de filas maduras. La censura no es una pérdida ni una etiqueta."""
         packet, supervision, censored = self._collection(generation)

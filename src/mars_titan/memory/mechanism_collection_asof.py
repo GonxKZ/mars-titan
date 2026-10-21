@@ -10,41 +10,127 @@ from .mechanism_supervision import MechanismSupervision
 from .native_mechanism_collection import PACKET, _key, _require
 
 
-def collection_at(
-    session, bundle, generation, *, through_generation, before, max_records, max_bytes
-):
-    """Corte exclusivo y generación incluidos por contrato, sin descubrirlos con etiquetas.
+class _Collection:
+    def __init__(self, entry, packet):
+        self.entry, self.packet = entry, packet
+        self.rows = packet.payload()["rows"]
+        self.supervision = MechanismSupervision.start(packet)
+        self.censored, self.resolutions, self.seen = [], [], set()
 
-    El presupuesto de bytes cubre el paquete y los registros nativos. Los bloques del
-    historial conservan los límites propios del archivo y se verifican por separado.
-    """
+    def receive(self, pairs, generation, sha):
+        indices, outcomes = zip(*pairs, strict=True)
+        watermark = max(o.available_at for o in outcomes)
+        self.supervision = self.supervision.receive(
+            outcomes, at=max(watermark, self.supervision.record()["clock"] or watermark)
+        )
+        self.resolutions.append(
+            dict(generation=generation, row_indices=list(indices), native_record_sha256=sha)
+        )
+
+    def record(self):
+        return dict(
+            generation=self.entry["generation"],
+            collection=self.packet.record(),
+            supervision=self.supervision.record(),
+            censored=self.censored,
+            resolutions=self.resolutions,
+            packet_reference=dict(self.entry["packet"]),
+        )
+
+
+def _receive(session, states, lookup, record, generation, sha):
+    received = {}
+    for kind in ("feedback", "excluded", "finalized"):
+        for item in record[kind]:
+            p = item["prediction"]
+            match = lookup.get((p["asset"], p["decision_at"]))
+            if match is None:
+                continue
+            state, index = match
+            _require(index not in state.seen, "El prefijo repite el resultado de una predicción")
+            state.seen.add(index)
+            if kind == "finalized":
+                _require(
+                    record["close_phase"]
+                    and item["closed_at"] == record["cutoff"]
+                    and item["closed_at"] == session.phase.close_at,
+                    "La censura no conserva su cierre nativo",
+                )
+                state.censored.append(
+                    dict(
+                        row_index=index,
+                        generation=generation,
+                        closed_at=item["closed_at"],
+                        native_record_sha256=sha,
+                    )
+                )
+            else:
+                row = state.rows[index]
+                outcome = CohortOutcome(
+                    row["flow_id"].split("/", 1)[0],
+                    row["prediction_at"],
+                    row["sample_id"],
+                    item["available_at"] if kind == "feedback" else record["cutoff"],
+                    value=item["target"] if kind == "feedback" else None,
+                    status="label" if kind == "feedback" else "excluded",
+                    evidence_sha256=None
+                    if kind == "feedback"
+                    else item["evidence"]["evidence_sha256"],
+                )
+                received.setdefault(state.entry["generation"], []).append((index, outcome))
+    for key, pairs in received.items():
+        states[key].receive(pairs, generation, sha)
+
+
+def _prefix(session, bundle, generations, *, through_generation, before, max_records, max_bytes):
     _require(bundle is not None, "No hay una recogida confirmada")
     bounded_integer(before, "corte histórico exclusivo", 1, FINAL_TEST_US)
-    bounded_integer(generation, "generación de recogida", 1, bundle["generation"])
+    _require(
+        type(generations) is tuple and 1 <= len(generations) <= 256,
+        "La ventana necesita una tupla de hasta 256 generaciones explícitas",
+    )
+    for generation in generations:
+        bounded_integer(generation, "generación de recogida", 1, bundle["generation"])
+    _require(
+        list(generations) == sorted(set(generations)),
+        "Las generaciones de la ventana se repiten o desordenan",
+    )
     bounded_integer(
-        through_generation, "última generación histórica", generation, bundle["generation"]
+        through_generation, "última generación histórica", generations[-1], bundle["generation"]
     )
     bounded_integer(max_records, "máximo de registros históricos", 1, 256)
     bounded_integer(max_bytes, "máximo de bytes históricos", 1, 1024**3)
-    _require(through_generation - generation + 1 <= max_records, "El prefijo supera sus registros")
+    _require(
+        through_generation - generations[0] + 1 <= max_records,
+        "El prefijo supera sus registros",
+    )
     binding = session._binding
     manifest = bundle["mechanism_collections"]
     binding.collections.index(
         session, manifest, generation=bundle["generation"], cutoff=bundle["cutoff"]
     )
-    selected = [entry for entry in manifest["entries"] if entry["generation"] == generation]
-    _require(len(selected) == 1, "La generación no contiene una recogida de decisión")
-    entry = selected[0]
-    _require(entry["cutoff"] < before, "La recogida no es anterior al corte histórico")
-    total = entry["packet"]["bytes"]
-    _require(total < max_bytes, "El paquete agota los bytes del prefijo histórico")
-    packet = CollectedMechanisms.restore(session._read(entry["packet"], PACKET))
-    rows = packet.payload()["rows"]
-    lookup = {_key(row): i for i, row in enumerate(rows)}
-    supervision, censored, seen, records = MechanismSupervision.start(packet), [], set(), []
-    resolutions = []
-    previous = entry["cutoff"] - 1
-    for current in range(generation, through_generation + 1):
+    chosen = set(generations)
+    selected = [entry for entry in manifest["entries"] if entry["generation"] in chosen]
+    _require(
+        len(selected) == len(generations), "La generación no contiene una recogida de decisión"
+    )
+    _require(
+        all(entry["cutoff"] < before for entry in selected),
+        "La recogida no es anterior al corte histórico",
+    )
+    total, states, lookup, records = 0, {}, {}, []
+    for entry in selected:
+        total += entry["packet"]["bytes"]
+        _require(total < max_bytes, "Los paquetes agotan los bytes del prefijo histórico")
+        packet = CollectedMechanisms.restore(session._read(entry["packet"], PACKET))
+        state = _Collection(entry, packet)
+        states[entry["generation"]] = state
+        for i, row in enumerate(state.rows):
+            key = _key(row)
+            _require(key not in lookup, "Las colecciones repiten una predicción")
+            lookup[key] = state, i
+    previous = selected[0]["cutoff"] - 1
+    for current in range(generations[0], through_generation + 1):
         event = binding.history.read_event(bundle["mechanism_history"], current)
         _require(
             previous < event["cutoff"] < before, "El registro alcanza el futuro del corte histórico"
@@ -62,68 +148,41 @@ def collection_at(
             record,
             cutoff=event["cutoff"],
         )
-        if current == generation:
+        if current in states:
+            state = states[current]
+            entry = state.entry
             _require(
                 record["event_kind"] == "decision"
                 and record["cutoff"] == entry["cutoff"]
                 and event["payload"]["collection_packet"] == entry["packet"],
                 "La colección no enlaza su emisión nativa",
             )
-            binding.collections.check_anchor(packet, event["payload"])
-        received, indices = [], []
-        for kind in ("feedback", "excluded", "finalized"):
-            for item in record[kind]:
-                p = item["prediction"]
-                index = lookup.get((p["asset"], p["decision_at"]))
-                if index is None:
-                    continue
-                _require(index not in seen, "El prefijo repite el resultado de una predicción")
-                seen.add(index)
-                if kind == "finalized":
-                    _require(
-                        record["close_phase"]
-                        and item["closed_at"] == record["cutoff"]
-                        and item["closed_at"] == session.phase.close_at,
-                        "La censura no conserva su cierre nativo",
-                    )
-                    censored.append(
-                        dict(
-                            row_index=index,
-                            generation=current,
-                            closed_at=item["closed_at"],
-                            native_record_sha256=sha,
-                        )
-                    )
-                else:
-                    row = rows[index]
-                    indices.append(index)
-                    received.append(
-                        CohortOutcome(
-                            row["flow_id"].split("/", 1)[0],
-                            row["prediction_at"],
-                            row["sample_id"],
-                            item["available_at"] if kind == "feedback" else record["cutoff"],
-                            value=item["target"] if kind == "feedback" else None,
-                            status="label" if kind == "feedback" else "excluded",
-                            evidence_sha256=None
-                            if kind == "feedback"
-                            else item["evidence"]["evidence_sha256"],
-                        )
-                    )
-        if received:
-            watermark = max(o.available_at for o in received)
-            supervision = supervision.receive(
-                received, at=max(watermark, supervision.record()["clock"] or watermark)
-            )
-            resolutions.append(
-                dict(generation=current, row_indices=indices, native_record_sha256=sha)
-            )
+            binding.collections.check_anchor(state.packet, event["payload"])
+        _receive(session, states, lookup, record, current, sha)
         total += size
         records.append(dict(generation=current, cutoff=record["cutoff"], sha256=sha, bytes=size))
         previous = record["cutoff"]
+    return states, records, total
+
+
+def collection_at(
+    session, bundle, generation, *, through_generation, before, max_records, max_bytes
+):
+    """Conservar el formato de una vista individual desde el mismo recorrido causal."""
+    states, records, total = _prefix(
+        session,
+        bundle,
+        (generation,),
+        through_generation=through_generation,
+        before=before,
+        max_records=max_records,
+        max_bytes=max_bytes,
+    )
+    state = states[generation]
+    packet, censored = state.packet, state.censored
     result = dict(
         collection=packet.record(),
-        supervision=supervision.record(),
+        supervision=state.supervision.record(),
         censored=censored,
         as_of=dict(
             schema_version=1,
@@ -134,9 +193,9 @@ def collection_at(
             through_generation=through_generation,
             before=before,
             native_records=records,
-            resolutions=resolutions,
+            resolutions=state.resolutions,
             source_bytes=total,
-            packet_reference=entry["packet"],
+            packet_reference=dict(state.entry["packet"]),
         ),
     )
     result["as_of"]["view_sha256"] = digest(
@@ -144,6 +203,48 @@ def collection_at(
             collection_sha256=packet.sha256,
             supervision=result["supervision"],
             censored=censored,
+            as_of=result["as_of"],
+        )
+    )
+    return result
+
+
+def collections_at(
+    session, bundle, generations, *, through_generation, before, max_records, max_bytes
+):
+    """Una procedencia común, sin repetir registros ni recibos posteriores por colección."""
+    states, records, total = _prefix(
+        session,
+        bundle,
+        generations,
+        through_generation=through_generation,
+        before=before,
+        max_records=max_records,
+        max_bytes=max_bytes,
+    )
+    result = dict(
+        collections=[state.record() for state in states.values()],
+        as_of=dict(
+            schema_version=1,
+            kind="native_mechanism_window_v1",
+            contract_id=session.contract_id,
+            model_id=session.model_id,
+            collection_generations=list(generations),
+            through_generation=through_generation,
+            before=before,
+            native_records=records,
+            source_bytes=total,
+        ),
+    )
+    result["as_of"]["window_sha256"] = digest(
+        dict(
+            collections=[
+                dict(
+                    collection_sha256=state.packet.sha256,
+                    **{k: v for k, v in item.items() if k != "collection"},
+                )
+                for state, item in zip(states.values(), result["collections"], strict=True)
+            ],
             as_of=result["as_of"],
         )
     )
