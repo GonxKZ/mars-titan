@@ -82,6 +82,19 @@ class CohortFeedback:
     def pending_rows(self):
         return sum(len(item["rows"]) for item in self._cohorts)
 
+    def unresolved_keys(self):
+        """Identidades aún sin resultado, incluidas las de cohortes parcialmente resueltas.
+
+        No equivalen a toda la cola financiera ni incluyen etiquetas ya recibidas.
+        La vista es inmutable y solo recorre los metadatos acotados de esta cola.
+        """
+        return frozenset(
+            (item["group"], item["prediction_at"], row["sample_id"])
+            for item in self._cohorts
+            for row in item["rows"]
+            if row["available_at"] is None
+        )
+
     def corrections(self, group):
         return self._calibrator.corrections(group)
 
