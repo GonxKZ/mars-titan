@@ -1,0 +1,18 @@
+[
+  {
+    "rows": 64,
+    "prediction_parity": true,
+    "p50_total_delta_ms": -264.08700000000044,
+    "p50_total_ratio": 0.92918325435789,
+    "retained_bytes_delta": 24960,
+    "interpretation": "Coste observado, cuatro repeticiones, sin inferencia de aceleración ni de mejora predictiva"
+  },
+  {
+    "rows": 256,
+    "prediction_parity": true,
+    "p50_total_delta_ms": 313.99433900000076,
+    "p50_total_ratio": 1.0326170935636618,
+    "retained_bytes_delta": 24960,
+    "interpretation": "Coste observado, cuatro repeticiones, sin inferencia de aceleración ni de mejora predictiva"
+  }
+]

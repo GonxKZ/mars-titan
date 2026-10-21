@@ -1,0 +1,3992 @@
+{
+  "recorded_at_utc": "2026-10-21T07:38:11.658378+00:00",
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "numpy": "2.5.3",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_total_bytes": 8183676928,
+  "driver": "595.91.07",
+  "device": "cuda:0",
+  "dtype": "float64",
+  "cpu_threads": 2,
+  "warmup": 1,
+  "repetitions": 4,
+  "hidden_size": 32,
+  "block_rows": 64,
+  "bank_capacity": 64,
+  "input_shapes": {
+    "prices": [
+      64,
+      5
+    ],
+    "news": 2,
+    "charts": 1,
+    "fundamentals": 3,
+    "macro": 3
+  },
+  "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "selector_fitted": false,
+  "scientific_study": false,
+  "cases": [
+    {
+      "rows": 64,
+      "kind": "fixed",
+      "consumer_identity": {
+        "action": {
+          "calibration": "none",
+          "context": "off",
+          "route": "k1"
+        },
+        "calibration": "92e4c4f2c573b80c22cc67a60e51dca2eb544eb8e3739ad94384272de3b95a9c",
+        "catalog": {
+          "actions": [
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4rc"
+            }
+          ],
+          "arbitrary_code_allowed": false,
+          "baseline": {
+            "calibration": "none",
+            "context": "off",
+            "route": "k1"
+          },
+          "budget": {
+            "max_context_markets": 2,
+            "max_online_rows": 8192,
+            "max_reader_searches": 2,
+            "max_reader_steps": 4
+          },
+          "event_order": "predict_all_then_feedback_v1",
+          "fallback": "raw_k1_on_the_selected_pre_mac_context_without_recomputation",
+          "kind": "financial_mechanism_catalog_v1",
+          "schema_version": 1,
+          "stages": {
+            "calibration": "cohort_emission",
+            "context": "before_mac",
+            "route": "after_k1"
+          },
+          "utility_conversion": "none_no_implicit_conversion_of_time_to_prediction_error",
+          "work_units": "reader_steps_and_searches_per_row_context_writes_per_market"
+        },
+        "fixed_controls": true,
+        "implementation": {
+          "mars_titan.calibration.cohort_feedback": "425e862040973c3ccfd6514a07457b5a2a3c0be67b990b48bddf20b952deca51",
+          "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+          "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+          "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+          "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+          "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+          "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+          "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+          "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+          "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+          "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+          "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+          "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+          "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+          "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+          "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+          "mars_titan.models.titans.financial": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+          "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+          "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+          "mars_titan.models.titans.frozen_financial": "839358927c4ad3177afbdb258e3efdea0646b1b4fc1bfd811d9b78814b380437",
+          "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+          "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+          "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+          "mars_titan.models.titans.mechanism_catalog": "60bb2c2a6e5551b55dca961fec99f10ea234226633e9c5aab8051a873cff6240",
+          "mars_titan.models.titans.mechanism_consumer": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+          "mars_titan.models.titans.mechanism_event": "2e0be484b589d2ed4a319ac736989813f0080d93488b23001737dbd9f2a92c65",
+          "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+          "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+          "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+          "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+          "mars_titan.models.titans.regional_fusion": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+          "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+          "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+          "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+          "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+        },
+        "modules": {
+          "predictor/": {
+            "settings": {
+              "masked": true
+            },
+            "training": false,
+            "type": "mars_titan.models.titans.financial.FinancialPredictor"
+          },
+          "predictor/encoders": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleDict"
+          },
+          "predictor/encoders.charts": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.charts.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 1,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.charts.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.fundamentals": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.fundamentals.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.fundamentals.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.macro": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.macro.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.macro.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.news": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.news.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 2,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.news.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/fusion.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 165,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/fusion.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion.2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/head": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 5
+            },
+            "training": false,
+            "type": "mars_titan.models.quantile_head.QuantileHead"
+          },
+          "predictor/mac": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.mac.TitansMAC"
+          },
+          "predictor/mac.attention": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": false,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/mac.attention.out_proj": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/mac.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/mac.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/mac.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.query_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.baselines.transformer.CompactPriceTransformer"
+          },
+          "predictor/price_encoder.blocks": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleList"
+          },
+          "predictor/price_encoder.blocks.0": {
+            "settings": {
+              "activation": "torch.nn.functional.gelu",
+              "activation_relu_or_gelu": 2,
+              "norm_first": true
+            },
+            "training": false,
+            "type": "torch.nn.modules.transformer.TransformerEncoderLayer"
+          },
+          "predictor/price_encoder.blocks.0.dropout": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout1": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.linear1": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 64
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.linear2": {
+            "settings": {
+              "bias": true,
+              "in_features": 64,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.norm1": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.norm2": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.self_attn": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": true,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/price_encoder.blocks.0.self_attn.out_proj": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/price_encoder.norm": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.projection": {
+            "settings": {
+              "bias": true,
+              "in_features": 5,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.session_context.SessionContext"
+          },
+          "predictor/session_context.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/session_context.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/session_context.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        },
+        "new_learned_selector": false,
+        "numerics": {
+          "cpu_threads": 2,
+          "cublas_workspace": ":4096:8",
+          "cudnn_allow_tf32": false,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": false,
+          "default_dtype": "torch.float32",
+          "deterministic": true,
+          "deterministic_warn_only": false,
+          "interop_threads": 8,
+          "matmul_allow_tf32": false,
+          "matmul_precision": "highest",
+          "mha_fastpath": false,
+          "sdpa_cudnn": true,
+          "sdpa_efficient": true,
+          "sdpa_flash": true,
+          "sdpa_math": true,
+          "torch_version": "2.14.0+cu130"
+        },
+        "online_policy": "only_cohorts_emitted_online_predict_all_then_feedback_v1",
+        "phase_end": "archive_censored_pending_without_maturity_or_cross_phase_reuse",
+        "planning_batch": 256,
+        "predictor": {
+          "backbone_contract": {
+            "activation": "gelu",
+            "aggregation": "last_token",
+            "causal": true,
+            "context": 64,
+            "dropout": 0.0,
+            "dtypes": [
+              "float32",
+              "float64"
+            ],
+            "feedforward_multiplier": 2,
+            "final_normalization": "layer_norm",
+            "heads": 4,
+            "hidden_size": 32,
+            "input_size": 5,
+            "kind": "compact_price_transformer",
+            "layer_norm_eps": 1e-05,
+            "layers": 1,
+            "max_attention_elements": 16777216,
+            "max_batch": 256,
+            "normalization": "pre_layer_norm",
+            "position_basis_dtype": "float32",
+            "position_encoding": "sinusoidal_v1",
+            "schema_version": 1,
+            "state_policy": "reset_per_window"
+          },
+          "configuration": {
+            "bank_policy": "disabled",
+            "dropout": 0.0,
+            "feedforward_multiplier": 2,
+            "heads": 4,
+            "hidden_size": 32,
+            "inputs": {
+              "context": 64,
+              "dimensions": {
+                "charts": 1,
+                "fundamentals": 3,
+                "macro": 3,
+                "news": 2,
+                "prices": 5
+              },
+              "input_policy": "historical_masked_2000_v1",
+              "representation": {
+                "context_sessions": 64,
+                "encoders": {
+                  "version": 1
+                },
+                "fundamental_concepts": [
+                  "Assets"
+                ],
+                "input_policy": "historical_masked_2000_v1",
+                "macro_indicators": [
+                  "inflation"
+                ],
+                "mask_contract": {
+                  "final_test_start": "2024-01-01",
+                  "first_prediction": "2000-01-01",
+                  "missing_available_at": null,
+                  "missing_fill": 0.0,
+                  "numeric_layout": "values_observed_log_age",
+                  "order": [
+                    "prices",
+                    "news",
+                    "charts",
+                    "fundamentals",
+                    "macro"
+                  ],
+                  "version": 1
+                },
+                "news_lookback_sessions": 5,
+                "representation_code": {
+                  "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "text_aggregation": "test_mean"
+              },
+              "schema_version": 1,
+              "source_sha256": "8112bc794ef5caa0febed121fd31e80ccbbc8123340a22672d899d21a586a14c",
+              "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "layers": 1,
+            "mask_fusion": "zero_after_projection_then_concat_presence",
+            "max_batch": 256,
+            "max_state_bytes": 67108864,
+            "output": "quantile_head_v1",
+            "output_head": {
+              "columns": [
+                "quantile_0025",
+                "quantile_0100",
+                "quantile_0500",
+                "quantile_0900",
+                "quantile_0975"
+              ],
+              "levels": [
+                0.025,
+                0.1,
+                0.5,
+                0.9,
+                0.975
+              ],
+              "loss": "mean_pinball_equal_level_weights",
+              "name": "quantile_head_v1",
+              "parametrization": "free_median_softplus_increments_as_native_candidate",
+              "point_prediction": "median",
+              "schema_version": 1,
+              "softplus": {
+                "beta": 1,
+                "threshold": 20
+              },
+              "zero_residual_subgradient": "midpoint_tau_minus_half"
+            },
+            "persistent_tokens": 4,
+            "refinements": 1,
+            "schema_version": 1,
+            "seed": 42,
+            "segment_length": 1,
+            "session_context": {
+              "kind": "market_memory_v1",
+              "sectors": null
+            },
+            "token_policy": "one_fused_token_per_new_decision",
+            "variant": "mac_online"
+          },
+          "dtype": "torch.float64",
+          "mac_contract": {
+            "attention_bias": false,
+            "attention_mask": "triangular_on_packed_sequence",
+            "disabled_policy": "attention_only_without_prefix_or_gate",
+            "dropout": 0.0,
+            "heads": 4,
+            "layout": "persistent_memory_segment",
+            "max_attention_elements": 8388608,
+            "max_segment": 1,
+            "memory": {
+              "architecture": "square_mlp",
+              "bias": false,
+              "depth": 2,
+              "dim": 32,
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "gradient_policy": "explicit_differentiable_or_detached",
+              "hidden_activation": "gelu_exact",
+              "inner_derivative": "partial_at_fixed_observation",
+              "layer_norm": false,
+              "loss_reduction": "sum_per_token_per_flow",
+              "max_batch": 256,
+              "max_state_bytes": 67108864,
+              "max_tokens": 1,
+              "normalization_eps": 1e-12,
+              "normalize_qk": true,
+              "parameter_seed": 42,
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "residual": false,
+              "schema_version": 1,
+              "theta_max": 0.1,
+              "update_order": "sequential_current_weights"
+            },
+            "memory_mode": "online",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "parameter_seed": 42,
+            "persistent_tokens": 4,
+            "schema_version": 1,
+            "write_positions": "segment_only"
+          },
+          "training": false
+        },
+        "predictor_parameters_sha256": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "reader_sha256": null,
+        "readout": null,
+        "recipe": "frozen_mechanism_cohort_proposals_v1",
+        "schema_version": 1,
+        "static_calibration": "71b1589243ffdd5f7643ea36c01a5c52d2b0d24b67a809dd5f537c0c4243af63"
+      },
+      "prefix_policy_id": "6a652e1cb99c4ed501b1428a773929eab02b66e4c3256a3e315bd5a03d08da85",
+      "samples_ms": [
+        {
+          "open": 14.066686,
+          "step_125": 427.896693,
+          "step_126": 765.901699,
+          "step_127": 878.42757,
+          "step_128": 893.807162,
+          "close_phase": 437.102729,
+          "recover": 306.737151,
+          "total": 3738.352837
+        },
+        {
+          "open": 14.45217,
+          "step_125": 438.318853,
+          "step_126": 766.895454,
+          "step_127": 861.849938,
+          "step_128": 900.568916,
+          "close_phase": 425.958853,
+          "recover": 297.485938,
+          "total": 3719.967864
+        },
+        {
+          "open": 18.117612,
+          "step_125": 376.312713,
+          "step_126": 750.189646,
+          "step_127": 865.030886,
+          "step_128": 920.360438,
+          "close_phase": 416.965614,
+          "recover": 291.579618,
+          "total": 3654.114924
+        },
+        {
+          "open": 13.22131,
+          "step_125": 455.400709,
+          "step_126": 840.000955,
+          "step_127": 904.261583,
+          "step_128": 1002.427492,
+          "close_phase": 426.657743,
+          "recover": 305.15675,
+          "total": 3961.543237
+        }
+      ],
+      "retained_bytes": [
+        3081289,
+        3081289,
+        3081289,
+        3081289
+      ],
+      "prediction_sha256": "efa7f3deab9f0162216134587df8f7d3237447a68f1a959b38c274d5c9cf7a02",
+      "p50_ms": 3729.1603505000003,
+      "p95_ms": 3928.064677,
+      "p99_ms": 3954.8475249999997,
+      "mean_ms": 3768.4947155,
+      "std_ms": 133.6835274232035,
+      "prediction_rows_per_second": 50.94872475481915,
+      "allocator_peaks_bytes": {
+        "allocated": 78303744,
+        "reserved": 98566144
+      }
+    },
+    {
+      "rows": 64,
+      "kind": "selected",
+      "consumer_identity": {
+        "action": {
+          "calibration": "none",
+          "context": "off",
+          "route": "k1"
+        },
+        "calibration": "92e4c4f2c573b80c22cc67a60e51dca2eb544eb8e3739ad94384272de3b95a9c",
+        "catalog": {
+          "actions": [
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4rc"
+            }
+          ],
+          "arbitrary_code_allowed": false,
+          "baseline": {
+            "calibration": "none",
+            "context": "off",
+            "route": "k1"
+          },
+          "budget": {
+            "max_context_markets": 2,
+            "max_online_rows": 8192,
+            "max_reader_searches": 2,
+            "max_reader_steps": 4
+          },
+          "event_order": "predict_all_then_feedback_v1",
+          "fallback": "raw_k1_on_the_selected_pre_mac_context_without_recomputation",
+          "kind": "financial_mechanism_catalog_v1",
+          "schema_version": 1,
+          "stages": {
+            "calibration": "cohort_emission",
+            "context": "before_mac",
+            "route": "after_k1"
+          },
+          "utility_conversion": "none_no_implicit_conversion_of_time_to_prediction_error",
+          "work_units": "reader_steps_and_searches_per_row_context_writes_per_market"
+        },
+        "fixed_controls": false,
+        "implementation": {
+          "mars_titan.calibration.cohort_feedback": "425e862040973c3ccfd6514a07457b5a2a3c0be67b990b48bddf20b952deca51",
+          "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+          "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+          "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+          "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+          "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+          "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+          "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+          "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+          "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+          "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+          "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+          "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+          "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+          "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+          "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+          "mars_titan.models.titans.financial": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+          "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+          "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+          "mars_titan.models.titans.frozen_financial": "839358927c4ad3177afbdb258e3efdea0646b1b4fc1bfd811d9b78814b380437",
+          "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+          "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+          "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+          "mars_titan.models.titans.mechanism_catalog": "60bb2c2a6e5551b55dca961fec99f10ea234226633e9c5aab8051a873cff6240",
+          "mars_titan.models.titans.mechanism_consumer": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+          "mars_titan.models.titans.mechanism_event": "2e0be484b589d2ed4a319ac736989813f0080d93488b23001737dbd9f2a92c65",
+          "mars_titan.models.titans.mechanism_observation": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+          "mars_titan.models.titans.mechanism_policy": "664f63aa342fd4ed5a5bcd3069220de4311fb2d024359b5e6d00f46b7b3bc11d",
+          "mars_titan.models.titans.mechanism_selection": "576ca3d07abe353e76771ceb649988c5b3411388827c0fcf2510453146b3e3d6",
+          "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+          "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+          "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+          "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+          "mars_titan.models.titans.regional_fusion": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+          "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+          "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+          "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+          "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+        },
+        "modules": {
+          "predictor/": {
+            "settings": {
+              "masked": true
+            },
+            "training": false,
+            "type": "mars_titan.models.titans.financial.FinancialPredictor"
+          },
+          "predictor/encoders": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleDict"
+          },
+          "predictor/encoders.charts": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.charts.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 1,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.charts.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.fundamentals": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.fundamentals.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.fundamentals.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.macro": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.macro.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.macro.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.news": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.news.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 2,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.news.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/fusion.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 165,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/fusion.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion.2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/head": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 5
+            },
+            "training": false,
+            "type": "mars_titan.models.quantile_head.QuantileHead"
+          },
+          "predictor/mac": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.mac.TitansMAC"
+          },
+          "predictor/mac.attention": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": false,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/mac.attention.out_proj": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/mac.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/mac.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/mac.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.query_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.baselines.transformer.CompactPriceTransformer"
+          },
+          "predictor/price_encoder.blocks": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleList"
+          },
+          "predictor/price_encoder.blocks.0": {
+            "settings": {
+              "activation": "torch.nn.functional.gelu",
+              "activation_relu_or_gelu": 2,
+              "norm_first": true
+            },
+            "training": false,
+            "type": "torch.nn.modules.transformer.TransformerEncoderLayer"
+          },
+          "predictor/price_encoder.blocks.0.dropout": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout1": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.linear1": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 64
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.linear2": {
+            "settings": {
+              "bias": true,
+              "in_features": 64,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.norm1": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.norm2": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.self_attn": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": true,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/price_encoder.blocks.0.self_attn.out_proj": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/price_encoder.norm": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.projection": {
+            "settings": {
+              "bias": true,
+              "in_features": 5,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.session_context.SessionContext"
+          },
+          "predictor/session_context.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/session_context.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/session_context.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        },
+        "new_learned_selector": false,
+        "numerics": {
+          "cpu_threads": 2,
+          "cublas_workspace": ":4096:8",
+          "cudnn_allow_tf32": false,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": false,
+          "default_dtype": "torch.float32",
+          "deterministic": true,
+          "deterministic_warn_only": false,
+          "interop_threads": 8,
+          "matmul_allow_tf32": false,
+          "matmul_precision": "highest",
+          "mha_fastpath": false,
+          "sdpa_cudnn": true,
+          "sdpa_efficient": true,
+          "sdpa_flash": true,
+          "sdpa_math": true,
+          "torch_version": "2.14.0+cu130"
+        },
+        "online_policy": "only_cohorts_emitted_online_predict_all_then_feedback_v1",
+        "phase_end": "archive_censored_pending_without_maturity_or_cross_phase_reuse",
+        "planning_batch": 256,
+        "predictor": {
+          "backbone_contract": {
+            "activation": "gelu",
+            "aggregation": "last_token",
+            "causal": true,
+            "context": 64,
+            "dropout": 0.0,
+            "dtypes": [
+              "float32",
+              "float64"
+            ],
+            "feedforward_multiplier": 2,
+            "final_normalization": "layer_norm",
+            "heads": 4,
+            "hidden_size": 32,
+            "input_size": 5,
+            "kind": "compact_price_transformer",
+            "layer_norm_eps": 1e-05,
+            "layers": 1,
+            "max_attention_elements": 16777216,
+            "max_batch": 256,
+            "normalization": "pre_layer_norm",
+            "position_basis_dtype": "float32",
+            "position_encoding": "sinusoidal_v1",
+            "schema_version": 1,
+            "state_policy": "reset_per_window"
+          },
+          "configuration": {
+            "bank_policy": "disabled",
+            "dropout": 0.0,
+            "feedforward_multiplier": 2,
+            "heads": 4,
+            "hidden_size": 32,
+            "inputs": {
+              "context": 64,
+              "dimensions": {
+                "charts": 1,
+                "fundamentals": 3,
+                "macro": 3,
+                "news": 2,
+                "prices": 5
+              },
+              "input_policy": "historical_masked_2000_v1",
+              "representation": {
+                "context_sessions": 64,
+                "encoders": {
+                  "version": 1
+                },
+                "fundamental_concepts": [
+                  "Assets"
+                ],
+                "input_policy": "historical_masked_2000_v1",
+                "macro_indicators": [
+                  "inflation"
+                ],
+                "mask_contract": {
+                  "final_test_start": "2024-01-01",
+                  "first_prediction": "2000-01-01",
+                  "missing_available_at": null,
+                  "missing_fill": 0.0,
+                  "numeric_layout": "values_observed_log_age",
+                  "order": [
+                    "prices",
+                    "news",
+                    "charts",
+                    "fundamentals",
+                    "macro"
+                  ],
+                  "version": 1
+                },
+                "news_lookback_sessions": 5,
+                "representation_code": {
+                  "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "text_aggregation": "test_mean"
+              },
+              "schema_version": 1,
+              "source_sha256": "8112bc794ef5caa0febed121fd31e80ccbbc8123340a22672d899d21a586a14c",
+              "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "layers": 1,
+            "mask_fusion": "zero_after_projection_then_concat_presence",
+            "max_batch": 256,
+            "max_state_bytes": 67108864,
+            "output": "quantile_head_v1",
+            "output_head": {
+              "columns": [
+                "quantile_0025",
+                "quantile_0100",
+                "quantile_0500",
+                "quantile_0900",
+                "quantile_0975"
+              ],
+              "levels": [
+                0.025,
+                0.1,
+                0.5,
+                0.9,
+                0.975
+              ],
+              "loss": "mean_pinball_equal_level_weights",
+              "name": "quantile_head_v1",
+              "parametrization": "free_median_softplus_increments_as_native_candidate",
+              "point_prediction": "median",
+              "schema_version": 1,
+              "softplus": {
+                "beta": 1,
+                "threshold": 20
+              },
+              "zero_residual_subgradient": "midpoint_tau_minus_half"
+            },
+            "persistent_tokens": 4,
+            "refinements": 1,
+            "schema_version": 1,
+            "seed": 42,
+            "segment_length": 1,
+            "session_context": {
+              "kind": "market_memory_v1",
+              "sectors": null
+            },
+            "token_policy": "one_fused_token_per_new_decision",
+            "variant": "mac_online"
+          },
+          "dtype": "torch.float64",
+          "mac_contract": {
+            "attention_bias": false,
+            "attention_mask": "triangular_on_packed_sequence",
+            "disabled_policy": "attention_only_without_prefix_or_gate",
+            "dropout": 0.0,
+            "heads": 4,
+            "layout": "persistent_memory_segment",
+            "max_attention_elements": 8388608,
+            "max_segment": 1,
+            "memory": {
+              "architecture": "square_mlp",
+              "bias": false,
+              "depth": 2,
+              "dim": 32,
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "gradient_policy": "explicit_differentiable_or_detached",
+              "hidden_activation": "gelu_exact",
+              "inner_derivative": "partial_at_fixed_observation",
+              "layer_norm": false,
+              "loss_reduction": "sum_per_token_per_flow",
+              "max_batch": 256,
+              "max_state_bytes": 67108864,
+              "max_tokens": 1,
+              "normalization_eps": 1e-12,
+              "normalize_qk": true,
+              "parameter_seed": 42,
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "residual": false,
+              "schema_version": 1,
+              "theta_max": 0.1,
+              "update_order": "sequential_current_weights"
+            },
+            "memory_mode": "online",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "parameter_seed": 42,
+            "persistent_tokens": 4,
+            "schema_version": 1,
+            "write_positions": "segment_only"
+          },
+          "training": false
+        },
+        "predictor_parameters_sha256": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "reader_sha256": null,
+        "readout": null,
+        "recipe": "frozen_mechanism_cohort_proposals_v1",
+        "schema_version": 1,
+        "selector": {
+          "buffers_sha256": "43980f453715d5901fc99d3e50209f50335edfa16cc2aa9e29c98645a7ac0a07",
+          "coefficient_origin": "supplied_not_verified_as_fitted",
+          "configuration": {
+            "actions": [
+              "off/k1/none",
+              "off/k1/static",
+              "off/k1/online",
+              "off/k2c/none",
+              "off/k2c/static",
+              "off/k2c/online",
+              "off/k2r/none",
+              "off/k2r/static",
+              "off/k2r/online",
+              "off/k4cc/none",
+              "off/k4cc/static",
+              "off/k4cc/online",
+              "off/k4cr/none",
+              "off/k4cr/static",
+              "off/k4cr/online",
+              "off/k4rc/none",
+              "off/k4rc/static",
+              "off/k4rc/online",
+              "parent/k1/none",
+              "parent/k1/static",
+              "parent/k1/online",
+              "parent/k2c/none",
+              "parent/k2c/static",
+              "parent/k2c/online",
+              "parent/k2r/none",
+              "parent/k2r/static",
+              "parent/k2r/online",
+              "parent/k4cc/none",
+              "parent/k4cc/static",
+              "parent/k4cc/online",
+              "parent/k4cr/none",
+              "parent/k4cr/static",
+              "parent/k4cr/online",
+              "parent/k4rc/none",
+              "parent/k4rc/static",
+              "parent/k4rc/online"
+            ],
+            "baseline": "off/k1/none_with_zero_score",
+            "costs": "incremental_declared_utility_units_not_raw_milliseconds",
+            "features": [
+              "log1p_cohort_rows",
+              "prices_present_fraction",
+              "news_present_fraction",
+              "charts_present_fraction",
+              "fundamentals_present_fraction",
+              "macro_present_fraction",
+              "prices_mean_log1p_rms",
+              "news_mean_log1p_rms",
+              "charts_mean_log1p_rms",
+              "fundamentals_mean_log1p_rms",
+              "macro_mean_log1p_rms",
+              "log1p_max_input_age_seconds",
+              "log1p_eligible_bank_entries",
+              "previous_context_present",
+              "log1p_previous_context_age_days",
+              "calibration_present",
+              "log1p_pending_calibration_rows",
+              "static_correction_mean",
+              "static_correction_max_abs",
+              "online_correction_mean",
+              "online_correction_max_abs"
+            ],
+            "interval_weight": 0.5,
+            "kind": "pre_mac_cohort_mechanism_policy_v1",
+            "max_cohorts": 2,
+            "min_gain": 0.0,
+            "point_actions": [
+              "off/k1",
+              "off/k2c",
+              "off/k2r",
+              "off/k4cc",
+              "off/k4cr",
+              "off/k4rc",
+              "parent/k1",
+              "parent/k2c",
+              "parent/k2r",
+              "parent/k4cc",
+              "parent/k4cr",
+              "parent/k4rc"
+            ],
+            "schema_version": 1,
+            "score": "point_gain_plus_weighted_interval_gain_minus_cost_and_min_gain",
+            "selection_unit": "market_cohort_before_mac",
+            "support": "marginal_feature_ranges_not_joint_or_calibrated_ood",
+            "tie": "first_admissible_action_in_declared_catalog_order"
+          },
+          "device": "cuda:0",
+          "dtype": "torch.float64"
+        },
+        "static_calibration": "71b1589243ffdd5f7643ea36c01a5c52d2b0d24b67a809dd5f537c0c4243af63"
+      },
+      "prefix_policy_id": "6a652e1cb99c4ed501b1428a773929eab02b66e4c3256a3e315bd5a03d08da85",
+      "samples_ms": [
+        {
+          "open": 13.059906,
+          "step_125": 392.145957,
+          "step_126": 687.062112,
+          "step_127": 756.917708,
+          "step_128": 814.025895,
+          "close_phase": 461.264061,
+          "recover": 286.806332,
+          "total": 3430.660158
+        },
+        {
+          "open": 15.38964,
+          "step_125": 471.766457,
+          "step_126": 705.387375,
+          "step_127": 796.443082,
+          "step_128": 912.260814,
+          "close_phase": 387.130747,
+          "recover": 267.700475,
+          "total": 3570.308193
+        },
+        {
+          "open": 13.197565,
+          "step_125": 401.077259,
+          "step_126": 731.474384,
+          "step_127": 792.344016,
+          "step_128": 813.944747,
+          "close_phase": 411.346921,
+          "recover": 254.083966,
+          "total": 3432.362147
+        },
+        {
+          "open": 14.199336,
+          "step_125": 482.95967,
+          "step_126": 783.268842,
+          "step_127": 781.627752,
+          "step_128": 794.083607,
+          "close_phase": 371.447541,
+          "recover": 253.510778,
+          "total": 3497.784554
+        }
+      ],
+      "retained_bytes": [
+        3106249,
+        3106249,
+        3106249,
+        3106249
+      ],
+      "prediction_sha256": "efa7f3deab9f0162216134587df8f7d3237447a68f1a959b38c274d5c9cf7a02",
+      "p50_ms": 3465.0733505,
+      "p95_ms": 3559.4296471499997,
+      "p99_ms": 3568.1324838299997,
+      "mean_ms": 3482.778763,
+      "std_ms": 66.19355214243059,
+      "prediction_rows_per_second": 55.12839403976807,
+      "allocator_peaks_bytes": {
+        "allocated": 78303744,
+        "reserved": 98566144
+      }
+    },
+    {
+      "rows": 256,
+      "kind": "fixed",
+      "consumer_identity": {
+        "action": {
+          "calibration": "none",
+          "context": "off",
+          "route": "k1"
+        },
+        "calibration": "92e4c4f2c573b80c22cc67a60e51dca2eb544eb8e3739ad94384272de3b95a9c",
+        "catalog": {
+          "actions": [
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4rc"
+            }
+          ],
+          "arbitrary_code_allowed": false,
+          "baseline": {
+            "calibration": "none",
+            "context": "off",
+            "route": "k1"
+          },
+          "budget": {
+            "max_context_markets": 2,
+            "max_online_rows": 8192,
+            "max_reader_searches": 2,
+            "max_reader_steps": 4
+          },
+          "event_order": "predict_all_then_feedback_v1",
+          "fallback": "raw_k1_on_the_selected_pre_mac_context_without_recomputation",
+          "kind": "financial_mechanism_catalog_v1",
+          "schema_version": 1,
+          "stages": {
+            "calibration": "cohort_emission",
+            "context": "before_mac",
+            "route": "after_k1"
+          },
+          "utility_conversion": "none_no_implicit_conversion_of_time_to_prediction_error",
+          "work_units": "reader_steps_and_searches_per_row_context_writes_per_market"
+        },
+        "fixed_controls": true,
+        "implementation": {
+          "mars_titan.calibration.cohort_feedback": "425e862040973c3ccfd6514a07457b5a2a3c0be67b990b48bddf20b952deca51",
+          "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+          "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+          "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+          "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+          "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+          "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+          "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+          "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+          "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+          "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+          "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+          "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+          "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+          "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+          "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+          "mars_titan.models.titans.financial": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+          "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+          "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+          "mars_titan.models.titans.frozen_financial": "839358927c4ad3177afbdb258e3efdea0646b1b4fc1bfd811d9b78814b380437",
+          "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+          "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+          "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+          "mars_titan.models.titans.mechanism_catalog": "60bb2c2a6e5551b55dca961fec99f10ea234226633e9c5aab8051a873cff6240",
+          "mars_titan.models.titans.mechanism_consumer": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+          "mars_titan.models.titans.mechanism_event": "2e0be484b589d2ed4a319ac736989813f0080d93488b23001737dbd9f2a92c65",
+          "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+          "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+          "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+          "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+          "mars_titan.models.titans.regional_fusion": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+          "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+          "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+          "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+          "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+        },
+        "modules": {
+          "predictor/": {
+            "settings": {
+              "masked": true
+            },
+            "training": false,
+            "type": "mars_titan.models.titans.financial.FinancialPredictor"
+          },
+          "predictor/encoders": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleDict"
+          },
+          "predictor/encoders.charts": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.charts.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 1,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.charts.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.fundamentals": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.fundamentals.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.fundamentals.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.macro": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.macro.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.macro.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.news": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.news.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 2,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.news.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/fusion.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 165,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/fusion.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion.2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/head": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 5
+            },
+            "training": false,
+            "type": "mars_titan.models.quantile_head.QuantileHead"
+          },
+          "predictor/mac": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.mac.TitansMAC"
+          },
+          "predictor/mac.attention": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": false,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/mac.attention.out_proj": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/mac.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/mac.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/mac.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.query_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.baselines.transformer.CompactPriceTransformer"
+          },
+          "predictor/price_encoder.blocks": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleList"
+          },
+          "predictor/price_encoder.blocks.0": {
+            "settings": {
+              "activation": "torch.nn.functional.gelu",
+              "activation_relu_or_gelu": 2,
+              "norm_first": true
+            },
+            "training": false,
+            "type": "torch.nn.modules.transformer.TransformerEncoderLayer"
+          },
+          "predictor/price_encoder.blocks.0.dropout": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout1": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.linear1": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 64
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.linear2": {
+            "settings": {
+              "bias": true,
+              "in_features": 64,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.norm1": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.norm2": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.self_attn": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": true,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/price_encoder.blocks.0.self_attn.out_proj": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/price_encoder.norm": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.projection": {
+            "settings": {
+              "bias": true,
+              "in_features": 5,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.session_context.SessionContext"
+          },
+          "predictor/session_context.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/session_context.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/session_context.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        },
+        "new_learned_selector": false,
+        "numerics": {
+          "cpu_threads": 2,
+          "cublas_workspace": ":4096:8",
+          "cudnn_allow_tf32": false,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": false,
+          "default_dtype": "torch.float32",
+          "deterministic": true,
+          "deterministic_warn_only": false,
+          "interop_threads": 8,
+          "matmul_allow_tf32": false,
+          "matmul_precision": "highest",
+          "mha_fastpath": false,
+          "sdpa_cudnn": true,
+          "sdpa_efficient": true,
+          "sdpa_flash": true,
+          "sdpa_math": true,
+          "torch_version": "2.14.0+cu130"
+        },
+        "online_policy": "only_cohorts_emitted_online_predict_all_then_feedback_v1",
+        "phase_end": "archive_censored_pending_without_maturity_or_cross_phase_reuse",
+        "planning_batch": 256,
+        "predictor": {
+          "backbone_contract": {
+            "activation": "gelu",
+            "aggregation": "last_token",
+            "causal": true,
+            "context": 64,
+            "dropout": 0.0,
+            "dtypes": [
+              "float32",
+              "float64"
+            ],
+            "feedforward_multiplier": 2,
+            "final_normalization": "layer_norm",
+            "heads": 4,
+            "hidden_size": 32,
+            "input_size": 5,
+            "kind": "compact_price_transformer",
+            "layer_norm_eps": 1e-05,
+            "layers": 1,
+            "max_attention_elements": 16777216,
+            "max_batch": 256,
+            "normalization": "pre_layer_norm",
+            "position_basis_dtype": "float32",
+            "position_encoding": "sinusoidal_v1",
+            "schema_version": 1,
+            "state_policy": "reset_per_window"
+          },
+          "configuration": {
+            "bank_policy": "disabled",
+            "dropout": 0.0,
+            "feedforward_multiplier": 2,
+            "heads": 4,
+            "hidden_size": 32,
+            "inputs": {
+              "context": 64,
+              "dimensions": {
+                "charts": 1,
+                "fundamentals": 3,
+                "macro": 3,
+                "news": 2,
+                "prices": 5
+              },
+              "input_policy": "historical_masked_2000_v1",
+              "representation": {
+                "context_sessions": 64,
+                "encoders": {
+                  "version": 1
+                },
+                "fundamental_concepts": [
+                  "Assets"
+                ],
+                "input_policy": "historical_masked_2000_v1",
+                "macro_indicators": [
+                  "inflation"
+                ],
+                "mask_contract": {
+                  "final_test_start": "2024-01-01",
+                  "first_prediction": "2000-01-01",
+                  "missing_available_at": null,
+                  "missing_fill": 0.0,
+                  "numeric_layout": "values_observed_log_age",
+                  "order": [
+                    "prices",
+                    "news",
+                    "charts",
+                    "fundamentals",
+                    "macro"
+                  ],
+                  "version": 1
+                },
+                "news_lookback_sessions": 5,
+                "representation_code": {
+                  "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "text_aggregation": "test_mean"
+              },
+              "schema_version": 1,
+              "source_sha256": "fb4ad17a4d623903e504a0abbc1b936e9cee1de595d649e82827e03f46170634",
+              "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "layers": 1,
+            "mask_fusion": "zero_after_projection_then_concat_presence",
+            "max_batch": 256,
+            "max_state_bytes": 67108864,
+            "output": "quantile_head_v1",
+            "output_head": {
+              "columns": [
+                "quantile_0025",
+                "quantile_0100",
+                "quantile_0500",
+                "quantile_0900",
+                "quantile_0975"
+              ],
+              "levels": [
+                0.025,
+                0.1,
+                0.5,
+                0.9,
+                0.975
+              ],
+              "loss": "mean_pinball_equal_level_weights",
+              "name": "quantile_head_v1",
+              "parametrization": "free_median_softplus_increments_as_native_candidate",
+              "point_prediction": "median",
+              "schema_version": 1,
+              "softplus": {
+                "beta": 1,
+                "threshold": 20
+              },
+              "zero_residual_subgradient": "midpoint_tau_minus_half"
+            },
+            "persistent_tokens": 4,
+            "refinements": 1,
+            "schema_version": 1,
+            "seed": 42,
+            "segment_length": 1,
+            "session_context": {
+              "kind": "market_memory_v1",
+              "sectors": null
+            },
+            "token_policy": "one_fused_token_per_new_decision",
+            "variant": "mac_online"
+          },
+          "dtype": "torch.float64",
+          "mac_contract": {
+            "attention_bias": false,
+            "attention_mask": "triangular_on_packed_sequence",
+            "disabled_policy": "attention_only_without_prefix_or_gate",
+            "dropout": 0.0,
+            "heads": 4,
+            "layout": "persistent_memory_segment",
+            "max_attention_elements": 8388608,
+            "max_segment": 1,
+            "memory": {
+              "architecture": "square_mlp",
+              "bias": false,
+              "depth": 2,
+              "dim": 32,
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "gradient_policy": "explicit_differentiable_or_detached",
+              "hidden_activation": "gelu_exact",
+              "inner_derivative": "partial_at_fixed_observation",
+              "layer_norm": false,
+              "loss_reduction": "sum_per_token_per_flow",
+              "max_batch": 256,
+              "max_state_bytes": 67108864,
+              "max_tokens": 1,
+              "normalization_eps": 1e-12,
+              "normalize_qk": true,
+              "parameter_seed": 42,
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "residual": false,
+              "schema_version": 1,
+              "theta_max": 0.1,
+              "update_order": "sequential_current_weights"
+            },
+            "memory_mode": "online",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "parameter_seed": 42,
+            "persistent_tokens": 4,
+            "schema_version": 1,
+            "write_positions": "segment_only"
+          },
+          "training": false
+        },
+        "predictor_parameters_sha256": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "reader_sha256": null,
+        "readout": null,
+        "recipe": "frozen_mechanism_cohort_proposals_v1",
+        "schema_version": 1,
+        "static_calibration": "71b1589243ffdd5f7643ea36c01a5c52d2b0d24b67a809dd5f537c0c4243af63"
+      },
+      "prefix_policy_id": "c10e248550211074e004f89cca0a198c1f7cc585e0951b2dda3e79cd15967f1d",
+      "samples_ms": [
+        {
+          "open": 12.448571,
+          "step_125": 1098.135311,
+          "step_126": 2724.122495,
+          "step_127": 2707.866235,
+          "step_128": 2555.013364,
+          "close_phase": 704.064899,
+          "recover": 589.914561,
+          "total": 10419.597854
+        },
+        {
+          "open": 19.029015,
+          "step_125": 987.130728,
+          "step_126": 1941.30627,
+          "step_127": 2396.543791,
+          "step_128": 2629.560682,
+          "close_phase": 909.562286,
+          "recover": 762.94377,
+          "total": 9701.997861
+        },
+        {
+          "open": 19.424569,
+          "step_125": 966.455061,
+          "step_126": 1996.391748,
+          "step_127": 2146.875241,
+          "step_128": 2792.32673,
+          "close_phase": 871.26061,
+          "recover": 726.53141,
+          "total": 9551.363165
+        },
+        {
+          "open": 13.832281,
+          "step_125": 1205.600205,
+          "step_126": 2347.567798,
+          "step_127": 2165.54697,
+          "step_128": 2376.462254,
+          "close_phase": 697.655599,
+          "recover": 639.149663,
+          "total": 9472.48817
+        }
+      ],
+      "retained_bytes": [
+        11505430,
+        11505430,
+        11505430,
+        11505430
+      ],
+      "prediction_sha256": "cd6197f121c8e0630f783e224110bd4f55271964349c8c91637cd85ecb2c1cd5",
+      "p50_ms": 9626.680513,
+      "p95_ms": 10311.95785505,
+      "p99_ms": 10398.06985421,
+      "mean_ms": 9786.3617625,
+      "std_ms": 432.7609765025493,
+      "prediction_rows_per_second": 78.47655938316841,
+      "allocator_peaks_bytes": {
+        "allocated": 80699392,
+        "reserved": 100663296
+      }
+    },
+    {
+      "rows": 256,
+      "kind": "selected",
+      "consumer_identity": {
+        "action": {
+          "calibration": "none",
+          "context": "off",
+          "route": "k1"
+        },
+        "calibration": "92e4c4f2c573b80c22cc67a60e51dca2eb544eb8e3739ad94384272de3b95a9c",
+        "catalog": {
+          "actions": [
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "off",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k1"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2c"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k2r"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cc"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4cr"
+            },
+            {
+              "calibration": "none",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "static",
+              "context": "parent",
+              "route": "k4rc"
+            },
+            {
+              "calibration": "online",
+              "context": "parent",
+              "route": "k4rc"
+            }
+          ],
+          "arbitrary_code_allowed": false,
+          "baseline": {
+            "calibration": "none",
+            "context": "off",
+            "route": "k1"
+          },
+          "budget": {
+            "max_context_markets": 2,
+            "max_online_rows": 8192,
+            "max_reader_searches": 2,
+            "max_reader_steps": 4
+          },
+          "event_order": "predict_all_then_feedback_v1",
+          "fallback": "raw_k1_on_the_selected_pre_mac_context_without_recomputation",
+          "kind": "financial_mechanism_catalog_v1",
+          "schema_version": 1,
+          "stages": {
+            "calibration": "cohort_emission",
+            "context": "before_mac",
+            "route": "after_k1"
+          },
+          "utility_conversion": "none_no_implicit_conversion_of_time_to_prediction_error",
+          "work_units": "reader_steps_and_searches_per_row_context_writes_per_market"
+        },
+        "fixed_controls": false,
+        "implementation": {
+          "mars_titan.calibration.cohort_feedback": "425e862040973c3ccfd6514a07457b5a2a3c0be67b990b48bddf20b952deca51",
+          "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+          "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+          "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+          "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+          "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+          "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+          "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+          "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+          "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+          "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+          "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+          "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+          "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+          "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+          "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+          "mars_titan.models.titans.financial": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+          "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+          "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+          "mars_titan.models.titans.frozen_financial": "839358927c4ad3177afbdb258e3efdea0646b1b4fc1bfd811d9b78814b380437",
+          "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+          "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+          "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+          "mars_titan.models.titans.mechanism_catalog": "60bb2c2a6e5551b55dca961fec99f10ea234226633e9c5aab8051a873cff6240",
+          "mars_titan.models.titans.mechanism_consumer": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+          "mars_titan.models.titans.mechanism_event": "2e0be484b589d2ed4a319ac736989813f0080d93488b23001737dbd9f2a92c65",
+          "mars_titan.models.titans.mechanism_observation": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+          "mars_titan.models.titans.mechanism_policy": "664f63aa342fd4ed5a5bcd3069220de4311fb2d024359b5e6d00f46b7b3bc11d",
+          "mars_titan.models.titans.mechanism_selection": "576ca3d07abe353e76771ceb649988c5b3411388827c0fcf2510453146b3e3d6",
+          "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+          "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+          "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+          "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+          "mars_titan.models.titans.regional_fusion": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+          "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+          "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+          "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+          "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+        },
+        "modules": {
+          "predictor/": {
+            "settings": {
+              "masked": true
+            },
+            "training": false,
+            "type": "mars_titan.models.titans.financial.FinancialPredictor"
+          },
+          "predictor/encoders": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleDict"
+          },
+          "predictor/encoders.charts": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.charts.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 1,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.charts.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.fundamentals": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.fundamentals.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.fundamentals.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.macro": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.macro.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.macro.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.news": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.news.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 2,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.news.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/fusion.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 165,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/fusion.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion.2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/head": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 5
+            },
+            "training": false,
+            "type": "mars_titan.models.quantile_head.QuantileHead"
+          },
+          "predictor/mac": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.mac.TitansMAC"
+          },
+          "predictor/mac.attention": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": false,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/mac.attention.out_proj": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/mac.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/mac.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/mac.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.query_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.baselines.transformer.CompactPriceTransformer"
+          },
+          "predictor/price_encoder.blocks": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleList"
+          },
+          "predictor/price_encoder.blocks.0": {
+            "settings": {
+              "activation": "torch.nn.functional.gelu",
+              "activation_relu_or_gelu": 2,
+              "norm_first": true
+            },
+            "training": false,
+            "type": "torch.nn.modules.transformer.TransformerEncoderLayer"
+          },
+          "predictor/price_encoder.blocks.0.dropout": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout1": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.linear1": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 64
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.linear2": {
+            "settings": {
+              "bias": true,
+              "in_features": 64,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.norm1": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.norm2": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.self_attn": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": true,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/price_encoder.blocks.0.self_attn.out_proj": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/price_encoder.norm": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.projection": {
+            "settings": {
+              "bias": true,
+              "in_features": 5,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.session_context.SessionContext"
+          },
+          "predictor/session_context.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/session_context.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/session_context.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/session_context.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        },
+        "new_learned_selector": false,
+        "numerics": {
+          "cpu_threads": 2,
+          "cublas_workspace": ":4096:8",
+          "cudnn_allow_tf32": false,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": false,
+          "default_dtype": "torch.float32",
+          "deterministic": true,
+          "deterministic_warn_only": false,
+          "interop_threads": 8,
+          "matmul_allow_tf32": false,
+          "matmul_precision": "highest",
+          "mha_fastpath": false,
+          "sdpa_cudnn": true,
+          "sdpa_efficient": true,
+          "sdpa_flash": true,
+          "sdpa_math": true,
+          "torch_version": "2.14.0+cu130"
+        },
+        "online_policy": "only_cohorts_emitted_online_predict_all_then_feedback_v1",
+        "phase_end": "archive_censored_pending_without_maturity_or_cross_phase_reuse",
+        "planning_batch": 256,
+        "predictor": {
+          "backbone_contract": {
+            "activation": "gelu",
+            "aggregation": "last_token",
+            "causal": true,
+            "context": 64,
+            "dropout": 0.0,
+            "dtypes": [
+              "float32",
+              "float64"
+            ],
+            "feedforward_multiplier": 2,
+            "final_normalization": "layer_norm",
+            "heads": 4,
+            "hidden_size": 32,
+            "input_size": 5,
+            "kind": "compact_price_transformer",
+            "layer_norm_eps": 1e-05,
+            "layers": 1,
+            "max_attention_elements": 16777216,
+            "max_batch": 256,
+            "normalization": "pre_layer_norm",
+            "position_basis_dtype": "float32",
+            "position_encoding": "sinusoidal_v1",
+            "schema_version": 1,
+            "state_policy": "reset_per_window"
+          },
+          "configuration": {
+            "bank_policy": "disabled",
+            "dropout": 0.0,
+            "feedforward_multiplier": 2,
+            "heads": 4,
+            "hidden_size": 32,
+            "inputs": {
+              "context": 64,
+              "dimensions": {
+                "charts": 1,
+                "fundamentals": 3,
+                "macro": 3,
+                "news": 2,
+                "prices": 5
+              },
+              "input_policy": "historical_masked_2000_v1",
+              "representation": {
+                "context_sessions": 64,
+                "encoders": {
+                  "version": 1
+                },
+                "fundamental_concepts": [
+                  "Assets"
+                ],
+                "input_policy": "historical_masked_2000_v1",
+                "macro_indicators": [
+                  "inflation"
+                ],
+                "mask_contract": {
+                  "final_test_start": "2024-01-01",
+                  "first_prediction": "2000-01-01",
+                  "missing_available_at": null,
+                  "missing_fill": 0.0,
+                  "numeric_layout": "values_observed_log_age",
+                  "order": [
+                    "prices",
+                    "news",
+                    "charts",
+                    "fundamentals",
+                    "macro"
+                  ],
+                  "version": 1
+                },
+                "news_lookback_sessions": 5,
+                "representation_code": {
+                  "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "text_aggregation": "test_mean"
+              },
+              "schema_version": 1,
+              "source_sha256": "fb4ad17a4d623903e504a0abbc1b936e9cee1de595d649e82827e03f46170634",
+              "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "layers": 1,
+            "mask_fusion": "zero_after_projection_then_concat_presence",
+            "max_batch": 256,
+            "max_state_bytes": 67108864,
+            "output": "quantile_head_v1",
+            "output_head": {
+              "columns": [
+                "quantile_0025",
+                "quantile_0100",
+                "quantile_0500",
+                "quantile_0900",
+                "quantile_0975"
+              ],
+              "levels": [
+                0.025,
+                0.1,
+                0.5,
+                0.9,
+                0.975
+              ],
+              "loss": "mean_pinball_equal_level_weights",
+              "name": "quantile_head_v1",
+              "parametrization": "free_median_softplus_increments_as_native_candidate",
+              "point_prediction": "median",
+              "schema_version": 1,
+              "softplus": {
+                "beta": 1,
+                "threshold": 20
+              },
+              "zero_residual_subgradient": "midpoint_tau_minus_half"
+            },
+            "persistent_tokens": 4,
+            "refinements": 1,
+            "schema_version": 1,
+            "seed": 42,
+            "segment_length": 1,
+            "session_context": {
+              "kind": "market_memory_v1",
+              "sectors": null
+            },
+            "token_policy": "one_fused_token_per_new_decision",
+            "variant": "mac_online"
+          },
+          "dtype": "torch.float64",
+          "mac_contract": {
+            "attention_bias": false,
+            "attention_mask": "triangular_on_packed_sequence",
+            "disabled_policy": "attention_only_without_prefix_or_gate",
+            "dropout": 0.0,
+            "heads": 4,
+            "layout": "persistent_memory_segment",
+            "max_attention_elements": 8388608,
+            "max_segment": 1,
+            "memory": {
+              "architecture": "square_mlp",
+              "bias": false,
+              "depth": 2,
+              "dim": 32,
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "gradient_policy": "explicit_differentiable_or_detached",
+              "hidden_activation": "gelu_exact",
+              "inner_derivative": "partial_at_fixed_observation",
+              "layer_norm": false,
+              "loss_reduction": "sum_per_token_per_flow",
+              "max_batch": 256,
+              "max_state_bytes": 67108864,
+              "max_tokens": 1,
+              "normalization_eps": 1e-12,
+              "normalize_qk": true,
+              "parameter_seed": 42,
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "residual": false,
+              "schema_version": 1,
+              "theta_max": 0.1,
+              "update_order": "sequential_current_weights"
+            },
+            "memory_mode": "online",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "parameter_seed": 42,
+            "persistent_tokens": 4,
+            "schema_version": 1,
+            "write_positions": "segment_only"
+          },
+          "training": false
+        },
+        "predictor_parameters_sha256": "85566f04097a3476ecabe5da902b23a12250982ff45b4913ce20e83bfd4b43f6",
+        "reader_sha256": null,
+        "readout": null,
+        "recipe": "frozen_mechanism_cohort_proposals_v1",
+        "schema_version": 1,
+        "selector": {
+          "buffers_sha256": "43980f453715d5901fc99d3e50209f50335edfa16cc2aa9e29c98645a7ac0a07",
+          "coefficient_origin": "supplied_not_verified_as_fitted",
+          "configuration": {
+            "actions": [
+              "off/k1/none",
+              "off/k1/static",
+              "off/k1/online",
+              "off/k2c/none",
+              "off/k2c/static",
+              "off/k2c/online",
+              "off/k2r/none",
+              "off/k2r/static",
+              "off/k2r/online",
+              "off/k4cc/none",
+              "off/k4cc/static",
+              "off/k4cc/online",
+              "off/k4cr/none",
+              "off/k4cr/static",
+              "off/k4cr/online",
+              "off/k4rc/none",
+              "off/k4rc/static",
+              "off/k4rc/online",
+              "parent/k1/none",
+              "parent/k1/static",
+              "parent/k1/online",
+              "parent/k2c/none",
+              "parent/k2c/static",
+              "parent/k2c/online",
+              "parent/k2r/none",
+              "parent/k2r/static",
+              "parent/k2r/online",
+              "parent/k4cc/none",
+              "parent/k4cc/static",
+              "parent/k4cc/online",
+              "parent/k4cr/none",
+              "parent/k4cr/static",
+              "parent/k4cr/online",
+              "parent/k4rc/none",
+              "parent/k4rc/static",
+              "parent/k4rc/online"
+            ],
+            "baseline": "off/k1/none_with_zero_score",
+            "costs": "incremental_declared_utility_units_not_raw_milliseconds",
+            "features": [
+              "log1p_cohort_rows",
+              "prices_present_fraction",
+              "news_present_fraction",
+              "charts_present_fraction",
+              "fundamentals_present_fraction",
+              "macro_present_fraction",
+              "prices_mean_log1p_rms",
+              "news_mean_log1p_rms",
+              "charts_mean_log1p_rms",
+              "fundamentals_mean_log1p_rms",
+              "macro_mean_log1p_rms",
+              "log1p_max_input_age_seconds",
+              "log1p_eligible_bank_entries",
+              "previous_context_present",
+              "log1p_previous_context_age_days",
+              "calibration_present",
+              "log1p_pending_calibration_rows",
+              "static_correction_mean",
+              "static_correction_max_abs",
+              "online_correction_mean",
+              "online_correction_max_abs"
+            ],
+            "interval_weight": 0.5,
+            "kind": "pre_mac_cohort_mechanism_policy_v1",
+            "max_cohorts": 2,
+            "min_gain": 0.0,
+            "point_actions": [
+              "off/k1",
+              "off/k2c",
+              "off/k2r",
+              "off/k4cc",
+              "off/k4cr",
+              "off/k4rc",
+              "parent/k1",
+              "parent/k2c",
+              "parent/k2r",
+              "parent/k4cc",
+              "parent/k4cr",
+              "parent/k4rc"
+            ],
+            "schema_version": 1,
+            "score": "point_gain_plus_weighted_interval_gain_minus_cost_and_min_gain",
+            "selection_unit": "market_cohort_before_mac",
+            "support": "marginal_feature_ranges_not_joint_or_calibrated_ood",
+            "tie": "first_admissible_action_in_declared_catalog_order"
+          },
+          "device": "cuda:0",
+          "dtype": "torch.float64"
+        },
+        "static_calibration": "71b1589243ffdd5f7643ea36c01a5c52d2b0d24b67a809dd5f537c0c4243af63"
+      },
+      "prefix_policy_id": "c10e248550211074e004f89cca0a198c1f7cc585e0951b2dda3e79cd15967f1d",
+      "samples_ms": [
+        {
+          "open": 14.048013,
+          "step_125": 1226.779117,
+          "step_126": 2452.677732,
+          "step_127": 2209.464571,
+          "step_128": 2208.991816,
+          "close_phase": 745.612039,
+          "recover": 646.528492,
+          "total": 9535.861707
+        },
+        {
+          "open": 16.342592,
+          "step_125": 1200.67428,
+          "step_126": 2452.024702,
+          "step_127": 2285.406949,
+          "step_128": 2204.973258,
+          "close_phase": 726.230648,
+          "recover": 646.125764,
+          "total": 9561.733014
+        },
+        {
+          "open": 14.288557,
+          "step_125": 1068.776001,
+          "step_126": 2533.094798,
+          "step_127": 2803.290674,
+          "step_128": 2603.105145,
+          "close_phase": 755.348295,
+          "recover": 751.961047,
+          "total": 10564.854511
+        },
+        {
+          "open": 21.45343,
+          "step_125": 1007.095119,
+          "step_126": 2424.315317,
+          "step_127": 2693.004159,
+          "step_128": 2778.710766,
+          "close_phase": 754.249415,
+          "recover": 610.211675,
+          "total": 10319.61669
+        }
+      ],
+      "retained_bytes": [
+        11530390,
+        11530390,
+        11530390,
+        11530390
+      ],
+      "prediction_sha256": "cd6197f121c8e0630f783e224110bd4f55271964349c8c91637cd85ecb2c1cd5",
+      "p50_ms": 9940.674852,
+      "p95_ms": 10528.06883785,
+      "p99_ms": 10557.49737637,
+      "mean_ms": 9995.5164805,
+      "std_ms": 525.5591769349595,
+      "prediction_rows_per_second": 76.83444887498027,
+      "allocator_peaks_bytes": {
+        "allocated": 80699392,
+        "reserved": 100663296
+      }
+    }
+  ],
+  "process_seconds": 142.57569524808787,
+  "process_peak_rss_bytes": 1499287552,
+  "scope": "Fixtures US con precios replicados, máscaras y etiquetas manuales. Reutiliza trajectory: apertura, calentamiento, tres emisiones, feedback, cierre, escritura, verificación, poda y recuperación. Incluye lectura de trazas y contabilidad de disco. K1 sin lector ni contexto activado, con módulos PT4/PT2 presentes. Selector dado con ganancias cero, no ajustado. Orden de controles alternado por repetición. No incluye encoders externos, corpus real, energía, tiempo de construcción en latencias ni un intervalo estadístico. RSS es del proceso completo y los picos CUDA incluyen ambos consumidores residentes, no la VRAM del dispositivo entero.",
+  "sources": {
+    "reports/engineering/mechanism-selection-20261021/benchmark.py": "0103da5971379d49a944d48477b6e494e5cf3675d2a49bf49d2868e1883083e9",
+    "reports/engineering/mechanism-session-20261021/benchmark.py": "3cd54926c7a12b33ba90eaea9b4c4d5a0444ce2727b2a145edd497de63f8c3bf",
+    "src/mars_titan/models/titans/mechanism_selection.py": "576ca3d07abe353e76771ceb649988c5b3411388827c0fcf2510453146b3e3d6",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+    "src/mars_titan/models/titans/mechanism_policy.py": "664f63aa342fd4ed5a5bcd3069220de4311fb2d024359b5e6d00f46b7b3bc11d",
+    "src/mars_titan/memory/financial_mechanisms.py": "f88a42e493fb10a5cf4f3d8325d1d3174559a9b8ce8843f9f9c07686f8ddb547",
+    "src/mars_titan/memory/mechanism_observations.py": "c6b2968d7e256a39e7c47db1e22b4f61c8745b34af22f1640158247d40d97c86",
+    "tests/memory/test_financial_mechanisms.py": "ea00f4c51a34f553bb9530bd54f448ae1c36ee35b2df424595f47eef86fb5dfa",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/models/titans/test_mechanism_policy.py": "c9054e88ae9b4a7ea92514f943fa722c3a8ff32c48be6e22169742558f85aa07"
+  }
+}
