@@ -34,7 +34,7 @@ CONNECTED = ("episodic_bank", "refinements", "refinement_episodes", "associative
 WRITES = ("m1", "m2", "m3")
 _BASE_FIELDS = {"architecture", "configuration", "dtype", "parameters_sha256", "recipe"}
 # Opciones del lector que fija la combinación de componentes y no la receta.
-_READOUT_FIELDS = {"mode", "refinements", "episode_selection", "codec_id"}
+_READOUT_FIELDS = {"mode", "refinements", "episode_selection", "codec_id", "evidence_bridge"}
 
 
 def load_declaration(path=DECLARATION):
@@ -227,12 +227,16 @@ class MarsTitanVariant:
         if self.readout_mode is None:
             if readout is not None:
                 raise ValueError("Sin banco episódico la variante no lleva lector")
-        elif type(readout) is not EpisodicReadout or any(
-            getattr(readout.config, name) != value
-            for name, value in (
-                ("mode", self.readout_mode),
-                ("refinements", self.refinements),
-                ("episode_selection", self.episode_selection),
+        elif (
+            type(readout) is not EpisodicReadout
+            or readout.config.evidence_bridge is not None
+            or any(
+                getattr(readout.config, name) != value
+                for name, value in (
+                    ("mode", self.readout_mode),
+                    ("refinements", self.refinements),
+                    ("episode_selection", self.episode_selection),
+                )
             )
         ):
             raise ValueError("El lector no corresponde a la combinación de componentes")

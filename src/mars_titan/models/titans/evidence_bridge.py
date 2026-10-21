@@ -76,6 +76,7 @@ class BridgeRead:
     evidence_weights: torch.Tensor
     bridge_weights: torch.Tensor
     snapshot_sha256: str
+    selected_positions: torch.Tensor | None = None
 
 
 class SharedEvidenceBridge(nn.Module):
@@ -123,7 +124,7 @@ class SharedEvidenceBridge(nn.Module):
     def set_extra_state(self, value):
         require_identity(value, self.get_extra_state())
 
-    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+    def validate_payload(self, state_dict, prefix=""):
         expected = self.state_dict()
         supplied = {
             key[len(prefix) :]: value for key, value in state_dict.items() if key.startswith(prefix)
@@ -145,6 +146,9 @@ class SharedEvidenceBridge(nn.Module):
             check_finite(other, "El checkpoint del puente")
         if not torch.equal(supplied["edges"].cpu(), expected["edges"].cpu()):
             raise ValueError("El checkpoint cambió los puentes declarados")
+
+    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+        self.validate_payload(state_dict, prefix)
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def estimated_bytes(self, batch, episodes, *, differentiable=False):
@@ -165,7 +169,7 @@ class SharedEvidenceBridge(nn.Module):
         )
         return 131072 + working * (4 if differentiable else 1)
 
-    def forward(self, state, snapshot, *, context_id, cutoff, available=None):
+    def forward(self, state, snapshot, *, context_id, cutoff, available=None, positions=None):
         reference = self.region_query
         if (
             not isinstance(state, torch.Tensor)
@@ -206,13 +210,29 @@ class SharedEvidenceBridge(nn.Module):
             or available.device != state.device
         ):
             raise ValueError("La máscara no corresponde a las regiones del puente")
+        count = min(snapshot.count, self.config.neighbors)
+        if positions is not None:
+            if (
+                not isinstance(positions, torch.Tensor)
+                or positions.layout != torch.strided
+                or positions.shape != (b, count)
+                or positions.dtype != torch.int64
+                or positions.device != state.device
+            ):
+                raise ValueError("Las posiciones comunes no corresponden al snapshot")
+            ordered = positions.sort(-1).values
+            valid = ((positions >= 0) & (positions < snapshot.count)).all() & (
+                ordered[:, 1:] != ordered[:, :-1]
+            ).all()
+            # Esta validación precede al gather para impedir un acceso inválido en CUDA.
+            if not valid.item():
+                raise ValueError("Las posiciones comunes se repiten o quedan fuera del snapshot")
         with deferred_checks():
             check_finite(state, "El estado del puente")
             for value in self.parameters():
                 check_finite(value, "Los parámetros del puente")
             allowed = self.edges[None] & available[:, :, None] & available[:, None, :]
             graph = allowed.to(state.dtype) / allowed.sum(-1, keepdim=True).clamp_min(1)
-            count = min(snapshot.count, self.config.neighbors)
             if count == 0:
                 return BridgeRead(
                     torch.zeros_like(state),
@@ -226,10 +246,11 @@ class SharedEvidenceBridge(nn.Module):
             check_finite(raw, "La consulta común del puente")
             common = _normalize(raw)
             keys, values, labels, ids = snapshot._values[:4]
-            with torch.no_grad():
-                positions = torch.argsort(
-                    common.double() @ keys.T, dim=-1, descending=True, stable=True
-                )[:, :count]
+            if positions is None:
+                with torch.no_grad():
+                    positions = torch.argsort(
+                        common.double() @ keys.T, dim=-1, descending=True, stable=True
+                    )[:, :count]
             flat = positions.flatten()
             selected_keys = keys.index_select(0, flat).reshape(b, count, 64).to(state.dtype)
             selected = torch.cat(
@@ -266,4 +287,5 @@ class SharedEvidenceBridge(nn.Module):
                 weights,
                 graph,
                 snapshot._digest,
+                positions,
             )

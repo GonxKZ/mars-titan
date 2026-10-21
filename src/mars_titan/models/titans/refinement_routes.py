@@ -50,7 +50,7 @@ class _Decision:
     """Cachés locales a una llamada. No se pueden reanudar ni reutilizar fuera de ella."""
 
     def __init__(self, model, base, snapshot, context_id, cutoff, steps):
-        if type(model) is not EpisodicReadout:
+        if type(model) is not EpisodicReadout or model.config.evidence_bridge is not None:
             raise ValueError("La ruta necesita un lector episódico identificado")
         # El presupuesto corresponde a la ruta, no al K declarado en el checkpoint.
         model._validate_read(base, snapshot, context_id, cutoff, refinements=steps)

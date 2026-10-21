@@ -15,6 +15,7 @@ from mars_titan.models.quantile_routing import QuantileRouting
 from .bank_readout import BankReadout
 from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
+from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
 from .regional_fusion import RegionalFusion
@@ -37,6 +38,8 @@ _TITANS_MODULES = (
     "local_control",
     "episodic_readout",
     "episodic_snapshot",
+    "evidence_bridge",
+    "regional_episode_readout",
     "frozen_financial",
 )
 _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_MODULES) + (
@@ -132,6 +135,8 @@ def _module_settings(module):
     elif type(module) is BankReadout:
         fields = ("dim",)
         settings["bank_readout"] = module.config.identity()
+    elif type(module) is SharedEvidenceBridge:
+        settings["evidence_bridge"] = module.config.identity()
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 

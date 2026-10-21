@@ -235,6 +235,7 @@ class FinancialSession(EpisodicSession):
             for name, module in (
                 ("financial_session", inspect.getmodule(FinancialSession)),
                 ("financial_consumers", financial_consumers),
+                ("regional_episode_trace", financial_consumers.regional_episode_trace),
                 ("financial_state_artifacts", financial_state_artifacts),
                 ("prefix_eligibility", prefix_eligibility),
             )
@@ -1112,6 +1113,10 @@ class FinancialSession(EpisodicSession):
             raise ValueError("Las evidencias y el control no concilian con las observaciones")
         if type(self._binding) is MechanismBinding:
             self._binding.verify(self, bundle, mechanism_observations)
+        elif type(self._binding) is financial_consumers.TitansBinding:
+            self._binding.verify_regional_control(
+                control, observed, bundle["cutoff"], self.block_rows
+            )
 
     def _check_observed(self, bundle, observed):
         fast = self._read(bundle["fast"], "fast")

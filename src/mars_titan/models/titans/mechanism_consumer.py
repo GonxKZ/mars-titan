@@ -126,6 +126,7 @@ class FrozenMechanismConsumer:
             raise ValueError("El consumidor necesita acción y catálogo identificados")
         if readout is not None and (
             type(readout) is not EpisodicReadout
+            or readout.config.evidence_bridge is not None
             or readout.config.refinements != 1
             or readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

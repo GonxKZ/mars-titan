@@ -2,7 +2,21 @@
 
 `SharedEvidenceBridge` implementa un componente experimental de lectura sobre un único `EpisodeSnapshot`. El registro episódico conserva su identidad, valores y etiqueta madura. Cada región calcula pesos de atención y una transformación propios sobre la misma selección de episodios. Los puentes comunican las representaciones derivadas. No crean otro registro del episodio ni otra memoria persistente.
 
-El componente está en `mars_titan.models.titans.evidence_bridge`. Todavía no está integrado en `FrozenFinancialConsumer`, en sus trazas ni en una configuración entrenable del predictor completo. No sustituye al lector anterior y no se activa por defecto. Las [pruebas y medidas del componente](../../reports/engineering/shared-evidence-bridge-20261021/README.md) son técnicas. No hay una mejora predictiva medida.
+El componente está en `mars_titan.models.titans.evidence_bridge`. El lector episódico admite la opción explícita `EpisodicReadoutConfig.evidence_bridge`, que lo conecta a `FrozenFinancialConsumer` y a las sesiones nativas. `None` conserva la configuración, los parámetros y los resultados del lector anterior. La opción activa tiene identidad propia. No se activa por defecto. Las [pruebas y medidas iniciales del componente](../../reports/engineering/shared-evidence-bridge-20261021/README.md) describen la versión independiente anterior a esa integración. No hay una mejora predictiva medida.
+
+## Integración con el predictor
+
+El puente y el lector declaran el mismo codec, dimensión, vecinos, temperatura, lote máximo y presupuesto de trabajo. La construcción empareja sus proyecciones comunes y refinador con la inicialización anterior. Las proyecciones pasan al submódulo del puente y se retiran del padre, por lo que no quedan dos copias de sus parámetros. Las matrices regionales tienen una semilla propia identificada.
+
+`RegionalEpisodeRead` contiene lectura, presencia y `BridgeRead`. `BridgedReadoutResult` conserva el estado refinado y esas lecturas. No tienen un campo que convierta los pesos regionales en `EpisodeRead.weights[B,k]`. El resultado anterior mantiene su tipo y significado. Las rutas y el controlador que aún esperan aquella forma rechazan la ampliación antes de ejecutarla. La declaración anterior de `MarsTitanVariant` también exige un contrato propio antes de incorporarla a su catálogo.
+
+La misma cabeza escalar o de cuantiles consume el estado refinado. K = 1, 2 y 4 cuenta lecturas episódicas, con una sola actualización de MAC por observación. `per_step` vuelve a seleccionar candidatos comunes y `first_read` conserva la selección inicial. Las posiciones se validan antes del acceso a memoria, incluida su unicidad y rango. Esa validación inmediata puede sincronizar CUDA y forma parte del coste. Los ciclos del puente siguen siendo otro eje.
+
+En `no_bank` no se consulta un snapshot ni se inventa su huella. Un snapshot vacío sí conserva su procedencia, con lecturas cero y presencia falsa. Las nuevas matrices se clasifican como parámetros de lectura episódica. Esto prepara su papel en la canalización existente, sin ejecutar un ajuste ni confirmar la utilidad de entrenarlas.
+
+La sesión guarda una traza regional por decisión con configuración, corte, contexto, huella y tamaño del snapshot, IDs comunes, pesos, vistas derivadas y lectura. El grafo compartido se guarda una vez y cada bloque conserva el orden de sus flujos. No se copian los valores fuente ni sus etiquetas a esa traza. Las copias archivadas son CPU, propias y sin autograd. Se valida su presupuesto antes de emitir y su coherencia antes de confirmar o recuperar. Los contadores distinguen consultas de candidatos, filas proyectadas y lecturas regionales. Son unidades de trabajo, no FLOPs.
+
+La retención sigue las reglas y límites del almacén de artefactos de sesión. La traza recuperable de una generación no equivale a un archivo ilimitado de todas las vistas históricas. Los experimentos deberán registrar qué evidencia conservan. La admisión M0–M3, la maduración y las escrituras del banco mantienen sus contratos y no se multiplican por el número de regiones. El [informe de integración](../../reports/engineering/bridge-readout-integration-20261021/README.md) conserva las comprobaciones y el coste nativo, con sus ejecuciones incompletas y límites.
 
 ## Cálculo y propiedad de los datos
 

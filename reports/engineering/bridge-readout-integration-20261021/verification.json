@@ -1,0 +1,123 @@
+{
+  "recorded_at_utc": "2026-10-21T20:35:33.538183+00:00",
+  "scope": "selected_technical_runs_not_whole_project_counts_not_added",
+  "runs": [
+    {
+      "name": "regression",
+      "counts": {
+        "tests": 373,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 360.503,
+      "junit_sha256": "af7c31e9c25146e604b773e6dbc2ce0a54962ac541cd95124801075c9c3b687f"
+    },
+    {
+      "name": "contracts",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 4.535,
+      "junit_sha256": "f97b0f15f921f8debe2e270fbb2fe310635748370817e02c752c09ce79997c80"
+    },
+    {
+      "name": "trace-export",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 2.012,
+      "junit_sha256": "5af55017ab41c664be9d32034bf260be9f9fb8f6cd8ff1d23ba6e0dc3610ed4d"
+    },
+    {
+      "name": "final",
+      "counts": {
+        "tests": 298,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 81.618,
+      "junit_sha256": "cb46c58e5d4f7b6ba2bbbb888716ad7ec239e2b337d324b1b3923753956be4f7"
+    }
+  ],
+  "final_run": "final",
+  "warning": "existing_torch_sync_debug_prototype",
+  "final_source_sha256": {
+    "src/mars_titan/models/titans/episodic_readout.py": "9b6d2f7aca4236f7f90f6bf980e7721619066fe6c1074957a653246300a8609a",
+    "src/mars_titan/models/titans/evidence_bridge.py": "5c0095cc6ed9d515db56eabe84c32d53cc26b5f2a6976654bc0a953083cbc5ac",
+    "src/mars_titan/models/titans/regional_episode_readout.py": "3a7c94729536db002993476d188200ebddd05506b85d65f8e06523959d036016",
+    "src/mars_titan/models/titans/frozen_financial.py": "b3af0684c7271646c598d48bb53edbe0755aa64b52f8000f0c6c8240742e8cf7",
+    "src/mars_titan/models/titans/refinement_routes.py": "7142c252771603ae9e4d9baca988257a30e1b045c58cf25fedc1f01cc0c7a381",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "885c45f76b42ffc3e10af0e2cb1dbc3746e2b60da778bc7aea6c5c7215a7c7f4",
+    "src/mars_titan/memory/financial_consumers.py": "686b99bec2a28c99eb6278cb05035dc5e764d26e090ca609e1f51f4e13fcf18f",
+    "src/mars_titan/memory/financial_session.py": "270b45badcc4e8b133a618e445ec52ae0c8f01ae4ff47121c667c7ca0000170e",
+    "src/mars_titan/memory/regional_episode_trace.py": "4c4e31ea0fa8cce72beb76c5c8b5530f7bc9489aeac02432d17112fd469ac3f4",
+    "src/mars_titan/memory/mars_titan_variant.py": "e0c7f5599a8d73483441153b2787d3d7e3d61af25aba65eeb8dae837f93f7e78",
+    "src/mars_titan/training/mars_titan_run.py": "173f5308a5a4d78e9c22a3c3966fe913dfd2f3ae89229f4dfe0f201dc52dfa01"
+  },
+  "legacy_parity": {
+    "cases": 36,
+    "exact_identity": true,
+    "old_checkpoints_loaded": true,
+    "exact_states_and_reads": true,
+    "devices": [
+      "cpu",
+      "cuda:0"
+    ],
+    "legacy_sha256": "7fe8c9024dfd422c2b13e9b748d2781ee93ff13308d2d6fd3663563e456bfaef",
+    "current_source_sha256": "9b6d2f7aca4236f7f90f6bf980e7721619066fe6c1074957a653246300a8609a"
+  },
+  "fp32_native_parity": {
+    "scope": "technical_native_fp32_cpu_cuda_parity_fixture",
+    "rtol": 2e-05,
+    "atol": 1e-06,
+    "maximum_absolute_difference": 4.656612873077393e-10,
+    "outer_optimizer_steps": 0,
+    "real_corpus": false,
+    "source_sha256": "9b6d2f7aca4236f7f90f6bf980e7721619066fe6c1074957a653246300a8609a"
+  },
+  "outer_optimizer_steps": 0,
+  "scientific_evaluation": false,
+  "final_cuda_collection": {
+    "cases": 33,
+    "artifact": "cuda-collection.log",
+    "sha256": "6cdb3c2f61cdc3da711876090389e759b363ec71ae7eb896346a0f228c32206b"
+  },
+  "test_format_only": {
+    "ast_unchanged": true,
+    "receipt_sha256": "9a8590594d869698532d9ecb623b8e713531e7deda7eff15e92dd7fe1cac91a3",
+    "repeated_native_cases": 2,
+    "junit_sha256": "4fd6174df5519746c5886a7870c7113042547bd0572c0a8a788d691639721920"
+  },
+  "parameter_roles": {
+    "scope": "pure_parameter_classification_no_optimizer",
+    "sha256": "9b71a0fbadbabfcbe0b5d2f913987803beb8ddc9ee349823ca279ecdd954c047"
+  },
+  "repository_checks": [
+    {
+      "command": "uv run --no-sync ruff check .",
+      "exit_code": 0,
+      "log": "final-ruff-check.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": "uv run --no-sync ruff format --check .",
+      "exit_code": 0,
+      "log": "final-ruff-format.log",
+      "sha256": "832d5e9293f2d8532684abe9606d7574b97a271d7f066b04707a4f1f24445db4"
+    },
+    {
+      "command": "uv run --no-sync python scripts/check_repository.py",
+      "exit_code": 0,
+      "log": "repository-check.log",
+      "sha256": "3f2b5e7589bdf66812c11fa0513b3ada2f301b58b962cd576633903307501ab2"
+    }
+  ]
+}
