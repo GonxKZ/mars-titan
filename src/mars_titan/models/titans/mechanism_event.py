@@ -33,6 +33,7 @@ class MechanismEvent:
     warmup: bool
     rows: tuple = ()
     selection_json: str | None = None
+    availability: tuple = ()
 
 
 @dataclass(frozen=True)

@@ -434,6 +434,7 @@ class FrozenMechanismConsumer:
             snapshot,
             warmup,
             selection_json=selection_json,
+            availability=tuple(availabilities.items()),
         )
 
     def prepare(self, batch, state, event):
