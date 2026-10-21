@@ -37,8 +37,10 @@ def _validate(collection, clock, outcomes):
             _instant(clock, "La recepción") >= rows[0]["prediction_at"],
             "El reloj precede a la colección",
         )
+    normalized = []
     for row, target in zip(rows, outcomes, strict=True):
         if target is None:
+            normalized.append(None)
             continue
         _require(
             type(target) is dict
@@ -48,7 +50,11 @@ def _validate(collection, clock, outcomes):
         )
         if target["status"] == "label":
             _require(row["matures_at"] is not None, "Falta una madurez explícita de la etiqueta")
-        validate_feedback(dict(target, matures_at=row["matures_at"]), row["prediction_at"], clock)
+        value = validate_feedback(
+            dict(target, matures_at=row["matures_at"]), row["prediction_at"], clock
+        )
+        normalized.append(dict(target, value=value, available_at=int(target["available_at"])))
+    return normalized
 
 
 @dataclass(frozen=True, init=False)
@@ -59,7 +65,7 @@ class MechanismSupervision:
     _json: str
 
     def __init__(self, collection, *, clock, outcomes):
-        _validate(collection, clock, outcomes)
+        outcomes = _validate(collection, clock, outcomes)
         body = dict(
             schema_version=1,
             kind=KIND,

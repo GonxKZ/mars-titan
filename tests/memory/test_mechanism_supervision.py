@@ -171,3 +171,22 @@ def test_finite_extreme_means_do_not_overflow_their_reductions(device):
     assert metric["point_losses"][0] == maximum
     assert metric["interval_losses"][0] == maximum
     assert metric["widths"][0] == [maximum, maximum]
+
+
+def test_numpy_feedback_scalars_keep_their_values_in_a_serializable_state():
+    import numpy as np
+
+    packet = collect(consumer())
+    state = (
+        api()
+        .MechanismSupervision.start(packet)
+        .receive(
+            (outcome(packet, 0, at=np.int64(AT + DAY), value=np.float32(0.1)),),
+            at=np.int64(AT + DAY),
+        )
+    )
+    received = state.record()["outcomes"][0]
+    assert type(received["available_at"]) is int
+    assert type(received["value"]) is float
+    assert received["value"] == 0.10000000149011612
+    assert api().MechanismSupervision.restore(packet, state.record()).record() == state.record()
