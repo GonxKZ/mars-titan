@@ -307,9 +307,11 @@ class MechanismBinding(TitansBinding):
         return [float(aligned[flow]) for flow in flows] if not warmup else [], fast, control
 
     def _record(self, session, generation):
-        raw = session.native.read_blob(
-            str(session.output / f"record-{generation}.json"), 64 * 1024**2
-        )
+        record, digest, _ = self._read_record(session, generation, maximum=64 * 1024**2)
+        return record, digest
+
+    def _read_record(self, session, generation, *, maximum):
+        raw = session.native.read_blob(str(session.output / f"record-{generation}.json"), maximum)
         record = json.loads(raw)
         if (
             type(record) is not dict
@@ -319,7 +321,7 @@ class MechanismBinding(TitansBinding):
             or record.get("prefix_policy_sha256") != session.prefixes.policy_id
         ):
             raise ValueError("El registro nativo no corresponde a la generación de mecanismos")
-        return record, hashlib.sha256(raw).hexdigest()
+        return record, hashlib.sha256(raw).hexdigest(), len(raw)
 
     def _feedback(self, session, auxiliary, metadata, outcomes, excluded, *, cutoff, kind):
         pending = (
