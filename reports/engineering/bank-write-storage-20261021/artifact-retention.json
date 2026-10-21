@@ -1,0 +1,227 @@
+{
+  "recorded_at_utc": "2026-10-21T18:02:15.848961+00:00",
+  "scope": "own_technical_fixtures_only_after_recovery_checks",
+  "children": 18,
+  "kept_sessions": 18,
+  "removed_sessions": 72,
+  "released_bytes": 914765888,
+  "timed_retained_bytes_unchanged": true,
+  "items": [
+    {
+      "child": "native-runs/4-mean_partial-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "c0cee035ccbaa6d71bd0d2e2cd66c227b33181ad1d172ef013f7a407a103982f"
+    },
+    {
+      "child": "native-runs/4-mean_partial-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "a752191bd3a288a06ff32de1d43dfeadac8f06d944beed75ffcff4f6651b6a01"
+    },
+    {
+      "child": "native-final-runs/4-per_bank-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "c120d43e6780d3c20a43520cb03fbd992c943afd994d85bca45bd9a32fe6eedb"
+    },
+    {
+      "child": "native-final-runs/4-per_bank-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "bdc639738b99c6a508c7cb5fb723e164c18a7f509043101290ea551a2023c1ca"
+    },
+    {
+      "child": "native-final-runs/4-mean_partial-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "d5d0ee38d7670fef92270dd57da9f179bcce07d2ed62e95245a5903071eb80fb"
+    },
+    {
+      "child": "native-final-runs/256-per_bank-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 215740232,
+      "result_sha256": "e3dfbba456e2edbad69f25985fac43c3b17694f140c0ace24c870e0827d1fd48"
+    },
+    {
+      "child": "native-final-runs/256-mean_partial-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 215745352,
+      "result_sha256": "d91dbe953bb817ff5e5019ab52b3c064f27df844e8024ef01b203fa6714b7010"
+    },
+    {
+      "child": "native-final-runs/256-mean_partial-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 215745352,
+      "result_sha256": "687c4a2a4d1e110eb800b2e15888b5afe3c8b1c340fbbeaec332548c964d3059"
+    },
+    {
+      "child": "native-final-runs/4-mean_partial-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "7eacc68dceccfba51428ee83777fda98d9d85423a649d95d9fc3319322d4cb8e"
+    },
+    {
+      "child": "native-final-runs/256-per_bank-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 215740232,
+      "result_sha256": "802e870a713ce1d77791d43553bbfeef5e3b99ce67bbc175cf793e79abbc6a8f"
+    },
+    {
+      "child": "small-confirm-runs/3-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699440,
+      "result_sha256": "95bb5d16346268dfcf520f3227180436f1b8372ff50694f5b92361a25cae4b9e"
+    },
+    {
+      "child": "small-confirm-runs/1-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "ce17f9978da768320c4d36d648e5ffa806ee8dc9038ae0a6b991596d581a25a5"
+    },
+    {
+      "child": "small-confirm-runs/2-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699440,
+      "result_sha256": "aac8ddb9b9b52dd53abdc4cd2e7eb1d901ee17fb1ef50ac03fc03d23a65990ac"
+    },
+    {
+      "child": "small-confirm-runs/0-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "ddd2eb8667fa09a3cf1e989b78618964172f6c91144f575c632ef81b8541c958"
+    },
+    {
+      "child": "small-confirm-runs/2-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699440,
+      "result_sha256": "3c562ce5a0b6699edf0e59793d0b9cf7c62d7d1076d46285dd2bf81404f6d5ea"
+    },
+    {
+      "child": "small-confirm-runs/0-copied",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "2d347df393cb47ddfe9a032950ea81aea0ddff30023debafcfa0eb1d9a7afb7c"
+    },
+    {
+      "child": "small-confirm-runs/1-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699696,
+      "result_sha256": "4eddccbbe590b5e5c843aaea8dc92a7aafd409f23fd5414e638ec0ae380e82d2"
+    },
+    {
+      "child": "small-confirm-runs/3-borrowed",
+      "kept": "session-4",
+      "removed": [
+        "session-0",
+        "session-1",
+        "session-2",
+        "session-3"
+      ],
+      "released_bytes": 3699440,
+      "result_sha256": "1ec7d30b000398b0e264cdc0a690a8cf36a6838cd0d760161f7a4edc00b005c8"
+    }
+  ]
+}

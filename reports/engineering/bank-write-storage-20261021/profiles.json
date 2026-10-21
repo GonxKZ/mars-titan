@@ -1,0 +1,162 @@
+{
+  "scope": "torch_profiler_three_updates_fp32_256",
+  "hardware_counters": false,
+  "items": [
+    {
+      "rule": "mean_partial",
+      "version": "copied",
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 510,
+          "self_cpu_us": 3034.6899999999882,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 2315.804000000013,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 21,
+          "self_cpu_us": 43.38400000000229,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1469.6910000000098,
+          "self_device_us": 382.7240000000038
+        },
+        {
+          "name": "aten::stack",
+          "calls": 15,
+          "self_cpu_us": 113.67399999999816,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::mean",
+          "calls": 6,
+          "self_cpu_us": 180.88099999999395,
+          "self_device_us": 114.91399999999885
+        }
+      ]
+    },
+    {
+      "rule": "mean_partial",
+      "version": "borrowed",
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 492,
+          "self_cpu_us": 2548.8390000000036,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 3000.250999999989,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1255.1839999999997,
+          "self_device_us": 369.57100000000855
+        },
+        {
+          "name": "aten::stack",
+          "calls": 15,
+          "self_cpu_us": 63.96200000000499,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 3,
+          "self_cpu_us": 7.424999999998363,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::mean",
+          "calls": 6,
+          "self_cpu_us": 86.98199999999815,
+          "self_device_us": 118.46499999999924
+        }
+      ]
+    },
+    {
+      "rule": "per_bank",
+      "version": "copied",
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 498,
+          "self_cpu_us": 3188.4290000000124,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 2286.4820000000027,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 21,
+          "self_cpu_us": 39.53899999999794,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1480.5839999999926,
+          "self_device_us": 356.1640000000084
+        },
+        {
+          "name": "aten::stack",
+          "calls": 9,
+          "self_cpu_us": 41.19199999999546,
+          "self_device_us": 0.0
+        }
+      ]
+    },
+    {
+      "rule": "per_bank",
+      "version": "borrowed",
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 480,
+          "self_cpu_us": 2261.315000000001,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 2501.7429999999927,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1084.2789999999986,
+          "self_device_us": 337.5379999999968
+        },
+        {
+          "name": "aten::stack",
+          "calls": 9,
+          "self_cpu_us": 44.4029999999957,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 3,
+          "self_cpu_us": 7.934999999999036,
+          "self_device_us": 0.0
+        }
+      ]
+    }
+  ]
+}

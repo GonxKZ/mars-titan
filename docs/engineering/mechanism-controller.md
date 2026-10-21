@@ -88,6 +88,8 @@ Los formatos anteriores se mantienen cuando no se usa el nuevo enlace. Las ident
 
 ## Comprobación y coste
 
+Los estados neuronales adicionales se describen en [BANK-READ](../experiments/bank-readout-v1.md) y [BANK-WRITE](../experiments/bank-write-v1.md). Sus informes separan mecanismos, pruebas y coste de una utilidad predictiva todavía no medida. El [ensayo de préstamo de almacenamiento](../../reports/engineering/bank-write-storage-20261021/README.md) conserva un candidato descartado por su latencia en sesiones pequeñas. No cambia la implementación activa ni los diez criterios pendientes de #701.
+
 Las [pruebas y medidas del acumulador](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. El [informe del consumidor](../../reports/engineering/mechanism-consumer-20261021/README.md) añade las 36 combinaciones en CPU y CUDA, presupuesto lógico, recuperación auxiliar, detección de cambios y coste del recorrido provisional. Ambos registran mutación dirigida y CRAP con su alcance.
 
 El [incremento de archivo y madurez](../../reports/engineering/mechanism-history-20261021/README.md) comprueba las claves pendientes, el calendario y el formato histórico. El [informe de la sesión integrada](../../reports/engineering/mechanism-session-20261021/README.md) añade cortes antes y después de publicar, recuperación, poda histórica, fronteras reservadas, corrupción y coste CUDA con 64 y 256 activos sintéticos.
