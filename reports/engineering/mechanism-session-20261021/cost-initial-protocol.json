@@ -1,0 +1,37 @@
+{
+  "recorded_at_utc": "2026-10-21T02:43:19.974950+00:00",
+  "reference_commit": "ee4d6369dafd9f1fb5b40c38c950c51c59525902",
+  "rows": [
+    64,
+    256
+  ],
+  "cases": [
+    "previous",
+    "disabled",
+    "context_online",
+    "context_reader_online"
+  ],
+  "warmup": 2,
+  "repetitions": 6,
+  "dtype": "float64",
+  "device": "cuda:0",
+  "block_rows": 64,
+  "bank_capacity": 64,
+  "storage": "ext4 on local NVMe",
+  "scientific_study": false,
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "comparison": "Medir la referencia antes de sustituir la introspección de clases. Exigir firmas de auditoría y predicciones equivalentes. Conservar intentos y percentiles desfavorables. No promover por una mejor repetición.",
+  "limits": [
+    "Orden fijo de condiciones",
+    "Sin controlar temperatura, frecuencias o cachés del sistema",
+    "Dimensiones pequeñas de modalidades y precios replicados",
+    "Sin energía medida",
+    "Sin otras pruebas o perfiles propios simultáneos"
+  ],
+  "sources": {
+    "src/mars_titan/models/titans/frozen_financial.py": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+    "src/mars_titan/memory/financial_mechanisms.py": "cbf2dd14b020c410089b22e177f36f0f0c29f6b7b88c90278a127ad0cbb39104",
+    "reports/engineering/mechanism-session-20261021/benchmark.py": "2d2f9df13ef95cb3e383d4a0f2a722939b4cd6ec8aa59e934340ce8b998a9d69"
+  }
+}

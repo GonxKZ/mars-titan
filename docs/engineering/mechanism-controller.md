@@ -1,6 +1,6 @@
 # Catálogo y propuestas del controlador de mecanismos
 
-La integración de un controlador de mecanismos sigue en curso en [#701](https://github.com/GonxKZ/mars-titan/issues/701). Están implementados el acumulador de feedback de PT2, un catálogo finito y un consumidor provisional que combina contexto PT4, rutas episódicas y calibración. Las acciones son controles fijos. Faltan el selector aprendido y la confirmación de este estado auxiliar en `FinancialSession`. Las variantes por defecto no cambian.
+La integración de un controlador de mecanismos sigue en curso en [#701](https://github.com/GonxKZ/mars-titan/issues/701). Están implementados el acumulador de feedback de PT2, un catálogo finito, el consumidor que combina contexto PT4, rutas episódicas y calibración y su enlace durable con `FinancialSession` para M0/M1. Las acciones son controles fijos. Faltan el selector aprendido y sus contrastes predictivos. Las variantes por defecto no cambian.
 
 ## Catálogo y momentos de ejecución
 
@@ -22,7 +22,7 @@ Si una propuesta online supera los bytes disponibles o la reserva operativa para
 
 La identidad declara `predict_all_then_feedback_v1`: primero se emiten todas las predicciones del evento y después se reciben resultados anteriores disponibles. El replay original de PT2 aplicaba las etiquetas maduras antes de emitir. Son políticas diferentes. Una cola llena puede provocar un retorno aunque el feedback posterior del mismo evento vaya a liberar capacidad. No se adelantan esas etiquetas.
 
-El estado auxiliar exporta contexto y calibración con versión e identidad. Un cierre administrativo conserva pendientes como archivo terminal censurado, sin inventar su madurez ni avanzar el reloj del calibrador al futuro. Ese archivo no puede continuar otra fase. Las pruebas de exportación y restauración auxiliares no sustituyen las pruebas de cortes y recuperación durable que faltan en `FinancialSession`.
+El estado auxiliar exporta contexto y calibración con versión e identidad. Un cierre administrativo conserva pendientes como archivo terminal censurado, sin inventar su madurez ni avanzar el reloj del calibrador al futuro. Ese archivo no puede continuar otra fase. La recuperación durable utiliza el enlace descrito más abajo.
 
 [`CohortFeedback`](../../src/mars_titan/calibration/cohort_feedback.py) recibe cohortes completas de los cinco cuantiles financieros y conserva sus identidades y fechas de madurez por fila. Su calibrador es el [`OnlineConformal`](../../src/mars_titan/calibration/online_conformal.py) existente. La madurez la aporta el contrato temporal que use el consumidor. El acumulador no la sustituye por un día añadido a la fecha de decisión.
 
@@ -38,7 +38,7 @@ Las etiquetas parciales quedan pendientes hasta completar la cohorte más antigu
 
 ## Exclusiones y recuperación
 
-Una exclusión o finalización necesita un estado identificado y una huella de evidencia. El acumulador verifica su formato, no su autenticidad. El adaptador de sesión deberá verificar la prueba externa antes de aceptarla.
+Una exclusión o finalización necesita un estado identificado y una huella de evidencia. El acumulador verifica su formato, no su autenticidad. El enlace recibe los resultados admitidos por el ejecutor nativo. No convierte finalizaciones administrativas en etiquetas.
 
 Si una fila queda excluida, se cancela la cohorte completa al alcanzar su madurez. No se inventan etiquetas para las demás filas ni se actualizan correcciones, errores o número de cohortes maduras con esa cancelación. El registro distingue etiquetas válidas recibidas, exclusiones y filas aún sin resultado. Las métricas del ejecutor deben conservar las pérdidas válidas de las otras predicciones, aunque esa cohorte ya no sirva para actualizar PT2. Los resultados posteriores de filas canceladas no se vuelven a enviar al acumulador de calibración.
 
@@ -48,17 +48,29 @@ El estado del acumulador tiene versión y política propias, huella SHA-256 y un
 
 Los límites por defecto son 32.768 filas pendientes y 8 MiB de JSON canónico. El máximo configurable de JSON es 16 MiB. Cada mercado conserva el límite de 64 cohortes de PT2 y el formato admite hasta ocho mercados. Los identificadores tienen como máximo 128 bytes. El presupuesto de JSON no representa un límite del pico transitorio de RAM. No se conserva un historial ilimitado de cohortes resueltas.
 
-[`MechanismHistory`](../../src/mars_titan/memory/mechanism_history.py) prepara el archivo de emisiones y actualizaciones sobre `SessionArtifacts`, con bloques sellados, generaciones contiguas y lectura incremental. Su manifiesto declara las referencias que una sesión deberá conservar al podar. No publica otra cabeza ni confirma por sí mismo una propuesta. El formato distingue el historial del estado operativo y permite leer generaciones antiguas sin retener sus payloads en la caché.
+[`MechanismHistory`](../../src/mars_titan/memory/mechanism_history.py) prepara el archivo de emisiones y actualizaciones sobre `SessionArtifacts`, con bloques sellados, generaciones contiguas y lectura incremental. Su manifiesto declara las referencias que la sesión conserva al podar. No publica otra cabeza ni confirma por sí mismo una propuesta. El formato distingue el historial del estado operativo y permite leer generaciones antiguas sin retener sus payloads en la caché.
 
-Cada evento lleva identidad de modelo, generación, corte, tipo y huella del registro nativo, además de un payload JSON acotado. El módulo valida ese transporte. La correspondencia financiera con inputs, acciones, cuantiles y resultados sigue siendo responsabilidad del enlace pendiente. La compresión `zlib1` es opcional y su versión forma parte de la identidad. `none` sigue siendo el valor por defecto. El agotamiento de capacidad produce un error y no autoriza borrar evidencia o cambiar la predicción para continuar.
+Cada evento lleva identidad de modelo, generación, corte, tipo y huella del registro nativo, además de un payload JSON acotado. El módulo valida ese transporte. El enlace verifica la correspondencia financiera con inputs, acciones, cuantiles y resultados. La compresión `zlib1` es opcional y su versión forma parte de la identidad. `none` sigue siendo el valor por defecto. El agotamiento de capacidad produce un error y no autoriza borrar evidencia o cambiar la predicción para continuar.
+
+## Publicación en la sesión financiera
+
+[`MechanismBinding`](../../src/mars_titan/memory/financial_mechanisms.py) reutiliza el banco, el codec, los snapshots y la descarga de pesos rápidos del enlace Titans. Admite el consumidor de mecanismos por su tipo exacto, con M0/M1. Rechaza M2/M3 y el control local C activo mientras esas interacciones no estén comprobadas. B6 mantiene su enlace independiente. Estas restricciones no eliminan esas variantes de sus canalizaciones anteriores.
+
+El bundle añade `mechanisms` y `mechanism_history` únicamente para la nueva identidad. La preparación utiliza el mismo snapshot de banco para toda la sesión. Descarga el estado rápido después de cada bloque físico y reúne las salidas CPU. La propuesta auxiliar no se publica en `finish`. El resolver recibe el registro nativo ya sellado, comprueba los puntos y resultados reales, añade el evento histórico y prepara el bundle. `latest.json` sigue siendo la única publicación. La poda conserva las referencias históricas de las dos generaciones recuperables.
+
+Las trazas conservan cuantiles brutos, K1 y emitidos, niveles, corrección aplicada al emitir, acciones, motivos de retorno e identidades de inputs, contexto, parámetros y snapshot. La validación reaplica esa corrección archivada y la concilia con los puntos nativos. No reconstruye una emisión antigua con el calibrador actual. `mechanism_state()` recupera el estado auxiliar confirmado y `mechanism_event(generation)` lee una generación confirmada, también después de la poda. Una generación futura o una referencia incompatible se rechazan.
+
+El feedback se filtra una vez por evento mediante las claves que PT2 todavía espera. Las pérdidas financieras válidas permanecen aunque no exista una cohorte de calibración. El calentamiento no recibe resultados para PT2. En el cierre de la frontera reservada, el watermark de feedback es el mínimo entre el corte y el instante reservado menos un microsegundo. Es una frontera exclusiva del prefijo. No cambia la disponibilidad real de ninguna etiqueta ni amplía el acceso al periodo reservado. El cierre administrativo posterior conserva el estado terminal sin trasladarlo implícitamente a otra fase.
+
+Los formatos anteriores se mantienen cuando no se usa el nuevo enlace. Las identidades incluyen código y política, por lo que esta modificación no autoriza cargar un checkpoint de otra versión como si conservara su identidad histórica. Los sellos y conciliaciones detectan corrupción e incompatibilidades. No autentican el sistema frente a un host que pueda modificar arbitrariamente código y archivos.
 
 ## Comprobación y coste
 
 Las [pruebas y medidas del acumulador](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. El [informe del consumidor](../../reports/engineering/mechanism-consumer-20261021/README.md) añade las 36 combinaciones en CPU y CUDA, presupuesto lógico, recuperación auxiliar, detección de cambios y coste del recorrido provisional. Ambos registran mutación dirigida y CRAP con su alcance.
 
-El [incremento de archivo y madurez](../../reports/engineering/mechanism-history-20261021/README.md) comprueba las claves pendientes, el calendario y el formato histórico. Separa coste de serialización, almacenamiento, recuperación y publicación de la sesión. Las pruebas del archivo no sustituyen los cortes y la recuperación completa que faltan en el enlace financiero.
+El [incremento de archivo y madurez](../../reports/engineering/mechanism-history-20261021/README.md) comprueba las claves pendientes, el calendario y el formato histórico. El [informe de la sesión integrada](../../reports/engineering/mechanism-session-20261021/README.md) añade cortes antes y después de publicar, recuperación, poda histórica, fronteras reservadas, corrupción y coste CUDA con 64 y 256 activos sintéticos.
 
-El acumulador y la serialización trabajan en CPU con NumPy. Se midieron propuestas completas con 64 y 256 filas y una o cuatro cohortes pendientes. La copia explícita de contenedores redujo el coste observado frente a las copias recursivas, sin cambiar los valores ni los estados exportados. No se ha medido aquí el predictor, el recorrido CUDA ni la escritura atómica en disco.
+El acumulador y la serialización trabajan en CPU con NumPy. Su medida aislada utilizó propuestas completas con 64 y 256 filas y una o cuatro cohortes pendientes. La copia explícita de contenedores redujo el coste observado frente a las copias recursivas, sin cambiar los valores ni los estados exportados. Esa comparación del acumulador no incluía el predictor ni la escritura atómica. El informe de la sesión integrada mide ese recorrido adicional por separado.
 
 Para repetir la selección técnica en el entorno del proyecto:
 
@@ -72,4 +84,4 @@ Para repetir la medida se necesita una ruta de salida cuyo directorio exista y c
 PYTHONPATH=src:. uv run --no-sync python reports/engineering/cohort-feedback-20261021/benchmark.py --output /tmp/mars-titan-cohort-feedback-cost.json
 ```
 
-El siguiente tramo debe conectar estos snapshots y sus trazas con la preparación, resolución, cierre de fase, verificación, recuperación y poda de `FinancialSession`. Faltan la confirmación durable, el ajuste del selector con cortes disjuntos y sus controles de utilidad. El acumulador y el catálogo no completan ese objetivo. La campaña completa y el test final permanecen cerrados. No hay una mejora predictiva medida por este componente.
+Faltan el ajuste del selector con cortes disjuntos y sus controles de utilidad. La [revisión de contexto y bucles](../research/context-and-nested-control.md) distingue esta integración de una especialización aprendida o una arquitectura anidada. El acumulador, el catálogo y la persistencia no completan ese objetivo. La campaña completa y el test final permanecen cerrados. No hay una mejora predictiva medida por este componente.

@@ -1,0 +1,199 @@
+{
+  "reference_process_seconds": 424.18085900193546,
+  "candidate_process_seconds": 422.95872314297594,
+  "process_change_pct": -0.2881166919778244,
+  "retained_in_production": false,
+  "decision": "Se descarta la candidata de enumeración. El tiempo total apenas cambia y no hay beneficio consistente entre condiciones. No se atribuye una aceleración a la corrección del generador de feedback del benchmark.",
+  "cases": [
+    {
+      "rows": 64,
+      "kind": "previous",
+      "reference_p50_ms": 2134.8230505,
+      "candidate_p50_ms": 2114.3688255,
+      "p50_change_pct": -0.9581227350533461,
+      "reference_p95_ms": 2393.5068117500005,
+      "candidate_p95_ms": 2399.05654325,
+      "reference_mean_ms": 2150.974458333333,
+      "candidate_mean_ms": 2157.1165983333335,
+      "reference_std_ms": 216.4995056827131,
+      "candidate_std_ms": 180.57651717899066,
+      "prediction_sha256": "efa7f3deab9f0162216134587df8f7d3237447a68f1a959b38c274d5c9cf7a02",
+      "retained_bytes": [
+        2492453,
+        2492453,
+        2492453,
+        2492453,
+        2492453,
+        2492453
+      ],
+      "allocated_vram_peak_bytes": 78161920
+    },
+    {
+      "rows": 64,
+      "kind": "disabled",
+      "reference_p50_ms": 3403.7122209999998,
+      "candidate_p50_ms": 3115.2718299999997,
+      "p50_change_pct": -8.47428843191853,
+      "reference_p95_ms": 3622.0351495,
+      "candidate_p95_ms": 3616.51550525,
+      "reference_mean_ms": 3317.5809245,
+      "candidate_mean_ms": 3212.68023,
+      "reference_std_ms": 321.3008206935918,
+      "candidate_std_ms": 283.96971365796975,
+      "prediction_sha256": "efa7f3deab9f0162216134587df8f7d3237447a68f1a959b38c274d5c9cf7a02",
+      "retained_bytes": [
+        2940441,
+        2940441,
+        2940441,
+        2940441,
+        2940441,
+        2940441
+      ],
+      "allocated_vram_peak_bytes": 78161920
+    },
+    {
+      "rows": 64,
+      "kind": "context_online",
+      "reference_p50_ms": 3804.4156965,
+      "candidate_p50_ms": 3768.3872485,
+      "p50_change_pct": -0.9470165952985998,
+      "reference_p95_ms": 4292.516558,
+      "candidate_p95_ms": 4054.126378,
+      "reference_mean_ms": 3875.925300333333,
+      "candidate_mean_ms": 3766.502584833333,
+      "reference_std_ms": 352.9829072574174,
+      "candidate_std_ms": 233.49826514444288,
+      "prediction_sha256": "bb41cfcc776936a668e99d8fbb749ae9c441af8b7d71f04f61612b84453f1119",
+      "retained_bytes": [
+        3162377,
+        3162377,
+        3162377,
+        3162377,
+        3162377,
+        3162377
+      ],
+      "allocated_vram_peak_bytes": 78291968
+    },
+    {
+      "rows": 64,
+      "kind": "context_reader_online",
+      "reference_p50_ms": 4082.022479,
+      "candidate_p50_ms": 4032.0232105,
+      "p50_change_pct": -1.2248650946245832,
+      "reference_p95_ms": 4347.01826525,
+      "candidate_p95_ms": 4283.2277035,
+      "reference_mean_ms": 3968.9853614999997,
+      "candidate_mean_ms": 3923.002712,
+      "reference_std_ms": 413.57149502217663,
+      "candidate_std_ms": 338.54150425372217,
+      "prediction_sha256": "89e0520e32e94300b08856fddd5da88dadfddb60b6c150d604d42c010a08bf0e",
+      "retained_bytes": [
+        3167305,
+        3167305,
+        3167305,
+        3167305,
+        3167305,
+        3167305
+      ],
+      "allocated_vram_peak_bytes": 78352384
+    },
+    {
+      "rows": 256,
+      "kind": "previous",
+      "reference_p50_ms": 6682.539413,
+      "candidate_p50_ms": 6759.230676,
+      "p50_change_pct": 1.1476365234869723,
+      "reference_p95_ms": 7439.032802,
+      "candidate_p95_ms": 6903.5362104999995,
+      "reference_mean_ms": 6748.1420573333335,
+      "candidate_mean_ms": 6660.806971333334,
+      "reference_std_ms": 511.40169423574906,
+      "candidate_std_ms": 255.95879070431525,
+      "prediction_sha256": "cd6197f121c8e0630f783e224110bd4f55271964349c8c91637cd85ecb2c1cd5",
+      "retained_bytes": [
+        9627314,
+        9627314,
+        9627314,
+        9627314,
+        9627314,
+        9627314
+      ],
+      "allocated_vram_peak_bytes": 80259584
+    },
+    {
+      "rows": 256,
+      "kind": "disabled",
+      "reference_p50_ms": 9958.4386285,
+      "candidate_p50_ms": 9685.058389000002,
+      "p50_change_pct": -2.745211872046016,
+      "reference_p95_ms": 10083.43348675,
+      "candidate_p95_ms": 10109.50732375,
+      "reference_mean_ms": 9792.572797,
+      "candidate_mean_ms": 9633.076151666668,
+      "reference_std_ms": 350.3268867472764,
+      "candidate_std_ms": 421.17649976404016,
+      "prediction_sha256": "cd6197f121c8e0630f783e224110bd4f55271964349c8c91637cd85ecb2c1cd5",
+      "retained_bytes": [
+        11364198,
+        11364198,
+        11364198,
+        11364198,
+        11364198,
+        11364198
+      ],
+      "allocated_vram_peak_bytes": 80259584
+    },
+    {
+      "rows": 256,
+      "kind": "context_online",
+      "reference_p50_ms": 11007.474676,
+      "candidate_p50_ms": 11144.905138999999,
+      "p50_change_pct": 1.2485194565075242,
+      "reference_p95_ms": 11185.941333499999,
+      "candidate_p95_ms": 11345.72190225,
+      "reference_mean_ms": 10905.082534833333,
+      "candidate_mean_ms": 11055.683860333333,
+      "reference_std_ms": 363.0954630609504,
+      "candidate_std_ms": 315.41620321342765,
+      "prediction_sha256": "d8cbc34de1deaa2d48f00838ec2f6c7581301ec10b53e123ac500bd87c7fb21b",
+      "retained_bytes": [
+        11824214,
+        11824214,
+        11824214,
+        11824214,
+        11824214,
+        11824214
+      ],
+      "allocated_vram_peak_bytes": 80438784
+    },
+    {
+      "rows": 256,
+      "kind": "context_reader_online",
+      "reference_p50_ms": 11512.943027,
+      "candidate_p50_ms": 11155.6398495,
+      "p50_change_pct": -3.1034912329719444,
+      "reference_p95_ms": 11856.905416,
+      "candidate_p95_ms": 11664.928734,
+      "reference_mean_ms": 11382.654688,
+      "candidate_mean_ms": 11127.997607833335,
+      "reference_std_ms": 430.2647283919161,
+      "candidate_std_ms": 481.68704553206703,
+      "prediction_sha256": "899a7c9d5a92ba7ebb8361d4a6155df0e3f5ddfcaa5159647d1ae5a42ee9767e",
+      "retained_bytes": [
+        11842646,
+        11842646,
+        11842646,
+        11842646,
+        11842646,
+        11842646
+      ],
+      "allocated_vram_peak_bytes": 80499200
+    }
+  ],
+  "limits": [
+    "Orden fijo y seis muestras, sin inferencia estadística de velocidad",
+    "No hay corpus real ni calidad predictiva medida",
+    "Memoria reservada CUDA es un contador del allocator, no toda la VRAM del proceso",
+    "El caudal por fila amortiza la trayectoria completa y no equivale a latencia por activo"
+  ]
+}
