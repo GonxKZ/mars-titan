@@ -35,8 +35,14 @@ class MechanismFitConfig(FingerprintOnce):
     max_sources: int = 8
     max_source_bytes: int = 512 * 1024**2
     max_condition: float = 1e12
+    source_mode: str = "closed_phases"
 
     def __post_init__(self):
+        if type(self.source_mode) is not str or self.source_mode not in (
+            "closed_phases",
+            "native_windows",
+        ):
+            raise ValueError("Modalidad de fuentes de ajuste desconocida")
         _digest_id(self.parent_consumer_id, "El consumidor padre")
         if any(
             type(v) is not int for v in (self.parent_selected_before, self.fit_start, self.fit_end)
@@ -71,10 +77,12 @@ class MechanismFitConfig(FingerprintOnce):
             raise ValueError("El coste incremental de la referencia debe ser cero")
 
     def identity(self):
-        return dict(
+        fields = asdict(self)
+        fields.pop("source_mode")
+        record = dict(
             schema_version=1,
             kind="closed_native_cohort_mechanism_fit_v1",
-            **asdict(self),
+            **fields,
             point_objective="mae_baseline_minus_mae_candidate",
             interval_objective="mean_interval_score_80_95_baseline_minus_candidate",
             normalization="fit_cohorts_only_weighted_population",
@@ -85,3 +93,12 @@ class MechanismFitConfig(FingerprintOnce):
             support="marginal_ranges_and_declared_objective_count_mask",
             parent_time="declared_protocol_cut_not_independent_timestamp_attestation",
         )
+        if self.source_mode == "native_windows":
+            record.update(
+                schema_version=2,
+                kind="windowed_native_cohort_mechanism_fit_v1",
+                source_mode=self.source_mode,
+                source_time="decision_in_fit_range_and_native_reception_before_fit_end",
+                source_budget="requested_windows_with_accumulated_packet_and_native_record_bytes",
+            )
+        return record

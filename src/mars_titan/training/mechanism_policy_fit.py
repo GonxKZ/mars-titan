@@ -1,4 +1,4 @@
-"""Ajuste protegido sobre pérdidas maduras de sesiones nativas cerradas."""
+"""Ajuste protegido sobre pérdidas maduras de fases cerradas o prefijos nativos."""
 
 import hashlib
 from dataclasses import asdict
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import torch
 
-from mars_titan.memory.financial_session import FinancialSession
+from mars_titan.memory.financial_session import FinancialSession, _check_callbacks
 from mars_titan.memory.mechanism_collection_record import CollectedMechanisms
 from mars_titan.memory.mechanism_supervision import MechanismSupervision
 from mars_titan.models.titans.mechanism_policy import (
@@ -19,7 +19,7 @@ from mars_titan.models.titans.mechanism_selection import digest, policy_signatur
 from mars_titan.models.titans.state import check_finite
 from mars_titan.training.learning_hold import require_learning_allowed
 
-from . import mechanism_fit_contract
+from . import mechanism_fit_contract, mechanism_fit_window
 from .mechanism_fit_contract import MechanismFitConfig
 
 
@@ -30,17 +30,19 @@ def _require(condition, message):
 
 def _cohorts(sources, *, config, device):
     require_learning_allowed("lectura de señales para la política de mecanismos")
+    if config.source_mode == "native_windows":
+        return _window_cohorts(sources, config=config, device=device)
     _require(
         type(sources) in (list, tuple) and 1 <= len(sources) <= config.max_sources,
         "El ajuste necesita sesiones fuente explícitas y acotadas",
     )
     records, used, cohort_keys, source_keys, budgets = [], [], set(), set(), [0, 0]
-    market_weights = dict(config.market_weights)
     for source in sources:
         _require(
             type(source) is FinancialSession and source._collection_config is not None,
             "La fuente debe ser una sesión financiera con recogida identificada",
         )
+        _check_callbacks(source)
         source.consumer.verify()
         before = source.snapshot()
         _require(
@@ -94,32 +96,60 @@ def _cohorts(sources, *, config, device):
                     observation_sha256=body["observation"]["sha256"],
                 )
             )
-            for group, metric in zip(observation["groups"], metrics, strict=True):
-                budgets[1] += 1
-                _require(
-                    budgets[1] <= config.max_cohorts, "Las fuentes superan las cohortes declaradas"
-                )
-                market, at = group["market"], observation["cutoff"]
-                _require(
-                    market in market_weights and (market, at) not in cohort_keys,
-                    "El mercado no tiene peso declarado o repite su decisión",
-                )
-                cohort_keys.add((market, at))
-                if metric["mature_rows"]:
-                    used.append(
-                        dict(
-                            features=group["values"],
-                            market=market,
-                            decision_at=at,
-                            point=metric["point_gains"],
-                            interval=metric["interval_gains"],
-                            mature_rows=metric["mature_rows"],
-                            excluded_rows=metric["excluded_rows"],
-                            collection_sha256=packet.sha256,
-                        )
-                    )
+            _append_cohorts(observation, metrics, packet.sha256, config, used, cohort_keys, budgets)
         _require(source.snapshot() == before, "La sesión fuente cambió durante el ajuste")
         records.append(record)
+    return _finish_cohorts(used, records, budgets, config)
+
+
+def _append_cohorts(observation, metrics, packet_sha, config, used, cohort_keys, budgets):
+    for group, metric in zip(observation["groups"], metrics, strict=True):
+        budgets[1] += 1
+        _require(budgets[1] <= config.max_cohorts, "Las fuentes superan las cohortes declaradas")
+        market, at = group["market"], observation["cutoff"]
+        _require(
+            market in dict(config.market_weights) and (market, at) not in cohort_keys,
+            "El mercado no tiene peso declarado o repite su decisión",
+        )
+        cohort_keys.add((market, at))
+        if metric["mature_rows"]:
+            used.append(
+                dict(
+                    features=group["values"],
+                    market=market,
+                    decision_at=at,
+                    point=metric["point_gains"],
+                    interval=metric["interval_gains"],
+                    mature_rows=metric["mature_rows"],
+                    excluded_rows=metric["excluded_rows"],
+                    collection_sha256=packet_sha,
+                )
+            )
+
+
+def _window_cohorts(sources, *, config, device):
+    require_learning_allowed("lectura de señales por ventanas para la política de mecanismos")
+    records, used, cohort_keys, budgets = [], [], set(), [0, 0]
+    for collections, record in mechanism_fit_window.iter_fit_windows(sources, config=config):
+        budgets[0] += record["source_bytes"]
+        for packet, supervision, _ in collections:
+            observation = packet.payload()["observation"]["observation"]
+            _append_cohorts(
+                observation,
+                supervision.metrics(device=device),
+                packet.sha256,
+                config,
+                used,
+                cohort_keys,
+                budgets,
+            )
+        records.append(record)
+    rows, weights, provenance = _finish_cohorts(used, records, budgets, config)
+    return rows, weights, dict(provenance, source_mode="native_windows")
+
+
+def _finish_cohorts(used, records, budgets, config):
+    market_weights = dict(config.market_weights)
     _require(len(used) >= config.min_cohorts, "No hay cohortes maduras suficientes para ajustar")
     present = {row["market"] for row in used}
     _require(present == set(market_weights), "Un mercado declarado no tiene cohortes maduras")
@@ -142,9 +172,9 @@ def _cohorts(sources, *, config, device):
 def fit_policy(sources, *, config, device="cuda:0"):
     """Ajustar objetivos firmados en CUDA, sin convertir ausencias en observaciones.
 
-    Solo admite fases cerradas antes del final de ajuste, para que la hora real de
-    recepción también pertenezca al pasado permitido. La fecha de selección del padre
-    sigue siendo una declaración del protocolo que debe respaldar el estudio.
+    La modalidad identifica fases cerradas o prefijos nativos explícitos. En ambos casos
+    la recepción debe preceder al final de ajuste. La selección del padre sigue siendo
+    una declaración del protocolo que debe respaldar el estudio.
     """
     require_learning_allowed("ajuste de la política del catálogo de mecanismos")
     _require(type(config) is MechanismFitConfig, "Falta el protocolo identificado del ajuste")
@@ -279,6 +309,11 @@ def fit_policy(sources, *, config, device="cuda:0"):
         selection_performed=False,
         predictive_improvement_measured=False,
     )
+    if config.source_mode == "native_windows":
+        receipt.update(schema_version=2, kind="native_window_cohort_mechanism_fit_receipt_v1")
+        receipt["implementation"]["windows"] = hashlib.sha256(
+            Path(mechanism_fit_window.__file__).read_bytes()
+        ).hexdigest()
     reference = digest(receipt)
     linked = MechanismPolicy(
         **dict(policy.named_buffers()),

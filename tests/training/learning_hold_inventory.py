@@ -49,6 +49,12 @@ GUARDS = {
             "test_fit_refuses_before_inspecting_sources_or_constructing_targets",
         ),
     ),
+    "mars_titan.training.mechanism_policy_fit:_window_cohorts": (
+        node(
+            "memory/test_mechanism_fit_window.py",
+            "test_fit_still_blocks_before_window_or_protocol_inspection",
+        ),
+    ),
     "mars_titan.training.refinement_policy_fit:fit_policy": (
         node(
             "training/test_refinement_policy_fit.py",
