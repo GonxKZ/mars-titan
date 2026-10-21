@@ -1,4 +1,4 @@
-"""Consulta de tres bancos neuronales históricos, sin almacenamiento adicional por flujo."""
+"""Consulta de tres bancos históricos y contrato explícito de sus gradientes de escritura."""
 
 import hashlib
 import math
@@ -17,6 +17,7 @@ class BankReadoutConfig:
     routing: str = "query"
     temperature: float = 1.0
     available: tuple[bool, bool, bool] = (True, True, True)
+    write_gradient: str = "common_translation"
 
     def __post_init__(self):
         if type(self.routing) is not str or self.routing not in ("query", "uniform", "constant"):
@@ -35,9 +36,15 @@ class BankReadoutConfig:
             raise ValueError("La disponibilidad necesita tres booleanos")
         object.__setattr__(self, "temperature", float(self.temperature))
         object.__setattr__(self, "available", tuple(self.available))
+        if type(self.write_gradient) is not str or self.write_gradient not in (
+            "common_translation",
+            "mean_partial",
+            "per_bank",
+        ):
+            raise ValueError("La escritura admite common_translation, mean_partial o per_bank")
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             kind=BANK_READOUT,
             routing=self.routing,
@@ -48,6 +55,18 @@ class BankReadoutConfig:
             availability="read_only_not_erasure",
             associative_gradient="common_translation_sum_of_partials",
         )
+        if self.write_gradient != "common_translation":
+            result.update(
+                schema_version=2,
+                write_gradient=self.write_gradient,
+                associative_gradient=(
+                    "per_bank_partials_of_mixture_loss"
+                    if self.write_gradient == "per_bank"
+                    else "orthogonal_projection_to_equal_bank_gradients"
+                ),
+                momentum="three_states_bank_major_then_layer",
+            )
+        return result
 
 
 def _unit(value):
@@ -89,11 +108,17 @@ class BankReadout(nn.Module):
         if mode not in ("disabled", "frozen", "online"):
             raise ValueError("El contador necesita un modo de memoria identificado")
         calls = 3 if mode == "online" else 2 if mode == "frozen" else 0
-        return dict(
+        result = dict(
             bank_function_evaluations=3 * rows * calls,
             bank_query_routes=rows * calls,
             bank_matrix_updates=3 * depth * rows if mode == "online" else 0,
         )
+        if self.config.write_gradient != "common_translation":
+            result.update(
+                bank_gradient_matrices=3 * depth * rows if mode == "online" else 0,
+                bank_momentum_updates=3 * depth * rows if mode == "online" else 0,
+            )
+        return result
 
     def set_extra_state(self, state):
         from .config import require_identity

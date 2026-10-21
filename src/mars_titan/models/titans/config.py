@@ -417,6 +417,21 @@ class MemoryConfig(FingerprintOnce):
         return 0 if self.plasticity is None else self.depth * (self.dim**2 + 2 * self.dim)
 
     @property
+    def momentum_copies(self) -> int:
+        """Un momentum común o uno por banco en el contraste de parciales."""
+        return (
+            3
+            if self.bank_readout is not None
+            and self.bank_readout.write_gradient != "common_translation"
+            else 1
+        )
+
+    @property
+    def matrix_elements(self) -> int:
+        """Elementos de pesos y momentum por flujo, sin ventanas ni plasticidad."""
+        return (1 + self.momentum_copies + self.hidden_levels) * self.depth * self.dim**2
+
+    @property
     def window(self) -> int:
         """Entradas anteriores que guarda cada ventana causal, K − 1, o 0 sin convolución."""
         return max(self.qkv_convolution - 1, 0)

@@ -65,9 +65,11 @@ def _decode(predictor, payload, *, device):
         require_identity(mac["configuration"], predictor.mac.config.identity())
         memory = require_payload(mac["memory"], predictor.mac.memory.payload_fields())
         require_identity(memory["configuration"], predictor.mac.memory.config.identity())
+        config = predictor.mac.memory.config
         for name in ("weights", "momentum"):
-            if type(memory[name]) is not tuple or len(memory[name]) != 2:
-                raise ValueError("El estado no conserva las dos capas de memoria")
+            count = config.depth * (config.momentum_copies if name == "momentum" else 1)
+            if type(memory[name]) is not tuple or len(memory[name]) != count:
+                raise ValueError("El estado no conserva las capas y el momentum declarados")
         # Las ventanas solo existen con convolución y los niveles con PT5. Su forma la
         # comprueba _validate_state.
         state = replace(

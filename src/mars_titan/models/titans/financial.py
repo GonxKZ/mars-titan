@@ -241,7 +241,8 @@ class FinancialConfig:
             if self.presence_modulation is not None:
                 raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
         if isinstance(self.memory_bank_readout, dict):
-            if set(self.memory_bank_readout) != {f.name for f in fields(BankReadoutConfig)}:
+            expected = {f.name for f in fields(BankReadoutConfig)}
+            if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
                 raise ValueError("memory_bank_readout debe declarar toda su configuración")
             object.__setattr__(
                 self, "memory_bank_readout", BankReadoutConfig(**self.memory_bank_readout)
@@ -639,22 +640,18 @@ class FinancialPredictor(nn.Module):
         return result
 
     def _tensor_bytes_per_flow(self):
+        memory = None if self.mac is None else self.mac.config.memory
         fast = (
             0
-            if self.mac is None
+            if memory is None
             else (
-                4 * self.config.hidden_size
-                + self.mac.config.memory.depth
-                * self.mac.config.memory.hidden_levels
-                * self.config.hidden_size
-                + 3 * self.mac.config.memory.window
+                memory.matrix_elements
+                + 3 * memory.window * self.config.hidden_size
+                + memory.modulation_elements
             )
-            * self.config.hidden_size
             * self.head.weight.element_size()
             + 8
         )
-        if self.mac is not None:
-            fast += self.mac.config.memory.modulation_elements * self.head.weight.element_size()
         return fast + 8
 
     def _metadata(self, flows, ids, moments):
