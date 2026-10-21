@@ -12,6 +12,10 @@ La traza `selection` se guarda una vez por evento, con una lista por mercado. Co
 
 Los hashes del contrato y del contexto de sesión pueden cambiar al variar el bloque físico. Eso no autoriza cambiar los rasgos consumidos ni la acción. La recuperación exige el mismo consumidor y sus coeficientes. Un selector incompatible se rechaza antes de reemplazar la cabeza confirmada. El archivo conserva las decisiones originales después de recibir feedback y de podar los checkpoints operativos.
 
+El [productor de alternativas y pérdidas maduras](../../reports/engineering/mechanism-collection-20261021/README.md) está disponible como API explícita. Cambia una acción de un mercado manteniendo las anclas de los demás, calcula las alternativas desde el mismo prefijo y registra los retornos de reservas compartidas. Conserva ausencias como `None` y separa punto e intervalos. La recepción parcial valida identidad y madurez, conserva ganancias negativas y no borra pérdidas válidas por una exclusión. Su transporte con `SessionArtifacts` está comprobado. Todavía falta enlazar sus referencias con la publicación, pendientes y recuperación de `FinancialSession` antes de una colección científica.
+
+El selector puede elegir una acción online que posteriormente agote la reserva de bytes. La traza conserva esa elección y la ruta ejecutada, mientras concilia la salida K1 realmente emitida, su contexto, cuantiles y trabajo descartado. El retorno no se atribuye como acierto de la solicitud original.
+
 ## Catálogo y momentos de ejecución
 
 [`MechanismCatalog`](../../src/mars_titan/models/titans/mechanism_catalog.py) registra 36 combinaciones. El contexto puede estar desactivado o utilizar el componente del padre. El lector conserva las seis rutas existentes, `k1`, `k2c`, `k2r`, `k4cc`, `k4cr` y `k4rc`. La calibración puede estar desactivada, usar la corrección inicial estática o recibir feedback de sus emisiones online. No se admiten comandos, código generado, acceso a red ni callbacks arbitrarios como acciones.

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "registered_at_utc": "2026-10-21T08:56:36.138069+00:00",
+  "kind": "technical_fixture_cost_not_scientific_study",
+  "rows": [
+    64,
+    256
+  ],
+  "modes": [
+    "fixed36",
+    "collect_seal",
+    "collect_receive_metrics"
+  ],
+  "warmup": 1,
+  "repetitions": 4,
+  "order": "rotating_three_modes_each_repetition",
+  "device": "cuda:0",
+  "dtype": "float64",
+  "hidden_size": 32,
+  "physical_block": "whole_cohort_for_these_bounded_fixtures",
+  "numerical_parity": {
+    "rtol": 1e-12,
+    "atol": 1e-12,
+    "compare": "all_36_quantile_matrices_same_parent_prefix"
+  },
+  "scope": "US fixtures, initial context, no episodic bank, fixed36 excludes observation extraction and packet sealing, collection modes include both, metrics mode additionally receives manual mature labels",
+  "excluded": [
+    "real_corpus",
+    "training",
+    "selector_fitting",
+    "native_generation_publication",
+    "filesystem_transport",
+    "external_encoders",
+    "energy",
+    "test_2024"
+  ],
+  "concurrency": "No other own tests, profiles, mutations or benchmarks, including CPU",
+  "report": [
+    "raw_ms",
+    "p50_p95_p99_empirical",
+    "mean_sample_std",
+    "work",
+    "packet_bytes",
+    "Torch_allocator_peaks",
+    "process_RSS_and_wall_time",
+    "software_hardware_source_hashes"
+  ],
+  "acceptance": "Numerical parity required, no prespecified speedup or scientific improvement claim"
+}
