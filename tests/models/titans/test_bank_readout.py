@@ -308,3 +308,76 @@ def test_learnable_constant_routing_is_a_query_independent_control(device):
     (probabilities[..., 0].sum()).backward()
     assert model.bank_readout.addresses.grad is not None
     assert torch.count_nonzero(model.bank_readout.addresses.grad)
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_bank_parameters_and_fast_state_reload_before_the_next_update(device):
+    import copy
+
+    model = memory(device, depth=2)
+    state = distinct(model)
+    with torch.no_grad():
+        model.bank_readout.addresses.add_(0.25)
+    saved = copy.deepcopy(model.state_dict())
+    restored = memory(device, depth=2)
+    restored.load_state_dict(saved)
+    state2 = restored.restore_state(model.export_state(state))
+    x = torch.tensor([[[0.2, -0.3]]], device=device, dtype=torch.float64)
+    torch.testing.assert_close(restored.read(x, state2), model.read(x, state), rtol=0, atol=0)
+    a, b = model.update(x, state), restored.update(x, state2)
+    for aa, bb in zip(
+        (*a.weights, *a.levels, *a.momentum), (*b.weights, *b.levels, *b.momentum), strict=True
+    ):
+        assert torch.equal(aa, bb)
+
+
+@pytest.mark.parametrize("change", ["missing", "dtype", "shape", "extra"])
+def test_bank_checkpoint_rejects_incompatible_contract_before_copying(change):
+    import copy
+
+    model = memory().bank_readout
+    state = copy.deepcopy(model.state_dict())
+    before = model.addresses.detach().clone()
+    state["addresses"] += 1
+    if change == "missing":
+        del state["available"]
+    elif change == "dtype":
+        state["addresses"] = state["addresses"].float()
+    elif change == "shape":
+        state["addresses"] = state["addresses"][:2]
+    else:
+        state["_extra_state"]["configuration"]["temperature"] = 2.0
+    with pytest.raises(ValueError):
+        model.load_state_dict(state)
+    assert torch.equal(model.addresses, before)
+
+
+def test_query_budgets_types_and_autocast_are_explicit():
+    model = memory().bank_readout
+    for query in (
+        torch.zeros(2, 2),
+        torch.zeros(1, 16385, 2, dtype=torch.float64),
+        torch.zeros(1, 1, 2, dtype=torch.float32),
+    ):
+        with pytest.raises(ValueError):
+            model.probabilities(query)
+    with (
+        torch.autocast("cpu", dtype=torch.bfloat16),
+        pytest.raises(ValueError, match="precisión|FP32"),
+    ):
+        model.probabilities(torch.ones(1, 1, 2, dtype=torch.float64))
+    with pytest.raises(ValueError):
+        model(
+            torch.ones(1, 1, 2, dtype=torch.float64), torch.zeros(1, 1, 2, 2, dtype=torch.float64)
+        )
+    with pytest.raises(ValueError):
+        model.operation_counts(1, mode="unknown", depth=2)
+
+
+def test_replica_control_has_no_fixed_decay_horizon_and_reports_only_homogeneous_bound():
+    cfg = MemoryMultiscale(form="replica_bank")
+    with pytest.raises(ValueError, match="escala fija"):
+        _ = cfg.timescales
+    assert cfg.transition(0.25) == ((0.75, 0.0, 0.0), (0.0, 0.75, 0.0), (0.0, 0.0, 0.75))
+    rho, weights = cfg.contraction(0.1)
+    assert rho == pytest.approx(0.9) and weights == (1.0, 1.0, 1.0)
