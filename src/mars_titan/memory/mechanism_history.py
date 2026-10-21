@@ -41,39 +41,48 @@ def _digest(value):
 
 
 def _json_only(value, budget, depth=0):
+    """Validar y acotar el JSON ASCII antes de materializarlo, sin contar bytes reales."""
     budget[0] -= 1
     if depth > 16:
         raise ValueError("La traza supera la profundidad admitida")
     if budget[0] < 0:
         raise HistoryCapacityError("La traza supera el número de elementos")
     kind = type(value)
-    if value is None or kind is bool:
-        return
+    if value is None:
+        return 4
+    if kind is bool:
+        return 5
     if kind is int and -(2**63) <= value < 2**63:
-        return
+        return 20
     if kind is float and math.isfinite(value):
-        return
+        # Binary64 finito tiene como máximo 17 cifras y un exponente decimal de tres.
+        return 32
     if kind is str:
         if len(value) > budget[1]:
             raise HistoryCapacityError("Una cadena de la traza supera su presupuesto")
-        return
+        # Un carácter fuera del BMP necesita dos escapes de seis bytes cada uno.
+        return 2 + 12 * len(value)
     if kind is dict and all(type(key) is str for key in value):
+        size = 2
         for key, item in value.items():
-            _json_only(key, budget, depth + 1)
-            _json_only(item, budget, depth + 1)
-        return
+            size += 2 + _json_only(key, budget, depth + 1)
+            size += _json_only(item, budget, depth + 1)
+        return size
     if kind in (list, tuple):
+        size = 2
         for item in value:
-            _json_only(item, budget, depth + 1)
-        return
+            size += 1 + _json_only(item, budget, depth + 1)
+        return size
     raise ValueError("La traza necesita valores JSON finitos y tipos ordinarios")
 
 
 def _json_bytes(value, maximum):
-    _json_only(value, [1_000_000, maximum])
+    upper = _json_only(value, [1_000_000, maximum])
     encoder = json.JSONEncoder(
         sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
     )
+    if upper <= maximum:
+        return len(encoder.encode(value))
     size = 0
     for part in encoder.iterencode(value):
         size += len(part)
