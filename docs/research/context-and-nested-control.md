@@ -30,6 +30,8 @@ Los pesos compartidos del predictor, los pesos rápidos de Titans, sus parámetr
 
 La [sesión durable](../../src/mars_titan/memory/financial_mechanisms.py) conserva las propuestas de mecanismos, sus cuantiles y correcciones, el feedback admitido y el estado auxiliar en la misma generación. Esta integración inicial admite M0/M1. No completa el entrenamiento de una política ni acredita la composición de bucles anidados. M2/M3, B6 y C local activo requieren comprobaciones adicionales para este enlace.
 
+La [fusión regional](../experiments/regional-fusion-v1.md) añade ahora un grafo opcional sobre las cinco fuentes y dos ritmos de cálculo dentro de una predicción. Sus estados locales y su resumen se reinician por fila. Sus ocho controles separan atención, topología y frecuencia del resumen, sin cambiar el número de transiciones MAC. Está integrada en el constructor y en la sesión recuperable, con comprobaciones técnicas sobre fixtures. No es un selector de herramientas aprendido ni un almacén histórico de recuerdos distribuidos. El anillo y el resumen global tienen antecedentes en Star-Transformer, que se distinguen de esta adaptación.
+
 ## Variantes que separarían las hipótesis
 
 Una primera variante escogería una acción del catálogo a partir de rasgos disponibles del prefijo, máscaras y contexto anterior confirmado. El vector utilizado, su versión y el instante de decisión deben guardarse al emitir. Una huella de inputs por sí sola no permite reconstruir ese vector. El control sin contexto usaría el mismo selector y número de parámetros, con las entradas contextuales anuladas de forma declarada. También se conservarían ruta fija, mezcla constante, umbral sencillo y residual cero.
@@ -44,7 +46,7 @@ Un recuerdo podría contribuir a varias representaciones especializadas, pero su
 
 La prueba de retirada de un módulo mediría pérdida de recuperación y error predictivo con el resto del estado congelado. Se separarían retirada aleatoria, retirada del módulo más utilizado y corrupción de una representación. La recuperación asistida por otros módulos se compararía con redundancia simple al mismo coste total. Repartir fragmentos complementarios puede mejorar especialización y también crear un punto imprescindible de fallo. Replicar todo puede facilitar recuperación a costa de capacidad. Ninguna de esas ventajas se presupone.
 
-Estas variantes siguen propuestas. No hay una implementación de HRM, TRM o SEAL en la canalización por citar sus artículos. La implementación actual proporciona mecanismos y persistencia reutilizables para contrastarlas, sin habilitarlas por defecto.
+El selector aprendido, la especialización por utilidad y el almacenamiento histórico distribuido siguen propuestos. La fusión regional implementa solo la comunicación y los ritmos de trabajo descritos en su especificación. No hay una reproducción de HRM, TRM o SEAL en la canalización por citar sus artículos. Las ampliaciones permanecen desactivadas por defecto.
 
 ## Aprender de intentos fallidos
 

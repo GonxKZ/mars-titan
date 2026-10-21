@@ -10,6 +10,8 @@ El contexto se elige antes de MAC. Solo los tokens fusionados de las filas selec
 
 Los presupuestos distinguen refinamientos y búsquedas por fila, mercados con escritura de contexto y filas online. El lector se admite con el tamaño lógico del evento, limitado por el bloque declarado del padre. Dividirlo después en bloques físicos más pequeños no habilita una ruta que antes no cabía. Las unidades de trabajo no se convierten implícitamente en MAE ni en utilidad financiera.
 
+El predictor puede incorporar la [fusión regional](../experiments/regional-fusion-v1.md) antes de PT4 y MAC. Es una opción de arquitectura fija, no otra acción aprendida del catálogo. Sus contadores distinguen evaluaciones de nodos locales y del resumen, con un límite conjunto por fila. El enlace los conserva en la misma traza confirmada. Los estados intermedios se reinician en cada predicción y no se añaden al estado histórico del banco ni a los pesos rápidos.
+
 Cuando falta un mecanismo o presupuesto, se registra el motivo y se emite K1 sin calibración. Si el fallo se conoce después de elegir el contexto, se conserva ese contexto pre-MAC. No se recalcula la transición para aparentar que la decisión anterior no ocurrió. Una entrada inválida, una identidad incompatible o un valor no finito producen un error, no un retorno silencioso.
 
 ## Consumidor provisional y estado
@@ -69,6 +71,8 @@ Los formatos anteriores se mantienen cuando no se usa el nuevo enlace. Las ident
 Las [pruebas y medidas del acumulador](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. El [informe del consumidor](../../reports/engineering/mechanism-consumer-20261021/README.md) añade las 36 combinaciones en CPU y CUDA, presupuesto lógico, recuperación auxiliar, detección de cambios y coste del recorrido provisional. Ambos registran mutación dirigida y CRAP con su alcance.
 
 El [incremento de archivo y madurez](../../reports/engineering/mechanism-history-20261021/README.md) comprueba las claves pendientes, el calendario y el formato histórico. El [informe de la sesión integrada](../../reports/engineering/mechanism-session-20261021/README.md) añade cortes antes y después de publicar, recuperación, poda histórica, fronteras reservadas, corrupción y coste CUDA con 64 y 256 activos sintéticos.
+
+La [comprobación regional](../../reports/engineering/regional-fusion-20261021/README.md) añade paridad de la ruta anterior, gradientes, aislamiento de activos, ocho controles y recuperación de la siguiente emisión con sus contadores. Registra coste CUDA residente y de sesión, cobertura, CRAP y mutación dirigida. No se ha medido su utilidad predictiva ni se ha entrenado el selector.
 
 El acumulador y la serialización trabajan en CPU con NumPy. Su medida aislada utilizó propuestas completas con 64 y 256 filas y una o cuatro cohortes pendientes. La copia explícita de contenedores redujo el coste observado frente a las copias recursivas, sin cambiar los valores ni los estados exportados. Esa comparación del acumulador no incluía el predictor ni la escritura atómica. El informe de la sesión integrada mide ese recorrido adicional por separado.
 

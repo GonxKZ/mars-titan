@@ -1,0 +1,819 @@
+{
+  "recorded_at_utc": "2026-10-21T04:35:34.322889+00:00",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_total_bytes": 8183676928,
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "dtype": "float64",
+  "hidden_size": 32,
+  "block_rows": 64,
+  "bank_capacity": 64,
+  "modalities": {
+    "prices": [
+      64,
+      5
+    ],
+    "news": 2,
+    "charts": 1,
+    "fundamentals": 3,
+    "macro": 3
+  },
+  "warmup": 2,
+  "repetitions": 6,
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "scientific_study": false,
+  "cases": [
+    {
+      "arm": "original_context_online",
+      "rows": 64,
+      "model_id": "f7ebb652b364469f55b5d421989bab5dae7cb9aa73999e40a41235624605193c",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "f42ff792a596f91b2ce2ba3ac42c5e827da220f7b8eeb2e4e49f940681901001",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "shared_parameter_sha256": "322133298fff5eb1ad5d0a9e31d79b350190f600a9ddd9200d63f0f9b0eabc98",
+      "parameters": 32357,
+      "samples_ms": [
+        {
+          "open": 15.026388,
+          "step_125": 452.038571,
+          "step_126": 821.303035,
+          "step_127": 939.09921,
+          "step_128": 953.038771,
+          "close_phase": 456.719008,
+          "recover": 269.487663,
+          "total": 3919.431936
+        },
+        {
+          "open": 25.18339,
+          "step_125": 371.115453,
+          "step_126": 773.066945,
+          "step_127": 835.044246,
+          "step_128": 857.09917,
+          "close_phase": 406.058103,
+          "recover": 268.20054,
+          "total": 3548.321856
+        },
+        {
+          "open": 12.76744,
+          "step_125": 392.913592,
+          "step_126": 682.963481,
+          "step_127": 812.306699,
+          "step_128": 796.626911,
+          "close_phase": 512.377159,
+          "recover": 338.665372,
+          "total": 3566.056383
+        },
+        {
+          "open": 13.701357,
+          "step_125": 456.463548,
+          "step_126": 863.667119,
+          "step_127": 960.866917,
+          "step_128": 958.908783,
+          "close_phase": 459.30572,
+          "recover": 318.583493,
+          "total": 4046.769146
+        },
+        {
+          "open": 14.568747,
+          "step_125": 465.389139,
+          "step_126": 866.323015,
+          "step_127": 1035.640793,
+          "step_128": 954.911024,
+          "close_phase": 405.695408,
+          "recover": 273.964011,
+          "total": 4029.616898
+        },
+        {
+          "open": 19.614436,
+          "step_125": 388.221095,
+          "step_126": 694.923713,
+          "step_127": 800.915904,
+          "step_128": 791.368267,
+          "close_phase": 388.987784,
+          "recover": 262.144823,
+          "total": 3358.875274
+        }
+      ],
+      "p50_ms": 3742.7441595,
+      "p95_ms": 4042.481084,
+      "p99_ms": 4045.9115336,
+      "mean_ms": 3744.845248833333,
+      "std_ms": 290.61767569601847,
+      "prediction_rows_per_second": 51.2704764128279,
+      "retained_bytes": [
+        3162377,
+        3162377,
+        3162377,
+        3162377,
+        3162377,
+        3162377
+      ],
+      "prediction_sha256": "bb41cfcc776936a668e99d8fbb749ae9c441af8b7d71f04f61612b84453f1119",
+      "allocated_vram_peak_bytes": 78291968,
+      "reserved_vram_peak_bytes": 98566144
+    },
+    {
+      "arm": "regional_ring_context_online",
+      "rows": 64,
+      "model_id": "be4ffa6997b534762b129f8ef8fc81edc2b4a62159aad3c56f2f64e0ab518c20",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "f42ff792a596f91b2ce2ba3ac42c5e827da220f7b8eeb2e4e49f940681901001",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "shared_parameter_sha256": "322133298fff5eb1ad5d0a9e31d79b350190f600a9ddd9200d63f0f9b0eabc98",
+      "parameters": 42725,
+      "samples_ms": [
+        {
+          "open": 15.233107,
+          "step_125": 471.178567,
+          "step_126": 870.471812,
+          "step_127": 1000.185347,
+          "step_128": 895.526984,
+          "close_phase": 396.642467,
+          "recover": 267.767648,
+          "total": 3929.040753
+        },
+        {
+          "open": 17.532981,
+          "step_125": 404.760934,
+          "step_126": 722.081656,
+          "step_127": 810.447877,
+          "step_128": 849.697975,
+          "close_phase": 407.608937,
+          "recover": 332.055468,
+          "total": 3559.692627
+        },
+        {
+          "open": 15.117849,
+          "step_125": 443.111889,
+          "step_126": 772.996163,
+          "step_127": 821.531181,
+          "step_128": 954.955402,
+          "close_phase": 480.525903,
+          "recover": 442.653183,
+          "total": 3945.731085
+        },
+        {
+          "open": 17.941368,
+          "step_125": 483.089452,
+          "step_126": 905.29962,
+          "step_127": 990.10906,
+          "step_128": 988.952363,
+          "close_phase": 481.816855,
+          "recover": 318.828709,
+          "total": 4201.973363
+        },
+        {
+          "open": 13.8687,
+          "step_125": 464.443073,
+          "step_126": 852.802842,
+          "step_127": 918.120578,
+          "step_128": 904.423459,
+          "close_phase": 415.661307,
+          "recover": 283.046378,
+          "total": 3867.770453
+        },
+        {
+          "open": 13.352449,
+          "step_125": 408.530558,
+          "step_126": 743.024259,
+          "step_127": 880.504343,
+          "step_128": 841.928742,
+          "close_phase": 408.994657,
+          "recover": 282.710124,
+          "total": 3592.576307
+        }
+      ],
+      "p50_ms": 3898.405603,
+      "p95_ms": 4137.9127935,
+      "p99_ms": 4189.1612491000005,
+      "mean_ms": 3849.464098,
+      "std_ms": 240.8968758293213,
+      "prediction_rows_per_second": 49.8770725254339,
+      "retained_bytes": [
+        3164809,
+        3164809,
+        3164809,
+        3164809,
+        3164809,
+        3164809
+      ],
+      "prediction_sha256": "3d1975f8cca807acf4cf96bfc90bdbaf62aeb41b8096ade69cfd3df117bf4e38",
+      "allocated_vram_peak_bytes": 78376448,
+      "reserved_vram_peak_bytes": 98566144
+    },
+    {
+      "arm": "original_context_online",
+      "rows": 256,
+      "model_id": "355037d1fbd1b3233f71208bad3900ef3e70922321c5d04f509cba32ecf3f76b",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0005a8eb7e18415b0037bb730f07a28ca675f528131d1f92daa019dc5b8760f",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "shared_parameter_sha256": "322133298fff5eb1ad5d0a9e31d79b350190f600a9ddd9200d63f0f9b0eabc98",
+      "parameters": 32357,
+      "samples_ms": [
+        {
+          "open": 14.17225,
+          "step_125": 1019.637778,
+          "step_126": 2168.810472,
+          "step_127": 2775.89911,
+          "step_128": 3032.672912,
+          "close_phase": 1046.620935,
+          "recover": 1426.419293,
+          "total": 11517.234555
+        },
+        {
+          "open": 16.362147,
+          "step_125": 1430.994902,
+          "step_126": 2264.750266,
+          "step_127": 2416.349294,
+          "step_128": 2706.458846,
+          "close_phase": 1149.928282,
+          "recover": 1189.425697,
+          "total": 11208.263294
+        },
+        {
+          "open": 14.69364,
+          "step_125": 1185.506956,
+          "step_126": 2532.735773,
+          "step_127": 2643.80762,
+          "step_128": 2424.31605,
+          "close_phase": 873.429938,
+          "recover": 790.604118,
+          "total": 10496.846539
+        },
+        {
+          "open": 13.690412,
+          "step_125": 960.177057,
+          "step_126": 2725.495516,
+          "step_127": 2973.122273,
+          "step_128": 2914.642945,
+          "close_phase": 1157.730085,
+          "recover": 679.869445,
+          "total": 11450.470095
+        },
+        {
+          "open": 14.776324,
+          "step_125": 978.022356,
+          "step_126": 2104.578606,
+          "step_127": 2551.956664,
+          "step_128": 3091.548182,
+          "close_phase": 1138.479344,
+          "recover": 859.077761,
+          "total": 10770.037078
+        },
+        {
+          "open": 14.195411,
+          "step_125": 1178.254677,
+          "step_126": 2242.004256,
+          "step_127": 2327.962368,
+          "step_128": 2482.981213,
+          "close_phase": 957.672458,
+          "recover": 873.899571,
+          "total": 10112.895162
+        }
+      ],
+      "p50_ms": 10989.150185999999,
+      "p95_ms": 11500.54344,
+      "p99_ms": 11513.896331999998,
+      "mean_ms": 10925.957787166664,
+      "std_ms": 561.0590592316657,
+      "prediction_rows_per_second": 70.29132044625618,
+      "retained_bytes": [
+        11824214,
+        11824214,
+        11824214,
+        11824214,
+        11824214,
+        11824214
+      ],
+      "prediction_sha256": "d8cbc34de1deaa2d48f00838ec2f6c7581301ec10b53e123ac500bd87c7fb21b",
+      "allocated_vram_peak_bytes": 80438784,
+      "reserved_vram_peak_bytes": 102760448
+    },
+    {
+      "arm": "regional_ring_context_online",
+      "rows": 256,
+      "model_id": "9150a6ac2905d5290f43cc7c8a2462feb1918ad7cc24964b9b3797dc5c231454",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0005a8eb7e18415b0037bb730f07a28ca675f528131d1f92daa019dc5b8760f",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "shared_parameter_sha256": "322133298fff5eb1ad5d0a9e31d79b350190f600a9ddd9200d63f0f9b0eabc98",
+      "parameters": 42725,
+      "samples_ms": [
+        {
+          "open": 12.282103,
+          "step_125": 1020.113833,
+          "step_126": 2142.194759,
+          "step_127": 2393.067942,
+          "step_128": 2864.699718,
+          "close_phase": 1159.337484,
+          "recover": 831.870923,
+          "total": 10457.864699
+        },
+        {
+          "open": 15.27495,
+          "step_125": 1255.754591,
+          "step_126": 4369.457304,
+          "step_127": 2559.87595,
+          "step_128": 2622.486186,
+          "close_phase": 1001.8591,
+          "recover": 854.276139,
+          "total": 12712.990879
+        },
+        {
+          "open": 21.043044,
+          "step_125": 1281.158033,
+          "step_126": 2606.295917,
+          "step_127": 2892.598337,
+          "step_128": 2507.724873,
+          "close_phase": 965.752485,
+          "recover": 736.909936,
+          "total": 11037.486045
+        },
+        {
+          "open": 13.395045,
+          "step_125": 1029.773529,
+          "step_126": 2429.207417,
+          "step_127": 3103.050458,
+          "step_128": 3025.489547,
+          "close_phase": 1032.843554,
+          "recover": 698.990147,
+          "total": 11360.357675
+        },
+        {
+          "open": 15.322158,
+          "step_125": 1030.660407,
+          "step_126": 2151.129718,
+          "step_127": 2690.919886,
+          "step_128": 2967.495035,
+          "close_phase": 1059.310275,
+          "recover": 856.022892,
+          "total": 10805.094433
+        },
+        {
+          "open": 15.239181,
+          "step_125": 1224.665626,
+          "step_126": 2457.779158,
+          "step_127": 2532.586312,
+          "step_128": 2579.414232,
+          "close_phase": 862.250406,
+          "recover": 783.69816,
+          "total": 10482.441135
+        }
+      ],
+      "p50_ms": 10921.290239,
+      "p95_ms": 12374.832578000001,
+      "p99_ms": 12645.3592188,
+      "mean_ms": 11142.705811,
+      "std_ms": 841.8048421644269,
+      "prediction_rows_per_second": 68.92401298451547,
+      "retained_bytes": [
+        11831830,
+        11831830,
+        11831830,
+        11831830,
+        11831830,
+        11831830
+      ],
+      "prediction_sha256": "a2bc80c27efca09e5604f0f5bbc6849dd798403f38ef7f3c058406f09b86d6cf",
+      "allocated_vram_peak_bytes": 80523264,
+      "reserved_vram_peak_bytes": 102760448
+    }
+  ],
+  "process_seconds": 246.00698547402862,
+  "process_peak_rss_bytes": 1596268544,
+  "scope": "Fixtures con precios replicados y etiquetas manuales. Una apertura, calentamiento, tres emisiones, dos recepciones de resultados, cierre censurado, escritura sellada, poda, lectura de una traza antigua y recuperación. Los dos brazos comparten contexto PT4, calibración PT2, memoria, parámetros del tronco y archivo. Solo el segundo añade fusión regional en anillo. Incluye las transferencias durante cada sesión. Construcción fuera de las latencias y dentro del proceso. No incluye codificadores externos, corpus real o aprendizaje. Orden fijo y percentiles empíricos, sin energía medida.",
+  "sources": {
+    "reports/engineering/regional-fusion-20261021/session_benchmark.py": "205a8e4a2cd3a173d32a52f6b6ba5f2ee90b3b1521f4f19f93930b3fd4159922",
+    "reports/engineering/mechanism-session-20261021/benchmark.py": "3cd54926c7a12b33ba90eaea9b4c4d5a0444ce2727b2a145edd497de63f8c3bf",
+    "src/mars_titan/models/titans/regional_fusion.py": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+    "src/mars_titan/models/titans/financial.py": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "207467e8ae18193f18db8130782fc7df50b6bc227013ac27fac210aa94c2abeb",
+    "src/mars_titan/memory/financial_mechanisms.py": "cbf2dd14b020c410089b22e177f36f0f0c29f6b7b88c90278a127ad0cbb39104",
+    "src/mars_titan/memory/financial_session.py": "4314fa93038fe912c8e9172810fe5bfa83f9898977eaf4b53841ce5c7266ecfc",
+    "tests/memory/test_regional_fusion_session.py": "6961df3298189c492661b0e43f94f3a32b321e238c007824e8358bcb4e864976",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042"
+  }
+}
