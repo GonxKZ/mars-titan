@@ -90,7 +90,8 @@ def trajectory(native, source, engine, output):
             (127, "decision"),
             (128, "decision"),
         ):
-            labels = [native.Feedback(value.id, 0, moment(index), 0.125) for value in prior]
+            available_at = source["batches"][index][0].prediction_at[0]
+            labels = [native.Feedback(value.id, 0, available_at, 0.125) for value in prior]
             before = time.perf_counter_ns()
             result = run.step(source["batches"][index], labels, kind=kind)
             torch.cuda.synchronize(0)
@@ -98,7 +99,7 @@ def trajectory(native, source, engine, output):
             prior = result.predictions
             predictions.extend((value.asset, value.decision_at, value.value) for value in prior)
         before = time.perf_counter_ns()
-        run.step([], [], kind="settlement", cutoff=moment(131), close_phase=True)
+        run.step([], [], kind="settlement", cutoff=options["phase"].close_at, close_phase=True)
         torch.cuda.synchronize(0)
         times["close_phase"] = (time.perf_counter_ns() - before) / 1e6
         expected = run.snapshot()
@@ -201,6 +202,9 @@ def main():
                     dict(
                         rows=rows,
                         kind=kind,
+                        model_id=engine.model_id,
+                        consumer_identity=engine.identity(),
+                        prefix_policy_id=source["prefixes"].policy_id,
                         samples_ms=samples,
                         **{f"p{p}_ms": float(np.percentile(totals, p)) for p in (50, 95, 99)},
                         mean_ms=float(np.mean(totals)),
@@ -212,6 +216,7 @@ def main():
                         reserved_vram_peak_bytes=torch.cuda.max_memory_reserved(0),
                     )
                 )
+                print(json.dumps(dict(rows=rows, kind=kind, completed=True)), flush=True)
     report["process_seconds"] = time.perf_counter() - started
     report["process_peak_rss_bytes"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
     report["scope"] = (
@@ -230,6 +235,8 @@ def main():
             ROOT / "src/mars_titan/memory/financial_mechanisms.py",
             ROOT / "src/mars_titan/memory/financial_session.py",
             ROOT / "src/mars_titan/memory/financial_consumers.py",
+            ROOT / "src/mars_titan/models/titans/frozen_financial.py",
+            ROOT / "src/mars_titan/models/titans/mechanism_consumer.py",
             ROOT / "tests/memory/test_financial_mechanisms.py",
             ROOT / "tests/memory/test_financial_session_controls.py",
         )
