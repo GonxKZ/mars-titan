@@ -25,6 +25,8 @@ $$
 
 Esta media es la proyección ortogonal para el producto de Frobenius entre las tres tuplas de matrices. Con P = 11ᵀ/3, Pᵀ = P y P² = P. Por tanto, la descomposición G = PG + (I − P)G separa las componentes común y diferencial y satisface la identidad de Pitágoras. Es una propiedad algebraica, no una certificación de la aritmética de coma flotante ni una garantía predictiva.
 
+La proyección puede reducir o anular la norma del gradiente. Mantener θ igual no iguala la norma total de escritura. Esa diferencia forma parte de este contraste y debe registrarse al estudiar utilidad. Aislar dirección y tamaño del paso requeriría otro control declarado, con una regla propia cuando la proyección sea cero. No se ha añadido una normalización para obtener un resultado favorable.
+
 En cada capa se aplica:
 
 $$
