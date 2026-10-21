@@ -1,0 +1,35 @@
+{
+  "reference": {
+    "cases": 66,
+    "mode": "capture",
+    "code_commit": "436aeec5813643a2ea19168be546bcf0e91167dd",
+    "producer_sha256": "5832a1a7f2e04779c85c8aa0cd639c011ba3aefdfbe688b642303ce33774f5e8",
+    "reference_sha256": null,
+    "comparison": "Todos los campos y valores exactos salvo producer_sha256. Las huellas exteriores cambian porque incluyen esa procedencia.",
+    "real_data_used": false,
+    "optimizer_steps": 0
+  },
+  "reference_artifact_sha256": "72caf81800f692a26e336b81146e7c45f041d698a3027262e3a2c8b9434ee652",
+  "candidates": {
+    "16": {
+      "cases": 66,
+      "mode": "verify",
+      "code_commit": "436aeec5813643a2ea19168be546bcf0e91167dd",
+      "producer_sha256": "c6b2968d7e256a39e7c47db1e22b4f61c8745b34af22f1640158247d40d97c86",
+      "reference_sha256": "72caf81800f692a26e336b81146e7c45f041d698a3027262e3a2c8b9434ee652",
+      "comparison": "Todos los campos y valores exactos salvo producer_sha256. Las huellas exteriores cambian porque incluyen esa procedencia.",
+      "real_data_used": false,
+      "optimizer_steps": 0
+    },
+    "64": {
+      "cases": 66,
+      "mode": "verify",
+      "code_commit": "436aeec5813643a2ea19168be546bcf0e91167dd",
+      "producer_sha256": "9e2416feb6747443a0495e70b6d8f67a62ca6502379a3dbb2ccf2ac0e8a87ae8",
+      "reference_sha256": "72caf81800f692a26e336b81146e7c45f041d698a3027262e3a2c8b9434ee652",
+      "comparison": "Todos los campos y valores exactos salvo producer_sha256. Las huellas exteriores cambian porque incluyen esa procedencia.",
+      "real_data_used": false,
+      "optimizer_steps": 0
+    }
+  }
+}

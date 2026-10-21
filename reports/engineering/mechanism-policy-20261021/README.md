@@ -2,6 +2,8 @@
 
 `b19d064a0` añade el cálculo de utilidades sobre las 36 combinaciones de contexto, ruta y calibración de [#701](https://github.com/GonxKZ/mars-titan/issues/701). Sus coeficientes están dados, no ajustados. Este incremento no conecta todavía el selector a `FinancialSession`, no extrae observaciones del corpus y no cambia la ruta por defecto. No constituye un controlador entrenado ni una mejora predictiva medida.
 
+El [incremento posterior del extractor](../mechanism-observations-20261021/README.md) calcula los rasgos desde entradas admitidas y conserva su procedencia. Su evidencia es independiente de la selección numérica descrita aquí. El enlace automático y el ajuste siguen pendientes.
+
 ## Decisión y objetivos
 
 [`MechanismPolicy`](../../../src/mars_titan/models/titans/mechanism_policy.py) recibe uno o dos vectores de 21 rasgos y una máscara de admisibilidad por cohorte de mercado. El esquema declara una decisión anterior a MAC. Sus nombres reservan presencia y magnitud de las cinco fuentes, edad de las entradas, tamaño del banco, contexto anterior y calibración. La extracción y la comprobación temporal de esos valores siguen pendientes. Recibir un tensor con esa forma no demuestra que proceda del prefijo permitido. Tampoco calcular una máscara acredita que se hayan aplicado las precondiciones del catálogo. Esa integración debe comprobarse por separado.

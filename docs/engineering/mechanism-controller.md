@@ -2,7 +2,7 @@
 
 La integración de un controlador de mecanismos sigue en curso en [#701](https://github.com/GonxKZ/mars-titan/issues/701). Están implementados el acumulador de feedback de PT2, un catálogo finito, el consumidor que combina contexto PT4, rutas episódicas y calibración y su enlace durable con `FinancialSession` para M0/M1. Las acciones son controles fijos. Faltan el selector aprendido y sus contrastes predictivos. Las variantes por defecto no cambian.
 
-El [núcleo de utilidades](../../reports/engineering/mechanism-policy-20261021/README.md) añade selección numérica entre las 36 combinaciones con coeficientes dados y objetivos puntuales y de intervalos separados. Todavía no se conecta al consumidor ni extrae las observaciones del prefijo. Sus comprobaciones CPU/CUDA, cobertura, CRAP y mutación no acreditan esa integración ni un selector entrenado. La ejecución financiera sigue usando las acciones fijas descritas a continuación.
+El [núcleo de utilidades](../../reports/engineering/mechanism-policy-20261021/README.md) añade selección numérica entre las 36 combinaciones con coeficientes dados y objetivos puntuales y de intervalos separados. El [extractor de observaciones](../../reports/engineering/mechanism-observations-20261021/README.md) calcula y sella sus 21 rasgos desde las filas admitidas y el snapshot anterior, sin consultar supervisión. Se ha comprobado explícitamente con fixtures y recuperación CPU/CUDA. Todavía no se conectan automáticamente al consumidor. Las pruebas, cobertura, CRAP, mutación y medidas de coste no acreditan un selector entrenado. La ejecución financiera sigue usando las acciones fijas descritas a continuación.
 
 ## Catálogo y momentos de ejecución
 
