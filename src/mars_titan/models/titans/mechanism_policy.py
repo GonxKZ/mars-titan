@@ -50,6 +50,7 @@ class MechanismChoice:
     interval_gains: torch.Tensor
     supported: torch.Tensor
     available: torch.Tensor
+    standardized: torch.Tensor
 
 
 class MechanismPolicy(nn.Module):
@@ -213,4 +214,6 @@ class MechanismPolicy(nn.Module):
             candidates = torch.where(available, scores, torch.full_like(scores, -torch.inf))
             choices = candidates.argmax(-1)
             choices = torch.where(supported, choices, torch.zeros_like(choices))
-        return MechanismChoice(choices, scores, point, interval, supported, available.clone())
+        return MechanismChoice(
+            choices, scores, point, interval, supported, available.clone(), standardized
+        )

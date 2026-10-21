@@ -13,8 +13,9 @@ from mars_titan.calibration.cohort_feedback import CohortOutcome
 from mars_titan.models.quantile_head import LEVELS
 from mars_titan.models.titans.config import bounded_integer, canonical
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
+from mars_titan.models.titans.mechanism_selection import check_trace
 
-from . import mechanism_history
+from . import mechanism_history, mechanism_observations
 from .financial_consumers import TitansBinding
 from .mechanism_history import MechanismHistory, MechanismHistoryConfig
 
@@ -70,12 +71,20 @@ class MechanismBinding(TitansBinding):
         self.max_batch = consumer.max_batch
 
     def code(self):
-        return dict(
+        result = dict(
             financial_mechanisms=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             mechanism_history=hashlib.sha256(
                 Path(mechanism_history.__file__).read_bytes()
             ).hexdigest(),
         )
+        if self.consumer.policy is not None:
+            result["mechanism_observations"] = hashlib.sha256(
+                Path(mechanism_observations.__file__).read_bytes()
+            ).hexdigest()
+        return result
+
+    def _trace_fields(self):
+        return TRACE_FIELDS + (("selection",) if self.consumer.policy is not None else ())
 
     @staticmethod
     def configuration(config):
@@ -112,7 +121,7 @@ class MechanismBinding(TitansBinding):
         )
 
     def settlement_control(self):
-        return dict(
+        result = dict(
             observations=0,
             mac_updates=0,
             refinements=0,
@@ -133,6 +142,9 @@ class MechanismBinding(TitansBinding):
                 context_updates_proposed=0,
             ),
         )
+        if self.consumer.policy is not None:
+            result["selection"] = None
+        return result
 
     def prepare_event(
         self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows, auxiliary
@@ -145,6 +157,17 @@ class MechanismBinding(TitansBinding):
                 session.prefixes.expected_maturity(row.flow_id, row.prediction_at) for row in rows
             )
         )
+        selection = {}
+        if self.consumer.policy is not None and not warmup:
+            selection["observation"] = mechanism_observations.extract_observation(
+                rows,
+                consumer=self.consumer,
+                state=auxiliary,
+                flow_ids=flows,
+                cutoff=rows[0].prediction_at,
+                context_id=context_id,
+                snapshot=snapshot,
+            )
         event = self.consumer.begin(
             auxiliary,
             flow_ids=flows,
@@ -153,6 +176,7 @@ class MechanismBinding(TitansBinding):
             matures_at=maturity,
             snapshot=snapshot,
             warmup=warmup,
+            **selection,
         )
         model = self.consumer.predictor
         for start in range(0, len(rows), batch_rows):
@@ -209,6 +233,10 @@ class MechanismBinding(TitansBinding):
             work=work,
             auxiliary=self.consumer.export_state(emission.state),
         )
+        if self.consumer.policy is not None:
+            control["selection"] = (
+                json.loads(emission.selection_json) if emission.selection_json is not None else None
+            )
         aligned = (
             dict(zip(emission.flow_ids, emission.point_predictions, strict=True))
             if not warmup
@@ -336,7 +364,7 @@ class MechanismBinding(TitansBinding):
                 auxiliary, at=bundle["cutoff"], evidence_sha256=digest
             )
         reference = session._stage(self.consumer.export_state(auxiliary), "mechanisms")
-        payload = {name: control[name] for name in TRACE_FIELDS}
+        payload = {name: control[name] for name in self._trace_fields()}
         payload.update(
             auxiliary_sha256=reference["sha256"],
             feedback_watermark=watermark,
@@ -394,6 +422,25 @@ class MechanismBinding(TitansBinding):
             ):
                 raise ValueError("El punto archivado no es la predicción nativa emitida")
         self._check_quantiles(control)
+        if self.consumer.policy is not None:
+            trace = control.get("selection")
+            if warmup or not rows:
+                if trace is not None:
+                    raise ValueError("El calentamiento y settlement no eligen mecanismos")
+            else:
+                check_trace(
+                    self.consumer,
+                    trace,
+                    rows=rows,
+                    cutoff=cutoff,
+                    context_id=control["context_id"],
+                    snapshot_sha256=control["snapshot_sha256"],
+                )
+                if (
+                    trace["observation"]["observation"]["producer_sha256"]
+                    != self.code()["mechanism_observations"]
+                ):
+                    raise ValueError("La observación procede de otro extractor")
 
     @staticmethod
     def _check_quantiles(control):
@@ -428,9 +475,9 @@ class MechanismBinding(TitansBinding):
             if row["calibration"] == "none" and row["quantiles"] != row["raw_quantiles"]:
                 raise ValueError("La ruta sin calibración cambió sus cuantiles")
 
-    @staticmethod
-    def _check_payload(payload, record):
-        if type(payload) is not dict or set(payload) != PAYLOAD_FIELDS:
+    def _check_payload(self, payload, record):
+        fields = PAYLOAD_FIELDS | ({"selection"} if self.consumer.policy is not None else set())
+        if type(payload) is not dict or set(payload) != fields:
             raise ValueError("El archivo no conserva el esquema de la traza financiera")
         expected_watermark = (
             None if record["event_kind"] == "warmup" else min(record["cutoff"], FINAL_TEST_US - 1)
@@ -468,7 +515,7 @@ class MechanismBinding(TitansBinding):
         if (
             event["native_record_sha256"] != digest
             or payload["auxiliary_sha256"] != bundle["mechanisms"]["sha256"]
-            or any(payload[name] != control[name] for name in TRACE_FIELDS)
+            or any(payload[name] != control[name] for name in self._trace_fields())
             or payload["phase_closed"] != (auxiliary.terminal is not None)
         ):
             raise ValueError("El archivo contradice la emisión o el estado auxiliar confirmado")

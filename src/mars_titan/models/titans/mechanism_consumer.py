@@ -35,6 +35,7 @@ from .mechanism_event import (
     frozen_array,
     frozen_row,
 )
+from .mechanism_selection import policy_signature, select
 from .refinement_policy import _output
 from .refinement_routes import run_route_pair
 from .session_context import SessionContextState
@@ -53,10 +54,19 @@ _SOURCES = (
 )
 
 
-def _code():
+def _code(*, policy=False):
+    sources = _SOURCES + (
+        (
+            "mars_titan.models.titans.mechanism_policy",
+            "mars_titan.models.titans.mechanism_selection",
+            "mars_titan.models.titans.mechanism_observation",
+        )
+        if policy
+        else ()
+    )
     return _implementation() | {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
-        for name in _SOURCES
+        for name in sources
     }
 
 
@@ -104,9 +114,12 @@ class FrozenMechanismConsumer:
         calibration=None,
         action=None,
         catalog=None,
+        policy=None,
     ):
         if type(self) is not FrozenMechanismConsumer or type(predictor) is not FinancialPredictor:
             raise ValueError("El consumidor necesita un predictor financiero identificado")
+        if policy is not None and action is not None:
+            raise ValueError("La acción fija y el selector son modos excluyentes")
         action = MechanismAction() if action is None else action
         catalog = MechanismCatalog() if catalog is None else catalog
         if type(action) is not MechanismAction or type(catalog) is not MechanismCatalog:
@@ -131,6 +144,16 @@ class FrozenMechanismConsumer:
             action,
             catalog,
         )
+        self.policy = policy
+        self._policy_ref = policy
+        self._policy_signature, self._policy_identity = (
+            policy_signature(policy, strong=True) if policy is not None else (None, None)
+        )
+        if policy is not None and (
+            type(predictor.head) is not QuantileHead
+            or policy.mean.device != predictor.head.weight.device
+        ):
+            raise ValueError("El selector necesita cuantiles y el dispositivo del predictor")
         self.max_batch = min(
             predictor.config.max_batch,
             readout.config.max_batch if readout else predictor.config.max_batch,
@@ -145,7 +168,11 @@ class FrozenMechanismConsumer:
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
         predictor.verify_parameter_identity()
-        self._reader_id, self._code, self._flags = _reader_digest(readout), _code(), _numerics()
+        self._reader_id, self._code, self._flags = (
+            _reader_digest(readout),
+            _code(policy=policy is not None),
+            _numerics(),
+        )
         self._identity = dict(
             schema_version=1,
             recipe="frozen_mechanism_cohort_proposals_v1",
@@ -162,10 +189,12 @@ class FrozenMechanismConsumer:
             modules=modes,
             online_policy="only_cohorts_emitted_online_predict_all_then_feedback_v1",
             phase_end="archive_censored_pending_without_maturity_or_cross_phase_reuse",
-            fixed_controls=True,
+            fixed_controls=policy is None,
             new_learned_selector=False,
             planning_batch=self.max_batch,
         )
+        if policy is not None:
+            self._identity["selector"] = self._policy_identity
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -182,8 +211,15 @@ class FrozenMechanismConsumer:
             or self.max_batch != self._identity["planning_batch"]
             or self.predictor is not self._models[0][1]
             or self.readout is not (self._models[1][1] if len(self._models) > 1 else None)
+            or self.policy is not self._policy_ref
         ):
             raise ValueError("El consumidor cambió sus componentes o su plan de ejecución")
+        if self.policy is not None:
+            signature, identity = policy_signature(self.policy, strong=strong)
+            if signature != self._policy_signature or (
+                strong and identity != self._policy_identity
+            ):
+                raise ValueError("El selector cambió respecto a su identidad congelada")
         signature, _ = _execution_signature(self._models)
         if (
             signature != self._signature
@@ -209,7 +245,10 @@ class FrozenMechanismConsumer:
             ):
                 raise ValueError("El calibrador estático cambió respecto de su identidad")
             self.predictor.verify_parameter_identity()
-            if _reader_digest(self.readout) != self._reader_id or _code() != self._code:
+            if (
+                _reader_digest(self.readout) != self._reader_id
+                or _code(policy=self.policy is not None) != self._code
+            ):
                 raise ValueError("El código o los parámetros cambiaron durante la cohorte")
 
     def initial_state(self):
@@ -272,11 +311,16 @@ class FrozenMechanismConsumer:
         action=None,
         snapshot=None,
         warmup=False,
+        observation=None,
     ):
         self.verify()
         self._check_state(state)
         cutoff = _instant(cutoff, "La decisión de mecanismos")
         _proof(context_id)
+        if self.policy is not None and action is not None:
+            raise ValueError("La selección automática no admite una acción de control explícita")
+        if observation is not None and (self.policy is None or warmup):
+            raise ValueError("La observación de selección solo se admite en decisiones automáticas")
         action = self.action if action is None else action
         if type(action) is not MechanismAction or type(warmup) is not bool:
             raise ValueError("La cohorte necesita una acción y modo explícitos")
@@ -348,7 +392,7 @@ class FrozenMechanismConsumer:
             online_rows = sum(flow.split("/", 1)[0] in eligible_groups for flow in flows)
             if payload["max_rows"] < online_rows + state.calibration.pending_rows:
                 available_online = dict.fromkeys(groups, False)
-        plans = []
+        plans, availabilities = [], {}
         for group in groups:
             rows = sum(flow.startswith(group + "/") for flow in flows)
             availability = MechanismAvailability(
@@ -365,6 +409,19 @@ class FrozenMechanismConsumer:
             )
             resolved = self.catalog.resolve(action, availability, rows=rows)
             plans.append((group, resolved))
+            availabilities[group] = availability
+        selection_json = None
+        if self.policy is not None and not warmup:
+            plans, selection_json = select(
+                self,
+                observation,
+                state=state,
+                flows=flows,
+                cutoff=cutoff,
+                context_id=context_id,
+                snapshot=snapshot,
+                availability=availabilities,
+            )
         return MechanismEvent(
             self.model_id,
             context_id,
@@ -376,6 +433,7 @@ class FrozenMechanismConsumer:
             state.calibration,
             snapshot,
             warmup,
+            selection_json=selection_json,
         )
 
     def prepare(self, batch, state, event):
@@ -558,6 +616,7 @@ class FrozenMechanismConsumer:
             frozen_array(raw) if raw is not None else None,
             tuple(frozen_row(**row) for row in rows),
             frozen_row(**work),
+            selection_json=event.selection_json,
         )
 
     def feedback(self, state, outcomes, *, at, settlement=False):

@@ -32,6 +32,7 @@ class MechanismEvent:
     snapshot: object
     warmup: bool
     rows: tuple = ()
+    selection_json: str | None = None
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class MechanismEmission:
     rows: tuple
     work: object
     publication_status: str = "proposed_not_durable"
+    selection_json: str | None = None
 
 
 def frozen_array(values):
