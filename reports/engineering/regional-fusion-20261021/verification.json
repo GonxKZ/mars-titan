@@ -244,6 +244,16 @@
       "cases": 8,
       "passed": 8
     },
-    "source_revision": "source-revision.json"
+    "source_revision": "source-revision.json",
+    "repository_after_hold_mutations": "Verificados 3282 archivos, 361 referencias y 64 tareas."
+  },
+  "hold_count_mutations": {
+    "receipt": "hold-mutations.json",
+    "mutations": 3,
+    "killed": 3,
+    "baseline_passed": 1,
+    "restored_passed": 1,
+    "errors": 0,
+    "skipped": 0
   }
 }
