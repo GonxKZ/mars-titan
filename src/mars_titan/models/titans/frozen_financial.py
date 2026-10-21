@@ -142,6 +142,8 @@ def _execution_signature(models):
     ):
         raise ValueError("El consumidor no admite hooks globales")
     signatures, modes = [], {}
+    # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
+    class_methods = {}
     for prefix, model in models:
         for name, module in model.named_modules():
             kind = type(module)
@@ -168,10 +170,12 @@ def _execution_signature(models):
                         raise ValueError("El consumidor no admite hooks adicionales")
                 if callable(hooks) and hasattr(kind, attribute):
                     raise ValueError("El consumidor no admite métodos sustituidos en una instancia")
-            methods = tuple(
-                (key, id(value), id(getattr(value, "__code__", None)))
-                for key, value in inspect.getmembers(kind, inspect.isfunction)
-            )
+            if kind not in class_methods:
+                class_methods[kind] = tuple(
+                    (key, id(value), id(getattr(value, "__code__", None)))
+                    for key, value in inspect.getmembers(kind, inspect.isfunction)
+                )
+            methods = class_methods[kind]
             qualified = prefix + "/" + name
             settings = _module_settings(module)
             try:
