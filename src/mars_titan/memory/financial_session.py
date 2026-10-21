@@ -38,6 +38,8 @@ from .episodic_session import (
     _row_key,
 )
 from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, THREE_INDEX, bind_consumer
+from .financial_mechanisms import FIELDS as MECHANISM_FIELDS
+from .financial_mechanisms import MechanismBinding
 from .regimes import SLOTS
 from .session_artifacts import SessionArtifacts
 
@@ -63,6 +65,7 @@ def _binding_signature(binding):
     if kind not in (
         financial_consumers.TitansBinding,
         financial_consumers.CandidateBinding,
+        MechanismBinding,
     ) or any(name in vars(binding) for name, _ in methods):
         raise ValueError("El enlace del consumidor no admite tipos o métodos sustituidos")
     return kind, tuple((name, id(function.__code__)) for name, function in methods)
@@ -83,6 +86,7 @@ def _check_callbacks(instance):
         instance.block_rows,
         instance.admission,
         instance.max_input_blocks,
+        instance._history_config.fingerprint() if instance._history_config is not None else None,
     )
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
@@ -151,6 +155,7 @@ class FinancialSession(EpisodicSession):
         max_log_bytes=16 * 1024**3,
         resume=False,
         associative=None,
+        mechanism_history=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -160,6 +165,11 @@ class FinancialSession(EpisodicSession):
         ):
             raise ValueError(ADMISSION_ERROR)
         binding = bind_consumer(consumer, codec, retention, admission)
+        if type(binding) is MechanismBinding:
+            mechanism_history = binding.configuration(mechanism_history)
+        elif mechanism_history is not None:
+            raise ValueError("Solo el consumidor de mecanismos admite su archivo histórico")
+        self._history_config = mechanism_history
         if associative is not None and (
             type(associative) is not MatureCorrection
             or binding.kind != "titans_mac"
@@ -237,6 +247,13 @@ class FinancialSession(EpisodicSession):
         # Sin B6 el contrato no cambia. Con B6 la generación guarda A y el núcleo pendiente.
         if associative is not None:
             contract["associative"] = associative.identity()
+        if type(binding) is MechanismBinding:
+            contract["mechanisms"] = dict(
+                history=mechanism_history.identity(),
+                event_order="predict_all_then_feedback_v1",
+                final_feedback_watermark="exclusive_development_end_minus_one_microsecond",
+                administrative_finalizations="archive_without_fabricated_labels",
+            )
         self.contract_id = _digest(contract)
         self._callback_versions = _callback_signature(self)
         self._runtime_contract = (
@@ -248,6 +265,7 @@ class FinancialSession(EpisodicSession):
             block_rows,
             admission,
             max_input_blocks,
+            mechanism_history.fingerprint() if mechanism_history is not None else None,
         )
         self._prototype = binding.bank(
             native,
@@ -261,6 +279,8 @@ class FinancialSession(EpisodicSession):
             native, self.output / "artifacts", max_files=1024, max_total_bytes=2 * 1024**3
         )
         self._fast_store = binding.state_store(self.artifacts, self.contract_id)
+        if type(binding) is MechanismBinding:
+            binding.initialize(self, mechanism_history)
         definition = native.Definition()
         identity = native.Identity()
         identity.source_sha256, identity.view_sha256 = (
@@ -317,6 +337,8 @@ class FinancialSession(EpisodicSession):
         }
         if self.associative is not None:
             fields.add("associative")
+        if type(self._binding) is MechanismBinding:
+            fields.update(MECHANISM_FIELDS)
         if (
             not isinstance(value, dict)
             or set(value) != fields
@@ -425,6 +447,20 @@ class FinancialSession(EpisodicSession):
     def fast_state(self):
         return self._fast(self._bundle(self.snapshot()["state"]))
 
+    def mechanism_state(self):
+        _check_callbacks(self)
+        if type(self._binding) is not MechanismBinding:
+            raise ValueError("Esta sesión no tiene un consumidor de mecanismos")
+        bundle = self._bundle(self.snapshot()["state"])
+        return self.consumer.export_state(self._binding.restore(self, bundle))
+
+    def mechanism_event(self, generation):
+        _check_callbacks(self)
+        if type(self._binding) is not MechanismBinding:
+            raise ValueError("Esta sesión no tiene un archivo de mecanismos")
+        self.consumer.verify()
+        return self._binding.read_event(self, self._bundle(self.snapshot()["state"]), generation)
+
     def step(
         self,
         batches,
@@ -488,13 +524,16 @@ class FinancialSession(EpisodicSession):
             for proof in proofs
             if proof.reason is not None
         ]
+        before = self.snapshot()
         self._inflight = dict(
             rows=rows,
             kind=kind,
             cutoff=cutoff,
             proofs=proofs,
-            before_observed=self.snapshot()["observed"],
+            before_observed=before["observed"],
         )
+        if type(self._binding) is MechanismBinding:
+            self._inflight.update(close_phase=close_phase, mechanism_before=before)
 
         def guarded(boundary):
             if fault is not None:
@@ -566,6 +605,9 @@ class FinancialSession(EpisodicSession):
         )
         warmup = kind == self.native.EventKind.warmup
         snapshot = None if warmup else self._binding.snapshot(bank, context_id, cutoff)
+        options = {}
+        if type(self._binding) is MechanismBinding:
+            options["auxiliary"] = self._binding.restore(self, bundle)
         values, fast, control = self._binding.prepare_event(
             self,
             rows,
@@ -574,6 +616,7 @@ class FinancialSession(EpisodicSession):
             context_id=context_id,
             warmup=warmup,
             batch_rows=batch_rows,
+            **options,
         )
         self.consumer.verify()
         pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
@@ -612,7 +655,16 @@ class FinancialSession(EpisodicSession):
                 values = [v + c for v, c in zip(values, corrections, strict=True)]
         if not warmup:
             pending = self._append_pending(pending, rows)
+        extra = {}
+        if type(self._binding) is MechanismBinding:
+            extra = dict(
+                mechanisms=self._stage(control.pop("auxiliary"), "mechanisms"),
+                mechanism_history=bundle["mechanism_history"]
+                if bundle
+                else self._binding.history.empty(),
+            )
         proposal = dict(
+            **extra,
             generation=state["generation"] + 1,
             cutoff=cutoff,
             bank=bundle["bank"] if bundle else None,
@@ -667,6 +719,8 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if type(self._binding) is MechanismBinding:
+            extra.update(self._binding.previous(self, bundle))
         if self.associative is not None:
             extra["associative"] = (
                 self._stage_associative(*self._associative_state(None))
@@ -684,7 +738,9 @@ class FinancialSession(EpisodicSession):
             current_inputs=[],
             prefix=self._stage([], "prefix"),
             control=self._stage(
-                dict(
+                self._binding.settlement_control()
+                if type(self._binding) is MechanismBinding
+                else dict(
                     observations=0,
                     mac_updates=0,
                     refinements=0,
@@ -702,6 +758,7 @@ class FinancialSession(EpisodicSession):
         bank, episodes = self._bank(proposed["bank"])
         pending = self._read(proposed["pending"], "pending")
         self._check_queue(pending, maximum=40960)
+        mechanism_rows = pending["rows"] if type(self._binding) is MechanismBinding else None
         positions = {_row_key(row): i for i, row in enumerate(pending["rows"])}
         admitted, removed = [], set()
         for item in outcomes:
@@ -808,6 +865,10 @@ class FinancialSession(EpisodicSession):
                 core.index_select(0, indexes),
                 routes.index_select(0, indexes) if routes is not None else None,
             )
+        if type(self._binding) is MechanismBinding:
+            bundle = self._binding.resolve(
+                self, bundle, mechanism_rows, outcomes, excluded, finalized
+            )
         self._verify_bundle(bundle)
         self.consumer.verify()
         self._proposal = bundle
@@ -876,6 +937,7 @@ class FinancialSession(EpisodicSession):
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
+        mechanism_observations = [] if type(self._binding) is MechanismBinding else None
         for reference in bundle["current_inputs"]:
             rows = self._input_rows(reference)
             if any(row.prediction_at != bundle["cutoff"] for row in rows):
@@ -895,6 +957,8 @@ class FinancialSession(EpisodicSession):
                         "Las observaciones no corresponden al cursor rápido o a su presupuesto"
                     )
                 observed.append(row.flow_id)
+                if mechanism_observations is not None:
+                    mechanism_observations.append(row.metadata())
         if observed != sorted(set(observed)):
             raise ValueError("Las observaciones confirmadas repiten o desordenan un flujo")
         proofs = self._read(bundle["prefix"], "prefix")
@@ -917,6 +981,8 @@ class FinancialSession(EpisodicSession):
             or (seen and seen != set(observed))
         ):
             raise ValueError("Las evidencias y el control no concilian con las observaciones")
+        if type(self._binding) is MechanismBinding:
+            self._binding.verify(self, bundle, mechanism_observations)
 
     def _check_observed(self, bundle, observed):
         fast = self._read(bundle["fast"], "fast")
@@ -934,6 +1000,16 @@ class FinancialSession(EpisodicSession):
         self._verify_bundle(bundle)
         self._check_observed(bundle, snapshot["observed"])
         record = json.loads(self._executor.record_json(snapshot["cursor"]))
+        if type(self._binding) is MechanismBinding:
+            event = self._binding.history.read_event(
+                bundle["mechanism_history"], snapshot["cursor"]
+            )
+            auxiliary = self._binding.restore(self, bundle)
+            if (
+                event["native_record_sha256"] != snapshot["record_sha256"]
+                or (auxiliary.terminal is not None) != snapshot["phase_closed"]
+            ):
+                raise ValueError("El archivo de mecanismos no concilia con el checkpoint nativo")
         control = self._read(bundle["control"], "control")
         proofs = [PrefixEvidence(**raw) for raw in self._read(bundle["prefix"], "prefix")]
         if record["observations_count"] != control["observations"] or len(proofs) != (
@@ -982,6 +1058,8 @@ class FinancialSession(EpisodicSession):
             names = ("bank", "pending", "fast", "prefix", "control")
             if self.associative is not None:
                 names += ("associative",)
+            if type(self._binding) is MechanismBinding:
+                names += ("mechanisms",)
             live = [
                 state["bundle"],
                 *(bundle[name] for name in names),
@@ -989,6 +1067,8 @@ class FinancialSession(EpisodicSession):
                 *bundle["current_inputs"],
                 *self._fast_store.live_references(self._read(bundle["fast"], "fast")),
             ]
+            if type(self._binding) is MechanismBinding:
+                live.extend(self._binding.history.live_references(bundle["mechanism_history"]))
             for reference in live:
                 previous = references.get(reference["name"])
                 if previous is not None and previous != reference:

@@ -396,4 +396,10 @@ def bind_consumer(consumer, codec, retention, admission):
         return TitansBinding(consumer, codec, retention, admission)
     if type(consumer) is FrozenCandidateConsumer:
         return CandidateBinding(consumer, codec, retention, admission)
+    from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
+
+    if type(consumer) is FrozenMechanismConsumer:
+        from .financial_mechanisms import MechanismBinding
+
+        return MechanismBinding(consumer, codec, retention, admission)
     raise ValueError(ADMISSION_ERROR)
