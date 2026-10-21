@@ -10,18 +10,25 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize("script", ["benchmark.py", "session_benchmark.py"])
+@pytest.mark.parametrize(
+    "script",
+    [
+        "regional-fusion-20261021/benchmark.py",
+        "regional-fusion-20261021/session_benchmark.py",
+        "mechanism-observations-20261021/benchmark.py",
+    ],
+)
 @pytest.mark.parametrize("fault", ["warmup", "repetitions", "duplicate_rows", "parent"])
 def test_invalid_resource_requests_fail_before_selecting_a_device(
     tmp_path, monkeypatch, script, fault
 ):
-    path = ROOT / "reports/engineering/regional-fusion-20261021" / script
+    path = ROOT / "reports/engineering" / script
     spec = importlib.util.spec_from_file_location("regional_cost_arguments", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     output = tmp_path / ("missing/result.json" if fault == "parent" else "result.json")
     arguments = [str(path), "--output", str(output), "--rows", "64"]
-    if script == "session_benchmark.py":
+    if path.name == "session_benchmark.py":
         arguments += ["--storage-root", str(tmp_path)]
     if fault == "warmup":
         arguments += ["--warmup", "17"]
