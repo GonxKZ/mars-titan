@@ -496,3 +496,60 @@ def test_reader_admission_uses_the_logical_event_instead_of_physical_blocks(devi
     assert [
         {key: value for key, value in row.items() if key not in numerical} for row in complete.rows
     ] == [{key: value for key, value in row.items() if key not in numerical} for row in split.rows]
+
+
+def test_emission_that_fits_json_but_not_feedback_reserve_returns_without_losing_created_work():
+    engine = consumer(
+        calibrator=calibration(max_bytes=4096), action=MechanismAction(calibration="online")
+    )
+    result, _ = execute(
+        engine, engine.initial_state(), flows=tuple(f"US/A{i:03d}" for i in range(8))
+    )
+    assert result.work["online_created_proposals"] == 1
+    assert result.work["online_discarded_proposals"] == 1
+    assert result.work["online_selected_proposals"] == 0
+    assert result.state.calibration.pending_rows == 0
+    assert all("pending_calibration_bytes" in row["reasons"] for row in result.rows)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        dict(warmup=1),
+        dict(matures_at=[1_609_459_200_000_010]),
+        dict(matures_at=(1_609_459_200_000_000,)),
+        dict(matures_at=(1_609_459_199_999_999,)),
+        dict(context_id="unknown"),
+        dict(cutoff=1_704_067_200_000_000),
+        dict(flow_ids=()),
+        dict(flow_ids=("US/A",) * 8193),
+        dict(warmup=True),
+    ],
+)
+def test_bad_cohort_contracts_do_not_create_auxiliary_state_or_fallbacks(changes):
+    engine = consumer(calibrator=calibration())
+    initial = engine.initial_state()
+    before = initial.calibration.state_sha256()
+    arguments = (
+        dict(
+            flow_ids=("US/A",),
+            cutoff=1_609_459_200_000_000,
+            context_id=CONTEXT,
+            matures_at=(1_609_459_200_000_010,),
+        )
+        | changes
+    )
+    with pytest.raises(ValueError):
+        engine.begin(initial, **arguments)
+    assert initial.cutoff is None and initial.calibration.state_sha256() == before
+
+
+def test_closed_archive_cannot_forge_its_censored_count_or_advance_the_calibration_clock():
+    engine = consumer(calibrator=calibration(), action=MechanismAction(calibration="online"))
+    result, _ = execute(engine, engine.initial_state())
+    closed = engine.close_phase(result.state, at=result.state.cutoff + 1, evidence_sha256="d" * 64)
+    payload = engine.export_state(closed)
+    assert payload["calibration"]["clock"] == result.state.cutoff
+    payload["terminal"]["censored_rows"] = 0
+    with pytest.raises(ValueError, match="censur"):
+        engine.restore_state(payload)
