@@ -25,7 +25,7 @@ class MechanismEvent:
     context_id: str
     cutoff: int
     flow_ids: tuple[str, ...]
-    matures_at: tuple[int, ...]
+    matures_at: tuple[int | None, ...]
     plans: tuple[tuple[str, ResolvedMechanisms], ...]
     context: object
     calibration: CohortFeedback | None

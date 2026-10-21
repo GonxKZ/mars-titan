@@ -54,6 +54,7 @@ class MechanismAvailability:
     static: bool = False
     online: bool = False
     online_capacity: bool = True
+    online_maturity: bool = True
     context_capacity: bool = True
     nonempty_bank: bool = False
     reader_limit: int = 4
@@ -152,6 +153,8 @@ class MechanismCatalog(FingerprintOnce):
                 not availability.online_capacity or rows > budget.max_online_rows
             ):
                 reasons.append("pending_calibration_budget")
+            if action.calibration == "online" and not availability.online_maturity:
+                reasons.append("unavailable_label_calendar")
         return ResolvedMechanisms(
             action,
             MechanismAction(selected_context, "k1", "none") if reasons else action,

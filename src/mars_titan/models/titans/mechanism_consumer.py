@@ -296,10 +296,10 @@ class FrozenMechanismConsumer:
             if type(matures_at) is not tuple or len(matures_at) != len(flows):
                 raise ValueError("La cohorte necesita una madurez explícita por fila")
             maturity = {
-                flow: _instant(at, "La madurez de fila")
+                flow: _instant(at, "La madurez de fila") if at is not None else None
                 for flow, at in zip(flows, matures_at, strict=True)
             }
-            if any(at <= cutoff for at in maturity.values()):
+            if any(at is not None and at <= cutoff for at in maturity.values()):
                 raise ValueError("La madurez debe ser posterior a la emisión")
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta episodios")
@@ -309,6 +309,12 @@ class FrozenMechanismConsumer:
             snapshot.verify()
         flows = tuple(sorted(flows))
         groups = tuple(sorted({flow.split("/", 1)[0] for flow in flows}))
+        known_maturity = {
+            group: all(
+                maturity.get(flow) is not None for flow in flows if flow.startswith(group + "/")
+            )
+            for group in groups
+        }
         planning_rows = min(len(flows), self.max_batch)
         reader_limit, populated = 4, False
         if self.readout is not None and not warmup:
@@ -338,10 +344,8 @@ class FrozenMechanismConsumer:
             )
         if state.calibration is not None:
             payload = state.calibration.export()
-            online_rows = sum(
-                flow.split("/", 1)[0] in {g for g in groups if available_online[g]}
-                for flow in flows
-            )
+            eligible_groups = {g for g in groups if available_online[g] and known_maturity[g]}
+            online_rows = sum(flow.split("/", 1)[0] in eligible_groups for flow in flows)
             if payload["max_rows"] < online_rows + state.calibration.pending_rows:
                 available_online = dict.fromkeys(groups, False)
         plans = []
@@ -354,6 +358,7 @@ class FrozenMechanismConsumer:
                 static=self._static is not None and group in self._static["groups"],
                 online=state.calibration is not None,
                 online_capacity=available_online[group],
+                online_maturity=known_maturity[group],
                 context_capacity=len(groups) <= self.catalog.budget.max_context_markets,
                 nonempty_bank=populated,
                 reader_limit=reader_limit,
