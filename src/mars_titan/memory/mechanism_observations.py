@@ -24,6 +24,8 @@ from mars_titan.models.titans.session_context import MARKETS
 
 from .episodic_session import DecisionRow
 
+_VALIDATION_ROWS = 16
+
 
 def _sha(value):
     return hashlib.sha256(canonical(value).encode()).hexdigest()
@@ -80,15 +82,21 @@ def _row_features(row, spec, cutoff):
     digest.update(memoryview(row.presence).cast("B"))
     if digest.hexdigest() != row.input_sha256:
         raise ValueError("La huella de inputs no corresponde a la observación")
-    if masked_inputs(spec.input_policy):
-        validate_historical_vectors(
-            {k: row.inputs[k][None] for k in MODALITIES[1:]},
-            row.presence[None],
-            spec.representation,
-        )
-    elif not row.presence.all():
+    if not masked_inputs(spec.input_policy) and not row.presence.all():
         raise ValueError("La observación estricta requiere todas las modalidades")
     return values, size
+
+
+def _validate_historical_rows(rows, spec):
+    """Las mismas reglas por filas, en buffers locales acotados y sin cambiar los datos."""
+    representation = spec.representation
+    for start in range(0, len(rows), _VALIDATION_ROWS):
+        block = rows[start : start + _VALIDATION_ROWS]
+        validate_historical_vectors(
+            {k: np.stack([row.inputs[k] for row in block]) for k in MODALITIES[1:]},
+            np.stack([row.presence for row in block]),
+            representation,
+        )
 
 
 def _corrections(values):
@@ -163,6 +171,8 @@ def extract_observation(rows, *, consumer, state, flow_ids, cutoff, context_id, 
         if total > MAX_INPUT_BYTES:
             raise ValueError("Los inputs de la observación superan 64 MiB")
         calculated[row.flow_id] = values
+    if masked_inputs(spec.input_policy):
+        _validate_historical_rows(ordered, spec)
     groups = []
     for market in sorted({flow.split("/", 1)[0] for flow in flows}):
         selected = [r for r in ordered if r.flow_id.startswith(market + "/")]

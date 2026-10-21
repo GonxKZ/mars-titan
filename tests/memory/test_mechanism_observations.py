@@ -362,6 +362,31 @@ def test_invalid_rows_cannot_be_summarised_as_valid_evidence(fault):
         extract(engine, rows)
 
 
+@pytest.mark.parametrize("fault", ["missing_fill", "concept_mask", "concept_age"])
+def test_input_hash_alone_does_not_admit_invalid_historical_vectors(fault):
+    engine = consumer()
+    rows = list(observation_rows(engine))
+    index = 1 if fault == "missing_fill" else 0
+    row = rows[index]
+    name = "news" if fault == "missing_fill" else "fundamentals"
+    changed = row.inputs[name].copy()
+    if fault == "missing_fill":
+        changed[0] = 7.0
+    elif fault == "concept_mask":
+        changed[1] = 2.0
+    else:
+        changed[2] = -1.0
+    values = dict(row.inputs)
+    values[name] = np.frombuffer(changed.tobytes(), dtype=changed.dtype)
+    row = replace(row, inputs=MappingProxyType(values))
+    rows[index] = replace(row, input_sha256=row_sha(row, engine.predictor.config.inputs))
+    state = engine.initial_state()
+    before = engine.export_state(state)
+    with pytest.raises(ValueError):
+        extract(engine, tuple(rows), state=state)
+    assert_same(engine.export_state(state), before)
+
+
 def test_strict_inputs_have_explicit_complete_presence_in_the_observation():
     model, _ = setup(historical=False)
     engine = FrozenMechanismConsumer(model.eval().requires_grad_(False))
