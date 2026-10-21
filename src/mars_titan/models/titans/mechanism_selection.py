@@ -49,7 +49,11 @@ def policy_signature(policy, *, strong):
         )
     identity = dict(
         configuration=policy.get_extra_state(),
-        coefficient_origin="supplied_not_verified_as_fitted",
+        coefficient_origin=(
+            "supplied_not_verified_as_fitted"
+            if policy.fit_receipt_sha256 is None
+            else "supplied_with_declared_fit_receipt_not_independently_verified"
+        ),
         dtype=str(policy.mean.dtype),
         device=str(policy.mean.device),
     )

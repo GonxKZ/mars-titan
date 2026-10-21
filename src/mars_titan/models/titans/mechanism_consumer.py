@@ -190,7 +190,9 @@ class FrozenMechanismConsumer:
             online_policy="only_cohorts_emitted_online_predict_all_then_feedback_v1",
             phase_end="archive_censored_pending_without_maturity_or_cross_phase_reuse",
             fixed_controls=policy is None,
-            new_learned_selector=False,
+            new_learned_selector=(
+                None if policy is not None and policy.fit_receipt_sha256 is not None else False
+            ),
             planning_batch=self.max_batch,
         )
         if policy is not None:

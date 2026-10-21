@@ -12,6 +12,7 @@ import torch
 from torch import nn
 
 from .config import require_identity
+from .episodic_snapshot import _digest_id
 from .mechanism_catalog import MechanismCatalog
 from .state import check_finite, deferred_checks, require_true
 
@@ -40,6 +41,12 @@ FEATURES = (
 )
 ACTIONS = tuple(action.key for action in MechanismCatalog().actions())
 POINT_ACTIONS = tuple(dict.fromkeys(key.rsplit("/", 1)[0] for key in ACTIONS))
+
+
+def _utility_scalar(value):
+    if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+        raise ValueError("El peso de intervalos y la ganancia mínima deben ser finitos")
+    return float(value)
 
 
 @dataclass(frozen=True)
@@ -73,12 +80,17 @@ class MechanismPolicy(nn.Module):
         costs,
         interval_weight,
         min_gain,
+        action_mask=None,
+        fit_receipt_sha256=None,
     ):
         super().__init__()
-        for value in (interval_weight, min_gain):
-            if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
-                raise ValueError("El peso de intervalos y la ganancia mínima deben ser finitos")
-        self.interval_weight, self.min_gain = float(interval_weight), float(min_gain)
+        self.interval_weight, self.min_gain = (
+            _utility_scalar(interval_weight),
+            _utility_scalar(min_gain),
+        )
+        if fit_receipt_sha256 is not None:
+            _digest_id(fit_receipt_sha256, "El recibo declarado del ajuste")
+        self.fit_receipt_sha256 = fit_receipt_sha256
         for name, value in (
             ("mean", mean),
             ("scale", scale),
@@ -91,10 +103,26 @@ class MechanismPolicy(nn.Module):
             if not isinstance(value, torch.Tensor):
                 raise ValueError("La política necesita tensores explícitos")
             self.register_buffer(name, value.detach().clone())
+        if action_mask is None:
+            self.action_mask = None
+        else:
+            if (
+                not isinstance(action_mask, torch.Tensor)
+                or action_mask.layout != torch.strided
+                or action_mask.shape != (len(ACTIONS),)
+                or action_mask.dtype != torch.bool
+                or action_mask.device != self.mean.device
+            ):
+                raise ValueError("La máscara de acciones debe ser un vector booleano del catálogo")
+            self.register_buffer("action_mask", action_mask.detach().clone())
         self.validate()
         self.eval()
 
     def validate(self):
+        _utility_scalar(self.interval_weight)
+        _utility_scalar(self.min_gain)
+        if self.fit_receipt_sha256 is not None:
+            _digest_id(self.fit_receipt_sha256, "El recibo declarado del ajuste")
         shapes = dict.fromkeys(("mean", "scale", "support_min", "support_max"), (len(FEATURES),))
         shapes.update(
             point_coefficients=(len(FEATURES) + 1, len(POINT_ACTIONS)),
@@ -122,9 +150,18 @@ class MechanismPolicy(nn.Module):
             & (self.costs[0] == 0),
             "La referencia debe conservar ganancia y coste incrementales cero",
         )
+        if self.action_mask is not None:
+            if (
+                self.action_mask.shape != (len(ACTIONS),)
+                or self.action_mask.dtype != torch.bool
+                or self.action_mask.device != self.mean.device
+                or self.action_mask.layout != torch.strided
+            ):
+                raise ValueError("La máscara de acciones cambió de forma, precisión o dispositivo")
+            require_true(self.action_mask[0], "La máscara debe conservar la acción de referencia")
 
     def get_extra_state(self):
-        return dict(
+        result = dict(
             schema_version=1,
             kind="pre_mac_cohort_mechanism_policy_v1",
             features=list(FEATURES),
@@ -140,6 +177,11 @@ class MechanismPolicy(nn.Module):
             support="marginal_feature_ranges_not_joint_or_calibrated_ood",
             costs="incremental_declared_utility_units_not_raw_milliseconds",
         )
+        if self.action_mask is not None:
+            result["action_support"] = "declared_boolean_mask_not_fit_attestation"
+        if self.fit_receipt_sha256 is not None:
+            result["declared_fit_receipt_sha256"] = self.fit_receipt_sha256
+        return result
 
     def set_extra_state(self, state):
         require_identity(state, self.get_extra_state())
@@ -168,6 +210,7 @@ class MechanismPolicy(nn.Module):
             **{name: supplied[name].detach().cpu() for name, _ in self.named_buffers()},
             interval_weight=self.interval_weight,
             min_gain=self.min_gain,
+            fit_receipt_sha256=self.fit_receipt_sha256,
         )
         super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
@@ -193,6 +236,8 @@ class MechanismPolicy(nn.Module):
             raise ValueError("La admisibilidad no corresponde al catálogo y sus cohortes")
         if torch.is_autocast_enabled(features.device.type):
             raise ValueError("La política requiere FP32 o FP64 explícitos, sin autocast")
+        if self.action_mask is not None:
+            available = available & self.action_mask[None, :]
         with deferred_checks():
             check_finite(features, "Los rasgos de la decisión")
             require_true(available[:, 0].all(), "K1 de referencia debe ser admisible")
