@@ -119,6 +119,7 @@ def main():
             FinancialPredictor(
                 FinancialConfig(
                     specification(),
+                    variant="mac_online",
                     hidden_size=32,
                     max_batch=256,
                     head=QUANTILE_HEAD,
