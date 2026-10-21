@@ -16,6 +16,7 @@ from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
+from .regional_fusion import RegionalFusion
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -29,6 +30,7 @@ _TITANS_MODULES = (
     "financial_inputs",
     "financial_blocks",
     "presence_modulation",
+    "regional_fusion",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -122,6 +124,9 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) is RegionalFusion:
+        fields = ("hidden_size", "max_batch")
+        settings["regional_fusion"] = module.config.identity()
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 

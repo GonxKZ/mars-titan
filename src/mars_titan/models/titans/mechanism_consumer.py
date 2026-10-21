@@ -527,6 +527,8 @@ class FrozenMechanismConsumer:
             if event.context is not None
             else 0,
         )
+        if self.predictor.regional_fusion is not None:
+            work.update(self.predictor.regional_fusion.operation_counts(len(rows)))
         context = (
             self.predictor.commit_context(event.context) if event.context is not None else None
         )

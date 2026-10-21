@@ -59,6 +59,7 @@ from .presence_modulation import (
     wide_parameters_per_unit,
     wide_units,
 )
+from .regional_fusion import RegionalFusion, RegionalFusionConfig
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
     MACState,
@@ -117,6 +118,8 @@ class FinancialConfig:
     session_context: str | None = None
     sector_map: SectorMap | None = None
     attention_layout: str = "batch_first_v1"
+    # Grafo de evidencia con memoria de trabajo reiniciada por decisión.
+    regional_fusion: RegionalFusionConfig | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -222,6 +225,19 @@ class FinancialConfig:
             raise ValueError(
                 "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
             )
+        if isinstance(self.regional_fusion, dict):
+            if set(self.regional_fusion) != {field.name for field in fields(RegionalFusionConfig)}:
+                raise ValueError("regional_fusion debe declarar toda su configuración")
+            object.__setattr__(
+                self, "regional_fusion", RegionalFusionConfig(**self.regional_fusion)
+            )
+        if self.regional_fusion is not None:
+            if type(self.regional_fusion) is not RegionalFusionConfig:
+                raise ValueError(
+                    "regional_fusion necesita RegionalFusionConfig, sus valores o None"
+                )
+            if self.presence_modulation is not None:
+                raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -290,6 +306,8 @@ class FinancialConfig:
             result.update(memory_plasticity=self.memory_plasticity.configuration())
         if self.memory_key_competition is not None:
             result.update(memory_key_competition=asdict(self.memory_key_competition))
+        if self.regional_fusion is not None:
+            result.update(regional_fusion=self.regional_fusion.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -404,6 +422,16 @@ class FinancialPredictor(nn.Module):
         self.fusion_branch = (
             WideFusionBranch(config.hidden_size, seed=config.seed)
             if config.presence_modulation == WIDE_FUSION
+            else None
+        )
+        self.regional_fusion = (
+            RegionalFusion(
+                config.hidden_size,
+                config.regional_fusion,
+                seed=config.seed,
+                max_batch=config.max_batch,
+            )
+            if config.regional_fusion is not None
             else None
         )
         # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
@@ -906,7 +934,9 @@ class FinancialPredictor(nn.Module):
                 self.encoders,
                 self.fusion,
                 batch.presence if self.masked else None,
-                modulation=self.presence_modulation,
+                modulation=self.regional_fusion
+                if self.regional_fusion is not None
+                else self.presence_modulation,
                 branch=self.fusion_branch,
             )
             check_finite(token, "El token fusionado")

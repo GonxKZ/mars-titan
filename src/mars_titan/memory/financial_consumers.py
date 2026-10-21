@@ -256,6 +256,8 @@ class TitansBinding:
             reevaluations=sum(m["reevaluations"] for m in measurements),
             group_estimated_bytes=selection.estimated_bytes if selection else 0,
         )
+        if model.regional_fusion is not None:
+            control.update(model.regional_fusion.operation_counts(len(rows)))
         return values, fast, control
 
     def propose(self, native, bank, pending, admitted, episodes, *, confirmed_at, features=None):
