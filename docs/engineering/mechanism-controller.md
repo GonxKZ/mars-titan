@@ -30,7 +30,11 @@ El estado auxiliar exporta contexto y calibración con versión e identidad. Un 
 
 `feedback` recibe resultados tipados con mercado, decisión, identidad y disponibilidad. Rechaza valores futuros, etiquetas anteriores a su madurez, duplicados e identidades desconocidas. Valida cada entrada antes de acceder a su valor numérico. Si falla una entrada posterior del lote, el snapshot de partida permanece intacto.
 
+`unresolved_keys` devuelve las identidades que el calibrador aún espera, sin copiar cuantiles o etiquetas. Una etiqueta parcial ya recibida no vuelve a figurar en esa vista. La cola financiera puede seguir conteniendo otras predicciones después de cancelar una cohorte de calibración. El enlace debe conservar sus pérdidas válidas y enviar a PT2 únicamente las claves que todavía espera.
+
 Las etiquetas parciales quedan pendientes hasta completar la cohorte más antigua de cada mercado. Las posteriores pueden recibir feedback, pero esperan su turno para actualizar la corrección. La actualización usa los cuantiles y la corrección realmente guardados al emitir, como ya hacía PT2. El reloj global y los relojes por mercado no retroceden.
+
+[`PrefixTargetVerifier.expected_maturity`](../../src/mars_titan/training/prefix_eligibility.py) obtiene la disponibilidad prevista de la sesión siguiente mediante el calendario y los manifiestos admitidos. No consulta retornos ni garantiza que exista la etiqueta. Conserva festivos, cambios horarios y medias sesiones. En el contrato auditado, los precios están disponibles cinco minutos después del cierre. Sin siguiente sesión anterior al periodo reservado devuelve `None`. El consumidor conserva esas filas y desactiva su ruta online con el motivo `unavailable_label_calendar`. Las acciones estáticas conservan su ruta y los otros mercados no pierden capacidad por las filas sin calendario.
 
 ## Exclusiones y recuperación
 
@@ -44,9 +48,15 @@ El estado del acumulador tiene versión y política propias, huella SHA-256 y un
 
 Los límites por defecto son 32.768 filas pendientes y 8 MiB de JSON canónico. El máximo configurable de JSON es 16 MiB. Cada mercado conserva el límite de 64 cohortes de PT2 y el formato admite hasta ocho mercados. Los identificadores tienen como máximo 128 bytes. El presupuesto de JSON no representa un límite del pico transitorio de RAM. No se conserva un historial ilimitado de cohortes resueltas.
 
+[`MechanismHistory`](../../src/mars_titan/memory/mechanism_history.py) prepara el archivo de emisiones y actualizaciones sobre `SessionArtifacts`, con bloques sellados, generaciones contiguas y lectura incremental. Su manifiesto declara las referencias que una sesión deberá conservar al podar. No publica otra cabeza ni confirma por sí mismo una propuesta. El formato distingue el historial del estado operativo y permite leer generaciones antiguas sin retener sus payloads en la caché.
+
+Cada evento lleva identidad de modelo, generación, corte, tipo y huella del registro nativo, además de un payload JSON acotado. El módulo valida ese transporte. La correspondencia financiera con inputs, acciones, cuantiles y resultados sigue siendo responsabilidad del enlace pendiente. La compresión `zlib1` es opcional y su versión forma parte de la identidad. `none` sigue siendo el valor por defecto. El agotamiento de capacidad produce un error y no autoriza borrar evidencia o cambiar la predicción para continuar.
+
 ## Comprobación y coste
 
 Las [pruebas y medidas del acumulador](../../reports/engineering/cohort-feedback-20261021/README.md) usan fixtures identificados, sin corpus real ni pasos de optimizador. Cubren recepción dividida, exclusiones, permutaciones, recuperación, aislamiento y rechazos. El [informe del consumidor](../../reports/engineering/mechanism-consumer-20261021/README.md) añade las 36 combinaciones en CPU y CUDA, presupuesto lógico, recuperación auxiliar, detección de cambios y coste del recorrido provisional. Ambos registran mutación dirigida y CRAP con su alcance.
+
+El [incremento de archivo y madurez](../../reports/engineering/mechanism-history-20261021/README.md) comprueba las claves pendientes, el calendario y el formato histórico. Separa coste de serialización, almacenamiento, recuperación y publicación de la sesión. Las pruebas del archivo no sustituyen los cortes y la recuperación completa que faltan en el enlace financiero.
 
 El acumulador y la serialización trabajan en CPU con NumPy. Se midieron propuestas completas con 64 y 256 filas y una o cuatro cohortes pendientes. La copia explícita de contenedores redujo el coste observado frente a las copias recursivas, sin cambiar los valores ni los estados exportados. No se ha medido aquí el predictor, el recorrido CUDA ni la escritura atómica en disco.
 
