@@ -1,0 +1,598 @@
+{
+  "recorded_at_utc": "2026-10-22T04:47:27.027990+00:00",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "dtype": "torch.float64",
+  "warmup": 2,
+  "repetitions": 3,
+  "capacity": 16,
+  "hidden_size": 32,
+  "regions": 3,
+  "neighbors": 8,
+  "logical_assets": [
+    4,
+    64,
+    256
+  ],
+  "physical_block_rows": 64,
+  "declared_reader_working_bytes": 134217728,
+  "statistical_scope": "Fixtures, tres repeticiones. Sin p95/p99 ni inferencia científica.",
+  "max_total_seconds": 900,
+  "gpu_before": "name, driver_version, memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 594 MiB, 12 %\n",
+  "cases": [
+    {
+      "name": "m2_assets4_fixed_k4cc",
+      "assets": 4,
+      "admission": "m2",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 16,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 2601.568312034942,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 2307.4752979446203,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 2305.5282410932705,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 1574.352656956762,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 1716.5365749970078,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 1432.5433000922203,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m2_assets4_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 2307.4752979446203,
+          "min_ms": 2305.5282410932705,
+          "max_ms": 2601.568312034942,
+          "max_incremental_peak_bytes": 685056
+        },
+        "fixed_reader": {
+          "median_ms": 1574.352656956762,
+          "min_ms": 1432.5433000922203,
+          "max_ms": 1716.5365749970078,
+          "max_incremental_peak_bytes": 685056
+        }
+      }
+    },
+    {
+      "name": "m3_assets4_fixed_k4cc",
+      "assets": 4,
+      "admission": "m3",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 16,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 2386.5645229816437,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 2465.7090350519866,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 2235.3220590157434,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 1473.2270749518648,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 1512.0712260250002,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 2136.657860944979,
+            "peak_allocated_bytes": 68499456,
+            "incremental_peak_bytes": 685056,
+            "native_execution_ref": "benchmark-runs/m3_assets4_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 2386.5645229816437,
+          "min_ms": 2235.3220590157434,
+          "max_ms": 2465.7090350519866,
+          "max_incremental_peak_bytes": 685056
+        },
+        "fixed_reader": {
+          "median_ms": 1512.0712260250002,
+          "min_ms": 1473.2270749518648,
+          "max_ms": 2136.657860944979,
+          "max_incremental_peak_bytes": 685056
+        }
+      }
+    },
+    {
+      "name": "m2_assets64_fixed_k4cc",
+      "assets": 64,
+      "admission": "m2",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 256,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 9750.70124794729,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 10242.420853930525,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 9351.556419976987,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 3673.9685100037605,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 3120.328805060126,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 3720.758329029195,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 9750.70124794729,
+          "min_ms": 9351.556419976987,
+          "max_ms": 10242.420853930525,
+          "max_incremental_peak_bytes": 10825216
+        },
+        "fixed_reader": {
+          "median_ms": 3673.9685100037605,
+          "min_ms": 3120.328805060126,
+          "max_ms": 3720.758329029195,
+          "max_incremental_peak_bytes": 10825216
+        }
+      }
+    },
+    {
+      "name": "m3_assets64_fixed_k4cc",
+      "assets": 64,
+      "admission": "m3",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 256,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 9870.746425003745,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 9753.360260976478,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 10081.845922977664,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 3445.5187669955194,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 3916.092465049587,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 3440.0289200711995,
+            "peak_allocated_bytes": 78639616,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 9870.746425003745,
+          "min_ms": 9753.360260976478,
+          "max_ms": 10081.845922977664,
+          "max_incremental_peak_bytes": 10825216
+        },
+        "fixed_reader": {
+          "median_ms": 3445.5187669955194,
+          "min_ms": 3440.0289200711995,
+          "max_ms": 3916.092465049587,
+          "max_incremental_peak_bytes": 10825216
+        }
+      }
+    },
+    {
+      "name": "m2_assets64_manual_policy_k2c",
+      "assets": 64,
+      "admission": "m2",
+      "automatic_manual_coefficients": true,
+      "points_per_phase": 256,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 7213.243145961314,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep0-controller"
+          },
+          {
+            "milliseconds": 8069.385546026751,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep1-controller"
+          },
+          {
+            "milliseconds": 7991.211895016022,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 3282.5555340386927,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 3830.7831489946693,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 3685.5271799722686,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m2_assets64_manual_policy_k2c/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 7991.211895016022,
+          "min_ms": 7213.243145961314,
+          "max_ms": 8069.385546026751,
+          "max_incremental_peak_bytes": 10825216
+        },
+        "fixed_reader": {
+          "median_ms": 3685.5271799722686,
+          "min_ms": 3282.5555340386927,
+          "max_ms": 3830.7831489946693,
+          "max_incremental_peak_bytes": 10825216
+        }
+      }
+    },
+    {
+      "name": "m3_assets64_manual_policy_k2c",
+      "assets": 64,
+      "admission": "m3",
+      "automatic_manual_coefficients": true,
+      "points_per_phase": 256,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 8622.47915705666,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep0-controller"
+          },
+          {
+            "milliseconds": 8293.645526049659,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep1-controller"
+          },
+          {
+            "milliseconds": 7186.273603932932,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 3189.770146040246,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 3326.1119480011985,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 3912.4230990419164,
+            "peak_allocated_bytes": 78651392,
+            "incremental_peak_bytes": 10825216,
+            "native_execution_ref": "benchmark-runs/m3_assets64_manual_policy_k2c/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 8293.645526049659,
+          "min_ms": 7186.273603932932,
+          "max_ms": 8622.47915705666,
+          "max_incremental_peak_bytes": 10825216
+        },
+        "fixed_reader": {
+          "median_ms": 3326.1119480011985,
+          "min_ms": 3189.770146040246,
+          "max_ms": 3912.4230990419164,
+          "max_incremental_peak_bytes": 10825216
+        }
+      }
+    },
+    {
+      "name": "m2_assets256_fixed_k4cc",
+      "assets": 256,
+      "admission": "m2",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 1024,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 36192.243814934045,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 46804.320522001944,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 35911.79351496976,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 12451.89623394981,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 14117.331740097143,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 11875.36733201705,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m2_assets256_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 36192.243814934045,
+          "min_ms": 35911.79351496976,
+          "max_ms": 46804.320522001944,
+          "max_incremental_peak_bytes": 12922880
+        },
+        "fixed_reader": {
+          "median_ms": 12451.89623394981,
+          "min_ms": 11875.36733201705,
+          "max_ms": 14117.331740097143,
+          "max_incremental_peak_bytes": 12922880
+        }
+      }
+    },
+    {
+      "name": "m3_assets256_fixed_k4cc",
+      "assets": 256,
+      "admission": "m3",
+      "automatic_manual_coefficients": false,
+      "points_per_phase": 1024,
+      "max_prediction_abs_difference": 0.0,
+      "samples": {
+        "controller": [
+          {
+            "milliseconds": 37305.2664269926,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep0-controller"
+          },
+          {
+            "milliseconds": 36097.41753595881,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep1-controller"
+          },
+          {
+            "milliseconds": 36610.16111704521,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep2-controller"
+          }
+        ],
+        "fixed_reader": [
+          {
+            "milliseconds": 11474.26309203729,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep0-fixed_reader"
+          },
+          {
+            "milliseconds": 11714.835635968484,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep1-fixed_reader"
+          },
+          {
+            "milliseconds": 12965.853957924992,
+            "peak_allocated_bytes": 80737280,
+            "incremental_peak_bytes": 12922880,
+            "native_execution_ref": "benchmark-runs/m3_assets256_fixed_k4cc/rep2-fixed_reader"
+          }
+        ]
+      },
+      "summaries": {
+        "controller": {
+          "median_ms": 36610.16111704521,
+          "min_ms": 36097.41753595881,
+          "max_ms": 37305.2664269926,
+          "max_incremental_peak_bytes": 12922880
+        },
+        "fixed_reader": {
+          "median_ms": 11714.835635968484,
+          "min_ms": 11474.26309203729,
+          "max_ms": 12965.853957924992,
+          "max_incremental_peak_bytes": 12922880
+        }
+      }
+    }
+  ],
+  "incomplete": [],
+  "total_process_seconds": 789.0970590190263,
+  "process_peak_rss_bytes": 1601257472,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "gpu_after": "memory.used [MiB], utilization.gpu [%]\n777 MiB, 1 %\n",
+  "source_sha256": {
+    "src/mars_titan/memory/financial_mechanisms.py": "0830dcf8ee8f2f742326c2c573fac3c43b7b93b80d99713ccfc1cfea9ccb8464",
+    "src/mars_titan/memory/financial_session.py": "ae50f994610d3dc843b63c088e11fce31306dd1c01673fa2c0b3a25902807f21",
+    "tests/memory/test_mechanism_admission.py": "ec50fd1d0a3544add75e0fe5e15493c5c45250fc87a3764aec20247c780cb4c9"
+  },
+  "scope": "Fases técnicas nuevas de cuatro decisiones y cierre, con lectores y pesos equivalentes. Incluye constructor, validaciones, publicación, estado rápido y recuperación de cada paso. No mide entrenamiento ni se abre una recuperación nueva tras cerrar.",
+  "memory_scope": "RAM: pico acumulado del proceso, no comparación por método. GPU: asignaciones de PyTorch, no toda la VRAM ni memoria del nativo CPU.",
+  "scientific_training": false,
+  "optimizer_steps": 0,
+  "scaler_fitting": false,
+  "real_corpus": false,
+  "final_test_opened": false,
+  "execution_commit": "b19c8b6a42bacce558c502aa5aa2b6d26f24259c",
+  "fixture_generator_sha256": {
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/memory/test_mars_titan_session_parity.py": "a6d9c3dcf3683701bcb92961f3dc97ffdd116a285a2d1fe37d832baa3dc6969d",
+    "tests/memory/test_bridge_mechanism_session.py": "55d722d58cdae5d6c631f93bcf80c89309f2ede8156401b9f7c8962e8f95ef61",
+    "tests/training/test_historical_corpus_inputs.py": "99c4836f8d6b953c539a8d88ea7f113ba542813421e9c24e2ecd2c684449cda8"
+  },
+  "fixture_artifacts": {
+    "4": {
+      "relative_root": "benchmark-fixture-4",
+      "files": 27,
+      "bytes": 151355,
+      "tree_sha256": "e22b44d314725c2814ca53caa87422d149c4f626f22648bec42b928d22d14bb1"
+    },
+    "64": {
+      "relative_root": "benchmark-fixture-64",
+      "files": 327,
+      "bytes": 1785228,
+      "tree_sha256": "e311e06ff5d3e01154b08a3539ff1bfaa48e6af3be62cc0c1e1b74a0a04db62e"
+    },
+    "256": {
+      "relative_root": "benchmark-fixture-256",
+      "files": 1287,
+      "bytes": 7013593,
+      "tree_sha256": "dd335a57cdeda796a875110464643fe1611335941dcf14c43322c2d6cc61bb94"
+    }
+  },
+  "execution_manifests": {
+    "fixture-files.json": {
+      "bytes": 292430,
+      "sha256": "5cf5b52a60666733f1cef9b06e3d501500482ecd6b3c19384e34363d6c605957"
+    },
+    "native-runs.json": {
+      "bytes": 46107,
+      "sha256": "8c98c2d1117b1e6255d13e542f34ce8561fe1225b710eb39dc2b743998e7e521"
+    }
+  },
+  "raw_measurement_sha256": "2fc6989a4c3b58f9851beedd632f1edc46c4d570f917da47919090b0e58babbf",
+  "predictor_input_observations_per_phase": "5 * activos",
+  "emissions_per_phase": "4 * activos",
+  "mature_labels_per_phase": "3 * activos",
+  "phase_events": 6,
+  "budget_semantics": "Se comprueba el presupuesto antes de iniciar cada caso. Un caso iniciado termina sus repeticiones aunque rebase ese tiempo."
+}
