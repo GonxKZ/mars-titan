@@ -1,5 +1,6 @@
 """Publicación acotada desde un checkout dedicado a datos públicos."""
 
+import fcntl
 import json
 import re
 import subprocess
@@ -53,13 +54,17 @@ class GitPublisher:
     """Enviar solo el índice y sus páginas, sin tocar el checkout científico."""
 
     def __init__(self, checkout, *, repository="GonxKZ/mars-titan", dispatch=True):
-        self.checkout = Path(checkout)
+        self.checkout = Path(checkout).resolve()
         self.repository, self.dispatch = repository, dispatch
         if self.git("branch", "--show-current").strip() != "observatory-data":
             raise ValueError("La publicación requiere la rama exclusiva observatory-data")
         tracked = self.git("ls-files").splitlines()
         if any(not self.allowed(path) for path in tracked):
             raise ValueError("La rama de datos contiene archivos ajenos al contrato público")
+        self._lock_path = (
+            Path(self.git("rev-parse", "--absolute-git-dir").strip()).resolve()
+            / "observatory-publisher.lock"
+        )
 
     @staticmethod
     def allowed(path):
@@ -77,6 +82,16 @@ class GitPublisher:
         return result.stdout
 
     def publish(self, output, index=None):
+        with self._lock_path.open("a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise BlockingIOError(
+                    error.errno, "Otro publicador ya utiliza este checkout de datos"
+                ) from error
+            return self._publish(output, index)
+
+    def _publish(self, output, index):
         output = Path(output)
         index = index or json.loads((output / "observatory.json").read_text())
         if index.get("schema_version") != 2 or index.get("project") != "MARS-TITAN":
