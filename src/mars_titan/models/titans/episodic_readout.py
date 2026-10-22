@@ -255,6 +255,32 @@ class EpisodicReadout(nn.Module):
     def read(self, state, snapshot=None, *, context_id=None, cutoff=None):
         return self._read(state, snapshot, context_id, cutoff)[0]
 
+    def node_read_limit(self, episodes):
+        """Límite por fila del evento completo, sin renovar cuotas por ruta o bloque."""
+        bridge = self.config.evidence_bridge
+        if bridge is None or bridge.recurrence is None or episodes == 0:
+            return 38
+        recurrence = bridge.recurrence
+        return recurrence.max_node_updates_per_row // (len(bridge.regions) * recurrence.steps)
+
+    def preflight_node_updates(self, reads, episodes):
+        """Admitir todas las lecturas previstas antes de ejecutar la primera MAC."""
+        bounded_integer(reads, "lecturas del evento", 0, 38)
+        bounded_integer(episodes, "episodios", 0, 1024)
+        if reads > self.node_read_limit(episodes):
+            raise ValueError("El presupuesto regional del evento no cabe antes de MAC")
+
+    def recurrence_work(self, value_projections):
+        """Contar R0 y actualizaciones nuevas J, sin atribuirles todos los FLOPs."""
+        bridge = self.config.evidence_bridge
+        if bridge is None or bridge.recurrence is None:
+            return {}
+        bounded_integer(value_projections, "proyecciones del evento", 0, 38 * 8192)
+        initial = len(bridge.regions) * value_projections
+        return dict(
+            bridge_initial_views=initial, bridge_node_updates=initial * bridge.recurrence.steps
+        )
+
     def _read(self, state, snapshot, context_id, cutoff, positions=None, *, repeated=False):
         """Leer y devolver también las posiciones elegidas en la instantánea.
 
@@ -357,6 +383,9 @@ class EpisodicReadout(nn.Module):
     def _validate_read(self, state, snapshot, context_id, cutoff, *, refinements=None):
         self._state(state)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
+        self.preflight_node_updates(
+            self.config.refinements if refinements is None else refinements, episodes
+        )
         if (
             self.estimated_bytes(
                 len(state),
@@ -431,6 +460,7 @@ class EpisodicReadout(nn.Module):
             raise ValueError("inference_mode no permite la diferenciación solicitada")
         self._state(z_base)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
+        self.preflight_node_updates(self.config.refinements, episodes)
         if (
             self.estimated_bytes(len(z_base), episodes, differentiable=differentiable)
             > self.config.max_working_bytes

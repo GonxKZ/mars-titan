@@ -8,6 +8,18 @@ from .regional_routes import REFRESH_AT, RegionalRouteResult
 KIND = "regional_mechanism_trace_v1"
 
 
+def verify_work(work, reader, *, value_projections):
+    """Conciliar lecturas, vistas R0 y pasos J con el lector sellado de la sesión."""
+    expected = dict(bridge_value_projections=value_projections)
+    expected.update(reader.recurrence_work(value_projections))
+    if any(
+        type(work.get(name)) is not int or work[name] != value for name, value in expected.items()
+    ):
+        raise ValueError(
+            "Las proyecciones y actualizaciones regionales no concilian con su trabajo"
+        )
+
+
 def estimated_bytes(reader, rows, episodes, steps):
     r, h = len(reader.config.evidence_bridge.regions), reader.config.hidden_size
     k = min(episodes, reader.config.neighbors)

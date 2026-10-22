@@ -12,6 +12,7 @@ import json
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
+from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.evidence_bridge import (
@@ -160,6 +161,13 @@ def check_components(declaration, components):
         bridge = bridge_view_options(components["evidence_bridge"])
         if bridge["topology"] not in declared["evidence_bridge"]["allowed"]:
             raise ValueError("La topología del puente no está declarada")
+        if "recurrence" in bridge and declared["evidence_bridge"].get("recurrence") != dict(
+            steps=[1, 2, 4],
+            max_node_updates_per_row=1216,
+            requires_cycles=0,
+            default=None,
+        ):
+            raise ValueError("La declaración no admite el contrato recurrente acotado")
         components["evidence_bridge"] = bridge
     if "associative_memory" in components:
         if "episodic_bank" in components:
@@ -235,9 +243,12 @@ class MarsTitanVariant:
             **options,
         )
         if "evidence_bridge" in self.components:
+            geometry = dict(self.components["evidence_bridge"])
+            if "recurrence" in geometry:
+                geometry["recurrence"] = BridgeRecurrenceConfig(**geometry["recurrence"])
             bridge = EvidenceBridgeConfig(
                 codec_id,
-                **self.components["evidence_bridge"],
+                **geometry,
                 **{
                     name: getattr(config, name)
                     for name in (
@@ -293,7 +304,10 @@ class MarsTitanVariant:
         module.config.__post_init__()
         if canonical(module.config.identity()) != canonical(bridge.identity()):
             raise ValueError("Los metadatos y el módulo del puente no conservan la combinación")
-        return bridge_view_options({name: getattr(bridge, name) for name in BRIDGE_VIEW_FIELDS})
+        geometry = {name: getattr(bridge, name) for name in BRIDGE_VIEW_FIELDS}
+        if bridge.recurrence is not None:
+            geometry["recurrence"] = asdict(bridge.recurrence)
+        return bridge_view_options(geometry)
 
     def session_options(self, *, capacity, seed, policy="reservoir", **retention):
         """Admisión, retención y corrección B6 para `FinancialSession`.

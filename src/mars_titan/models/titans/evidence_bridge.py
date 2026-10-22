@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 import torch
 from torch import nn
 
+from .bridge_recurrence import BridgeRecurrenceConfig, nonlinear_mix
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
 from .episodic_readout import _normalize
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
@@ -18,7 +19,7 @@ BRIDGE_VIEW_FIELDS = ("regions", "topology", "cycles", "bridge_gain", "seed")
 
 def bridge_view_options(value):
     """Validar las vistas y devolver sus opciones propias, sin codec ni formas del lector."""
-    if type(value) is not dict or set(value) != set(BRIDGE_VIEW_FIELDS):
+    if type(value) is not dict or set(value) - {"recurrence"} != set(BRIDGE_VIEW_FIELDS):
         raise ValueError("El puente declara regiones, topología, ciclos, ganancia y semilla")
     regions = value["regions"]
     if type(regions) not in (list, tuple):
@@ -38,7 +39,17 @@ def bridge_view_options(value):
     gain = value["bridge_gain"]
     if type(gain) not in (int, float) or not math.isfinite(gain) or not 0 <= gain <= 1:
         raise ValueError("La ganancia del puente debe ser finita y pertenecer a [0, 1]")
-    return dict(value, regions=regions, bridge_gain=float(gain))
+    result = {name: value[name] for name in BRIDGE_VIEW_FIELDS}
+    result.update(regions=regions, bridge_gain=float(gain))
+    recurrence = value.get("recurrence")
+    if recurrence is not None:
+        if type(recurrence) is not dict or set(recurrence) != {"steps", "max_node_updates_per_row"}:
+            raise ValueError("La recurrencia declara J y su presupuesto explícitos")
+        checked = BridgeRecurrenceConfig(**recurrence)
+        if value["cycles"] != 0:
+            raise ValueError("La recurrencia J requiere cycles=0")
+        result["recurrence"] = asdict(checked)
+    return result
 
 
 @dataclass(frozen=True)
@@ -54,6 +65,7 @@ class EvidenceBridgeConfig:
     seed: int = 42
     max_batch: int = 256
     max_working_bytes: int = 32 * 1024**2
+    recurrence: BridgeRecurrenceConfig | None = None
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec de evidencia")
@@ -64,6 +76,12 @@ class EvidenceBridgeConfig:
         if type(self.regions) is not tuple:
             raise ValueError("Se necesitan entre una y ocho regiones distintas identificadas")
         bridge_view_options({name: getattr(self, name) for name in BRIDGE_VIEW_FIELDS})
+        if self.recurrence is not None:
+            if type(self.recurrence) is not BridgeRecurrenceConfig:
+                raise ValueError("La recurrencia necesita BridgeRecurrenceConfig explícito")
+            self.recurrence.__post_init__()
+            if self.cycles != 0:
+                raise ValueError("La recurrencia J requiere cycles=0, sin composición implícita")
         if (
             type(self.temperature) not in (int, float)
             or not math.isfinite(self.temperature)
@@ -72,16 +90,26 @@ class EvidenceBridgeConfig:
             raise ValueError("La ganancia o temperatura del puente no es admisible")
 
     def identity(self):
-        return dict(
+        fields = asdict(self)
+        fields.pop("recurrence")
+        result = dict(
             schema_version=1,
             kind=KIND,
-            **asdict(self),
+            **fields,
             evidence="one_mature_snapshot_one_common_candidate_selection",
             regional_views="own_query_weights_and_value_transform",
             bridge="convex_messages_between_derived_views",
             storage="no_persistent_episode_copy_or_state",
             semantics="region_names_do_not_attest_specialization_or_historical_sectors",
         )
+        if self.recurrence is not None:
+            result.update(
+                schema_version=2,
+                kind="shared_evidence_bridge_nonlinear_v1",
+                bridge="synchronous_receiver_weights_reused_mixture_tanh",
+                recurrence=self.recurrence.identity(),
+            )
+        return result
 
 
 @dataclass(frozen=True)
@@ -178,10 +206,15 @@ class SharedEvidenceBridge(nn.Module):
             min(episodes, self.config.neighbors),
         )
         size = self.region_query.element_size()
+        steps = (
+            self.config.cycles
+            if self.config.recurrence is None
+            else 3 * self.config.recurrence.steps
+        )
         working = batch * (
             episodes * 32
             + k * (64 * (8 + size) + (65 + h) * size + 32)
-            + size * (r * (128 + k + h * (self.config.cycles + 4)) + r * r)
+            + size * (r * (128 + k + h * (steps + 4)) + r * r)
         )
         return 131072 + working * (4 if differentiable else 1)
 
@@ -203,6 +236,14 @@ class SharedEvidenceBridge(nn.Module):
         bounded_integer(len(state), "filas de puente", 1, self.config.max_batch)
         if type(snapshot) is not EpisodeSnapshot:
             raise ValueError("El puente requiere una instantánea episódica común")
+        recurrence = self.config.recurrence
+        if (
+            recurrence is not None
+            and snapshot.count > 0
+            and recurrence.node_updates(len(self.config.regions), 1)
+            > recurrence.max_node_updates_per_row
+        ):
+            raise ValueError("La lectura supera su presupuesto de actualizaciones regionales")
         if (
             self.estimated_bytes(len(state), snapshot.count, differentiable=torch.is_grad_enabled())
             > self.config.max_working_bytes
@@ -289,9 +330,19 @@ class SharedEvidenceBridge(nn.Module):
             transformed = torch.einsum("brh,rhd->brd", mixed, self.region_value)
             check_finite(transformed, "La transformación regional antes de tanh")
             local = torch.tanh(transformed)
-            for _ in range(self.config.cycles):
-                local = (1 - self.config.bridge_gain) * local + self.config.bridge_gain * torch.bmm(
-                    graph, local
+            if recurrence is None:
+                for _ in range(self.config.cycles):
+                    local = (
+                        1 - self.config.bridge_gain
+                    ) * local + self.config.bridge_gain * torch.bmm(graph, local)
+            else:
+                local = nonlinear_mix(
+                    local,
+                    graph,
+                    self.region_value,
+                    available,
+                    steps=recurrence.steps,
+                    gain=self.config.bridge_gain,
                 )
             result = self.output(local.reshape(b, r * h))
             check_finite(local, "Las vistas regionales")

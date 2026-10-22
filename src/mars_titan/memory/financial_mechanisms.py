@@ -184,6 +184,10 @@ class MechanismBinding(TitansBinding):
             result["selection"] = None
         if self.collections is not None:
             result["collection_packet"] = None
+        if self.consumer.readout is not None:
+            node_work = self.consumer.readout.recurrence_work(0)
+            if node_work:
+                result["work"].update(bridge_value_projections=0, **node_work)
         return result
 
     def prepare_event(
@@ -209,7 +213,7 @@ class MechanismBinding(TitansBinding):
                 matures_at=maturity,
                 snapshot=snapshot,
             )
-        if self.consumer.policy is not None and not warmup:
+        if collector is None and self.consumer.policy is not None and not warmup:
             selection["observation"] = mechanism_observations.extract_observation(
                 rows,
                 consumer=self.consumer,
@@ -219,15 +223,19 @@ class MechanismBinding(TitansBinding):
                 context_id=context_id,
                 snapshot=snapshot,
             )
-        event = self.consumer.begin(
-            auxiliary,
-            flow_ids=flows,
-            cutoff=rows[0].prediction_at,
-            context_id=context_id,
-            matures_at=maturity,
-            snapshot=snapshot,
-            warmup=warmup,
-            **selection,
+        event = (
+            collector.emission_event()
+            if collector is not None
+            else self.consumer.begin(
+                auxiliary,
+                flow_ids=flows,
+                cutoff=rows[0].prediction_at,
+                context_id=context_id,
+                matures_at=maturity,
+                snapshot=snapshot,
+                warmup=warmup,
+                **selection,
+            )
         )
         model = self.consumer.predictor
         for start in range(0, len(rows), batch_rows):
@@ -514,11 +522,10 @@ class MechanismBinding(TitansBinding):
                     route=row["executed_route"],
                 )
                 projections += row["regional_readout"]["value_projections"]
-            if rows and (
-                type(control["work"].get("bridge_value_projections")) is not int
-                or control["work"]["bridge_value_projections"] != projections
-            ):
-                raise ValueError("Las proyecciones regionales no concilian con su trabajo")
+            if rows or self.consumer.readout.recurrence_work(0):
+                regional_mechanism_trace.verify_work(
+                    control["work"], self.consumer.readout, value_projections=projections
+                )
         if self.consumer.policy is not None:
             trace = control.get("selection")
             if warmup or not rows:

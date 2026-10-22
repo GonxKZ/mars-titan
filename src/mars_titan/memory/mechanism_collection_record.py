@@ -163,7 +163,7 @@ def _work(body, catalog):
         and work["individual_route_batches"] <= 6 * passes,
         "El trabajo no corresponde a los bloques y contextos ejecutados",
     )
-    if catalog.reader_contract == "shared_evidence_bridge_v1":
+    if catalog.reader_contract != "legacy":
         populated = body["observation"]["observation"]["bank_entries"] > 0
         _require(
             work["reader_value_projections"] == (work["reader_refinements"] if populated else 0),

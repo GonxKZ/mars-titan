@@ -99,6 +99,7 @@ class MechanismCatalog(FingerprintOnce):
         if type(self.reader_contract) is not str or self.reader_contract not in (
             "legacy",
             "shared_evidence_bridge_v1",
+            "shared_evidence_bridge_nonlinear_v1",
         ):
             raise ValueError("El catálogo necesita un contrato de lector conocido")
 

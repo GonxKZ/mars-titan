@@ -94,6 +94,33 @@ class MechanismCollector:
             )
             for market, plan in self._event.plans
         ]
+        self._preflight_node_updates()
+
+    def _preflight_node_updates(self):
+        """Reservar el peor caso de colección y emisión antes de cualquier MAC.
+
+        La unión contempla cualquier partición de filas. Compartir prefijos reduce el
+        trabajo real, pero no renueva ni amplía esta admisión conservadora del evento.
+        """
+        reader = self.consumer.readout
+        if reader is None or not reader.recurrence_work(1):
+            return
+        reads = 0
+        for context in ("off", "parent"):
+            routes = self._routes(context)
+            reads += sum(
+                int(route[1])
+                for route in ROUTES
+                if any(route in allowed for allowed in routes.values())
+            )
+        episodes = self._event.snapshot.count if self._event.snapshot is not None else 0
+        for _, plan in self._event.plans:
+            reader.preflight_node_updates(reads + plan.reader_steps, episodes)
+
+    def emission_event(self):
+        """Reutilizar en la emisión el ancla que ya reservó colección y acción final."""
+        self._verify_prefix()
+        return self._event
 
     def _verify_prefix(self):
         if type(self.consumer) is not FrozenMechanismConsumer:

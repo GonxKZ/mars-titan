@@ -15,6 +15,7 @@ from mars_titan.models.quantile_routing import QuantileRouting
 from .bank_readout import BankReadout
 from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
+from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
@@ -39,6 +40,7 @@ _TITANS_MODULES = (
     "episodic_readout",
     "episodic_snapshot",
     "evidence_bridge",
+    "bridge_recurrence",
     "regional_episode_readout",
     "frozen_financial",
 )
@@ -324,6 +326,11 @@ class FrozenFinancialConsumer:
             options.update(control_selection=selection, control_context_id=context_id)
         elif selection is not None:
             raise ValueError("El predictor sin C no admite un plan de medición")
+        if not warmup and type(self.readout) is EpisodicReadout:
+            self.readout.preflight_node_updates(
+                self.readout.config.refinements,
+                snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0,
+            )
         prepared = self.predictor.prepare(batch, state, differentiable=False, **options)
         if warmup:
             return FrozenPreparation(None, prepared.next_state, None, prepared.local_control)

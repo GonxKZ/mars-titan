@@ -91,6 +91,7 @@
       "enabled": false,
       "disabled_value": "absent",
       "allowed": ["self", "ring", "complete"],
+      "recurrence": {"steps": [1, 2, 4], "max_node_updates_per_row": 1216, "requires_cycles": 0, "default": null},
       "value": {
         "regions": ["view_1", "view_2", "view_3"],
         "topology": "ring",

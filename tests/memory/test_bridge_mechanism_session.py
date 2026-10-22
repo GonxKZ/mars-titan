@@ -13,6 +13,7 @@ from test_mechanism_policy import policy
 from test_native_episode_backend import native as native
 
 from mars_titan.models.quantile_head import QUANTILE_HEAD
+from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.evidence_bridge import EvidenceBridgeConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
@@ -24,7 +25,7 @@ pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 DEVICES = ("cpu", pytest.param("cuda:0", marks=pytest.mark.cuda))
 
 
-def engines(source, device="cpu", *, automatic=False):
+def engines(source, device="cpu", *, automatic=False, recurrence=None):
     model = (
         FinancialPredictor(
             FinancialConfig(
@@ -39,14 +40,19 @@ def engines(source, device="cpu", *, automatic=False):
     common = dict(codec_id=source["codec"].fingerprint(), hidden_size=32)
     reader = (
         EpisodicReadout(
-            EpisodicReadoutConfig(**common, evidence_bridge=EvidenceBridgeConfig(**common)),
+            EpisodicReadoutConfig(
+                **common,
+                evidence_bridge=EvidenceBridgeConfig(
+                    **common, cycles=0 if recurrence is not None else 1, recurrence=recurrence
+                ),
+            ),
             device=device,
             dtype=torch.float64,
         )
         .eval()
         .requires_grad_(False)
     )
-    catalog = MechanismCatalog(reader_contract="shared_evidence_bridge_v1")
+    catalog = MechanismCatalog(reader_contract=reader.config.evidence_bridge.identity()["kind"])
     options = dict(action=MechanismAction(route="k4cr"))
     if automatic:
         parent = policy(device=device)
@@ -65,10 +71,16 @@ def engines(source, device="cpu", *, automatic=False):
 
 @pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("automatic", [False, True])
+@pytest.mark.parametrize("nonlinear", [False, True])
 def test_native_controller_recovers_the_next_route_and_applies_feedback_once(
-    native, four_flow_source, tmp_path, device, automatic
+    native, four_flow_source, tmp_path, device, automatic, nonlinear
 ):
-    data = engines(four_flow_source, device, automatic=automatic)
+    data = engines(
+        four_flow_source,
+        device,
+        automatic=automatic,
+        recurrence=BridgeRecurrenceConfig(2, 1216) if nonlinear else None,
+    )
     with session(native, tmp_path / "reference", data, block_rows=2) as run:
         run.step(four_flow_source["batches"][125], [], kind="warmup")
         first = run.step(four_flow_source["batches"][126], [])

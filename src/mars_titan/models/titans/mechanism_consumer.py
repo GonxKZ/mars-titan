@@ -128,7 +128,10 @@ class FrozenMechanismConsumer:
         if type(action) is not MechanismAction or type(catalog) is not MechanismCatalog:
             raise ValueError("El consumidor necesita acción y catálogo identificados")
         regional = type(readout) is EpisodicReadout and readout.config.evidence_bridge is not None
-        if regional != (catalog.reader_contract == "shared_evidence_bridge_v1"):
+        reader_contract = (
+            readout.config.evidence_bridge.identity()["kind"] if regional else "legacy"
+        )
+        if reader_contract != catalog.reader_contract:
             raise ValueError("El lector regional necesita un catálogo explícito compatible")
         if readout is not None and (
             type(readout) is not EpisodicReadout
@@ -207,6 +210,13 @@ class FrozenMechanismConsumer:
             self._identity["selector"] = self._policy_identity
         if regional:
             self._identity.update(schema_version=2, recipe="frozen_regional_mechanism_cohort_v1")
+            if readout.config.evidence_bridge.recurrence is not None:
+                self._identity.update(
+                    schema_version=3,
+                    recipe="frozen_nonlinear_regional_mechanism_cohort_v1",
+                    node_work="R0_initial_views_and_R_times_J_new_updates_per_value_projection",
+                    node_budget="conservative_collection_plus_final_emission_per_row_before_mac",
+                )
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -385,6 +395,7 @@ class FrozenMechanismConsumer:
                 for k in (1, 2, 4)
                 if self.readout.estimated_bytes(planning_rows, count, refinements=k)
                 <= self.readout.config.max_working_bytes
+                and k <= self.readout.node_read_limit(count)
                 and (
                     self.readout.config.evidence_bridge is None
                     or regional_mechanism_trace.estimated_bytes(self.readout, len(flows), count, k)
@@ -619,6 +630,7 @@ class FrozenMechanismConsumer:
                 if not event.warmup
                 else 0
             )
+            work.update(self.readout.recurrence_work(work["bridge_value_projections"]))
         context = (
             self.predictor.commit_context(event.context) if event.context is not None else None
         )
