@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "native_asof_order_attempts_v1",
+  "scope": "Intentos previos, separados de la verificación final.",
+  "records": [
+    {
+      "name": "check-same-cutoff-red-v1.json",
+      "sha256": "56ea9d802afeb268e3253deb93f2a5989f0124bdc660165f3b67dd34b7615e8e",
+      "returncode": 1,
+      "supervision_seconds": 29.784626574022695,
+      "timeout_seconds": 240,
+      "cause": "RED esperado del rechazo de una recepción válida al mismo corte.",
+      "status": "expected_red_not_green",
+      "bytes": 310
+    },
+    {
+      "name": "check-same-cutoff-kind-red-v1.json",
+      "sha256": "242240306c731b9d371aaeed3790461deef414679a3665a47ce4dc3bc8499e3b",
+      "returncode": 1,
+      "supervision_seconds": 30.271173179964535,
+      "timeout_seconds": 240,
+      "cause": "RED esperado de la falta de concordancia entre el tipo histórico y el nativo.",
+      "status": "expected_red_not_green",
+      "bytes": 290
+    },
+    {
+      "name": "check-asof-regression-coverage-v1.json",
+      "sha256": "b79340326b629239c3c646044df6e29cc93b423486b80da615b3504c9f911354",
+      "returncode": 124,
+      "supervision_seconds": 240.02769453905057,
+      "timeout_seconds": 240,
+      "cause": "La corrida amplia agotó el límite de 240 segundos por proceso. No se declara aprobada.",
+      "status": "not_approved",
+      "bytes": 1109
+    },
+    {
+      "name": "check-scoped-fit-regression-v1.json",
+      "sha256": "84775834550aa5cf06ea5dd218bca5b125ca742866981cc4f0b7dff600cdcbc1",
+      "returncode": 1,
+      "supervision_seconds": 108.78998438490089,
+      "timeout_seconds": 240,
+      "cause": "Falló la compatibilidad del diagnóstico: una prueba exigía «futuro» y recibió otro mensaje. Se conservó la prueba y se separaron los diagnósticos de los límites.",
+      "status": "not_approved",
+      "bytes": 732,
+      "xml": {
+        "name": "scoped-fit-tests.xml",
+        "sha256": "b931f4ecf22534fd1cfc2e6c6850630ea8f7e6baae278dcc8671b734c89511e5",
+        "bytes": 6781
+      },
+      "failed_test": "tests.memory.test_mechanism_fit_window::test_exact_reception_boundary_wrong_parent_and_earlier_decision_are_rejected"
+    },
+    {
+      "name": "check-mutation-strict-lower-v2.json",
+      "sha256": "2027ee60c74dd13b482b08f92def6e031a16a7d0509a3e395022e94b8488f6d8",
+      "returncode": 1,
+      "supervision_seconds": 18.051971573964693,
+      "timeout_seconds": 240,
+      "status": "not_approved",
+      "cause": "El cierre de fixtures omitió memory_stability_traces. La colección falló y otro error del hook ocultó la causa primaria. No se ejecutó el mutante.",
+      "mutant_executed": false,
+      "failed_calls": 0,
+      "bytes": 588,
+      "mutation_result": {
+        "name": "results.json",
+        "sha256": "0d9cecb898fc09e8055a3c3e70005dfcce6bcebea384c89260c8798ebcf63dca",
+        "bytes": 4407
+      }
+    }
+  ],
+  "failed_attempts_removed": false
+}

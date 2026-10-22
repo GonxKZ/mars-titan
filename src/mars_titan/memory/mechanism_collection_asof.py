@@ -84,9 +84,10 @@ def _receive(session, states, lookup, record, generation, sha):
 
 def _check_event_order(previous_at, previous_kind, event, before):
     _require(
-        previous_at <= event["cutoff"] < before,
-        "El registro retrocede o alcanza el corte histórico exclusivo",
+        previous_at <= event["cutoff"],
+        "El registro retrocede respecto al corte histórico anterior",
     )
+    _require(event["cutoff"] < before, "El registro alcanza el futuro del corte histórico")
     _require(
         event["cutoff"] != previous_at
         or (event["kind"] == "settlement" and previous_kind in ("warmup", "decision")),

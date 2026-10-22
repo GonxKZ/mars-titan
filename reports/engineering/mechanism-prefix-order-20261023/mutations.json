@@ -1,0 +1,466 @@
+{
+  "schema_version": 1,
+  "kind": "native_asof_order_directed_mutations_v1",
+  "status": "passed",
+  "captured_at_utc": "2026-10-22T23:53:59.378224+00:00",
+  "expected_targets": 4,
+  "completed_targets": 4,
+  "source_pins": {
+    "src/mars_titan/memory/mechanism_collection_asof.py": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+    "src/mars_titan/training/mechanism_fit_window.py": "16c838af74b3da95bd2057dbceecae6499b6bccb67b33865ad862becd1bc51a3",
+    "tests/memory/test_mechanism_same_cutoff_window.py": "5c6df672f7cfa9df41d87ec06f54dea20a58e4b1087c689eb039fb9e8c619232"
+  },
+  "criterion": "Una base y restauración correctas, un fallo CALL semántico del mutante y ningún error de colección, preparación o limpieza ni omisión.",
+  "scope": "Cuatro objetivos dirigidos sobre el orden as-of. No es una puntuación de todo el repositorio.",
+  "records": [
+    {
+      "id": "strict_lower_bound",
+      "status": "killed",
+      "mutation": {
+        "before": "previous_at <= event[\"cutoff\"]",
+        "after": "previous_at < event[\"cutoff\"]",
+        "nodeid": "tests/memory/test_mechanism_same_cutoff_window.py::test_clock_order_matches_the_native_event_rule[10-settlement-decision]",
+        "failure": "El registro retrocede respecto al corte histórico anterior"
+      },
+      "result": {
+        "name": "results.json",
+        "sha256": "89ae152c35815e0afcf2a2e81d8b786a3146b0a69e830cd8aef22bb62a8c82ea",
+        "bytes": 6616
+      },
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "23d8db60ec73bc90f13410cd727730668a319b888bf8b3a1447e9e23b1a613f1",
+        "bytes": 76251
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 31.31735938694328,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "base.xml",
+            "sha256": "6b8b2fb22ee62f03957a4be7b1a367037eb97172c69f55e5331187389614b910",
+            "bytes": 408
+          },
+          "call_report": {
+            "name": "base.phases.json",
+            "sha256": "27c40b11ddb88675036c4b91736e890357d8311c1339a80c60eff1b54aec3f84",
+            "bytes": 14434
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "returncode": 1,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 27.90692217508331,
+          "timeout_s": 45,
+          "source_sha256": "9508ecbc675ab76978420b44c9b899f917f899366578376dca7c609dc7d08fd3",
+          "xml": {
+            "name": "mutant.xml",
+            "sha256": "4d688a724863832f862e9407503149c5e108368fd7d6a43c366c1bda3603971c",
+            "bytes": 923
+          },
+          "call_report": {
+            "name": "mutant.phases.json",
+            "sha256": "57180e9e68f31fe3911564f17f11274e3d7e11082bd0989e4b2d6e5c40909126",
+            "bytes": 14843
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 28.40043621195946,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "restored.xml",
+            "sha256": "a1717e88f2692bfc9e2f818ba470fcc5e30c6b229245152da05a10806bbfdf9b",
+            "bytes": 408
+          },
+          "call_report": {
+            "name": "restored.phases.json",
+            "sha256": "27c40b11ddb88675036c4b91736e890357d8311c1339a80c60eff1b54aec3f84",
+            "bytes": 14434
+          }
+        }
+      ],
+      "integrity": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "driver_elapsed_seconds": 90.92242881306447,
+      "supervisor": {
+        "name": "check-mutation-strict-lower-v3.json",
+        "sha256": "a980e677eec8b9f14bc6919eebd3556f5427aedf7a58c4d76c92c0f67769512e",
+        "bytes": 589,
+        "returncode": 0,
+        "supervision_seconds": 91.5122265330283,
+        "timeout_seconds": 240
+      }
+    },
+    {
+      "id": "inclusive_before",
+      "status": "killed",
+      "mutation": {
+        "before": "event[\"cutoff\"] < before",
+        "after": "event[\"cutoff\"] <= before",
+        "nodeid": "tests/memory/test_mechanism_same_cutoff_window.py::test_clock_order_matches_the_native_event_rule[12-decision-decision]",
+        "failure": "DID NOT RAISE"
+      },
+      "result": {
+        "name": "results.json",
+        "sha256": "418f44999c6959b78a3fbe77d7353147e4e1977ecf01266173b7db6de691d566",
+        "bytes": 6591
+      },
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "23d8db60ec73bc90f13410cd727730668a319b888bf8b3a1447e9e23b1a613f1",
+        "bytes": 76251
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 29.926275932928547,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "base.xml",
+            "sha256": "f26185bf44d7cee843b3e25206440400e1075a6ab883491b8bc93442d9c7fdb0",
+            "bytes": 406
+          },
+          "call_report": {
+            "name": "base.phases.json",
+            "sha256": "64754a06be173ffade536113615e0d18b071f1b14a78242ebc3e56f023610ae4",
+            "bytes": 14424
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "returncode": 1,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 29.30552612792235,
+          "timeout_s": 45,
+          "source_sha256": "0e898742a10f6b89f8f545282a9670fc417191b8e1363074e1fdd3a7fc8b062e",
+          "xml": {
+            "name": "mutant.xml",
+            "sha256": "86270939cc4505c0f20edcabbc37e87c41498e37d5db210c04103b20cbd1e8f6",
+            "bytes": 763
+          },
+          "call_report": {
+            "name": "mutant.phases.json",
+            "sha256": "9561dd23b7b34a8ee7a1174c9d8f4b8404cf7296234d53490b83e26293dff546",
+            "bytes": 14713
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 30.17219671991188,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "restored.xml",
+            "sha256": "2431729bc52b75c581437f76ae99ef0ac1a380a471eb5d8024d30a37c92a4309",
+            "bytes": 406
+          },
+          "call_report": {
+            "name": "restored.phases.json",
+            "sha256": "036f31589f8ebf40680940c6ecf15de10b3ca85864626f893332cc35468118ca",
+            "bytes": 14424
+          }
+        }
+      ],
+      "integrity": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "driver_elapsed_seconds": 92.25922714103945,
+      "supervisor": {
+        "name": "check-mutation-inclusive-before-v3.json",
+        "sha256": "ce2427d3556c2c4b3de6eccf06525ae29b7df6d7f638294fa1bb7a5e14f203fa",
+        "bytes": 586,
+        "returncode": 0,
+        "supervision_seconds": 93.04970256891102,
+        "timeout_seconds": 240
+      }
+    },
+    {
+      "id": "untyped_equal_cutoff",
+      "status": "killed",
+      "mutation": {
+        "before": "    _require(\n        event[\"cutoff\"] != previous_at\n        or (event[\"kind\"] == \"settlement\" and previous_kind in (\"warmup\", \"decision\")),\n        \"El registro repite el corte sin una liquidación posterior admisible\",\n    )\n",
+        "after": "",
+        "nodeid": "tests/memory/test_mechanism_same_cutoff_window.py::test_clock_order_matches_the_native_event_rule[10-settlement-settlement]",
+        "failure": "DID NOT RAISE"
+      },
+      "result": {
+        "name": "results.json",
+        "sha256": "5a939d4376dda9824c3a5456592070fa9f17bc97ba247a1b65a535e001dd8ad0",
+        "bytes": 6645
+      },
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "23d8db60ec73bc90f13410cd727730668a319b888bf8b3a1447e9e23b1a613f1",
+        "bytes": 76251
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 22.374962476897053,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "base.xml",
+            "sha256": "db31f9d6b6fd1afe6e36096f757061d9c79040af6c69ae6c48e2357c497471e5",
+            "bytes": 410
+          },
+          "call_report": {
+            "name": "base.phases.json",
+            "sha256": "1f57e3b346433febadc2b3ce2a78558d8d791bbfb4b7d2d02f390a008f375a19",
+            "bytes": 14444
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "returncode": 1,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 25.925455561024137,
+          "timeout_s": 45,
+          "source_sha256": "aa2b266beac7f88f906f199f358d97c8d3238c89f8dea814ae9c07983ce25150",
+          "xml": {
+            "name": "mutant.xml",
+            "sha256": "82cd1809459174bdd67d338906135a0257b9b35a13b05130d059128665cefbcb",
+            "bytes": 767
+          },
+          "call_report": {
+            "name": "mutant.phases.json",
+            "sha256": "6b55b47a3618875d49c0ee976ac4ccdd28a872fec93a5de135c3b4ed20724be9",
+            "bytes": 14733
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 26.474922243971378,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "restored.xml",
+            "sha256": "073bc7f282b3ee9f65f9e68b89a7b527e24895eab7d8fcab880262354ca0e333",
+            "bytes": 410
+          },
+          "call_report": {
+            "name": "restored.phases.json",
+            "sha256": "5557ac1c79196d9c0ff2619d6fb9a05d6a5523e4efc32ccf2fab9c60fffc0d6d",
+            "bytes": 14444
+          }
+        }
+      ],
+      "integrity": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "driver_elapsed_seconds": 77.35756145697087,
+      "supervisor": {
+        "name": "check-mutation-equal-kind-v3.json",
+        "sha256": "11f11f63c1059ff1678a76f97e3d0cb3ced0e26836ffbd6c150e4f08440c568a",
+        "bytes": 594,
+        "returncode": 0,
+        "supervision_seconds": 77.93228258995805,
+        "timeout_seconds": 240
+      }
+    },
+    {
+      "id": "unbound_native_kind",
+      "status": "killed",
+      "mutation": {
+        "before": "        _require(\n            event[\"kind\"] == record[\"event_kind\"],\n            \"El tipo del evento histórico contradice su registro nativo\",\n        )\n",
+        "after": "",
+        "nodeid": "tests/memory/test_mechanism_same_cutoff_window.py::test_historical_event_kind_must_match_the_native_record[warmup]",
+        "failure": "DID NOT RAISE"
+      },
+      "result": {
+        "name": "results.json",
+        "sha256": "cb3e12058d15d094943e98d870ebe5dc01a608b3b893bbc1343d4dbe79afdc64",
+        "bytes": 6606
+      },
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "23d8db60ec73bc90f13410cd727730668a319b888bf8b3a1447e9e23b1a613f1",
+        "bytes": 76251
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 35.00951898901258,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "base.xml",
+            "sha256": "5c35a9b20ddcbfe1335519c6717500dac17bb90287fb651c0f8460c3e175e135",
+            "bytes": 403
+          },
+          "call_report": {
+            "name": "base.phases.json",
+            "sha256": "931b5dcf08c21a9129e99d0e007ad89db515b51a5b98b6279c17e8ef24b20305",
+            "bytes": 14650
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "returncode": 1,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 34.255443964968435,
+          "timeout_s": 45,
+          "source_sha256": "a24dc55fe945d5276c6239bc885d3da4bee923f61518e17a0efde140edf88e9d",
+          "xml": {
+            "name": "mutant.xml",
+            "sha256": "90769a5ffe5f35be9af2fc2577661078c6830f63119530820bc40d9748b36a87",
+            "bytes": 768
+          },
+          "call_report": {
+            "name": "mutant.phases.json",
+            "sha256": "5b28e5352b6d49e1809620f2063691c1910ef21d42bb3a10c08b5fd8f21aedda",
+            "bytes": 14948
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "returncode": 0,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "elapsed_s": 31.449452976929024,
+          "timeout_s": 45,
+          "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+          "xml": {
+            "name": "restored.xml",
+            "sha256": "b0bf91f860061052c50757b4cc3deb1df981762e78f442139be4d872cd86ca1a",
+            "bytes": 402
+          },
+          "call_report": {
+            "name": "restored.phases.json",
+            "sha256": "4d931a98cdbfa2d0dfa6ccb79871d05b22805a90442b93cfcc42387c63f17e67",
+            "bytes": 14650
+          }
+        }
+      ],
+      "integrity": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "driver_elapsed_seconds": 105.659994569025,
+      "supervisor": {
+        "name": "check-mutation-native-kind-v3.json",
+        "sha256": "62c287c32003ef31f321d4b26a368053185cd7237a2f42341f77159035ac4426",
+        "bytes": 593,
+        "returncode": 0,
+        "supervision_seconds": 106.43452795397025,
+        "timeout_seconds": 240
+      }
+    }
+  ],
+  "driver": {
+    "name": "mutate-asof-v3.py",
+    "sha256": "15ec73165af2c16dd8c99ee1fc7fa01b31a68d4f7f219c2b78db5eccdcff1350",
+    "bytes": 26733
+  }
+}
