@@ -1,0 +1,62 @@
+{
+  "adopted": false,
+  "reason": "El ahorro de memoria no resuelve la regresión descriptiva de latencia en el caso pequeño repetido.",
+  "active_source_sha256": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+  "memory_256_saving_bytes": {
+    "mean_partial/torch.float32": 25165824,
+    "per_bank/torch.float32": 25165824,
+    "mean_partial/torch.float64": 50331648,
+    "per_bank/torch.float64": 50331648
+  },
+  "native_256_original_limit_met": true,
+  "small_original_delta_percent": 24.18144516489773,
+  "small_confirmation_blocks": [
+    {
+      "pair": 0,
+      "order": [
+        "copied",
+        "borrowed"
+      ],
+      "copied_p50_ms": 1940.9400030000002,
+      "borrowed_p50_ms": 1808.43481,
+      "delta_percent": -6.826856718661811
+    },
+    {
+      "pair": 1,
+      "order": [
+        "borrowed",
+        "copied"
+      ],
+      "copied_p50_ms": 1714.7753945,
+      "borrowed_p50_ms": 1788.478859,
+      "delta_percent": 4.29814101230972
+    },
+    {
+      "pair": 2,
+      "order": [
+        "copied",
+        "borrowed"
+      ],
+      "copied_p50_ms": 1711.0879175,
+      "borrowed_p50_ms": 2123.212775,
+      "delta_percent": 24.08554541733534
+    },
+    {
+      "pair": 3,
+      "order": [
+        "borrowed",
+        "copied"
+      ],
+      "copied_p50_ms": 1799.0120805,
+      "borrowed_p50_ms": 1938.251064,
+      "delta_percent": 7.739746998324848
+    }
+  ],
+  "small_all_samples_per_version": 20,
+  "small_all_copied_p50_ms": 1788.1310765,
+  "small_all_borrowed_p50_ms": 1913.7211345,
+  "small_all_delta_percent": 7.023537572302807,
+  "causal_explanation_established": false,
+  "statistical_superiority_claim": false,
+  "predictive_effect_measured": false
+}

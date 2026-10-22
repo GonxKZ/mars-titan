@@ -1,0 +1,80 @@
+{
+  "recorded_at_utc": "2026-10-21T09:38:33.859542+00:00",
+  "code_commits": [
+    "ce8ccfbb5",
+    "883dca869",
+    "fd21b78d1"
+  ],
+  "tests": 423,
+  "passed": 423,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_tests": 93,
+  "new_collection_supervision_tests": 45,
+  "new_collection_supervision_cuda_tests": 8,
+  "junit_sha256": "ed63b56bc590eb1fd59a0cd399d89e7a02c5b4c851231004f17357e5dc7f9d14",
+  "log_sha256": "d1e082024f9a744e60366bc213fa7494c0a05aab0e7909b5e7489486d90a71e7",
+  "cuda_collection_sha256": "416974208666bc3054837e60a6bba3a5e674248bf314a18032d370e1da7aa866",
+  "coverage": {
+    "statements": 1194,
+    "covered_statements": 1124,
+    "branches": 420,
+    "covered_branches": 350
+  },
+  "coverage_tool": "coverage.py 7.16.1 con ramas",
+  "complexity_tool": "Radon 6.0.1",
+  "scope": "Selección dirigida, no toda la suite del proyecto",
+  "optimizer_steps": 0,
+  "predictor_trained": false,
+  "selector_fitted": false,
+  "real_corpus_used": false,
+  "final_test_used": false,
+  "external_artifact_transport_tested": true,
+  "collection_native_generation_publication_verified": false,
+  "prior_measurement": {
+    "tests": 422,
+    "cuda": 93,
+    "mutants": 21,
+    "reason": "Versión anterior a la normalización de escalares, conservada por separado"
+  },
+  "reproduced_failures": [
+    {
+      "kind": "selected_online_byte_return_rejected",
+      "log_sha256": "458def10a07155a2fc3f897a41d97ae823cc857f384b816fd1d5d9fad7730174",
+      "resolution": "Elección, ejecución y emisión conciliadas con K1 y trabajo descartado"
+    },
+    {
+      "kind": "changed_prefix_or_false_return_accepted",
+      "log_sha256": "d3bca3163e06fbfa5a8c312f233318dfb55d3cb8ddd5d9521d84cb326cc2b573",
+      "resolution": "Huella anterior invariable y cuantiles K1 exactos por contexto"
+    },
+    {
+      "kind": "inconsistent_collection_work",
+      "log_sha256": "dac41c029179d79c9b138eb110ddc99faebdd19512d26ae63045cf0ddab0dc39",
+      "resolution": "Trabajo contrastado con bloques, disponibilidades y propuestas"
+    },
+    {
+      "kind": "finite_mean_overflow",
+      "log_sha256": "e3f633cced6bca6a1da9dd6c9514bb94ec151cac8f55d24f1d6e520b7531de1d",
+      "resolution": "Media no negativa escalada, sin ocultar errores individuales no representables"
+    },
+    {
+      "kind": "numpy_feedback_not_serializable",
+      "log_sha256": "64f04024866cbdd8e10eae1d8f1d3833f794c06401e5d5b20dcd8bdd0b64d5f9",
+      "resolution": "Valores normalizados a float e int después de validar, conservando su valor"
+    }
+  ],
+  "sources": {
+    "src/mars_titan/memory/mechanism_collection.py": "a4feef164386062c2d907fbb0886ed98777bbbcfadefc00254dffd32b9105394",
+    "src/mars_titan/memory/mechanism_collection_record.py": "b5cdec277620f379446868c4b1e9c03d65d223304c99ecaf2dcda1ce68c423ff",
+    "src/mars_titan/memory/mechanism_supervision.py": "5c122163238779604a0a0376c356a944e1e9e6952df4cf4416b0e9f7904c66a6",
+    "src/mars_titan/models/titans/mechanism_selection.py": "271e807abd3f5571fc5457b8fbd3c0801f9bd52440a3aae01022e5e2a98a629f",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "4d2f0a5e79b9eee6d84738adfbabafdf21c15d62d240c26400f015c159d2a1a6",
+    "src/mars_titan/models/titans/mechanism_event.py": "92e938b72340006ca431ec645496318321959d4dca5dbe200668d39b6a230443",
+    "src/mars_titan/memory/financial_mechanisms.py": "93608f8ee6aff0a3a3519ae712aac4a5029564ac217692e3c179a0726b61e992",
+    "tests/memory/test_mechanism_collection.py": "1ca5547f3e517b6a22353c00facb46ba7490401bdc6ece7ba3d9b807596640ca",
+    "tests/memory/test_mechanism_supervision.py": "ddc82b8c7c2770f199b506e887ca624bf81eb6c1677a584af002dbb2191ac8a8",
+    "tests/memory/test_mechanism_selection.py": "9e32a2a2af33e5e85eded3642de26a8be7e077f879405bfd635c732ce51c6015"
+  }
+}

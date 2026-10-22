@@ -1,0 +1,82 @@
+{
+  "recorded_at_utc": "2026-10-21T11:39:13.351827+00:00",
+  "code_commit": "d0768ad43e6ea5b17625c4508c71e9d94ef767ad",
+  "tests": 402,
+  "passed": 402,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_marked_tests": 94,
+  "new_tests": 54,
+  "new_cuda_tests": 5,
+  "scope": "Selección de contratos, máscaras e integración, no toda la suite",
+  "junit_sha256": "3c53954036f703244cadec3cb4bd798b4644365f3573c0e0f047ebcf1bc6e0c5",
+  "log_sha256": "a4667f8cd163fee5ebeb270298fa3c66d8d7a0b71428e4c50a7fa44c2b18288a",
+  "cuda_collection_sha256": "1074bcbb02e5a0093059ca69b410791d344bb2e71f2b7fd4bd3f4ab7e2c0b23d",
+  "coverage_source": "src/mars_titan directory, report filtered to five declared files",
+  "coverage": {
+    "statements": 700,
+    "covered_statements": 549,
+    "branches": 262,
+    "covered_branches": 206
+  },
+  "optimizer_steps": 0,
+  "real_data_used": false,
+  "final_test_used": false,
+  "native_fp32_collection_and_action_support_tested": true,
+  "selector_coefficients_fitted": false,
+  "fit_source_reader_positive_path_executed": false,
+  "fit_normalization_executed": false,
+  "fit_solver_executed": false,
+  "predictive_improvement_measured": false,
+  "sources": {
+    "src/mars_titan/models/titans/mechanism_consumer.py": "9f76ab3679effa66dc6f50126b5b2ebc22d1536dac459256aa2dfbf89dd2e6f2",
+    "src/mars_titan/models/titans/mechanism_policy.py": "571505d2afc22107215f5ae5f66fb72cb440f84123c5a608ab38bb4f1419ab75",
+    "src/mars_titan/models/titans/mechanism_selection.py": "05172796b155f82fea9704381b27cf71b23e6112c3f01423965bb163099cc82f",
+    "src/mars_titan/training/mechanism_fit_contract.py": "4d2012359d22797063dbe66dac753e2982a3f8155f8d2f7b4c6fec0f026f46cc",
+    "src/mars_titan/training/mechanism_policy_fit.py": "243367aeefd513d89fd28fde5ca3ba1ff553f9b580f6f50727dc413de9e334ae",
+    "tests/memory/test_financial_mechanisms.py": "ea00f4c51a34f553bb9530bd54f448ae1c36ee35b2df424595f47eef86fb5dfa",
+    "tests/memory/test_mechanism_action_support_session.py": "95ef26322122327e9e4d23accbbb5edb8d174407aaf7739dde5902d13901887b",
+    "tests/memory/test_mechanism_collection.py": "1ca5547f3e517b6a22353c00facb46ba7490401bdc6ece7ba3d9b807596640ca",
+    "tests/memory/test_mechanism_selection.py": "9e32a2a2af33e5e85eded3642de26a8be7e077f879405bfd635c732ce51c6015",
+    "tests/memory/test_mechanism_supervision.py": "ddc82b8c7c2770f199b506e887ca624bf81eb6c1677a584af002dbb2191ac8a8",
+    "tests/memory/test_native_collection_guard.py": "803d8e3effd4303cfbe387e5b5fab13c2d178793ad37e418a0eb62cfcdc8056c",
+    "tests/memory/test_native_mechanism_collection.py": "705d5882313f8a1f061fe33318054857c64ab3a0bcb67a1ea974e309f533d3b0",
+    "tests/models/titans/test_mechanism_action_support.py": "3198a85631e715bf2c584ef84f2106e397e25b819a4576e70c9fc20d04dfff8c",
+    "tests/models/titans/test_mechanism_consumer.py": "fa55d3f8e3513bb8cad269030162895b840cda184c4264efa11ae640c0f57e71",
+    "tests/models/titans/test_mechanism_policy.py": "c9054e88ae9b4a7ea92514f943fa722c3a8ff32c48be6e22169742558f85aa07",
+    "tests/training/test_learning_hold_inventory.py": "a1e2950164d86eb11633fcabc2ccb5db01bd8bf432b5ff8dfe52aa28d4cf6eb9",
+    "tests/training/test_mechanism_policy_fit.py": "1587b10fd84f466337dd4cb27fc715388fc926892163562001ad070ae032dba8",
+    "tests/training/test_refinement_policy_fit.py": "6778017e03ae2404dcf186799483a7a4e35c8c7de7ee4d67aa07b3202dfe9045",
+    "tests/training/learning_hold_inventory.py": "063c35d01d2edab88dc8d5b1f0ad62980d20a1465ad212ebc6bcc4446fc8a197"
+  },
+  "reproduced_failures": [
+    {
+      "kind": "missing_action_support",
+      "log_sha256": "e7c417a0db56abd704972fd1f28f7da60aff97486352c0e7f16b1c22eee6e749"
+    },
+    {
+      "kind": "missing_fit_entry",
+      "log_sha256": "53d0dd2274ad495a5f27782a4743bb59be21d7b6e7332a8d287eb4335c3bce80"
+    },
+    {
+      "kind": "guard_inventory_incomplete",
+      "log_sha256": "ee71ee94b8d77b927e8fc87c30352364c7892ce1b53969c3650ce46f9d4ebd37"
+    },
+    {
+      "kind": "missing_declared_receipt_link",
+      "log_sha256": "b9623b00c6043cd0adaf35fff4c02ab148ba42f41f77a98a9e9f0d792eed19f7"
+    },
+    {
+      "kind": "changed_invalid_scalars_accepted",
+      "log_sha256": "fe666be30ad9f28f044d42247e9b3b1d6bd80c940b8ad1c283f33bdca485526b"
+    }
+  ],
+  "prior_runs_not_selected": {
+    "coverage": "path-final.xml plus supplement.xml, 397distinct439executions before scalar validation fix",
+    "mutation": "13targets before scalar validation fix, kept separate",
+    "cost": "cost.json before scalar validation fix, kept separate"
+  },
+  "equivalent_mutant_not_counted": "Omitir la primera validación del SHA queda cubierto por la revalidación posterior y no se cuenta como detección",
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+}

@@ -1,0 +1,974 @@
+{
+  "scope": "native_technical_cost_two_passes_compared_only_within_each_pair",
+  "planned_conditions": 12,
+  "observed_conditions": 12,
+  "first_termination": {
+    "exit_code": 124,
+    "timeout_seconds": 600,
+    "complete_conditions": 10,
+    "planned_conditions": 12,
+    "remaining_conditions": [
+      {
+        "rows": 256,
+        "refinements": 4,
+        "mode": "legacy"
+      },
+      {
+        "rows": 256,
+        "refinements": 4,
+        "mode": "bridge"
+      }
+    ],
+    "state": "incomplete_timeout_not_scientific_result"
+  },
+  "first_partial": {
+    "status": "running_not_complete",
+    "recorded_at_utc": "2026-10-21T20:07:57.360421+00:00",
+    "scope": "native_fixture_decision_and_following_maturation",
+    "code_parent_commit": "6f0e18a6f7884d436054946cb23dd0d12782fa62",
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "torch_git": "08187d9e0fba026dc8217405802ab5381dc88d90",
+    "cuda": "13.0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cpu_threads": 2,
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "autocast": false,
+    "tf32": false,
+    "warmup": 2,
+    "repetitions": 5,
+    "real_corpus": false,
+    "outer_optimizer_steps": 0,
+    "predictive_improvement_measured": false,
+    "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+    "energy_measured": false,
+    "cases": [
+      {
+        "rows": 4,
+        "refinements": 1,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "b5a78ab09cf66c1cd1675169207f3732a2e0fe9e57b8ab865ef73f00a965f9ef",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "7078a5c631e6b064ac1faece420a151475d525a7f88a693a45b3c1d3ec197199",
+        "reader": {
+          "configuration": {
+            "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 402.214454,
+          "p95_ms": 437.3433456,
+          "p99_ms": 440.99566112,
+          "calls_per_second": 2.43809174641349
+        },
+        "following_maturation": {
+          "p50_ms": 262.556091,
+          "p95_ms": 267.5822442,
+          "p99_ms": 267.65099124,
+          "calls_per_second": 3.8306672775242796
+        },
+        "serial_sum": {
+          "p50_ms": 665.9679060000001,
+          "p95_ms": 694.7818826,
+          "p99_ms": 700.32332612,
+          "calls_per_second": 1.4898512188655626
+        },
+        "decision_rows_per_second": 9.75236698565396,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 67954688,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 4,
+        "refinements": 1,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "b5a78ab09cf66c1cd1675169207f3732a2e0fe9e57b8ab865ef73f00a965f9ef",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "7078a5c631e6b064ac1faece420a151475d525a7f88a693a45b3c1d3ec197199",
+        "reader": {
+          "configuration": {
+            "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 450.177061,
+          "p95_ms": 473.8060548,
+          "p99_ms": 476.34863816,
+          "calls_per_second": 2.2367120714758664
+        },
+        "following_maturation": {
+          "p50_ms": 266.503732,
+          "p95_ms": 282.1190318,
+          "p99_ms": 284.97164156,
+          "calls_per_second": 3.7683494709055707
+        },
+        "serial_sum": {
+          "p50_ms": 716.201193,
+          "p95_ms": 726.2742114,
+          "p99_ms": 728.19289508,
+          "calls_per_second": 1.4036013938620846
+        },
+        "decision_rows_per_second": 8.946848285903465,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 68053504,
+        "control_archive_bytes": 8533,
+        "observed_work": {
+          "bridge_candidate_queries": 4,
+          "bridge_projected_episode_rows": 16,
+          "bridge_region_reads": 12
+        }
+      },
+      {
+        "rows": 4,
+        "refinements": 4,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "b5a78ab09cf66c1cd1675169207f3732a2e0fe9e57b8ab865ef73f00a965f9ef",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "7078a5c631e6b064ac1faece420a151475d525a7f88a693a45b3c1d3ec197199",
+        "reader": {
+          "configuration": {
+            "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 615.279104,
+          "p95_ms": 638.4206424,
+          "p99_ms": 641.41410688,
+          "calls_per_second": 1.7932663592773335
+        },
+        "following_maturation": {
+          "p50_ms": 378.870785,
+          "p95_ms": 531.4364982,
+          "p99_ms": 560.38497964,
+          "calls_per_second": 2.607400312929964
+        },
+        "serial_sum": {
+          "p50_ms": 994.149889,
+          "p95_ms": 1158.6316488,
+          "p99_ms": 1184.5866657600002,
+          "calls_per_second": 1.0625124815466231
+        },
+        "decision_rows_per_second": 7.173065437109334,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 67954688,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 4,
+        "refinements": 4,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "b5a78ab09cf66c1cd1675169207f3732a2e0fe9e57b8ab865ef73f00a965f9ef",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "7078a5c631e6b064ac1faece420a151475d525a7f88a693a45b3c1d3ec197199",
+        "reader": {
+          "configuration": {
+            "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "5da70e238ecbe36adeab47a6244cc26fab27e108258386a45c6855a78bb2dec3",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 672.421876,
+          "p95_ms": 787.8292312,
+          "p99_ms": 798.38605424,
+          "calls_per_second": 1.4842613878382407
+        },
+        "following_maturation": {
+          "p50_ms": 353.717284,
+          "p95_ms": 418.819712,
+          "p99_ms": 424.3059416,
+          "calls_per_second": 2.7586251871654777
+        },
+        "serial_sum": {
+          "p50_ms": 1026.13916,
+          "p95_ms": 1206.6489432,
+          "p99_ms": 1222.6919958400001,
+          "calls_per_second": 0.9650318895984558
+        },
+        "decision_rows_per_second": 5.937045551352963,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 68053504,
+        "control_archive_bytes": 25892,
+        "observed_work": {
+          "bridge_candidate_queries": 16,
+          "bridge_projected_episode_rows": 64,
+          "bridge_region_reads": 48
+        }
+      },
+      {
+        "rows": 64,
+        "refinements": 1,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "8b46f98937c6901269d3fc010df65ce98357c13190f1350e587bcbbfbcca2cd2",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "075d6cf743e95f7b79c2947e8d922bf1f2f2658e5a34c38c9520e29256c7dd2c",
+        "reader": {
+          "configuration": {
+            "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 1323.097312,
+          "p95_ms": 1433.1238456,
+          "p99_ms": 1453.79724832,
+          "calls_per_second": 0.747399994191237
+        },
+        "following_maturation": {
+          "p50_ms": 706.787608,
+          "p95_ms": 721.3376746,
+          "p99_ms": 722.09373732,
+          "calls_per_second": 1.450733560639529
+        },
+        "serial_sum": {
+          "p50_ms": 2026.579957,
+          "p95_ms": 2086.3394568,
+          "p99_ms": 2096.29846016,
+          "calls_per_second": 0.4932722365354616
+        },
+        "decision_rows_per_second": 47.83359962823917,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 76190208,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 64,
+        "refinements": 1,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "8b46f98937c6901269d3fc010df65ce98357c13190f1350e587bcbbfbcca2cd2",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "075d6cf743e95f7b79c2947e8d922bf1f2f2658e5a34c38c9520e29256c7dd2c",
+        "reader": {
+          "configuration": {
+            "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 1157.863494,
+          "p95_ms": 1580.2287982,
+          "p99_ms": 1633.04184444,
+          "calls_per_second": 0.7808040407221258
+        },
+        "following_maturation": {
+          "p50_ms": 737.623509,
+          "p95_ms": 946.0125053999999,
+          "p99_ms": 982.49120188,
+          "calls_per_second": 1.3760187087906908
+        },
+        "serial_sum": {
+          "p50_ms": 1879.237227,
+          "p95_ms": 2526.2413036,
+          "p99_ms": 2615.53304632,
+          "calls_per_second": 0.4981405950839954
+        },
+        "decision_rows_per_second": 49.97145860621605,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 76289024,
+        "control_archive_bytes": 86741,
+        "observed_work": {
+          "bridge_candidate_queries": 64,
+          "bridge_projected_episode_rows": 512,
+          "bridge_region_reads": 192
+        }
+      },
+      {
+        "rows": 64,
+        "refinements": 4,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "8b46f98937c6901269d3fc010df65ce98357c13190f1350e587bcbbfbcca2cd2",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "075d6cf743e95f7b79c2947e8d922bf1f2f2658e5a34c38c9520e29256c7dd2c",
+        "reader": {
+          "configuration": {
+            "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 1247.338629,
+          "p95_ms": 1409.049743,
+          "p99_ms": 1427.9873142,
+          "calls_per_second": 0.7869224826400655
+        },
+        "following_maturation": {
+          "p50_ms": 792.411253,
+          "p95_ms": 847.5703274,
+          "p99_ms": 856.29792708,
+          "calls_per_second": 1.3219746584427428
+        },
+        "serial_sum": {
+          "p50_ms": 2051.270958,
+          "p95_ms": 2214.6747108,
+          "p99_ms": 2223.0413101599997,
+          "calls_per_second": 0.49328701715384776
+        },
+        "decision_rows_per_second": 50.36303888896419,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 76190208,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 64,
+        "refinements": 4,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "8b46f98937c6901269d3fc010df65ce98357c13190f1350e587bcbbfbcca2cd2",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "075d6cf743e95f7b79c2947e8d922bf1f2f2658e5a34c38c9520e29256c7dd2c",
+        "reader": {
+          "configuration": {
+            "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "d9cf37ed2f7ad0372cd0873bb92f5658f49718538874869735d102024c81a3a9",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 1220.066682,
+          "p95_ms": 1418.0820330000001,
+          "p99_ms": 1433.3892930000002,
+          "calls_per_second": 0.7833253069409652
+        },
+        "following_maturation": {
+          "p50_ms": 620.661822,
+          "p95_ms": 708.4238646,
+          "p99_ms": 717.79714412,
+          "calls_per_second": 1.573781728088823
+        },
+        "serial_sum": {
+          "p50_ms": 1881.6241489999998,
+          "p95_ms": 2112.0522748000003,
+          "p99_ms": 2148.29571256,
+          "calls_per_second": 0.5230068201793308
+        },
+        "decision_rows_per_second": 50.132819644221776,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 76289024,
+        "control_archive_bytes": 336228,
+        "observed_work": {
+          "bridge_candidate_queries": 256,
+          "bridge_projected_episode_rows": 2048,
+          "bridge_region_reads": 768
+        }
+      },
+      {
+        "rows": 256,
+        "refinements": 1,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "40b026dcd69c680ade0fa26ef91b147617aecb489451428f16614d237f8e4c21",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "d6451bc2ac4af44a34295d35067aeb314ef663803be07ee4e6568a97e1c0640a",
+        "reader": {
+          "configuration": {
+            "codec_id": "e041eb8514c6eb516ae344ee17f8390b616da49a2e2a5f5f6d9cd26e277f3a28",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 3892.173729,
+          "p95_ms": 4247.0012202,
+          "p99_ms": 4290.44805764,
+          "calls_per_second": 0.2522551789068387
+        },
+        "following_maturation": {
+          "p50_ms": 1535.959161,
+          "p95_ms": 1815.0982227999998,
+          "p99_ms": 1868.1117437599999,
+          "calls_per_second": 0.6239787214689999
+        },
+        "serial_sum": {
+          "p50_ms": 5579.797651,
+          "p95_ms": 5821.2803514,
+          "p99_ms": 5830.82865108,
+          "calls_per_second": 0.1796345290346669
+        },
+        "decision_rows_per_second": 64.5773258001507,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 78529536,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 256,
+        "refinements": 1,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "40b026dcd69c680ade0fa26ef91b147617aecb489451428f16614d237f8e4c21",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "d6451bc2ac4af44a34295d35067aeb314ef663803be07ee4e6568a97e1c0640a",
+        "reader": {
+          "configuration": {
+            "codec_id": "e041eb8514c6eb516ae344ee17f8390b616da49a2e2a5f5f6d9cd26e277f3a28",
+            "hidden_size": 32,
+            "refinements": 1,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "e041eb8514c6eb516ae344ee17f8390b616da49a2e2a5f5f6d9cd26e277f3a28",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 5063.598787,
+          "p95_ms": 6006.3507486,
+          "p99_ms": 6138.48411692,
+          "calls_per_second": 0.19474536631740194
+        },
+        "following_maturation": {
+          "p50_ms": 1646.907579,
+          "p95_ms": 2563.0248795999996,
+          "p99_ms": 2628.39146872,
+          "calls_per_second": 0.5123278192424293
+        },
+        "serial_sum": {
+          "p50_ms": 6675.920142,
+          "p95_ms": 8569.3756282,
+          "p99_ms": 8766.87558564,
+          "calls_per_second": 0.14110769701154213
+        },
+        "decision_rows_per_second": 49.8548137772549,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 78821376,
+        "control_archive_bytes": 339748,
+        "observed_work": {
+          "bridge_candidate_queries": 256,
+          "bridge_projected_episode_rows": 2048,
+          "bridge_region_reads": 768
+        }
+      }
+    ]
+  },
+  "continuation": {
+    "status": "complete",
+    "requested_rows": [
+      256
+    ],
+    "requested_refinements": [
+      4
+    ],
+    "recorded_at_utc": "2026-10-21T20:21:56.583242+00:00",
+    "scope": "native_fixture_decision_and_following_maturation",
+    "code_parent_commit": "6f0e18a6f7884d436054946cb23dd0d12782fa62",
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "torch_git": "08187d9e0fba026dc8217405802ab5381dc88d90",
+    "cuda": "13.0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cpu_threads": 2,
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "autocast": false,
+    "tf32": false,
+    "warmup": 2,
+    "repetitions": 5,
+    "real_corpus": false,
+    "outer_optimizer_steps": 0,
+    "predictive_improvement_measured": false,
+    "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+    "energy_measured": false,
+    "cases": [
+      {
+        "rows": 256,
+        "refinements": 4,
+        "mode": "legacy",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "981656d4582f440fdba9c2c170ef4480dbfa01951c20017de66235168774b42f",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "5c020e6f9e1063297b00d32021d9304029aaa58581562aa93ebe011360d98f6e",
+        "reader": {
+          "configuration": {
+            "codec_id": "9025c47f7a958fd84d9fe65b57a5d359d74325a53f663da2ef1990b5c0e2a89d",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 1,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "global_each_step_fp64_stable_low_id",
+            "selection_gradient": false,
+            "attention": "model_dtype_softmax",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 7361,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 2105.90803,
+          "p95_ms": 3062.8387232,
+          "p99_ms": 3249.02806864,
+          "calls_per_second": 0.4445982384839062
+        },
+        "following_maturation": {
+          "p50_ms": 752.003291,
+          "p95_ms": 1388.9750642,
+          "p99_ms": 1513.06454484,
+          "calls_per_second": 1.1621876525558696
+        },
+        "serial_sum": {
+          "p50_ms": 2740.211985,
+          "p95_ms": 3963.7126964,
+          "p99_ms": 4030.80549608,
+          "calls_per_second": 0.3215777447359318
+        },
+        "decision_rows_per_second": 113.81714905188,
+        "allocated_before_bytes": 67396096,
+        "allocated_peak_bytes": 78604800,
+        "control_archive_bytes": 1773,
+        "observed_work": {}
+      },
+      {
+        "rows": 256,
+        "refinements": 4,
+        "mode": "bridge",
+        "logical_assets": "replicated_price_fixture_not_independent_histories",
+        "input_spec_id": "981656d4582f440fdba9c2c170ef4480dbfa01951c20017de66235168774b42f",
+        "parent_parameter_id": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "eligible_bank_sha256": "5c020e6f9e1063297b00d32021d9304029aaa58581562aa93ebe011360d98f6e",
+        "reader": {
+          "configuration": {
+            "codec_id": "9025c47f7a958fd84d9fe65b57a5d359d74325a53f663da2ef1990b5c0e2a89d",
+            "hidden_size": 32,
+            "refinements": 4,
+            "neighbors": 8,
+            "temperature": 1.0,
+            "mode": "bank",
+            "seed": 42,
+            "max_batch": 256,
+            "max_working_bytes": 33554432,
+            "schema_version": 2,
+            "query_normalization": "scaled_l2_eps_1e-12",
+            "selection": "common_bridge_query_fp64_stable_low_id_per_step",
+            "selection_gradient": false,
+            "attention": "regional_weights_in_separate_typed_result",
+            "values": "fixed64_plus_mature_label",
+            "refinement": "residual_sigmoid_scalar_tanh_concat_state_base_read_presence",
+            "bias": true,
+            "initial_step": 0.1,
+            "dropout": 0.0,
+            "evidence_bridge": {
+              "schema_version": 1,
+              "kind": "shared_evidence_bridge_v1",
+              "codec_id": "9025c47f7a958fd84d9fe65b57a5d359d74325a53f663da2ef1990b5c0e2a89d",
+              "hidden_size": 32,
+              "regions": [
+                "view_1",
+                "view_2",
+                "view_3"
+              ],
+              "neighbors": 8,
+              "topology": "ring",
+              "cycles": 2,
+              "bridge_gain": 0.25,
+              "temperature": 1.0,
+              "seed": 42,
+              "max_batch": 256,
+              "max_working_bytes": 33554432,
+              "evidence": "one_mature_snapshot_one_common_candidate_selection",
+              "regional_views": "own_query_weights_and_value_transform",
+              "bridge": "convex_messages_between_derived_views",
+              "storage": "no_persistent_episode_copy_or_state",
+              "semantics": "region_names_do_not_attest_specialization_or_historical_sectors"
+            },
+            "projection_initialization": "paired_legacy_query_value_and_refiner",
+            "regional_availability": "all_configured_views"
+          },
+          "dtype": "torch.float64"
+        },
+        "reader_parameter_count": 19649,
+        "native_block_rows": 64,
+        "decision": {
+          "p50_ms": 2754.830082,
+          "p95_ms": 3176.8090206,
+          "p99_ms": 3189.82781692,
+          "calls_per_second": 0.3623137848058986
+        },
+        "following_maturation": {
+          "p50_ms": 774.552002,
+          "p95_ms": 1174.4899484,
+          "p99_ms": 1179.04754488,
+          "calls_per_second": 1.0787412560772054
+        },
+        "serial_sum": {
+          "p50_ms": 3509.47189,
+          "p95_ms": 4351.2989689999995,
+          "p99_ms": 4368.875361799999,
+          "calls_per_second": 0.27121991612206986
+        },
+        "decision_rows_per_second": 92.75232891031004,
+        "allocated_before_bytes": 67494912,
+        "allocated_peak_bytes": 79475712,
+        "control_archive_bytes": 1339760,
+        "observed_work": {
+          "bridge_candidate_queries": 1024,
+          "bridge_projected_episode_rows": 8192,
+          "bridge_region_reads": 3072
+        }
+      }
+    ],
+    "process_seconds": 140.40770763601176,
+    "process_peak_rss_bytes": 1578954752,
+    "source_sha256": {
+      "reports/engineering/bridge-readout-integration-20261021/benchmark.py": "c5dd15d32fc51424470021dae038abe6fa6866fa5b02d02804feb5791c115d9b",
+      "reports/engineering/mechanism-window-20261021/benchmark.py": "f1dd5da972a7ee742e780874e5ec7be8af17a86b65294f12accf4c0be8841566",
+      "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+      "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be",
+      "src/mars_titan/models/titans/episodic_readout.py": "9b6d2f7aca4236f7f90f6bf980e7721619066fe6c1074957a653246300a8609a",
+      "src/mars_titan/models/titans/evidence_bridge.py": "5c0095cc6ed9d515db56eabe84c32d53cc26b5f2a6976654bc0a953083cbc5ac",
+      "src/mars_titan/models/titans/regional_episode_readout.py": "3a7c94729536db002993476d188200ebddd05506b85d65f8e06523959d036016",
+      "src/mars_titan/models/titans/frozen_financial.py": "b3af0684c7271646c598d48bb53edbe0755aa64b52f8000f0c6c8240742e8cf7",
+      "src/mars_titan/memory/financial_consumers.py": "686b99bec2a28c99eb6278cb05035dc5e764d26e090ca609e1f51f4e13fcf18f",
+      "src/mars_titan/memory/financial_session.py": "270b45badcc4e8b133a618e445ec52ae0c8f01ae4ff47121c667c7ca0000170e",
+      "src/mars_titan/memory/regional_episode_trace.py": "4c4e31ea0fa8cce72beb76c5c8b5530f7bc9489aeac02432d17112fd469ac3f4"
+    }
+  },
+  "cross_run_input_spec_equal": false,
+  "cross_run_bank_sha_equal": false,
+  "cross_run_parent_parameters_equal": true
+}

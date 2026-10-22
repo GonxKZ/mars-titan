@@ -1,0 +1,17 @@
+{
+  "recorded_at_utc": "2026-10-21T00:23:26.705970+00:00",
+  "kind": "technical_abba_cpu_audit_cache_cuda_pipeline",
+  "rounds": [
+    "A1",
+    "B1",
+    "B2",
+    "A2"
+  ],
+  "warmup": 2,
+  "repetitions": 8,
+  "case_order": "64_then_256_each_historical_disabled_reader_context_static_context_online_byte_return",
+  "comparison": "pooled_p50_by_condition_all_rounds_retained",
+  "selection": "Conservar solo si ninguna de las doce condiciones aumenta su p50 agregado y la paridad se mantiene",
+  "scope": "Fixtures técnicos, no selección predictiva ni estudio financiero",
+  "program_sha256": "12642f5c2313bad063f7ae8b99dae1b70e38e9bd24af211b6202df2c99d06763"
+}

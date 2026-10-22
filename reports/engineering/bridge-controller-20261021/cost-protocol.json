@@ -1,0 +1,60 @@
+{
+  "recorded_at_utc": "2026-10-21T20:59:44.183427+00:00",
+  "scope": "technical_native_fixed_route_cost_not_predictive_evaluation",
+  "conditions": 12,
+  "rows": [
+    4,
+    64,
+    256
+  ],
+  "routes": [
+    "k1",
+    "k4cr"
+  ],
+  "modes": [
+    "legacy",
+    "regional"
+  ],
+  "warmup": 1,
+  "repetitions": 3,
+  "maximum_process_seconds": 600,
+  "maximum_expected_storage_bytes": 2147483648,
+  "device": "cuda:0",
+  "dtype": "float64",
+  "tf32": false,
+  "autocast": false,
+  "hidden_size": 32,
+  "regions": 3,
+  "bridge_cycles": 2,
+  "physical_block_rows": 64,
+  "retention": "M1_reservoir_capacity_256",
+  "logical_inputs": "replicated_price_fixture_other_modalities_absent_with_masks",
+  "outcomes": "manual_0.125_available_after_emission",
+  "parent_commit": "2cb07f69d3678364da38b33637bb98adcdca7933",
+  "source_sha256": "abbcd04c4d3eddf1397d0bd84d894fa4c380afcc87fbb9bc7d935cca336396b4",
+  "timed_calls": [
+    "decision_128_with_native_verification_traces_history_and_commit",
+    "following_settlement_131_with_phase_close"
+  ],
+  "untimed_preparation": [
+    "construct_inputs",
+    "construct_frozen_consumer",
+    "warmup_125",
+    "decision_126",
+    "manual_feedback_127",
+    "assert_common_eligible_bank"
+  ],
+  "bank_equality": "same_snapshot_sha_per_row_size_across_modes_and_routes",
+  "parameter_pairing": "same_predictor_and_paired_common_query_value_refiner_additional_regional_parameters_reported",
+  "own_concurrent_workloads": 0,
+  "other_applications": "not_stopped_or_reconfigured",
+  "energy_measured": false,
+  "final_test_access": false,
+  "outer_optimizer_steps": 0,
+  "timeout_policy": "preserve_partial_json_and_terminal_exit_without_restarting_or_claiming_completion",
+  "reported_latency_quantiles": "descriptive_only_with_three_samples",
+  "fixed_actions": "no_automatic_selector_timing_in_this_benchmark",
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 5947 MiB, 0 %, 595.91.07",
+  "memory_before": "MemTotal:       31556032 kB\nMemAvailable:    9724672 kB",
+  "disk_available_bytes": 93824118784
+}

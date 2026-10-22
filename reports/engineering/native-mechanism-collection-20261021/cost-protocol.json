@@ -1,0 +1,22 @@
+{
+  "kind": "technical_native_collection_cost_v1",
+  "created_before_execution": true,
+  "rows": [64, 256],
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "hidden_size": 32,
+  "physical_block_rows": 64,
+  "cpu_threads": 2,
+  "warmup_runs_per_mode_and_size": 1,
+  "measured_runs_per_mode_and_size": 3,
+  "order": "alternate_two_modes_by_repetition",
+  "modes": ["native_fixed", "native_collect"],
+  "sequence": ["warmup_125", "decision_126", "decision_127_receiving_all_126", "decision_128", "administrative_close_131"],
+  "bank_capacity": 256,
+  "checks": ["same_emitted_points_within_1e-12", "same_fast_tensors", "same_native_applied_and_retained_counts", "36_conditional_actions_after_populated_prefix", "censored_not_labels"],
+  "included": ["admission", "encoding_by_existing_codec", "H2D", "forward", "counterfactual_collection_when_enabled", "calibration", "native_records", "artifact_sealing", "verification", "pruning", "closure", "disk_fsync"],
+  "excluded": ["fixture_preparation", "model_initialization", "session_constructor_and_resume", "external_feature_encoders", "selector_fitting", "training", "real_corpus", "scientific_inference", "energy"],
+  "notes": "Son trabajos distintos: recoger 36 alternativas cuesta más que emitir un control. No se presenta la comparación como aceleración del mismo trabajo.",
+  "concurrent_own_jobs_during_cost": 0,
+  "technical_wall_budget_seconds": 600
+}

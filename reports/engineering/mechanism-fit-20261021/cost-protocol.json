@@ -1,0 +1,23 @@
+{
+  "kind": "manual_policy_action_support_cost_v1",
+  "created_before_execution": true,
+  "device": "cuda:0",
+  "cohorts": [1, 2],
+  "features": 21,
+  "point_outputs": 12,
+  "interval_outputs": 36,
+  "dtypes": ["torch.float32", "torch.float64"],
+  "modes": ["legacy", "mask_all", "mask_subset"],
+  "warmup": 10,
+  "repetitions": 100,
+  "order": "rotate_three_modes_each_repetition",
+  "timing": "per_invocation_wall_with_explicit_cuda_sync_and_cuda_events",
+  "coefficients": "manual_test_fixture_not_fitted",
+  "checks": ["raw_scores_bit_equal", "legacy_and_all_mask_choices_bit_equal", "subset_rejects_action_4_and_chooses_3", "rng_unchanged"],
+  "real_data": false,
+  "fitting": false,
+  "concurrent_own_workloads": 0,
+  "external_feature_encoders": false,
+  "native_financial_session": false,
+  "energy_measured": false
+}

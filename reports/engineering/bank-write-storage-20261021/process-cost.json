@@ -1,0 +1,45 @@
+{
+  "tool": "GNU time -v",
+  "independent_processes": true,
+  "complete_native_children": 8,
+  "incomplete_native_children": 2,
+  "confirmation_children": 8,
+  "runs": [
+    {
+      "name": "cost",
+      "elapsed_wall_clock": "0:32.31",
+      "peak_rss_bytes": 1745477632,
+      "exit_code": 1,
+      "time_file_sha256": "f99b1b2b6918c1274874f9b9c680a3c6e9fc7652e1af5e28704a9727dd14e1d3"
+    },
+    {
+      "name": "cost-final",
+      "elapsed_wall_clock": "0:32.30",
+      "peak_rss_bytes": 1744805888,
+      "exit_code": 0,
+      "time_file_sha256": "9886ce2de44dd4b03b309a29ba55f023a85035d810cab14ed66b05ffaeb75c2c"
+    },
+    {
+      "name": "native-cost",
+      "elapsed_wall_clock": "0:31.31",
+      "peak_rss_bytes": 1664876544,
+      "exit_code": 1,
+      "time_file_sha256": "e9a6a7cf0645782d4f3ca0d16c62c3b0a782396ba66e35e0db04885409a64e01"
+    },
+    {
+      "name": "native-final-cost",
+      "elapsed_wall_clock": "7:17.24",
+      "peak_rss_bytes": 1706508288,
+      "exit_code": 0,
+      "time_file_sha256": "9f3ec51748a0896003e7de1c86f442f5bfae5b6c9a2d766eca5c7aab2923d8e5"
+    },
+    {
+      "name": "small-confirm",
+      "elapsed_wall_clock": "2:02.36",
+      "peak_rss_bytes": 1653493760,
+      "exit_code": 0,
+      "time_file_sha256": "dad8f98315ecb547900114f1f5dd1ab02c12e5848f9274c44429af3329e235cf"
+    }
+  ],
+  "energy_measured": false
+}

@@ -1,0 +1,337 @@
+[
+  {
+    "name": "regression.xml",
+    "bytes": 149408,
+    "sha256": "2db316b97794edf2db61201c3c86a6c5ef3d5e3c9225080082b07a3305b1cd56"
+  },
+  {
+    "name": "regression.log",
+    "bytes": 3277,
+    "sha256": "073f6d0eef9e3b37c51367c34aeb7126382ba5959299463f760f0289b4284d7a"
+  },
+  {
+    "name": "hold-inventory-green.xml",
+    "bytes": 9872,
+    "sha256": "d03c5ea9f810878e3c0c57a109ca578b368c9b359cc4535333f7642f023a2d92"
+  },
+  {
+    "name": "hold-inventory-green.log",
+    "bytes": 111,
+    "sha256": "57add155dfb6995535f37dc7241424a5963adcbcea858d088962916f0e0d475c"
+  },
+  {
+    "name": "checkpoint-boundaries.xml",
+    "bytes": 1093,
+    "sha256": "5b72ccdd6d757fb7bd41d16fe2b04c4d4e3327367edd6588c50d9740bba62a47"
+  },
+  {
+    "name": "checkpoint-boundaries.log",
+    "bytes": 113,
+    "sha256": "0bd57a70d34ba0a1ecf1e5cb24f9e621078ee1d2e45dd9a513cc5b3c45b995aa"
+  },
+  {
+    "name": "summary-wiring.xml",
+    "bytes": 385,
+    "sha256": "8d4c8c068d00ec85438e7cd709f49e3b1d1b5233570ce03fea67faa2c0824b25"
+  },
+  {
+    "name": "summary-wiring.log",
+    "bytes": 113,
+    "sha256": "2b8f66cd5a9ea12703e2f2bb267eb61fd25aa71470e91278cb6464209e64508b"
+  },
+  {
+    "name": "benchmark-limits-red.xml",
+    "bytes": 20974,
+    "sha256": "8e473ef5ef6d9fa1d370a3e80fc6e580582ff77f2a7cf31069f660f3006913d4"
+  },
+  {
+    "name": "benchmark-limits-red.log",
+    "bytes": 20518,
+    "sha256": "174f8b31c4c75783b1072695672a3a4b413cf392f3f880724033863850ae57b4"
+  },
+  {
+    "name": "benchmark-limits-green.xml",
+    "bytes": 1632,
+    "sha256": "0e38d2811181531af08a578fbe6fe7c82ee62cf76f52087dd9330fba9e96d7ae"
+  },
+  {
+    "name": "benchmark-limits-green.log",
+    "bytes": 98,
+    "sha256": "618296e2249738ff92363fc0e90a250b983c554bb6dae5ca511c87a92fa9eddb"
+  },
+  {
+    "name": "baseline-before.pt",
+    "bytes": 5133339,
+    "sha256": "6930f0a97e9de94c19654e253b65fc6bfcf68c6467fd37057fa808f7dd543f4e"
+  },
+  {
+    "name": "baseline-parity.py",
+    "bytes": 3559,
+    "sha256": "8bdc26a768b68f1ef2ae60a147e2adb1f69619c16c8d91185c228b91f03fea26"
+  },
+  {
+    "name": "baseline-capture.log",
+    "bytes": 672,
+    "sha256": "2e30b591de75a66fb553e247506956b273be546983bb4a71fc6170756608f687"
+  },
+  {
+    "name": "baseline-verify.log",
+    "bytes": 624,
+    "sha256": "20c0a71cc5cd5213cae3ab8a14e83d96cfc770fd6f30abab0598c9944906b4fd"
+  },
+  {
+    "name": "mutate-regional.py",
+    "bytes": 5955,
+    "sha256": "172735307e425d1c3e1baf47850eb0b81618911e6b0333176f929c7660206d61"
+  },
+  {
+    "name": "regional.coverage",
+    "bytes": 1040384,
+    "sha256": "cb15c133d938e7d56f6338a2edf97129f7e8a670cc4f29800f38365d53cc7da7"
+  },
+  {
+    "name": "coverage.json",
+    "bytes": 5631316,
+    "sha256": "dabb2f923d53dbb0be12562e242d70cd1873b1c73709e913bcd7ab55415c9c56"
+  },
+  {
+    "name": "cuda-collection.log",
+    "bytes": 16381,
+    "sha256": "f30230df6d34b5cf5b349cd9edfa46d93b6d3585cf7b1928aae6db7c50c62e37"
+  },
+  {
+    "name": "operator-cost-process.txt",
+    "bytes": 942,
+    "sha256": "8e0eba892f33d830eb15b9de70d68da213b273b3fdd1bfdda71da8404347a341"
+  },
+  {
+    "name": "session-cost-process.txt",
+    "bytes": 1056,
+    "sha256": "0346527f23cfcfd32a4105fccfd7528db3903b5190acf30e4fcd392ca4a36ea2"
+  },
+  {
+    "name": "profile-original.json",
+    "bytes": 3362465,
+    "sha256": "9aefdb72e012ec41c6da4f65e34360942a28aeb977c9b2291438ee7e1e0ba185"
+  },
+  {
+    "name": "profile-regional_ring_hub.json",
+    "bytes": 5909476,
+    "sha256": "550818b89aedecb460b048267896daba8d19290d06f9474e01e2f97ce97f79b0"
+  },
+  {
+    "name": "profile-original.txt",
+    "bytes": 7428,
+    "sha256": "8bd58d1c51760b1738f1d46a096ec99ac0d8c1a506c2e8478f86ae8cc7dcc901"
+  },
+  {
+    "name": "profile-regional_ring_hub.txt",
+    "bytes": 7428,
+    "sha256": "cd3fff72e35e2743290e3f4a8b2f45b04e6e823c9899cd62cc286b7576df8d06"
+  },
+  {
+    "name": "ruff-final.log",
+    "bytes": 19,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "name": "format-final.log",
+    "bytes": 29,
+    "sha256": "be9bd44f7a26b8849267d53d2b43bc632e70103bf249209dc1214b8066edb38b"
+  },
+  {
+    "name": "component-red.xml",
+    "bytes": 18812,
+    "sha256": "9c289ad58761f892a3f87b8fd6813dfc200218a4b115b6af0508d75dc08c2e19"
+  },
+  {
+    "name": "component-red-full.xml",
+    "bytes": 26773,
+    "sha256": "85af0e7906aa8c69c7f920d9d2cdadc81a31219dc2f696fae5bda25a52f4e98e"
+  },
+  {
+    "name": "masked-nonfinite-red.xml",
+    "bytes": 4476,
+    "sha256": "45a612a5501e83a9403cfdc8260329d39a4b1efabd6cea71a9ea6fb3f66a8e92"
+  },
+  {
+    "name": "masked-nonfinite-red-v2.xml",
+    "bytes": 4476,
+    "sha256": "c9ab129d1c281b4b3756f4b111be4f54c0bb1a748a1e5c4549562b8bb92dcbb6"
+  },
+  {
+    "name": "integration-red.xml",
+    "bytes": 16992,
+    "sha256": "45f408b8df36350d852f16a1c506c5a20a1fcd455f695a86e0faa4367468c9c8"
+  },
+  {
+    "name": "integration-green.xml",
+    "bytes": 3349,
+    "sha256": "6dd1d6305477003a1cd65f5f2d4bd73f9ec2dab5ba9d08d845e8958551c834e1"
+  },
+  {
+    "name": "strict-red.xml",
+    "bytes": 2947,
+    "sha256": "e64a3e4197d4acf6e5ad7baad46101715c2915aa41538929399d0e51ac6d3db2"
+  },
+  {
+    "name": "session-red.xml",
+    "bytes": 2134,
+    "sha256": "e139004ff9ed3c3be3b68d59377473ce7b73939af1ef4cdfa659c788fa5ac5d9"
+  },
+  {
+    "name": "plain-work-red.xml",
+    "bytes": 1976,
+    "sha256": "d9cfb91536ae8fd1d3a5cc002a70888696acaa8d4cce76d9875c23d8c0105cde"
+  },
+  {
+    "name": "mutations/baseline.xml",
+    "bytes": 7982,
+    "sha256": "dd41924a2750d66a3b4409f25abbe5bef4969a9c47aedc36b47a82928c89f751"
+  },
+  {
+    "name": "mutations/restored.xml",
+    "bytes": 7982,
+    "sha256": "7b6f212a95bd733b918177852b0473303a054db8277d52069e0a5d1660db53dc"
+  },
+  {
+    "name": "mutations/results.json",
+    "bytes": 9965,
+    "sha256": "802cf4a78f2ccf00d5d294c157141684f888170816294c26f154e3127d94911a"
+  },
+  {
+    "name": "mutations/unmasked_initial_representations.xml",
+    "bytes": 3261,
+    "sha256": "bfc6b6df251d3abf26b0fc793712f1630afbc2f22bb5110375f262abbd8217b5"
+  },
+  {
+    "name": "mutations/missing_keys_can_receive_attention.xml",
+    "bytes": 1860,
+    "sha256": "c35fdf5181bfdc5e96809debf875d9e7e1d0de70e49a704896a4850293581007"
+  },
+  {
+    "name": "mutations/omit_outer_cycles.xml",
+    "bytes": 1675,
+    "sha256": "cd342087f07c5f56eeb7f0dce599675c0c192ff57b46cb5b31952123184b80e6"
+  },
+  {
+    "name": "mutations/omit_local_steps.xml",
+    "bytes": 1675,
+    "sha256": "7c7cf73661618fc840043f96ed362123d0a1823e77470b1998ed9b94bcd98cba"
+  },
+  {
+    "name": "mutations/ignore_the_previous_summary.xml",
+    "bytes": 2110,
+    "sha256": "3f8b02284bc3ab675ad5daa06655c12ebf6406ea10975166b5b8045468d4a185"
+  },
+  {
+    "name": "mutations/skip_summary_updates.xml",
+    "bytes": 2478,
+    "sha256": "03bb684d159fda85f484993bf1a22a17f06fcbe43f22cfd9c574e5091b54b939"
+  },
+  {
+    "name": "mutations/pool_other_assets.xml",
+    "bytes": 1729,
+    "sha256": "6a3d6159163751eed5440a0934da4f34611c41349cf31fe8682daa3d8ea20d09"
+  },
+  {
+    "name": "mutations/detach_working_memory.xml",
+    "bytes": 11454,
+    "sha256": "e7cb439a7a6e45111d0708ab3c2b85e7d07bb11d64e85b3d5b2657d33254bbc4"
+  },
+  {
+    "name": "mutations/allow_unbounded_joint_loops.xml",
+    "bytes": 1135,
+    "sha256": "92975b9e66917b7f2f3d6e945946f8d222dd0b18cf0882163b1cfdbba39ef983"
+  },
+  {
+    "name": "mutations/hide_nonfinite_masked_updates.xml",
+    "bytes": 1172,
+    "sha256": "0eea24bb98a740a0b206b37a78236174a96ec79f96787fcd267be15705e5d58c"
+  },
+  {
+    "name": "mutations/accept_incompatible_checkpoint_configuration.xml",
+    "bytes": 906,
+    "sha256": "bb693af7318343977bf2630ccc9d20525c3847129df0863e487fd80e79bca963"
+  },
+  {
+    "name": "mutations/do_not_run_the_regional_module.xml",
+    "bytes": 5088,
+    "sha256": "b1de302fdb4ddb08c4f61e8cd0c3486a5e6893956ac3be3388655b3d1e85f12b"
+  },
+  {
+    "name": "mutations/omit_archived_regional_work.xml",
+    "bytes": 2148,
+    "sha256": "5b967db9c057a947c3bb4ffccb2b34fc8aed1af004669b426515b422454cbec1"
+  },
+  {
+    "name": "repository-v1.log",
+    "bytes": 1080,
+    "sha256": "71d28d2ead683d0786d30db9406b31a0aaa5b701e47ac2258e0c1fbbd6b924d2"
+  },
+  {
+    "name": "repository-final.log",
+    "bytes": 274,
+    "sha256": "00e09910cafbafd7a585fbcc6a36696de715ab7ebbeae628dbbf6880f97794a8"
+  },
+  {
+    "name": "session-benchmark-measured.py",
+    "bytes": 7957,
+    "sha256": "205a8e4a2cd3a173d32a52f6b6ba5f2ee90b3b1521f4f19f93930b3fd4159922"
+  },
+  {
+    "name": "hold-mutations/baseline.xml",
+    "bytes": 392,
+    "sha256": "c45bc20e7359d40047e14743f404a87413a1610f94fd01de19db1000032ae2af"
+  },
+  {
+    "name": "hold-mutations/baseline.log",
+    "bytes": 98,
+    "sha256": "af16903adc462d049ae837d35e881bb5672f1b8649c0dbc1c333add24bd7a61b"
+  },
+  {
+    "name": "hold-mutations/test_local_capture_study.xml",
+    "bytes": 1031,
+    "sha256": "e42760a272360a975b4112a9349a9ce4ca9c723eef627719b0d0d23c6f35f0c8"
+  },
+  {
+    "name": "hold-mutations/test_local_capture_study.log",
+    "bytes": 851,
+    "sha256": "06bad27ebad771b728abf98ac80912ff27f6142d7dcbff1806ccc7d1e96489e8"
+  },
+  {
+    "name": "hold-mutations/test_quantile_multiseed_analysis.xml",
+    "bytes": 1047,
+    "sha256": "d2460cc8d1f568ef5e203a09a6348fcfbe18b3d53312c83d5e9abc25486323b6"
+  },
+  {
+    "name": "hold-mutations/test_quantile_multiseed_analysis.log",
+    "bytes": 859,
+    "sha256": "1bf74f3998fb806a2930c03f299aa2e604fcfee3b974d42e105c08bdff5dfced"
+  },
+  {
+    "name": "hold-mutations/test_quantile_point_analysis.xml",
+    "bytes": 1039,
+    "sha256": "cce3877ba67e4877d94a741f1d4f78db7db70004b5adbb8054903629b6133b77"
+  },
+  {
+    "name": "hold-mutations/test_quantile_point_analysis.log",
+    "bytes": 855,
+    "sha256": "ed7310d436a97ea9420eba8aab8e579617eb58f06d88126d0e5de2e8726d43a5"
+  },
+  {
+    "name": "hold-mutations/restored.xml",
+    "bytes": 392,
+    "sha256": "42480952e5adf44aec345adce0380e13b1722dea08c1ba291b77b8441642213e"
+  },
+  {
+    "name": "hold-mutations/restored.log",
+    "bytes": 98,
+    "sha256": "6c17f41c5dc01d13b1e04d8267ea28263ac641b65e56c13f68db70171ee33b9b"
+  },
+  {
+    "name": "repository-with-hold-mutations.log",
+    "bytes": 274,
+    "sha256": "39093e17c4f801532e398d6ebfab2f5e2eaf25bc9212e72a0c41f1585ad3bc81"
+  }
+]

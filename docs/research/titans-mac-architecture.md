@@ -188,6 +188,7 @@ La variante parte del modelo Titans-MAC `mac_online` con su receta cronológica 
 | `episodic_bank` (I04 a I06) | `m0_no_bank`, `m1`, `m2`, `m3` | `readout=None` y admisión m0 | Evaluación y entrenamiento del lector | N4 |
 | `refinements` (I07) | 1, 2, 4 | 1. Solo existe con lector | Preparación de cada predicción | N4 en CPU y CUDA |
 | `refinement_episodes` (I07) | `first_read` | `per_step`. Solo existe con K mayor que 1 | Preparación de cada predicción | N4 en CPU y CUDA |
+| `evidence_bridge` (I04, I05, I07) | Regiones, topología `self`, `ring` o `complete`, ciclos, ganancia y semilla | Componente omitido | Vistas temporales de una única evidencia episódica, con parámetros regionales compartidos entre decisiones | Conectado al constructor y a la sesión. El colector, ajuste regional y campaña siguen pendientes |
 | `associative_memory` (I11) | `delta`, `proximal` y `kalman` (PT3), con clave del codec, constante o enrutada por régimen observable o por mes (I09) | Ausente. No se combina con el banco | Evaluación en `FinancialSession` y en las ventanas walk-forward | N4. Kalman tiene ventana, estimación por cohorte, diagnóstico de cobertura y control de retraso, con pruebas de recuperación |
 | `document_selection` (I10) | `attention` | Media de la ventana | Entradas | N2 |
 | `regime_context` (I09) | `filtered_hmm` | Ausente | Entradas o banco | N2 |

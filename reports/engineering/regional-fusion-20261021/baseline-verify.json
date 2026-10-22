@@ -1,0 +1,11 @@
+{
+  "cases": 16,
+  "mode": "verify",
+  "commit": "9d92efec65e471088a6546106cf7df1ca9994c19",
+  "source_sha256": "3f4b6401d2b4ba175394615e934a5cd63b4ca62a7a6906d3c2034cd6e9f78f4c",
+  "reference_sha256": "6930f0a97e9de94c19654e253b65fc6bfcf68c6467fd37057fa808f7dd543f4e",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "real_data_used": false,
+  "optimizer_steps": 0
+}

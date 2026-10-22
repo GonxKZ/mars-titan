@@ -1,0 +1,365 @@
+{
+  "scope": "Artefactos locales fuera de Git. Rutas relativas al directorio de evidencia, sin incluir instrucciones ni conversaciones.",
+  "artifacts": [
+    {
+      "path": "red.xml",
+      "bytes": 21342,
+      "sha256": "66346b7fa5014b35e694fcb13beca4e28ee638896c966f3795270c06c5cb4194"
+    },
+    {
+      "path": "red.log",
+      "bytes": 20375,
+      "sha256": "5e63e204463a585c1fce17033da93a3ea18804f2a0f7127d20f06638fd8bd97f"
+    },
+    {
+      "path": "green.xml",
+      "bytes": 28376,
+      "sha256": "149b594e1c407db460ed45548efd812b30dbd4558439f46b6cf7ae71ecd1dc89"
+    },
+    {
+      "path": "green.log",
+      "bytes": 27242,
+      "sha256": "fa891b088aa9648575f356def6caffff62460c140d6d774f803a4cdc68cc69ad"
+    },
+    {
+      "path": "green-fixed.xml",
+      "bytes": 1750,
+      "sha256": "36da58c4b2acb226269d21f5f7be3c50eb4e744ef61aead1ec36553c4ab2bba1"
+    },
+    {
+      "path": "green-fixed.log",
+      "bytes": 99,
+      "sha256": "209c0bf051650659fb4e2f6cdc330f9f0c8c6eb3426d13e448a95c2de04b0bac"
+    },
+    {
+      "path": "provenance-red.xml",
+      "bytes": 10193,
+      "sha256": "a257e557d696577efb01806febe320bff8473542e1ac462669067fc8d79c557b"
+    },
+    {
+      "path": "provenance-red.log",
+      "bytes": 7386,
+      "sha256": "31c9c2c413c9b0fb438c193d71091f0d9d0aeafd11fbefb4ffe90bf8f7aad2e2"
+    },
+    {
+      "path": "provenance-green.xml",
+      "bytes": 3389,
+      "sha256": "5c25ad833af71c58c82308bf3de9fb51123c42430b6d74f680a130c81bcf788e"
+    },
+    {
+      "path": "provenance-green.log",
+      "bytes": 100,
+      "sha256": "32dba4a2fc6535ccc990acad80b2333e1b981c228c828d67676e07534e06c0be"
+    },
+    {
+      "path": "expanded.xml",
+      "bytes": 3997,
+      "sha256": "1052b424240038ef95ccecb28a72c9cbc2a4a70b48638fe58300b4e8dc30ae88"
+    },
+    {
+      "path": "expanded.log",
+      "bytes": 100,
+      "sha256": "99afd158e7f8bfaf81c655b9660288818fb4376f4bbfb751608c78f81c473941"
+    },
+    {
+      "path": "final.xml",
+      "bytes": 57381,
+      "sha256": "cfa0d2167eb7c62fef8532395893fd892988dec84c5df795799ca92d97f16773"
+    },
+    {
+      "path": "final.log",
+      "bytes": 432,
+      "sha256": "ac17983c409171f620362cb8af0a995865fc43892d08b04c8f106e737bb78f93"
+    },
+    {
+      "path": "final.coverage",
+      "bytes": 1032192,
+      "sha256": "4c1c76ae9a2ecde16dc79ccb4baa0a255079408f8b00edcb35724920672b92cb"
+    },
+    {
+      "path": "review.xml",
+      "bytes": 555,
+      "sha256": "5471e6b8dae84196b0929b3ebeb4eb0f4ee90c204363356bc24f6433a098027a"
+    },
+    {
+      "path": "review.log",
+      "bytes": 113,
+      "sha256": "5378cf666c73c313e90f63c0a30724564ab0df902a832f13d1907a24b72a0d41"
+    },
+    {
+      "path": "cuda-collection.log",
+      "bytes": 4125,
+      "sha256": "3727d1365861989316c5e14b0fa7aa71d4d056721b40ed8b84fa0ea2dc815e7c"
+    },
+    {
+      "path": "coverage.json",
+      "bytes": 68965,
+      "sha256": "ffa38bcd4a3690d9cae3d3224c00a0270f2eae095904def8ad33b6aa34a16777"
+    },
+    {
+      "path": "quality.json",
+      "bytes": 22073,
+      "sha256": "1fbc0f6b62cff7dfebe22af0f090ba890ad8f442bb28a86c5d8878bc460977fd"
+    },
+    {
+      "path": "coverage-reviewed.json",
+      "bytes": 68941,
+      "sha256": "ca3262668c137924341a46c5c4dd36ab97fcbf79afd54090d0862af9d81a9398"
+    },
+    {
+      "path": "quality-reviewed.json",
+      "bytes": 22070,
+      "sha256": "e393db93f3c94f2e64534af9f3da19e19e222d32f911776466d764e9401d4470"
+    },
+    {
+      "path": "cost-registration.json",
+      "bytes": 607,
+      "sha256": "e3a329cad716f86a18a89b37c7203cbf5f234cdd76e8bd50e073bf989c008098"
+    },
+    {
+      "path": "cost.json",
+      "bytes": 8285,
+      "sha256": "e0200082b5729bf5ff2d52fbff9f2a6fbd1dbf14853362d1a856880e77859e5e"
+    },
+    {
+      "path": "cost.log",
+      "bytes": 5138,
+      "sha256": "64f042d89910d24c28ad9f117fd037d5d9392fc0f0bfe6b2a100daf0cbd2b704"
+    },
+    {
+      "path": "cost-time.txt",
+      "bytes": 889,
+      "sha256": "90b9773323efa7c219756f2991559063003c992fc6f58db3007b37e6b1940839"
+    },
+    {
+      "path": "cost-provenance-registration.json",
+      "bytes": 763,
+      "sha256": "514725f6bea1adaad3dca101e0b051c0c99dabbf91ddfe3a88f4bf680b9dae3b"
+    },
+    {
+      "path": "cost-provenance.json",
+      "bytes": 22384,
+      "sha256": "13d1773ea5585c228fc9a2ee0df50886931b305025947c5cc3404df9cdde5e02"
+    },
+    {
+      "path": "cost-provenance.log",
+      "bytes": 15849,
+      "sha256": "ba73262b50a340335584ccfefe2eaff943ae4e94d0fa61ba9d71a26aa5bc5a95"
+    },
+    {
+      "path": "cost-provenance-time.txt",
+      "bytes": 900,
+      "sha256": "739bd528dd032aa7f521b5f01174501734a0004c27e52079047bd5b2d5c3bdb0"
+    },
+    {
+      "path": "mutate.py",
+      "bytes": 4312,
+      "sha256": "c56cb048e534269ca752347ea21e0a7d9e5de45deda0b52f5ab00fd3067e433d"
+    },
+    {
+      "path": "mutate-head.py",
+      "bytes": 1976,
+      "sha256": "436fd5a49238e5680920c3a23052545801d493864fd79f6e7c5bad32f5625882"
+    },
+    {
+      "path": "publish.py",
+      "bytes": 11903,
+      "sha256": "be43bf7851578a348cc3534d65307ea92f6ced468d2870a1554503aa086a6979"
+    },
+    {
+      "path": "mutation-run.log",
+      "bytes": 2297,
+      "sha256": "264380805cedb30f28585881b64645627199a09b879bcd8129e2c24e89579d96"
+    },
+    {
+      "path": "head-mutation.log",
+      "bytes": 828,
+      "sha256": "dcb14c44d4e4fe389aa6dc25431f4b076a969c9f5811620f65aff71456f7f7ae"
+    },
+    {
+      "path": "mutations/results.json",
+      "bytes": 6197,
+      "sha256": "11316c5bb6c40e256928d7c765a886cbdcc2f02c368a0fccea871c60c826c927"
+    },
+    {
+      "path": "mutations/baseline.xml",
+      "bytes": 3078,
+      "sha256": "4d761817ef75a354a74228dfa058174db36d599aa3886d40486c064c7421461f"
+    },
+    {
+      "path": "mutations/baseline.log",
+      "bytes": 114,
+      "sha256": "015e765563aafda8969ceb838d0ad576dbe563710e6c588159da4b97abade590"
+    },
+    {
+      "path": "mutations/restored.xml",
+      "bytes": 3078,
+      "sha256": "69b0beefa458eacc29065a02170bb7bc0f46d9b41b092cd4d1aed23970405cb5"
+    },
+    {
+      "path": "mutations/restored.log",
+      "bytes": 114,
+      "sha256": "5cd73dbdc9835e6d7deaea1ac2814d2373b7096509197274addfaae88e67fd0d"
+    },
+    {
+      "path": "mutations/include_exclusive_boundary.xml",
+      "bytes": 3266,
+      "sha256": "6d15bfc0f96c6e46c86689c46fd5c0e643619e6cb8b3ae93ee0b2c0c01d2b5d9"
+    },
+    {
+      "path": "mutations/include_exclusive_boundary.log",
+      "bytes": 3265,
+      "sha256": "64425c01e7c5acf9280ed0587cbf37e9bcdf6f412c2be12b0aeb382e79c9542d"
+    },
+    {
+      "path": "mutations/omit_last_selected_generation.xml",
+      "bytes": 2180,
+      "sha256": "99a8aaead836cb1099018bdc27d25e4d3d29d16e5df4eb1d5df65b4ffe9a2e90"
+    },
+    {
+      "path": "mutations/omit_last_selected_generation.log",
+      "bytes": 2076,
+      "sha256": "de872519cd90663d2757ce3bfbb94a8374a3ef83ca91ec00ce410aa344ec4480"
+    },
+    {
+      "path": "mutations/replay_unselected_future.xml",
+      "bytes": 3676,
+      "sha256": "427e767263bec7d297e105788304b0ba77f48d3b1ef2781640b320b506cb0dfe"
+    },
+    {
+      "path": "mutations/replay_unselected_future.log",
+      "bytes": 3642,
+      "sha256": "ed2b010ecd3f99ed645fc4e163bc9add65721ea4b8f0f82a7c9dcb623fbbd261"
+    },
+    {
+      "path": "mutations/trust_changed_native_record.xml",
+      "bytes": 2063,
+      "sha256": "521927fcfe3e0065a70c1997e2ec482df3b2b4b776fbf5a300f5ea3fdaa1ec67"
+    },
+    {
+      "path": "mutations/trust_changed_native_record.log",
+      "bytes": 2062,
+      "sha256": "4793540a467c80dc025d8a8fa1d04de0e6b93f03e567e61fba0a134b9e460f1f"
+    },
+    {
+      "path": "mutations/ignore_remaining_byte_budget.xml",
+      "bytes": 3053,
+      "sha256": "2d2cc25b5782f2a93439e56adbd144ac8b4b5f94f3bff747b3f7dab0c2f3a1c3"
+    },
+    {
+      "path": "mutations/ignore_remaining_byte_budget.log",
+      "bytes": 3029,
+      "sha256": "a35cb9eea9d78c8497fbc92663f1c336e55a958c9042c6a1563385a2dcae278d"
+    },
+    {
+      "path": "mutations/ignore_record_budget.xml",
+      "bytes": 2232,
+      "sha256": "1f1558fbbe816389d4bf2bfcf5bbae773f362932755b2ea2d9ac310d23ed03e6"
+    },
+    {
+      "path": "mutations/ignore_record_budget.log",
+      "bytes": 1788,
+      "sha256": "75466033ab154b43a8b9751774951630592ffd7c99779b311e0575939d972d58"
+    },
+    {
+      "path": "mutations/confuse_receipt_and_availability_clock.xml",
+      "bytes": 2201,
+      "sha256": "2af438de7fcc938902d24239e9838a4b301ae7179c9bbc77adeb2ebd80ab1f1c"
+    },
+    {
+      "path": "mutations/confuse_receipt_and_availability_clock.log",
+      "bytes": 2144,
+      "sha256": "9ceccdf0d11c3aaea28f38be4878a6208dcb4e03540bac3ff835ba12daf6bbcc"
+    },
+    {
+      "path": "mutations/share_results_across_dates.xml",
+      "bytes": 2807,
+      "sha256": "c7ff65e28e01fe27acc3c94a48f4a12d0a7b0e4c2f586f2368f85002c186fbd7"
+    },
+    {
+      "path": "mutations/share_results_across_dates.log",
+      "bytes": 2774,
+      "sha256": "0d78af11a283fe406ef8274803a72517c12e6558f580ace6a923ac7167027c4b"
+    },
+    {
+      "path": "mutations/turn_exclusion_into_zero.xml",
+      "bytes": 3981,
+      "sha256": "02a3088f0e86e29195201dd7aa8fe27e8d35c2214f7ac84934d6ff232048a583"
+    },
+    {
+      "path": "mutations/turn_exclusion_into_zero.log",
+      "bytes": 3921,
+      "sha256": "fa5891711c47f1876ee8b039a500fab80f4b70364402bfe2a9e917cbaf18ecd4"
+    },
+    {
+      "path": "mutations/omit_censor.xml",
+      "bytes": 2180,
+      "sha256": "32631bdf852903ffd9fbbc1d3fcd9ace2412139d6001f4209fa6203273009e16"
+    },
+    {
+      "path": "mutations/omit_censor.log",
+      "bytes": 2081,
+      "sha256": "80519ea5e3ae6026b2e98d08f944e1a39488cea606aba9968a15007cef371a49"
+    },
+    {
+      "path": "mutations/omit_row_provenance.xml",
+      "bytes": 2928,
+      "sha256": "c0b812d63806bf6c47895059f9041a479d778208ff9fb093b96961da91bbcfab"
+    },
+    {
+      "path": "mutations/omit_row_provenance.log",
+      "bytes": 2694,
+      "sha256": "64cdd41e138382f29ee916f52fc8de2313488092fa2b12f107f6299cf25a202d"
+    },
+    {
+      "path": "head-mutation/results.json",
+      "bytes": 932,
+      "sha256": "cfb553117868130ea432fbf3000a6437197986045c77c9e107db9ad1b7027bce"
+    },
+    {
+      "path": "head-mutation/baseline.xml",
+      "bytes": 396,
+      "sha256": "1f4b838a4ec7952b3e243393f537655db8ffa0dc3583c6f574185abe095aa38d"
+    },
+    {
+      "path": "head-mutation/baseline.log",
+      "bytes": 113,
+      "sha256": "1dd7fea743f6dd3b23d512f5e450841e1196e2c89927d4b36dce6f5bb6cc8945"
+    },
+    {
+      "path": "head-mutation/mutant.xml",
+      "bytes": 2103,
+      "sha256": "beee5cae43ce8f9ddbb6f580327774e330a64d08e90404fa627aeb493be32b8b"
+    },
+    {
+      "path": "head-mutation/mutant.log",
+      "bytes": 2096,
+      "sha256": "3e872c97618e09d8996e6b502a3443067314819fe20d5fb6a218df24b5cb22e2"
+    },
+    {
+      "path": "head-mutation/restored.xml",
+      "bytes": 396,
+      "sha256": "8e9704b42fdfb7237d39ed1553d93ce5f51b2a8dcfb375fbb776ce0a9aa25e65"
+    },
+    {
+      "path": "head-mutation/restored.log",
+      "bytes": 113,
+      "sha256": "0646e626128c1330fea0b7c3609ce31b4de813cd28a41fffde0d4b849eda601e"
+    },
+    {
+      "path": "ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "format.log",
+      "bytes": 29,
+      "sha256": "dbd837edb6203951419198171db7b013eae72b513338c20e68d607fecc534d4f"
+    },
+    {
+      "path": "repository.log",
+      "bytes": 274,
+      "sha256": "5ac9d0dca96d5946c85f122ba75efca950c7ff3cfd4672ff0e3178b7878c3f35"
+    }
+  ]
+}

@@ -1,0 +1,824 @@
+{
+  "recorded_at_utc": "2026-10-21T00:24:18.705268+00:00",
+  "commit": "e8675908e009b4ac673e2edf9898753782ce9b7f",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "cuda": "13.0",
+  "precision": "fp64_strict",
+  "hidden_size": 32,
+  "price_context": 64,
+  "episodes": 64,
+  "cpu_threads": 2,
+  "warmup": 2,
+  "repetitions": 8,
+  "scientific_study": false,
+  "optimizer_steps": 0,
+  "real_data_used": false,
+  "durable_publication": false,
+  "energy_joules": null,
+  "cases": [
+    {
+      "rows": 64,
+      "kind": "historical_consumer",
+      "initialization_ms": 27.325392002239823,
+      "trajectory_ms": {
+        "mean": 41.228451,
+        "std": 2.0023872218101504,
+        "p50": 40.56076,
+        "p95": 43.626947550000004,
+        "p99": 43.65044711
+      },
+      "raw_samples_ms": [
+        43.572395,
+        43.300154,
+        39.949566,
+        41.074861,
+        43.656322,
+        40.046659,
+        38.673799,
+        39.553852
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 4656.978259988473,
+      "allocated_vram_peak_bytes": 76067328,
+      "reserved_vram_peak_bytes": 96468992,
+      "serialized_proposal_bytes": [
+        2108885,
+        2108885,
+        2108885
+      ],
+      "work": []
+    },
+    {
+      "rows": 64,
+      "kind": "disabled",
+      "initialization_ms": 9.5492759719491,
+      "trajectory_ms": {
+        "mean": 92.63373325,
+        "std": 6.702517785752942,
+        "p50": 90.615973,
+        "p95": 103.49566784999999,
+        "p99": 107.43190477
+      },
+      "raw_samples_ms": [
+        87.18215,
+        94.357975,
+        90.25851,
+        90.717744,
+        90.514202,
+        88.594834,
+        91.028487,
+        108.415964
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 2072.679069101428,
+      "allocated_vram_peak_bytes": 76064768,
+      "reserved_vram_peak_bytes": 96468992,
+      "serialized_proposal_bytes": [
+        2109077,
+        2109077,
+        2109077
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "reader",
+      "initialization_ms": 10.90529398061335,
+      "trajectory_ms": {
+        "mean": 101.054491125,
+        "std": 1.71264621848859,
+        "p50": 101.207167,
+        "p95": 103.09159425,
+        "p99": 103.68070445000001
+      },
+      "raw_samples_ms": [
+        100.25079,
+        101.187951,
+        101.491902,
+        97.662315,
+        101.226383,
+        101.724017,
+        103.827982,
+        101.064589
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 1899.9650373035313,
+      "allocated_vram_peak_bytes": 76258304,
+      "reserved_vram_peak_bytes": 98566144,
+      "serialized_proposal_bytes": [
+        2109077,
+        2109077,
+        2109077
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "context_static",
+      "initialization_ms": 16.178403981029987,
+      "trajectory_ms": {
+        "mean": 133.93228987499998,
+        "std": 7.255392722442022,
+        "p50": 131.55224850000002,
+        "p95": 145.3406301,
+        "p99": 149.12727002
+      },
+      "raw_samples_ms": [
+        136.550216,
+        150.07393,
+        135.476518,
+        133.069615,
+        128.96418,
+        130.034882,
+        129.68289,
+        127.606088
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 1433.560198061237,
+      "allocated_vram_peak_bytes": 76344320,
+      "reserved_vram_peak_bytes": 98566144,
+      "serialized_proposal_bytes": [
+        2179571,
+        2179571,
+        2179571
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        }
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "context_online",
+      "initialization_ms": 16.449071932584047,
+      "trajectory_ms": {
+        "mean": 193.045007875,
+        "std": 23.451481080489767,
+        "p50": 197.4621715,
+        "p95": 224.288231,
+        "p99": 227.3873662
+      },
+      "raw_samples_ms": [
+        165.402838,
+        161.819043,
+        178.044906,
+        217.09381,
+        198.026096,
+        228.16215,
+        198.912973,
+        196.898247
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 994.5867138109229,
+      "allocated_vram_peak_bytes": 76537856,
+      "reserved_vram_peak_bytes": 98566144,
+      "serialized_proposal_bytes": [
+        2179571,
+        2187187,
+        2187187
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "byte_return",
+      "initialization_ms": 20.057354005984962,
+      "trajectory_ms": {
+        "mean": 178.78917487500001,
+        "std": 1.5971242321937271,
+        "p50": 178.61061949999998,
+        "p95": 181.01235825,
+        "p99": 181.20526845
+      },
+      "raw_samples_ms": [
+        180.564531,
+        178.74896,
+        176.569553,
+        178.472279,
+        181.253496,
+        177.970727,
+        179.501754,
+        177.232099
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 192,
+      "observations_per_second": 1073.890520129288,
+      "allocated_vram_peak_bytes": 76537856,
+      "reserved_vram_peak_bytes": 98566144,
+      "serialized_proposal_bytes": [
+        2179571,
+        2179571,
+        2179571
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "historical_consumer",
+      "initialization_ms": 15.151183935813606,
+      "trajectory_ms": {
+        "mean": 86.1571625,
+        "std": 3.190752200098905,
+        "p50": 85.99044549999999,
+        "p95": 90.8905207,
+        "p99": 91.69172894
+      },
+      "raw_samples_ms": [
+        89.030573,
+        91.892031,
+        81.627301,
+        84.711537,
+        86.482636,
+        86.470212,
+        85.510679,
+        83.532331
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 8913.942587187688,
+      "allocated_vram_peak_bytes": 102241792,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8414933,
+        8414933,
+        8414933
+      ],
+      "work": []
+    },
+    {
+      "rows": 256,
+      "kind": "disabled",
+      "initialization_ms": 12.505581020377576,
+      "trajectory_ms": {
+        "mean": 168.87037262500002,
+        "std": 39.513114617170274,
+        "p50": 156.0577965,
+        "p95": 232.08307194999998,
+        "p99": 257.85500638999997
+      },
+      "raw_samples_ms": [
+        156.855135,
+        150.263037,
+        156.41613,
+        141.028563,
+        154.147296,
+        155.699463,
+        172.255367,
+        264.29799
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 4547.8670299700825,
+      "allocated_vram_peak_bytes": 102231552,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8415125,
+        8415125,
+        8415125
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "reader",
+      "initialization_ms": 12.958031031303108,
+      "trajectory_ms": {
+        "mean": 166.74689337499998,
+        "std": 9.638908250320544,
+        "p50": 166.1885155,
+        "p95": 181.39519585,
+        "p99": 184.88299597
+      },
+      "raw_samples_ms": [
+        167.787931,
+        173.298517,
+        164.956881,
+        167.42015,
+        160.183079,
+        185.754946,
+        154.178826,
+        160.394817
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 4605.782959163332,
+      "allocated_vram_peak_bytes": 102425088,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8415125,
+        8415125,
+        8415125
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "context_static",
+      "initialization_ms": 19.15078004822135,
+      "trajectory_ms": {
+        "mean": 184.72799887499997,
+        "std": 15.141008163710278,
+        "p50": 183.52436949999998,
+        "p95": 207.2066276,
+        "p99": 208.59146392
+      },
+      "raw_samples_ms": [
+        203.991829,
+        208.937673,
+        185.326551,
+        181.722188,
+        186.556803,
+        173.613399,
+        167.066205,
+        170.609343
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 4157.463972311437,
+      "allocated_vram_peak_bytes": 102560256,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8485619,
+        8485619,
+        8485619
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        }
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "context_online",
+      "initialization_ms": 17.405519960448146,
+      "trajectory_ms": {
+        "mean": 255.456415375,
+        "std": 26.576568717185914,
+        "p50": 255.22464000000002,
+        "p95": 289.71937395000003,
+        "p99": 292.24088119
+      },
+      "raw_samples_ms": [
+        227.059189,
+        245.356795,
+        265.092485,
+        228.03393,
+        272.347649,
+        283.865875,
+        292.871258,
+        229.024142
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 3006.3836873018286,
+      "allocated_vram_peak_bytes": 102753792,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8485619,
+        8514227,
+        8514227
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "byte_return",
+      "initialization_ms": 17.217045999132097,
+      "trajectory_ms": {
+        "mean": 184.103375,
+        "std": 8.839661853796104,
+        "p50": 188.221291,
+        "p95": 193.25477339999998,
+        "p99": 194.13165948
+      },
+      "raw_samples_ms": [
+        189.672909,
+        188.828623,
+        174.77386,
+        187.613959,
+        172.913323,
+        173.4543,
+        191.219145,
+        194.350881
+      ],
+      "session_count": 3,
+      "predicted_sessions": 2,
+      "observations": 768,
+      "observations_per_second": 4171.569369654413,
+      "allocated_vram_peak_bytes": 102753792,
+      "reserved_vram_peak_bytes": 119537664,
+      "serialized_proposal_bytes": [
+        8485619,
+        8485619,
+        8485619
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ]
+    }
+  ],
+  "implementation": {
+    "mars_titan.calibration.cohort_feedback": "1156ba19b09dae069647775c3b1fac27166fec02e6b35bb04057e0b69e2af33e",
+    "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+    "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+    "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+    "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+    "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+    "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+    "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+    "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+    "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+    "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+    "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+    "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+    "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+    "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+    "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "mars_titan.models.titans.financial": "eb950231a91c399ef6374879f87b190235e217eac4fcbcccf4cafd6c0f5db44b",
+    "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+    "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+    "mars_titan.models.titans.frozen_financial": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+    "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+    "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+    "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+    "mars_titan.models.titans.mechanism_catalog": "be754afb519676e6fc6e445797e811739ecdb16e623b26877033d46b8404af84",
+    "mars_titan.models.titans.mechanism_consumer": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+    "mars_titan.models.titans.mechanism_event": "259b68c65ebb572b89b45965c06b3fc54b3b262bc11f6da08b1a031d373663c0",
+    "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+    "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+    "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+    "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+    "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+    "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+    "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+    "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+  },
+  "internal_seconds": 18.7600862509571,
+  "process_peak_rss_bytes": 1602748416,
+  "scope": "Tres sesiones, una de calentamiento y dos de predicción, con fixtures de ambos mercados. Incluye preparación de entradas CPU, transferencia a CUDA, estados iniciales, auditorías, MAC, contexto, lector, calibración, feedback manual, exportación, restauración auxiliar y serialización en RAM. No incluye escritura atómica, métricas financieras ni disco. Las comprobaciones de paridad quedan fuera de cada tiempo y dentro del proceso. RSS corresponde al proceso completo. La VRAM se mide por caso e incluye el calentamiento y la memoria reservada por PyTorch. Los percentiles son empíricos y tienen pocas muestras.",
+  "sources": {
+    "reports/engineering/mechanism-consumer-20261021/benchmark.py": "12642f5c2313bad063f7ae8b99dae1b70e38e9bd24af211b6202df2c99d06763",
+    "src/mars_titan/models/titans/mechanism_catalog.py": "be754afb519676e6fc6e445797e811739ecdb16e623b26877033d46b8404af84",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+    "src/mars_titan/models/titans/mechanism_event.py": "259b68c65ebb572b89b45965c06b3fc54b3b262bc11f6da08b1a031d373663c0",
+    "src/mars_titan/models/titans/mechanism_calibration.py": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+    "tests/models/titans/test_mechanism_consumer.py": "fa55d3f8e3513bb8cad269030162895b840cda184c4264efa11ae640c0f57e71",
+    "tests/models/titans/test_context_selection.py": "d7fd6e723d364320f2156d03f6d18d16fe1d747d997e7330c9ddf7058b1c7479",
+    "tests/models/titans/test_market_memory.py": "d024d19350e2ebcbb90601b1480a449ff17624633a08aeb5d37040eefeef8400",
+    "tests/models/titans/test_memory_stability.py": "c46b9129b5803cc4b0697a4866eff8e3105d2d7eea01b630f229896199b864c8",
+    "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17",
+    "tests/models/titans/test_episodic_readout.py": "4251563092e3f230ae8d566353a3116d31b37551b84abd0d78fc87c6314ca728"
+  }
+}

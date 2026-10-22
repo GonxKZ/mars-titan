@@ -1,0 +1,24 @@
+{
+  "runs": [
+    {
+      "name": "cost",
+      "completed": false,
+      "wall": "0:44.99",
+      "max_rss_kib": 1724876,
+      "max_rss_bytes": 1766273024,
+      "time_source_sha256": "95dfffccf7cfd9cf96e5da5d036e57d1b34c6072043ee94a92915065dd08cd16"
+    },
+    {
+      "name": "cost-final",
+      "completed": true,
+      "wall": "3:39.91",
+      "max_rss_kib": 1758644,
+      "max_rss_bytes": 1800851456,
+      "time_source_sha256": "cb7d104b2cd00a6b86c5cf8c2cced75c8b8cac116f392ee8f6e187f6e078f53e",
+      "internal_seconds": 215.83800599793904,
+      "python_peak_rss_bytes": 1766760448
+    }
+  ],
+  "energy_measured": false,
+  "limits": "Incluye construcción, perfiles, datos de prueba y limpieza. No mide entrenamiento compartido ni energía."
+}

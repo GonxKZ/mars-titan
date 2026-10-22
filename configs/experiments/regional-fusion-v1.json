@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "regional_fusion_variants",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_executed",
+  "arms": {
+    "original": {
+      "role": "Fusión anterior, sin grafo",
+      "predictor_changes": {}
+    },
+    "regional_self": {
+      "role": "Nodos sin comunicación regional ni resumen",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "self",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": false,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_uniform_hub": {
+      "role": "Mensajes uniformes con resumen",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "complete",
+          "routing": "uniform",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_attention_hub": {
+      "role": "Atención completa con resumen",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "complete",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_ring_hub": {
+      "role": "Atención local en anillo con resumen",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_ring_no_hub": {
+      "role": "Anillo sin resumen global",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": false,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_ring_frequent_summary": {
+      "role": "Cuatro actualizaciones del resumen y cuatro pasos locales",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 4,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "regional_ring_single_summary": {
+      "role": "Una actualización del resumen y cuatro pasos locales",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 1,
+          "local_steps": 4,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    }
+  },
+  "limits": [
+    "Las siete alternativas regionales conservan el mismo conjunto de parámetros. La referencia anterior tiene menos parámetros.",
+    "La ruta uniforme calcula QKV pero anula Q y K. No se afirma igualdad de capacidad efectiva.",
+    "El resumen añade conexiones indirectas incluso con aristas locales diagonales o de anillo.",
+    "Los ritmos del resumen cambian el coste aunque se iguale el número de pasos locales.",
+    "El estado regional es memoria de trabajo por predicción. No es memoria histórica regional ni un selector aprendido de mecanismos."
+  ]
+}

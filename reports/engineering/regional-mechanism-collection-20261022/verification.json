@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T04:00:14.142270+00:00",
+  "parent_commit": "f1ac211936ef96fc57655f91d4a4d1f3a766b5cd",
+  "source_sha256": {
+    "src/mars_titan/models/titans/regional_routes.py": "bb4417d459dc440bfc9ab857a84cc178c14a94665822dc4fe9c7597ade83048d",
+    "src/mars_titan/models/titans/mechanism_catalog.py": "d52e565840cfcb9ab1962e2d4aa56303dce399ea25df172265b610fc3587d8de",
+    "src/mars_titan/memory/mechanism_collection.py": "f05850fb9084d2bf252f0025f01807621fb64be55ee750708249cbaead97abe9",
+    "src/mars_titan/memory/mechanism_collection_record.py": "1db955d8c0f00fbc162f85a2d472e0576885aa141a4851e32dd915cd3b7398ec",
+    "src/mars_titan/training/mechanism_fit_contract.py": "f2f6c91476b86b75b5ce7667e7be2fadb6a48db612ba56cf2a4346140d0e72f7",
+    "src/mars_titan/training/mechanism_fit_window.py": "16c838af74b3da95bd2057dbceecae6499b6bccb67b33865ad862becd1bc51a3",
+    "src/mars_titan/training/mechanism_policy_fit.py": "4ad9ff767377425b6ebe633625f4086821c75f6dee6fcf4583d418e6fb492f63",
+    "tests/memory/test_regional_mechanism_collection.py": "9f34e6fcdf45de38f0e15f823017952ea631043404dfcea5eb57de36c7d7cf9d",
+    "tests/memory/test_regional_mechanism_fit_window.py": "a1c7a59d3ad91e4c92e4b3275a887602914624d8cafe3a9d08bc67a75c1611bd"
+  },
+  "regression": {
+    "tests": 237,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "cuda_cases": 41,
+    "seconds": 469.068,
+    "xml_sha256": "38058c96c743968bbdbcc11578f4a2be1954ae492689c291e75fb821b1ca3493"
+  },
+  "selected_tests_only": true,
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "static_checks": [
+    {
+      "file": "ruff-check.log",
+      "result": "All checks passed!",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "file": "ruff-format.log",
+      "result": "1813 files already formatted",
+      "sha256": "06482057598b1683b451ad317836014cc0b23bef2d8893a997555dbc5a444575"
+    },
+    {
+      "file": "repository-check.log",
+      "result": "Verificados 3532 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código.",
+      "sha256": "edca35fea08d1059dcd3d1b180dda9d9f3c8d38c4471e4807f4c466b23b5ae3d"
+    }
+  ],
+  "optimizer_steps": 0,
+  "fitted_signal_normalizers": false,
+  "fitted_policy": false,
+  "new_native_build": false,
+  "real_corpus": false,
+  "final_test_opened": false,
+  "scope_limit": "Recogida, transporte, integridad y rechazo del ajuste bajo protección. Sin validación positiva de lectores de ganancias, normalización, solver o recibo de ajuste."
+}

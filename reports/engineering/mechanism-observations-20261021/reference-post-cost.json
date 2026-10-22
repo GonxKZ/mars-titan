@@ -1,0 +1,1278 @@
+{
+  "recorded_at_utc": "2026-10-21T06:44:46.487727+00:00",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_total_bytes": 8183676928,
+  "driver": "595.91.07",
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.3",
+  "cpu_threads": 2,
+  "warmup": 2,
+  "repetitions": 12,
+  "hidden_size": 32,
+  "input_shapes": {
+    "prices": [
+      64,
+      5
+    ],
+    "news": 2,
+    "charts": 2,
+    "fundamentals": 3,
+    "macro": 3
+  },
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "scientific_study": false,
+  "cases": [
+    {
+      "rows": 64,
+      "markets": [
+        "US"
+      ],
+      "dtype": "torch.float32",
+      "model_id": "35eda1af8c8d2703b521ce84179b1b86ed4025d088dfb164291303c840b361e9",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          11.724107,
+          11.826763,
+          11.922305,
+          12.389334,
+          13.277246,
+          13.556708,
+          16.187708,
+          13.08555,
+          11.964435,
+          11.545016,
+          11.053621,
+          11.134274
+        ],
+        "p50_ms": 11.94337,
+        "p95_ms": 14.740657999999998,
+        "p99_ms": 15.898298000000002,
+        "mean_ms": 12.472255583333334,
+        "std_ms": 1.420974240572193,
+        "rows_per_second": 5131.3893924306,
+        "observation_sha256": "f6f35e1a795912a94dd068e5aa2837e019650bc1f766674a5625691d48f93da5",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          11.508276,
+          11.341017,
+          10.89051,
+          11.26849,
+          11.098486,
+          10.779328,
+          11.054943,
+          12.403391,
+          11.253731,
+          11.459012,
+          11.075101,
+          11.206552
+        ],
+        "p50_ms": 11.2301415,
+        "p95_ms": 11.911077749999999,
+        "p99_ms": 12.304928349999999,
+        "mean_ms": 11.278236416666667,
+        "std_ms": 0.4138535056219021,
+        "rows_per_second": 5674.646073691323,
+        "observation_sha256": "f6f35e1a795912a94dd068e5aa2837e019650bc1f766674a5625691d48f93da5",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 64,
+      "markets": [
+        "CN",
+        "US"
+      ],
+      "dtype": "torch.float32",
+      "model_id": "35eda1af8c8d2703b521ce84179b1b86ed4025d088dfb164291303c840b361e9",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          10.917011,
+          11.427212,
+          13.401021,
+          11.496184,
+          11.681025,
+          11.633945,
+          12.003369,
+          11.738564,
+          11.11621,
+          10.773156,
+          11.62064,
+          12.992353
+        ],
+        "p50_ms": 11.6272925,
+        "p95_ms": 13.176253599999999,
+        "p99_ms": 13.35606752,
+        "mean_ms": 11.733390833333333,
+        "std_ms": 0.7736388160625711,
+        "rows_per_second": 5454.5187243045475,
+        "observation_sha256": "f17c6ecd3b510da930d32d60eaed10c79fa3cd604133ec5d1116ad28862ee543",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          11.089699,
+          10.848379,
+          11.849005,
+          11.742812,
+          10.819284,
+          12.381409,
+          11.809539,
+          11.180832,
+          11.082655,
+          10.975702,
+          11.004206,
+          12.147934
+        ],
+        "p50_ms": 11.1352655,
+        "p95_ms": 12.252997749999999,
+        "p99_ms": 12.35572675,
+        "mean_ms": 11.410954666666667,
+        "std_ms": 0.5419832471624817,
+        "rows_per_second": 5608.645540145282,
+        "observation_sha256": "f17c6ecd3b510da930d32d60eaed10c79fa3cd604133ec5d1116ad28862ee543",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 256,
+      "markets": [
+        "US"
+      ],
+      "dtype": "torch.float32",
+      "model_id": "35eda1af8c8d2703b521ce84179b1b86ed4025d088dfb164291303c840b361e9",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          31.641106,
+          31.775733,
+          33.266191,
+          31.597202,
+          32.533125,
+          35.022406,
+          32.366397,
+          33.221275,
+          32.406794,
+          31.871875,
+          32.679283,
+          32.155856
+        ],
+        "p50_ms": 32.3865955,
+        "p95_ms": 34.056487749999995,
+        "p99_ms": 34.829222349999995,
+        "mean_ms": 32.54477025,
+        "std_ms": 0.9580199517266772,
+        "rows_per_second": 7866.087178784124,
+        "observation_sha256": "f506509d3f7f3293533d29bcefcb327cc014bc0fe54b863f38547cbfd005edfc",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          32.664284,
+          32.204409,
+          33.205445,
+          32.649757,
+          31.862007,
+          32.831794,
+          33.272993,
+          32.466066,
+          32.180442,
+          32.646079,
+          34.088695,
+          34.317141
+        ],
+        "p50_ms": 32.6570205,
+        "p95_ms": 34.1914957,
+        "p99_ms": 34.29201194,
+        "mean_ms": 32.86575933333333,
+        "std_ms": 0.7443292299029236,
+        "rows_per_second": 7789.261687325689,
+        "observation_sha256": "f506509d3f7f3293533d29bcefcb327cc014bc0fe54b863f38547cbfd005edfc",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 256,
+      "markets": [
+        "CN",
+        "US"
+      ],
+      "dtype": "torch.float32",
+      "model_id": "35eda1af8c8d2703b521ce84179b1b86ed4025d088dfb164291303c840b361e9",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          31.578014,
+          34.443561,
+          35.284803,
+          32.114125,
+          33.17774,
+          31.457715,
+          30.493269,
+          36.892905,
+          36.952519,
+          33.887573,
+          33.165307,
+          31.445472
+        ],
+        "p50_ms": 33.1715235,
+        "p95_ms": 36.9197313,
+        "p99_ms": 36.94596146,
+        "mean_ms": 33.40775025,
+        "std_ms": 2.149389104961184,
+        "rows_per_second": 7662.892534944043,
+        "observation_sha256": "b9a5cf0c440c0ed2d6b3461d69c3e254effb069939d84f3a4862d279e138fd7e",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          30.957984,
+          30.540158,
+          33.115633,
+          30.748555,
+          30.4679,
+          33.315954,
+          30.96148,
+          32.877459,
+          31.283814,
+          33.637405,
+          33.257892,
+          32.037768
+        ],
+        "p50_ms": 31.660791,
+        "p95_ms": 33.46060695,
+        "p99_ms": 33.60204539,
+        "mean_ms": 31.933500166666665,
+        "std_ms": 1.2314027665168794,
+        "rows_per_second": 8016.659578934037,
+        "observation_sha256": "b9a5cf0c440c0ed2d6b3461d69c3e254effb069939d84f3a4862d279e138fd7e",
+        "allocated_vram_peak_bytes": 186368,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 64,
+      "markets": [
+        "US"
+      ],
+      "dtype": "torch.float64",
+      "model_id": "37b49ccd453f461a12fa540417b0bb14939e5d83cfc2bf3b32989b0d951f5c6d",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          10.985288,
+          14.908129,
+          15.173614,
+          12.024197,
+          11.654563,
+          11.166574,
+          12.104941,
+          13.463117,
+          12.199491,
+          13.025734,
+          12.649969,
+          11.70017
+        ],
+        "p50_ms": 12.152216,
+        "p95_ms": 15.027597250000001,
+        "p99_ms": 15.144410650000001,
+        "mean_ms": 12.587982250000001,
+        "std_ms": 1.3477429866572637,
+        "rows_per_second": 5084.21435055646,
+        "observation_sha256": "2e25458c01e4b9e64f460e51401cd479083ec879a07a5aa43f5368c529adad5b",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          11.823745,
+          13.246976,
+          12.061318,
+          12.572802,
+          12.854849,
+          11.495611,
+          11.73136,
+          11.456827,
+          11.185069,
+          12.126411,
+          12.089071,
+          11.189608
+        ],
+        "p50_ms": 11.942531500000001,
+        "p95_ms": 13.031306149999999,
+        "p99_ms": 13.20384203,
+        "mean_ms": 11.986137249999999,
+        "std_ms": 0.6475626634413809,
+        "rows_per_second": 5339.501681411166,
+        "observation_sha256": "2e25458c01e4b9e64f460e51401cd479083ec879a07a5aa43f5368c529adad5b",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 64,
+      "markets": [
+        "CN",
+        "US"
+      ],
+      "dtype": "torch.float64",
+      "model_id": "37b49ccd453f461a12fa540417b0bb14939e5d83cfc2bf3b32989b0d951f5c6d",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          11.338171,
+          11.37977,
+          10.997763,
+          11.168397,
+          11.33218,
+          10.896349,
+          11.02273,
+          13.075059,
+          11.459061,
+          11.439574,
+          11.272817,
+          11.087083
+        ],
+        "p50_ms": 11.302498499999999,
+        "p95_ms": 12.186260099999998,
+        "p99_ms": 12.89729922,
+        "mean_ms": 11.372412833333335,
+        "std_ms": 0.5669776383998085,
+        "rows_per_second": 5627.653598048388,
+        "observation_sha256": "0ac6f9f5c51e58942f2b6746c04f2faeb9ab48ed37fd1be44b83668a23b0b1ec",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          11.282595,
+          13.99008,
+          15.09223,
+          15.231364,
+          13.467866,
+          12.564276,
+          12.383862,
+          12.123186,
+          11.588868,
+          12.96084,
+          12.735832,
+          13.022568
+        ],
+        "p50_ms": 12.848336,
+        "p95_ms": 15.1548403,
+        "p99_ms": 15.21605926,
+        "mean_ms": 13.036963916666666,
+        "std_ms": 1.2391367206773403,
+        "rows_per_second": 4909.118442690584,
+        "observation_sha256": "0ac6f9f5c51e58942f2b6746c04f2faeb9ab48ed37fd1be44b83668a23b0b1ec",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 256,
+      "markets": [
+        "US"
+      ],
+      "dtype": "torch.float64",
+      "model_id": "37b49ccd453f461a12fa540417b0bb14939e5d83cfc2bf3b32989b0d951f5c6d",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          40.118838,
+          40.849358,
+          43.192008,
+          48.582753,
+          35.347169,
+          42.432351,
+          42.480402,
+          41.22915,
+          46.123569,
+          42.079529,
+          51.894709,
+          43.58748
+        ],
+        "p50_ms": 42.4563765,
+        "p95_ms": 50.073133199999994,
+        "p99_ms": 51.53039384,
+        "mean_ms": 43.159776333333326,
+        "std_ms": 4.223127691692159,
+        "rows_per_second": 5931.448717964859,
+        "observation_sha256": "df72f1a4b63be5749a75be1f76bb026f310b517ac55e8bfc7bcace622e297c20",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          40.518416,
+          44.925028,
+          33.49905,
+          31.001915,
+          33.255967,
+          32.161683,
+          30.719838,
+          32.883016,
+          32.710768,
+          30.864603,
+          31.658545,
+          32.723894
+        ],
+        "p50_ms": 32.717331,
+        "p95_ms": 42.501391399999996,
+        "p99_ms": 44.44030068,
+        "mean_ms": 33.910226916666666,
+        "std_ms": 4.322589081888127,
+        "rows_per_second": 7549.344940365987,
+        "observation_sha256": "df72f1a4b63be5749a75be1f76bb026f310b517ac55e8bfc7bcace622e297c20",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    },
+    {
+      "rows": 256,
+      "markets": [
+        "CN",
+        "US"
+      ],
+      "dtype": "torch.float64",
+      "model_id": "37b49ccd453f461a12fa540417b0bb14939e5d83cfc2bf3b32989b0d951f5c6d",
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "fixture": "frozen-v1"
+            },
+            "fundamental_concepts": [
+              "assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "rate"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture.py": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "text_aggregation": "mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 2,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 32,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 256,
+        "max_state_bytes": 67108864,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "session_context": {
+          "kind": "market_memory_v1",
+          "sectors": null
+        }
+      },
+      "extract_and_seal": {
+        "samples_ms": [
+          38.865899,
+          37.563337,
+          37.148929,
+          31.157058,
+          31.836533,
+          31.414629,
+          32.310666,
+          30.653039,
+          32.215635,
+          32.412259,
+          32.697281,
+          32.776282
+        ],
+        "p50_ms": 32.3614625,
+        "p95_ms": 38.1494899,
+        "p99_ms": 38.72261718,
+        "mean_ms": 33.42096225,
+        "std_ms": 2.7743823647578383,
+        "rows_per_second": 7659.863234488408,
+        "observation_sha256": "cbc4668d26c15f39731b609b87f0f1db9e08985fcb471d69879b4d9e27f23fae",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      },
+      "extract_seal_to_cuda": {
+        "samples_ms": [
+          32.576782,
+          33.787608,
+          32.344841,
+          32.063304,
+          33.729187,
+          32.563537,
+          32.663587,
+          35.517372,
+          34.444348,
+          34.006495,
+          32.469437,
+          32.521487
+        ],
+        "p50_ms": 32.6201845,
+        "p95_ms": 34.927208799999995,
+        "p99_ms": 35.39933936,
+        "mean_ms": 33.22399874999999,
+        "std_ms": 1.056846144793953,
+        "rows_per_second": 7705.273586310861,
+        "observation_sha256": "cbc4668d26c15f39731b609b87f0f1db9e08985fcb471d69879b4d9e27f23fae",
+        "allocated_vram_peak_bytes": 353792,
+        "reserved_vram_peak_bytes": 2097152
+      }
+    }
+  ],
+  "process_seconds": 5.3561775960261,
+  "process_peak_rss_bytes": 928329728,
+  "scope": "Fixtures preparados en CPU, consumidor y contexto inicial en CUDA. La medida incluye verificación del consumidor, comprobación de estado y filas, huellas, RMS FP64, agregación canónica y sellado. La segunda medida incluye además la transferencia del vector al dispositivo. Construcción fuera de las latencias y dentro del proceso. No incluye codificadores externos, predicción, selector, feedback o publicación de una sesión financiera. Orden fijo. Sin pruebas ni perfiles propios concurrentes. No se mide energía.",
+  "sources": {
+    "reports/engineering/mechanism-observations-20261021/benchmark.py": "55eb8d62dd45590e213ed2ceb5d1bbf39344b134e6775554852935ad1669841f",
+    "src/mars_titan/memory/mechanism_observations.py": "5832a1a7f2e04779c85c8aa0cd639c011ba3aefdfbe688b642303ce33774f5e8",
+    "src/mars_titan/models/titans/mechanism_observation.py": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "207467e8ae18193f18db8130782fc7df50b6bc227013ac27fac210aa94c2abeb",
+    "tests/memory/test_mechanism_observations.py": "19fccf60c8950b321c4a492d4b616232688cabec2000f6d2ce141a20efee9ba7",
+    "tests/models/titans/test_mechanism_consumer.py": "fa55d3f8e3513bb8cad269030162895b840cda184c4264efa11ae640c0f57e71",
+    "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17"
+  }
+}

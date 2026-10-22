@@ -6,6 +6,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
+from .bank_readout import BankReadout
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
 from .key_competition import competitive_normalize
@@ -91,6 +92,11 @@ class NeuralMemory(nn.Module):
                 self.value_convolution = CausalDepthwiseConvolution(
                     config.dim, config.qkv_convolution, dtype=dtype
                 )
+        self.bank_readout = (
+            BankReadout(config.dim, config.bank_readout, seed=config.parameter_seed, dtype=dtype)
+            if config.bank_readout is not None
+            else None
+        )
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -104,8 +110,7 @@ class NeuralMemory(nn.Module):
     def _check_size(self, batch_size: int) -> None:
         bounded_integer(batch_size, "lote", 1, self.config.max_batch)
         element_size = self._reference().element_size()
-        matrices = (2 + self.config.hidden_levels) * self.config.depth
-        required = batch_size * (matrices * self.config.dim**2 * element_size + 8)
+        required = batch_size * (self.config.matrix_elements * element_size + 8)
         required += batch_size * self.config.modulation_elements * element_size
         # Se cuentan las tres ventanas de q, k y v porque dependen de esta configuración,
         # aunque la de q viaje en el estado de MAC.
@@ -128,7 +133,7 @@ class NeuralMemory(nn.Module):
             )
         state = NeuralMemoryState(
             weights,
-            tuple(torch.zeros_like(w) for w in weights),
+            tuple(torch.zeros_like(w) for _ in range(self.config.momentum_copies) for w in weights),
             torch.zeros(batch_size, dtype=torch.int64, device=reference.device),
             self.config.fingerprint(),
             self.initial_windows(batch_size, 2),
@@ -199,7 +204,7 @@ class NeuralMemory(nn.Module):
             or type(state.levels) is not tuple
             or type(state.modulation) is not tuple
             or len(state.weights) != self.config.depth
-            or len(state.momentum) != self.config.depth
+            or len(state.momentum) != self.config.depth * self.config.momentum_copies
             or len(state.levels) != self.config.depth * self.config.hidden_levels
             or len(state.modulation)
             != (0 if self.config.plasticity is None else 3 * self.config.depth)
@@ -298,6 +303,56 @@ class NeuralMemory(nn.Module):
             values = F.silu(values)
         return values, window
 
+    def _read_memory(self, query, state, translation=None):
+        if self.bank_readout is None:
+            return self._apply_memory(query, self.readable_weights(state))
+        banks = self._banks(state)
+        outputs = []
+        for bank in banks:
+            weights = (
+                bank
+                if translation is None
+                else tuple(w + d for w, d in zip(bank, translation, strict=True))
+            )
+            outputs.append(self._apply_memory(query, weights))
+        return self.bank_readout(query, torch.stack(outputs, dim=2))
+
+    def _banks(self, state):
+        return (state.weights,) + tuple(
+            tuple(state.levels[2 * layer + region] for layer in range(self.config.depth))
+            for region in range(2)
+        )
+
+    def _associative_problem(self, keys, state, differentiable):
+        if self.bank_readout is None:
+            local = tuple(
+                (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
+                for w in self.readable_weights(state)
+            )
+            return local, self._apply_memory(keys, local)
+        if self.config.momentum_copies == 3:
+            local = tuple(
+                (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
+                for bank in self._banks(state)
+                for w in bank
+            )
+            depth = self.config.depth
+            outputs = torch.stack(
+                [self._apply_memory(keys, local[r * depth : (r + 1) * depth]) for r in range(3)],
+                dim=2,
+            )
+            return local, self.bank_readout(keys, outputs)
+        # La variable de derivación es una traslación compartida por los bancos. Su
+        # gradiente suma las parciales de cada región sin fingir que se lee una media de pesos.
+        local = tuple(torch.zeros_like(w, requires_grad=True) for w in state.weights)
+        if not differentiable:
+            state = replace(
+                state,
+                weights=tuple(w.detach() for w in state.weights),
+                levels=tuple(w.detach() for w in state.levels),
+            )
+        return local, self._read_memory(keys, state, local)
+
     def _gates(
         self, alpha_logits: Tensor, eta_logits: Tensor, theta_logits: Tensor
     ) -> tuple[Tensor, Tensor, Tensor]:
@@ -326,6 +381,8 @@ class NeuralMemory(nn.Module):
         (w + z2 + z3) / 3, pero con tres copias iguales devuelve w sin redondeo, así que el
         banco arranca leyendo exactamente los pesos del control.
         """
+        if self.bank_readout is not None:
+            raise ValueError("La lectura por consulta no tiene una red equivalente de pesos medios")
         multiscale = self.config.multiscale
         if multiscale is None or multiscale.form == "cascade":
             return state.weights
@@ -357,7 +414,9 @@ class NeuralMemory(nn.Module):
                 )
                 new_levels.append(third + (g23 * (second - third) - g34 * third) / 4)
             else:
-                decay_second, decay_third = multiscale.bank_decays
+                decay_second, decay_third = (
+                    (alpha, alpha) if multiscale.form == "replica_bank" else multiscale.bank_decays
+                )
                 new_weights.append((1 - alpha) * first + surprise)
                 new_levels.append((1 - decay_second) * second + surprise)
                 new_levels.append((1 - decay_third) * third + surprise)
@@ -377,6 +436,8 @@ class NeuralMemory(nn.Module):
         observation=None,
     ):
         """Momentum, olvido y escritura de un paso con el gradiente asociativo ya calculado."""
+        if self.config.momentum_copies == 3:
+            return self._write_banks(weights, momentum, levels, gradients, gates, differentiable)
         alpha, eta, theta = gates
         stability = self.config.stability
         if stability is not None and stability.gradient_clip is not None:
@@ -440,10 +501,46 @@ class NeuralMemory(nn.Module):
             modulation = tuple(value.detach() for value in modulation)
         return weights, momentum, levels, modulation
 
+    def _write_banks(self, weights, momentum, levels, gradients, gates, differentiable):
+        """Parciales de la mezcla, o su proyección media, con un momentum por banco."""
+        alpha, eta, theta = gates
+        depth = self.config.depth
+        if self.config.bank_readout.write_gradient == "mean_partial":
+            average = tuple(
+                torch.stack([gradients[r * depth + i] for r in range(3)]).mean(0)
+                for i in range(depth)
+            )
+            gradients = average * 3
+        following_momentum = tuple(
+            eta * old - theta * gradient for old, gradient in zip(momentum, gradients, strict=True)
+        )
+        decays = (
+            (alpha, alpha, alpha)
+            if self.config.multiscale.form == "replica_bank"
+            else (alpha, *self.config.multiscale.bank_decays)
+        )
+        matrices = weights + tuple(levels[2 * i + r] for r in range(2) for i in range(depth))
+        following = tuple(
+            (1 - decays[r]) * matrices[r * depth + i] + following_momentum[r * depth + i]
+            for r in range(3)
+            for i in range(depth)
+        )
+        for value in (*following, *following_momentum):
+            check_finite(value, "La actualización por banco")
+        if not differentiable:
+            following = tuple(value.detach() for value in following)
+            following_momentum = tuple(value.detach() for value in following_momentum)
+        return (
+            following[:depth],
+            following_momentum,
+            tuple(following[(r + 1) * depth + i] for i in range(depth) for r in range(2)),
+            (),
+        )
+
     def read_shared(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Leer n consultas [n, dim] con un único estado compartido de lote 1 (PT4)."""
         self._check_shared(query, state)
-        result = self._apply_memory(query.unsqueeze(0), self.readable_weights(state)).squeeze(0)
+        result = self._read_memory(query.unsqueeze(0), state).squeeze(0)
         check_finite(result, "La lectura de memoria")
         return result
 
@@ -485,11 +582,8 @@ class NeuralMemory(nn.Module):
             elif self.config.normalize_qk:
                 keys = F.normalize(keys, dim=-1, eps=1e-12)
             gates = self._gates(*logits)
-            local = tuple(
-                (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
-                for w in self.readable_weights(state)
-            )
-            residual = self._apply_memory(keys.unsqueeze(0), local).squeeze(0) - values
+            local, prediction = self._associative_problem(keys.unsqueeze(0), state, differentiable)
+            residual = prediction.squeeze(0) - values
             loss = residual.square().sum() / observed.shape[0]
             check_finite(loss, "La pérdida asociativa")
             gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
@@ -541,7 +635,7 @@ class NeuralMemory(nn.Module):
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
-        result = self._apply_memory(query, self.readable_weights(state))
+        result = self._read_memory(query, state)
         check_finite(result, "La lectura de memoria")
         return result
 
@@ -588,12 +682,12 @@ class NeuralMemory(nn.Module):
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
                 # La copia separa la variable de derivación interna de y(M_prev). Con el banco
                 # de PT5 la memoria lee la media de sus niveles, y el gradiente se toma en ella.
-                readable = self.readable_weights(replace(state, weights=weights, levels=levels))
-                local = tuple(
-                    (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
-                    for w in readable
+                local, prediction = self._associative_problem(
+                    keys.unsqueeze(1),
+                    replace(state, weights=weights, levels=levels),
+                    differentiable,
                 )
-                residual = self._apply_memory(keys.unsqueeze(1), local).squeeze(1) - values
+                residual = prediction.squeeze(1) - values
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
@@ -640,6 +734,8 @@ class NeuralMemory(nn.Module):
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         require_identity(state_dict.get(prefix + "_extra_state"), self.get_extra_state())
+        if self.bank_readout is not None:
+            self.bank_readout.validate_payload(state_dict, prefix + "bank_readout.")
         return super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def export_state(self, state: NeuralMemoryState) -> dict:

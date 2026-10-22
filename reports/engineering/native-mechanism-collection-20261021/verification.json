@@ -1,0 +1,88 @@
+{
+  "recorded_at_utc": "2026-10-21T10:26:44.897732+00:00",
+  "code_commit": "4a0fc2579046ee5346068f23063249312a8641a3",
+  "tests": 220,
+  "passed": 220,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_marked_tests": 38,
+  "runs": [
+    {
+      "receipt": "final.xml",
+      "tests": 217,
+      "sha256": "83d342072228074c58627c7b54b767c18cfe35f8d9eadad975c9230eb9d2c293"
+    },
+    {
+      "receipt": "guard-final.xml",
+      "tests": 3,
+      "sha256": "0b8ea5a47cfe794fcdeeb7bc11d76c8817b269446c4333be52f393efcd865897"
+    }
+  ],
+  "new_native_collection_tests": 40,
+  "new_native_collection_cuda_tests": 10,
+  "cuda_collection_sha256": "04753cbb5f7b636c0b742d85c51c62436299437ddf4c4098be0ae39f78d9fb7a",
+  "quality_totals": {
+    "statements": 1026,
+    "covered_statements": 911,
+    "branches": 410,
+    "covered_branches": 313
+  },
+  "native_collection_file": {
+    "path": "src/mars_titan/memory/native_mechanism_collection.py",
+    "source_sha256": "a12e970601f8402755ca4286cfcde682d596e5874a1463df7260e70451453757",
+    "statements": 184,
+    "covered_statements": 181,
+    "branches": 40,
+    "covered_branches": 38
+  },
+  "scope": "Selección de integración y regresión, no toda la suite del proyecto",
+  "optimizer_steps": 0,
+  "real_corpus_used": false,
+  "predictor_trained": false,
+  "selector_fitted": false,
+  "final_test_used": false,
+  "collection_native_generation_publication_verified": true,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "sources": {
+    "src/mars_titan/memory/financial_mechanisms.py": "569fe78f4b22f728c2909059c3c5087f3a4cb07871fb494759b94fe932ed66d4",
+    "src/mars_titan/memory/financial_session.py": "b7db84efa13344a6d18cb1c7ef5f4b89958952acda7d5a0be41021e6ec495854",
+    "src/mars_titan/memory/native_mechanism_collection.py": "a12e970601f8402755ca4286cfcde682d596e5874a1463df7260e70451453757",
+    "tests/memory/test_financial_mechanisms.py": "ea00f4c51a34f553bb9530bd54f448ae1c36ee35b2df424595f47eef86fb5dfa",
+    "tests/memory/test_financial_session_associative.py": "b41dfd0ccf9613c00e57ed5c2dbcd8d81a070ebe9bc83a47aa15a1c9cdec9d91",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/memory/test_financial_session_gru.py": "942d906551bda5a64eacf52e584d3a04ff7be30a352dd2761c334b988e0d3d80",
+    "tests/memory/test_mechanism_collection.py": "1ca5547f3e517b6a22353c00facb46ba7490401bdc6ece7ba3d9b807596640ca",
+    "tests/memory/test_mechanism_selection.py": "9e32a2a2af33e5e85eded3642de26a8be7e077f879405bfd635c732ce51c6015",
+    "tests/memory/test_mechanism_supervision.py": "ddc82b8c7c2770f199b506e887ca624bf81eb6c1677a584af002dbb2191ac8a8",
+    "tests/memory/test_native_collection_guard.py": "803d8e3effd4303cfbe387e5b5fab13c2d178793ad37e418a0eb62cfcdc8056c",
+    "tests/memory/test_native_mechanism_collection.py": "705d5882313f8a1f061fe33318054857c64ab3a0bcb67a1ea974e309f533d3b0"
+  },
+  "reproduced_failures": [
+    {
+      "kind": "missing_native_collection",
+      "log_sha256": "9b268ccb47608629bd7187f535cd371c0c4ab1fe404cf4c3ca33f9ce78bd6a38"
+    },
+    {
+      "kind": "runtime_configuration_changes_accepted",
+      "log_sha256": "fc1659951cda7c9f9ca9415a09b4e492e041b7e1d6878dd1c1377475c765168d"
+    },
+    {
+      "kind": "resealed_supervision_clock_from_future_accepted",
+      "log_sha256": "ad4821736aa069b3c57b8371a1ff1d58111b82291b736ec2ae7b8ab048500be4"
+    }
+  ],
+  "mutation_refinement": {
+    "initial_guard_detection": "Solo el mensaje, descartada como prueba de conducta",
+    "first_behavioral_attempt_survivors": 1,
+    "final_behavioral_survivors": 0,
+    "final_guard_log_sha256": "d66545f576abe43d42c5e2b80dff774d66645c04e58e8d7d6101dbcc7ef5c9fc"
+  },
+  "remaining": [
+    "Ajuste protegido del selector",
+    "Selección temporal y contrastes predictivos",
+    "Especialización regional aprendida",
+    "Memoria histórica distribuida entre regiones"
+  ]
+}

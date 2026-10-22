@@ -1,0 +1,25 @@
+{
+  "recorded_at_utc": "2026-10-21T01:36:43+00:00",
+  "scope": "Archivo técnico de fixtures, sin predictor, corpus real ni aprendizaje",
+  "storage": "Directorio privado en el sistema de archivos de /home, detectado por stat como ext2/ext3. No usar /tmp porque está en tmpfs",
+  "order": [
+    "dictionary",
+    "none",
+    "zlib1"
+  ],
+  "payload": "varied",
+  "prior_events": [
+    8,
+    64
+  ],
+  "rows_per_event": [
+    64,
+    256
+  ],
+  "warmup": 2,
+  "repetitions": 12,
+  "concurrency": "Sin otras pruebas, perfiles o cargas propias durante las medidas",
+  "comparison": "Conservar todas las muestras y exigir el mismo digest semántico por condición. Comparar bytes y tiempo, sin seleccionar un formato por la mejor repetición",
+  "limitations": "Orden fijo, cachés y frecuencias sin controlar. Percentiles empíricos de doce eventos cuyo historial crece. No es una medida de FinancialSession ni del rendimiento financiero. Sin energía medida",
+  "decision": "Mantener none por defecto. zlib1 es una opción explícita y versionada hasta medir el recorrido integrado"
+}

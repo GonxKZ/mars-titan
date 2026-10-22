@@ -1,0 +1,228 @@
+{
+  "recorded_at_utc": "2026-10-21T05:07:52.506693+00:00",
+  "scope": "Mutaciones dirigidas CPU, con coeficientes fijados y sin ajuste",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.1729871729621664,
+    "log_sha256": "52ea98709b42f271b7bdb8e3be7cc5f4f93a2781c35f4caeea0aefe5fc9c7e83",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "mix_point_actions_across_calibrations",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "point.repeat_interleave(3, dim=-1)",
+      "after": "point.repeat(1, 3)",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_interval_utility_does_not_change_the_shared_point_gain",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.772191195981577,
+      "log_sha256": "5613a5146296f7ae6514290802dc63e3a2b04d040e7e23dbff56405d5c68936b",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_interval_utility",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "self.interval_weight * interval",
+      "after": "0 * interval",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_interval_utility_does_not_change_the_shared_point_gain",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.8719226070679724,
+      "log_sha256": "df5709fd414ff7451b02b58aa006bd1aead9af12fd69cfd13c731dd71c0baaa5",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_declared_cost",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "- self.costs",
+      "after": "- 0 * self.costs",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_declared_cost_and_minimum_gain_can_keep_the_baseline",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.4211086770519614,
+      "log_sha256": "f21f73061f137973e409f8cdf24e58bcab83317ec18626757862c11fa03aea6c",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_minimum_gain",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "utilities[:, 1:] - self.min_gain",
+      "after": "utilities[:, 1:]",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_declared_cost_and_minimum_gain_can_keep_the_baseline",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.3213138059945777,
+      "log_sha256": "0a714311e46b202b9306e7ab5d0e4ec464f56dddb29ca7507b1f10596398d860",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "allow_unavailable_actions",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "choices = candidates.argmax(-1)",
+      "after": "choices = scores.argmax(-1)",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_unavailable_actions_are_excluded_before_the_choice_and_keep_their_scores",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.421459965989925,
+      "log_sha256": "6cc8817bb334ced12f25ae3ff541b861b430a0bdcf01f3ccd3379979319b9733",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_marginal_support",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "choices = torch.where(supported, choices, torch.zeros_like(choices))",
+      "after": "choices = choices",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_marginal_support_fallback_does_not_evaluate_an_overflowing_unused_regression",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.570995523943566,
+      "log_sha256": "465d674a1cf8b9d6c5b9ccf46e630b5662de71e85d6ee109f7e2dc2b185cc6b0",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "retain_selection_autograd",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "    @torch.no_grad()\n",
+      "after": "",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_selection_is_row_independent_and_does_not_consume_rng_or_retain_autograd",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 2.9216871660901234,
+      "log_sha256": "102bfa00a07131f0b4cb19e320644fb79f446b783c2c74a8f1f31f3ccc2a9fff",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_incompatible_identity",
+      "path": "src/mars_titan/models/titans/mechanism_policy.py",
+      "before": "from .config import require_identity",
+      "after": "from .config import require_identity\nrequire_identity = lambda *args: None",
+      "test": "tests/models/titans/test_mechanism_policy.py::test_rejected_checkpoint_does_not_copy_any_buffer[identity]",
+      "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+      "exit_code": 1,
+      "seconds": 3.1228726719273254,
+      "log_sha256": "cdacc66f53830e526c0cda1f9f79759a4d683deaa50a0c030921bbf4ea2aba7e",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "allow_calibration_to_change_medians",
+      "path": "src/mars_titan/models/titans/mechanism_losses.py",
+      "before": "(medians == medians[..., :1]).all()",
+      "after": "torch.tensor(True, device=quantiles.device)",
+      "test": "tests/models/titans/test_mechanism_losses.py::test_invalid_or_incomplete_alternatives_do_not_turn_into_losses[median]",
+      "source_sha256": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+      "exit_code": 1,
+      "seconds": 2.4217810180271044,
+      "log_sha256": "ebed7c40f2c6338c3c15021d2a8f01177099035157f165ac6bac12c2a326c7cc",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "double_exceedance_penalties",
+      "path": "src/mars_titan/models/titans/mechanism_losses.py",
+      "before": "[10.0, 40.0]",
+      "after": "[20.0, 80.0]",
+      "test": "tests/models/titans/test_mechanism_losses.py::test_equal_medians_keep_the_same_point_error_but_different_interval_scores",
+      "source_sha256": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+      "exit_code": 1,
+      "seconds": 3.022419771994464,
+      "log_sha256": "daccbecb2644f0352d6ef60c60c1d4a24bca40692d4c3b7f4f4a263e7ac6ffc5",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "erase_negative_interval_gains",
+      "path": "src/mars_titan/models/titans/mechanism_losses.py",
+      "before": "self.interval_scores[:, :1] - self.interval_scores",
+      "after": "(self.interval_scores[:, :1] - self.interval_scores).clamp_min(0)",
+      "test": "tests/models/titans/test_mechanism_losses.py::test_negative_gains_remain_negative_and_the_baseline_has_zero_gain",
+      "source_sha256": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+      "exit_code": 1,
+      "seconds": 3.2728811940178275,
+      "log_sha256": "413b486ed1e7484a495c4785417c6f78b5853df3b34b0229f736c5fe00aad7cf",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "exclude_interval_boundaries",
+      "path": "src/mars_titan/models/titans/mechanism_losses.py",
+      "before": "(lower <= y) & (y <= upper)",
+      "after": "(lower < y) & (y < upper)",
+      "test": "tests/models/titans/test_mechanism_losses.py::test_interval_boundaries_are_included_without_an_exceedance_penalty",
+      "source_sha256": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+      "exit_code": 1,
+      "seconds": 2.8221872750436887,
+      "log_sha256": "071600a8c014c9f1ee377455dd9e081a3065537712266234ddb7c3f488d38e1e",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 3.623896589037031,
+    "log_sha256": "6882b5a2f156c0b017a14356ec3c9745da7c25c5576b1c3ae27c7363098304b1",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_sources": {
+    "tests/models/titans/test_mechanism_policy.py": "a4f11f1f85f483030e328cd8054255b4d6fd715a0e34d7f07dcada4969e28fd5",
+    "tests/models/titans/test_mechanism_losses.py": "656ad6ac69ad3d712737f3bea3cfc52bf2ed670f75c766e3f2b7b5ef5d70a4c3"
+  },
+  "finished_at_utc": "2026-10-21T05:08:32.308717+00:00",
+  "later_test_additions": {
+    "tests/models/titans/test_mechanism_policy.py": {
+      "previous_sha256": "a4f11f1f85f483030e328cd8054255b4d6fd715a0e34d7f07dcada4969e28fd5",
+      "current_sha256": "c9054e88ae9b4a7ea92514f943fa722c3a8ff32c48be6e22169742558f85aa07",
+      "existing_definitions_unchanged": true,
+      "added_definitions": [
+        "test_autocast_is_rejected_before_changing_the_declared_precision",
+        "test_cpu_checkpoint_restores_the_next_cuda_decision"
+      ]
+    },
+    "tests/models/titans/test_mechanism_losses.py": {
+      "previous_sha256": "656ad6ac69ad3d712737f3bea3cfc52bf2ed670f75c766e3f2b7b5ef5d70a4c3",
+      "current_sha256": "c065b3687d970ec748640244a5d9110a5b5b94f1406010e808bb908fcbf14fc6",
+      "existing_definitions_unchanged": true,
+      "added_definitions": [
+        "test_loss_autocast_cannot_change_the_precision_of_the_scores"
+      ]
+    }
+  }
+}

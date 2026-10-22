@@ -1,0 +1,53 @@
+{
+  "recorded_at_utc": "2026-10-21T20:07:50.631433+00:00",
+  "status": "preregistered_not_run",
+  "scope": "native_fixture_decision_and_following_maturation_not_scientific_study",
+  "rows": [
+    4,
+    64,
+    256
+  ],
+  "refinements": [
+    1,
+    4
+  ],
+  "modes": [
+    "legacy",
+    "bridge"
+  ],
+  "regions": 3,
+  "bridge_cycles": 2,
+  "hidden_size": 32,
+  "block_rows": 64,
+  "retention": "m1_original_reservoir_capacity256",
+  "parameter_pairing": "same_frozen_parent_and_paired_reader_common_projections_refiner_seed42_extra_regional_parameters_declared",
+  "data": "replicated_price_fixture_missing_other_modalities_manual_labels",
+  "dtype": "torch.float64",
+  "device": "cuda:0",
+  "warmup": 2,
+  "repetitions": 5,
+  "conditions": 12,
+  "decision_samples": 60,
+  "maturation_samples": 60,
+  "passes": 1,
+  "maximum_process_seconds": 600,
+  "maximum_expected_storage_bytes": 2147483648,
+  "own_concurrent_workloads": 0,
+  "tf32": false,
+  "autocast": false,
+  "energy_measured": false,
+  "outer_optimizer_steps": 0,
+  "bank_equality": "same_source_columns_ids_labels_codec_and_diagnostic_context_before_timing",
+  "head": "existing_scalar_head_after_refinement",
+  "sources_sha256": {
+    "reports/engineering/bridge-readout-integration-20261021/benchmark.py": "323291ee54d39835ddfd80955ea8c66f3356d1f0501cc5342bcf47234144f397",
+    "src/mars_titan/models/titans/episodic_readout.py": "9b6d2f7aca4236f7f90f6bf980e7721619066fe6c1074957a653246300a8609a",
+    "src/mars_titan/models/titans/evidence_bridge.py": "5c0095cc6ed9d515db56eabe84c32d53cc26b5f2a6976654bc0a953083cbc5ac",
+    "src/mars_titan/models/titans/regional_episode_readout.py": "3a7c94729536db002993476d188200ebddd05506b85d65f8e06523959d036016",
+    "src/mars_titan/models/titans/frozen_financial.py": "b3af0684c7271646c598d48bb53edbe0755aa64b52f8000f0c6c8240742e8cf7",
+    "src/mars_titan/memory/financial_session.py": "270b45badcc4e8b133a618e445ec52ae0c8f01ae4ff47121c667c7ca0000170e",
+    "src/mars_titan/memory/financial_consumers.py": "686b99bec2a28c99eb6278cb05035dc5e764d26e090ca609e1f51f4e13fcf18f",
+    "src/mars_titan/memory/regional_episode_trace.py": "4c4e31ea0fa8cce72beb76c5c8b5530f7bc9489aeac02432d17112fd469ac3f4"
+  },
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 5959 MiB, 16 %"
+}

@@ -1,0 +1,11 @@
+--- a/reports/engineering/regional-fusion-20261021/session_benchmark.py
++++ b/reports/engineering/regional-fusion-20261021/session_benchmark.py
+@@ -141,7 +141,7 @@
+         scope=(
+             "Fixtures con precios replicados y etiquetas manuales. Una apertura, calentamiento, "
+             "tres emisiones, dos recepciones de resultados, cierre censurado, escritura sellada, "
+-            "poda, lectura de una traza antigua y recuperación. Las dos configuraciones comparten "
++            "poda, lectura de una traza antigua y recuperación. Los dos brazos comparten "
+             "contexto PT4, calibración PT2, memoria, parámetros del tronco y archivo. Solo el "
+             "segundo añade fusión regional en anillo. Incluye las transferencias durante cada "
+             "sesión. Construcción fuera de las latencias y dentro del proceso. No incluye "

@@ -1,0 +1,21 @@
+{
+  "scope": "process_includes_fixture_preparation_query_timing_does_not",
+  "runs": [
+    {
+      "run": "first",
+      "internal_seconds": 114.13976671197452,
+      "internal_peak_rss_bytes": 1554464768,
+      "external_elapsed_hmmss": "1:58.13",
+      "external_peak_rss_kib": 1614840,
+      "exit_status": 0
+    },
+    {
+      "run": "second",
+      "internal_seconds": 117.76560650905594,
+      "internal_peak_rss_bytes": 1554464768,
+      "external_elapsed_hmmss": "2:02.43",
+      "external_peak_rss_kib": 1615152,
+      "exit_status": 0
+    }
+  ]
+}

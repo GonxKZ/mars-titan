@@ -1,0 +1,221 @@
+{
+  "recorded_at_utc": "2026-10-21T11:28:22.979151+00:00",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_total_bytes": 8183676928,
+  "driver": "595.91.07",
+  "torch": "2.14.0+cu130",
+  "torch_commit": "08187d9e0fba026dc8217405802ab5381dc88d90",
+  "cuda": "13.0",
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "cpu_threads": 2,
+  "warmup": 10,
+  "repetitions": 100,
+  "fitted": false,
+  "optimizer_steps": 0,
+  "real_data": false,
+  "scope": "manual_policy_forward_with_synchronization_not_financial_predictor_or_fit",
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "cohorts": 1,
+      "mode": "legacy",
+      "p50_wall_ms": 0.54137,
+      "p95_wall_ms": 0.6268565500000001,
+      "p99_wall_ms": 0.7210912600000003,
+      "p50_cuda_event_ms": 0.5222240090370178,
+      "p50_cohorts_per_second": 1847.1655245026507,
+      "allocated_peak_bytes": 33592832,
+      "raw_scores_sha256": [
+        "4eeb98ede564f7cae5ddd17d382e6a7239657ea3a2d2ad1f478f53cdca81cb4b"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float32",
+      "cohorts": 1,
+      "mode": "mask_all",
+      "p50_wall_ms": 0.5568285,
+      "p95_wall_ms": 0.6465022500000001,
+      "p99_wall_ms": 0.7678690300000014,
+      "p50_cuda_event_ms": 0.5357120037078857,
+      "p50_cohorts_per_second": 1795.8850884967276,
+      "allocated_peak_bytes": 33593344,
+      "raw_scores_sha256": [
+        "4eeb98ede564f7cae5ddd17d382e6a7239657ea3a2d2ad1f478f53cdca81cb4b"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float32",
+      "cohorts": 1,
+      "mode": "mask_subset",
+      "p50_wall_ms": 0.5591729999999999,
+      "p95_wall_ms": 0.6520760499999999,
+      "p99_wall_ms": 1.1666978400000005,
+      "p50_cuda_event_ms": 0.5379679799079895,
+      "p50_cohorts_per_second": 1788.3553032782343,
+      "allocated_peak_bytes": 33593344,
+      "raw_scores_sha256": [
+        "4eeb98ede564f7cae5ddd17d382e6a7239657ea3a2d2ad1f478f53cdca81cb4b"
+      ],
+      "chosen_action": 3,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float32",
+      "cohorts": 2,
+      "mode": "legacy",
+      "p50_wall_ms": 0.537362,
+      "p95_wall_ms": 0.6370136000000001,
+      "p99_wall_ms": 0.8833641700000006,
+      "p50_cuda_event_ms": 0.5170720219612122,
+      "p50_cohorts_per_second": 3721.885805099728,
+      "allocated_peak_bytes": 33592832,
+      "raw_scores_sha256": [
+        "da2aadf2b6ae3fba83677a6ec0ffabc3960649e02c707a54174c19122da8a854"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float32",
+      "cohorts": 2,
+      "mode": "mask_all",
+      "p50_wall_ms": 0.5502465000000001,
+      "p95_wall_ms": 0.6424576,
+      "p99_wall_ms": 0.782607,
+      "p50_cuda_event_ms": 0.5314080119132996,
+      "p50_cohorts_per_second": 3634.734614395548,
+      "allocated_peak_bytes": 33593344,
+      "raw_scores_sha256": [
+        "da2aadf2b6ae3fba83677a6ec0ffabc3960649e02c707a54174c19122da8a854"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float32",
+      "cohorts": 2,
+      "mode": "mask_subset",
+      "p50_wall_ms": 0.5504370000000001,
+      "p95_wall_ms": 0.65127455,
+      "p99_wall_ms": 0.7057415,
+      "p50_cuda_event_ms": 0.530351996421814,
+      "p50_cohorts_per_second": 3633.4766739881215,
+      "allocated_peak_bytes": 33593344,
+      "raw_scores_sha256": [
+        "da2aadf2b6ae3fba83677a6ec0ffabc3960649e02c707a54174c19122da8a854"
+      ],
+      "chosen_action": 3,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 1,
+      "mode": "legacy",
+      "p50_wall_ms": 0.5561484999999999,
+      "p95_wall_ms": 0.63783795,
+      "p99_wall_ms": 0.6587185600000025,
+      "p50_cuda_event_ms": 0.5349279940128326,
+      "p50_cohorts_per_second": 1798.0809082466285,
+      "allocated_peak_bytes": 33605120,
+      "raw_scores_sha256": [
+        "4c49972b485c184840ee04427ff7b39e12ec1af2aeb23097801752d7062ceae9"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 1,
+      "mode": "mask_all",
+      "p50_wall_ms": 0.566377,
+      "p95_wall_ms": 0.6415529999999999,
+      "p99_wall_ms": 0.7589636100000031,
+      "p50_cuda_event_ms": 0.5442880094051361,
+      "p50_cohorts_per_second": 1765.6084198334324,
+      "allocated_peak_bytes": 33605632,
+      "raw_scores_sha256": [
+        "4c49972b485c184840ee04427ff7b39e12ec1af2aeb23097801752d7062ceae9"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 1,
+      "mode": "mask_subset",
+      "p50_wall_ms": 0.564028,
+      "p95_wall_ms": 0.6666436499999999,
+      "p99_wall_ms": 0.7421427400000019,
+      "p50_cuda_event_ms": 0.5428480207920074,
+      "p50_cohorts_per_second": 1772.9616260185664,
+      "allocated_peak_bytes": 33605632,
+      "raw_scores_sha256": [
+        "4c49972b485c184840ee04427ff7b39e12ec1af2aeb23097801752d7062ceae9"
+      ],
+      "chosen_action": 3,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 2,
+      "mode": "legacy",
+      "p50_wall_ms": 0.5712515,
+      "p95_wall_ms": 0.7691646,
+      "p99_wall_ms": 1.0605557700000001,
+      "p50_cuda_event_ms": 0.5512800216674805,
+      "p50_cohorts_per_second": 3501.084898682979,
+      "allocated_peak_bytes": 33609216,
+      "raw_scores_sha256": [
+        "6ff5f9e78909c4f8c92cd4e86f4727ccbc649f58e4e3b56730d1546d83716b92"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 2,
+      "mode": "mask_all",
+      "p50_wall_ms": 0.5843605000000001,
+      "p95_wall_ms": 0.74586045,
+      "p99_wall_ms": 0.8724968600000009,
+      "p50_cuda_event_ms": 0.5628640055656433,
+      "p50_cohorts_per_second": 3422.5448160852757,
+      "allocated_peak_bytes": 33609728,
+      "raw_scores_sha256": [
+        "6ff5f9e78909c4f8c92cd4e86f4727ccbc649f58e4e3b56730d1546d83716b92"
+      ],
+      "chosen_action": 4,
+      "sample_count": 100
+    },
+    {
+      "dtype": "torch.float64",
+      "cohorts": 2,
+      "mode": "mask_subset",
+      "p50_wall_ms": 0.586475,
+      "p95_wall_ms": 0.7394189999999999,
+      "p99_wall_ms": 0.8658950700000012,
+      "p50_cuda_event_ms": 0.5647359788417816,
+      "p50_cohorts_per_second": 3410.205038577945,
+      "allocated_peak_bytes": 33609728,
+      "raw_scores_sha256": [
+        "6ff5f9e78909c4f8c92cd4e86f4727ccbc649f58e4e3b56730d1546d83716b92"
+      ],
+      "chosen_action": 3,
+      "sample_count": 100
+    }
+  ],
+  "process_seconds": 1.160186257911846,
+  "process_peak_rss_bytes": 1181106176,
+  "sources": {
+    "reports/engineering/mechanism-fit-20261021/benchmark.py": "4d8587bcab850650b9c231a59953c8cfe1fa0065c4e46c4cc8aac56f53f14eaa",
+    "src/mars_titan/models/titans/mechanism_policy.py": "571505d2afc22107215f5ae5f66fb72cb440f84123c5a608ab38bb4f1419ab75"
+  },
+  "raw_samples_sha256": "70ebf86c7267c8818259716f8555583924a432344cb6e285d36295b5f448770a",
+  "raw_samples_storage": "external_local_artifact_not_versioned"
+}

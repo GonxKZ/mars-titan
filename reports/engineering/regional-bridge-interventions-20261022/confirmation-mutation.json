@@ -1,0 +1,47 @@
+{
+  "method": "Repetición de la llamada nativa de settlement en una copia privada",
+  "change": {
+    "file": "src/mars_titan/memory/financial_session.py",
+    "before": "result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+    "after": "result = self._executor.step(cohort, feedback, self.block_rows, guarded)\n            if kind == \"settlement\":\n                result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+    "source_sha256": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8",
+    "mutant_sha256": "2f9c0e8dc935d47433e6981e0ff7f0151e06a4864da401bdf4bc0ae63928346f",
+    "source_restored": true
+  },
+  "records": [
+    {
+      "label": "baseline",
+      "returncode": 0,
+      "elapsed_s": 5.578949796035886,
+      "tests": 1,
+      "errors": 0,
+      "skipped": 0,
+      "failures": []
+    },
+    {
+      "label": "repeated-settlement",
+      "returncode": 1,
+      "elapsed_s": 4.07452755398117,
+      "tests": 1,
+      "errors": 0,
+      "skipped": 0,
+      "failures": [
+        {
+          "name": "test_native_recovery_preserves_the_next_intervened_emission_and_feedback_once[cpu]",
+          "message": "ValueError: El cursor, el orden temporal o el lote físico no es válido"
+        }
+      ]
+    },
+    {
+      "label": "restored",
+      "returncode": 0,
+      "elapsed_s": 6.27886974089779,
+      "tests": 1,
+      "errors": 0,
+      "skipped": 0,
+      "failures": []
+    }
+  ],
+  "scope": "La segunda llamada se rechaza por el control de cursor. No se altera el registro de idempotencia en C++.",
+  "supervised_process_seconds": 16.05286128493026
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "dtype": "torch.float32",
+    "cohorts": 1,
+    "legacy_p50_ms": 0.54137,
+    "all_supported_p50_ms": 0.5568285,
+    "all_supported_extra_microseconds": 15.45849999999993,
+    "all_supported_peak_allocator_delta_bytes": 512,
+    "raw_scores_bit_equal": true,
+    "legacy_and_all_supported_actions_equal": true,
+    "scope": "Solo forward del selector con coeficientes manuales, sin ajuste ni predictor financiero"
+  },
+  {
+    "dtype": "torch.float32",
+    "cohorts": 2,
+    "legacy_p50_ms": 0.537362,
+    "all_supported_p50_ms": 0.5502465000000001,
+    "all_supported_extra_microseconds": 12.884500000000077,
+    "all_supported_peak_allocator_delta_bytes": 512,
+    "raw_scores_bit_equal": true,
+    "legacy_and_all_supported_actions_equal": true,
+    "scope": "Solo forward del selector con coeficientes manuales, sin ajuste ni predictor financiero"
+  },
+  {
+    "dtype": "torch.float64",
+    "cohorts": 1,
+    "legacy_p50_ms": 0.5561484999999999,
+    "all_supported_p50_ms": 0.566377,
+    "all_supported_extra_microseconds": 10.228500000000086,
+    "all_supported_peak_allocator_delta_bytes": 512,
+    "raw_scores_bit_equal": true,
+    "legacy_and_all_supported_actions_equal": true,
+    "scope": "Solo forward del selector con coeficientes manuales, sin ajuste ni predictor financiero"
+  },
+  {
+    "dtype": "torch.float64",
+    "cohorts": 2,
+    "legacy_p50_ms": 0.5712515,
+    "all_supported_p50_ms": 0.5843605000000001,
+    "all_supported_extra_microseconds": 13.109000000000037,
+    "all_supported_peak_allocator_delta_bytes": 512,
+    "raw_scores_bit_equal": true,
+    "legacy_and_all_supported_actions_equal": true,
+    "scope": "Solo forward del selector con coeficientes manuales, sin ajuste ni predictor financiero"
+  }
+]

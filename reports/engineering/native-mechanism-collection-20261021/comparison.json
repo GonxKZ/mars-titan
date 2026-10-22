@@ -1,0 +1,24 @@
+[
+  {
+    "rows": 64,
+    "workload_observations": 256,
+    "workload_decision_outputs": 192,
+    "collected_p50_over_fixed": 1.4885394273163857,
+    "fixed_p50_observations_per_second": 77.86058125557784,
+    "collected_p50_observations_per_second": 52.306697307943566,
+    "collected_minus_fixed_artifact_bytes": 807529,
+    "actual_emissions_max_abs_difference": 0.0,
+    "interpretation": "Coste de trabajo adicional, no aceleración de un trabajo equivalente ni latencia por activo"
+  },
+  {
+    "rows": 256,
+    "workload_observations": 1024,
+    "workload_decision_outputs": 768,
+    "collected_p50_over_fixed": 1.5622895602600912,
+    "fixed_p50_observations_per_second": 99.00848638758653,
+    "collected_p50_observations_per_second": 63.37396658472422,
+    "collected_minus_fixed_artifact_bytes": 3002025,
+    "actual_emissions_max_abs_difference": 0.0,
+    "interpretation": "Coste de trabajo adicional, no aceleración de un trabajo equivalente ni latencia por activo"
+  }
+]
