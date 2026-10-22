@@ -1,0 +1,397 @@
+{
+  "kind": "hierarchy_directed_mutation_verification_v1",
+  "mutants": 10,
+  "detected": 10,
+  "survived": 0,
+  "scope": "ten_hand_selected_substitutions_not_global_mutation_coverage",
+  "elapsed_s": 71.3657264530193,
+  "production_unchanged": true,
+  "private_copy_restored": true,
+  "plan_sha256": "39c56f4eaba04e393b18039e9dcfe18e050263dfff078ad0ba5a074d417a4bb6",
+  "script_sha256": "5329f7cc8fdc52596fe726d47cbb33233de8889f0c9080ef0930604576075712",
+  "controls": [
+    {
+      "label": "baseline",
+      "cases": 153,
+      "returncode": 0,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "elapsed_s": 15.401487253024243,
+      "classification": "passed_control"
+    },
+    {
+      "label": "restored",
+      "cases": 153,
+      "returncode": 0,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "elapsed_s": 15.549315343028866,
+      "classification": "passed_control"
+    }
+  ],
+  "records": [
+    {
+      "name": "hierarchy-identity-erased",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "kind=\"shared_evidence_bridge_hierarchy_v1\",",
+      "after": "kind=\"shared_evidence_bridge_v1\",",
+      "expression": "factory_preserves_the_typed_hierarchy_and_omits_null",
+      "source_sha256": "1c5119d5e6976ecf7b9b57d5ff3f115cd1de80824d5eabb81b1bb131d62798dd",
+      "mutant_sha256": "8f8b0f032bdd46fe5faac947925b47c1118bf28f0836590a570627cff75b37a6",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 4.124763417989016,
+      "reason": "La geometría jerárquica declara el kind legado pese a conservar jerarquía activa. El roundtrip de fábrica exige el contrato jerárquico explícito.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_factory_preserves_the_typed_hierarchy_and_omits_null",
+          "exception_type": "builtins.AssertionError",
+          "message": "def test_factory_preserves_the_typed_hierarchy_and_omits_null():\n        model = pt4(None).eval().requires_grad_(False)\n        geometry = dict(\n            GEOMETRY,\n            regions=[\"view_1\", \"view_2\", \"view_3\", \"view_4\"],\n            topology=\"self\",\n            cycles=0,\n            hierarchy=dict(\n                topology=\"star\", local_steps=2, feedback=False, max_node_updates_per_row=988\n            ),\n        )\n        variant = selected(model, geometry=geometry, k=4)\n        rebuilt = variants.select_variant(\n            variants.load_declaration(), json.loads(json.dumps(variant.components)), base=variant.base\n        )\n        config = rebuilt.readout_config(CODEC, hidden_size=32)\n>       assert config.identity()[\"evidence_bridge\"][\"kind\"] == CONTRACT\nE       AssertionError: assert 'shared_evidence_bridge_v1' == 'shared_evide..._hierarchy_v1'\nE         \nE         - shared_evidence_bridge_hierarchy_v1\nE         ?                        ----------\nE         + shared_evidence"
+        }
+      ]
+    },
+    {
+      "name": "root-before-first-group",
+      "file": "src/mars_titan/models/titans/bridge_hierarchy.py",
+      "before": "            current = _phase(current, graph, weights, present, gain, 4, 6)\n            current = _phase(current, graph, weights, present, gain, 6, 7)\n            current = _phase(current, graph, weights, present, gain, 4, 6)",
+      "after": "            current = _phase(current, graph, weights, present, gain, 6, 7)\n            current = _phase(current, graph, weights, present, gain, 4, 6)\n            current = _phase(current, graph, weights, present, gain, 4, 6)",
+      "expression": "two_rounds_match_scalar_reference_with_distinct_receiver_matrices and cpu and tree",
+      "source_sha256": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+      "mutant_sha256": "fa3d7da2eeb50e6d4ea58cdb34311d6137604db37c32d0ec78612bc29cadd045",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 6,
+      "failures": 6,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.5231879689963534,
+      "reason": "La raíz lee grupos de la fase anterior, alterando el calendario grupo-raíz-grupo sin cambiar rondas, formas o parámetros.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[1-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 1\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[1-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 1\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[2-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 2\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[2-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 2\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[4-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 4\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[4-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 4\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        }
+      ]
+    },
+    {
+      "name": "reset-auxiliaries-each-round",
+      "file": "src/mars_titan/models/titans/bridge_hierarchy.py",
+      "before": "        for _ in range(2):\n            current = _phase(current, graph, weights, present, gain, 4, 6)",
+      "after": "        for _ in range(2):\n            current = torch.cat((current[:, :4], local.new_zeros((batch, 3, width))), 1)\n            current = _phase(current, graph, weights, present, gain, 4, 6)",
+      "expression": "two_rounds_match_scalar_reference_with_distinct_receiver_matrices and cpu and tree",
+      "source_sha256": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+      "mutant_sha256": "145486f848028350e7f1763dd93440c16b5d48c728266cff78015af27f097445",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 6,
+      "failures": 6,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.171949386014603,
+      "reason": "Conserva las vistas pero borra grupos y raíz antes de la segunda ronda, cuando solo deben reiniciarse al comenzar una lectura.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[1-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 1\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[1-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 1\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[2-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 2\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[2-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 2\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[4-False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False, local_steps = 4\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == loca"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices[4-True-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = True, local_steps = 4\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    @pytest.mark.parametrize(\"local_steps\", (1, 2, 4))\n    def test_two_rounds_match_scalar_reference_with_distinct_receiver_matrices(\n        device, topology, feedback, local_steps\n    ):\n        module = hierarchy_api()\n        local, graph, weights, available = operands(device, topology, feedback)\n        before = [value.clone() for value in (local, graph, weights, available)]\n        actual = module.hierarchy_mix(\n            local, graph, weights, available, local_steps=local_steps, gain=0.35\n        )\n        expected = scalar_reference(\n            LOCAL, reference_graph(MASKS, topology, feedback), WEIGHTS, MASKS, local_steps, 0.35\n        )\n        assert actual.shape == (4, 7, 2)\n        assert actual.dtype == local.dtype and actual.device == local"
+        }
+      ]
+    },
+    {
+      "name": "feedback-off-uses-connected-denominator",
+      "file": "src/mars_titan/models/titans/bridge_hierarchy.py",
+      "before": "    graph = allowed.to(torch.float64) / allowed.sum(-1, keepdim=True).clamp_min(1)",
+      "after": "    graph = allowed.to(torch.float64) / (\n        edges[None] & present[:, :, None] & present[:, None, :]\n    ).sum(-1, keepdim=True).clamp_min(1)",
+      "expression": "graph_matches_independent_edges_presence_and_masked_means and cpu",
+      "source_sha256": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+      "mutant_sha256": "79a087287ccd3e83a9729f1dfe73c21dbac41d8b32081d85bba6d2574d8dfa23",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 4,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.372987765003927,
+      "reason": "Después de retirar aristas receptoras locales en feedback=False, mantiene el denominador del soporte conectado. La diagonal local deja de valer uno.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_graph_matches_independent_edges_presence_and_masked_means[False-tree-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'tree', feedback = False\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    def test_graph_matches_independent_edges_presence_and_masked_means(device, topology, feedback):\n        module = hierarchy_api()\n        config = module.BridgeHierarchyConfig(topology=topology, feedback=feedback)\n        edges = torch.as_tensor(config.edges(), dtype=torch.bool, device=device)\n        expected_edges = torch.tensor(adjacency(topology), dtype=torch.bool, device=device)\n        assert torch.equal(edges, expected_edges)\n        assert int(edges.sum()) == 19 and torch.equal(edges, edges.T)\n        available = torch.tensor(MASKS, dtype=torch.bool, device=device)\n        graph, present = module.hierarchy_graph(available, edges, feedback=feedback)\n        assert graph.shape == (4, 7, 7) and graph.dtype == torch.float64\n        assert graph.device == available.de"
+        },
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_graph_matches_independent_edges_presence_and_masked_means[False-star-cpu]",
+          "exception_type": "builtins.AssertionError",
+          "message": "device = 'cpu', topology = 'star', feedback = False\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    @pytest.mark.parametrize(\"feedback\", (False, True))\n    def test_graph_matches_independent_edges_presence_and_masked_means(device, topology, feedback):\n        module = hierarchy_api()\n        config = module.BridgeHierarchyConfig(topology=topology, feedback=feedback)\n        edges = torch.as_tensor(config.edges(), dtype=torch.bool, device=device)\n        expected_edges = torch.tensor(adjacency(topology), dtype=torch.bool, device=device)\n        assert torch.equal(edges, expected_edges)\n        assert int(edges.sum()) == 19 and torch.equal(edges, edges.T)\n        available = torch.tensor(MASKS, dtype=torch.bool, device=device)\n        graph, present = module.hierarchy_graph(available, edges, feedback=feedback)\n        assert graph.shape == (4, 7, 7) and graph.dtype == torch.float64\n        assert graph.device == available.de"
+        }
+      ]
+    },
+    {
+      "name": "detach-auxiliary-phases",
+      "file": "src/mars_titan/models/titans/bridge_hierarchy.py",
+      "before": "    return torch.cat((current[:, :start], updated, current[:, stop:]), 1)",
+      "after": "    updated = updated.detach() if start >= 4 else updated\n    return torch.cat((current[:, :start], updated, current[:, stop:]), 1)",
+      "expression": "full_gradcheck_covers_initial_views_receiver_weights_and_graph and cpu and tree",
+      "source_sha256": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+      "mutant_sha256": "a02ec89b454c4aae3b5c2a7ff36daab4355912e55d7efe146f2ba9505e38415e",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.774331556982361,
+      "reason": "El forward conserva valores, pero corta las derivadas por grupos y raíz que sí tienen camino causal en el árbol.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy.py::test_full_gradcheck_covers_initial_views_receiver_weights_and_graph[tree-cpu]",
+          "exception_type": "torch.autograd.gradcheck.GradcheckError",
+          "message": "device = 'cpu', topology = 'tree'\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\"topology\", (\"tree\", \"star\"))\n    def test_full_gradcheck_covers_initial_views_receiver_weights_and_graph(device, topology):\n        module = hierarchy_api()\n        local = numbers([[[0.2], [-0.35], [0.4], [0.1]]], device).requires_grad_()\n        weights = numbers([[[0.9]], [[0.6]], [[1.1]], [[1.25]]], device).requires_grad_()\n        logits = torch.zeros((1, 7, 7), dtype=torch.float64, device=device, requires_grad=True)\n        allowed = torch.tensor(adjacency(topology), dtype=torch.bool, device=device)[None]\n        available = torch.ones((1, 4), dtype=torch.bool, device=device)\n    \n        def evaluate(values, matrices, scores):\n            graph = torch.where(allowed, scores, -torch.inf).softmax(-1)\n            return module.hierarchy_mix(values, graph, matrices, available, local_steps=2, gain=0.37)\n    \n>       assert torch.autograd.gradcheck(\n            evaluate, (l"
+        }
+      ]
+    },
+    {
+      "name": "global-budget-off-by-one-read",
+      "file": "src/mars_titan/models/titans/episodic_readout.py",
+      "before": "        if reads > self.node_read_limit(episodes):",
+      "after": "        if reads > self.node_read_limit(episodes) + 1:",
+      "expression": "collection_reserves_hierarchy_and_final_emission_before_mac and cpu",
+      "source_sha256": "4d2e1700bcd8931d7c7ab3cc98fbe10b2f44ac28ad0458716e13a774b7e4d9a7",
+      "mutant_sha256": "6e2b6b059916ce2eea8e2024d85f4fea66ab040850a1a7d6238e4a74cd32f508",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 4,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 4.024630065076053,
+      "reason": "Admite una lectura adicional y permite el evento de 38 lecturas cuando la cuota solo deja 37. Debe romper los bordes 988/987 y 1596/1595.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_collection_reserves_hierarchy_and_final_emission_before_mac[2-987-False-cpu]",
+          "exception_type": "builtins.Failed",
+          "message": "device = 'cpu', steps = 2, budget = 987, allowed = False\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a945d0d7b30>\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\n        \"steps,budget,allowed\", [(2, 988, True), (2, 987, False), (4, 1596, True), (4, 1595, False)]\n    )\n    def test_collection_reserves_hierarchy_and_final_emission_before_mac(\n        device, steps, budget, allowed, monkeypatch\n    ):\n        from test_mechanism_consumer import calibration\n        from test_regional_mechanism_collection import regional, snapshot_on\n    \n        parent = regional(device)\n        calls = []\n        original = FinancialPredictor.prepare\n    \n        def observed(*args, **options):\n            calls.append(True)\n            return original(*args, **options)\n    \n        monkeypatch.setattr(FinancialPredictor, \"prepare\", observed)\n        engine = FrozenMechanismConsumer(\n            parent.predictor,\n            readout=hierarchy_reader(device, b"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_collection_reserves_hierarchy_and_final_emission_before_mac[4-1595-False-cpu]",
+          "exception_type": "builtins.Failed",
+          "message": "device = 'cpu', steps = 4, budget = 1595, allowed = False\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a945d07d790>\n\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    @pytest.mark.parametrize(\n        \"steps,budget,allowed\", [(2, 988, True), (2, 987, False), (4, 1596, True), (4, 1595, False)]\n    )\n    def test_collection_reserves_hierarchy_and_final_emission_before_mac(\n        device, steps, budget, allowed, monkeypatch\n    ):\n        from test_mechanism_consumer import calibration\n        from test_regional_mechanism_collection import regional, snapshot_on\n    \n        parent = regional(device)\n        calls = []\n        original = FinancialPredictor.prepare\n    \n        def observed(*args, **options):\n            calls.append(True)\n            return original(*args, **options)\n    \n        monkeypatch.setattr(FinancialPredictor, \"prepare\", observed)\n        engine = FrozenMechanismConsumer(\n            parent.predictor,\n            readout=hierarchy_reader(device, "
+        }
+      ]
+    },
+    {
+      "name": "tensor-trace-accepts-forged-graph",
+      "file": "src/mars_titan/memory/regional_episode_trace.py",
+      "before": "            or not torch.equal(value, expected)",
+      "after": "            or False",
+      "expression": "forged_hierarchical_archives_cannot_pass_as_valid_or_legacy and graph",
+      "source_sha256": "5a00c430a586f5ac7a3d2c7a480a1a475e0857fa2b2a87c0d978586463157c04",
+      "mutant_sha256": "5784421c96d472e90ec2974243c12f4a10093b1058a7bdf16957970f6feb4754",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 2,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.471521666040644,
+      "reason": "El verificador tensorial conserva formas y dtype pero deja de comparar el grafo archivado con el derivado del lector sellado.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_forged_hierarchical_archives_cannot_pass_as_valid_or_legacy[graph]",
+          "exception_type": "builtins.Failed",
+          "message": "fault = 'graph'\n\n    @pytest.mark.parametrize(\n        \"fault\", [\"group_shape\", \"root_nan\", \"graph\", \"local_graph\", \"legacy_kind\", \"fields\"]\n    )\n    def test_forged_hierarchical_archives_cannot_pass_as_valid_or_legacy(fault):\n        reader = hierarchy_reader()\n        snapshot = bank(\"cpu\")\n        state = torch.ones((1, 32), dtype=torch.float64)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\",)\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=1\n        )\n        episode_trace.append(trace, flows, result)\n        read = trace[\"blocks\"][0][\"reads\"][0]\n        if fault == \"group_shape\":\n            read[\"group_values\"] = read[\"group_values\"][:, :1]\n        elif fault == \"root_nan\":\n            read[\"root_values\"][0, 0, 0] = float(\"nan\")\n        elif fault == \"graph\":\n            trace[\"hierarchy_weights\"][0, 4] = 0.0\n        elif fault == \"local_graph\":\n            trac"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_forged_hierarchical_archives_cannot_pass_as_valid_or_legacy[local_graph]",
+          "exception_type": "builtins.Failed",
+          "message": "fault = 'local_graph'\n\n    @pytest.mark.parametrize(\n        \"fault\", [\"group_shape\", \"root_nan\", \"graph\", \"local_graph\", \"legacy_kind\", \"fields\"]\n    )\n    def test_forged_hierarchical_archives_cannot_pass_as_valid_or_legacy(fault):\n        reader = hierarchy_reader()\n        snapshot = bank(\"cpu\")\n        state = torch.ones((1, 32), dtype=torch.float64)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\",)\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=1\n        )\n        episode_trace.append(trace, flows, result)\n        read = trace[\"blocks\"][0][\"reads\"][0]\n        if fault == \"group_shape\":\n            read[\"group_values\"] = read[\"group_values\"][:, :1]\n        elif fault == \"root_nan\":\n            read[\"root_values\"][0, 0, 0] = float(\"nan\")\n        elif fault == \"graph\":\n            trace[\"hierarchy_weights\"][0, 4] = 0.0\n        elif fault == \"local_graph\":\n          "
+        }
+      ]
+    },
+    {
+      "name": "json-trace-zeroes-real-groups",
+      "file": "src/mars_titan/models/titans/regional_mechanism_trace.py",
+      "before": "                    group_values=bridge.group_values.detach().cpu().tolist(),",
+      "after": "                    group_values=(bridge.group_values.detach().cpu() * 0).tolist(),",
+      "expression": "both_traces_capture_actual_auxiliaries_and_the_effective_graph",
+      "source_sha256": "f49c5cd4c9bafb5bd35c8013e23788bb3e9c54f3e0b18fac71e0737fe93cc8b6",
+      "mutant_sha256": "416f770a5c4150c28d2a1f11f39203c10c7b4423013a702bfecc7a32f2894fc1",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 24,
+      "failures": 8,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 5.07637921103742,
+      "reason": "Archiva grupos nulos pese a que el resultado ejecutado contiene grupos reales. Mantiene campos, formas, grafos y metadatos válidos.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cpu-tree-True-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = True, topology = 'tree', device = 'cpu'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, flow"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cpu-tree-False-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = False, topology = 'tree', device = 'cpu'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, flo"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cpu-star-True-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = True, topology = 'star', device = 'cpu'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, flow"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cpu-star-False-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = False, topology = 'star', device = 'cpu'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, flo"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cuda:0-tree-True-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = True, topology = 'tree', device = 'cuda:0'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, f"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cuda:0-tree-False-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = False, topology = 'tree', device = 'cuda:0'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, "
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cuda:0-star-True-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = True, topology = 'star', device = 'cuda:0'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, f"
+        },
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_both_traces_capture_actual_auxiliaries_and_the_effective_graph[cuda:0-star-False-bank-8]",
+          "exception_type": "builtins.AssertionError",
+          "message": "mode = 'bank', count = 8, feedback = False, topology = 'star', device = 'cuda:0'\n\n    @pytest.mark.parametrize(\"mode,count\", [(\"bank\", 8), (\"bank\", 0), (\"no_bank\", 0)])\n    @pytest.mark.parametrize(\"feedback\", [True, False])\n    @pytest.mark.parametrize(\"topology\", [\"tree\", \"star\"])\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_both_traces_capture_actual_auxiliaries_and_the_effective_graph(\n        mode, count, feedback, topology, device\n    ):\n        reader = hierarchy_reader(device, k=4, mode=mode, feedback=feedback, topology=topology)\n        snapshot = None if mode == \"no_bank\" else bank(device, count)\n        state = torch.linspace(-0.5, 0.5, 64, dtype=torch.float64, device=device).reshape(2, 32)\n        result = reader(state, snapshot, context_id=CONTEXT, cutoff=10)\n        flows = (\"US/AAA\", \"US/BBB\")\n        trace = episode_trace.begin(\n            reader, flows, snapshot, context_id=CONTEXT, cutoff=10, block_rows=2\n        )\n        episode_trace.append(trace, "
+        }
+      ]
+    },
+    {
+      "name": "payload-trusts-its-own-hierarchy-edges",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "torch.tensor(self.config.hierarchy.edges())",
+      "after": "supplied[\"hierarchy_edges\"].cpu()",
+      "expression": "declared_geometry_is_checked_before_loading_or_freezing and hierarchy_edges",
+      "source_sha256": "1c5119d5e6976ecf7b9b57d5ff3f115cd1de80824d5eabb81b1bb131d62798dd",
+      "mutant_sha256": "ae172c5442fc8b39f196b651a63fac4f6f9e1bb4dafbc61277f37751f5e3e32a",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 3.323066247976385,
+      "reason": "La comparación de geometría jerárquica se convierte en payload contra sí mismo. Debe dejar pasar el buffer falso en lugar de derivarlo de la configuración.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/models/titans/test_bridge_hierarchy_contracts.py::test_declared_geometry_is_checked_before_loading_or_freezing[hierarchy_edges]",
+          "exception_type": "builtins.Failed",
+          "message": "buffer = 'hierarchy_edges'\n\n    @pytest.mark.parametrize(\"buffer\", [\"edges\", \"hierarchy_edges\"])\n    def test_declared_geometry_is_checked_before_loading_or_freezing(buffer):\n        reader = hierarchy_reader()\n        assert hasattr(reader.evidence_bridge, buffer), \"Falta la geometría persistente declarada\"\n        valid = copy.deepcopy(reader.state_dict())\n        key = \"evidence_bridge.\" + buffer\n        payload = copy.deepcopy(valid)\n        payload[key][0, 0] = False\n        payload[\"step_logit\"].add_(0.125)\n>       with pytest.raises(ValueError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ValueError\n\ntests/models/titans/test_bridge_hierarchy_contracts.py:153: Failed"
+        }
+      ]
+    },
+    {
+      "name": "settlement-submitted-twice",
+      "file": "src/mars_titan/memory/financial_session.py",
+      "before": "            result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+      "after": "            result = self._executor.step(cohort, feedback, self.block_rows, guarded)\n            if kind == \"settlement\":\n                result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+      "expression": "native_recovery_keeps_hierarchy_auxiliaries_and_the_next_emission and cpu",
+      "source_sha256": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8",
+      "mutant_sha256": "2f9c0e8dc935d47433e6981e0ff7f0151e06a4864da401bdf4bc0ae63928346f",
+      "classification": "detected_by_expected_call_failure",
+      "cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "returncode": 1,
+      "elapsed_s": 4.27519283501897,
+      "reason": "Duplica la llamada nativa del settlement en la costura de publicación de la nueva recuperación jerárquica. Se añade este archivo existente porque la publicación no reside en los cinco módulos numéricos o de trazas.",
+      "imported_sources_valid": true,
+      "imported_tests_valid": true,
+      "expected_call_failures": [
+        {
+          "nodeid": "tests/memory/test_bridge_hierarchy_integration.py::test_native_recovery_keeps_hierarchy_auxiliaries_and_the_next_emission[cpu]",
+          "exception_type": "builtins.ValueError",
+          "message": "native = <module '_episodic_native' from '${MARS_TITAN_NATIVE_ROOT}/build/native/native-candidate-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so'>\nfour_flow_source = {'spec': FinancialInputSpec(source_sha256='d0bd45d812f488cd2cbb4acd81725c25efe5fa5a46b3fe1303c48007484d2ae0', view_sha...True, False,  True, False, False]])), '69ffc254a5ff6ec6937466a077f6dbb492fad17dc9fac705b13a07de8f9b6f58'))], ...}, ...}\ntmp_path = PosixPath('${PYTEST_TMPDIR}/test_native_recovery_keeps_hie0')\ndevice = 'cpu'\n\n    @pytest.mark.native(\"MARS_TITAN_EPISODIC_NATIVE\")\n    @pytest.mark.parametrize(\"device\", DEVICES)\n    def test_native_recovery_keeps_hierarchy_auxiliaries_and_the_next_emission(\n        native, four_flow_source, tmp_path, device\n    ):\n        parent = engines(four_flow_source, device)\n        config = hierarchy_config()\n        codec = four_flow_source[\"codec\"].fingerprint()\n        config = replace(\n            config, codec"
+        }
+      ]
+    }
+  ],
+  "path_representation": "environment_variable_aliases_public_copy_original_receipts_external"
+}
