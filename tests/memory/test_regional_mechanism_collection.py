@@ -232,3 +232,48 @@ def test_shared_route_api_rejects_legacy_readers_and_insufficient_working_memory
         regional_routes.collect_routes(
             regional(limit=cap).readout, base, snapshot_on("cpu"), context_id=CONTEXT, cutoff=AT
         )
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_large_collector_parity_compares_binary64_outputs_without_casting(device):
+    from test_mechanism_collection import many_rows
+
+    full = regional(device, limit=128 * 1024**2)
+    count, size = 256, 64
+    data = source(count)
+    data["keys"] = torch.eye(64, dtype=torch.float32).repeat(4, 1)
+    snapshot = EpisodeSnapshot.create(
+        **data, cutoff=AT, codec_id=CODEC, context_id=CONTEXT, dtype=torch.float64, device=device
+    )
+    cap = (
+        full.readout.estimated_bytes(size, count, refinements=4)
+        + full.readout.estimated_bytes(size, count, refinements=9)
+    ) // 2
+    limited = regional(device, limit=cap)
+    rows = many_rows(full, size)
+    bodies = []
+    for engine in (full, limited):
+        collector = MechanismCollector(
+            engine,
+            engine.initial_state(),
+            rows=rows,
+            cutoff=AT,
+            context_id=CONTEXT,
+            matures_at=(AT + DAY,) * size,
+            snapshot=snapshot,
+        )
+        collector.add(rows, engine.predictor.initial_state(tuple(row.flow_id for row in rows)))
+        bodies.append(collector.finish().payload())
+    assert all(body["output_dtype"] == "torch.float64" for body in bodies)
+    assert bodies[0]["work"]["shared_route_batches"] == 2
+    assert bodies[1]["work"]["individual_route_batches"] == 12
+    # json.loads devuelve floats de Python. No se crean tensores FP32 intermedios.
+    assert all(
+        type(x) is float
+        for body in bodies
+        for group in body["groups"]
+        for candidate in group["candidates"]
+        for row in candidate["quantiles"]
+        for x in row
+    )
+    assert bodies[0]["groups"] == bodies[1]["groups"]

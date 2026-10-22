@@ -27,7 +27,9 @@ La [medición](benchmark.json) usa la RTX 4070 Laptop de 8.188 MiB, PyTorch 2.14
 | Seis rutas, 256 filas | 27,46 ms | 12,86 ms | 15.645.184 / 10.097.664 bytes |
 | Colector completo, 64 filas, dos contextos y 36 alternativas | 510,56 ms | 417,13 ms | 9.050.624 / 8.816.128 bytes |
 
-Las salidas comprobadas coinciden exactamente. El colector incluye preparación, cuantiles, calibración de fixture, transferencia a CPU, validación y codificación del paquete. Sus tiempos oscilaron entre 194,58 y 562,78 ms con prefijos y entre 266,59 y 671,13 ms por separado. Cinco repeticiones con esa dispersión no sostienen una aceleración general ni una conclusión sobre latencias extremas.
+Las seis rutas coinciden exactamente al comparar sus tensores FP64. El comparador original del colector completo convertía las listas a tensores sin indicar el tipo, de modo que esa comprobación correspondía a FP32. Una [comprobación posterior](../../../tests/memory/test_regional_mechanism_collection.py) compara directamente los flotantes binary64 del JSON, sin esa conversión. Sus dos casos, CPU y CUDA, conservan igualdad exacta de todos los cuantiles y metadatos con 64 filas y 256 episodios. No se han modificado las medidas de tiempo y memoria anteriores.
+
+El colector incluye preparación, cuantiles, calibración de fixture, transferencia a CPU, validación y codificación del paquete. Sus tiempos oscilaron entre 194,58 y 562,78 ms con prefijos y entre 266,59 y 671,13 ms por separado. Cinco repeticiones con esa dispersión no sostienen una aceleración general ni una conclusión sobre latencias extremas.
 
 La ruta individual `k4cr` de 64 filas también se comparó con su implementación en `f1ac211936ef96fc57655f91d4a4d1f3a766b5cd`. Dio 6,48 ms frente a 7,19 ms de mediana y el mismo pico incremental de 1.812.480 bytes. Sus rangos se solapan, de 6,29 a 8,15 ms y de 6,33 a 8,48 ms. Esta pasada no identifica una diferencia estable entre ambas versiones.
 
