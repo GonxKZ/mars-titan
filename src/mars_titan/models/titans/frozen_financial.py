@@ -41,6 +41,7 @@ _TITANS_MODULES = (
     "episodic_snapshot",
     "evidence_bridge",
     "bridge_intervention",
+    "bridge_hierarchy",
     "bridge_recurrence",
     "regional_episode_readout",
     "frozen_financial",
@@ -153,7 +154,10 @@ def _validate_intervention(readout):
     config = readout.config.evidence_bridge
     bridge = readout.evidence_bridge
     physical = bridge.config if type(bridge) is SharedEvidenceBridge else None
-    if not any(item is not None and item.intervention is not None for item in (config, physical)):
+    if not any(
+        item is not None and (item.intervention is not None or item.hierarchy is not None)
+        for item in (config, physical)
+    ):
         return
     if (
         type(bridge) is not SharedEvidenceBridge
@@ -161,7 +165,12 @@ def _validate_intervention(readout):
         or canonical(bridge.config.identity()) != canonical(config.identity())
     ):
         raise ValueError("El módulo no conserva la intervención de regiones y puentes declarada")
-    for name in ("edges", "active_regions"):
+    names = (
+        ("edges", "hierarchy_edges")
+        if config.hierarchy is not None
+        else ("edges", "active_regions")
+    )
+    for name in names:
         value = getattr(bridge, name, None)
         if (
             not isinstance(value, torch.Tensor)
@@ -170,6 +179,10 @@ def _validate_intervention(readout):
             or value.device != readout.step_logit.device
         ):
             raise ValueError("Los puentes y regiones necesitan buffers booleanos compatibles")
+    if config.hierarchy is not None and (
+        bridge.edges.shape != (4, 4) or bridge.hierarchy_edges.shape != (7, 7)
+    ):
+        raise ValueError("La jerarquía no conserva cuatro vistas y siete nodos")
     bridge.validate_payload(bridge.state_dict())
 
 

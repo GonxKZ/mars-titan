@@ -101,6 +101,7 @@ class MechanismCatalog(FingerprintOnce):
             "shared_evidence_bridge_v1",
             "shared_evidence_bridge_nonlinear_v1",
             "shared_evidence_bridge_intervention_v1",
+            "shared_evidence_bridge_hierarchy_v1",
         ):
             raise ValueError("El catálogo necesita un contrato de lector conocido")
 
@@ -131,6 +132,10 @@ class MechanismCatalog(FingerprintOnce):
                 reader_route_semantics="c_reuses_positions_r_reselects_values_reprojected_each_step",
                 regional_trace="common_ids_separate_regional_weights_and_derived_views",
             )
+            if self.reader_contract == "shared_evidence_bridge_hierarchy_v1":
+                result["regional_trace"] = (
+                    "common_ids_four_views_two_groups_one_root_effective_graph"
+                )
         return result
 
     @classmethod
