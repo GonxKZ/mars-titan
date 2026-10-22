@@ -33,6 +33,8 @@ La referencia anterior es una copia con dos fuentes restauradas a `bbb2b51`. No 
 | Preparación completa | Normal | 14,4625 | 11,9771 |
 | Preparación completa | Inverso | 22,0965 | 9,7354 |
 
+La topología completa con 256 filas muestra el límite de esta comparación: sus p50 anteriores fueron 13,4506 y 14,0063 ms, frente a 10,9275 y 22,1197 ms después del cambio. La segunda pasada empeora. No se descarta ese resultado ni se resume el benchmark con la condición más favorable.
+
 Los procesos fueron separados y coexistieron con otras aplicaciones. La variación entre órdenes impide atribuir aceleración al arreglo. Los percentiles de diez muestras son descriptivos. Los tiempos de proceso fueron 33,5982 y 18,9687 segundos e incluyen importaciones, construcción, comprobaciones y medidas. No son una medida exclusiva del recorrido numérico.
 
 En esta condición, el pico adicional del asignador Torch durante la preparación fue de 25.826.816 bytes en ambas versiones. Durante la carga pasó de 1.024 a 2.560 bytes. Los parámetros residentes conservaron 283.144 bytes. Los máximos RSS de proceso declarados fueron 1.412.624.384 y 1.446.473.728 bytes. Incluyen bibliotecas y otras asignaciones del proceso. No se midieron energía ni transferencias físicas. Se mantienen las primitivas CUDA existentes, sin nuevos kernels ni relajación de precisión.
