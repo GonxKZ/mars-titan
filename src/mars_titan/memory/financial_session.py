@@ -316,7 +316,11 @@ class FinancialSession(EpisodicSession):
             fold=fold,
         )
         self.artifacts = SessionArtifacts(
-            native, self.output / "artifacts", max_files=1024, max_total_bytes=2 * 1024**3
+            native,
+            self.output / "artifacts",
+            max_files=1024,
+            max_total_bytes=2 * 1024**3,
+            max_cached_bytes=8 * 1024**2 if type(binding) is MechanismBinding else 0,
         )
         self._fast_store = binding.state_store(self.artifacts, self.contract_id)
         if type(binding) is MechanismBinding:
