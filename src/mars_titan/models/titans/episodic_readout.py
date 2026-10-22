@@ -118,6 +118,8 @@ class EpisodicReadoutConfig:
                 projection_initialization="paired_legacy_query_value_and_refiner",
                 regional_availability="all_configured_views",
             )
+            if self.evidence_bridge.intervention is not None:
+                result["regional_availability"] = "fixed_declared_active_views"
         return result
 
 

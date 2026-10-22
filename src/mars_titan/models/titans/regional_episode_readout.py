@@ -37,7 +37,12 @@ def regional_read(model, state, snapshot, context_id, cutoff, positions):
     return (
         RegionalEpisodeRead(
             bridge.values,
-            torch.full((len(state), 1), snapshot.count > 0, dtype=torch.bool, device=state.device),
+            torch.full(
+                (len(state), 1),
+                snapshot.count > 0 and any(model.evidence_bridge.config.active_views()),
+                dtype=torch.bool,
+                device=state.device,
+            ),
             bridge,
         ),
         bridge.selected_positions,

@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 import torch
 from torch import nn
 
+from .bridge_intervention import BridgeInterventionConfig, intervention_options
 from .bridge_recurrence import BridgeRecurrenceConfig, nonlinear_mix
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
 from .episodic_readout import _normalize
@@ -19,7 +20,9 @@ BRIDGE_VIEW_FIELDS = ("regions", "topology", "cycles", "bridge_gain", "seed")
 
 def bridge_view_options(value):
     """Validar las vistas y devolver sus opciones propias, sin codec ni formas del lector."""
-    if type(value) is not dict or set(value) - {"recurrence"} != set(BRIDGE_VIEW_FIELDS):
+    if type(value) is not dict or set(value) - {"recurrence", "intervention"} != set(
+        BRIDGE_VIEW_FIELDS
+    ):
         raise ValueError("El puente declara regiones, topología, ciclos, ganancia y semilla")
     regions = value["regions"]
     if type(regions) not in (list, tuple):
@@ -49,6 +52,11 @@ def bridge_view_options(value):
         if value["cycles"] != 0:
             raise ValueError("La recurrencia J requiere cycles=0")
         result["recurrence"] = asdict(checked)
+    intervention = value.get("intervention")
+    if intervention is not None:
+        checked = intervention_options(intervention)
+        checked.edges(len(regions), topology)
+        result["intervention"] = asdict(checked)
     return result
 
 
@@ -66,6 +74,7 @@ class EvidenceBridgeConfig:
     max_batch: int = 256
     max_working_bytes: int = 32 * 1024**2
     recurrence: BridgeRecurrenceConfig | None = None
+    intervention: BridgeInterventionConfig | None = None
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec de evidencia")
@@ -76,6 +85,11 @@ class EvidenceBridgeConfig:
         if type(self.regions) is not tuple:
             raise ValueError("Se necesitan entre una y ocho regiones distintas identificadas")
         bridge_view_options({name: getattr(self, name) for name in BRIDGE_VIEW_FIELDS})
+        if self.intervention is not None:
+            if type(self.intervention) is not BridgeInterventionConfig:
+                raise ValueError("La intervención necesita BridgeInterventionConfig explícito")
+            self.intervention.__post_init__()
+            self.intervention.edges(len(self.regions), self.topology)
         if self.recurrence is not None:
             if type(self.recurrence) is not BridgeRecurrenceConfig:
                 raise ValueError("La recurrencia necesita BridgeRecurrenceConfig explícito")
@@ -92,6 +106,7 @@ class EvidenceBridgeConfig:
     def identity(self):
         fields = asdict(self)
         fields.pop("recurrence")
+        fields.pop("intervention")
         result = dict(
             schema_version=1,
             kind=KIND,
@@ -109,7 +124,22 @@ class EvidenceBridgeConfig:
                 bridge="synchronous_receiver_weights_reused_mixture_tanh",
                 recurrence=self.recurrence.identity(),
             )
+        if self.intervention is not None:
+            result.update(
+                schema_version=3,
+                base_kind=result["kind"],
+                kind="shared_evidence_bridge_intervention_v1",
+                intervention=asdict(self.intervention),
+            )
         return result
+
+    def active_views(self):
+        """Distinguir lectores activos de la existencia física de episodios."""
+        return (
+            (True,) * len(self.regions)
+            if self.intervention is None
+            else self.intervention.active_regions
+        )
 
 
 @dataclass(frozen=True)
@@ -160,6 +190,9 @@ class SharedEvidenceBridge(nn.Module):
                 positions = torch.arange(regions)
                 edges[positions, (positions + 1) % regions] = True
             self.register_buffer("edges", edges)
+            if config.intervention is not None:
+                self.edges.copy_(torch.tensor(config.intervention.edges(regions, config.topology)))
+                self.register_buffer("active_regions", torch.tensor(config.active_views()))
         self.to(device=device)
 
     def get_extra_state(self):
@@ -188,8 +221,19 @@ class SharedEvidenceBridge(nn.Module):
             ):
                 raise ValueError("El checkpoint del puente no conserva formas y precisión")
             check_finite(other, "El checkpoint del puente")
-        if not torch.equal(supplied["edges"].cpu(), expected["edges"].cpu()):
+        declared_edges = expected["edges"].cpu()
+        if self.config.intervention is not None:
+            if any(supplied[name].dtype != torch.bool for name in ("edges", "active_regions")):
+                raise ValueError("Los puentes y regiones declarados necesitan buffers booleanos")
+            declared_edges = torch.tensor(
+                self.config.intervention.edges(len(self.config.regions), self.config.topology)
+            )
+        if not torch.equal(supplied["edges"].cpu(), declared_edges):
             raise ValueError("El checkpoint cambió los puentes declarados")
+        if self.config.intervention is not None and not torch.equal(
+            supplied["active_regions"].cpu(), torch.tensor(self.config.active_views())
+        ):
+            raise ValueError("El checkpoint cambió las regiones activas declaradas")
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         self.validate_payload(state_dict, prefix)
@@ -267,6 +311,8 @@ class SharedEvidenceBridge(nn.Module):
             or available.device != state.device
         ):
             raise ValueError("La máscara no corresponde a las regiones del puente")
+        if self.config.intervention is not None:
+            available = available & self.active_regions[None]
         count = min(snapshot.count, self.config.neighbors)
         if positions is not None:
             if (

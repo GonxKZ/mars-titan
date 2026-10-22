@@ -92,6 +92,7 @@
       "disabled_value": "absent",
       "allowed": ["self", "ring", "complete"],
       "recurrence": {"steps": [1, 2, 4], "max_node_updates_per_row": 1216, "requires_cycles": 0, "default": null},
+      "intervention": {"default": null, "kind": "fixed_reader_mask_and_directed_edge_cuts_v1"},
       "value": {
         "regions": ["view_1", "view_2", "view_3"],
         "topology": "ring",

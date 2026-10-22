@@ -25,7 +25,12 @@ from .episodic_readout import EpisodicReadout
 from .episodic_snapshot import EpisodeSnapshot
 from .financial import FinancialPredictor, _tensor_digest
 from .financial_inputs import DecisionBatch
-from .frozen_financial import _execution_signature, _implementation, _numerics
+from .frozen_financial import (
+    _execution_signature,
+    _implementation,
+    _numerics,
+    _validate_intervention,
+)
 from .mechanism_calibration import _reserve_fits, _static_record, calibrate_event
 from .mechanism_catalog import MechanismAction, MechanismAvailability, MechanismCatalog
 from .mechanism_event import (
@@ -177,6 +182,7 @@ class FrozenMechanismConsumer:
             _static_record(self._initial_calibration) if calibration is not None else None
         )
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
+        _validate_intervention(readout)
         self._signature, modes = _execution_signature(self._models)
         predictor.verify_parameter_identity()
         self._reader_id, self._code, self._flags = (
@@ -216,6 +222,12 @@ class FrozenMechanismConsumer:
                     recipe="frozen_nonlinear_regional_mechanism_cohort_v1",
                     node_work="R0_initial_views_and_R_times_J_new_updates_per_value_projection",
                     node_budget="conservative_collection_plus_final_emission_per_row_before_mac",
+                )
+            if readout.config.evidence_bridge.intervention is not None:
+                self._identity.update(
+                    schema_version=4,
+                    recipe="frozen_intervened_regional_mechanism_cohort_v1",
+                    intervention="fixed_reader_mask_and_directed_edge_cuts_dense_work_unchanged",
                 )
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)

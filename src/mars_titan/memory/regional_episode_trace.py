@@ -35,7 +35,7 @@ def begin(reader, flows, snapshot, *, context_id, cutoff, block_rows):
     if estimated_bytes(reader, flows, count, block_rows) > reader.config.max_working_bytes:
         raise ValueError("La traza regional del evento supera su presupuesto antes de emitir")
     edges = reader.evidence_bridge.edges.detach().cpu().to(reader.step_logit.dtype)
-    graph = edges / edges.sum(-1, keepdim=True)
+    graph = edges / edges.sum(-1, keepdim=True).clamp_min(1)
     return dict(
         schema_version=1,
         kind=KIND,
@@ -147,7 +147,7 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
         raise ValueError("Los bloques de la traza regional no están acotados")
     dtype = reader.step_logit.dtype
     graph = reader.evidence_bridge.edges.detach().cpu().to(dtype)
-    graph /= graph.sum(-1, keepdim=True)
+    graph /= graph.sum(-1, keepdim=True).clamp_min(1)
     if (
         not isinstance(trace["bridge_weights"], torch.Tensor)
         or trace["bridge_weights"].device.type != "cpu"
@@ -159,7 +159,7 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
     return True
 
 
-def _verify_read(read, rows, r, h, expected_count, dtype):
+def _verify_read(read, rows, r, h, expected_count, dtype, active):
     if type(read) is not dict or set(read) != set(_TENSORS):
         raise ValueError("La lectura regional no conserva sus campos")
     ids = read["evidence_ids"]
@@ -196,16 +196,23 @@ def _verify_read(read, rows, r, h, expected_count, dtype):
         if (
             (ids <= 0).any()
             or (ordered[:, 1:] == ordered[:, :-1]).any()
-            or not read["presence"].all()
+            or not torch.equal(read["presence"], torch.full((rows, 1), any(active)))
             or (weights < 0).any()
             or not torch.allclose(
                 weights.sum(-1),
-                torch.ones(weights.shape[:2], dtype=dtype),
+                torch.tensor(active, dtype=dtype).expand(rows, -1),
                 atol=1e-6,
                 rtol=1e-6,
             )
         ):
             raise ValueError("La traza no conserva IDs únicos y pesos regionales normalizados")
+        inactive = ~torch.tensor(active)
+        if (
+            weights[:, inactive].count_nonzero()
+            or read["regional_values"][:, inactive].count_nonzero()
+            or (not any(active) and read["read_values"].count_nonzero())
+        ):
+            raise ValueError("Una región retirada debe conservar valores cero")
     elif (
         read["presence"].any()
         or read["regional_values"].count_nonzero()
@@ -248,6 +255,7 @@ def verify(trace, reader, *, flows, context_id, cutoff, refinements, block_rows)
                 h,
                 min(trace["episodes"], reader.config.neighbors),
                 dtype,
+                reader.config.evidence_bridge.active_views(),
             )
             if first_ids is None:
                 first_ids = ids

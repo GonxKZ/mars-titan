@@ -40,6 +40,7 @@ _TITANS_MODULES = (
     "episodic_readout",
     "episodic_snapshot",
     "evidence_bridge",
+    "bridge_intervention",
     "bridge_recurrence",
     "regional_episode_readout",
     "frozen_financial",
@@ -141,6 +142,35 @@ def _module_settings(module):
         settings["evidence_bridge"] = module.config.identity()
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
+
+
+def _validate_intervention(readout):
+    """Conciliar la geometría fija una vez, antes de sellar los buffers del lector."""
+    if readout is None:
+        return
+    from .evidence_bridge import SharedEvidenceBridge
+
+    config = readout.config.evidence_bridge
+    bridge = readout.evidence_bridge
+    physical = bridge.config if type(bridge) is SharedEvidenceBridge else None
+    if not any(item is not None and item.intervention is not None for item in (config, physical)):
+        return
+    if (
+        type(bridge) is not SharedEvidenceBridge
+        or config is None
+        or canonical(bridge.config.identity()) != canonical(config.identity())
+    ):
+        raise ValueError("El módulo no conserva la intervención de regiones y puentes declarada")
+    for name in ("edges", "active_regions"):
+        value = getattr(bridge, name, None)
+        if (
+            not isinstance(value, torch.Tensor)
+            or value.dtype != torch.bool
+            or value.layout != torch.strided
+            or value.device != readout.step_logit.device
+        ):
+            raise ValueError("Los puentes y regiones necesitan buffers booleanos compatibles")
+    bridge.validate_payload(bridge.state_dict())
 
 
 def _execution_signature(models):
@@ -260,6 +290,7 @@ class FrozenFinancialConsumer:
                 "El lector y predictor no comparten dimensión, precisión y dispositivo"
             )
         self.predictor, self.readout = predictor, readout
+        _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
         self._flags = _numerics()

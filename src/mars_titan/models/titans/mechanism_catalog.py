@@ -100,6 +100,7 @@ class MechanismCatalog(FingerprintOnce):
             "legacy",
             "shared_evidence_bridge_v1",
             "shared_evidence_bridge_nonlinear_v1",
+            "shared_evidence_bridge_intervention_v1",
         ):
             raise ValueError("El catálogo necesita un contrato de lector conocido")
 

@@ -96,6 +96,7 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         _digest_id(snapshot_sha256, "El snapshot regional del controlador")
     r, h = len(reader.config.evidence_bridge.regions), reader.config.hidden_size
     k = min(trace["episodes"], reader.config.neighbors)
+    active = np.asarray(reader.config.evidence_bridge.active_views())
     expected_searches = (1 + int("r" in route)) if trace["episodes"] else 0
     if searches != expected_searches:
         raise ValueError("El recibo regional no conserva las búsquedas de su ruta")
@@ -134,9 +135,16 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         if snapshot_sha256 is not None:
             weights = np.asarray(read["regional_weights"])
             if k and (
-                (weights < 0).any() or not np.allclose(weights.sum(-1), 1, atol=1e-6, rtol=1e-6)
+                (weights < 0).any()
+                or not np.allclose(weights.sum(-1), active, atol=1e-6, rtol=1e-6)
             ):
                 raise ValueError("El recibo regional no conserva pesos normalizados")
+            if (
+                np.count_nonzero(weights[~active])
+                or np.count_nonzero(np.asarray(read["regional_values"])[~active])
+                or (not active.any() and np.count_nonzero(read["read_values"]))
+            ):
+                raise ValueError("Una región retirada debe conservar valores cero")
             if not k and any(
                 np.count_nonzero(read[name]) for name in ("regional_values", "read_values")
             ):

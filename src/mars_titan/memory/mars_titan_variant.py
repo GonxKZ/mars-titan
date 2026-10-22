@@ -12,6 +12,7 @@ import json
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
+from mars_titan.models.titans.bridge_intervention import intervention_options
 from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
@@ -168,6 +169,10 @@ def check_components(declaration, components):
             default=None,
         ):
             raise ValueError("La declaración no admite el contrato recurrente acotado")
+        if "intervention" in bridge and declared["evidence_bridge"].get("intervention") != dict(
+            default=None, kind="fixed_reader_mask_and_directed_edge_cuts_v1"
+        ):
+            raise ValueError("La declaración no admite las intervenciones regionales fijas")
         components["evidence_bridge"] = bridge
     if "associative_memory" in components:
         if "episodic_bank" in components:
@@ -246,6 +251,8 @@ class MarsTitanVariant:
             geometry = dict(self.components["evidence_bridge"])
             if "recurrence" in geometry:
                 geometry["recurrence"] = BridgeRecurrenceConfig(**geometry["recurrence"])
+            if "intervention" in geometry:
+                geometry["intervention"] = intervention_options(geometry["intervention"])
             bridge = EvidenceBridgeConfig(
                 codec_id,
                 **geometry,
@@ -307,6 +314,8 @@ class MarsTitanVariant:
         geometry = {name: getattr(bridge, name) for name in BRIDGE_VIEW_FIELDS}
         if bridge.recurrence is not None:
             geometry["recurrence"] = asdict(bridge.recurrence)
+        if bridge.intervention is not None:
+            geometry["intervention"] = asdict(bridge.intervention)
         return bridge_view_options(geometry)
 
     def session_options(self, *, capacity, seed, policy="reservoir", **retention):
