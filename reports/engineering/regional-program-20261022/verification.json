@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "code_commits": [
+    "1c8f749fd1a682eb4e794768019225899b535168",
+    "a7785b4c1ae027b3b8f6e3dd6962c24b7d2f49ea",
+    "04a13c6fa7caa4ae0204e391d60291583de86759",
+    "6e2e91cb343b8234cc3340eb9fc6da05325af314",
+    "c598ea961565c95f8a554bd0fafdf972c51e4a52",
+    "1a076f90d6f84a468b3ac3ddf7510518507fefe5",
+    "dc8ab69b5c4c31793dd6007b9e06bc6d5807e33e"
+  ],
+  "unique_selected_cases": 805,
+  "passed_groups": [
+    {
+      "kind": "core",
+      "cases": 608,
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-core-identity",
+        "--include=src/mars_titan/models/titans/session_context.py,src/mars_titan/models/titans/regional_execution.py,src/mars_titan/models/titans/regional_fusion.py,src/mars_titan/models/titans/financial.py,src/mars_titan/models/titans/frozen_financial.py,src/mars_titan/models/titans/mechanism_catalog.py,src/mars_titan/models/titans/mechanism_consumer.py,src/mars_titan/training/search_cases.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "tests/models/titans/test_context_selection.py",
+        "tests/models/titans/test_market_memory.py",
+        "tests/models/titans/test_regional_execution.py",
+        "tests/models/titans/test_regional_execution_archive.py",
+        "tests/models/titans/test_financial_regional_program.py",
+        "tests/models/titans/test_regional_fusion.py",
+        "tests/models/titans/test_regional_geometry_contract.py",
+        "tests/models/titans/test_mechanism_consumer.py",
+        "tests/models/titans/test_frozen_financial.py",
+        "tests/models/titans/test_regional_program_declaration.py"
+      ],
+      "elapsed_s": 44.719018706004135,
+      "returncode": 0,
+      "timeout_s": 180
+    },
+    {
+      "kind": "ledger",
+      "cases": 70,
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-ledger",
+        "--include=src/mars_titan/memory/regional_work.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_reservation.py"
+      ],
+      "elapsed_s": 132.23091332707554,
+      "returncode": 0,
+      "timeout_s": 180
+    },
+    {
+      "kind": "session_collection",
+      "cases": 115,
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-session-final",
+        "--include=src/mars_titan/memory/financial_mechanisms.py,src/mars_titan/memory/financial_session.py,src/mars_titan/memory/mechanism_collection.py,src/mars_titan/memory/mechanism_collection_record.py,src/mars_titan/memory/regional_session_work.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_program_session.py",
+        "tests/memory/test_regional_session_integrity.py",
+        "tests/memory/test_regional_program_collection.py",
+        "tests/memory/test_mechanism_collection.py",
+        "tests/memory/test_regional_mechanism_collection.py"
+      ],
+      "elapsed_s": 162.833140732022,
+      "returncode": 0,
+      "timeout_s": 180
+    },
+    {
+      "kind": "compressed_archive",
+      "cases": 12,
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-compression",
+        "--include=src/mars_titan/memory/regional_work.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_archive_compression.py"
+      ],
+      "elapsed_s": 5.525345742935315,
+      "returncode": 0,
+      "timeout_s": 180
+    }
+  ],
+  "final_groups_errors": 0,
+  "final_groups_skipped": 0,
+  "unsuccessful_intermediate_runs": [
+    {
+      "label": "check-coverage-session",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "--with",
+        "radon==6.0.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-session",
+        "--include=src/mars_titan/memory/financial_mechanisms.py,src/mars_titan/memory/financial_session.py,src/mars_titan/memory/mechanism_collection.py,src/mars_titan/memory/mechanism_collection_record.py,src/mars_titan/memory/regional_session_work.py,src/mars_titan/memory/regional_work.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_reservation.py",
+        "tests/memory/test_regional_program_session.py",
+        "tests/memory/test_regional_session_integrity.py",
+        "tests/memory/test_regional_program_collection.py",
+        "tests/memory/test_mechanism_collection.py",
+        "tests/memory/test_regional_mechanism_collection.py",
+        "tests/memory/test_financial_mechanisms.py",
+        "tests/memory/test_native_mechanism_collection.py"
+      ],
+      "elapsed_s": 180.00409499311354,
+      "returncode": 124,
+      "timeout_s": 180
+    },
+    {
+      "label": "check-cost-core",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "python",
+        "local-artifacts/regional_program_cuda.py",
+        "--run",
+        "--repository",
+        ".",
+        "--output",
+        "local-artifacts/cost-core-20261022-v1"
+      ],
+      "elapsed_s": 8.08357830089517,
+      "returncode": 1,
+      "timeout_s": 180
+    },
+    {
+      "label": "check-coverage-core-final",
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "--with",
+        "radon==6.0.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--data-file=local-artifacts/.coverage-core-final",
+        "--include=src/mars_titan/models/titans/session_context.py,src/mars_titan/models/titans/regional_execution.py,src/mars_titan/models/titans/regional_fusion.py,src/mars_titan/models/titans/financial.py,src/mars_titan/models/titans/frozen_financial.py,src/mars_titan/models/titans/mechanism_catalog.py,src/mars_titan/models/titans/mechanism_consumer.py,src/mars_titan/training/search_cases.py",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "tests/models/titans/test_context_selection.py",
+        "tests/models/titans/test_market_memory.py",
+        "tests/models/titans/test_regional_execution.py",
+        "tests/models/titans/test_regional_execution_archive.py",
+        "tests/models/titans/test_financial_regional_program.py",
+        "tests/models/titans/test_regional_fusion.py",
+        "tests/models/titans/test_regional_geometry_contract.py",
+        "tests/models/titans/test_mechanism_consumer.py",
+        "tests/models/titans/test_frozen_financial.py",
+        "tests/models/titans/test_regional_program_declaration.py"
+      ],
+      "elapsed_s": 34.64868875895627,
+      "returncode": 1,
+      "timeout_s": 180
+    }
+  ],
+  "model_parity": {
+    "cases": [
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": null,
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": null,
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": "market_memory_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": "market_memory_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": "sector_mean_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "context": "sector_mean_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": null,
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": null,
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": "market_memory_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": "market_memory_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": "sector_mean_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "context": "sector_mean_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": null,
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": null,
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": "market_memory_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": "market_memory_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": "sector_mean_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "context": "sector_mean_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": null,
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": null,
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": "market_memory_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": "market_memory_v1",
+        "topology": "ring",
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": "sector_mean_v1",
+        "topology": null,
+        "exact": true
+      },
+      {
+        "device": "cuda:0",
+        "dtype": "torch.float64",
+        "context": "sector_mean_v1",
+        "topology": "ring",
+        "exact": true
+      }
+    ],
+    "count": 24,
+    "optimizer_steps": 0,
+    "real_corpus": false
+  },
+  "optimizer_steps": 0,
+  "scientific_evaluations": 0,
+  "final_test_access": false,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "long_fixture": {
+    "native_events": 600,
+    "receipts": 605,
+    "reopens": 6,
+    "archived_cohorts": 598,
+    "retained_cohorts": 2,
+    "checked_upper_bounds": {
+      "index_bytes": 16384,
+      "live_references": 5,
+      "live_artifact_files": 24,
+      "receipt_reads_per_event": 96
+    },
+    "exact_peaks_recorded": false
+  },
+  "scope_limits": [
+    "Paridad de configuración, pesos y dos emisiones del predictor, no identidad de runtimes con fuentes distintas.",
+    "Los SHA locales no autentican el reemplazo coherente de toda la historia.",
+    "La ronda confirma mecanismos sobre fixtures, no utilidad financiera ni superioridad."
+  ],
+  "supervised_commands_total_s": 1427.4272607467137,
+  "final_regression_cases": 42,
+  "final_regression_receipt": "check-session-final-regression"
+}
