@@ -85,7 +85,11 @@ class MechanismBinding(TitansBinding):
             self.collections = NativeMechanismCollections(config)
 
     def bundle_fields(self):
-        return FIELDS + (("mechanism_collections",) if self.collections is not None else ())
+        return (
+            FIELDS
+            + (("mechanism_collections",) if self.collections is not None else ())
+            + (("regional_work",) if self.consumer.predictor.regional_execution is not None else ())
+        )
 
     def code(self):
         result = dict(
@@ -117,6 +121,7 @@ class MechanismBinding(TitansBinding):
             TRACE_FIELDS
             + (("selection",) if self.consumer.policy is not None else ())
             + (("collection_packet",) if self.collections is not None else ())
+            + (("regional_work",) if self.consumer.predictor.regional_execution is not None else ())
         )
 
     @staticmethod
@@ -184,6 +189,13 @@ class MechanismBinding(TitansBinding):
             result["selection"] = None
         if self.collections is not None:
             result["collection_packet"] = None
+        if self.consumer.predictor.regional_execution is not None:
+            result["work"].update(
+                regional_local_node_evaluations=0,
+                regional_summary_evaluations=0,
+                regional_program_selection_rows=0,
+                regional_context_query_rows=0,
+            )
         if self.consumer.readout is not None:
             node_work = self.consumer.readout.recurrence_work(0)
             if node_work:
@@ -506,6 +518,7 @@ class MechanismBinding(TitansBinding):
             ):
                 raise ValueError("El punto archivado no es la predicción nativa emitida")
         self._check_quantiles(control)
+        self._check_regional_program(control)
         if self.consumer.catalog.reader_contract != "legacy":
             projections = 0
             for row in rows:
@@ -546,6 +559,33 @@ class MechanismBinding(TitansBinding):
                     != self.code()["mechanism_observations"]
                 ):
                     raise ValueError("La observación procede de otro extractor")
+
+    def _check_regional_program(self, control):
+        model, rows = self.consumer.predictor, control["rows"]
+        program = model.regional_execution
+        if program is None:
+            if any("regional_execution" in row for row in rows):
+                raise ValueError("La referencia sin programa no puede archivar fases regionales")
+            return
+        totals = program.verify_exported_traces(
+            [row.get("regional_execution") for row in rows], model.regional_fusion
+        )
+        if any(
+            row["context"] == "off" and row["regional_execution"]["context_norm"] != 0
+            for row in rows
+        ):
+            raise ValueError("La ruta sin contexto no puede consultar un prefijo regional")
+        expected = dict(
+            regional_local_node_evaluations=totals["local_node_evaluations"],
+            regional_summary_evaluations=totals["summary_evaluations"],
+            regional_program_selection_rows=len(rows),
+            regional_context_query_rows=sum(row["context"] == "parent" for row in rows),
+        )
+        if any(
+            type(control["work"].get(name)) is not int or control["work"][name] != count
+            for name, count in expected.items()
+        ):
+            raise ValueError("El control no conserva el trabajo de las fases regionales emitidas")
 
     @staticmethod
     def _check_quantiles(control):
@@ -639,6 +679,15 @@ class MechanismBinding(TitansBinding):
         self._check_payload(event["payload"], record)
         control = dict(event["payload"], observations=record["observations_count"])
         self._check_record(control, record, cutoff=event["cutoff"])
+        if self.consumer.predictor.regional_execution is not None:
+            fields = ("flow_id", "sample_id", "prediction_at", "input_available_at", "input_sha256")
+            session._regional_work.verify_archive_payload(
+                control["regional_work"],
+                generation=generation,
+                cutoff=event["cutoff"],
+                rows_digest=_sha([{name: row[name] for name in fields} for row in control["rows"]]),
+                event_kind=record["event_kind"],
+            )
         if digest != event["native_record_sha256"]:
             raise ValueError("El registro histórico no conserva su huella nativa")
         return event

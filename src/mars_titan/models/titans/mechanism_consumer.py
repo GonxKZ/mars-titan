@@ -132,6 +132,8 @@ class FrozenMechanismConsumer:
         catalog = MechanismCatalog() if catalog is None else catalog
         if type(action) is not MechanismAction or type(catalog) is not MechanismCatalog:
             raise ValueError("El consumidor necesita acción y catálogo identificados")
+        if predictor.config.regional_execution != catalog.regional_execution:
+            raise ValueError("El programa regional necesita un catálogo explícito compatible")
         regional = type(readout) is EpisodicReadout and readout.config.evidence_bridge is not None
         reader_contract = (
             readout.config.evidence_bridge.identity()["kind"] if regional else "legacy"
@@ -166,7 +168,10 @@ class FrozenMechanismConsumer:
         if policy is not None and (
             type(predictor.head) is not QuantileHead
             or policy.mean.device != predictor.head.weight.device
-            or (regional and policy.catalog_id != catalog.fingerprint())
+            or (
+                (regional or predictor.regional_execution is not None)
+                and policy.catalog_id != catalog.fingerprint()
+            )
             or (policy.catalog_id is not None and policy.catalog_id != catalog.fingerprint())
         ):
             raise ValueError("El selector necesita cuantiles y el dispositivo del predictor")
@@ -229,6 +234,12 @@ class FrozenMechanismConsumer:
                     recipe="frozen_intervened_regional_mechanism_cohort_v1",
                     intervention="fixed_reader_mask_and_directed_edge_cuts_dense_work_unchanged",
                 )
+        if predictor.regional_execution is not None:
+            self._identity.update(
+                schema_version=5,
+                recipe="frozen_pre_mac_regional_program_cohort_v1",
+                regional_execution=predictor.regional_execution.get_extra_state(),
+            )
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -505,6 +516,13 @@ class FrozenMechanismConsumer:
                 ),
             )
         prepared = self.predictor.prepare(batch, state, differentiable=False, **options)
+        program_rows = (
+            self.predictor.regional_execution.export_trace(
+                prepared.regional_trace, self.predictor.regional_fusion
+            )
+            if self.predictor.regional_execution is not None
+            else None
+        )
         if event.warmup:
             rows = tuple(
                 frozen_row(
@@ -523,8 +541,11 @@ class FrozenMechanismConsumer:
                     reader_steps=0,
                     reader_searches=0,
                     discarded_reader_steps=0,
+                    **({"regional_execution": program_rows[i]} if program_rows is not None else {}),
                 )
-                for flow, sample in zip(batch.flow_ids, batch.sample_ids, strict=True)
+                for i, (flow, sample) in enumerate(
+                    zip(batch.flow_ids, batch.sample_ids, strict=True)
+                )
             )
             return MechanismBlock(
                 prepared.next_state,
@@ -605,6 +626,11 @@ class FrozenMechanismConsumer:
                         reader_searches=searches,
                         discarded_reader_steps=0,
                         **({"regional_readout": regional_rows[local]} if regional else {}),
+                        **(
+                            {"regional_execution": program_rows[position]}
+                            if program_rows is not None
+                            else {}
+                        ),
                     )
                 )
         return MechanismBlock(
@@ -636,6 +662,17 @@ class FrozenMechanismConsumer:
             else 0,
         )
         work.update(self.predictor.operation_counts(len(rows)))
+        if self.predictor.regional_execution is not None:
+            work.update(
+                regional_local_node_evaluations=sum(
+                    row["regional_execution"]["work"]["local_node_evaluations"] for row in rows
+                ),
+                regional_summary_evaluations=sum(
+                    row["regional_execution"]["work"]["summary_evaluations"] for row in rows
+                ),
+                regional_program_selection_rows=len(rows),
+                regional_context_query_rows=sum(row["context"] == "parent" for row in rows),
+            )
         if self.catalog.reader_contract != "legacy":
             work["bridge_value_projections"] = (
                 sum(row["regional_readout"]["value_projections"] for row in rows)

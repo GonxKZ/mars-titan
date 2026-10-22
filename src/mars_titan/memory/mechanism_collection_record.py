@@ -18,8 +18,10 @@ from mars_titan.models.titans.mechanism_catalog import (
 from mars_titan.models.titans.mechanism_observation import MechanismObservation
 from mars_titan.models.titans.mechanism_policy import ACTIONS
 from mars_titan.models.titans.mechanism_selection import _calibration_failed, digest
+from mars_titan.models.titans.regional_execution import verify_exported_traces
 
 KIND = "conditional_mechanism_collection_v1"
+REGIONAL_KIND = "conditional_regional_program_collection_v1"
 PROTOCOL = "one_market_deviation_from_frozen_anchor_v1"
 MAX_BYTES = 48 * 1024**2
 ROW_FIELDS = {"flow_id", "sample_id", "prediction_at", "input_available_at", "input_sha256"}
@@ -43,6 +45,12 @@ WORK = {
     "calibration_attempts",
     "calibration_created_proposals",
     "calibration_discarded_proposals",
+}
+REGIONAL_WORK = {
+    "regional_local_node_evaluations",
+    "regional_summary_evaluations",
+    "regional_program_selection_rows",
+    "regional_context_query_rows",
 }
 
 
@@ -131,11 +139,55 @@ def _candidate(item, index, *, catalog, available, market, size, anchors):
     return matrix(item["quantiles"], size)
 
 
+def _regional_work(block, descriptor, parent):
+    calls = block["regional_execution"]
+    flows = block["flow_ids"]
+    contexts = ["off"] + (["parent"] if any(parent[f.split("/", 1)[0]] for f in flows) else [])
+    _require(
+        len(flows) <= descriptor["execution"]["max_batch"]
+        and type(calls) is list
+        and len(calls) == len(contexts),
+        "El bloque regional no conserva sus llamadas acotadas por contexto",
+    )
+    work = dict.fromkeys(REGIONAL_WORK, 0)
+    for call, context in zip(calls, contexts, strict=True):
+        _require(
+            type(call) is dict
+            and set(call) == {"context", "rows"}
+            and call["context"] == context
+            and type(call["rows"]) is list
+            and len(call["rows"]) == len(flows),
+            "La llamada regional no conserva su contexto y filas",
+        )
+        traces = []
+        queries = 0
+        for row, flow in zip(call["rows"], flows, strict=True):
+            _require(
+                type(row) is dict and set(row) == {"flow_id", "trace"} and row["flow_id"] == flow,
+                "La llamada regional cambia los flujos de su bloque",
+            )
+            traces.append(row["trace"])
+        totals = verify_exported_traces(traces, descriptor)
+        for trace, flow in zip(traces, flows, strict=True):
+            selected = context == "parent" and parent[flow.split("/", 1)[0]]
+            _require(
+                selected or trace["context_norm"] == 0,
+                "Una fila sin consulta al padre conserva contexto regional",
+            )
+            queries += int(selected)
+        work["regional_local_node_evaluations"] += totals["local_node_evaluations"]
+        work["regional_summary_evaluations"] += totals["summary_evaluations"]
+        work["regional_program_selection_rows"] += len(traces)
+        work["regional_context_query_rows"] += queries
+    return work
+
+
 def _work(body, catalog):
     work = body["work"]
+    regional = catalog.regional_execution is not None
     _require(
         type(work) is dict
-        and set(work) == WORK
+        and set(work) == WORK | (REGIONAL_WORK if regional else set())
         and all(type(v) is int and v >= 0 for v in work.values()),
         "La colección necesita contadores enteros de trabajo",
     )
@@ -149,10 +201,15 @@ def _work(body, catalog):
         for market, group in groups.items()
     }
     observations, passes = 0, 0
+    regional_totals = dict.fromkeys(REGIONAL_WORK, 0)
     for block in body["blocks"]:
         count = 1 + int(any(parent[flow.split("/", 1)[0]] for flow in block["flow_ids"]))
         observations += count * len(block["flow_ids"])
         passes += count
+        if regional:
+            counts = _regional_work(block, body["regional_execution"], parent)
+            for name, value in counts.items():
+                regional_totals[name] += value
     _require(
         work["core_observations"] == observations
         and work["context_passes"] == passes
@@ -163,6 +220,11 @@ def _work(body, catalog):
         and work["individual_route_batches"] <= 6 * passes,
         "El trabajo no corresponde a los bloques y contextos ejecutados",
     )
+    if regional:
+        _require(
+            all(work[name] == value for name, value in regional_totals.items()),
+            "El trabajo regional no corresponde a las fases y consultas archivadas",
+        )
     if catalog.reader_contract != "legacy":
         populated = body["observation"]["observation"]["bank_entries"] > 0
         _require(
@@ -184,9 +246,11 @@ def _work(body, catalog):
 
 
 def validate(body):
+    _require(type(body) is dict, "La colección necesita un objeto completo")
+    catalog = MechanismCatalog.restore(body.get("catalog"))
+    regional = catalog.regional_execution is not None
     _require(
-        type(body) is dict
-        and set(body)
+        set(body)
         == {
             "schema_version",
             "kind",
@@ -202,13 +266,14 @@ def validate(body):
             "blocks",
             "groups",
             "work",
-        },
+        }
+        | ({"regional_execution"} if regional else set()),
         "La colección no conserva su esquema completo",
     )
     _require(
         type(body["schema_version"]) is int
-        and body["schema_version"] == 1
-        and body["kind"] == KIND
+        and body["schema_version"] == (2 if regional else 1)
+        and body["kind"] == (REGIONAL_KIND if regional else KIND)
         and body["protocol"] == PROTOCOL,
         "La colección pertenece a otro protocolo",
     )
@@ -221,7 +286,15 @@ def validate(body):
     )
     for key in ("prior_state_sha256", "producer_sha256"):
         _digest_id(body[key], key)
-    catalog = MechanismCatalog.restore(body["catalog"])
+    if regional:
+        descriptor = body["regional_execution"]
+        verify_exported_traces([], descriptor)
+        _require(
+            descriptor["dtype"] == body["output_dtype"]
+            and canonical(descriptor["execution"]["configuration"])
+            == canonical(catalog.regional_execution.identity()),
+            "El descriptor regional no corresponde al catálogo y precisión de la colección",
+        )
     rows = body["rows"]
     _require(type(rows) is list and 1 <= len(rows) <= 8192, "La colección necesita filas acotadas")
     for row in rows:
@@ -332,7 +405,8 @@ def validate(body):
     for block in body["blocks"]:
         _require(
             type(block) is dict
-            and set(block) == {"flow_ids", "fast_state_sha256"}
+            and set(block)
+            == {"flow_ids", "fast_state_sha256"} | ({"regional_execution"} if regional else set())
             and type(block["flow_ids"]) is list
             and block["flow_ids"],
             "Bloque incompleto",
