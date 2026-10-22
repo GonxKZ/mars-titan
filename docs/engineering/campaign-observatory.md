@@ -240,6 +240,15 @@ saneadas y las matrices de las campañas por ventanas. Cada publicación crea un
 `chore(observatory)` y un push normal. Nunca cambia el checkout científico ni fuerza la
 historia remota.
 
+Cada llamada toma un cerrojo exclusivo y no bloqueante en el directorio Git canónico
+del checkout. La exclusión cubre escritura, commit, push y petición a Pages, también
+entre estados distintos, alias de ruta o llamadas sobre la misma instancia. Otro
+publicador recibe `BlockingIOError` antes de escribir y puede reintentar al liberarse.
+Cada llamada abre su propio descriptor y lo cierra incluso si falla. El archivo del
+cerrojo no se borra al liberar ni se incorpora a los commits de datos. Su alcance es
+ese checkout local. Los clones independientes siguen necesitando coordinar sus envíos
+y el relevo del servicio continúa siendo una operación de despliegue separada.
+
 Cada publicación retira de la rama las páginas y matrices que el índice ya no enumera.
 Antes se conservaban todas: el 10 de octubre la rama tenía 7.773 páginas y 1,8 GB,
 mientras el índice solo enumeraba 51, y el workflow copiaba todas al paquete de Pages.

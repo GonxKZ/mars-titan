@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T09:22:21.039314+00:00",
+  "project": "MARS-TITAN",
+  "issue": 451,
+  "state_observed": "OPEN",
+  "project_state_observed": "En revisión",
+  "deployment_completed": false,
+  "comparison_revision": "8d8096b109262f4a6d848acd3b7f48c40fcac289",
+  "runtime_revision": "05462aedc0290ed0ebedbad1db0415a7336001e5",
+  "runtime_committed_at": "2026-10-06T03:41:27Z",
+  "runtime_clean": true,
+  "service_active": true,
+  "service_started_at_utc": "2026-10-17T20:23:13Z",
+  "source_files": {
+    "scripts/collect_observatory.py": {
+      "main_sha256": "d38f78e444896c8b3354c0dc4ea452b46714919a7f3d547327d2ba576e50d053",
+      "main_bytes": 4336,
+      "runtime_exists": true,
+      "runtime_sha256": "d38f78e444896c8b3354c0dc4ea452b46714919a7f3d547327d2ba576e50d053",
+      "equal": true,
+      "runtime_mtime": "2026-10-06T03:43:06.746214+00:00"
+    },
+    "src/mars_titan/observatory/collector.py": {
+      "main_sha256": "75925a75fe2dc4c6a53ded2439571b733479518821ed4031e7abb6aa0246a936",
+      "main_bytes": 58439,
+      "runtime_exists": true,
+      "runtime_sha256": "21841c85f548f16c7707eb0e5cabbcd59b4e391d9039a5df8f92b5a02fd75a7b",
+      "equal": false,
+      "runtime_mtime": "2026-10-06T03:43:06.763519+00:00"
+    },
+    "src/mars_titan/observatory/publication.py": {
+      "main_sha256": "4676e611bdd40fcf9ce9248cfb153c5287b44e3e37ef678e28d65aed3e96aa02",
+      "main_bytes": 6638,
+      "runtime_exists": true,
+      "runtime_sha256": "d42d75e5e6473b4cc3b2b211f10077f4de884346e1144534798ffd96429a0c61",
+      "equal": false,
+      "runtime_mtime": "2026-10-06T03:43:06.763519+00:00"
+    },
+    "src/mars_titan/observatory/window_campaigns.py": {
+      "main_sha256": "805aa3b11ce6dc47a15bb0813096df4cc8f05f185debe547e824fc1316f76144",
+      "main_bytes": 11072,
+      "runtime_exists": false,
+      "runtime_sha256": null,
+      "equal": false,
+      "runtime_mtime": null
+    }
+  },
+  "configuration": {
+    "active_sha256": "9ce8efadf219a9b8a843843e92b40b409a98f89bcf88dc5e068029c3d2e2ac90",
+    "main_sha256": "79b976a772c33c075b41fae199b2fcfc976d3fe8a4cc47266711f59f3cde50bd",
+    "active_sources": 88,
+    "active_window_campaigns": 0,
+    "main_sources": 30,
+    "main_window_campaigns": 8,
+    "active_sources_not_in_main": 66,
+    "union_preserving_active_sources": 96,
+    "source_limit": 128
+  },
+  "missing_sources": [
+    {
+      "id": "historical-masked-a-base",
+      "path": "data/interim/historical-masked-a/base",
+      "stage": "base",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-adapters",
+      "path": "data/interim/historical-masked-a/adapters",
+      "stage": "adapters",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-ablation",
+      "path": "data/interim/historical-masked-a/ablation",
+      "stage": "ablation",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-policies",
+      "path": "data/interim/historical-masked-a/policies",
+      "stage": "policies",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-v2-base",
+      "path": "data/interim/historical-masked-a-v2/base",
+      "stage": "base",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-v2-adapters",
+      "path": "data/interim/historical-masked-a-v2/adapters",
+      "stage": "adapters",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-v2-ablation",
+      "path": "data/interim/historical-masked-a-v2/ablation",
+      "stage": "ablation",
+      "directory_exists": false,
+      "summary_exists": false
+    },
+    {
+      "id": "historical-masked-a-v2-policies",
+      "path": "data/interim/historical-masked-a-v2/policies",
+      "stage": "policies",
+      "directory_exists": false,
+      "summary_exists": false
+    }
+  ],
+  "indices": {
+    "collector_output": {
+      "schema_version": 2,
+      "project": "MARS-TITAN",
+      "generated_at": "2026-10-22T09:09:54.389288Z",
+      "bytes": 211049,
+      "sha256": "e3d8c68288d23f3d70a850db4b3e9bd85830bd314ec5b63d8095545c0447fa3b",
+      "campaigns_count": 88,
+      "total_runs": 3319,
+      "listed_pages": 51,
+      "window_campaigns_present": false,
+      "window_campaigns_count": 0,
+      "canonical_without_generated_at_sha256": "bc32017a8656cff7508f0686dc56753fe3003cb6b2fb70ca0a9dfc341acaa9c3"
+    },
+    "publisher_checkout": {
+      "schema_version": 2,
+      "project": "MARS-TITAN",
+      "generated_at": "2026-10-17T20:23:23.690451Z",
+      "bytes": 211049,
+      "sha256": "33e743a87e601592bff3af79d4cd3e40179c6f246d2a768db72e7c8684fe87de",
+      "campaigns_count": 88,
+      "total_runs": 3319,
+      "listed_pages": 51,
+      "window_campaigns_present": false,
+      "window_campaigns_count": 0,
+      "canonical_without_generated_at_sha256": "bc32017a8656cff7508f0686dc56753fe3003cb6b2fb70ca0a9dfc341acaa9c3"
+    },
+    "pages": {
+      "schema_version": 2,
+      "project": "MARS-TITAN",
+      "generated_at": "2026-10-17T20:23:23.690451Z",
+      "bytes": 211049,
+      "sha256": "33e743a87e601592bff3af79d4cd3e40179c6f246d2a768db72e7c8684fe87de",
+      "campaigns_count": 88,
+      "total_runs": 3319,
+      "listed_pages": 51,
+      "window_campaigns_present": false,
+      "window_campaigns_count": 0,
+      "canonical_without_generated_at_sha256": "bc32017a8656cff7508f0686dc56753fe3003cb6b2fb70ca0a9dfc341acaa9c3"
+    }
+  },
+  "pages_deployment": {
+    "frontend_sha": "f75ecf61ec1178ffe88600ed63cc0dfa28dbaa6a",
+    "data_sha": "25447833a25792a7a7e962fb5a9eb2d14a62fdb8",
+    "packaged_at": "2026-10-20T22:40:13Z"
+  },
+  "published_data_revision": "25447833a25792a7a7e962fb5a9eb2d14a62fdb8",
+  "published_data_committed_at": "2026-10-17T20:23:25Z",
+  "tracked_pages": 7773,
+  "listed_pages": 51,
+  "tracked_windows": 0,
+  "candidate_views": {
+    "receipt": "views-a-v2-verification-20261014T050227Z.json",
+    "sha256": "b0e708868fe5c923b9f4bc13870f7a2f8143013403f8df165e87dd2a5d7944c1",
+    "checked_at_utc": "2026-10-14T05:02:27.179943+00:00",
+    "runtime_commit": "9b2641c8856e0020055d1fdbc4ee5b89f6fc4bd3",
+    "training_executed": false,
+    "final_test_opened": false
+  },
+  "equivalent_real_campaign_root_proven": false,
+  "search_limits": {
+    "symlinks_followed": false,
+    "project_data": {
+      "max_depth": 6,
+      "excluded": [
+        "2024",
+        "test",
+        "final-test",
+        ".git",
+        "dataset"
+      ]
+    },
+    "private_state": {
+      "max_depth": 6,
+      "excluded": [
+        "*mutat*",
+        "runtime*",
+        "*fixtures*",
+        "tests",
+        ".venv",
+        ".git",
+        "2024",
+        "test",
+        "final-test"
+      ]
+    },
+    "worktrees": {
+      "max_depth": 8,
+      "excluded": [
+        ".venv",
+        "build",
+        "dataset",
+        "datasets",
+        "node_modules",
+        "tests",
+        ".git",
+        "*fixtures*",
+        "2024",
+        "test",
+        "final-test"
+      ]
+    }
+  },
+  "writer": {
+    "local_python_collectors_observed": 1,
+    "state_dir_lock_observed": true,
+    "publication_worker_max_workers": 1,
+    "shared_checkout_lock_in_inspected_publisher": false,
+    "cross_state_dir_exclusion_test_executed": false,
+    "mitigation_implemented": false,
+    "mitigation_proposed": "Cerrojo por checkout canónico independiente de state-dir, acompañado de relevo sin solape y prueba aislada de exclusión."
+  },
+  "historical_receipts": [
+    {
+      "receipt": "observatory-migration-audit-v1.json",
+      "sha256": "f26d7c3c172cabef83a713969b17f2c1649c6fa3ab27069161301d67c43efba3",
+      "mtime_utc": "2026-10-06T03:18:52.505072+00:00",
+      "scope": "migración anterior al soporte de campañas por ventanas"
+    },
+    {
+      "receipt": "observatory-migration-audit-final.json",
+      "sha256": "8f81fbf10a39699a59fc85f616378dd29833eb7e942f46c1e0b0e9ad011b1769",
+      "mtime_utc": "2026-10-06T03:37:49.199793+00:00",
+      "scope": "migración anterior al soporte de campañas por ventanas"
+    },
+    {
+      "receipt": "observatory-complete-preflight.json",
+      "sha256": "b799f6048b484eda70ff63253612afba5fc6b20f7094e2b3709a74f3140b2f01",
+      "mtime_utc": "2026-10-06T03:35:38.122823+00:00",
+      "scope": "migración anterior al soporte de campañas por ventanas"
+    },
+    {
+      "receipt": "collector-recovery-final.md",
+      "sha256": "9446a1bba0e04ee30e1707206763ca0b5f8846d1205ee373ae10846ad63d2bbf",
+      "mtime_utc": "2026-10-17T20:24:28.807701+00:00",
+      "scope": "reparación del entorno Python sin cambiar las fuentes del recolector"
+    }
+  ],
+  "audit_scope": "Código, configuración y metadatos. Sin activar servicios, ejecutar colectores, aprendizaje, GPU o test final.",
+  "conclusion": "Pendientes la actualización del runtime, la configuración y la identificación o ausencia explícita de las ocho fuentes. Los recibos antiguos no acreditan ese despliegue.",
+  "page_payloads_verified": false,
+  "financial_metrics_compared": false,
+  "stage_kinds": {
+    "base": "historical_masked_campaign_run",
+    "adapters": "historical_masked_posttraining_stage_run",
+    "ablation": "historical_masked_modality_ablation_stage_run",
+    "policies": "historical_masked_rl_stage_run"
+  },
+  "window_contract": {
+    "required_summary_fields": [
+      "kind",
+      "jobs"
+    ],
+    "max_summary_bytes": 8388608,
+    "max_jobs": 20000,
+    "declared_stage_and_configuration_required": true,
+    "missing_summary": {
+      "state": null,
+      "path": null
+    },
+    "collector_source_limit": 128
+  }
+}
