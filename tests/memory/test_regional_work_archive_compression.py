@@ -107,16 +107,20 @@ def test_real_history_keeps_complete_receipts_after_compaction_pruning_and_resum
             assert work["receipts"] == [stored]
             assert work["cohort"]["charged_units"] == receipt["units"]
             assert work["cohort"]["attempts"][0]["status"] == "confirmed"
-            assert book.verify_archive_payload(
-                work,
-                generation=generation,
-                cutoff=10 * generation,
-                rows_digest=ROWS,
-                event_kind="decision",
-            ) == work
-        assert book.snapshot()["cohorts"][-1]["attempts"][-1]["reservation_id"] == receipts[-1][
-            "reservation_id"
-        ]
+            assert (
+                book.verify_archive_payload(
+                    work,
+                    generation=generation,
+                    cutoff=10 * generation,
+                    rows_digest=ROWS,
+                    event_kind="decision",
+                )
+                == work
+            )
+        assert (
+            book.snapshot()["cohorts"][-1]["attempts"][-1]["reservation_id"]
+            == receipts[-1]["reservation_id"]
+        )
         assert env.executor.cursor == 3
 
 
@@ -173,13 +177,12 @@ def test_authentic_chunk_with_damaged_event_cannot_change_index_or_confirmed_roo
             damage=damage,
             maximum=env.artifacts.max_bytes,
         )
-        reference = env.artifacts.stage(
-            damaged, identity=IDENTITY["contract_id"], kind=CHUNK_KIND
-        )
+        reference = env.artifacts.stage(damaged, identity=IDENTITY["contract_id"], kind=CHUNK_KIND)
         assert reference != proof["reference"]
-        assert env.artifacts.read(
-            reference, identity=IDENTITY["contract_id"], kind=CHUNK_KIND
-        ) == damaged
+        assert (
+            env.artifacts.read(reference, identity=IDENTITY["contract_id"], kind=CHUNK_KIND)
+            == damaged
+        )
         before, roots, head = index_bytes(env), native_roots(env), latest(env)
         references = book.references()
         with pytest.raises(ValueError, match=message):
