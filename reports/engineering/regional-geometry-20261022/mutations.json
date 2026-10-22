@@ -1,0 +1,250 @@
+{
+  "plan_sha256": "a8e5c68208f3fa1d3e5b85698f9b5fd143e803ca6188c9b51de5d2e2796f9266",
+  "harness_sha256": "c52f81330157f1e680c7b4815bdd31cbbc236d0e4cf7bf1d5651183ed82ba204",
+  "inherited_harness_sha256": "5329f7cc8fdc52596fe726d47cbb33233de8889f0c9080ef0930604576075712",
+  "source_and_test_sha256": {
+    "src/mars_titan/models/titans/regional_fusion.py": "5ca4f1105fdaa010828bdae3acd4ad25ed79e5a37d9b7d32d6e53e3098fa5a11",
+    "src/mars_titan/models/titans/financial.py": "c2142dd2dad556abd15f867bcae52a5007fa23290cd4b1d80b7942f2d8881c78",
+    "tests/models/titans/test_regional_geometry_contract.py": "695197a69d51b143656cc57b694bae25d6e99eb6cb20d81a4c1c259e037de473",
+    "tests/models/titans/test_financial_checkpoint_finiteness.py": "3ba8f66f281f712a3d185e78f4306a87f3f02aeeabd86cd90ec3a5e64eefb4ae"
+  },
+  "baseline_cases": 154,
+  "restored_cases": 154,
+  "mutants": 9,
+  "detected": 9,
+  "errors": 0,
+  "skips": 0,
+  "timeouts": 0,
+  "private_copy_restored": true,
+  "production_unchanged": true,
+  "records": [
+    {
+      "name": "payload-trusts-live-edges",
+      "path": "src/mars_titan/models/titans/regional_fusion.py",
+      "old": "        if not torch.equal(edges, _topology_edges(self.config.topology, device=edges.device)):\n",
+      "new": "        if not torch.equal(edges, self.edges):\n",
+      "expression": "test_matching_corrupted_module_and_payload_cannot_redefine_declared_edges and values and dtype1 and cpu",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_matching_corrupted_module_and_payload_cannot_redefine_declared_edges",
+          "[values-dtype1-cpu]"
+        ],
+        "exception_type_suffix": "Failed",
+        "message_contains": [
+          "DID NOT RAISE",
+          "ValueError"
+        ],
+        "parameters": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "fault": "values"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "parent-skips-regional-prevalidation",
+      "path": "src/mars_titan/models/titans/financial.py",
+      "old": "            regional.validate_payload(state_dict, prefix + \"regional_fusion.\")\n",
+      "new": "",
+      "expression": "test_invalid_child_payload_is_rejected_before_copying_any_parent_weight and False and dtype1 and cpu",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_invalid_child_payload_is_rejected_before_copying_any_parent_weight",
+          "[False-dtype1-cpu]"
+        ],
+        "exception_type_suffix": "AssertionError",
+        "message_contains": [
+          "assert_same",
+          "torch.equal"
+        ],
+        "parameters": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "altered_parent": false
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "seal-skips-regional-geometry",
+      "path": "src/mars_titan/models/titans/financial.py",
+      "old": "        regional = self._regional_component()\n        if regional is not None:\n            regional.validate_geometry()\n",
+      "new": "        self._regional_component()\n",
+      "expression": "test_precision_conversion_does_not_seal_incompatible_regional_geometry and values and dtype1 and cpu",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_precision_conversion_does_not_seal_incompatible_regional_geometry",
+          "[values-dtype1-cpu]"
+        ],
+        "exception_type_suffix": "Failed",
+        "message_contains": [
+          "DID NOT RAISE",
+          "ValueError"
+        ],
+        "parameters": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "fault": "values"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "structure-accepts-nonboolean-edges",
+      "path": "src/mars_titan/models/titans/regional_fusion.py",
+      "old": "            or edges.dtype != torch.bool\n",
+      "new": "",
+      "expression": "test_matching_corrupted_module_and_payload_cannot_redefine_declared_edges and dtype1 and cpu and not values and not shape",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_matching_corrupted_module_and_payload_cannot_redefine_declared_edges",
+          "[dtype-dtype1-cpu]"
+        ],
+        "exception_type_suffix": "Failed",
+        "message_contains": [
+          "DID NOT RAISE",
+          "ValueError"
+        ],
+        "parameters": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "fault": "dtype"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "module-config-not-reconciled",
+      "path": "src/mars_titan/models/titans/financial.py",
+      "old": "            or module.config != declared\n",
+      "new": "",
+      "expression": "test_precision_conversion_does_not_seal_incompatible_regional_geometry and configuration and dtype1 and cpu",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_precision_conversion_does_not_seal_incompatible_regional_geometry",
+          "[configuration-dtype1-cpu]"
+        ],
+        "exception_type_suffix": "Failed",
+        "message_contains": [
+          "DID NOT RAISE",
+          "ValueError"
+        ],
+        "parameters": {
+          "device": "cpu",
+          "dtype": "torch.float64",
+          "fault": "configuration"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "assign-allows-two-devices",
+      "path": "src/mars_titan/models/titans/regional_fusion.py",
+      "old": "        if len(devices) > 1:\n",
+      "new": "        if len(devices) > 2:\n",
+      "expression": "test_assigning_only_cuda_edges_into_a_cpu_target_is_rejected_before_copy and module",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_assigning_only_cuda_edges_into_a_cpu_target_is_rejected_before_copy",
+          "[module]"
+        ],
+        "exception_type_suffix": "Failed",
+        "message_contains": [
+          "DID NOT RAISE",
+          "ValueError"
+        ],
+        "parameters": {
+          "level": "module"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "regional-payload-finiteness-deferred-again",
+      "path": "src/mars_titan/models/titans/regional_fusion.py",
+      "old": "            if not is_finite(finite_indicator(other)):\n                raise ValueError(\"El checkpoint regional contiene NaN o infinito\")\n",
+      "new": "            check_finite(other, \"El checkpoint regional\")\n",
+      "expression": "test_cuda_nonfinite_regional_payload_is_rejected_atomically_inside_deferred_checks and module",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_regional_geometry_contract.py::test_cuda_nonfinite_regional_payload_is_rejected_atomically_inside_deferred_checks",
+          "[module]"
+        ],
+        "exception_type_suffix": "AssertionError",
+        "message_contains": [
+          "assert_same",
+          "torch.equal"
+        ],
+        "parameters": {
+          "level": "module"
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "parent-payload-finiteness-deferred-again",
+      "path": "src/mars_titan/models/titans/financial.py",
+      "old": "                if not is_finite(finite_indicator(supplied)):\n                    raise ValueError(\"Los parámetros guardados contienen NaN o infinito\")\n",
+      "new": "                check_finite(supplied, \"Los parámetros guardados\")\n",
+      "expression": "test_nonfinite_head_is_rejected_before_copy_even_inside_deferred_checks and not True",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_financial_checkpoint_finiteness.py::test_nonfinite_head_is_rejected_before_copy_even_inside_deferred_checks",
+          "[False-False]"
+        ],
+        "exception_type_suffix": "AssertionError",
+        "message_contains": [
+          "assert_same",
+          "torch.equal"
+        ],
+        "parameters": {
+          "regional": false,
+          "training": false
+        }
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    },
+    {
+      "name": "public-parent-load-skips-assignment-request",
+      "path": "src/mars_titan/models/titans/financial.py",
+      "old": "        validate_assignment_request(state_dict, assign)\n",
+      "new": "",
+      "expression": "test_nonboolean_child_assignment_metadata_is_rejected_before_copy",
+      "expected_call": {
+        "nodeid_contains": [
+          "tests/models/titans/test_financial_checkpoint_finiteness.py::test_nonboolean_child_assignment_metadata_is_rejected_before_copy"
+        ],
+        "exception_type_suffix": "AssertionError",
+        "message_contains": [
+          "assert_same",
+          "torch.equal"
+        ],
+        "parameters": {}
+      },
+      "cases": 1,
+      "failures": 1,
+      "classification": "detected_by_expected_call_failure"
+    }
+  ],
+  "limits": [
+    "Nueve defectos elegidos, no una puntuación global de mutación.",
+    "Se contrastaron fase call, nodeid, parámetros, excepción, mensaje y procedencia de imports."
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_executed",
+  "device": "cuda:0",
+  "required_gpu_name_fragment": "4070",
+  "dtype": "torch.float64",
+  "hidden_size": 32,
+  "seed": 42,
+  "fixture_model": "test_market_memory.pt4(None, regional_fusion=...)",
+  "fixture_batch": "test_context_selection.batch_on",
+  "fixture_event": 0,
+  "session_context": null,
+  "backend": "FrozenFinancialConsumer_without_readout",
+  "mha_fastpath": false,
+  "parameters_require_grad": false,
+  "inference_mode": false,
+  "grad_context": "torch.no_grad",
+  "shared_predictor_parameter_updates": 0,
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "scientific_evaluation": false,
+  "conditions": [
+    {
+      "batch": 1,
+      "topology": null
+    },
+    {
+      "batch": 1,
+      "topology": "self"
+    },
+    {
+      "batch": 1,
+      "topology": "ring"
+    },
+    {
+      "batch": 1,
+      "topology": "complete"
+    },
+    {
+      "batch": 256,
+      "topology": null
+    },
+    {
+      "batch": 256,
+      "topology": "self"
+    },
+    {
+      "batch": 256,
+      "topology": "ring"
+    },
+    {
+      "batch": 256,
+      "topology": "complete"
+    }
+  ],
+  "orders": [
+    [
+      {
+        "batch": 1,
+        "topology": null
+      },
+      {
+        "batch": 1,
+        "topology": "self"
+      },
+      {
+        "batch": 1,
+        "topology": "ring"
+      },
+      {
+        "batch": 1,
+        "topology": "complete"
+      },
+      {
+        "batch": 256,
+        "topology": null
+      },
+      {
+        "batch": 256,
+        "topology": "self"
+      },
+      {
+        "batch": 256,
+        "topology": "ring"
+      },
+      {
+        "batch": 256,
+        "topology": "complete"
+      }
+    ],
+    [
+      {
+        "batch": 256,
+        "topology": "complete"
+      },
+      {
+        "batch": 256,
+        "topology": "ring"
+      },
+      {
+        "batch": 256,
+        "topology": "self"
+      },
+      {
+        "batch": 256,
+        "topology": null
+      },
+      {
+        "batch": 1,
+        "topology": "complete"
+      },
+      {
+        "batch": 1,
+        "topology": "ring"
+      },
+      {
+        "batch": 1,
+        "topology": "self"
+      },
+      {
+        "batch": 1,
+        "topology": null
+      }
+    ]
+  ],
+  "stages": [
+    "load_state_dict",
+    "prepare"
+  ],
+  "warmup_per_record": 3,
+  "measured_repetitions_per_record": 10,
+  "expected_records_per_version": 32,
+  "expected_calls_per_stage_per_version": 208,
+  "expected_measured_calls_per_stage_per_version": 160,
+  "load_checkpoint_device": "cuda:0",
+  "load_scope": "strict load_state_dict of an already resident immutable clone including hooks and sealing, without disk IO or checkpoint construction",
+  "prepare_scope": "complete FrozenFinancialConsumer.prepare and completion synchronization from the same initial state",
+  "total_scope": "whole worker including imports, source archive, fixtures, validation, warmups and measurements",
+  "timing": "perf_counter_ns with cuda synchronization immediately before start and before stop",
+  "percentiles": "linear interpolation, descriptive only for ten samples",
+  "throughput": {
+    "load_state_dict": "loads_per_second",
+    "prepare": "rows_per_second_from_batch_divided_by_mean_seconds"
+  },
+  "memory": "process RSS and Torch allocator, neither exclusive variant memory nor total physical process VRAM",
+  "memory_peak_reset": "each warmup and sample after synchronization, before timing",
+  "cpu_threads": 1,
+  "interop_threads": 1,
+  "torch_allocator_cap_bytes": 536870912,
+  "minimum_global_free_vram_bytes": 268435456,
+  "internal_deadline_seconds": 170,
+  "sources_max_files": 4096,
+  "sources_max_bytes": 134217728,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "validation_outside_timing": [
+    "full_result_SHA256_per_prepare_including_state",
+    "full_checkpoint_SHA256_before_after",
+    "initial_state_and_batch_unchanged",
+    "CPU_and_CUDA_global_RNG_unchanged",
+    "source_bytes_and_hold_unchanged"
+  ],
+  "exclusions": [
+    "fixture_construction_from_stage_timing",
+    "proof_SHA_and_D2H_copies_from_stage_timing",
+    "corpus_access",
+    "collection",
+    "native_persistence",
+    "feedback",
+    "optimizer",
+    "backward_benchmark"
+  ],
+  "unavailable": [
+    "energy",
+    "total_physical_process_VRAM_peak",
+    "physical_transfer_counters"
+  ],
+  "processes": "one independent process per --repository and --label, invoked by existing run-check.py"
+}

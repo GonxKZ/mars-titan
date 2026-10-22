@@ -1,0 +1,320 @@
+{
+  "location": "Archivo técnico local fuera de Git",
+  "artifacts": [
+    {
+      "artifact": "baseline.pt",
+      "bytes": 5225313,
+      "sha256": "2f36f782dd0f289d507b945153aa6c9c722789ed660a17c23120510f52552b94"
+    },
+    {
+      "artifact": "capture-baseline.py",
+      "bytes": 2408,
+      "sha256": "0f0f5a7a3234404c1b3ceca5b99f4a70ab77c6a267462ef2b306fc019afead88"
+    },
+    {
+      "artifact": "verify-baseline.py",
+      "bytes": 3169,
+      "sha256": "067efd2765a73252ee956eae764aa6c3179e64f21a60f703bd96effd173c2139"
+    },
+    {
+      "artifact": "run-check.py",
+      "bytes": 2571,
+      "sha256": "8db8627bbc1ca493c0920b8483a01b8dc903c8766150495ff4fe075781a4c51d"
+    },
+    {
+      "artifact": "cost.py",
+      "bytes": 19378,
+      "sha256": "ed93d58ba9c3483424ce0cd1a15dfe497ceb77f0054e5fc583b6c20f7e536c8a"
+    },
+    {
+      "artifact": "cost-protocol.json",
+      "bytes": 4467,
+      "sha256": "f9fe45eaeaf9f9841c47ade543568369a2517a79af407cadc6c3b22839fcc6b3"
+    },
+    {
+      "artifact": "mutate.py",
+      "bytes": 4136,
+      "sha256": "c52f81330157f1e680c7b4815bdd31cbbc236d0e4cf7bf1d5651183ed82ba204"
+    },
+    {
+      "artifact": "mutation-plan.json",
+      "bytes": 16079,
+      "sha256": "a8e5c68208f3fa1d3e5b85698f9b5fd143e803ca6188c9b51de5d2e2796f9266"
+    },
+    {
+      "artifact": "verified-final.xml",
+      "bytes": 61699,
+      "sha256": "dafe13e535639e1fb861546308401c9ea6ea87d65eb657e32d4edda7a6e87562"
+    },
+    {
+      "artifact": "red-adversarial.xml",
+      "bytes": 54024,
+      "sha256": "d9ae1daa7adb5f83cf5c6871cf26cc3b04c8c3b363f3ace3c6cd766034464b72"
+    },
+    {
+      "artifact": "coverage.json",
+      "bytes": 68029,
+      "sha256": "b594e3692a7422f67ad84ca9c0ec23ff36116a65f5ea09ea9bc152afdea0bedb"
+    },
+    {
+      "artifact": "mutation-execution-01/results.json",
+      "bytes": 619933,
+      "sha256": "9bb90411a8cf43789805dc38cc822f2eaf370cdb15d6b7042e40b9255fc86947"
+    },
+    {
+      "artifact": "mutation-execution-01/source-manifest.json",
+      "bytes": 152183,
+      "sha256": "8c0372929ed8958bc5974458c84ebe6a485073f7c580b094f34ed8fae14540bf"
+    },
+    {
+      "artifact": "cost-before/results.json",
+      "bytes": 272646,
+      "sha256": "ef7a157f37d18a0b789b903c032fd5386abdaf5922e16744179141273e867fe4"
+    },
+    {
+      "artifact": "cost-after/results.json",
+      "bytes": 273146,
+      "sha256": "30807f2fae1a1df93d8520840cf3f548d435ea5cb3ab89f505e97aba0a33cf63"
+    },
+    {
+      "artifact": "cost-before/source-manifest.json",
+      "bytes": 203473,
+      "sha256": "93b662552cfd11e07334fa354acf37689df6a09f1e3a3d2e270b302788a7fd67"
+    },
+    {
+      "artifact": "cost-after/source-manifest.json",
+      "bytes": 203646,
+      "sha256": "ed9a03427c8aba779fefbefada7c873192bc2dc548ee614704f79466bbd5d751"
+    },
+    {
+      "artifact": "check-baseline.json",
+      "bytes": 239,
+      "sha256": "02ea352797b4502db3d07009049e9ace1e21bcf6a26556ccb615102d292b94e3"
+    },
+    {
+      "artifact": "check-cost-after.json",
+      "bytes": 362,
+      "sha256": "3f4e451df0ab00eb0c4f9af325bb53d9fd48a725bd441012a87dde9079a6287d"
+    },
+    {
+      "artifact": "check-cost-before.json",
+      "bytes": 365,
+      "sha256": "4b5b985b83d37af582ae445e03164b5aab8c58b1162c8dc57bd662d634256577"
+    },
+    {
+      "artifact": "check-coverage-json.json",
+      "bytes": 462,
+      "sha256": "ae0924dd95b1810e3fc746ea0f9d71a370691559934a0278137cc2b95b0f8425"
+    },
+    {
+      "artifact": "check-final-regression.json",
+      "bytes": 1018,
+      "sha256": "834636c5c9690a8559ed6c683df67e8fcfb71eb58ef4f3def366b3c55f81bc27"
+    },
+    {
+      "artifact": "check-format.json",
+      "bytes": 185,
+      "sha256": "58026ca40d60d8511e545026f500b17352207626d96e9916846bf3cf57ac44b0"
+    },
+    {
+      "artifact": "check-green-adversarial.json",
+      "bytes": 220,
+      "sha256": "c68ab8308dffde98991741615b65981924243b0e0e822439b472048b4e029e53"
+    },
+    {
+      "artifact": "check-green-assignment-metadata.json",
+      "bytes": 286,
+      "sha256": "c433b32874f288e8e41d679cab6375b368af39c9a2caede7a9e3bf52c4f362f4"
+    },
+    {
+      "artifact": "check-green.json",
+      "bytes": 219,
+      "sha256": "a880c8ddd581e730582d054585a797e235f69366129a544486f07c9c81d2dfa2"
+    },
+    {
+      "artifact": "check-mutations.json",
+      "bytes": 336,
+      "sha256": "4b66b0f12e99eec32b953ed5fa54c42a606a2ba52b489b9af05fb0fcbe108d08"
+    },
+    {
+      "artifact": "check-parity-final.json",
+      "bytes": 238,
+      "sha256": "147f2f15c4aa7026540bcf342285230fa7256f504c0270426c9d1eaf93d60f8d"
+    },
+    {
+      "artifact": "check-parity.json",
+      "bytes": 238,
+      "sha256": "ec70ef5c9e8f2b829bac8cfba27fdbf3e6a4663f0eaa195fe23bf1ca41871632"
+    },
+    {
+      "artifact": "check-quality.json",
+      "bytes": 493,
+      "sha256": "83df0c2b22df554eb1220ee9129b425dec0b7d6fbc6681ba7412f2059b2007c3"
+    },
+    {
+      "artifact": "check-red-adversarial.json",
+      "bytes": 322,
+      "sha256": "eb8ef40c18dce1edec8e2ed2889aa75728c876367fb4ad92965465f0704314f9"
+    },
+    {
+      "artifact": "check-red-assignment-metadata.json",
+      "bytes": 252,
+      "sha256": "5a5978606ca5b7fae89ddeeb8149085c7e0e75b17d5c805d9abfa29b94f9d331"
+    },
+    {
+      "artifact": "check-red-parent-finite.json",
+      "bytes": 224,
+      "sha256": "325fecc95ea44553505c95dc3f0ceadb65052d7de451907b53557f054e54f932"
+    },
+    {
+      "artifact": "check-red.json",
+      "bytes": 344,
+      "sha256": "d8d62a2f675581515e8497d83dda0a20b1ae8c2e63d85d389f04ecd8a5f4c886"
+    },
+    {
+      "artifact": "check-regression-v2.json",
+      "bytes": 928,
+      "sha256": "c42c7eb92d6a87b9504d42ac1ce067e23992e3720d067ba850b7f89728d2ee35"
+    },
+    {
+      "artifact": "check-regression-v3.json",
+      "bytes": 955,
+      "sha256": "3042a8ebeffbab970f5eebaaa553095ec490d09a00c27f0de1b7910f69a01386"
+    },
+    {
+      "artifact": "check-regression.json",
+      "bytes": 835,
+      "sha256": "7e0f1275f386c6b64632e22fec2fdcf9bf6f35b50e8bfbd4b740909bcf639739"
+    },
+    {
+      "artifact": "check-repository.json",
+      "bytes": 183,
+      "sha256": "53ecb4c3f01add3549ee9e13a041b48610992b2aa8b239dd047cac2bf7ef3013"
+    },
+    {
+      "artifact": "check-ruff.json",
+      "bytes": 168,
+      "sha256": "cc39419abd28485aa9099c2ef404b6f96bccf59320b48843da1123804a55beae"
+    },
+    {
+      "artifact": "check-verified-final.json",
+      "bytes": 1029,
+      "sha256": "014d0c876090bb1dc95ace159d8e9f0b801285619a54f809d1c512059fe56fcd"
+    },
+    {
+      "artifact": "check-baseline.log",
+      "bytes": 100,
+      "sha256": "749e0badbcda89f93d8b0f1b37d1407dc656daeb494991435077744a1570dbcf"
+    },
+    {
+      "artifact": "check-cost-after.log",
+      "bytes": 1440,
+      "sha256": "6594940aac7116e000207df6ff6eecca8de4570790b687afd2af2010b64e0ac0"
+    },
+    {
+      "artifact": "check-cost-before.log",
+      "bytes": 1472,
+      "sha256": "063cfc651d755aba40d13632a108df36d0cf8cfea717b3359f20e369873fb18c"
+    },
+    {
+      "artifact": "check-coverage-json.log",
+      "bytes": 100,
+      "sha256": "b1b3577a2aee96f3b8c9b991c6b9c5f34857bd88e649a0db0298be9e9da3933e"
+    },
+    {
+      "artifact": "check-final-regression.log",
+      "bytes": 1033,
+      "sha256": "45cd471b6657a1130f211e7a4f6a7ae5be085fbd5f2378a40f3cffd2cdfcc8ea"
+    },
+    {
+      "artifact": "check-format.log",
+      "bytes": 29,
+      "sha256": "f9e2a328a03c624b078bc809c49390d665bd7b303a8d09b9f281002a34598eb6"
+    },
+    {
+      "artifact": "check-green-adversarial.log",
+      "bytes": 261,
+      "sha256": "f6bbb2167b472590e7066f438817f4d7dd12a5e025bc81af1674374ddfe6106b"
+    },
+    {
+      "artifact": "check-green-assignment-metadata.log",
+      "bytes": 260,
+      "sha256": "890437faa245fbabcc51382b84315f2391fac55f5e6ad20e67a99a944cd9d469"
+    },
+    {
+      "artifact": "check-green.log",
+      "bytes": 179,
+      "sha256": "89016319379476491c33efd5dbe2a75bbf1659d418ac1d7487e6c9dd9fb1709b"
+    },
+    {
+      "artifact": "check-mutations.log",
+      "bytes": 1590,
+      "sha256": "2f764d8932da8723757fc15f284d58bdb9f9b41686c7c1219e6cf10d23338d91"
+    },
+    {
+      "artifact": "check-parity-final.log",
+      "bytes": 51,
+      "sha256": "86eba9a7f4fcb72515e851a4d9a227a78a46e82644dc4bcfd5a1e9d4c5ad827c"
+    },
+    {
+      "artifact": "check-parity.log",
+      "bytes": 51,
+      "sha256": "86eba9a7f4fcb72515e851a4d9a227a78a46e82644dc4bcfd5a1e9d4c5ad827c"
+    },
+    {
+      "artifact": "check-quality.log",
+      "bytes": 106,
+      "sha256": "c73e436fc1eda657657e63ddac10abb3a7e179a66b4a3d04e07b97c5c7db860b"
+    },
+    {
+      "artifact": "check-red-adversarial.log",
+      "bytes": 24495,
+      "sha256": "7b8b029d3e174d89b8f0f0fe0dd84265cf00f8a4d211a940b488e55cb626c97b"
+    },
+    {
+      "artifact": "check-red-assignment-metadata.log",
+      "bytes": 6351,
+      "sha256": "a8c7fc27642c1c53059388af442f12e8e540d6dc183bd6be6ecf566c406adfec"
+    },
+    {
+      "artifact": "check-red-parent-finite.log",
+      "bytes": 13164,
+      "sha256": "0315d074b601b8f212162558afb66dd862e08aca572fe66cd918f47c2d2e109a"
+    },
+    {
+      "artifact": "check-red.log",
+      "bytes": 28746,
+      "sha256": "5825e73d2f953ec6f76908946418b8d3279a26f9ae8465133e22920d48a7b554"
+    },
+    {
+      "artifact": "check-regression-v2.log",
+      "bytes": 1801,
+      "sha256": "26d705f89e64443d7ec2193d3157e4b23ebc80bca7779f06a035aeb7edf77add"
+    },
+    {
+      "artifact": "check-regression-v3.log",
+      "bytes": 1032,
+      "sha256": "0cf1c8d25beb5dac00bd8db61a1b615036feada50ca44669d99e5157061b7e11"
+    },
+    {
+      "artifact": "check-regression.log",
+      "bytes": 83,
+      "sha256": "9c8c93089668622b2bc74bc72794b6e2201a06f54d6bf66a9e8b85fc7e6cf169"
+    },
+    {
+      "artifact": "check-repository.log",
+      "bytes": 274,
+      "sha256": "a73ca6bb6d987bedfb051e4a5dad41378c69d50c5fc8c61d58eba8121f51dfe7"
+    },
+    {
+      "artifact": "check-ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "artifact": "check-verified-final.log",
+      "bytes": 1033,
+      "sha256": "f3ab4fc86e6865b049ccada20a6887e2802a11ee3eee199ffd2cc0543819fe9c"
+    }
+  ]
+}
