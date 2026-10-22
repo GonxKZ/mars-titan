@@ -13,6 +13,32 @@ from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .state import check_finite, deferred_checks
 
 KIND = "shared_evidence_bridge_v1"
+BRIDGE_VIEW_FIELDS = ("regions", "topology", "cycles", "bridge_gain", "seed")
+
+
+def bridge_view_options(value):
+    """Validar las vistas y devolver sus opciones propias, sin codec ni formas del lector."""
+    if type(value) is not dict or set(value) != set(BRIDGE_VIEW_FIELDS):
+        raise ValueError("El puente declara regiones, topología, ciclos, ganancia y semilla")
+    regions = value["regions"]
+    if type(regions) not in (list, tuple):
+        raise ValueError("Las regiones del puente necesitan una lista o tupla")
+    regions = tuple(regions)
+    if (
+        not 1 <= len(regions) <= 8
+        or any(type(name) is not str or not name or len(name) > 64 for name in regions)
+        or len(set(regions)) != len(regions)
+    ):
+        raise ValueError("Se necesitan entre una y ocho regiones distintas identificadas")
+    topology = value["topology"]
+    if type(topology) is not str or topology not in ("self", "ring", "complete"):
+        raise ValueError("La topología de puentes debe ser self, ring o complete")
+    bounded_integer(value["cycles"], "ciclos de puente", 0, 4)
+    bounded_integer(value["seed"], "semilla de puente", 0, 2**32 - 1)
+    gain = value["bridge_gain"]
+    if type(gain) not in (int, float) or not math.isfinite(gain) or not 0 <= gain <= 1:
+        raise ValueError("La ganancia del puente debe ser finita y pertenecer a [0, 1]")
+    return dict(value, regions=regions, bridge_gain=float(gain))
 
 
 @dataclass(frozen=True)
@@ -33,27 +59,17 @@ class EvidenceBridgeConfig:
         _digest_id(self.codec_id, "El codec de evidencia")
         bounded_integer(self.hidden_size, "dimensión regional", 1, 128)
         bounded_integer(self.neighbors, "vecinos comunes", 1, 8)
-        bounded_integer(self.cycles, "ciclos de puente", 0, 4)
-        bounded_integer(self.seed, "semilla de puente", 0, 2**32 - 1)
         bounded_integer(self.max_batch, "lote de puente", 1, MAX_BLOCK_ROWS)
         bounded_integer(self.max_working_bytes, "presupuesto de puente", 1024, MAX_STATE_BYTES)
-        if (
-            type(self.regions) is not tuple
-            or not 1 <= len(self.regions) <= 8
-            or any(type(name) is not str or not name or len(name) > 64 for name in self.regions)
-            or len(set(self.regions)) != len(self.regions)
-        ):
+        if type(self.regions) is not tuple:
             raise ValueError("Se necesitan entre una y ocho regiones distintas identificadas")
-        if type(self.topology) is not str or self.topology not in ("self", "ring", "complete"):
-            raise ValueError("La topología de puentes debe ser self, ring o complete")
-        for name, lower, upper in (("bridge_gain", 0.0, 1.0), ("temperature", 1e-4, 100.0)):
-            value = getattr(self, name)
-            if (
-                type(value) not in (int, float)
-                or not math.isfinite(value)
-                or not lower <= value <= upper
-            ):
-                raise ValueError("La ganancia o temperatura del puente no es admisible")
+        bridge_view_options({name: getattr(self, name) for name in BRIDGE_VIEW_FIELDS})
+        if (
+            type(self.temperature) not in (int, float)
+            or not math.isfinite(self.temperature)
+            or not 1e-4 <= self.temperature <= 100.0
+        ):
+            raise ValueError("La ganancia o temperatura del puente no es admisible")
 
     def identity(self):
         return dict(

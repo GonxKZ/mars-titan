@@ -9,11 +9,17 @@ identidad es la del núcleo. Cada combinación activa tiene una identidad propia
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+from mars_titan.models.titans.evidence_bridge import (
+    BRIDGE_VIEW_FIELDS,
+    EvidenceBridgeConfig,
+    SharedEvidenceBridge,
+    bridge_view_options,
+)
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
@@ -29,7 +35,13 @@ from .financial_consumers import bank_retention
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
 VARIANT = "mars_titan_extensions_v1"
-CONNECTED = ("episodic_bank", "refinements", "refinement_episodes", "associative_memory")
+CONNECTED = (
+    "episodic_bank",
+    "refinements",
+    "refinement_episodes",
+    "evidence_bridge",
+    "associative_memory",
+)
 # Escrituras que usan el banco y, por tanto, el lector en modo `bank`.
 WRITES = ("m1", "m2", "m3")
 _BASE_FIELDS = {"architecture", "configuration", "dtype", "parameters_sha256", "recipe"}
@@ -136,7 +148,7 @@ def check_components(declaration, components):
             )
         if value == component["disabled_value"]:
             raise ValueError(f"El valor apagado de {name} se expresa omitiendo el componente")
-        if name != "associative_memory" and not any(
+        if name not in ("associative_memory", "evidence_bridge") and not any(
             type(value) is type(allowed) and value == allowed for allowed in component["allowed"]
         ):
             raise ValueError(f"{name} no admite el valor {value!r}")
@@ -144,6 +156,11 @@ def check_components(declaration, components):
         if required is not None and required not in components:
             raise ValueError(f"{name} necesita {required} activo")
     components, correction = dict(sorted(components.items())), None
+    if "evidence_bridge" in components:
+        bridge = bridge_view_options(components["evidence_bridge"])
+        if bridge["topology"] not in declared["evidence_bridge"]["allowed"]:
+            raise ValueError("La topología del puente no está declarada")
+        components["evidence_bridge"] = bridge
     if "associative_memory" in components:
         if "episodic_bank" in components:
             # El error del banco y la escritura de A mezclarían dos memorias en una emisión.
@@ -210,13 +227,30 @@ class MarsTitanVariant:
             raise ValueError("Modo, K y episodios pertenecen a la combinación de componentes")
         if self.readout_mode is None:
             return None
-        return EpisodicReadoutConfig(
+        config = EpisodicReadoutConfig(
             codec_id,
             mode=self.readout_mode,
             refinements=self.refinements,
             episode_selection=self.episode_selection,
             **options,
         )
+        if "evidence_bridge" in self.components:
+            bridge = EvidenceBridgeConfig(
+                codec_id,
+                **self.components["evidence_bridge"],
+                **{
+                    name: getattr(config, name)
+                    for name in (
+                        "hidden_size",
+                        "neighbors",
+                        "temperature",
+                        "max_batch",
+                        "max_working_bytes",
+                    )
+                },
+            )
+            config = replace(config, evidence_bridge=bridge)
+        return config
 
     def consumer(self, predictor, readout=None):
         """Consumidor congelado del núcleo identificado y del lector de esta combinación."""
@@ -229,7 +263,7 @@ class MarsTitanVariant:
                 raise ValueError("Sin banco episódico la variante no lleva lector")
         elif (
             type(readout) is not EpisodicReadout
-            or readout.config.evidence_bridge is not None
+            or self._bridge_options(readout) != self.components.get("evidence_bridge")
             or any(
                 getattr(readout.config, name) != value
                 for name, value in (
@@ -241,6 +275,25 @@ class MarsTitanVariant:
         ):
             raise ValueError("El lector no corresponde a la combinación de componentes")
         return FrozenFinancialConsumer(predictor, readout=readout)
+
+    @staticmethod
+    def _bridge_options(readout):
+        readout.config.__post_init__()
+        bridge = readout.config.evidence_bridge
+        module = readout.evidence_bridge
+        if bridge is None:
+            if module is not None:
+                raise ValueError("El lector no declara el módulo del puente de la combinación")
+            return None
+        if (
+            type(module) is not SharedEvidenceBridge
+            or type(module.config) is not EvidenceBridgeConfig
+        ):
+            raise ValueError("El módulo del puente no corresponde a la combinación")
+        module.config.__post_init__()
+        if canonical(module.config.identity()) != canonical(bridge.identity()):
+            raise ValueError("Los metadatos y el módulo del puente no conservan la combinación")
+        return bridge_view_options({name: getattr(bridge, name) for name in BRIDGE_VIEW_FIELDS})
 
     def session_options(self, *, capacity, seed, policy="reservoir", **retention):
         """Admisión, retención y corrección B6 para `FinancialSession`.
