@@ -1,0 +1,105 @@
+{
+  "recorded_at_utc": "2026-10-22T06:13:13.039890+00:00",
+  "execution_parent_commit": "72f80ccbb1fa69a1bb839ebd2c7b0942b869e755",
+  "implementation_commit": "d3345cf47e75c6a0d978d67100c408177c020ffe",
+  "execution_sources_match_implementation": true,
+  "tests": {
+    "distinct_cases": 185,
+    "cuda_cases": 37,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "directed_mutants_detected": 13,
+    "directed_mutants_total": 13,
+    "initial_survivors": [
+      "cache_unrelated_artifacts",
+      "never_replace_cache"
+    ],
+    "mutation_source_and_test_hashes_current": true
+  },
+  "source_files": {
+    "src/mars_titan/memory/session_artifacts.py": {
+      "path": "src/mars_titan/memory/session_artifacts.py",
+      "bytes": 10019,
+      "sha256": "58e8cac888d0522234ecebbd48e126a0ad4341825f796740199ccd98df3b322b"
+    },
+    "src/mars_titan/memory/financial_session.py": {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "bytes": 53614,
+      "sha256": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8"
+    },
+    "tests/memory/test_session_artifact_cache.py": {
+      "path": "tests/memory/test_session_artifact_cache.py",
+      "bytes": 6982,
+      "sha256": "9041c88ac1f159cadd3528a0f82445de8cfc9c0bb0697a22a5bd4212c2b5c26e"
+    },
+    "tests/memory/test_mechanism_control_cache.py": {
+      "path": "tests/memory/test_mechanism_control_cache.py",
+      "bytes": 2264,
+      "sha256": "12c6057973288c87c2edf27cfe8f3f9c76638fadae35af1a6cd4fb46dea62ecf"
+    },
+    "tests/memory/test_bridge_mechanism_session.py": {
+      "path": "tests/memory/test_bridge_mechanism_session.py",
+      "bytes": 5412,
+      "sha256": "55d722d58cdae5d6c631f93bcf80c89309f2ede8156401b9f7c8962e8f95ef61"
+    },
+    "tests/memory/test_financial_mechanisms.py": {
+      "path": "tests/memory/test_financial_mechanisms.py",
+      "bytes": 20673,
+      "sha256": "ea00f4c51a34f553bb9530bd54f448ae1c36ee35b2df424595f47eef86fb5dfa"
+    },
+    "tests/memory/test_financial_session_controls.py": {
+      "path": "tests/memory/test_financial_session_controls.py",
+      "bytes": 22225,
+      "sha256": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042"
+    },
+    "tests/memory/test_mars_titan_session_parity.py": {
+      "path": "tests/memory/test_mars_titan_session_parity.py",
+      "bytes": 8982,
+      "sha256": "a6d9c3dcf3683701bcb92961f3dc97ffdd116a285a2d1fe37d832baa3dc6969d"
+    },
+    "tests/models/titans/test_frozen_financial.py": {
+      "path": "tests/models/titans/test_frozen_financial.py",
+      "bytes": 9138,
+      "sha256": "8c86d6d4230d5998a3034172372309dc0a2118f8adc9d93e4b32abd44f12c043"
+    }
+  },
+  "measured_native_executions": 48,
+  "final_snapshot_parity": true,
+  "max_prediction_abs_difference": 0.0,
+  "cache_limit_bytes": 8388608,
+  "cache_charge_is_exact_heap_measurement": false,
+  "native_state_and_records_index": {
+    "path": "native-runs.json",
+    "bytes": 168657,
+    "sha256": "102299555ee7dce40207c7dee134405f7c4aececa1f54a0e643cfe658a4400c3"
+  },
+  "fixtures_index": {
+    "path": "fixtures.json",
+    "bytes": 333725,
+    "sha256": "760689d74751a6f0973d8ac8ba4d87b386f7d2bce185b3f60d36b20ab8457fcb"
+  },
+  "rounds": [
+    {
+      "path": "benchmark/benchmark.json",
+      "bytes": 14428,
+      "sha256": "6902be3c572a5937136f3833c981ffd488e99efa115b875e523e77526f149557"
+    },
+    {
+      "path": "benchmark-small-followup/benchmark.json",
+      "bytes": 8943,
+      "sha256": "6f3e6d5baeb657badcb3cdf44134b47e71ebc41e667ab524e81db0f6883accf7"
+    }
+  ],
+  "scientific_training": false,
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "final_test_opened": false,
+  "limits": [
+    "Tres repeticiones iniciales y nueve adicionales solo en la carga pequeña",
+    "GPU compartida con otro modelo local",
+    "RAM global del proceso, sin atribución causal por método",
+    "Los pesos compartidos no se exportan en un checkpoint de entrenamiento. Se conserva el generador versionado y la identidad del modelo",
+    "El alcance de cobertura es la tanda de 28 casos, distinta de la regresión más amplia"
+  ]
+}
