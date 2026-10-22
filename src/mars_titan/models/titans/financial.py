@@ -60,13 +60,20 @@ from .presence_modulation import (
     wide_parameters_per_unit,
     wide_units,
 )
-from .regional_fusion import RegionalFusion, RegionalFusionConfig
+from .regional_fusion import (
+    RegionalFusion,
+    RegionalFusionConfig,
+    validate_assignment,
+    validate_assignment_request,
+)
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
     MACState,
     check_differentiable,
     check_finite,
     deferred_checks,
+    finite_indicator,
+    is_finite,
     mac_tensors,
     map_mac_rows,
     require_finite,
@@ -518,9 +525,32 @@ class FinancialPredictor(nn.Module):
             for name, value in (*self.named_parameters(), *self.named_buffers())
         )
 
+    def _regional_component(self):
+        declared, module = self.config.regional_fusion, self.regional_fusion
+        if declared is None and module is None:
+            return None
+        if (
+            type(declared) is not RegionalFusionConfig
+            or type(module) is not RegionalFusion
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+        ):
+            raise ValueError("El módulo regional no corresponde a la configuración del predictor")
+        module.validate_structure()
+        if (
+            module.qkv.weight.device != self.head.weight.device
+            or module.qkv.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("El módulo regional no conserva dispositivo y precisión del predictor")
+        return module
+
     def _seal_parameters(self):
         if self.head.weight.dtype not in (torch.float32, torch.float64):
             raise ValueError("El predictor admite float32 y float64")
+        regional = self._regional_component()
+        if regional is not None:
+            regional.validate_geometry()
         # Una carga o un cambio de tipo o dispositivo vuelve a sellar y a calcular la identidad.
         self._config_ids = {}
         self._metadata_sizes = {}
@@ -582,7 +612,15 @@ class FinancialPredictor(nn.Module):
         self._validate_extra_state(state)
         self.train(state["training"])
 
-    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        validate_assignment_request(state_dict, assign)
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, *args, **kwargs):
+        regional = self._regional_component()
+        if regional is not None:
+            validate_assignment(state_dict, prefix, local_metadata)
+            regional.validate_payload(state_dict, prefix + "regional_fusion.")
         expected = self.state_dict()
         if self.mac is not None and self.mac.memory.bank_readout is not None:
             self.mac.memory.bank_readout.validate_payload(
@@ -607,13 +645,14 @@ class FinancialPredictor(nn.Module):
                     or supplied.layout != torch.strided
                 ):
                     raise ValueError("Los parámetros no tienen forma o precisión compatibles")
-                check_finite(supplied, "Los parámetros guardados")
+                if not is_finite(finite_indicator(supplied)):
+                    raise ValueError("Los parámetros guardados contienen NaN o infinito")
             else:
                 if name == "_extra_state":
                     self._validate_extra_state(supplied)
                 else:
                     require_identity(supplied, value)
-        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
+        super()._load_from_state_dict(state_dict, prefix, local_metadata, *args, **kwargs)
 
     def _config_id(self):
         """Huella del contrato de `get_extra_state`, calculada una vez por modo train/eval.
