@@ -33,6 +33,7 @@ WARMUP, REPETITIONS = 3, 10
 CHILD_SECONDS, TOTAL_SECONDS = 180, 360
 ATOL, RTOL = 2e-6, 1e-5
 VARIANTS = ("cycles0", "cycles2", "j1", "j2", "j4")
+INTERVENTIONS = ("j2", "active-control", "region-removed", "edge-cut", "all-removed")
 SHAPES = tuple(itertools.product((1, 256), (3, 8), (8, 1024)))
 CODEC, CONTEXT = "a" * 64, "b" * 64
 HIDDEN, NEIGHBORS, GAIN = 32, 8, 0.25
@@ -64,13 +65,17 @@ def save(path, value):
             temporary.unlink(missing_ok=True)
 
 
-def protocol():
+def protocol(suite="nonlinear"):
+    variants = INTERVENTIONS if suite == "interventions" else VARIANTS
     return dict(
-        kind="shared_evidence_bridge_full_forward_cost_v1",
+        kind="shared_evidence_bridge_full_forward_cost_v1"
+        if suite == "nonlinear"
+        else "shared_evidence_bridge_intervention_forward_cost_v1",
+        suite=suite,
         script_sha256=digest(Path(__file__).read_bytes()),
         shapes=[dict(batch=b, regions=r, episodes=n) for b, r, n in SHAPES],
-        variants=list(VARIANTS),
-        conditions_per_process=len(SHAPES) * len(VARIANTS),
+        variants=list(variants),
+        conditions_per_process=len(SHAPES) * len(variants),
         passes=["normal", "reverse"],
         warmup=WARMUP,
         repetitions=REPETITIONS,
@@ -88,7 +93,9 @@ def protocol():
         total_budget_seconds=TOTAL_SECONDS,
         allocator_cap_bytes=ALLOCATOR_CAP,
         free_memory_headroom_bytes=HEADROOM,
-        availability="all_regions_present_no_financial_missingness_claim",
+        availability="all_regions_present_no_financial_missingness_claim"
+        if suite == "nonlinear"
+        else "fixed_masks_and_directed_cuts_dense_work_no_financial_missingness_claim",
         timing_scope="complete_SharedEvidenceBridge_forward_including_candidate_selection",
         percentiles="linear_interpolation_descriptive_only_ten_samples_not_tail_estimates",
         numerical_reference="same_FP32_parameters_inputs_and_labels_lifted_exactly_to_FP64",
@@ -195,11 +202,11 @@ def reference_errors(torch, actual, expected):
     return result
 
 
-def run_child(root, out, *, reverse):
+def run_child(root, out, *, reverse, suite="nonlinear"):
     started = time.monotonic()
     deadline = started + CHILD_SECONDS - 8
     report = dict(
-        protocol=protocol(),
+        protocol=protocol(suite),
         status="incomplete",
         started_at_utc=now(),
         reverse=reverse,
@@ -278,6 +285,7 @@ def run_child(root, out, *, reverse):
             deterministic_algorithms=True,
         )
         sys.path.insert(0, str(root / "src"))
+        from mars_titan.models.titans.bridge_intervention import BridgeInterventionConfig
         from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
         from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
         from mars_titan.models.titans.evidence_bridge import (
@@ -345,13 +353,26 @@ def run_child(root, out, *, reverse):
             )
             report["cases"].append(entry)
             models, first_ids = {}, None
-            for variant in VARIANTS:
+            variants = INTERVENTIONS if suite == "interventions" else VARIANTS
+            for variant in variants:
                 check_budget(deadline)
+                intervention = None
+                if suite == "interventions" and variant != "j2":
+                    active = tuple(
+                        variant != "all-removed" and not (variant == "region-removed" and i == 1)
+                        for i in range(regions)
+                    )
+                    intervention = BridgeInterventionConfig(
+                        active, ((0, 1),) if variant == "edge-cut" else ()
+                    )
                 config = EvidenceBridgeConfig(
                     **dict(options, cycles=2 if variant == "cycles2" else 0),
                     recurrence=None
                     if variant.startswith("cycles")
-                    else BridgeRecurrenceConfig(int(variant[1:]), 512),
+                    else BridgeRecurrenceConfig(
+                        2 if suite == "interventions" else int(variant[1:]), 512
+                    ),
+                    intervention=intervention,
                 )
                 model = SharedEvidenceBridge(config, dtype=torch.float32)
                 cpu = SharedEvidenceBridge(config, dtype=torch.float64)
@@ -454,7 +475,7 @@ def run_child(root, out, *, reverse):
                     for item in entry["variants"].values()
                 )
             )
-            order = list(VARIANTS)
+            order = list(variants)
             random.Random(ORDER_SEED + case_index).shuffle(order)
             if reverse:
                 order.reverse()
@@ -548,7 +569,7 @@ def run_child(root, out, *, reverse):
     return 0 if report["status"] == "passed" else 1
 
 
-def supervise(root, output):
+def supervise(root, output, *, suite="nonlinear"):
     started = time.monotonic()
     root, output = root.resolve(), output.resolve()
     if not output.is_relative_to(BASE) or output.is_relative_to(root):
@@ -570,7 +591,7 @@ def supervise(root, output):
     output.mkdir(mode=0o700)
     save(output / "source-manifest.json", pinned)
     execution = dict(
-        protocol=protocol(),
+        protocol=protocol(suite),
         source_root=str(root),
         started_at_utc=now(),
         status="incomplete",
@@ -603,6 +624,8 @@ def supervise(root, output):
                 str(root),
                 "--child",
                 str(out),
+                "--suite",
+                suite,
             ]
             if reverse:
                 command.append("--reverse")
@@ -682,6 +705,7 @@ def main():
     signal.signal(signal.SIGTERM, terminate)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", action="store_true")
+    parser.add_argument("--suite", choices=("nonlinear", "interventions"), default="nonlinear")
     parser.add_argument("--source-root", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--child", type=Path, help=argparse.SUPPRESS)
@@ -690,14 +714,16 @@ def main():
     if args.child is not None:
         if args.source_root is None or args.run or args.output is not None:
             parser.error("El hijo necesita únicamente árbol, salida interna y orden")
-        return run_child(args.source_root.resolve(), args.child.resolve(), reverse=args.reverse)
+        return run_child(
+            args.source_root.resolve(), args.child.resolve(), reverse=args.reverse, suite=args.suite
+        )
     if args.run:
         if args.source_root is None or args.output is None:
             parser.error("--run necesita --source-root y --output")
-        return supervise(args.source_root, args.output)
+        return supervise(args.source_root, args.output, suite=args.suite)
     if args.output is not None or args.reverse:
         parser.error("Describir el protocolo no escribe una salida ni ejecuta variantes")
-    print(json.dumps(protocol(), ensure_ascii=False, indent=2), flush=True)
+    print(json.dumps(protocol(args.suite), ensure_ascii=False, indent=2), flush=True)
     return 0
 
 

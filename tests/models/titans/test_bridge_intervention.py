@@ -129,6 +129,39 @@ def test_presence_is_false_for_silenced_readers_with_a_populated_snapshot(device
     assert result.reads[0].bridge.snapshot_sha256 == source._digest
 
 
+@pytest.mark.parametrize("device", DEVICES)
+@pytest.mark.parametrize("mode", ["empty", "absent"])
+def test_empty_and_absent_banks_keep_distinct_provenance_under_intervention(device, mode):
+    from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+
+    reader = EpisodicReadout(
+        EpisodicReadoutConfig(
+            "a" * 64,
+            hidden_size=2,
+            mode="no_bank" if mode == "absent" else "bank",
+            evidence_bridge=replace(bridge(device).config, intervention=intervention((False,) * 3)),
+        ),
+        device=device,
+        dtype=torch.float64,
+    )
+    source = None if mode == "absent" else snapshot(device, count=0)
+    result = reader(
+        torch.ones((1, 2), dtype=torch.float64, device=device),
+        source,
+        context_id="b" * 64,
+        cutoff=4,
+    )
+    part = result.reads[0]
+    assert part.presence.tolist() == [[False]]
+    assert part.values.count_nonzero() == 0
+    if mode == "absent":
+        assert part.bridge is None
+    else:
+        assert part.bridge.snapshot_sha256 == source._digest
+        assert part.bridge.evidence_ids.shape == (1, 0)
+        assert torch.isfinite(part.bridge.bridge_weights).all()
+
+
 @pytest.mark.parametrize("field", ["active_regions", "edges", "_extra_state"])
 def test_fixed_buffer_and_identity_rejection_precedes_copy(field):
     model = configured()

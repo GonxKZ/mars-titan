@@ -2,7 +2,7 @@
 
 La opción `shared_evidence_bridge_nonlinear_v1` está implementada y desactivada por defecto. Añade J = 1, 2 o 4 pasos síncronos con tanh y reutiliza los pesos de la región receptora. Las vistas proceden de un único snapshot y de una selección común de episodios. No añade parámetros de recurrencia ni bancos regionales persistentes. J es distinto de las lecturas K y de las actualizaciones de pesos rápidos de Titans.
 
-La [especificación](../../../docs/experiments/nonlinear-evidence-bridge-v1.md) describe la actualización, la identidad y la reserva de trabajo antes del primer MAC. El [script de coste](../../../benchmarks/nonlinear_bridge_cuda.py) es una copia idéntica del ejecutado. Las pruebas y el perfil principal preceden al commit `3c2d0b639caf48552d86504178ffad1aa119220d` y quedan ligados a los mismos bytes mediante manifiestos y SHA-256. El diagnóstico de operadores se ejecutó después y se documenta por separado.
+La [especificación](../../../docs/experiments/nonlinear-evidence-bridge-v1.md) describe la actualización, la identidad y la reserva de trabajo antes del primer MAC. El [script histórico de coste](https://github.com/GonxKZ/mars-titan/blob/d94aae96504997f84cc3c626557f492d562f79c0/benchmarks/nonlinear_bridge_cuda.py) es una copia idéntica del ejecutado. El archivo actual incorpora después otra batería de intervenciones y tiene otra huella. Las pruebas y el perfil principal preceden al commit `3c2d0b639caf48552d86504178ffad1aa119220d` y quedan ligados a los mismos bytes mediante manifiestos y SHA-256. El diagnóstico de operadores se ejecutó después y se documenta por separado.
 
 ## Verificación técnica
 
@@ -82,9 +82,9 @@ Para reproducir el perfil principal, el guion debe copiarse primero a una carpet
 
 ```bash
 profile_dir=$(mktemp -d)
-cp benchmarks/nonlinear_bridge_cuda.py "$profile_dir/profile_bridge.py"
+git show d94aae96504997f84cc3c626557f492d562f79c0:benchmarks/nonlinear_bridge_cuda.py > "$profile_dir/profile_bridge.py"
 uv run --no-sync python "$profile_dir/profile_bridge.py" --run \
   --source-root "$PWD" --output "$profile_dir/run-1"
 ```
 
-La copia conserva el SHA-256 `00d7dacf799fd65e75120495e030e5613f5bb501ac1ce23f09174bf59b06d62a`. Las huellas y tamaños de los originales externos están en [external-artifacts.json](external-artifacts.json).
+La copia histórica conserva el SHA-256 `00d7dacf799fd65e75120495e030e5613f5bb501ac1ce23f09174bf59b06d62a`. Para repetir aquella revisión también se necesita su árbol fuente y entorno, no solo el script. Las huellas y tamaños de los originales externos están en [external-artifacts.json](external-artifacts.json).
