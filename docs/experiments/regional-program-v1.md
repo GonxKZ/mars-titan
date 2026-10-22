@@ -102,4 +102,35 @@ uv run --no-sync pytest -q \
 
 [#709](https://github.com/GonxKZ/mars-titan/issues/709) sigue pendiente. Estos calendarios no incorporan todavía los grupos y la raíz jerárquica anteriores a MAC ni un selector aprendido de programas. El ciclo exterior de propuestas y revisión de mecanismos de [#711](https://github.com/GonxKZ/mars-titan/issues/711) también sigue separado. Los antecedentes recogidos en la [revisión de recurrencia regional](../research/regional-recurrence-extensions.md) motivan controles y preguntas, sin acreditar una reproducción biológica ni novedad por usar un grafo o un resumen.
 
+## Matriz técnica de modos de memoria
+
+[`regional_program_matrix_cuda.py`](../../benchmarks/regional_program_matrix_cuda.py) cruza las seis configuraciones de la declaración con los cuatro modos existentes de memoria y dos opciones de contexto. Son 48 casillas. El constructor real de `FinancialConfig` admite 26 y rechaza 22 antes de inicializar CUDA. PT4 exige `mac_online` y la selección por norma contextual exige PT4. Los rechazos se conservan con su motivo y no cuentan como pruebas omitidas.
+
+El [informe de la matriz](../../reports/engineering/regional-program-matrix-20261022/README.md) recoge sus 208 condiciones ejecutadas, paridad, costes, mutaciones y límites de cobertura.
+
+`transformer_direct` no construye MAC. `mac_disabled` conserva el módulo con lectura y actualización de memoria desactivadas. `mac_frozen` permite lectura sin actualización asociativa y `mac_online` permite actualizar sus pesos rápidos. Esta matriz utiliza el mismo codificador de fixture. No compara cuatro codificadores distintos ni sustituye la comparación entre GRU, Transformer y Titans.
+
+El protocolo técnico usa la cabeza de cuantiles existente, H = 32, semilla 42, FP32 y FP64 y lotes de 1 y 256 filas. Los cuatro estratos se ejecutan por separado. Cada uno recorre las 26 configuraciones en orden original y en orden global inverso, con dos calentamientos y cinco muestras por registro. El conjunto previsto contiene 208 registros, 416 preparaciones de prefijo y 1.456 preparaciones entre calentamientos y medidas. Cada condición reconstruye sus dos observaciones previas y utiliza su propio estado rápido y contexto confirmado.
+
+Las entradas y los tensores de parámetros con nombres comunes se contrastan exactamente. Los parámetros adicionales de MAC y PT4 se contabilizan aparte. Las 40 parejas sin resumen deben conservar todos los tensores del resultado, excluida la traza regional, dentro del mismo modo, contexto, precisión, tamaño y orden. No se exige igualdad entre arquitecturas diferentes. La matriz tampoco identifica por separado consulta y calendario cuando compara PT4 posterior a la fusión con un programa que consulta antes.
+
+Sin `--run`, el guion imprime el protocolo sin importar Torch ni crear una salida. La ejecución exige un estrato explícito y un directorio nuevo fuera del repositorio. Desde su raíz:
+
+```bash
+set -e
+matrix_artifacts=$(mktemp -d)
+for dtype in float32 float64
+do
+  for batch in 1 256
+  do
+    timeout --signal=TERM --kill-after=10s 300s \
+      uv run --no-sync python benchmarks/regional_program_matrix_cuda.py \
+      --run --dtype "$dtype" --batch "$batch" \
+      --output "$matrix_artifacts/$dtype-$batch"
+  done
+done
+```
+
+El límite interno es de 240 segundos por estrato. La ronda documentada dispone de 300 segundos de supervisión por proceso y 1.500 segundos técnicos en total. El asignador de Torch se limita a 512 MiB y se exige una reserva global libre de 256 MiB. La caché de tensores CPU tiene un máximo de 128 MiB, distinto del RSS del runtime. Se conserva una sola instancia de predictor GPU por condición. Las cinco muestras describen mínimo, mediana, máximo y caudal, sin estimar percentiles de cola ni intervalos de confianza. La construcción, los prefijos y las comprobaciones se registran fuera de la latencia de `prepare`.
+
 La guarda local mantiene bloqueada la campaña de aprendizaje. Las verificaciones históricas registradas no la abren automáticamente. Estas comprobaciones técnicas no ejecutan pasos de optimizador ni constituyen un entrenamiento, piloto o evaluación científica. El test final de 2024 permanece cerrado.

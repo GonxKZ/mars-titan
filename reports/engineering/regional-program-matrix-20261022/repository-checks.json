@@ -1,0 +1,59 @@
+{
+  "final_ruff": [
+    {
+      "command": "UV_PROJECT_ENVIRONMENT='local-environment' uv run --no-sync ruff check .",
+      "returncode": 0,
+      "stdout": "All checks passed!\n"
+    },
+    {
+      "command": "UV_PROJECT_ENVIRONMENT='local-environment' uv run --no-sync ruff format --check .",
+      "returncode": 0,
+      "stdout": "1864 files already formatted\n"
+    }
+  ],
+  "final_repository_check": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "scripts/check_repository.py"
+    ],
+    "returncode": 0,
+    "stdout": "Verificados 3657 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código.\n",
+    "stderr": "warning: `VIRTUAL_ENV=.venv` does not match the project environment path `local-environment` and will be ignored; use `--active` to target the active environment instead\n",
+    "elapsed_s": 12.985663285013288,
+    "environment": "shared_project_uv_environment"
+  },
+  "diff_check": {
+    "command": "git diff --check",
+    "returncode": 0,
+    "stdout": ""
+  },
+  "initial_incomplete_environment": [
+    {
+      "command": "uv run --no-sync ruff check .",
+      "returncode": 2,
+      "stdout": "error: Failed to spawn: `ruff`\n  cause: No such file or directory (os error 2)\n"
+    },
+    {
+      "command": "uv run --no-sync ruff format --check .",
+      "returncode": 2,
+      "stdout": "error: Failed to spawn: `ruff`\n  cause: No such file or directory (os error 2)\n"
+    },
+    {
+      "command": "uv run --no-sync python scripts/check_repository.py",
+      "returncode": 1,
+      "stdout": "Traceback (most recent call last):\n  File \"./scripts/check_repository.py\", line 13, in <module>\n    import bibtexparser\nModuleNotFoundError: No module named 'bibtexparser'\n"
+    }
+  ],
+  "terminology_correction": {
+    "returncode": 1,
+    "stdout": "Término «brazos» en docs/experiments/regional-program-v1.md:107. Usar modelo, variante o configuración",
+    "change": "Sustitución por «configuraciones» en la prosa añadida."
+  },
+  "limits": [
+    "El catálogo de 140 entradas con dependencias válidas no acredita que todo el corpus histórico contenga sus valores.",
+    "No se repite la suite completa del repositorio ni las 805 pruebas del incremento anterior."
+  ]
+}

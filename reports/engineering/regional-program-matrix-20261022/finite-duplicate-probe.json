@@ -1,0 +1,81 @@
+{
+  "raw_local_sha256": "5af6da270d12e5163772c2224630a72ee84eada1548fe2b2e8ebc0f193e4355a",
+  "data": {
+    "status": "passed",
+    "kind": "finite_check_duplicate_observation_v1",
+    "optimizer_steps": 0,
+    "scientific_evaluation": false,
+    "final_test_access": false,
+    "device": "cuda:0",
+    "dtype": "float32",
+    "batch": 256,
+    "observations": [
+      {
+        "counts": {
+          "require_finite_cuda_deferred": 87,
+          "indicator_cuda": 68,
+          "already_deduplicated": 22
+        },
+        "candidate_shapes": []
+      },
+      {
+        "counts": {
+          "require_finite_cuda_deferred": 87,
+          "indicator_cuda": 68,
+          "already_deduplicated": 22
+        },
+        "candidate_shapes": []
+      },
+      {
+        "counts": {
+          "require_finite_cuda_deferred": 87,
+          "indicator_cuda": 68,
+          "already_deduplicated": 22
+        },
+        "candidate_shapes": []
+      }
+    ],
+    "warning": "La instrumentación Python cuenta llamadas. Estas observaciones no son medidas de latencia.",
+    "hold_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "hardware_before": {
+      "gpu": {
+        "code": 0,
+        "stdout": "index, name, uuid, memory.total [MiB], memory.free [MiB], driver_version\n0, NVIDIA GeForce RTX 4070 Laptop GPU, GPU-cc2150ad-4685-7021-3760-da025106eb1a, 8188 MiB, 1910 MiB, 595.91.07\n",
+        "stderr": ""
+      },
+      "applications": {
+        "code": 0,
+        "stdout": "pid, process_name, used_gpu_memory [MiB]\n324091, llama-server, 5438 MiB\n4710, xdg-desktop-portal-gnome, 6 MiB\n406545, gnome-text-editor, 46 MiB\n414907, nautilus, 48 MiB\n",
+        "stderr": ""
+      }
+    },
+    "source_sha256": {
+      "src/mars_titan/models/titans/state.py": "01c17150f6f15d179d8cdd1ef03abcef8ca66fcace2095345702860bdefa24e2",
+      "src/mars_titan/models/titans/financial.py": "cd770b79b56fb099678e34f57b4d802589b2106c54f06287c2d3a082fdc6d1af",
+      "src/mars_titan/models/titans/regional_execution.py": "64b4c2c97a484a7bb97d86b684c76b6edfaf8adc321347faa202c10c43529f43",
+      "src/mars_titan/models/titans/regional_fusion.py": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+      "src/mars_titan/models/titans/session_context.py": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "benchmarks/regional_program_cuda.py": "f4955ff9b3bb61d8a2d71febbe4ab17b0e0bc6d28d436415f944ee569416472e"
+    },
+    "result_sha256": "c636517e76023be4190941557e9d303014cb5e8c7dd21f0696007ba39de4ece2",
+    "memory": {
+      "allocated_bytes": 71873024,
+      "reserved_bytes": 104857600,
+      "peak_allocated_bytes": 82383360,
+      "peak_reserved_bytes": 104857600,
+      "free_global_vram_bytes": 1700331520,
+      "total_global_vram_bytes": 8183676928
+    },
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "loadavg": [
+      23.7919921875,
+      23.59814453125,
+      20.279296875
+    ],
+    "cpu_count": 16,
+    "hold_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "hold_unchanged": true,
+    "elapsed_s": 27.264248533989303
+  }
+}
