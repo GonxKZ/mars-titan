@@ -1,4 +1,4 @@
-"""Contratos de los brazos declarados, sin construir modelos ni ejecutar ajustes."""
+"""Contratos de las configuraciones declaradas, sin construir modelos ni ejecutar ajustes."""
 
 import hashlib
 import json

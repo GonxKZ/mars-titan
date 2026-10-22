@@ -18,7 +18,7 @@
     "calibration": "none"
   },
   "construction": [
-    "FinancialConfig recibe las opciones predictor de base_recipe, después common_predictor y finalmente predictor_changes de cada brazo. dtype pertenece a la construcción del modelo y no se pasa a FinancialConfig.",
+    "FinancialConfig recibe las opciones predictor de base_recipe, después common_predictor y finalmente predictor_changes de cada configuración. dtype pertenece a la construcción del modelo y no se pasa a FinancialConfig.",
     "session_context es configuración común del predictor. No se incluye en predictor_changes porque ese campo no pertenece a su registro de cambios permitidos.",
     "El control omite regional_execution y conserva su valor None. Con PT4 consulta el contexto después de la fusión. Los programas activos consultan antes del operador regional.",
     "Esta declaración no es una receta ejecutable del runner ni habilita entrenamientos, pilotos o evaluaciones científicas."
@@ -147,10 +147,10 @@
     }
   },
   "limits": [
-    "Todos los brazos conservan PT4 de mercado, MAC online, codificador, cabeza y opciones compartidas de la receta base. Cambian únicamente el programa regional y la presencia del resumen.",
+    "Todas las configuraciones conservan PT4 de mercado, MAC online, codificador, cabeza y opciones compartidas de la receta base. Cambian únicamente el programa regional y la presencia del resumen.",
     "Los programas sustituyen cycles y local_steps durante su ejecución sin modificar los valores almacenados del operador.",
     "La regla contextual es programada y no aprende de errores financieros. Sus resultados deben compararse con los dos calendarios fijos.",
     "Sin resumen, los dos programas ejecutan los mismos cuatro pasos locales. Se conservan identidades distintas para comprobar esta ablación.",
-    "No hay hipótesis predictivas confirmadas ni una comparación financiera ejecutada para estos brazos."
+    "No hay hipótesis predictivas confirmadas ni una comparación financiera ejecutada para estas configuraciones."
   ]
 }
