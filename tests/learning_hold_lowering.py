@@ -335,6 +335,21 @@ DOUBLES = {
         "analiza predicciones y checkpoints mínimos escritos por el fixture, sin abrir "
         "datos reales ni ejecutar un optimizador",
     ),
+    "tests/tooling/test_local_capture_study.py": (
+        1,
+        "analiza los controles de captura sobre archivos sintéticos de multiseed_fixture, "
+        "sin construir entrenadores ni ejecutar pasos de optimizador",
+    ),
+    "tests/tooling/test_quantile_multiseed_analysis.py": (
+        3,
+        "comprueba el análisis, su entrada CLI y los rechazos sobre predicciones y checkpoints "
+        "sintéticos de complete_fixture, sin entrenamientos ni fuentes reales",
+    ),
+    "tests/tooling/test_quantile_point_analysis.py": (
+        1,
+        "analiza objetivos puntuales con manifiestos y predicciones sintéticos de "
+        "point_fixture, sin ajustar los modelos ni calcular predicciones reales",
+    ),
     "tests/tooling/test_neural_plasticity_study.py": (
         1,
         "prepara un corpus técnico, conecta el entrenador real con un optimizador registrador "

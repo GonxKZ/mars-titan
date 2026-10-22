@@ -37,6 +37,12 @@ _REGENERATION = node(
 )
 
 GUARDS = {
+    "mars_titan.training.refinement_policy_fit:fit_policy": (
+        node(
+            "training/test_refinement_policy_fit.py",
+            "test_fit_requires_authorization_before_inspecting_any_arrays",
+        ),
+    ),
     # Sondas, perfilado y comparadores tabulares.
     "mars_titan.budget_training:train_budget_grid": ("budget_training",),
     "mars_titan.budget_training:train_step": ("budget_train_step",),
