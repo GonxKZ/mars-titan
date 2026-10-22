@@ -193,6 +193,10 @@ class FinancialSession(EpisodicSession):
         ):
             raise ValueError(ADMISSION_ERROR)
         binding = bind_consumer(consumer, codec, retention, admission)
+        if admission == "m3":
+            scaling_end = phase.decision_end if phase.partition == "train" else phase.decision_start
+            if retention.scalers.decision_end > scaling_end:
+                raise ValueError("Las escalas M3 superan el tramo permitido de la fase")
         if type(binding) is MechanismBinding:
             mechanism_history = binding.configuration(mechanism_history)
             binding.configure_collection(mechanism_collection)

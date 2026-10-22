@@ -66,13 +66,11 @@ def _prediction(value):
 
 
 class MechanismBinding(TitansBinding):
-    """M0/M1 con contexto y calibración confirmados por el mismo ejecutor nativo."""
+    """M0–M3 con contexto y calibración confirmados por el mismo ejecutor nativo."""
 
     kind = KIND
 
     def __init__(self, consumer, codec, retention, admission):
-        if admission not in {"m0", "m1"}:
-            raise ValueError("El enlace de mecanismos requiere admisión M0 o M1")
         super().__init__(consumer, codec, retention, admission)
         control = consumer.predictor.local_control
         if control is not None and control.config.mode != "disabled":
@@ -91,6 +89,7 @@ class MechanismBinding(TitansBinding):
 
     def code(self):
         result = dict(
+            super().code(),
             financial_mechanisms=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             mechanism_history=hashlib.sha256(
                 Path(mechanism_history.__file__).read_bytes()
