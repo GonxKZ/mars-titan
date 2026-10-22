@@ -17,6 +17,8 @@ La ronda inicial ejecuta cinco casos con dos calentamientos y tres parejas alter
 | m3-256-fixed-k4cc | 52,878 | 39,947 | -24,46 % |
 | M3, 4 activos, repetición adicional | 2,873 | 2,517 | -12,42 % |
 
+El [caudal derivado de la fase](throughput.json) divide las cuatro emisiones por activo entre el tiempo completo medido de cada repetición. Con 256 activos pasa de una mediana de 19,37 a 25,63 emisiones por segundo. Incluye el calentamiento de memoria y el cierre de la fase, con la construcción inicial del modelo fuera del cronómetro.
+
 El signo negativo indica menos tiempo. El primer caso pequeño empeora un 28,69 % al comparar medianas. Dos de sus tres diferencias emparejadas favorecen la caché y la tercera la perjudica. Se declaró después una [repetición técnica](small-followup-protocol.json) de nueve parejas y un calentamiento, manteniendo el mismo código de producción. Siete parejas favorecen la caché y dos la perjudican. Los [resultados iniciales](benchmark.json) y los [adicionales](small-followup.json) permanecen separados. La dispersión y la GPU compartida impiden asegurar una mejora estable para cuatro activos. En las cargas iniciales de 64 y 256 activos las medianas son favorables. No se deduce una aceleración universal ni un cambio predictivo.
 
 Las predicciones FP64 y la huella del snapshot final coinciden exactamente entre métodos en las 24 parejas medidas. La diferencia máxima de predicciones es 0,0. La igualdad incluye las referencias del banco, pendientes, historial y estado rápido que forman el snapshot. No equivale a revalidar todo el corpus real ni un checkpoint de entrenamiento.
@@ -40,7 +42,7 @@ La [calidad](quality.json) utiliza coverage.py 7.16.1 y Radon 6.0.1 con el cálc
 | `SessionArtifacts.prune_unreferenced` | 18/18 | 14/14 | 10,000 |
 | `FinancialSession.__init__` | 63/78 | 17/30 | 34,981 |
 
-Ruff pasa en el repositorio y su comprobación de formato registra 1.820 archivos. El comprobador local verifica 3.555 archivos, 361 referencias y 64 tareas. Las 140 entradas del catálogo macro tienen dependencias válidas, lo que no acredita disponibilidad completa de sus series históricas. La puntuación no demuestra ausencia de defectos. Esta ronda no cambia código nativo, bibliotecas, kernels, precisión ni políticas de memoria financiera. No atribuye mejoras predictivas, originalidad científica o superioridad frente a otros modelos.
+Ruff pasa en el repositorio y su comprobación de formato registra 1.820 archivos. La comprobación previa del informe verificó 3.555 archivos, 361 referencias y 64 tareas. Las 140 entradas del catálogo macro tienen dependencias válidas, lo que no acredita disponibilidad completa de sus series históricas. La puntuación no demuestra ausencia de defectos. Esta ronda no cambia código nativo, bibliotecas, kernels, precisión ni políticas de memoria financiera. No atribuye mejoras predictivas, originalidad científica o superioridad frente a otros modelos.
 
 ## Reproducción y archivos
 
