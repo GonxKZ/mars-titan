@@ -1,0 +1,98 @@
+{
+  "recorded_at_utc": "2026-10-21T17:56:54.130583+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.0731894390191883,
+    "log_sha256": "fba9d3f4c02cc4279bdf3ca483bafbd2978d67f8c80857511973b8b4f186313d",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "copy_every_normal_weight",
+      "before": "else w.detach()).requires_grad_",
+      "after": "else w.detach().clone()).requires_grad_",
+      "expression": "borrows_storage",
+      "exit_code": 1,
+      "seconds": 2.270882309996523,
+      "log_sha256": "19f9659db695b38d730ac856b4c7487a725a5a43494f6b0aa8116e226c5298a4",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "borrow_owner_without_detach",
+      "before": "else w.detach()).requires_grad_",
+      "after": "else w).requires_grad_",
+      "expression": "borrows_storage or owner_flags",
+      "exit_code": 1,
+      "seconds": 2.3209402681095526,
+      "log_sha256": "c9bacd1c2eb590c7ef3cd7f12d5a3fbd88169bd27625684c3caf6990eecb1313",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "borrow_inference_tensor",
+      "before": "if differentiable or w.is_inference() else",
+      "after": "if differentiable else",
+      "expression": "inference_owned",
+      "exit_code": 1,
+      "seconds": 2.0200159680098295,
+      "log_sha256": "f17e486b998fb5ca4e53b02f335163d030ca3dfe2ea2b41d3dfabf9328065d2e",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "detach_external_curvature",
+      "before": "w.clone() if differentiable or w.is_inference()",
+      "after": "w.detach().clone() if differentiable or w.is_inference()",
+      "expression": "keep_curvature",
+      "exit_code": 1,
+      "seconds": 1.9700227509019896,
+      "log_sha256": "d660299a6086127d1569f961a4d80c93c114ea70492b98d809f0a02dba3c1bda",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "mutate_borrowed_owner",
+      "before": "else w.detach()).requires_grad_",
+      "after": "else w.detach().add_(0.125)).requires_grad_",
+      "expression": "owner_flags",
+      "exit_code": 1,
+      "seconds": 2.120022480026819,
+      "log_sha256": "1d9b20f728a6debef11300279444f188a57ab60d39bf818e384c7d49d0732a1f",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 2.6710561040090397,
+    "log_sha256": "23bbbb6ee5c6fabfdf3a80af3cdb67fce86ea60bf3e1e9221aaf4d031ae68a06",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finished_at_utc": "2026-10-21T17:57:10.594979+00:00",
+  "source_sha256": {
+    "reports/engineering/bank-write-storage-20261021/borrowed_candidate.py": "5af50bb3fa6976e3047ffbfde164bc258ab0264ccfda4160fffb53f791cf0a7a"
+  },
+  "tests_sha256": {
+    "tests/models/titans/test_bank_write_storage_candidate.py": "f9cd334fcf51513fb87d294a80b237a1f40f003f849bb0293337f0a7a90caf10",
+    "tests/models/titans/test_bank_write.py": "cece02d9fb371d330d312881160cc482f8c6bdf5c3399ecde806d419652ffde8"
+  },
+  "scope": "directed_not_exhaustive",
+  "adopted": false
+}

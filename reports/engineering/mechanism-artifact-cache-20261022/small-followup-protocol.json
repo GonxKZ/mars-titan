@@ -1,0 +1,23 @@
+{
+  "recorded_at_utc": "2026-10-22T05:56:42.663848+00:00",
+  "scope": "Repetición técnica independiente del caso pequeño ambiguo, sin cambios de modelo ni código de producción",
+  "cases": [
+    {
+      "assets": 4,
+      "admission": "m3",
+      "manual_policy": false
+    }
+  ],
+  "warmup": 1,
+  "repetitions": 9,
+  "checks": [
+    "Igualdad exacta de predicciones FP64",
+    "Igualdad SHA del snapshot final",
+    "Mismas filas y fase",
+    "Orden alternado por pareja"
+  ],
+  "selection": "Conservar los dos resultados por separado, sin sustituir la ronda inicial",
+  "scientific_training": false,
+  "real_corpus": false,
+  "final_test_access": false
+}

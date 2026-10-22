@@ -1,0 +1,354 @@
+{
+  "recorded_at_utc": "2026-10-21T18:48:10.528507+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 11.243416128098033,
+    "log_sha256": "8b2f3cf88ab438953240ac9eff44547381321b3795ed5eb0ef5ebb9cc21a0c75",
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "reset_byte_budget",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "for request in sources:",
+          "after": "for request in sources:\n        total = 0"
+        }
+      ],
+      "expression": "global_byte",
+      "exit_code": 1,
+      "seconds": 5.278575435979292,
+      "log_sha256": "ee6e2e08773de1c8b5f719c2e1db77c7854e4b05a5be235170f07a95fc87526e",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reset_cohort_identity_set",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "for request in sources:",
+          "after": "for request in sources:\n        cohorts = set()"
+        }
+      ],
+      "expression": "global_byte",
+      "exit_code": 1,
+      "seconds": 5.828920664964244,
+      "log_sha256": "29e243501fcc992097475b117ded181a9047f0e0bd90786c427740fe4155c222",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reset_cohort_budget",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "for request in sources:",
+          "after": "for request in sources:\n        observed = 0"
+        }
+      ],
+      "expression": "global_byte",
+      "exit_code": 1,
+      "seconds": 5.829207498929463,
+      "log_sha256": "f7a95479d5630849445725cb8936865223a89accef55e2ac326ce3fc4db4116e",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_lower_decision_bound",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "config.fit_start <= observation[\"cutoff\"] < config.fit_end",
+          "after": "observation[\"cutoff\"] < config.fit_end"
+        }
+      ],
+      "expression": "exact_reception_boundary",
+      "exit_code": 1,
+      "seconds": 5.679107003030367,
+      "log_sha256": "c1acf201e36ca34e43ad68230d9f058652ddcc795dc1056896c416282cdf2419",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_other_parent",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "session.consumer.model_id == config.parent_consumer_id",
+          "after": "True"
+        },
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "observation[\"consumer_id\"] == config.parent_consumer_id",
+          "after": "True"
+        }
+      ],
+      "expression": "exact_reception_boundary",
+      "exit_code": 1,
+      "seconds": 5.579279245925136,
+      "log_sha256": "de20f7b1f3be2b4f185c0f2084a8bdd0879ebf03bee37ae8ebc3e805f8977f91",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "read_latest_prefix",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "through_generation=request.through_generation,",
+          "after": "through_generation=request.session.snapshot()[\"cursor\"],"
+        },
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "before=before,",
+          "after": "before=request.session.phase.close_at+1,"
+        }
+      ],
+      "expression": "open_or_later_closed",
+      "exit_code": 1,
+      "seconds": 5.178013672004454,
+      "log_sha256": "e1bac39437a2b57e0bbbe29fefa5bef626cc00a91bda5a6b46da29c8fed3cf10",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_changed_head",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "session.snapshot() == snapshot",
+          "after": "True"
+        }
+      ],
+      "expression": "head_change",
+      "exit_code": 1,
+      "seconds": 5.527699313941412,
+      "log_sha256": "072f1139fb58bca00ffe27f42a5dd752dc2b34694653754798ef0f2cfed329b7",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "count_censures_as_pending",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "sum(t is None for t in outcomes) - censored",
+          "after": "sum(t is None for t in outcomes)"
+        }
+      ],
+      "expression": "open_or_later_closed",
+      "exit_code": 1,
+      "seconds": 5.779361650929786,
+      "log_sha256": "1d3a9eec587ba3900657c4d08b89c488ad87dbb5d0e0b05de75a7f330f02002d",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "change_closed_identity",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_contract.py",
+          "before": "fields.pop(\"source_mode\")",
+          "after": "pass"
+        }
+      ],
+      "expression": "closed_protocol_keeps",
+      "exit_code": 1,
+      "seconds": 3.875056196935475,
+      "log_sha256": "df22648210e2a1623a659698847fda21c4f95f83c354513f4c41e331fdc4f040",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "merge_protocol_modes",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_contract.py",
+          "before": "if self.source_mode == \"native_windows\":",
+          "after": "if False:"
+        }
+      ],
+      "expression": "window_protocol",
+      "exit_code": 1,
+      "seconds": 4.37549341795966,
+      "log_sha256": "d379c71300cead429008ab4346839000c8c0eacfa659b54386a6d9d157420522",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "remove_main_reader_guard",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "require_learning_allowed(\"lectura de señales para la política de mecanismos\")",
+          "after": "pass"
+        }
+      ],
+      "expression": "fit_still_blocks",
+      "exit_code": 1,
+      "seconds": 3.8722716770134866,
+      "log_sha256": "8ae570f84de5aa46727ad5888e3af18d657a6a2a1e989b5cda78a5f04d1a3886",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "remove_window_reader_guard",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "require_learning_allowed(\"lectura de señales por ventanas para la política de mecanismos\")",
+          "after": "pass"
+        }
+      ],
+      "expression": "fit_still_blocks",
+      "exit_code": 1,
+      "seconds": 3.8227986720157787,
+      "log_sha256": "1b3ed945b7128ad337e48c8cb934d2ad91afee7ebef6dfdc1cd126930335f31d",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "clamp_negative_gains",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "point=metric[\"point_gains\"],",
+          "after": "point=[None if v is None else max(0.0,v) for v in metric[\"point_gains\"]],"
+        }
+      ],
+      "expression": "cohort_transport",
+      "exit_code": 1,
+      "seconds": 3.923452856950462,
+      "log_sha256": "81d94a54f9bb955119b31e511456bbe647691ecf7daa917d2e133998e665f2cc",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "convert_missing_to_zero",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "point=metric[\"point_gains\"],",
+          "after": "point=[0.0 if v is None else v for v in metric[\"point_gains\"]],"
+        }
+      ],
+      "expression": "cohort_transport",
+      "exit_code": 1,
+      "seconds": 4.025362691027112,
+      "log_sha256": "6e2e78a7fee73ecacf4767a423a9b4ab111b9e7486b36b764e5d7d5176dff0cc",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_market_weights",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "market_weights[row[\"market\"]] / counts[row[\"market\"]]",
+          "after": "1.0 / len(used)"
+        }
+      ],
+      "expression": "cohort_transport",
+      "exit_code": 1,
+      "seconds": 3.923913300037384,
+      "log_sha256": "e0773943c95bf2e13485bd2ddc79eeea2bb2d32fd5026c84267d7e0d6cc8904e",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reverse_temporal_order",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_policy_fit.py",
+          "before": "used.sort(key=lambda row: (row[\"decision_at\"], row[\"market\"]))",
+          "after": "used.sort(key=lambda row: (row[\"decision_at\"], row[\"market\"]), reverse=True)"
+        }
+      ],
+      "expression": "cohort_transport",
+      "exit_code": 1,
+      "seconds": 3.9238184499554336,
+      "log_sha256": "947be2a6c9006172089323abff893a953ec5583e389ea3f5dc79309b05a3dbe8",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_replaced_callback",
+      "edits": [
+        {
+          "path": "src/mars_titan/training/mechanism_fit_window.py",
+          "before": "_check_callbacks(session)",
+          "after": "pass"
+        }
+      ],
+      "expression": "replaced_session_callback",
+      "exit_code": 1,
+      "seconds": 5.227359393960796,
+      "log_sha256": "9ba23b2b650e4015624c11f7df3bce86d27aa8381bfecfaffb0c67f24663336d",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 11.895287076942623,
+    "log_sha256": "8d5dff2e102cb0b4d6846951572a79e21376c4c1e4a1b546d7cca691beb6f257",
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finished_at_utc": "2026-10-21T18:49:55.388466+00:00",
+  "source_sha256": {
+    "src/mars_titan/training/mechanism_fit_window.py": "b3417f9c6dcd5daa23d12f88dcd11a5154ba17ffa84d3e70905f3c13590fe31d",
+    "src/mars_titan/training/mechanism_policy_fit.py": "59e73f940f7c57808be3b4af3727d9e087e02cdcf25ebb9ea44bc65f88153444",
+    "src/mars_titan/training/mechanism_fit_contract.py": "fed9aea285eabd026fcf66f385c6e748984796168c42044d354fe886c0228801"
+  },
+  "tests_sha256": {
+    "tests/memory/test_mechanism_fit_window.py": "0f964119114e1ace496f89bef4d88031929e9a2f46a51188c6a151d0e1889985",
+    "tests/training/test_mechanism_policy_fit.py": "1587b10fd84f466337dd4cb27fc715388fc926892163562001ad070ae032dba8"
+  },
+  "scope": "targeted_mutations_not_universal_score",
+  "mutants_detected": 17,
+  "mutants_total": 17,
+  "baseline_device": "cpu",
+  "positive_protected_reader_executed": false
+}

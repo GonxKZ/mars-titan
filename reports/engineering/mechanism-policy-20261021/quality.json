@@ -1,0 +1,159 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-21T07:10:23.102154",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "src/mars_titan/models/titans/mechanism_policy.py",
+  "src/mars_titan/models/titans/mechanism_losses.py"
+ ],
+ "totals": {
+  "statements": 122,
+  "covered_statements": 122,
+  "branches": 28,
+  "covered_branches": 28
+ },
+ "files": [
+  {
+   "path": "src/mars_titan/models/titans/mechanism_losses.py",
+   "source_sha256": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+   "statements": 36,
+   "covered_statements": 36,
+   "branches": 4,
+   "covered_branches": 4
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "source_sha256": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+   "statements": 86,
+   "covered_statements": 86,
+   "branches": 24,
+   "covered_branches": 24
+  }
+ ],
+ "functions": [
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy.forward",
+   "start_line": 174,
+   "end_line": 216,
+   "cyclomatic_complexity": 14,
+   "statements": 24,
+   "covered_statements": 24,
+   "coverage_fraction": 1.0,
+   "branches": 6,
+   "covered_branches": 6,
+   "crap": 14.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_losses.py",
+   "function": "mechanism_losses",
+   "start_line": 32,
+   "end_line": 78,
+   "cyclomatic_complexity": 13,
+   "statements": 22,
+   "covered_statements": 22,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 13.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy._load_from_state_dict",
+   "start_line": 146,
+   "end_line": 171,
+   "cyclomatic_complexity": 9,
+   "statements": 11,
+   "covered_statements": 11,
+   "coverage_fraction": 1.0,
+   "branches": 6,
+   "covered_branches": 6,
+   "crap": 9.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy.__init__",
+   "start_line": 63,
+   "end_line": 94,
+   "cyclomatic_complexity": 7,
+   "statements": 11,
+   "covered_statements": 11,
+   "coverage_fraction": 1.0,
+   "branches": 8,
+   "covered_branches": 8,
+   "crap": 7.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy.validate",
+   "start_line": 96,
+   "end_line": 123,
+   "cyclomatic_complexity": 7,
+   "statements": 12,
+   "covered_statements": 12,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 7.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_losses.py",
+   "function": "MechanismLosses.gains",
+   "start_line": 23,
+   "end_line": 28,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy.get_extra_state",
+   "start_line": 125,
+   "end_line": 141,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_policy.py",
+   "function": "MechanismPolicy.set_extra_state",
+   "start_line": 143,
+   "end_line": 144,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "c4a9f0963eaf322c677e1628fe4feb5a34d6dc1a770b5d3a778579176c0c028d",
+ "functions_measured": 8
+}

@@ -1,0 +1,131 @@
+{
+  "scope": "Contraste técnico A1/B1/B2/A2 por condición. Tres sesiones por trayectoria. Sin afirmación de mejora predictiva.",
+  "cases": [
+    {
+      "rows": 64,
+      "kind": "historical_consumer",
+      "samples_each": 16,
+      "p50_before_ms": 59.580913499999994,
+      "p50_after_ms": 45.902849,
+      "p50_reduction_pct": 22.957124516058304,
+      "p95_before_ms": 67.10422525,
+      "p95_after_ms": 51.9824015
+    },
+    {
+      "rows": 64,
+      "kind": "disabled",
+      "samples_each": 16,
+      "p50_before_ms": 131.700917,
+      "p50_after_ms": 108.721758,
+      "p50_reduction_pct": 17.44798709336246,
+      "p95_before_ms": 173.02923625,
+      "p95_after_ms": 112.52228225
+    },
+    {
+      "rows": 64,
+      "kind": "reader",
+      "samples_each": 16,
+      "p50_before_ms": 143.7055775,
+      "p50_after_ms": 112.770171,
+      "p50_reduction_pct": 21.526935167147563,
+      "p95_before_ms": 178.28662425,
+      "p95_after_ms": 137.574434
+    },
+    {
+      "rows": 64,
+      "kind": "context_static",
+      "samples_each": 16,
+      "p50_before_ms": 164.918785,
+      "p50_after_ms": 152.31843800000001,
+      "p50_reduction_pct": 7.640334604696486,
+      "p95_before_ms": 205.3840085,
+      "p95_after_ms": 170.9345075
+    },
+    {
+      "rows": 64,
+      "kind": "context_online",
+      "samples_each": 16,
+      "p50_before_ms": 198.4248675,
+      "p50_after_ms": 183.99350950000002,
+      "p50_reduction_pct": 7.272958365462932,
+      "p95_before_ms": 208.3555715,
+      "p95_after_ms": 219.860895
+    },
+    {
+      "rows": 64,
+      "kind": "byte_return",
+      "samples_each": 16,
+      "p50_before_ms": 180.6863095,
+      "p50_after_ms": 161.030776,
+      "p50_reduction_pct": 10.878263856509832,
+      "p95_before_ms": 191.48640475,
+      "p95_after_ms": 180.73677225
+    },
+    {
+      "rows": 256,
+      "kind": "historical_consumer",
+      "samples_each": 16,
+      "p50_before_ms": 83.138631,
+      "p50_after_ms": 78.3612525,
+      "p50_reduction_pct": 5.74627996941638,
+      "p95_before_ms": 94.97498525,
+      "p95_after_ms": 89.7459375
+    },
+    {
+      "rows": 256,
+      "kind": "disabled",
+      "samples_each": 16,
+      "p50_before_ms": 173.484338,
+      "p50_after_ms": 145.6458,
+      "p50_reduction_pct": 16.04671541012538,
+      "p95_before_ms": 245.25407925000002,
+      "p95_after_ms": 237.75439350000002
+    },
+    {
+      "rows": 256,
+      "kind": "reader",
+      "samples_each": 16,
+      "p50_before_ms": 200.513451,
+      "p50_after_ms": 157.1809525,
+      "p50_reduction_pct": 21.61076889549919,
+      "p95_before_ms": 208.91781125,
+      "p95_after_ms": 190.13966324999998
+    },
+    {
+      "rows": 256,
+      "kind": "context_static",
+      "samples_each": 16,
+      "p50_before_ms": 245.556349,
+      "p50_after_ms": 180.247084,
+      "p50_reduction_pct": 26.59644731890032,
+      "p95_before_ms": 255.95491425,
+      "p95_after_ms": 205.22829
+    },
+    {
+      "rows": 256,
+      "kind": "context_online",
+      "samples_each": 16,
+      "p50_before_ms": 328.15533500000004,
+      "p50_after_ms": 283.70839750000005,
+      "p50_reduction_pct": 13.544481152500532,
+      "p95_before_ms": 414.706652,
+      "p95_after_ms": 297.54598075
+    },
+    {
+      "rows": 256,
+      "kind": "byte_return",
+      "samples_each": 16,
+      "p50_before_ms": 218.5785055,
+      "p50_after_ms": 200.305781,
+      "p50_reduction_pct": 8.359799358221894,
+      "p95_before_ms": 235.5652215,
+      "p95_after_ms": 237.92304825000002
+    }
+  ],
+  "all_p50_nonregressing": true,
+  "limits": [
+    "16 muestras por versión y condición, sin control de frecuencia ni temperatura",
+    "Orden alternado entre versiones y orden fijo de condiciones dentro de cada ronda",
+    "Percentiles empíricos, sin garantía de cola ni inferencia financiera"
+  ]
+}

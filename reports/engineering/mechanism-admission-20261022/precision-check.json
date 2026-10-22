@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T05:18:13.973072+00:00",
+  "selection": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "file": "precision-release.xml",
+    "seconds": 3.601,
+    "cuda_cases": 1,
+    "sha256": "5456d5b7e44bc3bc084f2ef29d6b9f0e4d121e2019fb51c1dcbf3b933bfafcb4"
+  },
+  "test_source_sha256": "bec5da0e248915b729f1b5271bed3bc56d9c79f898bc30a9fb9ba6294413423f",
+  "compared_dtype": "Floats binary64 de Python recuperados del JSON, sin conversión a tensor",
+  "dimensions": {
+    "rows": 64,
+    "episodes": 256,
+    "regions": 3,
+    "hidden_size": 32,
+    "neighbors": 8
+  },
+  "comparison": "Igualdad exacta de todos los grupos, incluidos cada cuantil y los metadatos de cada alternativa, entre rutas compartidas e individuales.",
+  "previous_benchmark_limit": "El comparador del colector completo del informe anterior convertía listas con torch.tensor sin dtype y comprobaba FP32. Las rutas individuales sí comparaban sus tensores FP64. Este complemento no modifica sus tiempos históricos."
+}

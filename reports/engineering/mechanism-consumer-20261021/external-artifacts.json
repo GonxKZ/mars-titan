@@ -1,0 +1,130 @@
+{
+  "scope": "Artefactos locales no incluidos en Git. Los nombres son relativos al directorio privado del recibo, sin instrucciones personales ni datos reales.",
+  "artifacts": [
+    {
+      "name": "consumer-final.xml",
+      "bytes": 86188,
+      "sha256": "37343ad8ed8d81b4b46a0943fa3e8b334de9194888df349892e07e2871237cb0"
+    },
+    {
+      "name": "consumer-final.log",
+      "bytes": 1325,
+      "sha256": "7433cd5daa45a1364c02a06834b5516e93791b33e94ec11635e7da71c76f6f4b"
+    },
+    {
+      "name": "consumer-final-coverage.json",
+      "bytes": 5564144,
+      "sha256": "8c5c95a6a2a396f6ab894a0d6832e53425009807b307d8bd63c83f04a5077c04"
+    },
+    {
+      "name": "consumer-coverage-diagnostic.log",
+      "bytes": 1434,
+      "sha256": "014ab4930a20cd03d175ca9f1248a4869525213c70acc0a58f02901939bbe6ed"
+    },
+    {
+      "name": "consumer-directory-diagnostic.log",
+      "bytes": 98,
+      "sha256": "6edbdf6855c1e52b6d4717078920b961e1ebf9a67b233ef94fd73219a3da75b8"
+    },
+    {
+      "name": "consumer-regression.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "consumer-work-red.xml",
+      "bytes": 2524,
+      "sha256": "b0e3df7d3f807c2de3723194fa02e7bfe4185ccd3c1f450907b7556058ce35fb"
+    },
+    {
+      "name": "consumer-atomic.xml",
+      "bytes": 6623,
+      "sha256": "1d0cf2c7627f55cb4d934a2aa05779472d7958b8f8d0ae1882d42948865e2f60"
+    },
+    {
+      "name": "consumer-cost-process.txt",
+      "bytes": 937,
+      "sha256": "41592c2488662e1bb4e6e76572cb4ebe6564022a1f49b240e42e96a4c920bc33"
+    },
+    {
+      "name": "consumer-cost-after-process.txt",
+      "bytes": 942,
+      "sha256": "873d5b5b1ab034a9f4752115315aaa0023829c326823002ef441618d853edb75"
+    },
+    {
+      "name": "consumer-cuda-profile.json",
+      "bytes": 19271543,
+      "sha256": "2b6f3023472d6c2a041ff9ee9d1f375db5b299fb1ab4f6b85c8b18b80aeec351"
+    },
+    {
+      "name": "consumer-cuda-profile-after.json",
+      "bytes": 19268481,
+      "sha256": "736a80a1e0881297cbf9a61a5727eeb12dd608064a2d32f2849dd7795b88a6d2"
+    },
+    {
+      "name": "profile-disabled-before.txt",
+      "bytes": 6390,
+      "sha256": "93b169255855c77b7b9ee6703192b6f38fe38bb4bcb97d5584b9b363a0fdb996"
+    },
+    {
+      "name": "profile-disabled-after.txt",
+      "bytes": 6501,
+      "sha256": "b3306d20cf4445558314c8919cb8d5deb5941b28d2ff5248efa540c62aa7118c"
+    },
+    {
+      "name": "profile-context_online-before.txt",
+      "bytes": 6603,
+      "sha256": "b05367bf6edcc3f52f7ffd76214025c8bf13a829aafeee5d967d64271aeaa7b5"
+    },
+    {
+      "name": "profile-context_online-after.txt",
+      "bytes": 6772,
+      "sha256": "ccf2a1f49e403092c6020561e7b7c0aae4abc5ccca59b1e136a3e98f7e4ffb19"
+    },
+    {
+      "name": "signature-cache-red.xml",
+      "bytes": 1437,
+      "sha256": "c6c725d6209469838cd97db8ed81d6c2539d04026e169a491f317c24fdb3662a"
+    },
+    {
+      "name": "consumer-mutations/results.json",
+      "bytes": 13663,
+      "sha256": "b4f8e620dd478358de381e4c260ff8ed3cf62ec9c474b2b4c7c3746da467546b"
+    },
+    {
+      "name": "signature-mutations/results.json",
+      "bytes": 2243,
+      "sha256": "bbb80012296d1dd46e84bfe7f9e60dcb2d6b577aa035d666f0a4b87e2a0de4f6"
+    },
+    {
+      "name": "benchmark-abba.py",
+      "bytes": 1852,
+      "sha256": "6ea4aef6e206f7adc5ceda58decf8dc3ec73eb0d6788e4bc90092fb2f1fdb084"
+    },
+    {
+      "name": "mutate-consumer.py",
+      "bytes": 7343,
+      "sha256": "fb3139261720be704e1b72c3da1e25e9734156ab9c8b84a8a0889445f2221a12"
+    },
+    {
+      "name": "mutate-signature.py",
+      "bytes": 3132,
+      "sha256": "d0e9fda2308e9dd7d4b4c12290f05a29b8e9e90d2e26531e590f16916e82921b"
+    },
+    {
+      "name": "parity-consumer.py",
+      "bytes": 1034,
+      "sha256": "98939f68c5ba8ea8f65ab610ac108a4f92bcab3bc22df7f9a78a46d9c1ccefcb"
+    },
+    {
+      "name": "profile-consumer.py",
+      "bytes": 1748,
+      "sha256": "6138e2089ba99a15f7de367032917cd50ffe7188f313300740bc8beb8ab13bf4"
+    },
+    {
+      "name": "profile-consumer-after.py",
+      "bytes": 1759,
+      "sha256": "3de064ebaf3931f26614c78120c965e2d992fa3406143230d3a5071a30b139be"
+    }
+  ]
+}

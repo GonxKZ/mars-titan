@@ -12,10 +12,14 @@ import torch
 from mars_titan.models.quantile_head import QuantileHead
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .bank_readout import BankReadout
 from .config import canonical
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
+from .episodic_snapshot import EpisodeSnapshot
+from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
+from .regional_fusion import RegionalFusion
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -29,10 +33,16 @@ _TITANS_MODULES = (
     "financial_inputs",
     "financial_blocks",
     "presence_modulation",
+    "regional_fusion",
+    "bank_readout",
     "session_context",
     "local_control",
     "episodic_readout",
     "episodic_snapshot",
+    "evidence_bridge",
+    "bridge_intervention",
+    "bridge_recurrence",
+    "regional_episode_readout",
     "frozen_financial",
 )
 _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_MODULES) + (
@@ -122,8 +132,45 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) is RegionalFusion:
+        fields = ("hidden_size", "max_batch")
+        settings["regional_fusion"] = module.config.identity()
+    elif type(module) is BankReadout:
+        fields = ("dim",)
+        settings["bank_readout"] = module.config.identity()
+    elif type(module) is SharedEvidenceBridge:
+        settings["evidence_bridge"] = module.config.identity()
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
+
+
+def _validate_intervention(readout):
+    """Conciliar la geometría fija una vez, antes de sellar los buffers del lector."""
+    if readout is None:
+        return
+    from .evidence_bridge import SharedEvidenceBridge
+
+    config = readout.config.evidence_bridge
+    bridge = readout.evidence_bridge
+    physical = bridge.config if type(bridge) is SharedEvidenceBridge else None
+    if not any(item is not None and item.intervention is not None for item in (config, physical)):
+        return
+    if (
+        type(bridge) is not SharedEvidenceBridge
+        or config is None
+        or canonical(bridge.config.identity()) != canonical(config.identity())
+    ):
+        raise ValueError("El módulo no conserva la intervención de regiones y puentes declarada")
+    for name in ("edges", "active_regions"):
+        value = getattr(bridge, name, None)
+        if (
+            not isinstance(value, torch.Tensor)
+            or value.dtype != torch.bool
+            or value.layout != torch.strided
+            or value.device != readout.step_logit.device
+        ):
+            raise ValueError("Los puentes y regiones necesitan buffers booleanos compatibles")
+    bridge.validate_payload(bridge.state_dict())
 
 
 def _execution_signature(models):
@@ -142,6 +189,8 @@ def _execution_signature(models):
     ):
         raise ValueError("El consumidor no admite hooks globales")
     signatures, modes = [], {}
+    # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
+    class_methods = {}
     for prefix, model in models:
         for name, module in model.named_modules():
             kind = type(module)
@@ -168,10 +217,12 @@ def _execution_signature(models):
                         raise ValueError("El consumidor no admite hooks adicionales")
                 if callable(hooks) and hasattr(kind, attribute):
                     raise ValueError("El consumidor no admite métodos sustituidos en una instancia")
-            methods = tuple(
-                (key, id(value), id(getattr(value, "__code__", None)))
-                for key, value in inspect.getmembers(kind, inspect.isfunction)
-            )
+            if kind not in class_methods:
+                class_methods[kind] = tuple(
+                    (key, id(value), id(getattr(value, "__code__", None)))
+                    for key, value in inspect.getmembers(kind, inspect.isfunction)
+                )
+            methods = class_methods[kind]
             qualified = prefix + "/" + name
             settings = _module_settings(module)
             try:
@@ -239,6 +290,7 @@ class FrozenFinancialConsumer:
                 "El lector y predictor no comparten dimensión, precisión y dispositivo"
             )
         self.predictor, self.readout = predictor, readout
+        _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
         self._flags = _numerics()
@@ -305,6 +357,11 @@ class FrozenFinancialConsumer:
             options.update(control_selection=selection, control_context_id=context_id)
         elif selection is not None:
             raise ValueError("El predictor sin C no admite un plan de medición")
+        if not warmup and type(self.readout) is EpisodicReadout:
+            self.readout.preflight_node_updates(
+                self.readout.config.refinements,
+                snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0,
+            )
         prepared = self.predictor.prepare(batch, state, differentiable=False, **options)
         if warmup:
             return FrozenPreparation(None, prepared.next_state, None, prepared.local_control)

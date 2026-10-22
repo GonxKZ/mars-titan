@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-21T16:57:26.203972+00:00",
+  "code_commit": "84778ea236558e57e1640cf807d63f36501b7799",
+  "runs": [
+    {
+      "name": "final",
+      "counts": {
+        "tests": 422,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 90.804,
+      "junit_sha256": "64a8f3bd97d90dda4609dd5e2cabec8d0988454a5e7861e8fac42223ffb018f6"
+    },
+    {
+      "name": "finite-review",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 1.21,
+      "junit_sha256": "e55f2e01c55b1913478efd03dd1305541b96053cf58ae45ab1ad949223910adf"
+    }
+  ],
+  "distinct_tests": 424,
+  "marked_cuda": 76,
+  "new_tests": 87,
+  "new_marked_cuda": 38,
+  "warnings": [
+    {
+      "test": "test_financial_adapter.py::test_cuda_prepare_waits_for_the_device_once[False]",
+      "kind": "torch_sync_debug_mode_experimental"
+    }
+  ],
+  "single_run_of_424": false,
+  "production_source_changed_between_runs": false,
+  "scope": "selected_regression_and_two_additional_failure_cases",
+  "scientific_evaluation": false,
+  "outer_optimizer_steps": 0,
+  "fast_memory_updates": "executed_as_inference_on_fixtures",
+  "sources": {
+    "src/mars_titan/models/titans/bank_readout.py": "eb8853e99e7de816197d19dc3a957db8d7ed00d69d638ab29e7aca3bda17e8a3",
+    "src/mars_titan/models/titans/config.py": "119f71fd5dfb4a8e81633bbd1c6ba1e06e04ecdfcbd2c8edd94871bdbd390780",
+    "src/mars_titan/models/titans/financial.py": "b76a2c92e4953c8338bca2bcd603515c4da0bd66f0fc9245bac8bc3609963701",
+    "src/mars_titan/models/titans/financial_blocks.py": "20debec174fe1196f18bb66566153a3fd780ca189fcbb316d58d5c7665753a15",
+    "src/mars_titan/models/titans/neural_memory.py": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+    "src/mars_titan/models/titans/state.py": "01c17150f6f15d179d8cdd1ef03abcef8ca66fcace2095345702860bdefa24e2",
+    "src/mars_titan/models/titans/transition_jacobian.py": "cfc97424ab8493c6e8919a4464db5ae1351f4f625d076852cc0d5363864a30f5"
+  },
+  "cuda_collection_sha256": "bc2d42f84e4c9be9767fb68784479d499e04e936ca65137a56a8d53d210710c0"
+}

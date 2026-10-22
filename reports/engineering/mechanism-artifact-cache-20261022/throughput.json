@@ -1,0 +1,151 @@
+{
+  "scope": "Caudal derivado de las emisiones y los tiempos de fase medidos. Incluye calentamiento de memoria y cierre de la fase, no la construcción inicial del modelo.",
+  "unit": "emitted_predictions_per_second",
+  "formula": "4 * assets * 1000 / milliseconds",
+  "rounds": [
+    {
+      "source_file": "benchmark.json",
+      "source_sha256": "6902be3c572a5937136f3833c981ffd488e99efa115b875e523e77526f149557",
+      "cases": [
+        {
+          "name": "m3-4-fixed-k4cc",
+          "emissions_per_phase": 16,
+          "samples": {
+            "uncached": [
+              4.689731552053871,
+              3.479328661877856,
+              6.377043490149368
+            ],
+            "cached": [
+              3.004026176127617,
+              3.644245468453714,
+              6.986425743400504
+            ]
+          },
+          "median": {
+            "uncached": 4.689731552053871,
+            "cached": 3.644245468453714
+          }
+        },
+        {
+          "name": "m2-64-fixed-k4cc",
+          "emissions_per_phase": 256,
+          "samples": {
+            "uncached": [
+              22.635173984042204,
+              23.037704732835635,
+              26.097545721306215
+            ],
+            "cached": [
+              33.38089002202153,
+              34.0853622038423,
+              33.11257046376885
+            ]
+          },
+          "median": {
+            "uncached": 23.037704732835635,
+            "cached": 33.38089002202153
+          }
+        },
+        {
+          "name": "m3-64-fixed-k4cc",
+          "emissions_per_phase": 256,
+          "samples": {
+            "uncached": [
+              12.606291781594434,
+              14.212060567315524,
+              13.00386957616385
+            ],
+            "cached": [
+              16.982088497894967,
+              14.537520769454382,
+              20.673182747522315
+            ]
+          },
+          "median": {
+            "uncached": 13.00386957616385,
+            "cached": 16.982088497894967
+          }
+        },
+        {
+          "name": "m3-64-manual-k2c",
+          "emissions_per_phase": 256,
+          "samples": {
+            "uncached": [
+              27.77271454904279,
+              24.438502582724063,
+              22.37460344310966
+            ],
+            "cached": [
+              33.707597012479745,
+              29.648138856459372,
+              31.10339305946648
+            ]
+          },
+          "median": {
+            "uncached": 24.438502582724063,
+            "cached": 31.10339305946648
+          }
+        },
+        {
+          "name": "m3-256-fixed-k4cc",
+          "emissions_per_phase": 1024,
+          "samples": {
+            "uncached": [
+              23.223569315971773,
+              16.10390146363246,
+              19.365335995331314
+            ],
+            "cached": [
+              25.63423024961151,
+              27.714181015014216,
+              22.13422229688734
+            ]
+          },
+          "median": {
+            "uncached": 19.365335995331314,
+            "cached": 25.63423024961151
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "small-followup.json",
+      "source_sha256": "6f3e6d5baeb657badcb3cdf44134b47e71ebc41e667ab524e81db0f6883accf7",
+      "cases": [
+        {
+          "name": "m3-4-fixed-k4cc",
+          "emissions_per_phase": 16,
+          "samples": {
+            "uncached": [
+              4.965776535429079,
+              6.237955616450432,
+              5.568159612675304,
+              4.113097753287724,
+              4.6320999341529845,
+              6.053431886222847,
+              4.721668331653403,
+              6.333106892671598,
+              5.760784532815545
+            ],
+            "cached": [
+              6.366123769897943,
+              6.357804624041357,
+              7.538683849195227,
+              6.787894085289354,
+              5.128524053507064,
+              6.991172076132694,
+              5.34422613099906,
+              5.920226596144686,
+              5.440132025143838
+            ]
+          },
+          "median": {
+            "uncached": 5.568159612675304,
+            "cached": 6.357804624041357
+          }
+        }
+      ]
+    }
+  ]
+}

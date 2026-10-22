@@ -1,0 +1,426 @@
+{
+  "comparisons": [
+    {
+      "scope": "resident",
+      "arm": "original",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 0,
+      "fusion_p50_delta_ms": 0.0,
+      "consumer_p50_delta_ms": 0.0,
+      "consumer_mean_change_pct": 0.0,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_self",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.2387265000000003,
+      "consumer_p50_delta_ms": 1.4669999999999987,
+      "consumer_mean_change_pct": 19.38754053335674,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_uniform_hub",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.41087,
+      "consumer_p50_delta_ms": 3.408056499999999,
+      "consumer_mean_change_pct": 41.69046897180604,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_attention_hub",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.8280695,
+      "consumer_p50_delta_ms": 4.427664,
+      "consumer_mean_change_pct": 53.46765446085742,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_hub",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.8620585,
+      "consumer_p50_delta_ms": 4.3380455,
+      "consumer_mean_change_pct": 48.891676595774115,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_no_hub",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.1533610000000003,
+      "consumer_p50_delta_ms": 2.0946554999999982,
+      "consumer_mean_change_pct": 29.160413158199905,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_frequent_summary",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.330555,
+      "consumer_p50_delta_ms": 3.6752339999999997,
+      "consumer_mean_change_pct": 45.55143231833072,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_single_summary",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.566843,
+      "consumer_p50_delta_ms": 2.5748545000000007,
+      "consumer_mean_change_pct": 40.879563287599964,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "original",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 0,
+      "fusion_p50_delta_ms": 0.0,
+      "consumer_p50_delta_ms": 0.0,
+      "consumer_mean_change_pct": 0.0,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_self",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.3618125,
+      "consumer_p50_delta_ms": 3.3946164999999997,
+      "consumer_mean_change_pct": 31.722294474725143,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_uniform_hub",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.8880175,
+      "consumer_p50_delta_ms": 3.9911425000000005,
+      "consumer_mean_change_pct": 48.7766092043374,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_attention_hub",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.5578765,
+      "consumer_p50_delta_ms": 2.628655,
+      "consumer_mean_change_pct": 29.224319005651346,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_hub",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.7440875,
+      "consumer_p50_delta_ms": 2.915258999999999,
+      "consumer_mean_change_pct": 31.2382625857458,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_no_hub",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.21955,
+      "consumer_p50_delta_ms": 2.9916079999999994,
+      "consumer_mean_change_pct": 33.79449847580729,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_frequent_summary",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.29845,
+      "consumer_p50_delta_ms": 3.341575999999998,
+      "consumer_mean_change_pct": 37.02542807518323,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_single_summary",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.4912865,
+      "consumer_p50_delta_ms": 3.2754059999999985,
+      "consumer_mean_change_pct": 33.74171691176559,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "original",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 0,
+      "fusion_p50_delta_ms": 0.0,
+      "consumer_p50_delta_ms": 0.0,
+      "consumer_mean_change_pct": 0.0,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_self",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.0925925000000003,
+      "consumer_p50_delta_ms": 3.6347129999999996,
+      "consumer_mean_change_pct": 37.925556918617545,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_uniform_hub",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.4020595,
+      "consumer_p50_delta_ms": 3.8552625000000003,
+      "consumer_mean_change_pct": 38.561376421486784,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_attention_hub",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.093179,
+      "consumer_p50_delta_ms": 3.8980834999999985,
+      "consumer_mean_change_pct": 41.261181608534045,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_hub",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.4423909999999998,
+      "consumer_p50_delta_ms": 4.6358609999999985,
+      "consumer_mean_change_pct": 56.611832732426784,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_no_hub",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.648187,
+      "consumer_p50_delta_ms": 1.2712164999999995,
+      "consumer_mean_change_pct": 16.29748360787433,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_frequent_summary",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.5010265,
+      "consumer_p50_delta_ms": 2.2861364999999996,
+      "consumer_mean_change_pct": 24.11114099552776,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_single_summary",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.8018405,
+      "consumer_p50_delta_ms": 1.4332320000000003,
+      "consumer_mean_change_pct": 15.020783215162892,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "original",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 0,
+      "fusion_p50_delta_ms": 0.0,
+      "consumer_p50_delta_ms": 0.0,
+      "consumer_mean_change_pct": 0.0,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_self",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.805297,
+      "consumer_p50_delta_ms": 2.6890789999999996,
+      "consumer_mean_change_pct": 30.06170729606692,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_uniform_hub",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.255825,
+      "consumer_p50_delta_ms": 3.082964499999999,
+      "consumer_mean_change_pct": 33.53309633340695,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_attention_hub",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.223459,
+      "consumer_p50_delta_ms": 4.155872500000001,
+      "consumer_mean_change_pct": 40.093188475039575,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_hub",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.4923745,
+      "consumer_p50_delta_ms": 3.1685055,
+      "consumer_mean_change_pct": 32.93049253527185,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_no_hub",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.857796,
+      "consumer_p50_delta_ms": 1.9621060000000003,
+      "consumer_mean_change_pct": 20.09407688962761,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_frequent_summary",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 3.6050665,
+      "consumer_p50_delta_ms": 2.8861995,
+      "consumer_mean_change_pct": 29.479237761523237,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "resident",
+      "arm": "regional_ring_single_summary",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "parameter_delta": 41216,
+      "fusion_p50_delta_ms": 2.9795655,
+      "consumer_p50_delta_ms": 2.2706465,
+      "consumer_mean_change_pct": 25.47562692987091,
+      "persistent_bytes_per_flow_delta": 0
+    },
+    {
+      "scope": "session",
+      "arm": "original_context_online",
+      "rows": 64,
+      "dtype": "float64",
+      "p50_delta_ms": 0.0,
+      "mean_change_pct": 0.0,
+      "retained_bytes_delta": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "scope": "session",
+      "arm": "regional_ring_context_online",
+      "rows": 64,
+      "dtype": "float64",
+      "p50_delta_ms": 155.66144350000013,
+      "mean_change_pct": 2.7936761659045795,
+      "retained_bytes_delta": [
+        2432,
+        2432,
+        2432,
+        2432,
+        2432,
+        2432
+      ]
+    },
+    {
+      "scope": "session",
+      "arm": "original_context_online",
+      "rows": 256,
+      "dtype": "float64",
+      "p50_delta_ms": 0.0,
+      "mean_change_pct": 0.0,
+      "retained_bytes_delta": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "scope": "session",
+      "arm": "regional_ring_context_online",
+      "rows": 256,
+      "dtype": "float64",
+      "p50_delta_ms": -67.85994699999901,
+      "mean_change_pct": 1.9837896874169036,
+      "retained_bytes_delta": [
+        7616,
+        7616,
+        7616,
+        7616,
+        7616,
+        7616
+      ]
+    }
+  ],
+  "scientific_study": false,
+  "predictive_error_measured": false,
+  "limits": [
+    "Comparaciones de coste sobre fixtures con orden fijo, no intervalos inferenciales ni resultados financieros.",
+    "La sesión y el consumidor residente usan formas y alcances diferentes."
+  ]
+}

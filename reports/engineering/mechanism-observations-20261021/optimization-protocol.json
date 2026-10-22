@@ -1,0 +1,25 @@
+{
+  "recorded_at_utc": "2026-10-21T06:30:00.486889+00:00",
+  "hypothesis": "La validación histórica por fila repite miles de comprobaciones NumPy. Agrupar sus comprobaciones independientes en bloques acotados conserva exactamente los rasgos y reduce llamadas.",
+  "evidence": "Perfil instrumentado: validate_historical_vectors acumuló 0,728 de 1,604 segundos en veinte llamadas de 256 filas, con 5.120 invocaciones. Las duraciones instrumentadas no son las latencias del benchmark.",
+  "reference_commit": "dc0456ffe",
+  "reference_source_sha256": "5832a1a7f2e04779c85c8aa0cd639c011ba3aefdfbe688b642303ce33774f5e8",
+  "candidates_validation_rows": [
+    16,
+    64
+  ],
+  "unchanged": [
+    "Validación por fila de identidad, fecha, inmutabilidad, formas, finitud y huella",
+    "RMS FP64 por fila, orden de reducción y medias",
+    "Prohibición de supervisión y consulta de feedback actual",
+    "Validación completa de las mismas máscaras y rellenos históricos",
+    "Parámetros, normalización y estado del consumidor"
+  ],
+  "memory_bound": "Arrays adicionales de modalidades distintas de precios por bloque: filas*sum(widths_no_precio)*4 bytes más máscara. Como máximo 0,5 MiB para 16 y 2 MiB para 64 antes de temporales de validación.",
+  "parity": "66 condiciones. Todos los campos y valores deben coincidir exactamente excepto la huella del productor y la exterior que la contiene. Mantener todos los rechazos de contrato.",
+  "measurements": "Repetir el benchmark técnico original sin otras cargas propias. Referencia ya medida, candidatas 16/64 y referencia posterior para observar deriva de orden.",
+  "acceptance": "Media de ratios p50 de extracción+CUDA <=0,90 frente a la media de las dos referencias por condición, sin empeorar p95 más de un 10 % frente a esa misma media en ninguna condición. Elegir el bloque menor si su media queda dentro de un 5 % de la más rápida. Registrar deriva entre referencias y no afirmar un límite de hardware. Si no hay beneficio reproducible suficiente, conservar la referencia.",
+  "scientific_study": false,
+  "real_data_used": false,
+  "optimizer_steps": 0
+}

@@ -1,0 +1,677 @@
+{
+  "schema_version": 1,
+  "method": "Mutación dirigida con fallos de aserción identificados y controles de copia inicial y restaurada. No es una puntuación global.",
+  "component_historical": {
+    "unique_declared": 10,
+    "unique_detected": 10,
+    "first_batch": [
+      {
+        "name": "baseline",
+        "status": "passed",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-baseline-log",
+        "summary_from_log": {
+          "passed": 63
+        },
+        "xml_artifact_id": "component-first-mutations-baseline-xml"
+      },
+      {
+        "name": "remove_tanh",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_nonlinear_steps_match_synchronous_receiver_weight_equation[2-cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "4978a46939115f9fd3d9f2ca71862649c9cd84a5dd621d3ab374ec328d0d3b90",
+        "old": "gain * torch.tanh(transformed)",
+        "new": "gain * transformed",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-remove_tanh-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-remove_tanh-xml"
+      },
+      {
+        "name": "one_step_only",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_nonlinear_steps_match_synchronous_receiver_weight_equation[2-cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "d99c18b3211d1be6336db483041447c2b042329a017707569fbd68264b22a8c0",
+        "old": "for _ in range(steps):",
+        "new": "for _ in range(1):",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-one_step_only-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-one_step_only-xml"
+      },
+      {
+        "name": "wrong_receiver_weights",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_nonlinear_steps_match_synchronous_receiver_weight_equation[2-cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "7d180d825a97a721655616e065c5c308b4384c9023f5befea8c177e6acd82648",
+        "old": "\"brh,rhd->brd\", message, weights)",
+        "new": "\"brh,rhd->brd\", message, weights.flip(0))",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-wrong_receiver_weights-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-wrong_receiver_weights-xml"
+      },
+      {
+        "name": "mixed_rows",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_nonlinear_steps_match_synchronous_receiver_weight_equation[2-cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "12489376eb01d3d03420edff8c124dc9205748544ac03e2631f30f30818f5b83",
+        "old": "torch.bmm(masked_graph, current)",
+        "new": "torch.bmm(masked_graph, current.flip(0))",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-mixed_rows-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-mixed_rows-xml"
+      },
+      {
+        "name": "presence_ignored",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_nonlinear_steps_match_synchronous_receiver_weight_equation[2-cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "df20d7c424d662a9614d8a4cbdc28f428c74b91607e06599392b382c9a0df82f",
+        "old": "present = available[..., None]",
+        "new": "present = torch.ones_like(available[..., None])",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-presence_ignored-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-presence_ignored-xml"
+      },
+      {
+        "name": "detached_message",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_bounded_states_do_not_imply_a_contractive_four_step_derivative[cuda:0]",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "867960014f2688d9d502ba35b7c4d230925a00337c863475f10567a295fd3fcc",
+        "old": "torch.bmm(masked_graph, current)",
+        "new": "torch.bmm(masked_graph, current.detach())",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-detached_message-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-detached_message-xml"
+      },
+      {
+        "name": "j_missing_from_budget",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_global_work_bound_includes_collection_and_emission",
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "d80876d2c9f917bbe9a2579c35f538e1cb83669d9e0896425eafa613169ace6f",
+        "old": "return regions * self.steps * reads",
+        "new": "return regions * reads",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-j_missing_from_budget-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-j_missing_from_budget-xml"
+      },
+      {
+        "name": "active_identity_missing",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/evidence_bridge.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_active_identity_zero_gain_and_checkpoint_rejection_precede_copy",
+        "original_sha256": "78820a59a8268225ea1d7d3dfb760b9385cdbbf6f45c5c86ccac2378a5f93a73",
+        "mutant_sha256": "e157e1cd3f99fdc7a827bc1ce65f10b74181163d5ec603c263316a13b7b55cfa",
+        "old": "if self.recurrence is not None:\n            result.update(",
+        "new": "if False:\n            result.update(",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-active_identity_missing-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-active_identity_missing-xml"
+      },
+      {
+        "name": "per_read_budget_ignored",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/evidence_bridge.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_active_recurrence_rejects_legacy_cycles_and_counts_j_without_k_reset",
+        "original_sha256": "78820a59a8268225ea1d7d3dfb760b9385cdbbf6f45c5c86ccac2378a5f93a73",
+        "mutant_sha256": "779093272058181b6e2dfb7e11a8ab69565233f8d299a70af723748fb5acc3f2",
+        "old": "> recurrence.max_node_updates_per_row",
+        "new": "> 1216",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-per_read_budget_ignored-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-first-mutations-per_read_budget_ignored-xml"
+      },
+      {
+        "name": "restored",
+        "status": "passed",
+        "targets": [],
+        "log_artifact_id": "component-first-mutations-restored-log",
+        "summary_from_log": {
+          "passed": 63
+        },
+        "xml_artifact_id": "component-first-mutations-restored-xml"
+      }
+    ],
+    "additional_graph_check": [
+      {
+        "name": "baseline",
+        "status": "passed",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 2,
+          "error": 0,
+          "skipped": 0,
+          "failure": 0
+        },
+        "log_sha256": "fb59177fc9644f6dff47da7d93d97f83d6318d51989e0bc387e5462fe6fcd642",
+        "xml_sha256": "29178957eaf66bf2989114f448c8511a34f0c882ba6b043db8d646a404f14ecd",
+        "targets": [
+          "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation"
+        ],
+        "log_artifact_id": "component-graph-mutation-baseline-log",
+        "summary_from_log": {
+          "passed": 2
+        },
+        "xml_artifact_id": "component-graph-mutation-baseline-xml"
+      },
+      {
+        "name": "detached_graph",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/bridge_recurrence.py",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation[cuda:0]",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "error": 0,
+          "skipped": 0,
+          "failure": 1
+        },
+        "original_sha256": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+        "mutant_sha256": "46d2b98da71a5d8cd4a5d7d6437f7063f02ec390b1bbb069047be78a0c2e5e6c",
+        "log_sha256": "7a16a4d10dfaaa1a026ac25115c3e932be735c347e0f2d5732d6471a52df08f4",
+        "xml_sha256": "580d58e55a0422f9d846079c16901bc91c6fb05acffb69964f19a4e117070752",
+        "old": "message = torch.bmm(masked_graph, current)",
+        "new": "message = torch.bmm(masked_graph.detach(), current)",
+        "targets": [
+          "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation[cuda:0]"
+        ],
+        "log_artifact_id": "component-graph-mutation-detached_graph-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "component-graph-mutation-detached_graph-xml"
+      },
+      {
+        "name": "restored",
+        "status": "passed",
+        "target": "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 2,
+          "error": 0,
+          "skipped": 0,
+          "failure": 0
+        },
+        "log_sha256": "441ebc4cc35197e4df54102e5528d995ac3b85f301ce1e4611fc1cfbd944811f",
+        "xml_sha256": "22409aea560c4ca4e5fc5f3aa49f34779afa5ed86192e1f1b0e1fa1aef0a7428",
+        "targets": [
+          "tests/models/titans/test_bridge_recurrence.py::test_recurrence_gradcheck_and_row_isolation"
+        ],
+        "log_artifact_id": "component-graph-mutation-restored-log",
+        "summary_from_log": {
+          "passed": 2
+        },
+        "xml_artifact_id": "component-graph-mutation-restored-xml"
+      }
+    ],
+    "original_source_files_sha256": {
+      "src/mars_titan/models/titans/bridge_recurrence.py": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+      "src/mars_titan/models/titans/evidence_bridge.py": "78820a59a8268225ea1d7d3dfb760b9385cdbbf6f45c5c86ccac2378a5f93a73",
+      "tests/models/titans/test_bridge_recurrence.py": "eef364a1603ee8c993a663ed12d9b446ba69679237ad5fd8bdd5b850e604bb90",
+      "tests/models/titans/fixtures/shared_evidence_bridge_v1.json": "88a4d13241aca6b7dd7d397f5214d47a410d9843e26ac4a2287fec367a4efdf9"
+    },
+    "nine_first_mutants_reexecuted_for_graph_check": false,
+    "reexecuted_in_integration_mutation_run": false,
+    "baseline_first_cases": 63,
+    "restored_first_cases": 63,
+    "baseline_graph_cases": 2,
+    "restored_graph_cases": 2,
+    "scope": "Ecuación, tanh, pesos receptores, filas, disponibilidad, gradientes, límites J e identidad del componente"
+  },
+  "integration": {
+    "unique_declared": 9,
+    "unique_detected": 9,
+    "first_batch": [
+      {
+        "name": "baseline",
+        "status": "passed",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 48,
+          "failure": 0,
+          "error": 0,
+          "skipped": 0
+        },
+        "log_sha256": "4cd9608d1f584d0dc9611eec277308ec960ea09593742f9ccac501243159bd09",
+        "xml_sha256": "20992338ca98108b77a5629b75d9d218a35b94da6ebdfcb28739932a8ca0eba4",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py"
+        ],
+        "log_artifact_id": "integration-first-mutations-baseline-log",
+        "summary_from_log": {
+          "passed": 48,
+          "deselected": 2
+        },
+        "xml_artifact_id": "integration-first-mutations-baseline-xml"
+      },
+      {
+        "name": "final_emission_not_reserved",
+        "status": "killed",
+        "source": "src/mars_titan/memory/mechanism_collection.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "247ea98814aa54e7caa91526c1a2042086afd072e0053b5a5fa233cfcf6f059a",
+        "mutant_sha256": "5f40653dd933b71d8f9e3acb009851297c1f4048f09bff59bf1d4fa809905819",
+        "log_sha256": "d9394016f67ae0968462dfe19aac5ce1bbfe75c683519ad7383e497f810afc49",
+        "xml_sha256": "be1e1d7d9907522b67eb94ddb7b711e8353256f084f3b4dd05ed2a06b09439b9",
+        "old": "reads + plan.reader_steps, episodes",
+        "new": "reads, episodes",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_collection_reserves_both_contexts_and_final_emission_before_mac[3-2-228-False-cuda:0]"
+        ],
+        "log_artifact_id": "integration-first-mutations-final_emission_not_reserved-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-final_emission_not_reserved-xml"
+      },
+      {
+        "name": "last_context_only",
+        "status": "killed",
+        "source": "src/mars_titan/memory/mechanism_collection.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "247ea98814aa54e7caa91526c1a2042086afd072e0053b5a5fa233cfcf6f059a",
+        "mutant_sha256": "b38dfce1c9cecdf0a0c78bb49d1a6f725d3113d5645dff1e17dabcc8409e82f4",
+        "log_sha256": "5af2c45b54daf50ddf34de31fe46df585a6243ad56399ca2c0b257c5929b8e32",
+        "xml_sha256": "37ac64b1ac0ca158da1b47f4b18daa8a689d93c36151820a9f613ec06cce009d",
+        "old": "reads += sum(",
+        "new": "reads = sum(",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_collection_reserves_both_contexts_and_final_emission_before_mac[3-2-228-False-cuda:0]"
+        ],
+        "log_artifact_id": "integration-first-mutations-last_context_only-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-last_context_only-xml"
+      },
+      {
+        "name": "j_missing_from_global_limit",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/episodic_readout.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "994be060bb7535cf7c5ddb15d46c9cdca2eb14957101478b199d44acc1cad634",
+        "mutant_sha256": "446bfe787cc5a70d6ec74062884bca39273c67ec1067318ef21039050427671b",
+        "log_sha256": "48d9f4e9c279dc61755be115c9f0d4a89e4d79e0c56220343e834125c85f2d15",
+        "xml_sha256": "d5d5113d778346cc26160be4b07f7c4269c7be21de3389c05e06fb9464a6a670",
+        "old": "len(bridge.regions) * recurrence.steps",
+        "new": "len(bridge.regions)",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_j_and_k_share_one_node_budget_in_the_direct_reader[cuda:0]"
+        ],
+        "log_artifact_id": "integration-first-mutations-j_missing_from_global_limit-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-j_missing_from_global_limit-xml"
+      },
+      {
+        "name": "budget_after_mac",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "3a6c97294aa72766312bdaa9bda5bd14d87e018746bd123eecd9f6dcc4b97497",
+        "mutant_sha256": "fd8815ab909c23142a9514e49f92991845beb3e247d8b72a3018db06fa8a3756",
+        "log_sha256": "aacd71ef9f35dd6f2446f971944f81ef1cb5659895a1539a7f0a8ce54285ec3a",
+        "xml_sha256": "67dc427dae47daba7e29d2e872af8ed98295c11e55d7c5da9b54f68e711509b3",
+        "old": "        if not warmup and type(self.readout) is EpisodicReadout:\n            self.readout.preflight_node_updates(\n                self.readout.config.refinements,\n                snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0,\n            )\n        prepared = self.predictor.prepare(batch, state, differentiable=False, **options)\n",
+        "new": "        prepared = self.predictor.prepare(batch, state, differentiable=False, **options)\n        if not warmup and type(self.readout) is EpisodicReadout:\n            self.readout.preflight_node_updates(\n                self.readout.config.refinements,\n                snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0,\n            )\n",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_frozen_budget_rejection_precedes_the_first_mac[127-cuda:0]"
+        ],
+        "log_artifact_id": "integration-first-mutations-budget_after_mac-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-budget_after_mac-xml"
+      },
+      {
+        "name": "legacy_catalog_accepted",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/mechanism_consumer.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "3612c796f996eb79bdb270cc29dc8c4288b167beb4de4830018e30ab27e2d0b0",
+        "mutant_sha256": "9f531778a500ac4437575ff0b84d2c6246d96f617da45aa197af3e56b93ddbae",
+        "log_sha256": "7d3b35baf2c1e3aab72d6627605ee004c6214cd44f8f6576ed2517d6aaaac6e0",
+        "xml_sha256": "c714ace6b1e8722171008dd2fd7ad7643d08ef4ee51701a884af15a4a8162058",
+        "old": "if reader_contract != catalog.reader_contract:",
+        "new": "if False:",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_nonlinear_reader_rejects_legacy_catalog_and_policy"
+        ],
+        "log_artifact_id": "integration-first-mutations-legacy_catalog_accepted-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-legacy_catalog_accepted-xml"
+      },
+      {
+        "name": "nonlinear_projection_check_omitted",
+        "status": "killed",
+        "source": "src/mars_titan/memory/mechanism_collection_record.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "85bc25cc1514af48eb1c573b624bc831012b70c91f0b06d75db585f73cf98b14",
+        "mutant_sha256": "1db955d8c0f00fbc162f85a2d472e0576885aa141a4851e32dd915cd3b7398ec",
+        "log_sha256": "e713162bc56f6ff37d79322914323e8c3132ae83c594485a744afa49acd1e15f",
+        "xml_sha256": "c51d4b30bd930c144c423ce0e93db829fff3dc0baf13200106750454134cc9e8",
+        "old": "if catalog.reader_contract != \"legacy\":",
+        "new": "if catalog.reader_contract == \"shared_evidence_bridge_v1\":",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_collection_reserves_both_contexts_and_final_emission_before_mac[3-2-228-False-cuda:0]"
+        ],
+        "log_artifact_id": "integration-first-mutations-nonlinear_projection_check_omitted-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-nonlinear_projection_check_omitted-xml"
+      },
+      {
+        "name": "reader_copied_before_identity",
+        "status": "error",
+        "source": "src/mars_titan/models/titans/episodic_readout.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "994be060bb7535cf7c5ddb15d46c9cdca2eb14957101478b199d44acc1cad634",
+        "mutant_sha256": "120c93226c34d4dee8f1432ae6da657ce5d8bf77ecf4e4e2c58e4e512b75bf49",
+        "log_sha256": "c8055343902cdb00e868f9295bad1e29e33ae5eaa791cb93003b3f50a0392afb",
+        "xml_sha256": "0f143a830cbce24b0ddd88943910dc49f2faa57940c345e29712b4acc042988e",
+        "old": "        require_identity(supplied[\"_extra_state\"], self.get_extra_state())",
+        "new": "        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)\n        require_identity(supplied[\"_extra_state\"], self.get_extra_state())",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_recurrence_checkpoint_rejection_precedes_all_reader_parameter_copies[steps]"
+        ],
+        "log_artifact_id": "integration-first-mutations-reader_copied_before_identity-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-reader_copied_before_identity-xml"
+      },
+      {
+        "name": "recurrence_source_not_sealed",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "3a6c97294aa72766312bdaa9bda5bd14d87e018746bd123eecd9f6dcc4b97497",
+        "mutant_sha256": "d61ae9033d7cca94188d63dc24b0908e2e1ca5ba77924d1ecf5f988cf2f5f57c",
+        "log_sha256": "5bbff78cac5ae475570262b65ed57d68991eb68e618901d6d33bd8fcc633e89a",
+        "xml_sha256": "86d9a978756ebecd6a412b5caea3b217dcec04f6c622fd35ca5cbd4a09fa1689",
+        "old": "    \"bridge_recurrence\",\n",
+        "new": "",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_new_module_is_sealed_in_both_runtime_implementations"
+        ],
+        "log_artifact_id": "integration-first-mutations-recurrence_source_not_sealed-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-first-mutations-recurrence_source_not_sealed-xml"
+      },
+      {
+        "name": "restored",
+        "status": "passed",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 48,
+          "failure": 0,
+          "error": 0,
+          "skipped": 0
+        },
+        "log_sha256": "ec84a38c7df323e7d7e855353e060daa84b8273c632af1424f879c8373501020",
+        "xml_sha256": "e5416245b3f5f34ae8d64394ebe7afd9acbe9b3527af9c75f73a57bb7f807f27",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py"
+        ],
+        "log_artifact_id": "integration-first-mutations-restored-log",
+        "summary_from_log": {
+          "passed": 48,
+          "deselected": 2
+        },
+        "xml_artifact_id": "integration-first-mutations-restored-xml"
+      }
+    ],
+    "first_automatic_detected": 7,
+    "first_classification_errors": 1,
+    "first_batch_exit_code": 1,
+    "original_results_rewritten": false,
+    "classification_review": {
+      "original_results_sha256": "dd7ccd4ab3825f8124fe7197fd439f3b3ac58312618628c56000f7443086da2b",
+      "original_status": "error",
+      "reviewed_status": "killed",
+      "source": "src/mars_titan/models/titans/episodic_readout.py",
+      "original_source_sha256": "994be060bb7535cf7c5ddb15d46c9cdca2eb14957101478b199d44acc1cad634",
+      "mutant_source_sha256": "120c93226c34d4dee8f1432ae6da657ce5d8bf77ecf4e4e2c58e4e512b75bf49",
+      "evidence_xml_sha256": "0f143a830cbce24b0ddd88943910dc49f2faa57940c345e29712b4acc042988e",
+      "assertion": "assert_same(reader.state_dict(), before)",
+      "reason": "Pytest serializa la comparación torch.equal como assert False. La traza termina en AssertionError, después del rechazo esperado, porque step_logit ya cambió 0,125. El filtro de prefijo produjo un falso negativo",
+      "baseline": {
+        "testcase": 48,
+        "failure": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "restored": {
+        "testcase": 48,
+        "failure": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "earlier_results_rewritten": false,
+      "setup_or_syntax_counted_as_killed": false
+    },
+    "focused_rerun": [
+      {
+        "name": "baseline",
+        "status": "passed",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 2,
+          "failure": 0,
+          "error": 0,
+          "skipped": 0
+        },
+        "log_sha256": "9a194be2475bd973a0ce43d0e1d1b60f948235c1414d3b42fedc3989c6767951",
+        "xml_sha256": "10882006e845dc4ca5390e9aceac68deef157867d73267c6cd7f1a40de7e571b",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_recurrence_checkpoint_rejection_precedes_all_reader_parameter_copies[steps]",
+          "tests/models/titans/test_bridge_recurrence.py::test_disabled_recurrence_preserves_pinned_legacy_identity_and_tensors"
+        ],
+        "log_artifact_id": "integration-focused-rerun-baseline-log",
+        "summary_from_log": {
+          "passed": 2
+        },
+        "xml_artifact_id": "integration-focused-rerun-baseline-xml"
+      },
+      {
+        "name": "reader_copied_before_identity_reviewed",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/episodic_readout.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "994be060bb7535cf7c5ddb15d46c9cdca2eb14957101478b199d44acc1cad634",
+        "mutant_sha256": "120c93226c34d4dee8f1432ae6da657ce5d8bf77ecf4e4e2c58e4e512b75bf49",
+        "log_sha256": "ec23f270460dca49ace6ebef5ff50b2c13ec9fc7abec3799efb1ea1c859c1e65",
+        "xml_sha256": "735904347feb3c54e810966aeb0f581ba53c5732099750ad5b086b1e8ed8470b",
+        "old": "        require_identity(supplied[\"_extra_state\"], self.get_extra_state())",
+        "new": "        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)\n        require_identity(supplied[\"_extra_state\"], self.get_extra_state())",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_recurrence_checkpoint_rejection_precedes_all_reader_parameter_copies[steps]"
+        ],
+        "log_artifact_id": "integration-focused-rerun-reader_copied_before_identity_reviewed-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-focused-rerun-reader_copied_before_identity_reviewed-xml"
+      },
+      {
+        "name": "disabled_identity_gains_a_null_field",
+        "status": "killed",
+        "source": "src/mars_titan/models/titans/evidence_bridge.py",
+        "exit_code": 1,
+        "counts": {
+          "testcase": 1,
+          "failure": 1,
+          "error": 0,
+          "skipped": 0
+        },
+        "original_sha256": "7aaea308af97f616fd4ef1c98de050a3a1e8f347f8055d0e829279d4bfc3a2a0",
+        "mutant_sha256": "56cc31fb9f63e1ffaa298a99490545807fba8911491e7312a8c8b603e8d2599a",
+        "log_sha256": "aefa8b03cbfceeb6989ac5abb3530fe903cc487ee8725088830eef31d681dc11",
+        "xml_sha256": "03c637fee314108a5ed1b3a16db7315597f9fa241a5050a94e77cc352946b558",
+        "old": "        fields.pop(\"recurrence\")",
+        "new": "        fields[\"recurrence\"] = None",
+        "targets": [
+          "tests/models/titans/test_bridge_recurrence.py::test_disabled_recurrence_preserves_pinned_legacy_identity_and_tensors"
+        ],
+        "log_artifact_id": "integration-focused-rerun-disabled_identity_gains_a_null_field-log",
+        "summary_from_log": {
+          "failed": 1
+        },
+        "xml_artifact_id": "integration-focused-rerun-disabled_identity_gains_a_null_field-xml"
+      },
+      {
+        "name": "restored",
+        "status": "passed",
+        "exit_code": 0,
+        "counts": {
+          "testcase": 2,
+          "failure": 0,
+          "error": 0,
+          "skipped": 0
+        },
+        "log_sha256": "33491df9a0ed1898058863467b55b78ae620277c96b219bc356c614a1a9d70d0",
+        "xml_sha256": "a5cc1a028e3bf449ab91ab7bf2b2d5f51ee778bfc94ee002b87062b10c0152aa",
+        "targets": [
+          "tests/memory/test_nonlinear_bridge_integration.py::test_recurrence_checkpoint_rejection_precedes_all_reader_parameter_copies[steps]",
+          "tests/models/titans/test_bridge_recurrence.py::test_disabled_recurrence_preserves_pinned_legacy_identity_and_tensors"
+        ],
+        "log_artifact_id": "integration-focused-rerun-restored-log",
+        "summary_from_log": {
+          "passed": 2
+        },
+        "xml_artifact_id": "integration-focused-rerun-restored-xml"
+      }
+    ],
+    "existing_mutants_repeated_in_focused_rerun": 1,
+    "new_mutants_in_focused_rerun": 1,
+    "other_seven_mutants_reexecuted": false,
+    "baseline_first_cases": 48,
+    "restored_first_cases": 48,
+    "baseline_focused_cases": 2,
+    "restored_focused_cases": 2,
+    "source_files_sha256": {
+      "configs/titans/mars-titan-extensions.json": "52704d43f549fa2b846cdd5540f9b7be6dfcbae55fdc50fbc1049ed91ab9ae23",
+      "src/mars_titan/memory/financial_mechanisms.py": "c964e0b7b90e0a71aeac00c4a895ff8751ec12db63f7f13961046ca19b27a948",
+      "src/mars_titan/memory/mars_titan_variant.py": "1b2f8a8b8035fbf86aceca32f294a00def91b92f3c632e1cd6eb839dd02aab69",
+      "src/mars_titan/memory/mechanism_collection.py": "247ea98814aa54e7caa91526c1a2042086afd072e0053b5a5fa233cfcf6f059a",
+      "src/mars_titan/memory/mechanism_collection_record.py": "85bc25cc1514af48eb1c573b624bc831012b70c91f0b06d75db585f73cf98b14",
+      "src/mars_titan/models/titans/bridge_recurrence.py": "b53c85185d0a2a9db8d0d22048f9df74e0acf81948fd05adc3dee27ebd914ae2",
+      "src/mars_titan/models/titans/episodic_readout.py": "994be060bb7535cf7c5ddb15d46c9cdca2eb14957101478b199d44acc1cad634",
+      "src/mars_titan/models/titans/evidence_bridge.py": "7aaea308af97f616fd4ef1c98de050a3a1e8f347f8055d0e829279d4bfc3a2a0",
+      "src/mars_titan/models/titans/frozen_financial.py": "3a6c97294aa72766312bdaa9bda5bd14d87e018746bd123eecd9f6dcc4b97497",
+      "src/mars_titan/models/titans/mechanism_catalog.py": "ae7625e26f3b544fe5a615a2198902fa54ca59833b63f0d6c7378d1189c12878",
+      "src/mars_titan/models/titans/mechanism_consumer.py": "3612c796f996eb79bdb270cc29dc8c4288b167beb4de4830018e30ab27e2d0b0",
+      "src/mars_titan/models/titans/regional_mechanism_trace.py": "0c6897b2ea259d5efc32c92175513315fd705af709a30bf67b6483013cdcf31e",
+      "tests/memory/test_bridge_mechanism_session.py": "60f5051de6b22f2f011b49f7a6e95cdbc302bde1be4560275563db1e0ebf5bce",
+      "tests/memory/test_nonlinear_bridge_integration.py": "9becf699885927010a705687a9661d8f4a293697b09e5eada857b37305b22d17",
+      "tests/models/titans/fixtures/shared_evidence_bridge_v1.json": "88a4d13241aca6b7dd7d397f5214d47a410d9843e26ac4a2287fec367a4efdf9",
+      "tests/models/titans/test_bridge_recurrence.py": "eef364a1603ee8c993a663ed12d9b446ba69679237ad5fd8bdd5b850e604bb90"
+    },
+    "scope": "Reserva global antes de MAC, ambos contextos y emisión, factor J, catálogo, reconstrucción de contadores, checkpoint e identidad desactivada"
+  },
+  "setup_syntax_fixture_or_timeout_failures_counted_as_detected": false,
+  "limits": [
+    "Los diez mutantes del componente pertenecen a la fase anterior y conservan sus fuentes",
+    "El error original de clasificación se mantiene junto a su revisión y repetición focal válida",
+    "No se suman estas campañas como una puntuación única sobre la fuente final"
+  ]
+}

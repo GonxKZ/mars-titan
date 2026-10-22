@@ -1,0 +1,52 @@
+{
+  "recorded_at_utc": "2026-10-21T05:13:01.120015+00:00",
+  "code_commit": "b19d064a0a4214e098cbcf62a951e9fe388f3e8d",
+  "tests": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_cases": {
+    "tests/models/titans/test_mechanism_policy.py": 38,
+    "tests/models/titans/test_mechanism_losses.py": 13
+  },
+  "new_cuda_cases": 8,
+  "cuda_marked_tests": 9,
+  "cuda_nodeids": [
+    "tests/models/titans/test_mechanism_policy.py::test_autocast_is_rejected_before_changing_the_declared_precision[cuda:0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cpu_checkpoint_restores_the_next_cuda_decision[dtype0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cpu_checkpoint_restores_the_next_cuda_decision[dtype1]",
+    "tests/models/titans/test_mechanism_policy.py::test_cuda_matches_cpu_and_preserves_the_cuda_rng[dtype0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cuda_matches_cpu_and_preserves_the_cuda_rng[dtype1]",
+    "tests/models/titans/test_mechanism_losses.py::test_loss_autocast_cannot_change_the_precision_of_the_scores[cuda:0]",
+    "tests/models/titans/test_mechanism_losses.py::test_cuda_losses_match_the_cpu_reference[dtype0]",
+    "tests/models/titans/test_mechanism_losses.py::test_cuda_losses_match_the_cpu_reference[dtype1]",
+    "tests/models/titans/test_refinement_policy.py::test_cuda_rejected_load_is_atomic_even_inside_deferred_checks"
+  ],
+  "pytest_seconds": 2.167,
+  "test_files": [
+    "tests/models/titans/test_mechanism_policy.py",
+    "tests/models/titans/test_mechanism_losses.py",
+    "tests/models/titans/test_mechanism_catalog.py",
+    "tests/models/titans/test_refinement_policy.py"
+  ],
+  "source_sha256": {
+    "src/mars_titan/models/titans/mechanism_policy.py": "e8057b5e7e6f8e02ba95a67df84025d2826f0c2b6a01a0032300815115115260",
+    "src/mars_titan/models/titans/mechanism_losses.py": "7137add09c6f20e38f24a6275a97b6c839c39e4b9b5d3c5eaa53e67d6fdae258",
+    "tests/models/titans/test_mechanism_policy.py": "c9054e88ae9b4a7ea92514f943fa722c3a8ff32c48be6e22169742558f85aa07",
+    "tests/models/titans/test_mechanism_losses.py": "c065b3687d970ec748640244a5d9110a5b5b94f1406010e808bb908fcbf14fc6"
+  },
+  "scientific_study": false,
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "regression_fits": 0,
+  "production_binding": false,
+  "feature_extraction_integrated": false,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "checks": {
+    "ruff": "All checks passed!",
+    "format": "1719 files already formatted",
+    "repository": "Verificados 3291 archivos, 361 referencias y 64 tareas."
+  }
+}

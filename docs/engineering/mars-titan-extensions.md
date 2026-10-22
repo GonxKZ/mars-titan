@@ -6,7 +6,7 @@ La especificación, los niveles y la correspondencia con el documento de integra
 
 ## Constructor de la variante
 
-`memory/mars_titan_variant.py` lee la declaración y exige que los componentes marcados como conectados coincidan con los que conoce el código: `episodic_bank`, `refinements`, `refinement_episodes` y `associative_memory`. Una deriva entre declaración y código hace fallar la carga.
+`memory/mars_titan_variant.py` lee la declaración y exige que los componentes marcados como conectados coincidan con los que conoce el código: `episodic_bank`, `refinements`, `refinement_episodes`, `evidence_bridge` y `associative_memory`. Una deriva entre declaración y código hace fallar la carga.
 
 `select_variant(declaration, components, base=...)` valida una combinación y devuelve `MarsTitanVariant`. La base es la identidad del núcleo que devuelve `core_identity(predictor, recipe)`: arquitectura, configuración de `FinancialPredictor`, precisión, huella de parámetros y receta del núcleo. La receta entra como parámetro, así que la variante parte de cualquier receta de Titans-MAC `mac_online`, incluida la de campaña con `memory_residual_layer_norm` y `gate_bias`.
 
@@ -14,13 +14,16 @@ Reglas de la combinación:
 
 - Un valor apagado se expresa omitiendo el componente. Así una misma combinación no tiene dos identidades.
 - `refinements` necesita `episodic_bank` activo. `refinement_episodes="first_read"` necesita K mayor que 1, porque con K = 1 los dos modos coinciden bit a bit.
+- `evidence_bridge` necesita `episodic_bank`. Declara regiones, topología, ciclos, ganancia y semilla propios. El codec, formas y presupuestos son los del lector. Conserva un único banco y asigna pesos y transformaciones regionales a la misma evidencia, como describe el [contrato del puente](../experiments/shared-evidence-bridge-v1.md).
 - `associative_memory` declara `rule`, `key`, `rate` y `forgetting`. Se rechaza junto al banco episódico, porque el error del banco y la escritura de A mezclarían dos memorias en una misma emisión.
 - `episodic_bank="m3"` usa la [escritura M3](m3-write-policy.md). La carga exige que su bloque en la declaración coincida con `write_scores.declaration()`, y `session_options` necesita las escalas `scalers` del tramo de entrenamiento.
 - Los seis componentes declarados sin conexión se rechazan con el texto `pending` de la declaración.
 
-Con todos los componentes apagados, `identity()` devuelve la base sin cambios. La combinación no crea otro modelo: es el Titans-MAC `mac_online` elegido, con `readout=None`, admisión M0 y sin control local. Cada combinación activa tiene identidad propia, el JSON canónico de la base y de los componentes normalizados. Las 23 combinaciones válidas de los componentes conectados producen 23 huellas distintas, y el orden de las claves o escribir 1 frente a 1.0 no cambia la huella.
+Con todos los componentes apagados, `identity()` devuelve la base sin cambios. La combinación no crea otro modelo: es el Titans-MAC `mac_online` elegido, con `readout=None`, admisión M0 y sin control local. Cada combinación activa tiene identidad propia, el JSON canónico de la base y de los componentes normalizados. Las 23 combinaciones anteriores sin puente siguen produciendo 23 huellas distintas, y el orden de las claves o escribir 1 frente a 1.0 no cambia la huella. No son el recuento de todas las combinaciones regionales posibles.
 
 `consumer(predictor, readout)` exige que el predictor sea exactamente el núcleo de la base y que el lector tenga el modo, K y selección de la combinación. `session_options(capacity, seed)` devuelve admisión, retención y corrección B6 para `FinancialSession`.
+
+Con `evidence_bridge`, el constructor normaliza y copia las cinco opciones regionales antes de incorporarlas a la identidad. `readout_config` construye `EvidenceBridgeConfig` con esas opciones y los campos comunes del lector. El consumidor verifica también la coincidencia entre configuración declarada y módulo físico, incluidos formas y presupuestos. El control M0 conserva `no_bank`. M1, M2 y M3 mantienen sus políticas originales y M3 requiere las escalas congeladas de su tramo. Esta conexión al constructor no añade la variante a la campaña ni completa el ajuste del selector regional.
 
 La paridad completa está comprobada en `tests/memory/test_mars_titan_variant.py::test_all_disabled_session_is_exactly_the_mac_online_session`: la sesión construida desde la declaración con todo apagado y la sesión `mac_online` escrita a mano tienen el mismo contrato y modelo, las mismas emisiones en seis eventos con labels y liquidación, el mismo estado de banco, la misma cola pendiente y los mismos pesos rápidos bit a bit, sin cambiar el RNG global. La combinación M1 también reproduce bit a bit la sesión M1 escrita a mano.
 

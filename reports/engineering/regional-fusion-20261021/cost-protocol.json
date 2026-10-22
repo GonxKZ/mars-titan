@@ -1,0 +1,55 @@
+{
+  "recorded_at_utc": "2026-10-21T04:32:50.143755+00:00",
+  "code_commit": "2abecb549415e62e2046be4986668fcbf5953dd1",
+  "sources": {
+    "reports/engineering/regional-fusion-20261021/benchmark.py": "ca454ddbeaa684c97da4e0b7246200483c17515121bb5f4dcb34cfcdadcc118e",
+    "reports/engineering/regional-fusion-20261021/session_benchmark.py": "205a8e4a2cd3a173d32a52f6b6ba5f2ee90b3b1521f4f19f93930b3fd4159922",
+    "src/mars_titan/models/titans/regional_fusion.py": "9e90c308d3999435acbf05bf1085f233a62bb0a90987c7ad20b3d739219bf077",
+    "configs/experiments/regional-fusion-v1.json": "c96a47ba3f2b80cef822a34983d248923e4151b81437eda1b65cc0b8f535a674",
+    "configs/experiments/regional-fusion-recipe-v1.json": "dfa155da844fdab7ebddec9c24a22efe45635b6d204411027e0516a1bce55839"
+  },
+  "operator": {
+    "rows": [
+      64,
+      256
+    ],
+    "dtypes": [
+      "float32",
+      "float64"
+    ],
+    "arms": 8,
+    "warmup": 2,
+    "repetitions": 12,
+    "stages": [
+      "fusion",
+      "frozen_consumer"
+    ],
+    "hidden_size": 64
+  },
+  "session": {
+    "rows": [
+      64,
+      256
+    ],
+    "dtype": "float64",
+    "arms": 2,
+    "warmup": 2,
+    "repetitions": 6,
+    "hidden_size": 32,
+    "storage": "ext4 on local NVMe",
+    "block_rows": 64,
+    "bank_capacity": 64
+  },
+  "device": "cuda:0",
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "scientific_study": false,
+  "limits": [
+    "Orden fijo, sin ajustar temperatura o frecuencias",
+    "Sin pruebas, perfiles o mutaciones propias concurrentes con las medidas de coste",
+    "Las modalidades de fixtures son pequeñas y no incluyen codificadores externos",
+    "Las fuentes y las formas difieren entre la medida residente y la sesión, por lo que sus tiempos no se suman ni restan como etapas equivalentes",
+    "No se mide energía ni error predictivo financiero"
+  ],
+  "decision": "Registrar el coste de cada brazo sin seleccionar por latencia una arquitectura supuestamente superior en predicción."
+}

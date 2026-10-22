@@ -1,0 +1,198 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-21T09:00:05.393373",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "src/mars_titan/models/titans/mechanism_observation.py",
+  "src/mars_titan/memory/mechanism_observations.py"
+ ],
+ "totals": {
+  "statements": 228,
+  "covered_statements": 223,
+  "branches": 110,
+  "covered_branches": 105
+ },
+ "files": [
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "source_sha256": "c6b2968d7e256a39e7c47db1e22b4f61c8745b34af22f1640158247d40d97c86",
+   "statements": 122,
+   "covered_statements": 121,
+   "branches": 52,
+   "covered_branches": 51
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "source_sha256": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+   "statements": 106,
+   "covered_statements": 102,
+   "branches": 58,
+   "covered_branches": 54
+  }
+ ],
+ "functions": [
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "function": "extract_observation",
+   "start_line": 120,
+   "end_line": 239,
+   "cyclomatic_complexity": 48,
+   "statements": 59,
+   "covered_statements": 59,
+   "coverage_fraction": 1.0,
+   "branches": 30,
+   "covered_branches": 30,
+   "crap": 48.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "_validate_group",
+   "start_line": 52,
+   "end_line": 101,
+   "cyclomatic_complexity": 34,
+   "statements": 34,
+   "covered_statements": 32,
+   "coverage_fraction": 0.9411764705882353,
+   "branches": 30,
+   "covered_branches": 28,
+   "crap": 34.23529411764706
+  },
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "function": "_row_features",
+   "start_line": 34,
+   "end_line": 87,
+   "cyclomatic_complexity": 28,
+   "statements": 28,
+   "covered_statements": 27,
+   "coverage_fraction": 0.9642857142857143,
+   "branches": 16,
+   "covered_branches": 15,
+   "crap": 28.035714285714285
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "MechanismObservation.__init__",
+   "start_line": 111,
+   "end_line": 156,
+   "cyclomatic_complexity": 21,
+   "statements": 30,
+   "covered_statements": 28,
+   "coverage_fraction": 0.9333333333333333,
+   "branches": 20,
+   "covered_branches": 18,
+   "crap": 21.130666666666666
+  },
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "function": "_corrections",
+   "start_line": 102,
+   "end_line": 117,
+   "cyclomatic_complexity": 13,
+   "statements": 9,
+   "covered_statements": 9,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 13.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "MechanismObservation.tensor",
+   "start_line": 170,
+   "end_line": 181,
+   "cyclomatic_complexity": 6,
+   "statements": 7,
+   "covered_statements": 7,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 6.0
+  },
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "function": "_validate_historical_rows",
+   "start_line": 90,
+   "end_line": 99,
+   "cyclomatic_complexity": 5,
+   "statements": 4,
+   "covered_statements": 4,
+   "coverage_fraction": 1.0,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 5.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "MechanismObservation.restore",
+   "start_line": 162,
+   "end_line": 168,
+   "cyclomatic_complexity": 4,
+   "statements": 6,
+   "covered_statements": 6,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 4.0
+  },
+  {
+   "path": "src/mars_titan/memory/mechanism_observations.py",
+   "function": "_sha",
+   "start_line": 30,
+   "end_line": 31,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "_close",
+   "start_line": 48,
+   "end_line": 49,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_observation.py",
+   "function": "MechanismObservation.record",
+   "start_line": 158,
+   "end_line": 159,
+   "cyclomatic_complexity": 1,
+   "statements": 1,
+   "covered_statements": 1,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 1.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "75b94ea8bc1573c8054ef326b7f924426f51e3cd4e40f69ab62a0dbf62f95476",
+ "functions_measured": 11
+}

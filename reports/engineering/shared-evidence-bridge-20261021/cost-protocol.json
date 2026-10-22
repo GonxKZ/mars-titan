@@ -1,0 +1,52 @@
+{
+  "recorded_at_utc": "2026-10-21T19:18:50.745018+00:00",
+  "status": "preregistered_not_run",
+  "scope": "standalone_component_not_full_predictor",
+  "rows": [
+    4,
+    64,
+    256
+  ],
+  "episodes": [
+    8,
+    128,
+    1024
+  ],
+  "regions": [
+    3,
+    8
+  ],
+  "hidden_size": 32,
+  "cycles": 2,
+  "dtypes": [
+    "torch.float64",
+    "torch.float32"
+  ],
+  "warmup": 3,
+  "repetitions": 20,
+  "passes": 1,
+  "conditions": 36,
+  "timed_samples": 720,
+  "maximum_process_seconds": 300,
+  "reference": "CPU_same_weights_evidence_and_state_checked_before_timing_not_a_speed_comparator",
+  "tolerance_fp64": {
+    "rtol": 1e-11,
+    "atol": 1e-12
+  },
+  "tolerance_fp32": {
+    "rtol": 1e-05,
+    "atol": 2e-06
+  },
+  "own_concurrent_workloads": 0,
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "tf32": false,
+  "autocast": false,
+  "energy_measured": false,
+  "source_sha256": {
+    "reports/engineering/shared-evidence-bridge-20261021/benchmark.py": "567de24f0c40176a8f4782e1d4419688941da945f6d6e15dd3b6b92ff2daf876",
+    "src/mars_titan/models/titans/evidence_bridge.py": "4e818d4bb0d3e87ff846fc3f287576038f6e78e8b96fbe7da1571f52c7102d9d",
+    "tests/models/titans/test_evidence_bridge.py": "d16d2b58301d012dd5602456c98bae5350941392223cd3d9b65215d8b08e0ef4"
+  },
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 5880 MiB, 24 %"
+}

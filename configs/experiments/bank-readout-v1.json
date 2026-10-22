@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "kind": "bank_readout_variants",
+  "variant_id": "MARS-TITAN-BANK-READ-v1",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/bank-readout-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "arms": {
+    "ema_weight_mean": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        }
+      }
+    },
+    "ema_uniform": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    },
+    "ema_constant": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    },
+    "ema_query": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    },
+    "replica_uniform": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    },
+    "replica_query": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    },
+    "ema_uniform_graph": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        },
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "ema_query_graph": {
+      "predictor_changes": {
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ]
+        },
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    }
+  },
+  "limits": [
+    "Los bancos son pesos rápidos neuronales por flujo, no episodios ni regiones anatómicas.",
+    "Uniforme, constante y por consulta almacenan el mismo estado y direcciones compartidas. No tienen la misma capacidad efectiva.",
+    "Las réplicas ofrecen redundancia simple con el mismo número de matrices y la misma escritura. El acoplamiento no se usa en esa dinámica.",
+    "La máscara solo cambia lectura, no borra estado ni detiene escrituras. Las lesiones de datos son otro diagnóstico.",
+    "El grafo añade parámetros y coste. Su comparación usa uniforme y consulta con el mismo grafo.",
+    "K=1 principal, mismas filas y cortes. No hay entrenamiento ni mejora predictiva medida."
+  ]
+}

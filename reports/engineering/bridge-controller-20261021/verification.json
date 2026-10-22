@@ -1,0 +1,107 @@
+{
+  "recorded_at_utc": "2026-10-21T21:57:59.495875+00:00",
+  "scope": "selected_technical_checks_not_whole_project",
+  "runs": [
+    {
+      "name": "regression",
+      "counts": {
+        "tests": 432,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cuda_marked_cases": 105,
+      "junit_sha256": "cd346ce36b984a8e67e387012ff54ab490f0581b8f93c9dd2c11f6ad9519b51b",
+      "financial_binding_sha256": "d00d377716abbff3c5b80a68476d2f48a60ad962391da55884e0404e9ce167a5"
+    },
+    {
+      "name": "adversarial-precision",
+      "counts": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cuda_marked_cases": 6,
+      "junit_sha256": "63a7f25837510ebe4ec791b4355cbf83b7dbf57a2698408d14ed11d0ad5de249",
+      "financial_binding_sha256": "d00d377716abbff3c5b80a68476d2f48a60ad962391da55884e0404e9ce167a5"
+    },
+    {
+      "name": "planning-verified",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cuda_marked_cases": 0,
+      "junit_sha256": "28173e15413114e61a58bff7e1f06bac0d66b4898b4436f1262428825f727e0b",
+      "financial_binding_sha256": "d00d377716abbff3c5b80a68476d2f48a60ad962391da55884e0404e9ce167a5"
+    },
+    {
+      "name": "final",
+      "counts": {
+        "tests": 453,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cuda_marked_cases": 111,
+      "junit_sha256": "e2e89a06ef99be55aa67dcb38e4b4ababddf3382cf428af8c89be4275d035daa",
+      "financial_binding_sha256": "c4445ab7f314fc8402fcba91d29909842799564b574e5d31e35becdcca7d96a2"
+    }
+  ],
+  "unique_case_identities": 453,
+  "counts_have_overlap": true,
+  "source_sha256": {
+    "src/mars_titan/memory/financial_mechanisms.py": "c4445ab7f314fc8402fcba91d29909842799564b574e5d31e35becdcca7d96a2",
+    "src/mars_titan/models/titans/mechanism_catalog.py": "4bda02e1145d897894444883fb82be64d6a7d7813609ec362759881e24706e27",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "a39642c00b568d9a3eb0c963abe58c5151b186ab4b3c6785600fb10645e54ed8",
+    "src/mars_titan/models/titans/mechanism_policy.py": "ae29d4022f8dce0e87e8f56534c95a6a5787087c507c20a0b52d220a2ccedcff",
+    "src/mars_titan/models/titans/regional_mechanism_trace.py": "5dff3e85a5bc46181d34c1423ac6b378e402c98860e8c002e13fb42aa25879c2",
+    "src/mars_titan/models/titans/regional_routes.py": "8dd4f660484ac7ee5168764c5f5256cba7e5a5373a82bb2e2ddc510c6791222b"
+  },
+  "fp32_reference": {
+    "reference_device": "cpu",
+    "reference_dtype": "float64",
+    "actual_device": "cuda:0",
+    "actual_dtype": "float32",
+    "routes": 6,
+    "equal_evidence_ids": true,
+    "rtol": 2e-05,
+    "atol": 1e-06
+  },
+  "initial_failures_preserved": [
+    "red.xml",
+    "initial.xml",
+    "trace-red.xml",
+    "planning.xml",
+    "mutations-final/baseline.xml",
+    "counter-red.xml"
+  ],
+  "final_run": "final",
+  "benchmark_revision": "before_strict_integer_zero_counter_check_preserved_by_source_hash",
+  "repository_checks": [
+    {
+      "command": "uv run --no-sync ruff check .",
+      "exit_code": 0,
+      "artifact": "final-ruff-check.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": "uv run --no-sync ruff format --check .",
+      "exit_code": 0,
+      "artifact": "final-ruff-format.log",
+      "sha256": "a3040e69bebc4325e2b7d512678541f912890be05e276a2c26cfe264ec8bf7e4"
+    },
+    {
+      "command": "uv run --no-sync python scripts/check_repository.py",
+      "exit_code": 0,
+      "artifact": "repository-check.log",
+      "sha256": "13a28b7de6b4caf0bfdadc31fdb30852d14bb94385e3572ba90c540bd541bea8"
+    }
+  ],
+  "optimizer_steps": 0,
+  "scientific_evaluation": false,
+  "final_test_access": false
+}

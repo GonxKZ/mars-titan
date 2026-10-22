@@ -1,0 +1,9 @@
+{
+  "internal_seconds": 1.160186257911846,
+  "external_elapsed": "0:04.68",
+  "internal_peak_rss_bytes": 1181106176,
+  "external_peak_rss_bytes": 1295167488,
+  "exit_code": 0,
+  "receipt_sha256": "548cda3a8c67338394ce78c88dbe38d83deae78757fc0970e9198b1f7236a9c8",
+  "energy_measured": false
+}

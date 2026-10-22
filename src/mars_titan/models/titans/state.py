@@ -13,6 +13,7 @@ from torch import Tensor
 @dataclass(frozen=True)
 class NeuralMemoryState:
     weights: tuple[Tensor, ...]
+    # Una matriz por capa, o tres grupos banco/capa en el contraste de parciales.
     momentum: tuple[Tensor, ...]
     steps: Tensor
     config_id: str

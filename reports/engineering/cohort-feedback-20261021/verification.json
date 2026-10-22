@@ -1,0 +1,77 @@
+{
+  "recorded_at_utc": "2026-10-20T23:05:45.473111+00:00",
+  "code_commit": "cdf733b2e2087b862f395e97b6012d7e720278c1",
+  "test_runs": [
+    {
+      "receipt": "final.xml",
+      "sha256": "e1c38e44c57c6ed62655044fc8c936addfa9c6904c8bb8b623bcd03778721f86",
+      "tests": 78,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "distinct_cases": 78,
+  "new_cases": 49,
+  "baseline_cases": 29,
+  "cuda_cases": 0,
+  "mutants_detected": 13,
+  "mutants_total": 13,
+  "initial_mutants_detected": 12,
+  "initial_mutants_total": 12,
+  "sources": {
+    "src/mars_titan/calibration/cohort_feedback.py": "3ac9097bc16bdfa80b60accf948ca87f20d13732c7b57273c1d2217fabf9af9e",
+    "src/mars_titan/calibration/cohort_feedback_state.py": "e35ea024633532560d2615a5ccd1e78248af780a152b97b0898a2b4919707529",
+    "src/mars_titan/calibration/online_conformal.py": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+    "tests/calibration/test_cohort_feedback.py": "4352b99afa4f1301eba41667abc758a30209dd38654a96767f87cbce625134ad",
+    "tests/calibration/test_online_conformal_cancellation.py": "f20c1ea5a13ed15f4013a661955a81edf71d2d33dde61731cde7b90c7410a85e",
+    "tests/calibration/test_online_conformal.py": "d0a5ca58215393756b50285b2fadf9a065007409dc6a0d3680ff68bf019deabf"
+  },
+  "quality_totals": {
+    "statements": 449,
+    "covered_statements": 447,
+    "branches": 78,
+    "covered_branches": 78
+  },
+  "maximum_crap": 34.0,
+  "optimizer_steps": 0,
+  "real_data_used": false,
+  "final_test_opened": false,
+  "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scope": "Pruebas técnicas de recepción y recuperación en CPU. No verifica el controlador completo, publicación atómica de FinancialSession ni su recorrido CUDA.",
+  "test_driven_checks": {
+    "cancellation_red": "cancel-red.xml",
+    "missing_feedback_module": "feedback-red.xml",
+    "state_validation_red": "state-validation-red.xml"
+  },
+  "commands": [
+    [
+      "uv",
+      "run",
+      "--no-sync",
+      "coverage",
+      "run",
+      "--branch",
+      "--source=mars_titan.calibration.cohort_feedback,mars_titan.calibration.cohort_feedback_state,mars_titan.calibration.online_conformal",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/calibration/test_cohort_feedback.py",
+      "tests/calibration/test_online_conformal_cancellation.py",
+      "tests/calibration/test_online_conformal.py"
+    ]
+  ],
+  "limitations": [
+    "Dos sentencias de rechazo de valores JSON no aparecen ejecutadas en esta selección.",
+    "La cobertura de ramas no enumera todas las combinaciones de operandos booleanos.",
+    "La mutación es dirigida, no exhaustiva.",
+    "La autenticidad de las evidencias externas corresponde al ejecutor pendiente."
+  ],
+  "quality_checks": {
+    "ruff_passed": true,
+    "format_passed": true,
+    "formatted_files": 1680,
+    "repository_check_passed": true
+  },
+  "quality_checks_recorded_at_utc": "2026-10-20T23:10:17.883704+00:00"
+}

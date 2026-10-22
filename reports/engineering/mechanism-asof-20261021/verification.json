@@ -1,0 +1,42 @@
+{
+  "scope": "Regresión local seleccionada y dos casos adicionales de revisión, sin corpus real ni ajuste",
+  "regression": {
+    "tests": 348,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "review": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "cuda_marked": 32,
+  "new_cases": 27,
+  "new_cuda_marked": 6,
+  "production_commit": "ee5603ecc5e675f08482709490616e64a1fdb541",
+  "optimizer_steps": 0,
+  "scientific_runs": 0,
+  "final_test_access": false,
+  "artifacts": {
+    "final.xml": "cfa0d2167eb7c62fef8532395893fd892988dec84c5df795799ca92d97f16773",
+    "review.xml": "5471e6b8dae84196b0929b3ebeb4eb0f4ee90c204363356bc24f6433a098027a",
+    "cuda-collection.log": "3727d1365861989316c5e14b0fa7aa71d4d056721b40ed8b84fa0ea2dc815e7c",
+    "coverage-reviewed.json": "ca3262668c137924341a46c5c4dd36ab97fcbf79afd54090d0862af9d81a9398"
+  },
+  "static_checks": {
+    "ruff.log": {
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "summary": "All checks passed!"
+    },
+    "format.log": {
+      "sha256": "dbd837edb6203951419198171db7b013eae72b513338c20e68d607fecc534d4f",
+      "summary": "1755 files already formatted"
+    },
+    "repository.log": {
+      "sha256": "5ac9d0dca96d5946c85f122ba75efca950c7ff3cfd4672ff0e3178b7878c3f35",
+      "summary": "Verificados 3380 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código."
+    }
+  }
+}

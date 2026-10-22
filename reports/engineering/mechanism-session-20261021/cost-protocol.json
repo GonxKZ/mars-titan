@@ -1,0 +1,31 @@
+{
+  "recorded_at_utc": "2026-10-21T03:02:11.381807+00:00",
+  "reference_commit": "ee4d6369dafd9f1fb5b40c38c950c51c59525902",
+  "benchmark_sha256": "3cd54926c7a12b33ba90eaea9b4c4d5a0444ce2727b2a145edd497de63f8c3bf",
+  "rows": [
+    64,
+    256
+  ],
+  "cases": [
+    "previous",
+    "disabled",
+    "context_online",
+    "context_reader_online"
+  ],
+  "warmup": 2,
+  "repetitions": 6,
+  "dtype": "float64",
+  "device": "cuda:0",
+  "storage": "ext4 on local NVMe",
+  "scientific_study": false,
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "change": "El ensayo inicial A se conserva como diagnóstico. Se elimina la reconstrucción de MarketClock por cada etiqueta manual del benchmark, usando la disponibilidad idéntica ya contenida en el batch. La corrección del generador de feedback no es una aceleración del predictor.",
+  "comparison": "Comparar la misma versión corregida del benchmark con enumeración de funciones anterior y candidata. Exigir paridad de firmas y puntos, sin eludir controles.",
+  "limits": [
+    "Orden fijo, sin controlar temperatura o frecuencias",
+    "Sin otras pruebas o perfiles propios simultáneos",
+    "Ocho condiciones con dimensiones de modalidades pequeñas",
+    "Sin métricas financieras ni energía medida"
+  ]
+}
