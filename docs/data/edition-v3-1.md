@@ -202,6 +202,20 @@ La porción se volvió a codificar con `--text-carry` sobre la v3 real, con lote
 
 Las 43.973 muestras coinciden en todas sus columnas con las de la edición que recodificó todos sus textos, y la sustitución no encontró ninguna diferencia no declarada. La recogida apenas cambia de coste, porque buscar un texto en la v3 es una consulta por clave. La GPU codifica un 5,4 % de los textos que codificaba sin herencia.
 
+### Alcance de la paridad con caché vacía
+
+La revisión del 22 de octubre de 2026 de #428 distingue el contraste de caché de la verificación global. El criterio original pedía «Verificador completo de la edición, `verify-targets`, paridad de las ventanas existentes y de una recodificación con caché vacía». El [recibo de la porción](../../reports/data/edition-v3-1-slice-20261010.json) acredita esa recodificación y su contraste con la herencia de textos dentro de los 13 activos ensayados, 12 con muestras y uno sin muestras.
+
+| Recorrido del recibo | Comprobación registrada |
+| --- | --- |
+| Codificación inicial sin vectores ya calculados | 49.107 vectores codificados, `already=0` y `remaining=0`, con cero activos fallidos al finalizar. |
+| Repetición con lotes de ocho gráficos | Las 43.973 muestras coinciden con las de la codificación de uno en uno. Esta repetición aprovecha 3.072 gráficos ya calculados y no se presenta como otra pasada enteramente vacía. |
+| Herencia de textos contrastada | `comparison_with_batch_8` registra 13 activos, 43.973 filas y `all_equal=true`. Los 5.051 textos heredables coinciden individualmente con los recodificados. La regla de herencia contrasta 165 de ellos y registra cero diferencias. |
+
+Queda acreditada la paridad entre esos recorridos de la porción, ejecutados con la misma implementación. No es una segunda implementación independiente ni una prueba sobre cada vector del universo. El [recibo global del 11 de octubre](../../reports/data/edition-v3-1-verification-20261011.json) acredita por separado la edición de 5.023 activos, sus recuentos, las muestras de verificación de vectores y los objetivos. No contiene una recodificación independiente con caché vacía de esos 5.023 activos.
+
+Esta evidencia resuelve la revisión pendiente del contraste de caché con el alcance de 13 activos declarado, sin inferir igualdad bit a bit entre v3 y v3.1 ni añadir una reconstrucción global como requisito nuevo. No cambia datos, recetas, runtime o resultados anteriores. La revisión no repite pruebas o codificaciones, no selecciona modelos y no abre la campaña científica o el test final.
+
 ### Disco
 
 | Concepto | Porción | Por muestra |
