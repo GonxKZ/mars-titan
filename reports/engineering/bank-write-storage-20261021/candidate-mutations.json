@@ -1,0 +1,98 @@
+{
+  "recorded_at_utc": "2026-10-21T17:30:23.262726+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 2.8707414659438655,
+    "log_sha256": "23bbbb6ee5c6fabfdf3a80af3cdb67fce86ea60bf3e1e9221aaf4d031ae68a06",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "copy_every_normal_weight",
+      "before": "else w.detach()).requires_grad_",
+      "after": "else w.detach().clone()).requires_grad_",
+      "expression": "borrows_storage",
+      "exit_code": 1,
+      "seconds": 2.3190845500212163,
+      "log_sha256": "5a856d13dd2fb04d5940a22e9d5782937d33d10714dbf49c3720055bf28141c7",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "borrow_owner_without_detach",
+      "before": "else w.detach()).requires_grad_",
+      "after": "else w).requires_grad_",
+      "expression": "borrows_storage or owner_flags",
+      "exit_code": 1,
+      "seconds": 2.370508822030388,
+      "log_sha256": "7561e38795cb8cf7d852628cb41770a2e2816f39bf6ef2fabe915e1ce61e926b",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "borrow_inference_tensor",
+      "before": "if differentiable or w.is_inference() else",
+      "after": "if differentiable else",
+      "expression": "inference_owned",
+      "exit_code": 1,
+      "seconds": 2.3205268679885194,
+      "log_sha256": "660e29a8ae6ea0b8ebbb9c30836a9855d4e2916c45614f1a9afe337a8d7479bf",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "detach_external_curvature",
+      "before": "w.clone() if differentiable or w.is_inference()",
+      "after": "w.detach().clone() if differentiable or w.is_inference()",
+      "expression": "keep_curvature",
+      "exit_code": 1,
+      "seconds": 2.070154757006094,
+      "log_sha256": "94cbd82e926fdddfef94b94040454370ea2053e9c902099c87dfdfee0d3246d1",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "write_in_place",
+      "before": "(1 - decays[r]) * matrices[r * depth + i] + following_momentum[r * depth + i]",
+      "after": "matrices[r * depth + i].mul_(1 - decays[r]) + following_momentum[r * depth + i]",
+      "expression": "owner_flags",
+      "exit_code": 1,
+      "seconds": 2.1193722509779036,
+      "log_sha256": "4b3c1d2e70bda20ed8b82ced60fe15ecf96cf9f2b8acb9512a2396dc8642aba5",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 3.1221809750422835,
+    "log_sha256": "d0e78b24046c2c3861f29e1ed4a2fd57a6c38d8c57f69efabe002a6f72bfa1db",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finished_at_utc": "2026-10-21T17:30:40.474036+00:00",
+  "source_sha256": {
+    "src/mars_titan/models/titans/neural_memory.py": "9bb8c89bcd619dce6e98eb4dd524e897735f122c06c5ef07bbaf8126dcfae2b1"
+  },
+  "tests_sha256": {
+    "tests/models/titans/test_bank_write_storage.py": "041a91cce00ec17411708bf53eda1a046ef5525201253b48e1059dc948bd18e4",
+    "tests/models/titans/test_bank_write.py": "cece02d9fb371d330d312881160cc482f8c6bdf5c3399ecde806d419652ffde8"
+  },
+  "scope": "directed_not_exhaustive",
+  "adopted": false
+}

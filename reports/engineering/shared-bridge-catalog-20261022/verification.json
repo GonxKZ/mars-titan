@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T03:21:37.463322+00:00",
+  "parent_commit": "29cd125c5191805dca8ddcdad30be410973a1eb2",
+  "source_sha256": {
+    "src/mars_titan/memory/mars_titan_variant.py": "8f1fb788005f7b16210eb9f467de26741142fe02901d27fe0f35e96baee438e7",
+    "src/mars_titan/models/titans/evidence_bridge.py": "50b61229630f9c480017c41496aff64a0cfe68be1245594a0aad19bf0d14d4ae",
+    "configs/titans/mars-titan-extensions.json": "8671304eb19cc46dbd574e5a35cacb4057533083747e1c61309be5866e11c7fe",
+    "tests/memory/test_shared_bridge_variant.py": "0e307630637e8a2c2c0c8b9242449198414e492da8098096c8f520edec79a31b"
+  },
+  "selections": [
+    {
+      "tests": 239,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "catalog-regression-directory.xml",
+      "seconds": 123.044,
+      "sha256": "399e1b9118cffc3c8e1d7894bcf3f70aece815dcf5763e8202e96fc09283418a"
+    },
+    {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "catalog-complement.xml",
+      "seconds": 3.016,
+      "sha256": "9128ed155231df4379429ca6b5702ce578698e400bdab98ac36b0a06fcdecc9c"
+    },
+    {
+      "tests": 80,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "catalog-release.xml",
+      "seconds": 38.977,
+      "sha256": "8e3428a4acd48b9f1048f7a828f43ab0d489667f5d42829d05b06572f30c7ec1"
+    }
+  ],
+  "distinct_tests": 247,
+  "cuda_marked_tests": 78,
+  "release_selection_overlaps": true,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "static_checks": [
+    {
+      "file": "catalog-ruff-check-final.log",
+      "result": "All checks passed!",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "file": "catalog-ruff-format-final.log",
+      "result": "1810 files already formatted",
+      "sha256": "45e791dd6398d2729319633e9625cf682ac63746d8b89020fbeace21eb92d30f"
+    },
+    {
+      "file": "catalog-repository-final.log",
+      "result": "Verificados 3524 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código.",
+      "sha256": "1490e593643caed226bbf2cd8448f1667f77673cb3face2c8e20a32bdd28bcb6"
+    }
+  ],
+  "new_native_build": false,
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "final_test_opened": false,
+  "coverage_scope": "two_modified_production_modules",
+  "scope_limit": "Regresión seleccionada y pruebas técnicas. No es toda la suite ni una evaluación predictiva."
+}

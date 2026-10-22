@@ -1,0 +1,341 @@
+{
+  "recorded_at_utc": "2026-10-22T05:40:55.728082+00:00",
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_before": "name, driver_version, memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 6015 MiB, 16 %\n",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+  "capacity": 16,
+  "hidden_size": 32,
+  "physical_block_rows": 64,
+  "reader_budget_bytes": 134217728,
+  "cache_budget_bytes": 8388608,
+  "warmup": 2,
+  "repetitions": 3,
+  "maximum_seconds": 1200,
+  "cases": [
+    {
+      "name": "m3-4-fixed-k4cc",
+      "assets": 4,
+      "admission": "m3",
+      "manual_policy": false,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 3411.7091399384663,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          },
+          {
+            "milliseconds": 4598.588278051466,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          },
+          {
+            "milliseconds": 2508.9996680617332,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 5326.185279991478,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          },
+          {
+            "milliseconds": 4390.483609982766,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          },
+          {
+            "milliseconds": 2290.1553079718724,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "160c7d9212241989e733f9225958111bb3655a579ba7783641f3f8e22a250f82"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 3411.7091399384663,
+        "cached": 4390.483609982766
+      }
+    },
+    {
+      "name": "m2-64-fixed-k4cc",
+      "assets": 64,
+      "admission": "m2",
+      "manual_policy": false,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 11309.831335092895,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          },
+          {
+            "milliseconds": 11112.21812106669,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          },
+          {
+            "milliseconds": 9809.351528063416,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 7669.058549101464,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          },
+          {
+            "milliseconds": 7510.555365937762,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          },
+          {
+            "milliseconds": 7731.202875962481,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "a7f64a5ebd8ca17a6719fe2301968475ee49c0ba25f8fa1d5784017f725eace5"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 11112.21812106669,
+        "cached": 7669.058549101464
+      }
+    },
+    {
+      "name": "m3-64-fixed-k4cc",
+      "assets": 64,
+      "admission": "m3",
+      "manual_policy": false,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 20307.319903047755,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          },
+          {
+            "milliseconds": 18012.8700400237,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          },
+          {
+            "milliseconds": 19686.44783005584,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 15074.706508079544,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          },
+          {
+            "milliseconds": 17609.605108038522,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          },
+          {
+            "milliseconds": 12383.192425011657,
+            "peak_allocated_bytes": 78480384,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 2075185,
+            "final_snapshot_sha256": "33a9e259b444e0c4b4ef947bd36fdae860059b23e07dc46ae721f0be06fce3c8"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 19686.44783005584,
+        "cached": 15074.706508079544
+      }
+    },
+    {
+      "name": "m3-64-manual-k2c",
+      "assets": 64,
+      "admission": "m3",
+      "manual_policy": true,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 9217.680164030753,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          },
+          {
+            "milliseconds": 10475.273562013172,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          },
+          {
+            "milliseconds": 11441.543563036248,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 7594.727084971964,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 1177688,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          },
+          {
+            "milliseconds": 8634.60607896559,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 1177688,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          },
+          {
+            "milliseconds": 8230.613281019032,
+            "peak_allocated_bytes": 78492160,
+            "incremental_peak_bytes": 10825216,
+            "peak_control_cache_charge_bytes": 1177688,
+            "final_snapshot_sha256": "e21ec09595043f79c1e08f9acae88e1ce427a403d9745b35dcb72b127289d02d"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 10475.273562013172,
+        "cached": 8230.613281019032
+      }
+    },
+    {
+      "name": "m3-256-fixed-k4cc",
+      "assets": 256,
+      "admission": "m3",
+      "manual_policy": false,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 44093.135989038274,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          },
+          {
+            "milliseconds": 63587.07561099436,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          },
+          {
+            "milliseconds": 52877.98777397256,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 39946.586654987186,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 8286385,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          },
+          {
+            "milliseconds": 36948.593192966655,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 8286385,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          },
+          {
+            "milliseconds": 46263.20212497376,
+            "peak_allocated_bytes": 80578048,
+            "incremental_peak_bytes": 12922880,
+            "peak_control_cache_charge_bytes": 8286385,
+            "final_snapshot_sha256": "baaadc20de911cd0e77f86922f74dc2dd6aa3a4a5bc826ec866e4e7e82024ca4"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 52877.98777397256,
+        "cached": 39946.586654987186
+      }
+    }
+  ],
+  "incomplete": [],
+  "processes_before": "pid, process_name, used_gpu_memory [MiB]\n17860, /usr/bin/nautilus, 51 MiB\n2878860, /home/gonzalo/.local/share/kaizten-local-model/runtime/b11118/llama-b11118/llama-server, 5424 MiB\n2930220, /home/gonzalo/.local/share/mars-titan/worktrees/convergence-runtime-20261001/.venv/bin/python, 128 MiB\n",
+  "total_process_seconds": 874.185440232046,
+  "process_peak_rss_bytes": 1602514944,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "gpu_after": "name, driver_version, memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 6200 MiB, 1 %\n",
+  "source_sha256": {
+    "src/mars_titan/memory/session_artifacts.py": "58e8cac888d0522234ecebbd48e126a0ad4341825f796740199ccd98df3b322b",
+    "src/mars_titan/memory/financial_session.py": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8",
+    "src/mars_titan/memory/financial_mechanisms.py": "0830dcf8ee8f2f742326c2c573fac3c43b7b93b80d99713ccfc1cfea9ccb8464",
+    "tests/memory/test_mechanism_admission.py": "ec50fd1d0a3544add75e0fe5e15493c5c45250fc87a3764aec20247c780cb4c9",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/memory/test_mars_titan_session_parity.py": "a6d9c3dcf3683701bcb92961f3dc97ffdd116a285a2d1fe37d832baa3dc6969d"
+  },
+  "benchmark_script_sha256": "5c0ff78c00c861f29499b48b755e89414f322c80e5d2f67ce552698da82ae500",
+  "scope": "Fases t\u00e9cnicas con cinco observaciones, cuatro decisiones y cierre. Dos calentamientos y tres pares por caso, orden alternado. Sin corpus real, optimizador, ajuste ni acceso a 2024.",
+  "memory_scope": "VRAM son asignaciones de PyTorch. RAM es pico global del proceso. El cargo de cach\u00e9 usa la convenci\u00f3n del validador m\u00e1s archivo y margen, no el heap exacto de Python.",
+  "concurrency_scope": "Otro modelo local segu\u00eda en la GPU. No hab\u00eda otras pruebas, mutaciones o consultas propias en paralelo.",
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "final_test_opened": false
+}

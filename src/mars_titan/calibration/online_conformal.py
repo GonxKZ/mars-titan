@@ -264,12 +264,7 @@ class OnlineConformal:
         )
         return calibrated, emission
 
-    def mature(self, group, prediction_at, target, *, at):
-        """Actualizar la corrección con la cohorte pendiente más antigua del mercado.
-
-        Los errores usan los cuantiles base y la corrección guardados al emitir. Toda la
-        comprobación ocurre antes de escribir, así que un rechazo deja el estado intacto.
-        """
+    def _oldest(self, group, prediction_at, at):
         market = self._market(group)
         prediction_at = _instant(prediction_at, "La fecha de predicción")
         at = _instant(at, "El instante de actualización")
@@ -286,6 +281,35 @@ class OnlineConformal:
         )
         _require(at >= oldest["matures_at"], "La etiqueta de la cohorte todavía no es madura")
         _require(at >= market["clock"], "El reloj del mercado no puede retroceder")
+        return market, oldest, prediction_at, at
+
+    def cancel(self, group, prediction_at, *, at):
+        """Retirar una cohorte incompleta sin actualizar la corrección ni sus errores.
+
+        Solo permite la cohorte más antigua y tras su madurez. Quien confirma la
+        cancelación debe conservar su motivo y evidencia. No aporta una etiqueta ni
+        una pérdida, y la cobertura de cohortes completas no cubre las canceladas.
+        """
+        market, oldest, prediction_at, at = self._oldest(group, prediction_at, at)
+        result = dict(
+            status="cancelled",
+            group=group,
+            prediction_at=prediction_at,
+            matures_at=oldest["matures_at"],
+            at=at,
+            rows=len(oldest["quantiles"]),
+        )
+        market["pending"].pop(0)
+        market["clock"] = at
+        return result
+
+    def mature(self, group, prediction_at, target, *, at):
+        """Actualizar la corrección con la cohorte pendiente más antigua del mercado.
+
+        Los errores usan los cuantiles base y la corrección guardados al emitir. Toda la
+        comprobación ocurre antes de escribir, así que un rechazo deja el estado intacto.
+        """
+        market, oldest, prediction_at, at = self._oldest(group, prediction_at, at)
         raw = oldest["quantiles"]
         target = np.asarray(target)
         _require(

@@ -1,0 +1,23 @@
+{
+  "runs": [
+    {
+      "run": "cost-final.json",
+      "internal_seconds": 123.06913442502264,
+      "external_wall": "2:06.87",
+      "python_peak_rss_bytes": 1557426176,
+      "external_max_rss_kib": 1617324,
+      "external_max_rss_bytes": 1656139776,
+      "source_sha256": "e195d3f70f1dc0ab806d95ceb1e9a8c0f9f8c7c514bcd300c70ae78db62140b8"
+    },
+    {
+      "run": "cost-repeat.json",
+      "internal_seconds": 148.07535115303472,
+      "external_wall": "2:32.22",
+      "python_peak_rss_bytes": 1555681280,
+      "external_max_rss_kib": 1617360,
+      "external_max_rss_bytes": 1656176640,
+      "source_sha256": "4c56241889f24f79d4b4ef79ba21d56ff425a2e0075e31d6cd76d29e26b33a46"
+    }
+  ],
+  "limits": "El proceso incluye preparación y perfiles Python de asignaciones. No es el coste de una campaña ni energía."
+}

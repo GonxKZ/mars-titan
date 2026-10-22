@@ -1,0 +1,49 @@
+{
+  "recorded_at_utc": "2026-10-21T19:22:29.754213+00:00",
+  "scope": "selected_technical_regression_not_whole_project",
+  "counts": {
+    "tests": 231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "junit_seconds": 4.216,
+  "pytest_reported_seconds": 4.28,
+  "marked_cuda": 47,
+  "new_cases": 52,
+  "new_marked_cuda": 10,
+  "warning": "existing_torch_sync_debug_mode_prototype",
+  "junit_sha256": "7e4cb02e7f73eedad3787f2e3624a7740fca18ad9b9b7ca0752ff4e0a56beeaa",
+  "cuda_collection_sha256": "90e22df59db9d227fe07f4ae49632d3324a67f24bddbf397d026e84219ede1ed",
+  "source_sha256": {
+    "src/mars_titan/models/titans/evidence_bridge.py": "4e818d4bb0d3e87ff846fc3f287576038f6e78e8b96fbe7da1571f52c7102d9d",
+    "src/mars_titan/models/titans/episodic_readout.py": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+    "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "tests/models/titans/test_evidence_bridge.py": "d16d2b58301d012dd5602456c98bae5350941392223cd3d9b65215d8b08e0ef4",
+    "tests/models/titans/test_episodic_readout.py": "4251563092e3f230ae8d566353a3116d31b37551b84abd0d78fc87c6314ca728",
+    "tests/models/titans/test_regional_fusion.py": "19b4387a11e129962830f3b78324dfd4ffc71e871a0af8f14956c9ab8927517f",
+    "tests/models/titans/test_bank_readout.py": "f4d1ec658a1122bb382715682413e53703f0fdf3d0aa7999bb47aeb12fec061a",
+    "scripts/summarize_python_quality.py": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "integrated_into_frozen_consumer": false,
+  "predictive_improvement_measured": false,
+  "outer_optimizer_steps": 0,
+  "checks": {
+    "ruff_check": {
+      "exit_code": 0,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff_format": {
+      "exit_code": 0,
+      "log_sha256": "1fed7283e5814272657cf56116713ca3de0201428872cd2d899ed50dd15ba730"
+    },
+    "repository": {
+      "exit_code": 0,
+      "log_sha256": "4bb0a55ff144f49813b5b3dfaa4e1bca980b70116c02f78308448a9232495d7e"
+    },
+    "benchmark_help": {
+      "exit_code": 0,
+      "log_sha256": "c5cf21fa917b8bbdb8e04096556f2f179c40127657f6872b50bf6465f4a8de71"
+    }
+  }
+}

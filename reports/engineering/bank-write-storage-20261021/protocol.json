@@ -1,0 +1,426 @@
+{
+  "records": [
+    {
+      "raw_sha256": "6e0a8140daf1e93db4ecefc4d60b7a1746384fb1f50e61eb3834b8d9fb539e2a",
+      "file": "cost-registration.json",
+      "declaration": {
+        "recorded_at_utc": "2026-10-21T17:30:24.213190+00:00",
+        "status": "registered_before_execution",
+        "reference_commit": "0f05b62e23302551a63b3bfa857e06661b0494d9",
+        "comparison": [
+          "copied",
+          "borrowed"
+        ],
+        "order": "alternating_every_repetition",
+        "dimension": 64,
+        "depth": 2,
+        "memory_update": {
+          "rules": [
+            "mean_partial",
+            "per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": [
+            "float32",
+            "float64"
+          ],
+          "warmup": 3,
+          "repetitions": 20,
+          "max_batch": 256
+        },
+        "financial_prepare": {
+          "arms": [
+            "ema_query_mean_partial",
+            "ema_query_per_bank",
+            "ema_query_graph_mean_partial",
+            "ema_query_graph_per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": "float32",
+          "block_rows": 64,
+          "max_batch": 128,
+          "prefixes": [
+            125,
+            126,
+            127
+          ],
+          "warmup": 3,
+          "repetitions": 20
+        },
+        "native": {
+          "rules": [
+            "mean_partial",
+            "per_bank"
+          ],
+          "rows": [
+            4,
+            256
+          ],
+          "dtype": "float32",
+          "max_batch": 256,
+          "block_rows": 64,
+          "memory_max_bytes": 134217728,
+          "warmup": 1,
+          "repetitions": 4,
+          "resident_models": 2,
+          "feedback": "manual_after_emissions",
+          "phases": [
+            "warmup",
+            "decision",
+            "decision",
+            "decision",
+            "close",
+            "resume"
+          ]
+        },
+        "expected_pairs": 28,
+        "expected_conditions": 56,
+        "expected_timed_calls": 992,
+        "precision": {
+          "tf32": false,
+          "autocast": false,
+          "deterministic": true
+        },
+        "no_other_own_workloads": true,
+        "no_external_app_stopped": true,
+        "scientific_evaluation": false,
+        "outer_optimizer_steps": 0,
+        "acceptance": {
+          "bitwise_equal_all_outputs_and_next_states": true,
+          "old_state_unchanged": true,
+          "persistent_state_unchanged": true,
+          "memory_update_256_peak_saving_min_bytes": 8388608,
+          "native_256_max_descriptive_p50_regression_percent": 3,
+          "if_latency_exceeds_limit": "Revisar fases y medir otro bloque pareado completo antes de adoptar. No escoger solo repeticiones favorables.",
+          "statistical_claim": "Ninguna. Cuatro trayectorias temporizadas por versión no precisan bien las colas ni prueban superioridad."
+        },
+        "source_sha256": {
+          "reports/engineering/bank-write-storage-20261021/benchmark.py": "8029599c77a81b6fec2c0e2120a2449d99cd9c6e341566e073428af478daf716",
+          "reports/engineering/bank-write-storage-20261021/copied_reference.py": "6b3c020bf27a1684f5b975b8d70866be793eba4eaf00b4f9521874c8fd69a402",
+          "src/mars_titan/models/titans/neural_memory.py": "9bb8c89bcd619dce6e98eb4dd524e897735f122c06c5ef07bbaf8126dcfae2b1",
+          "tests/models/titans/test_bank_write_storage.py": "041a91cce00ec17411708bf53eda1a046ef5525201253b48e1059dc948bd18e4",
+          "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be"
+        },
+        "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+      }
+    },
+    {
+      "raw_sha256": "f747671c8c689458041ec7587d4a9d587418947be84303e80fff467599afd651",
+      "file": "cost-final-registration.json",
+      "declaration": {
+        "recorded_at_utc": "2026-10-21T17:35:27.150443+00:00",
+        "status": "registered_before_execution",
+        "reference_commit": "0f05b62e23302551a63b3bfa857e06661b0494d9",
+        "comparison": [
+          "copied",
+          "borrowed"
+        ],
+        "order": "alternating_every_repetition",
+        "dimension": 64,
+        "depth": 2,
+        "memory_update": {
+          "rules": [
+            "mean_partial",
+            "per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": [
+            "float32",
+            "float64"
+          ],
+          "warmup": 3,
+          "repetitions": 20,
+          "max_batch": 256
+        },
+        "financial_prepare": {
+          "arms": [
+            "ema_query_mean_partial",
+            "ema_query_per_bank",
+            "ema_query_graph_mean_partial",
+            "ema_query_graph_per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": "float32",
+          "block_rows": 64,
+          "max_batch": 128,
+          "prefixes": [
+            125,
+            126,
+            127
+          ],
+          "warmup": 3,
+          "repetitions": 20
+        },
+        "native": {
+          "expected_pairs": 4,
+          "expected_conditions": 8,
+          "timed_calls": 32,
+          "output": "native-cost.json",
+          "max_batch": 256,
+          "block_rows": 64,
+          "max_state_bytes": 134217728,
+          "dtype": "float32",
+          "warmup": 1,
+          "repetitions": 4,
+          "resident_models": 1,
+          "order": "versiones_agrupadas_orden_invertido_entre_condiciones",
+          "no_instance_method_replacement": true,
+          "children": 8,
+          "reference_source": "isolated_source_tree",
+          "retained_sessions_max": 40,
+          "process_startup_recorded_separately": true
+        },
+        "expected_pairs": 28,
+        "expected_conditions": 56,
+        "expected_timed_calls": 992,
+        "precision": {
+          "tf32": false,
+          "autocast": false,
+          "deterministic": true
+        },
+        "no_other_own_workloads": true,
+        "no_external_app_stopped": true,
+        "scientific_evaluation": false,
+        "outer_optimizer_steps": 0,
+        "acceptance": {
+          "bitwise_equal_all_outputs_and_next_states": true,
+          "old_state_unchanged": true,
+          "persistent_state_unchanged": true,
+          "memory_update_256_peak_saving_min_bytes": 8388608,
+          "native_256_max_descriptive_p50_regression_percent": 3,
+          "if_latency_exceeds_limit": "Revisar fases y medir otro bloque pareado completo antes de adoptar. No escoger solo repeticiones favorables.",
+          "statistical_claim": "Ninguna. Cuatro trayectorias temporizadas por versión no precisan bien las colas ni prueban superioridad."
+        },
+        "source_sha256": {
+          "reports/engineering/bank-write-storage-20261021/benchmark.py": "965e18e8a3a27a7603d357d3cd0bdea7e01ecb9fa79df827ac306f41f5a82f24",
+          "reports/engineering/bank-write-storage-20261021/native_benchmark.py": "4cf6458cf72296a8ddbdfef5fa18411e76f6470388d6b3b9f88452d085c8eb50",
+          "reports/engineering/bank-write-storage-20261021/copied_reference.py": "6b3c020bf27a1684f5b975b8d70866be793eba4eaf00b4f9521874c8fd69a402",
+          "src/mars_titan/models/titans/neural_memory.py": "9bb8c89bcd619dce6e98eb4dd524e897735f122c06c5ef07bbaf8126dcfae2b1",
+          "tests/models/titans/test_bank_write_storage.py": "041a91cce00ec17411708bf53eda1a046ef5525201253b48e1059dc948bd18e4",
+          "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be"
+        },
+        "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+        "supersedes": "cost-registration.json",
+        "reason": "El consumidor protegido rechazó la sustitución por instancia. No se cambia ninguna protección. Se separan componentes alternados y sesiones con árboles de fuentes reales.",
+        "incomplete": {
+          "status": "running_not_complete",
+          "finished_pairs": 24,
+          "exit_code": 1,
+          "file": "cost.json",
+          "source": "benchmark-incomplete-source.py"
+        },
+        "components": {
+          "expected_pairs": 24,
+          "expected_conditions": 48,
+          "timed_calls": 960,
+          "output": "cost-final.json",
+          "order": "alternating_every_repetition",
+          "reference": "copied_reference.py"
+        },
+        "source_tree_differences": [
+          "src/mars_titan/models/titans/neural_memory.py"
+        ],
+        "reference_neural_sha256": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3"
+      }
+    },
+    {
+      "raw_sha256": "08ea491475d1b3fc8d884709c89dad68c92743b4525225da158e3add274769ea",
+      "file": "native-final-registration.json",
+      "declaration": {
+        "recorded_at_utc": "2026-10-21T17:39:07.794137+00:00",
+        "status": "registered_before_execution",
+        "reference_commit": "0f05b62e23302551a63b3bfa857e06661b0494d9",
+        "comparison": [
+          "copied",
+          "borrowed"
+        ],
+        "order": "alternating_every_repetition",
+        "dimension": 64,
+        "depth": 2,
+        "memory_update": {
+          "rules": [
+            "mean_partial",
+            "per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": [
+            "float32",
+            "float64"
+          ],
+          "warmup": 3,
+          "repetitions": 20,
+          "max_batch": 256
+        },
+        "financial_prepare": {
+          "arms": [
+            "ema_query_mean_partial",
+            "ema_query_per_bank",
+            "ema_query_graph_mean_partial",
+            "ema_query_graph_per_bank"
+          ],
+          "rows": [
+            1,
+            64,
+            256
+          ],
+          "dtype": "float32",
+          "block_rows": 64,
+          "max_batch": 128,
+          "prefixes": [
+            125,
+            126,
+            127
+          ],
+          "warmup": 3,
+          "repetitions": 20
+        },
+        "native": {
+          "expected_pairs": 4,
+          "expected_conditions": 8,
+          "timed_calls": 32,
+          "output": "native-final-cost.json",
+          "max_batch": 256,
+          "block_rows": 64,
+          "max_state_bytes": 134217728,
+          "dtype": "float32",
+          "warmup": 1,
+          "repetitions": 4,
+          "resident_models": 1,
+          "order": "versiones_agrupadas_orden_invertido_entre_condiciones",
+          "no_instance_method_replacement": true,
+          "children": 8,
+          "reference_source": "isolated_source_tree",
+          "retained_sessions_max": 40,
+          "process_startup_recorded_separately": true,
+          "shared_fixture_path": true,
+          "input_contracts_must_match": true
+        },
+        "expected_pairs": 28,
+        "expected_conditions": 56,
+        "expected_timed_calls": 992,
+        "precision": {
+          "tf32": false,
+          "autocast": false,
+          "deterministic": true
+        },
+        "no_other_own_workloads": true,
+        "no_external_app_stopped": true,
+        "scientific_evaluation": false,
+        "outer_optimizer_steps": 0,
+        "acceptance": {
+          "bitwise_equal_all_outputs_and_next_states": true,
+          "old_state_unchanged": true,
+          "persistent_state_unchanged": true,
+          "memory_update_256_peak_saving_min_bytes": 8388608,
+          "native_256_max_descriptive_p50_regression_percent": 3,
+          "if_latency_exceeds_limit": "Revisar fases y medir otro bloque pareado completo antes de adoptar. No escoger solo repeticiones favorables.",
+          "statistical_claim": "Ninguna. Cuatro trayectorias temporizadas por versión no precisan bien las colas ni prueban superioridad."
+        },
+        "source_sha256": {
+          "reports/engineering/bank-write-storage-20261021/benchmark.py": "965e18e8a3a27a7603d357d3cd0bdea7e01ecb9fa79df827ac306f41f5a82f24",
+          "reports/engineering/bank-write-storage-20261021/native_benchmark.py": "60d7b2446f3f9495ca93e9a2cf0de3bd78b68fd260a5c5f270006438c603cfd6",
+          "reports/engineering/bank-write-storage-20261021/copied_reference.py": "6b3c020bf27a1684f5b975b8d70866be793eba4eaf00b4f9521874c8fd69a402",
+          "src/mars_titan/models/titans/neural_memory.py": "9bb8c89bcd619dce6e98eb4dd524e897735f122c06c5ef07bbaf8126dcfae2b1",
+          "tests/models/titans/test_bank_write_storage.py": "041a91cce00ec17411708bf53eda1a046ef5525201253b48e1059dc948bd18e4",
+          "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be"
+        },
+        "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+        "supersedes": "cost-final-registration.json",
+        "reason": "Las dos versiones ejecutaron sesiones correctamente, pero usaron rutas de fixture distintas y por eso sus contratos de entrada no eran idénticos. Se reconstruye secuencialmente el fixture en una misma ruta temporal. No se relaja la comparación de identidades.",
+        "incomplete": {
+          "status": "running_not_complete",
+          "finished_pairs": 24,
+          "exit_code": 1,
+          "file": "cost.json",
+          "source": "benchmark-incomplete-source.py"
+        },
+        "components": {
+          "expected_pairs": 24,
+          "expected_conditions": 48,
+          "timed_calls": 960,
+          "output": "cost-final.json",
+          "order": "alternating_every_repetition",
+          "reference": "copied_reference.py"
+        },
+        "source_tree_differences": [
+          "src/mars_titan/models/titans/neural_memory.py"
+        ],
+        "reference_neural_sha256": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+        "native_incomplete": {
+          "file": "native-cost.json",
+          "source": "native-benchmark-incomplete-source.py",
+          "finished_children": 2,
+          "finished_pairs": 0,
+          "exit_code": 1,
+          "equal_prediction_hashes": true,
+          "input_contracts_equal": false
+        },
+        "components_reused": "cost-final.json"
+      }
+    },
+    {
+      "raw_sha256": "324b99ae32ddd8c516a0df6762f0a19f19693371a94a911a861fe8658485de31",
+      "file": "small-confirm-registration.json",
+      "declaration": {
+        "status": "running_not_complete",
+        "recorded_at_utc": "2026-10-21T17:49:08.987072+00:00",
+        "rule": "per_bank",
+        "rows": 4,
+        "reason": "Desviación p50 del 24,18% en el caso pequeño original, con dispersión en varias fases.",
+        "pairs": 4,
+        "outer_optimizer_steps": 0,
+        "real_corpus": false,
+        "source_sha256": {
+          "reports/engineering/bank-write-storage-20261021/native_benchmark.py": "60d7b2446f3f9495ca93e9a2cf0de3bd78b68fd260a5c5f270006438c603cfd6",
+          "confirm_small.py": "31bef7d57dd524ec6809b38f6d66aa2448e50ee1f579e234d3c01244213ebb8f"
+        },
+        "children": 8,
+        "warmup_per_child": 1,
+        "repetitions_per_child": 4,
+        "timed_calls": 32,
+        "order": [
+          [
+            "copied",
+            "borrowed"
+          ],
+          [
+            "borrowed",
+            "copied"
+          ],
+          [
+            "copied",
+            "borrowed"
+          ],
+          [
+            "borrowed",
+            "copied"
+          ]
+        ],
+        "prior_case_included_in_final_summary": true,
+        "criterion": "Revisar todos los pares y el caso original. Sin aceleración general afirmada. Si persiste una regresión material o la dirección no se aclara, no atribuir beneficio integral."
+      }
+    }
+  ],
+  "no_retroactive_threshold_change": true,
+  "confirmation_reason": "Nueva preocupación por la latencia de cuatro flujos, examinada sin eliminar el caso original."
+}

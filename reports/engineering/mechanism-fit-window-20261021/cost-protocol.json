@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-21T18:54:25.042473+00:00",
+  "scope": "read_only_fit_window_audit_not_fitting",
+  "status": "preregistered_not_run",
+  "rows": [
+    4,
+    64,
+    256
+  ],
+  "collections": [
+    1,
+    2,
+    4
+  ],
+  "modes": [
+    "combined",
+    "separate"
+  ],
+  "passes": 2,
+  "warmup": 3,
+  "repetitions": 20,
+  "order": "alternating_modes_per_repetition",
+  "comparison": "same_native_prefix_packets_outcomes_metadata_and_counts_checked_before_timing",
+  "producer_device": "cuda:0",
+  "producer_dtype": "torch.float64",
+  "audit_device": "CPU_JSON_and_native_files",
+  "tf32": false,
+  "autocast": false,
+  "cpu_threads": 2,
+  "own_concurrent_workloads": 0,
+  "maximum_process_seconds_per_pass": 600,
+  "setup_in_query_timing": false,
+  "integrity_validation_in_query_timing": true,
+  "python_allocations": "tracemalloc_separate_from_latency",
+  "cuda_memory": "torch_allocator_only_not_whole_device",
+  "physical_storage_bytes": false,
+  "energy_measured": false,
+  "shared_optimizer_steps": 0,
+  "protected_reader_executed": false,
+  "normalization_executed": false,
+  "scientific_corpus_used": false,
+  "source_sha256": {
+    "reports/engineering/mechanism-fit-window-20261021/benchmark.py": "c920e54688a1ed71bc4db69ce0ae24ca3eae8d76aa288251235e7400b8a1245d",
+    "src/mars_titan/training/mechanism_fit_contract.py": "fed9aea285eabd026fcf66f385c6e748984796168c42044d354fe886c0228801",
+    "src/mars_titan/training/mechanism_fit_window.py": "b3417f9c6dcd5daa23d12f88dcd11a5154ba17ffa84d3e70905f3c13590fe31d",
+    "src/mars_titan/training/mechanism_policy_fit.py": "59e73f940f7c57808be3b4af3727d9e087e02cdcf25ebb9ea44bc65f88153444"
+  },
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 461 MiB, 13 %",
+  "hardware_before_second": "NVIDIA GeForce RTX 4070 Laptop GPU, 616 MiB used, 4 % utilization"
+}

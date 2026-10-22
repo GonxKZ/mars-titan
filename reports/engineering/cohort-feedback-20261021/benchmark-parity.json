@@ -1,0 +1,11 @@
+{
+  "timed_functions_ast_equal": true,
+  "functions": {
+    "calibrator": "407ab80e5578e0c22e875ce4ccf5d7fe91d0125fcba2e970c89fa5d957b2ed7b",
+    "fixture": "38881abc9325c2bbee3402185e9c153317c3b781cf290f633da94fc520e7cbf4",
+    "trajectory": "e30252a633697fe65dc112a6b284ab513814b2406f940bd8223e756871194bfb",
+    "check_reference": "e95abe5f4aa60e127be7c7746c17d94f4065ae4dd882a3b430f78a21e29f730a"
+  },
+  "baseline_benchmark_sha256": "d7469d283bfaa0eb7dab24f1c6ad3e33183cfd84af9fd32e2b9920170a24b9e5",
+  "final_benchmark_sha256": "955167eb1bf449c965d1f05edd9eb04b89111f14dd6b06cec5904a6d8f92fbb6"
+}

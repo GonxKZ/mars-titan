@@ -1,0 +1,62 @@
+{
+  "recorded_at_utc": "2026-10-21T00:22:21.837307+00:00",
+  "source_sha256": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+  "test_sha256": "6f8a66b2cd2e84a90d9e721ec8ddb8d142e36485888504850cb7817a1b3dbeeb",
+  "mutations": [
+    {
+      "exit_code": 1,
+      "seconds": 3.072436431888491,
+      "log_sha256": "c5cc9223251fe3d75882e7aaf7b6d22625bb05e2ce49c211278e0ddcb0676e96",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "cache_across_audits",
+      "test": "tests/models/titans/test_frozen_signature.py::test_class_methods_are_reinspected_on_the_next_audit",
+      "mutant_sha256": "0be7a257c49dea690b529cffcae82055abd8fb7bf3e8768805d3d67a40207816"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.9704870398854837,
+      "log_sha256": "b12fb52a5d9d0f2c3492190c8844e4be086aae910448d796dfa49865c73815b6",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "skip_later_instance_hooks",
+      "test": "tests/models/titans/test_frozen_signature.py::test_repeated_class_audit_still_rejects_a_hook_on_a_later_instance",
+      "mutant_sha256": "66e210719276a618fc83732c05e2a9850a4e42419651a47626f04f8e8ecad238"
+    },
+    {
+      "exit_code": 1,
+      "seconds": 2.9202055130153894,
+      "log_sha256": "4aba00aa603f0e7ba9f9044cac70cc77cef06f53c873232ac85dbb484df659f1",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "name": "repeat_class_introspection",
+      "test": "tests/models/titans/test_frozen_signature.py::test_audit_inspects_each_shared_module_class_once_and_keeps_all_instances",
+      "mutant_sha256": "75ab2c96cfcbd98f278ce051b2be961eba08a1a892e6944c6064f938d0e373ec"
+    }
+  ],
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 2.9220358510501683,
+    "log_sha256": "578bf93c71a73dce967094cc1ec48482e93aeacee93544ee57478aa9bbdef5dc",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "restored": {
+    "exit_code": 0,
+    "seconds": 2.8223825639579445,
+    "log_sha256": "20a13ad4b34409de2f55808835ad5c4e627977339b4feeeb2094ff79f04738f7",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "reference_runtime_restored": true
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "rows": 64,
+    "quantiles_bit_equal": true,
+    "max_abs_difference": 0.0,
+    "collection_p50_over_fixed36": 0.17218519654699374,
+    "fixed36_p50_ms": 733.337215,
+    "collection_p50_ms": 126.2698125,
+    "collection_receive_metrics_p50_ms": 135.412125,
+    "core_observations": {
+      "reference": 2304,
+      "collection": 128
+    },
+    "reader_refinements": {
+      "reference": 6528,
+      "collection": 1152
+    },
+    "allocated_peak_delta_bytes": -2130944,
+    "interpretation": "Coste de colección sobre una referencia simple, no latencia de despliegue ni mejora predictiva"
+  },
+  {
+    "rows": 256,
+    "quantiles_bit_equal": true,
+    "max_abs_difference": 0.0,
+    "collection_p50_over_fixed36": 0.2851557667148328,
+    "fixed36_p50_ms": 1058.656146,
+    "collection_p50_ms": 301.88190499999996,
+    "collection_receive_metrics_p50_ms": 444.26901,
+    "core_observations": {
+      "reference": 9216,
+      "collection": 512
+    },
+    "reader_refinements": {
+      "reference": 26112,
+      "collection": 4608
+    },
+    "allocated_peak_delta_bytes": -8423936,
+    "interpretation": "Coste de colección sobre una referencia simple, no latencia de despliegue ni mejora predictiva"
+  }
+]

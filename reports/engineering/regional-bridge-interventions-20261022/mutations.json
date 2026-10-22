@@ -1,0 +1,269 @@
+{
+  "method": "Sustituciones dirigidas en una copia privada, una por proceso pytest, con JUnit y restauración",
+  "tested": 10,
+  "detected": 10,
+  "survivors": 0,
+  "score_pct": 100,
+  "scope": "Solo estos diez mutantes, sin garantía universal",
+  "controls": [
+    {
+      "label": "baseline",
+      "tests": 88,
+      "returncode": 0,
+      "elapsed_s": 6.280044148908928,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "label": "restored",
+      "tests": 88,
+      "returncode": 0,
+      "elapsed_s": 6.883530778926797,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "source_manifest_sha256": "597ba1d79e2258f450edea9fe3fc2bb478ee22dd8d6fe351ce6379e36cb7bb30",
+  "source_restored": true,
+  "original_unchanged_at_batch_end": true,
+  "mutations": [
+    {
+      "name": "fixed-mask",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "available = available & self.active_regions[None]",
+      "after": "available = available",
+      "source_sha256": "d40ef59bebae16b93fcab45efe6408faf452801445be97efdc5b9f753561831d",
+      "mutant_sha256": "33739763b1764a548020915fc0d9af8c05004d605b5f0dd7b5076e9c9bcb8710",
+      "tests": 2,
+      "selection": "fixed_lesion and cpu",
+      "failures": [
+        {
+          "name": "test_fixed_lesion_equals_a_runtime_mask_and_preserves_the_bank[0-0.0-cpu]",
+          "message": "AssertionError: Tensor-likes are not equal!\n\nMismatched elements: 4 / 4 (100.0%)\nGreatest absolute difference: 0.09039084824001858 at index (1, 0)\nGreatest relative difference: 0.9662930391707987 at index (0, 0)"
+        },
+        {
+          "name": "test_fixed_lesion_equals_a_runtime_mask_and_preserves_the_bank[2-0.5-cpu]",
+          "message": "AssertionError: Tensor-likes are not equal!\n\nMismatched elements: 4 / 4 (100.0%)\nGreatest absolute difference: 0.02259771206000464 at index (0, 0)\nGreatest relative difference: 0.410041449671129 at index (0, 0)"
+        }
+      ],
+      "elapsed_s": 3.7731821010820568,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "directed-cut",
+      "file": "src/mars_titan/models/titans/bridge_intervention.py",
+      "before": "and (target, sender) not in cuts",
+      "after": "and True",
+      "source_sha256": "aacce65d22466366a5a8e56ffae88cd39c3ea4dc79351401094357a200b67e8e",
+      "mutant_sha256": "1a67ce1a0f1d0e5389d5e37e5733243f7335631a19430cb2e67a21b7e31849bf",
+      "tests": 1,
+      "selection": "directed_cut and cpu",
+      "failures": [
+        {
+          "name": "test_directed_cut_keeps_the_reader_and_the_residual[cpu]",
+          "message": "assert tensor(2) == 0\n +  where tensor(2) = <built-in method count_nonzero of type object at 0x7451c1ea5640>(tensor([[0.5000, 0.5000, 0.0000]], dtype=torch.float64))\n +    where <built-in method count_nonzero of type object at 0x7451c1ea5640> = torch.count_nonzero"
+        }
+      ],
+      "elapsed_s": 2.8697537869447842,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "identity",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "kind=\"shared_evidence_bridge_intervention_v1\"",
+      "after": "kind=\"shared_evidence_bridge_v1\"",
+      "source_sha256": "d40ef59bebae16b93fcab45efe6408faf452801445be97efdc5b9f753561831d",
+      "mutant_sha256": "f8fb8577675d5ccd51c40bb0ebcdf9446e84da02a397f7517799bce0afc1daa1",
+      "tests": 1,
+      "selection": "noop_intervention and cpu",
+      "failures": [
+        {
+          "name": "test_noop_intervention_keeps_parameters_and_rng_but_has_its_own_identity[cpu]",
+          "message": "AssertionError: assert 'shared_evidence_bridge_v1' == 'shared_evide...tervention_v1'\n  \n  - shared_evidence_bridge_intervention_v1\n  ?                        -------------\n  + shared_evidence_bridge_v1"
+        }
+      ],
+      "elapsed_s": 2.619761410052888,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "mask-checkpoint",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "if self.config.intervention is not None and not torch.equal(",
+      "after": "if False and not torch.equal(",
+      "source_sha256": "d40ef59bebae16b93fcab45efe6408faf452801445be97efdc5b9f753561831d",
+      "mutant_sha256": "eac1cd3f78de52575da972bcd871af4661074bc74eec3d54fbcac4b976d71060",
+      "tests": 1,
+      "selection": "fixed_buffer and active_regions",
+      "failures": [
+        {
+          "name": "test_fixed_buffer_and_identity_rejection_precedes_copy[active_regions]",
+          "message": "Failed: DID NOT RAISE ValueError"
+        }
+      ],
+      "elapsed_s": 2.7710150530328974,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "declared-edges",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "declared_edges = torch.tensor(\n                self.config.intervention.edges(len(self.config.regions), self.config.topology)\n            )",
+      "after": "declared_edges = expected[\"edges\"].cpu()",
+      "source_sha256": "d40ef59bebae16b93fcab45efe6408faf452801445be97efdc5b9f753561831d",
+      "mutant_sha256": "4f2c50f5b1c34a13492f90a554c7b74da2eb8d68f6484e9090b50841e2a56684",
+      "tests": 1,
+      "selection": "preexisting_edge_corruption",
+      "failures": [
+        {
+          "name": "test_preexisting_edge_corruption_cannot_become_the_checkpoint_reference",
+          "message": "Failed: DID NOT RAISE ValueError"
+        }
+      ],
+      "elapsed_s": 2.7209446830675006,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "presence",
+      "file": "src/mars_titan/models/titans/regional_episode_readout.py",
+      "before": "snapshot.count > 0 and any(model.evidence_bridge.config.active_views())",
+      "after": "snapshot.count > 0",
+      "source_sha256": "7e7a790d73537b1a4ee9c73f84dd2fd3a0b2b18b1516957289fef5b070f88a22",
+      "mutant_sha256": "bdc90b0da8fbe4a2a64e1b6e1668a771aaf7e2f6262f34555b148103f291f94c",
+      "tests": 1,
+      "selection": "presence_is_false and cpu",
+      "failures": [
+        {
+          "name": "test_presence_is_false_for_silenced_readers_with_a_populated_snapshot[cpu]",
+          "message": "assert [[True]] == [[False]]\n  \n  At index 0 diff: [True] != [False]\n  Use -v to get more diff"
+        }
+      ],
+      "elapsed_s": 2.9721878219861537,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "regional-query",
+      "file": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "torch.einsum(\"bh,rhd->brd\", state, self.region_query)",
+      "after": "torch.zeros_like(raw[:, None]).expand(-1, r, -1)",
+      "source_sha256": "d40ef59bebae16b93fcab45efe6408faf452801445be97efdc5b9f753561831d",
+      "mutant_sha256": "0abe6dd3d2b8e28b5fb9fc0be2caa498b09975a66c0dbebe2ec1c0be2107b059",
+      "tests": 1,
+      "selection": "distinct_views_contribute",
+      "failures": [
+        {
+          "name": "test_distinct_views_contribute_through_the_ring_with_a_fixed_receiver_output",
+          "message": "AssertionError: Tensor-likes are not close!\n\nMismatched elements: 4 / 6 (66.7%)\nGreatest absolute difference: 0.5 at index (0, 1, 0) (up to 1e-12 allowed)\nGreatest relative difference: 2.0 at index (0, 1, 0) (up to 1e-12 allowed)"
+        }
+      ],
+      "elapsed_s": 3.5733805659692734,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "trace-values",
+      "file": "src/mars_titan/memory/regional_episode_trace.py",
+      "before": "read[\"regional_values\"][:, inactive].count_nonzero()",
+      "after": "read[\"regional_values\"][:, :0].count_nonzero()",
+      "source_sha256": "6aee6e07faef08435066e9bc6eb8dd13e7a5fffb0270b8970d8ff9f3577d3754",
+      "mutant_sha256": "7c8f23baf38dbab11fe93ebc7a9d6843bc42f73660dd229f421ea9bb9adceca5",
+      "tests": 1,
+      "selection": "both_archives",
+      "failures": [
+        {
+          "name": "test_both_archives_enforce_zero_weights_and_values_for_the_silenced_view",
+          "message": "Failed: DID NOT RAISE ValueError"
+        }
+      ],
+      "elapsed_s": 3.472389627015218,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "prefreeze",
+      "file": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "bridge.validate_payload(bridge.state_dict())",
+      "after": "pass",
+      "source_sha256": "710dd6e74e5b2e7205921466626d22c617a60f8e8d5844c9d18e7d0157b6d124",
+      "mutant_sha256": "6315e3981d266d108dff589602eb9b6c66712f1c44ffe8e0dedfec8ce67d8da1",
+      "tests": 6,
+      "selection": "prefreeze and not dtype and not configuration and not absent and not sparse",
+      "failures": [
+        {
+          "name": "test_prefreeze_corruption_cannot_be_sealed_as_the_declared_intervention[active_regions-financial]",
+          "message": "Failed: DID NOT RAISE ValueError"
+        },
+        {
+          "name": "test_prefreeze_corruption_cannot_be_sealed_as_the_declared_intervention[active_regions-mechanism]",
+          "message": "Failed: DID NOT RAISE ValueError"
+        },
+        {
+          "name": "test_prefreeze_corruption_cannot_be_sealed_as_the_declared_intervention[edges-financial]",
+          "message": "Failed: DID NOT RAISE ValueError"
+        },
+        {
+          "name": "test_prefreeze_corruption_cannot_be_sealed_as_the_declared_intervention[edges-mechanism]",
+          "message": "Failed: DID NOT RAISE ValueError"
+        }
+      ],
+      "elapsed_s": 3.573484165011905,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected"
+    },
+    {
+      "name": "repeated-settlement",
+      "file": "src/mars_titan/memory/financial_session.py",
+      "before": "result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+      "after": "result = self._executor.step(cohort, feedback, self.block_rows, guarded)\n            if kind == \"settlement\":\n                result = self._executor.step(cohort, feedback, self.block_rows, guarded)",
+      "source_sha256": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8",
+      "mutant_sha256": "2f9c0e8dc935d47433e6981e0ff7f0151e06a4864da401bdf4bc0ae63928346f",
+      "source_restored": true,
+      "tests": 1,
+      "selection": "test_native_recovery_preserves_the_next_intervened_emission_and_feedback_once[cpu]",
+      "failures": [
+        {
+          "name": "test_native_recovery_preserves_the_next_intervened_emission_and_feedback_once[cpu]",
+          "message": "ValueError: El cursor, el orden temporal o el lote físico no es válido"
+        }
+      ],
+      "elapsed_s": 4.07452755398117,
+      "errors": 0,
+      "skipped": 0,
+      "status": "detected",
+      "detection_scope": "Rechazo de la segunda llamada por el cursor nativo"
+    }
+  ],
+  "confirmation_controls": [
+    {
+      "label": "baseline",
+      "returncode": 0,
+      "elapsed_s": 5.578949796035886,
+      "tests": 1,
+      "errors": 0,
+      "skipped": 0,
+      "failures": []
+    },
+    {
+      "label": "restored",
+      "returncode": 0,
+      "elapsed_s": 6.27886974089779,
+      "tests": 1,
+      "errors": 0,
+      "skipped": 0,
+      "failures": []
+    }
+  ]
+}

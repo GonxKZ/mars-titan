@@ -1,0 +1,8 @@
+{
+  "internal_seconds": 19.936441075988114,
+  "external_elapsed": "0:23.84",
+  "python_peak_rss_bytes": 1665724416,
+  "external_peak_rss_kib": 1678828,
+  "external_peak_rss_bytes": 1719119872,
+  "note": "Incluye creación de fixtures, inicialización y profiler, no solo lectura ni memoria exclusiva del módulo."
+}

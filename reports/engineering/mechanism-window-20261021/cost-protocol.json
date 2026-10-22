@@ -1,0 +1,121 @@
+{
+  "runs": [
+    {
+      "registered_at_utc": "2026-10-21T14:53:32.191049+00:00",
+      "code_commit": "abd288ee0d29087e2c621f6d82cfb6b25a314d20",
+      "rows": [
+        4,
+        64,
+        256
+      ],
+      "collections": [
+        1,
+        2,
+        4
+      ],
+      "modes": [
+        "legacy_individual",
+        "individual",
+        "window"
+      ],
+      "warmup": 3,
+      "repetitions": 20,
+      "order": "rotated_by_repetition",
+      "device": "cuda:0",
+      "producer_dtype": "float64",
+      "reader_compute": "cpu_json_native_io",
+      "real_corpus": false,
+      "optimizer_steps": 0,
+      "comparison": "exact_individual_receipt_and_hash_parity_plus_collection_results",
+      "metrics": [
+        "synchronized_wall_ms_p50_p95_p99",
+        "collections_per_second",
+        "native_packet_reference_bytes",
+        "python_tracemalloc_peak_separate_from_timing",
+        "process_peak_rss",
+        "cuda_peak_allocated"
+      ],
+      "own_parallel_workloads": false,
+      "other_apps_stopped": false,
+      "energy_measured": false,
+      "sources": {
+        "reports/engineering/mechanism-window-20261021/benchmark.py": "f1dd5da972a7ee742e780874e5ec7be8af17a86b65294f12accf4c0be8841566",
+        "src/mars_titan/memory/mechanism_collection_asof.py": "a174426d46f3ff528e3545985e5975e5b1eeb975ad5ddafd5c18fa44ac9d006f",
+        "src/mars_titan/memory/financial_session.py": "8e6385b54774237e98b8e734cda0483f39d1c70b4682e78bdacba3556fb33a6b"
+      },
+      "command": "uv run --no-sync python reports/engineering/mechanism-window-20261021/benchmark.py --reference \"$evidence_dir/reference-asof.py\" --output \"$evidence_dir/cost-final.json\"",
+      "superseded_partial_runs": [
+        {
+          "path": "cost.json",
+          "sha256": "e5385bc8bb78f8b47935db252ea4ec2a60bbd1a781442796b5bba6457db48146"
+        },
+        {
+          "path": "cost-complete.json",
+          "sha256": "b409069f1145cf8362208521ef6595451b25493b806123f8bdd5001f907df254"
+        }
+      ],
+      "change_before_complete_run": "El fixture debe contener decisiones y disponibilidades de etiquetas anteriores a decision_end. Fase definitiva: decisión hasta moment132 exclusiva, cierre moment133 y corte de vista moment134. No cambia el ejecutor ni el protocolo de medida. Preparación de cuatro cohortes y paridad exacta verificadas en setup-verified.log.",
+      "raw_registration_sha256": "1c8d1fbfa1e9070d53f98508d24d9bf42ecbfe34fe54d599c4905bf712a8afd7"
+    },
+    {
+      "registered_at_utc": "2026-10-21T14:57:48.553387+00:00",
+      "code_commit": "abd288ee0d29087e2c621f6d82cfb6b25a314d20",
+      "rows": [
+        4,
+        64,
+        256
+      ],
+      "collections": [
+        1,
+        2,
+        4
+      ],
+      "modes": [
+        "legacy_individual",
+        "individual",
+        "window"
+      ],
+      "warmup": 3,
+      "repetitions": 20,
+      "order": "rotated_by_repetition",
+      "device": "cuda:0",
+      "producer_dtype": "float64",
+      "reader_compute": "cpu_json_native_io",
+      "real_corpus": false,
+      "optimizer_steps": 0,
+      "comparison": "exact_individual_receipt_and_hash_parity_plus_collection_results",
+      "metrics": [
+        "synchronized_wall_ms_p50_p95_p99",
+        "collections_per_second",
+        "native_packet_reference_bytes",
+        "python_tracemalloc_peak_separate_from_timing",
+        "process_peak_rss",
+        "cuda_peak_allocated"
+      ],
+      "own_parallel_workloads": false,
+      "other_apps_stopped": false,
+      "energy_measured": false,
+      "sources": {
+        "reports/engineering/mechanism-window-20261021/benchmark.py": "f1dd5da972a7ee742e780874e5ec7be8af17a86b65294f12accf4c0be8841566",
+        "src/mars_titan/memory/mechanism_collection_asof.py": "a174426d46f3ff528e3545985e5975e5b1eeb975ad5ddafd5c18fa44ac9d006f",
+        "src/mars_titan/memory/financial_session.py": "8e6385b54774237e98b8e734cda0483f39d1c70b4682e78bdacba3556fb33a6b"
+      },
+      "command": "uv run --no-sync python reports/engineering/mechanism-window-20261021/benchmark.py --reference \"$evidence_dir/reference-asof.py\" --output \"$evidence_dir/cost-repeat.json\"",
+      "superseded_partial_runs": [
+        {
+          "path": "cost.json",
+          "sha256": "e5385bc8bb78f8b47935db252ea4ec2a60bbd1a781442796b5bba6457db48146"
+        },
+        {
+          "path": "cost-complete.json",
+          "sha256": "b409069f1145cf8362208521ef6595451b25493b806123f8bdd5001f907df254"
+        }
+      ],
+      "change_before_complete_run": "El fixture debe contener decisiones y disponibilidades de etiquetas anteriores a decision_end. Fase definitiva: decisión hasta moment132 exclusiva, cierre moment133 y corte de vista moment134. No cambia el ejecutor ni el protocolo de medida. Preparación de cuatro cohortes y paridad exacta verificadas en setup-verified.log.",
+      "repeat_reason": "Repetición completa por colas variables y un p50 individual 3,13% superior a referencia en 256x1. No cambiar fuentes, muestras, configuración o elegir la repetición más favorable.",
+      "previous_complete_sha256": "53a2612dfbb81ba47f7084b6b9564bd4a3c4e67a1cc41c77a2c2674f836a4012",
+      "raw_registration_sha256": "8e26b0ab994d3ee494c34d762217c385696f4af51def7d16559dad9354d85179"
+    }
+  ],
+  "selection": "Se publican ambas pasadas completas sin elegir la más favorable. Los dos intentos anteriores están incompletos y no forman la medida final."
+}

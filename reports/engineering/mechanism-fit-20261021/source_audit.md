@@ -1,0 +1,13 @@
+# Fuentes y alcance matemático del ajuste
+
+Consulta de API: 21 de octubre de 2026. Instalación comprobada: PyTorch `2.14.0+cu130`, CUDA `13.0`, `torch.version.git_version=08187d9e0fba026dc8217405802ab5381dc88d90`. No se han cambiado paquetes ni compilado otro backend.
+
+La [documentación de `torch.linalg.lstsq` de PyTorch 2.14](https://docs.pytorch.org/docs/2.14/generated/torch.linalg.lstsq.html) identifica `gels` como el único driver CUDA admitido y presupone rango completo. Su resultado de rango no se calcula para ese driver. La implementación utiliza esa API, pero no se ha ejecutado la regresión mientras está activa la protección. Consultar la documentación y registrar la versión no constituye una validación numérica de sus llamadas en este módulo.
+
+Para un objetivo observado, sean Z el diseño con intercepto, W la diagonal de pesos positivos normalizados y lambda un número positivo. El problema implementado es minimizar la suma de `(Z beta - y)' W (Z beta - y)` y `lambda * ||beta||²`. Se forma la matriz A apilando `sqrt(W) Z` y `sqrt(lambda) I`, con el segundo bloque del lado derecho igual a cero.
+
+En aritmética exacta, `A' A = Z' W Z + lambda I` es definida positiva. Para cualquier vector no nulo v, su forma cuadrática es `||sqrt(W) Z v||² + lambda ||v||²`, que es positiva. Por tanto, A tiene rango completo de columnas. Esta derivación explica la elección del sistema aumentado. No certifica el rango de una matriz calculada en coma flotante ni el resultado del solver. La SVD que estima el condicionamiento y el residuo que se registraría son diagnósticos ordinarios. No se ha ejecutado una formalización Lean ni se invoca Crouzeix para esta regresión.
+
+La selección se ajustaría con ganancias firmadas por cohorte y con máscaras distintas por objetivo. El procedimiento no acredita un estimador causal económico, una garantía de mejora del MAE ni una evaluación de la trayectoria autónoma. El intercepto penalizado, las escalas, el soporte marginal y el mínimo de cohortes son decisiones de este componente. No se atribuyen al artículo de Titans ni a SEAL.
+
+La primera medición por nombres de módulos terminó sin recibos. Una reproducción aislada devolvió un error al importar `torch._C` y código 139. El mismo conjunto pequeño pasó 16 casos al indicar un directorio como fuente de cobertura. La [documentación de coverage.py 7.16.1](https://coverage.readthedocs.io/en/7.16.1/source.html) advierte que las fuentes nombradas como módulos pueden importarse adicionalmente para localizarse. Esto es compatible con el comportamiento observado, pero no identifica por sí solo la causa interna del error de importación. La medición seleccionada usa directorios, mantiene la cobertura de ramas y no omite el código de ajuste sin ejecutar.

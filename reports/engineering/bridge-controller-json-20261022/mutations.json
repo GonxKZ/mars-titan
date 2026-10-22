@@ -1,0 +1,157 @@
+{
+  "recorded_at_utc": "2026-10-21T22:23:24.866348+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "underestimate_surrogate_pair",
+      "before": "12 * len(value)",
+      "after": "6 * len(value)",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "underestimate_integer",
+      "before": "return 20",
+      "after": "return 1",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "underestimate_float",
+      "before": "return 32",
+      "after": "return 1",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "underestimate_null",
+      "before": "return 4",
+      "after": "return 1",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "underestimate_boolean",
+      "before": "return 5",
+      "after": "return 1",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_element_limit",
+      "before": "if budget[0] < 0:",
+      "after": "if False:",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_depth_limit",
+      "before": "if depth > 16:",
+      "after": "if False:",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_string_limit",
+      "before": "if len(value) > budget[1]:",
+      "after": "if False:",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_infinite_float",
+      "before": "kind is float and math.isfinite(value)",
+      "after": "kind is float",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_outside_int64",
+      "before": "kind is int and -(2**63) <= value < 2**63",
+      "after": "kind is int",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "materialize_without_bound",
+      "before": "if upper <= maximum:",
+      "after": "if True:",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 16,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "report_bound_instead_of_size",
+      "before": "return len(encoder.encode(value))",
+      "after": "return upper",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_streamed_byte_limit",
+      "before": "if size > maximum:",
+      "after": "if False:",
+      "exit_code": 1,
+      "tests": 24,
+      "failures": 16,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_sha256": "437cf6f8c2d08b8a7468e340b4a6516ab546f81d4abca96d3e00744eb634dcd5",
+  "test_sha256": "67d84f359bdebc256ffd7d0a9ccc142a884549576f7a9222b5847cd358fd9668",
+  "format_equivalence": {
+    "test_ast_equivalent_after_ruff_format": true,
+    "mutated_test_sha256": "67d84f359bdebc256ffd7d0a9ccc142a884549576f7a9222b5847cd358fd9668",
+    "current_test_sha256": "c060d266378d8256543c6b8073929fa8734becbfc21fdab6c3069f6beda939b2",
+    "production_unchanged_since_measurement": true
+  }
+}

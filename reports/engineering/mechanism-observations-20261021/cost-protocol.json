@@ -1,0 +1,51 @@
+{
+  "recorded_at_utc": "2026-10-21T06:16:24.967028+00:00",
+  "code_commit": "436aeec5813643a2ea19168be546bcf0e91167dd",
+  "sources": {
+    "reports/engineering/mechanism-observations-20261021/benchmark.py": "55eb8d62dd45590e213ed2ceb5d1bbf39344b134e6775554852935ad1669841f",
+    "src/mars_titan/memory/mechanism_observations.py": "5832a1a7f2e04779c85c8aa0cd639c011ba3aefdfbe688b642303ce33774f5e8",
+    "src/mars_titan/models/titans/mechanism_observation.py": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "207467e8ae18193f18db8130782fc7df50b6bc227013ac27fac210aa94c2abeb",
+    "tests/memory/test_mechanism_observations.py": "549bb0edb968952397e0a4fa5d898b1b4a56cd7258840a31e3cfe46abd0a45c6"
+  },
+  "device": "cuda:0",
+  "model": "mac_online, quantile_head_v1, market_memory_v1, parámetros congelados",
+  "rows": [
+    64,
+    256
+  ],
+  "markets": [
+    [
+      "US"
+    ],
+    [
+      "CN",
+      "US"
+    ]
+  ],
+  "dtypes": [
+    "float32",
+    "float64"
+  ],
+  "raw_features_dtype": "float64",
+  "input_dtype": "float32",
+  "warmup_per_stage": 2,
+  "repetitions_per_stage": 12,
+  "stages": [
+    "extract_and_seal",
+    "extract_seal_to_cuda"
+  ],
+  "fixtures": "Dos observaciones técnicas de raw_batch con semilla 67, repetidas con identidades únicas. Sin fuente financiera real.",
+  "state": "Mismo estado auxiliar inicial sin modificar, sin banco y con calibración inicial de fixture. Sin feedback.",
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "scientific_study": false,
+  "own_concurrent_workloads": false,
+  "energy_measured": false,
+  "limits": [
+    "No incluye predictor, selector, publicaciones de sesión ni codificadores externos.",
+    "Las latencias son inclusivas. No sumar ambos recorridos como etapas independientes.",
+    "Orden fijo, sin control de temperatura, frecuencia o carga gráfica ajena.",
+    "Las formas de las modalidades son pequeñas y no acreditan coste del corpus completo."
+  ]
+}

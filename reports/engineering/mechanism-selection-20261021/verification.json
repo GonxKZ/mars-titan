@@ -1,0 +1,55 @@
+{
+  "recorded_at_utc": "2026-10-21T07:42:24.165060+00:00",
+  "code_commit": "7ca32e9ab",
+  "tests": 355,
+  "passed": 355,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_tests": 80,
+  "new_tests": 55,
+  "new_cuda_tests": 11,
+  "junit_sha256": "0a9f24f7d64320dd0bb6ee8f1109f24c5fb97c0ea0dca29614cb757219410e12",
+  "log_sha256": "9e1d66860e8a5ae367c92729810ed652899e76bd24017200eb253f4cdfe63d70",
+  "cuda_collection_sha256": "0f8bcda573ff6baef439dbc61a188ad50708bb7650c6d4186dc3a35f80e39255",
+  "coverage": "coverage.py 7.16.1 con ramas y selección por rutas",
+  "complexity": "Radon 6.0.1",
+  "coverage_totals": {
+    "statements": 759,
+    "covered_statements": 700,
+    "branches": 308,
+    "covered_branches": 248
+  },
+  "scope": "Selección dirigida, no suite completa del proyecto",
+  "optimizer_steps": 0,
+  "selector_fitted": false,
+  "real_corpus_used": false,
+  "final_test_used": false,
+  "technical_failures_retained": [
+    {
+      "kind": "named_module_coverage_startup",
+      "first_exit_code": 139,
+      "subsequent_exit_code": 4,
+      "subsequent_error": "UnicodeDecodeError al importar torch._C",
+      "first_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "subsequent_log_sha256": "4250e58f8123911a89033cd9e7e18119ec19e57060c284f0bb0ef645ddb130a7",
+      "resolution": "Selección por rutas, diagnóstico de tres casos aprobado y pasada final de 355 casos"
+    },
+    {
+      "kind": "test_expectation_for_partition_identity",
+      "tests": 355,
+      "passed": 353,
+      "failed": 2,
+      "junit_sha256": "6185336c1c271b61e10a9ce115726d871b59783dba00636675928786cffd31cc",
+      "resolution": "La identidad incluye el bloque físico. Se comprueba que solo cambia context_id y su huella, conservando rasgos, utilidades, acciones y salidas dentro de tolerancia"
+    }
+  ],
+  "sources": {
+    "src/mars_titan/models/titans/mechanism_selection.py": "576ca3d07abe353e76771ceb649988c5b3411388827c0fcf2510453146b3e3d6",
+    "src/mars_titan/models/titans/mechanism_consumer.py": "63fafe3b294323089a89ebcdce440e6d5bb21c8512649046135d1c27e78df535",
+    "src/mars_titan/models/titans/mechanism_event.py": "2e0be484b589d2ed4a319ac736989813f0080d93488b23001737dbd9f2a92c65",
+    "src/mars_titan/models/titans/mechanism_policy.py": "664f63aa342fd4ed5a5bcd3069220de4311fb2d024359b5e6d00f46b7b3bc11d",
+    "src/mars_titan/memory/financial_mechanisms.py": "f88a42e493fb10a5cf4f3d8325d1d3174559a9b8ce8843f9f9c07686f8ddb547",
+    "tests/memory/test_mechanism_selection.py": "e7dc00ec30e56da0beb8300df7d8dc2cc040b194e488f244c82d453b99a40d05"
+  }
+}

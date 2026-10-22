@@ -1,0 +1,21 @@
+{
+  "capture": {
+    "commit": "65f011472c53e8c023faa75b986ae09ed5a92ba5",
+    "sha256": "953b0b414d559e1260b9fe35809f4abaf09bacef297661b7ecb03ac076c79538",
+    "cases": 8,
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cpu_threads": 2,
+    "source_sha256": {
+      "src/mars_titan/models/titans/config.py": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+      "src/mars_titan/models/titans/neural_memory.py": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01"
+    }
+  },
+  "verification": {
+    "cases": 8,
+    "parameters_and_state_and_reads_bitwise_equal": true,
+    "baseline_sha256": "953b0b414d559e1260b9fe35809f4abaf09bacef297661b7ecb03ac076c79538"
+  },
+  "note": "Ocho condiciones pequeñas anteriores al cambio, CPU/CUDA FP32/64, sin lector y con EMA. No garantiza paridad universal."
+}

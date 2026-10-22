@@ -226,7 +226,7 @@ class PrefixTargetVerifier:
             self._cache_bytes += size
         return arrays
 
-    def evidence(self, flow_id, decision_at):
+    def _position(self, flow_id, decision_at):
         if (
             not isinstance(flow_id, str)
             or flow_id not in self._prices
@@ -240,6 +240,23 @@ class PrefixTargetVerifier:
             raise ValueError("La decisión no pertenece al calendario del prefijo")
         for path in self._manifest_paths:
             self._confirm(path)
+        return market, position
+
+    def expected_maturity(self, flow_id, decision_at):
+        """Disponibilidad prevista del siguiente retorno, sin consultar precios futuros.
+
+        Los precios auditados se declaran disponibles cinco minutos después del cierre,
+        igual que el instante de decisión. El calendario no garantiza que exista la
+        etiqueta. Sin siguiente sesión anterior al periodo reservado devuelve None.
+        """
+        market, position = self._position(flow_id, decision_at)
+        decisions = self._clocks[market].decisions
+        if position + 1 == len(decisions):
+            return None
+        return int(pd.Timestamp(decisions[position + 1]).value // 1000)
+
+    def evidence(self, flow_id, decision_at):
+        market, position = self._position(flow_id, decision_at)
         stock, stock_at = self._returns(self._prices[flow_id], market)
         factor, factor_at = self._returns(self._factors[market], market, factor=True)
         window = slice(max(0, position - _HISTORY + 1), position + 1)

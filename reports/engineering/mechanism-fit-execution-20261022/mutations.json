@@ -1,0 +1,299 @@
+{
+  "kind": "directed_cuda_fixture_mutation_results_v1",
+  "declared": 12,
+  "detected": 12,
+  "scope": "finite_declared_mutants_not_a_global_mutation_score",
+  "original_round_status": "incomplete",
+  "original_round_seconds": 894.4424530590186,
+  "original_round_budget_seconds": 900,
+  "original_restoration": "timeout",
+  "baseline": "passed",
+  "restoration_followup": {
+    "status": "passed",
+    "seconds": 34.26001901400741
+  },
+  "snapshot_manifest_sha256": "f2b35bea074cf8b3ecc7934d474d4675d1e3012ef96b49df0f247e216d1e00b9",
+  "source_sha256": {
+    "src/mars_titan/training/mechanism_policy_fit.py": "4ad9ff767377425b6ebe633625f4086821c75f6dee6fcf4583d418e6fb492f63",
+    "tests/memory/test_mechanism_policy_fit_execution.py": "b4a1f89b1c785cedc287ea18c33fbf8a5a9caec071370abd54081b34a98cefe4",
+    "tests/memory/mechanism_fit_oracle.py": "e7a0dda53a082767af62c625fc3629ef4edb2ed7230c3d1fc4e2eb4fd68469f2"
+  },
+  "mutations": [
+    {
+      "name": "point_gain_sign",
+      "status": "killed",
+      "elapsed_seconds": 69.56348004599568,
+      "declaration": {
+        "name": "point_gain_sign",
+        "old": "objectives = [row[\"point\"] + row[\"interval\"] for row in rows]",
+        "new": "objectives = [[-v if v is not None else None for v in row[\"point\"]] + row[\"interval\"] for row in rows]",
+        "reason": "Invierte la ganancia puntual antes de resolver ridge",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "fa851487c201c2807035a4f9f46b4292ad70ce4674fba1c7e0170011dc047ee7",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "52e27d6ec4ddae9dfb92de37c1c1f0f1017d8ab9ab0704944357d7fada742400",
+        "pytest.xml": "1adefcb7b713d6bb56f7cdbd6c859f5d09f447d8b2cae723f9775be4e917e2e7",
+        "child-result.json": "fa3727028ab2a7e7604c399916f7b8a27739b4a7747c3d25db449340d8767b0f"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "interval_gain_sign",
+      "status": "killed",
+      "elapsed_seconds": 71.12507248099428,
+      "declaration": {
+        "name": "interval_gain_sign",
+        "old": "objectives = [row[\"point\"] + row[\"interval\"] for row in rows]",
+        "new": "objectives = [row[\"point\"] + [-v if v is not None else None for v in row[\"interval\"]] for row in rows]",
+        "reason": "Invierte la ganancia de intervalos antes de resolver ridge",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "76682911e207f2db127002ad1f96a51d37d98166ec040cb35e748838b40ffef3",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "8aa993585a4c380db15680f1ff3270242eb10eb92fa4fc6794ac4fd80adcc7e4",
+        "pytest.xml": "aed9ee1bc67d13ab3646bf5badea47674d3dca18082a78a2bc29d98f8a023f63",
+        "child-result.json": "4079b271bb6c0d0e559243c6b4925c15fef279e2ed7b6f38da2c9d8c5538428b"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "mature_rows_weighting",
+      "status": "killed",
+      "elapsed_seconds": 75.7974559450522,
+      "declaration": {
+        "name": "mature_rows_weighting",
+        "old": "market_weights[row[\"market\"]] / counts[row[\"market\"]] for row in used",
+        "new": "market_weights[row[\"market\"]] * row[\"mature_rows\"] / counts[row[\"market\"]] for row in used",
+        "reason": "Sustituye el peso por cohorte por un peso proporcional a sus filas maduras",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "819d893cffdadc5644e50227ebc064875c8c5b5534292dd448586826d4b2fb45",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "9d927ab64d2b2130f8b8ef2808eb41a8dde636624870e31092b225919d5ef134",
+        "pytest.xml": "82b56c8fd723771fa4420974b0df1cb7618e3f5132eb6e880c845589cbf42e64",
+        "child-result.json": "7f56c5abbfdbf4593ddca819c956a10a1daf719d2832c4b5f75472e8f4610cff"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "feature_scale_doubled",
+      "status": "killed",
+      "elapsed_seconds": 77.29174056393094,
+      "declaration": {
+        "name": "feature_scale_doubled",
+        "old": "scale = spread * feature_magnitude\n",
+        "new": "scale = 2.0 * spread * feature_magnitude\n",
+        "reason": "Duplica la escala de las características no constantes",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "8ad2625cc0769cd03ff3e68b1e4723b9f57947f0fd4af506778ca95fb9f63935",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "4feb32e406dbcbd2394992daf82e1b80412dbec8b4bde20cc8d4866054a4e236",
+        "pytest.xml": "fb17c04e406a8056c4737ad60dc94f269d9a419e98d22472c52ecb854e421b95",
+        "child-result.json": "87767cefc4ea1c921e44ef5671e683fd1efb52791ac3a66e2c090aeb191785d4"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "ridge_without_square_root",
+      "status": "killed",
+      "elapsed_seconds": 68.2603832379682,
+      "declaration": {
+        "name": "ridge_without_square_root",
+        "old": "float(config.ridge) ** 0.5 * torch.eye",
+        "new": "float(config.ridge) * torch.eye",
+        "reason": "Usa ridge en la matriz aumentada donde corresponde su raíz cuadrada",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "a99fde4d72541e1829f97db20382eb70f10bbb2064ec7a4de4ee74e7861107a5",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "637c808b9781928909ff9713d67e7edc8013b963be43a2cb99897c1c1d111505",
+        "pytest.xml": "a8619c43b096ebd53a8cf1c45f8b8c7a1ece8446163206536308b88601eed7f7",
+        "child-result.json": "b44dbaab68e1d4d3539336f838b46fd5ef06c95bc52ae74ac5b0a85da6186518"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "unpenalized_intercept",
+      "status": "killed",
+      "elapsed_seconds": 64.92049250402488,
+      "declaration": {
+        "name": "unpenalized_intercept",
+        "old": "torch.eye(z.shape[1], dtype=z.dtype, device=device)",
+        "new": "torch.diag(z.new_tensor([1.0] * (z.shape[1] - 1) + [0.0]))",
+        "reason": "Retira la penalización del intercepto",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "ce1883aeb0640dd4575c34c484737ac1b550d861d3f1a2fcec6df192728b9cb7",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "7a2a54fd80df5d26ae7af317c4e5eeebd81504e8e37ed2e6ec76cd71a91366bc",
+        "pytest.xml": "20fae664ef8392390c9446549e4df740ca6adfb811e90ba2abf132bd0cb71b43",
+        "child-result.json": "6bdf18884096f24e291a476674f7fa543fee048893dafd1ecb553a8afccc484c"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "immature_cohorts_included",
+      "status": "killed",
+      "elapsed_seconds": 63.096658385009505,
+      "declaration": {
+        "name": "immature_cohorts_included",
+        "old": "if metric[\"mature_rows\"]:",
+        "new": "if metric[\"mature_rows\"] >= 0:",
+        "reason": "Incluye las cohortes sin resultados maduros",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "bbbe2b2164d554e6f63d8e76f86220264ba7b55eebc6d6a2a7ba9c2ad453438c",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "95160b68fa0e416c28174993c1b4c5316af866e35712f238a781056a70c8b6a2",
+        "pytest.xml": "b7e494bd0dd23ff8965f3227ffaacdfb252d0755a5689fc7795c0bd2722e5406",
+        "child-result.json": "6dd7065ae24fdb7043cff238340a9e11c2edfd08c9fcf023cadb92ce9e01d8ce"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "receipt_link_missing",
+      "status": "killed",
+      "elapsed_seconds": 66.86331408994738,
+      "declaration": {
+        "name": "receipt_link_missing",
+        "old": "fit_receipt_sha256=reference,",
+        "new": "fit_receipt_sha256=None,",
+        "reason": "Publica la política sin el enlace al recibo de ajuste",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      },
+      "mutant_sha256": "10afd3c4b32711a6697327be6f5693181b35cf21eb1e00b3b402e5ae3138cbfb",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_matches_independent_losses_moments_and_normal_equations[0.5-native_windows]"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "291935d77ce047c8e41cf11a00ae27c540dfc4b0227f5e5d2511137c28de942a",
+        "pytest.xml": "20ea4e33345e2fdc30084b2c29d34018a6d8c15750cfcdfcc3be0c47c70d399b",
+        "child-result.json": "a293e88eec7289ac938577ac0375a6b7cc34933a870ea117052711cd08e955d2"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "missing_objectives_observed",
+      "status": "killed",
+      "elapsed_seconds": 60.45247996994294,
+      "declaration": {
+        "name": "missing_objectives_observed",
+        "old": "[[v is not None for v in row] for row in objectives]",
+        "new": "[[True for v in row] for row in objectives]",
+        "reason": "Trata los objetivos ausentes como observaciones de cero",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_preserves_missing_objectives_and_disables_unobserved_actions"
+      },
+      "mutant_sha256": "eb2fd6af3d6d5db3238f901c152acc510a387793bdd1c65c1934145b79bdc988",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_preserves_missing_objectives_and_disables_unobserved_actions"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "ef45040ed8f7febc0591fc78917171b1081cc1960b4d3bb68c3c655f7a01d2d2",
+        "pytest.xml": "1375ea3c99074e1e40784d633db80cf5774702c18c9f8a26c993e6afc9be5352",
+        "child-result.json": "e91f2cf2894df82236665160fdb594735301cb9cfb2ef85fc685e2aea6727eb9"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "unobserved_actions_enabled",
+      "status": "killed",
+      "elapsed_seconds": 54.84211209893692,
+      "declaration": {
+        "name": "unobserved_actions_enabled",
+        "old": "                action == 0\n",
+        "new": "                True\n",
+        "reason": "Habilita todas las acciones aunque no tengan objetivos suficientes",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_preserves_missing_objectives_and_disables_unobserved_actions"
+      },
+      "mutant_sha256": "7711ea1ad5bc5b3b5d8987c543ba414a1c2745a7c9ae3525ffcc6ce99c3b3fbf",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_preserves_missing_objectives_and_disables_unobserved_actions"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "d63861c41a573eaf3687932e43b3dee02df3c46ae1272447f877a09aeeaabaa0",
+        "pytest.xml": "db4bfbc2fd7418bef4976cd7be641a5215d020a2cae7d990274d3cb4fbe17926",
+        "child-result.json": "b40f7fab5ac569997c17ccb3665461ccd05f90b858b1b37b9e15e30af1db5dfc"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "partially_observed_rows_included",
+      "status": "killed",
+      "elapsed_seconds": 60.593184871948324,
+      "declaration": {
+        "name": "partially_observed_rows_included",
+        "old": "chosen = masks[:, column]",
+        "new": "chosen = torch.ones_like(masks[:, column])",
+        "reason": "Incluye también las filas donde el objetivo no se ha observado",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_renormalizes_each_partially_observed_objective"
+      },
+      "mutant_sha256": "2308068a0b48edbdd39fe6921630eb27cd9ee00960762265d90ef12f3ebfd4f9",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_renormalizes_each_partially_observed_objective"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "26799123a4ef6e7c92cc77da78fdd3c24a055b208daae8ad0b64c2be6cfd9411",
+        "pytest.xml": "3031b1ece7cde3e42854c5afc4e2fa512787b33097293c5950efac2d6919cc86",
+        "child-result.json": "f2cc193dc34aafbdd9d75c2fa93c3089f0ffad14cb0199d484233497bb9a87e9"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    },
+    {
+      "name": "objective_weights_not_renormalized",
+      "status": "killed",
+      "elapsed_seconds": 59.88389355596155,
+      "declaration": {
+        "name": "objective_weights_not_renormalized",
+        "old": "w = w / w.sum()",
+        "new": "w = w",
+        "reason": "Omite la renormalización de los pesos propios de cada objetivo observado",
+        "target": "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_renormalizes_each_partially_observed_objective"
+      },
+      "mutant_sha256": "91dbffd1dd9638c07b3cfc7f132cc0e09d1d9602872440a09688a998adb8e395",
+      "targets": [
+        "tests/memory/test_mechanism_policy_fit_execution.py::test_native_fit_renormalizes_each_partially_observed_objective"
+      ],
+      "artifact_sha256": {
+        "pytest.log": "6fa5b7afc94129de4b85cd316a96628423f6a3e64d7102a31527e5481e981add",
+        "pytest.xml": "c4589de8f83cd11b548a8e2f6cfd13c38bcd21736daa311780dcd9cc1af83a4b",
+        "child-result.json": "c73a2d3aa5526b7d472ab63a05bb85228e2bc321fe01a626c44ae10e9f21830a"
+      },
+      "global_hold_unchanged": true,
+      "authorization_closed": true
+    }
+  ]
+}

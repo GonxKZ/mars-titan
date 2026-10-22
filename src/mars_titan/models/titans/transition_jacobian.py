@@ -31,8 +31,7 @@ def fast_state_dimension(config: MACConfig) -> int:
     """Orden de z: matrices y momentum, con convolución las tres ventanas de un flujo y, con
     PT5, los niveles ocultos de cada capa, y las estadísticas de plasticidad si están activas."""
     memory = config.memory
-    matrices = (2 + memory.hidden_levels) * memory.depth
-    return matrices * memory.dim**2 + 3 * memory.window * memory.dim + memory.modulation_elements
+    return memory.matrix_elements + 3 * memory.window * memory.dim + memory.modulation_elements
 
 
 def fast_state_point(state):
@@ -55,17 +54,18 @@ def fast_state_transition(mac, token, state):
     dim, depth = mac.config.memory.dim, mac.config.memory.depth
     window, count = mac.config.memory.window, len(memory.convolution)
     windows_total = count + len(state.convolution)
-    sizes = [dim**2] * (2 * depth) + [window * dim] * windows_total + [dim**2] * len(memory.levels)
+    matrix_count = depth + len(memory.momentum)
+    sizes = [dim**2] * matrix_count + [window * dim] * windows_total + [dim**2] * len(memory.levels)
     sizes += [value.numel() for value in memory.modulation]
 
     def transition(value):
         pieces = value.split(sizes)
-        matrices = tuple(piece.reshape(1, dim, dim).clone() for piece in pieces[: 2 * depth])
+        matrices = tuple(piece.reshape(1, dim, dim).clone() for piece in pieces[:matrix_count])
         windows = tuple(
             piece.reshape(1, window, dim).clone()
-            for piece in pieces[2 * depth : 2 * depth + windows_total]
+            for piece in pieces[matrix_count : matrix_count + windows_total]
         )
-        levels_start = 2 * depth + windows_total
+        levels_start = matrix_count + windows_total
         modulation_start = levels_start + len(memory.levels)
         levels = tuple(
             piece.reshape(1, dim, dim).clone() for piece in pieces[levels_start:modulation_start]

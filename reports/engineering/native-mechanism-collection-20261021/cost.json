@@ -1,0 +1,245 @@
+{
+  "recorded_at_utc": "2026-10-21T10:06:35.212585+00:00",
+  "torch": "2.14.0+cu130",
+  "numpy": "2.5.3",
+  "python": "3.12.14",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "cpu_threads": 2,
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "warmup": 1,
+  "repetitions": 3,
+  "cases": [
+    {
+      "rows": 64,
+      "mode": "native_fixed",
+      "samples": [
+        {
+          "elapsed_ms": 3024.055468,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 3300381,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        },
+        {
+          "elapsed_ms": 3502.259951,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 3300381,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        },
+        {
+          "elapsed_ms": 3287.92819,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 3300381,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        }
+      ],
+      "p50_ms": 3287.92819,
+      "p95_ms": 3480.8267749,
+      "p99_ms": 3497.97331578,
+      "max_abs_point_difference": 0.0
+    },
+    {
+      "rows": 64,
+      "mode": "native_collect",
+      "samples": [
+        {
+          "elapsed_ms": 4894.210745,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 4107910,
+          "last_packet_bytes": 258959,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        },
+        {
+          "elapsed_ms": 5438.542048,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 4107910,
+          "last_packet_bytes": 258959,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        },
+        {
+          "elapsed_ms": 4523.912179,
+          "allocated_peak_bytes": 78352384,
+          "reserved_peak_bytes": 98566144,
+          "artifact_and_native_bytes": 4107910,
+          "last_packet_bytes": 258959,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 64,
+            "retained": 64,
+            "pending": 0
+          },
+          "fast_sha256": "d77514b82b7e479312793cb5cd3233bf25df7dc6c871eeec0e2a1c4154c4a17a"
+        }
+      ],
+      "p50_ms": 4894.210745,
+      "p95_ms": 5384.1089177,
+      "p99_ms": 5427.65542194,
+      "max_abs_point_difference": 0.0
+    },
+    {
+      "rows": 256,
+      "mode": "native_fixed",
+      "samples": [
+        {
+          "elapsed_ms": 9878.495445,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 12588780,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        },
+        {
+          "elapsed_ms": 10342.547769,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 12588780,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        },
+        {
+          "elapsed_ms": 10610.043437,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 12588780,
+          "last_packet_bytes": 0,
+          "observed_candidates": 0,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        }
+      ],
+      "p50_ms": 10342.547769,
+      "p95_ms": 10583.293870200001,
+      "p99_ms": 10604.69352364,
+      "max_abs_point_difference": 0.0
+    },
+    {
+      "rows": 256,
+      "mode": "native_collect",
+      "samples": [
+        {
+          "elapsed_ms": 16264.777771,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 15590805,
+          "last_packet_bytes": 982146,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        },
+        {
+          "elapsed_ms": 16158.054406,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 15590805,
+          "last_packet_bytes": 982146,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        },
+        {
+          "elapsed_ms": 15841.717791,
+          "allocated_peak_bytes": 80499200,
+          "reserved_peak_bytes": 100663296,
+          "artifact_and_native_bytes": 15590805,
+          "last_packet_bytes": 982146,
+          "observed_candidates": 36,
+          "diagnostics": {
+            "cursor": 5,
+            "admitted": 256,
+            "retained": 256,
+            "pending": 0
+          },
+          "fast_sha256": "a6f479990387560020bdbe99167ce5640f8a96588b1b7c08b4a4742a24b1320f"
+        }
+      ],
+      "p50_ms": 16158.054406,
+      "p95_ms": 16254.1054345,
+      "p99_ms": 16262.643303699999,
+      "max_abs_point_difference": 0.0
+    }
+  ],
+  "process_seconds": 151.6928114319453,
+  "process_peak_rss_bytes": 1654013952,
+  "sources_sha256": {
+    "reports/engineering/native-mechanism-collection-20261021/benchmark.py": "c274d503f0952485b0a3c5d85982dff93ff5c4d65c29d34f5bd62bd70c259b47",
+    "src/mars_titan/memory/financial_session.py": "b7db84efa13344a6d18cb1c7ef5f4b89958952acda7d5a0be41021e6ec495854",
+    "src/mars_titan/memory/financial_mechanisms.py": "569fe78f4b22f728c2909059c3c5087f3a4cb07871fb494759b94fe932ed66d4",
+    "src/mars_titan/memory/native_mechanism_collection.py": "a12e970601f8402755ca4286cfcde682d596e5874a1463df7260e70451453757"
+  }
+}

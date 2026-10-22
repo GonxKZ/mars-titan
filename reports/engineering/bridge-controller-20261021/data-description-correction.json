@@ -1,0 +1,29 @@
+{
+  "recorded_at_utc": "2026-10-21T21:57:59.496777+00:00",
+  "source": "tests/memory/test_financial_session_controls.py",
+  "source_sha256": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+  "function": "flow_source",
+  "actual_modality_order": [
+    "prices",
+    "news",
+    "charts",
+    "fundamentals",
+    "macro"
+  ],
+  "actual_presence": [
+    true,
+    false,
+    true,
+    false,
+    false
+  ],
+  "chart_dimension": 1,
+  "chart_value": 3.0,
+  "price_history": "replicated_fixture_not_independent_asset_histories",
+  "correction": "Los protocolos describían como ausentes todas las modalidades distintas de precios. El generador también marca presente un canal gráfico constante. Se corrige la descripción, sin cambiar entradas ni medidas.",
+  "protocols_retained": true,
+  "affected_reports": [
+    "bridge-readout-integration-20261021",
+    "bridge-controller-20261021"
+  ]
+}

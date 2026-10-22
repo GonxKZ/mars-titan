@@ -1,0 +1,18 @@
+{
+  "runs": [
+    {
+      "run": "first",
+      "external_elapsed_hmmss": "10:00.47",
+      "external_peak_rss_kib": 1546040,
+      "exit_status": 124
+    },
+    {
+      "run": "continuation",
+      "external_elapsed_hmmss": "2:24.65",
+      "external_peak_rss_kib": 1652064,
+      "exit_status": 0
+    }
+  ],
+  "continuation_internal_seconds": 140.40770763601176,
+  "continuation_internal_peak_rss_bytes": 1578954752
+}

@@ -1,0 +1,123 @@
+{
+  "scope": "three_isolated_fp32_memory_updates_not_native_trajectory",
+  "profiles": [
+    {
+      "rule": "common_translation",
+      "rows": 256,
+      "updates": 3,
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 462,
+          "self_cpu_us": 2534.243000000001,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 81,
+          "self_cpu_us": 1290.7250000000017,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1335.4640000000086,
+          "self_device_us": 331.43099999999777
+        },
+        {
+          "name": "aten::stack",
+          "calls": 9,
+          "self_cpu_us": 38.76600000000599,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 3,
+          "self_cpu_us": 7.5330000000003565,
+          "self_device_us": 0.0
+        }
+      ]
+    },
+    {
+      "rule": "mean_partial",
+      "rows": 256,
+      "updates": 3,
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 510,
+          "self_cpu_us": 2708.7010000000087,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 2320.7040000000125,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 21,
+          "self_cpu_us": 35.11399999999685,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1154.494999999993,
+          "self_device_us": 376.6470000000063
+        },
+        {
+          "name": "aten::stack",
+          "calls": 15,
+          "self_cpu_us": 68.37499999999955,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::mean",
+          "calls": 6,
+          "self_cpu_us": 96.62500000000819,
+          "self_device_us": 134.88500000000204
+        }
+      ]
+    },
+    {
+      "rule": "per_bank",
+      "rows": 256,
+      "updates": 3,
+      "events": [
+        {
+          "name": "cudaLaunchKernel",
+          "calls": 498,
+          "self_cpu_us": 2493.9299999999776,
+          "self_device_us": 0
+        },
+        {
+          "name": "cudaStreamSynchronize",
+          "calls": 105,
+          "self_cpu_us": 2476.3009999999927,
+          "self_device_us": 0
+        },
+        {
+          "name": "aten::clone",
+          "calls": 21,
+          "self_cpu_us": 31.963000000004286,
+          "self_device_us": 0.0
+        },
+        {
+          "name": "aten::bmm",
+          "calls": 45,
+          "self_cpu_us": 1318.6090000000086,
+          "self_device_us": 377.6399999999985
+        },
+        {
+          "name": "aten::stack",
+          "calls": 9,
+          "self_cpu_us": 31.519999999999072,
+          "self_device_us": 0.0
+        }
+      ]
+    }
+  ],
+  "limits": "Atributos del profiler del framework, sin contadores físicos ni medida de energía."
+}

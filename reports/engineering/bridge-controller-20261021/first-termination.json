@@ -1,0 +1,34 @@
+{
+  "exit_code": 1,
+  "completed_conditions": 11,
+  "total_conditions": 12,
+  "status": "failed_work_assertion_not_complete",
+  "failed_condition": {
+    "rows": 256,
+    "route": "k4cr",
+    "mode": "regional"
+  },
+  "requested_steps_per_row": 4,
+  "executed_steps_per_row": 1,
+  "reasons": [
+    "reader_budget"
+  ],
+  "planning_rows": 256,
+  "physical_block_rows": 64,
+  "reader_estimates": {
+    "64": {
+      "1": 3842560,
+      "2": 7095296,
+      "4": 13600768
+    },
+    "256": {
+      "1": 14780416,
+      "2": 27398144,
+      "4": 52633600
+    }
+  },
+  "trace_estimate_k4": 8945664,
+  "max_working_bytes": 33554432,
+  "control_sha256": "270c5f97cc76f05283d56a7123a79de2e62c8ec1c51dfd6446eda6197535bbb0",
+  "source_sha256": "abbcd04c4d3eddf1397d0bd84d894fa4c380afcc87fbb9bc7d935cca336396b4"
+}
