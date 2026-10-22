@@ -9,6 +9,7 @@ import torch
 from mars_titan.memory.financial_session import FinancialSession, _check_callbacks
 from mars_titan.memory.mechanism_collection_record import CollectedMechanisms
 from mars_titan.memory.mechanism_supervision import MechanismSupervision
+from mars_titan.models.titans.mechanism_catalog import MechanismCatalog
 from mars_titan.models.titans.mechanism_policy import (
     ACTIONS,
     FEATURES,
@@ -44,6 +45,7 @@ def _cohorts(sources, *, config, device):
         )
         _check_callbacks(source)
         source.consumer.verify()
+        config.check_catalog(source.consumer.catalog)
         before = source.snapshot()
         _require(
             before["phase_closed"]
@@ -74,6 +76,11 @@ def _cohorts(sources, *, config, device):
             receipt = source.mechanism_collection(entry["generation"])
             packet = CollectedMechanisms.restore(receipt["collection"])
             body = packet.payload()
+            config.check_catalog(MechanismCatalog.restore(body["catalog"]))
+            _require(
+                body["catalog"] == source.consumer.catalog.identity(),
+                "La colección cambia el catálogo del consumidor padre",
+            )
             observation = body["observation"]["observation"]
             _require(
                 observation["consumer_id"] == config.parent_consumer_id
@@ -277,6 +284,7 @@ def fit_policy(sources, *, config, device="cuda:0"):
             interval_weight=config.interval_weight,
             min_gain=config.min_gain,
             action_mask=action_mask,
+            catalog_id=config.catalog_id,
         )
     receipt = dict(
         schema_version=1,
@@ -320,5 +328,6 @@ def fit_policy(sources, *, config, device="cuda:0"):
         interval_weight=config.interval_weight,
         min_gain=config.min_gain,
         fit_receipt_sha256=reference,
+        catalog_id=config.catalog_id,
     )
     return linked, dict(receipt, receipt_sha256=reference)

@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from mars_titan.models.titans.config import FingerprintOnce, bounded_integer
 from mars_titan.models.titans.episodic_snapshot import _digest_id
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US, HISTORICAL_START_US
+from mars_titan.models.titans.mechanism_catalog import MechanismCatalog
 
 
 def finite(value, name, minimum=0.0, maximum=1e12):
@@ -36,6 +37,7 @@ class MechanismFitConfig(FingerprintOnce):
     max_source_bytes: int = 512 * 1024**2
     max_condition: float = 1e12
     source_mode: str = "closed_phases"
+    catalog_id: str | None = None
 
     def __post_init__(self):
         if type(self.source_mode) is not str or self.source_mode not in (
@@ -44,6 +46,8 @@ class MechanismFitConfig(FingerprintOnce):
         ):
             raise ValueError("Modalidad de fuentes de ajuste desconocida")
         _digest_id(self.parent_consumer_id, "El consumidor padre")
+        if self.catalog_id is not None:
+            _digest_id(self.catalog_id, "El catálogo declarado del ajuste")
         if any(
             type(v) is not int for v in (self.parent_selected_before, self.fit_start, self.fit_end)
         ) or not (
@@ -76,9 +80,21 @@ class MechanismFitConfig(FingerprintOnce):
         if self.costs[0] != 0:
             raise ValueError("El coste incremental de la referencia debe ser cero")
 
+    def check_catalog(self, catalog):
+        """Exigir un vínculo explícito para lectores con semántica regional."""
+        if type(catalog) is not MechanismCatalog:
+            raise ValueError("El ajuste necesita un catálogo identificado")
+        if self.catalog_id is None:
+            if catalog.reader_contract != "legacy":
+                raise ValueError("El ajuste regional debe declarar la huella del catálogo")
+        elif catalog.fingerprint() != self.catalog_id:
+            raise ValueError("La fuente pertenece a otro catálogo de mecanismos")
+
     def identity(self):
         fields = asdict(self)
         fields.pop("source_mode")
+        if self.catalog_id is None:
+            fields.pop("catalog_id")
         record = dict(
             schema_version=1,
             kind="closed_native_cohort_mechanism_fit_v1",

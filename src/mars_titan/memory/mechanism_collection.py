@@ -9,6 +9,7 @@ import torch
 
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
 from mars_titan.models.quantile_head import QuantileHead
+from mars_titan.models.titans import refinement_routes, regional_routes
 from mars_titan.models.titans.financial import _tensor_digest
 from mars_titan.models.titans.financial_inputs import DecisionBatch
 from mars_titan.models.titans.mechanism_calibration import calibrate_event
@@ -17,7 +18,7 @@ from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
 from mars_titan.models.titans.mechanism_policy import ACTIONS
 from mars_titan.models.titans.mechanism_selection import digest
 from mars_titan.models.titans.refinement_policy import _output
-from mars_titan.models.titans.refinement_routes import ROUTES, collect_routes, run_route_pair
+from mars_titan.models.titans.refinement_routes import ROUTES
 
 from . import mechanism_collection_record
 from .episodic_session import DecisionRow
@@ -186,13 +187,18 @@ class MechanismCollector:
                 outputs["k1"] = prepared.quantiles.detach().cpu().tolist()
             else:
                 reader, base = self.consumer.readout, prepared.working_state
+                route_api = (
+                    regional_routes
+                    if reader.config.evidence_bridge is not None
+                    else refinement_routes
+                )
                 count = self._event.snapshot.count if self._event.snapshot is not None else 0
                 if (
                     len(union) == 6
                     and reader.estimated_bytes(len(flows), count, refinements=9)
                     <= reader.config.max_working_bytes
                 ):
-                    collected = collect_routes(
+                    collected = route_api.collect_routes(
                         reader,
                         base,
                         self._event.snapshot,
@@ -210,7 +216,7 @@ class MechanismCollector:
                     del collected
                 else:
                     for route in union:
-                        _, final = run_route_pair(
+                        _, final = route_api.run_route_pair(
                             reader,
                             base,
                             self._event.snapshot,

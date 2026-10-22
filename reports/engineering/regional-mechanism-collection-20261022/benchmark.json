@@ -1,0 +1,395 @@
+{
+  "recorded_at_utc": "2026-10-22T03:56:34.537257+00:00",
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "warmup": 2,
+  "repetitions": 5,
+  "timing": "Host wall con sincronización CUDA antes y después. Sin cobertura ni mutaciones concurrentes.",
+  "gpu_before": "name, driver_version, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 591 MiB, 22 %\n",
+  "cases": [
+    {
+      "name": "single_route_k4cr_b64_n256",
+      "samples": {
+        "current": [
+          {
+            "milliseconds": 8.149920962750912,
+            "peak_allocated_bytes": 36094976,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.475111003965139,
+            "peak_allocated_bytes": 36738048,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.288749980740249,
+            "peak_allocated_bytes": 36094976,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.752412999048829,
+            "peak_allocated_bytes": 36738048,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.361006060615182,
+            "peak_allocated_bytes": 36094976,
+            "incremental_peak_bytes": 1812480
+          }
+        ],
+        "previous": [
+          {
+            "milliseconds": 8.477668976411223,
+            "peak_allocated_bytes": 36738048,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 7.3273839661851525,
+            "peak_allocated_bytes": 36094976,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.528842030093074,
+            "peak_allocated_bytes": 36738048,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 7.187410956248641,
+            "peak_allocated_bytes": 36094976,
+            "incremental_peak_bytes": 1812480
+          },
+          {
+            "milliseconds": 6.332893972285092,
+            "peak_allocated_bytes": 36738048,
+            "incremental_peak_bytes": 1812480
+          }
+        ]
+      },
+      "summaries": {
+        "current": {
+          "median_ms": 6.475111003965139,
+          "min_ms": 6.288749980740249,
+          "max_ms": 8.149920962750912,
+          "max_incremental_peak_bytes": 1812480
+        },
+        "previous": {
+          "median_ms": 7.187410956248641,
+          "min_ms": 6.332893972285092,
+          "max_ms": 8.477668976411223,
+          "max_incremental_peak_bytes": 1812480
+        }
+      }
+    },
+    {
+      "name": "six_routes_b2_n256_h32_r3_k8",
+      "samples": {
+        "shared": [
+          {
+            "milliseconds": 16.155040939338505,
+            "peak_allocated_bytes": 34473472,
+            "incremental_peak_bytes": 206848
+          },
+          {
+            "milliseconds": 19.51698597986251,
+            "peak_allocated_bytes": 34583040,
+            "incremental_peak_bytes": 206848
+          },
+          {
+            "milliseconds": 15.974942012690008,
+            "peak_allocated_bytes": 34473472,
+            "incremental_peak_bytes": 206848
+          },
+          {
+            "milliseconds": 13.680675998330116,
+            "peak_allocated_bytes": 34583040,
+            "incremental_peak_bytes": 206848
+          },
+          {
+            "milliseconds": 13.489046017639339,
+            "peak_allocated_bytes": 34473472,
+            "incremental_peak_bytes": 206848
+          }
+        ],
+        "separate": [
+          {
+            "milliseconds": 39.766408037394285,
+            "peak_allocated_bytes": 34536960,
+            "incremental_peak_bytes": 218112
+          },
+          {
+            "milliseconds": 42.49859799165279,
+            "peak_allocated_bytes": 34484736,
+            "incremental_peak_bytes": 218112
+          },
+          {
+            "milliseconds": 28.737941989675164,
+            "peak_allocated_bytes": 34536960,
+            "incremental_peak_bytes": 218112
+          },
+          {
+            "milliseconds": 26.453443919308484,
+            "peak_allocated_bytes": 34484736,
+            "incremental_peak_bytes": 218112
+          },
+          {
+            "milliseconds": 25.211308035068214,
+            "peak_allocated_bytes": 34536960,
+            "incremental_peak_bytes": 218112
+          }
+        ]
+      },
+      "summaries": {
+        "shared": {
+          "median_ms": 15.974942012690008,
+          "min_ms": 13.489046017639339,
+          "max_ms": 19.51698597986251,
+          "max_incremental_peak_bytes": 206848
+        },
+        "separate": {
+          "median_ms": 28.737941989675164,
+          "min_ms": 25.211308035068214,
+          "max_ms": 42.49859799165279,
+          "max_incremental_peak_bytes": 218112
+        }
+      }
+    },
+    {
+      "name": "six_routes_b64_n256_h32_r3_k8",
+      "samples": {
+        "shared": [
+          {
+            "milliseconds": 13.883727951906621,
+            "peak_allocated_bytes": 36868608,
+            "incremental_peak_bytes": 2586112
+          },
+          {
+            "milliseconds": 13.620452955365181,
+            "peak_allocated_bytes": 39626240,
+            "incremental_peak_bytes": 2586112
+          },
+          {
+            "milliseconds": 13.28054303303361,
+            "peak_allocated_bytes": 36868608,
+            "incremental_peak_bytes": 2586112
+          },
+          {
+            "milliseconds": 14.4503740593791,
+            "peak_allocated_bytes": 39626240,
+            "incremental_peak_bytes": 2586112
+          },
+          {
+            "milliseconds": 13.185054063796997,
+            "peak_allocated_bytes": 36868608,
+            "incremental_peak_bytes": 2586112
+          }
+        ],
+        "separate": [
+          {
+            "milliseconds": 28.78527995198965,
+            "peak_allocated_bytes": 39500800,
+            "incremental_peak_bytes": 3943424
+          },
+          {
+            "milliseconds": 24.01167096104473,
+            "peak_allocated_bytes": 38225920,
+            "incremental_peak_bytes": 3943424
+          },
+          {
+            "milliseconds": 26.212230091914535,
+            "peak_allocated_bytes": 39500800,
+            "incremental_peak_bytes": 3943424
+          },
+          {
+            "milliseconds": 26.05489396955818,
+            "peak_allocated_bytes": 38225920,
+            "incremental_peak_bytes": 3943424
+          },
+          {
+            "milliseconds": 25.4871160723269,
+            "peak_allocated_bytes": 39500800,
+            "incremental_peak_bytes": 3943424
+          }
+        ]
+      },
+      "summaries": {
+        "shared": {
+          "median_ms": 13.620452955365181,
+          "min_ms": 13.185054063796997,
+          "max_ms": 14.4503740593791,
+          "max_incremental_peak_bytes": 2586112
+        },
+        "separate": {
+          "median_ms": 26.05489396955818,
+          "min_ms": 24.01167096104473,
+          "max_ms": 28.78527995198965,
+          "max_incremental_peak_bytes": 3943424
+        }
+      }
+    },
+    {
+      "name": "six_routes_b256_n256_h32_r3_k8",
+      "samples": {
+        "shared": [
+          {
+            "milliseconds": 14.421790023334324,
+            "peak_allocated_bytes": 44429312,
+            "incremental_peak_bytes": 10097664
+          },
+          {
+            "milliseconds": 12.516606017015874,
+            "peak_allocated_bytes": 55433728,
+            "incremental_peak_bytes": 10097664
+          },
+          {
+            "milliseconds": 12.50853098463267,
+            "peak_allocated_bytes": 44429312,
+            "incremental_peak_bytes": 10097664
+          },
+          {
+            "milliseconds": 12.855142937041819,
+            "peak_allocated_bytes": 55433728,
+            "incremental_peak_bytes": 10097664
+          },
+          {
+            "milliseconds": 14.389720046892762,
+            "peak_allocated_bytes": 44429312,
+            "incremental_peak_bytes": 10097664
+          }
+        ],
+        "separate": [
+          {
+            "milliseconds": 27.785671059973538,
+            "peak_allocated_bytes": 55062528,
+            "incremental_peak_bytes": 15645184
+          },
+          {
+            "milliseconds": 25.301015935838223,
+            "peak_allocated_bytes": 49976832,
+            "incremental_peak_bytes": 15645184
+          },
+          {
+            "milliseconds": 28.02521106787026,
+            "peak_allocated_bytes": 55062528,
+            "incremental_peak_bytes": 15645184
+          },
+          {
+            "milliseconds": 24.995672050863504,
+            "peak_allocated_bytes": 49976832,
+            "incremental_peak_bytes": 15645184
+          },
+          {
+            "milliseconds": 27.46013691648841,
+            "peak_allocated_bytes": 55062528,
+            "incremental_peak_bytes": 15645184
+          }
+        ]
+      },
+      "summaries": {
+        "shared": {
+          "median_ms": 12.855142937041819,
+          "min_ms": 12.50853098463267,
+          "max_ms": 14.421790023334324,
+          "max_incremental_peak_bytes": 10097664
+        },
+        "separate": {
+          "median_ms": 27.46013691648841,
+          "min_ms": 24.995672050863504,
+          "max_ms": 28.02521106787026,
+          "max_incremental_peak_bytes": 15645184
+        }
+      }
+    },
+    {
+      "name": "full_collector_b64_n256_two_contexts_36_actions",
+      "samples": {
+        "shared": [
+          {
+            "milliseconds": 562.7788649871945,
+            "peak_allocated_bytes": 77147648,
+            "incremental_peak_bytes": 8816128
+          },
+          {
+            "milliseconds": 521.643467945978,
+            "peak_allocated_bytes": 77147648,
+            "incremental_peak_bytes": 8816128
+          },
+          {
+            "milliseconds": 417.12636197917163,
+            "peak_allocated_bytes": 77147648,
+            "incremental_peak_bytes": 8816128
+          },
+          {
+            "milliseconds": 194.57985006738454,
+            "peak_allocated_bytes": 77147648,
+            "incremental_peak_bytes": 8816128
+          },
+          {
+            "milliseconds": 243.48002101760358,
+            "peak_allocated_bytes": 77147648,
+            "incremental_peak_bytes": 8816128
+          }
+        ],
+        "separate": [
+          {
+            "milliseconds": 579.0174719877541,
+            "peak_allocated_bytes": 77382144,
+            "incremental_peak_bytes": 9050624
+          },
+          {
+            "milliseconds": 671.1286589270458,
+            "peak_allocated_bytes": 77382144,
+            "incremental_peak_bytes": 9050624
+          },
+          {
+            "milliseconds": 350.96699406858534,
+            "peak_allocated_bytes": 77382144,
+            "incremental_peak_bytes": 9050624
+          },
+          {
+            "milliseconds": 266.5881810244173,
+            "peak_allocated_bytes": 77382144,
+            "incremental_peak_bytes": 9050624
+          },
+          {
+            "milliseconds": 510.5609780875966,
+            "peak_allocated_bytes": 77382144,
+            "incremental_peak_bytes": 9050624
+          }
+        ]
+      },
+      "summaries": {
+        "shared": {
+          "median_ms": 417.12636197917163,
+          "min_ms": 194.57985006738454,
+          "max_ms": 562.7788649871945,
+          "max_incremental_peak_bytes": 8816128
+        },
+        "separate": {
+          "median_ms": 510.5609780875966,
+          "min_ms": 266.5881810244173,
+          "max_ms": 671.1286589270458,
+          "max_incremental_peak_bytes": 9050624
+        }
+      }
+    }
+  ],
+  "declared_reader_working_budget_bytes": 134217728,
+  "bank_fixture": "256 episodios ficticios. Claves: cuatro repeticiones de la identidad64. IDs únicos, valores de source y etiquetas manuales. Sin relación financiera.",
+  "process_peak_rss_bytes": 1501384704,
+  "ram_scope": "Pico acumulado del proceso completo. No permite comparar RAM de cada método.",
+  "gpu_after": "memory.used [MiB], utilization.gpu [%]\n781 MiB, 18 %\n",
+  "source_sha256": {
+    "src/mars_titan/models/titans/regional_routes.py": "bb4417d459dc440bfc9ab857a84cc178c14a94665822dc4fe9c7597ade83048d",
+    "src/mars_titan/memory/mechanism_collection.py": "f05850fb9084d2bf252f0025f01807621fb64be55ee750708249cbaead97abe9"
+  },
+  "previous_single_route_commit": "f1ac211936ef96fc57655f91d4a4d1f3a766b5cd",
+  "previous_single_route_source_sha256": "8dd4f660484ac7ee5168764c5f5256cba7e5a5373a82bb2e2ddc510c6791222b",
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "predictive_effect_measured": false,
+  "limits": "Cinco repeticiones locales, sin p95/p99 ni energía. CUDA compartida con aplicaciones ajenas. La referencia calcula las seis rutas de forma independiente. No es latencia de una única predicción ni campaña real."
+}

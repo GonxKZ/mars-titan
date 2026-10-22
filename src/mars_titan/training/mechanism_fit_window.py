@@ -6,6 +6,7 @@ from mars_titan.memory.financial_session import FinancialSession, _check_callbac
 from mars_titan.memory.mechanism_collection_record import CollectedMechanisms
 from mars_titan.memory.mechanism_supervision import MechanismSupervision
 from mars_titan.models.titans.config import bounded_integer
+from mars_titan.models.titans.mechanism_catalog import MechanismCatalog
 
 from .mechanism_fit_contract import MechanismFitConfig
 
@@ -78,6 +79,7 @@ def iter_fit_windows(sources, *, config, max_bytes=None):
             session.consumer.model_id == config.parent_consumer_id,
             "La ventana pertenece a otro consumidor padre",
         )
+        config.check_catalog(session.consumer.catalog)
         snapshot = session.snapshot()
         _require(total < maximum, "Las ventanas agotaron sus bytes acumulados")
         view = _read(request, before=config.fit_end, maximum=maximum - total)
@@ -88,6 +90,11 @@ def iter_fit_windows(sources, *, config, max_bytes=None):
         for item in view["collections"]:
             packet = CollectedMechanisms.restore(item["collection"])
             body = packet.payload()
+            config.check_catalog(MechanismCatalog.restore(body["catalog"]))
+            _require(
+                body["catalog"] == session.consumer.catalog.identity(),
+                "La colección cambia el catálogo del consumidor padre",
+            )
             observation = body["observation"]["observation"]
             _require(
                 observation["consumer_id"] == config.parent_consumer_id

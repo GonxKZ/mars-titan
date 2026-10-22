@@ -3,7 +3,7 @@
 from dataclasses import asdict, dataclass, fields
 from itertools import product
 
-from .config import FingerprintOnce, bounded_integer
+from .config import FingerprintOnce, bounded_integer, canonical
 from .refinement_routes import ROUTES
 
 CONTEXT_ACTIONS = ("off", "parent")
@@ -130,6 +130,23 @@ class MechanismCatalog(FingerprintOnce):
                 regional_trace="common_ids_separate_regional_weights_and_derived_views",
             )
         return result
+
+    @classmethod
+    def restore(cls, identity):
+        """Restaurar un catálogo completo sin reinterpretar contratos ni campos omitidos."""
+        if type(identity) is not dict:
+            raise ValueError("Falta la identidad completa del catálogo")
+        try:
+            catalog = cls(
+                MechanismBudget(**identity["budget"]),
+                reader_contract=identity.get("reader_contract", "legacy"),
+            )
+            matches = canonical(identity) == canonical(catalog.identity())
+        except (TypeError, KeyError) as error:
+            raise ValueError("La identidad del catálogo está incompleta o no es válida") from error
+        if not matches:
+            raise ValueError("El catálogo no conserva sus campos y semántica registrados")
+        return catalog
 
     def resolve(self, action, availability, *, rows):
         """Resolver disponibilidad antes de ejecutar. Un contrato inválido no es un retorno."""

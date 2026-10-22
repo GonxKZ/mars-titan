@@ -13,7 +13,6 @@ from mars_titan.models.titans.financial_inputs import FLOW_ID
 from mars_titan.models.titans.mechanism_catalog import (
     MechanismAction,
     MechanismAvailability,
-    MechanismBudget,
     MechanismCatalog,
 )
 from mars_titan.models.titans.mechanism_observation import MechanismObservation
@@ -164,6 +163,12 @@ def _work(body, catalog):
         and work["individual_route_batches"] <= 6 * passes,
         "El trabajo no corresponde a los bloques y contextos ejecutados",
     )
+    if catalog.reader_contract == "shared_evidence_bridge_v1":
+        populated = body["observation"]["observation"]["bank_entries"] > 0
+        _require(
+            work["reader_value_projections"] == (work["reader_refinements"] if populated else 0),
+            "La colección regional debe contar las proyecciones de cada lectura",
+        )
     for target, source in (
         ("calibration_attempts", "online_attempts"),
         ("calibration_created_proposals", "online_created_proposals"),
@@ -216,11 +221,7 @@ def validate(body):
     )
     for key in ("prior_state_sha256", "producer_sha256"):
         _digest_id(body[key], key)
-    try:
-        catalog = MechanismCatalog(MechanismBudget(**body["catalog"]["budget"]))
-    except (TypeError, KeyError) as error:
-        raise ValueError("La colección necesita el catálogo completo") from error
-    _require(body["catalog"] == catalog.identity(), "El catálogo de la colección cambió")
+    catalog = MechanismCatalog.restore(body["catalog"])
     rows = body["rows"]
     _require(type(rows) is list and 1 <= len(rows) <= 8192, "La colección necesita filas acotadas")
     for row in rows:
