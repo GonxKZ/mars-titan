@@ -612,6 +612,7 @@ class FinancialPredictor(nn.Module):
             type(declared) is not RegionalExecutionConfig
             or type(module) is not RegionalExecution
             or module.config != declared
+            or type(module.config.context_threshold) is not type(declared.context_threshold)
             or module.hidden_size != self.config.hidden_size
             or module.max_batch != self.config.max_batch
             or self.regional_fusion is None
@@ -628,6 +629,7 @@ class FinancialPredictor(nn.Module):
                 module.max_batch,
                 module.config.selection,
                 module.config.program,
+                type(module.config.context_threshold).__name__,
                 module.config.context_threshold,
             )
             if module is not None

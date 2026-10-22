@@ -398,3 +398,28 @@ def test_chronological_pipeline_accepts_the_explicit_program_changes_without_fit
         ),
     )
     assert checked_predictor_changes(changes) == changes
+
+
+@pytest.mark.parametrize("threshold", [1, 1.0], ids=["integer", "float"])
+@pytest.mark.parametrize("boundary", ["catalog", "module", "parent", "sealed_shared"])
+def test_program_threshold_representation_is_checked_before_execution(
+    frozen_backend, threshold, boundary
+):
+    model = predictor("cpu", selection="context_norm_v1", context_threshold=threshold)
+    changed = execution(
+        selection="context_norm_v1", context_threshold=1.0 if type(threshold) is int else 1
+    )
+    if boundary == "catalog":
+        with pytest.raises(ValueError):
+            FrozenMechanismConsumer(model, catalog=MechanismCatalog(regional_execution=changed))
+    else:
+        if boundary == "module":
+            model.regional_execution.config = changed
+        elif boundary == "parent":
+            model.config = replace(model.config, regional_execution=changed)
+        else:
+            object.__setattr__(
+                model.config.regional_execution, "context_threshold", changed.context_threshold
+            )
+        with pytest.raises(ValueError):
+            model.verify_parameter_identity()

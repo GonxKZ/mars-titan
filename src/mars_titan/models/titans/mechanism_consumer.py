@@ -132,7 +132,10 @@ class FrozenMechanismConsumer:
         catalog = MechanismCatalog() if catalog is None else catalog
         if type(action) is not MechanismAction or type(catalog) is not MechanismCatalog:
             raise ValueError("El consumidor necesita acción y catálogo identificados")
-        if predictor.config.regional_execution != catalog.regional_execution:
+        program, registered = predictor.config.regional_execution, catalog.regional_execution
+        if canonical(None if program is None else program.identity()) != canonical(
+            None if registered is None else registered.identity()
+        ):
             raise ValueError("El programa regional necesita un catálogo explícito compatible")
         regional = type(readout) is EpisodicReadout and readout.config.evidence_bridge is not None
         reader_contract = (
