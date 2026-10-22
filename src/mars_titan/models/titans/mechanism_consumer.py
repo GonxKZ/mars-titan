@@ -44,6 +44,7 @@ from .mechanism_event import (
 from .mechanism_selection import policy_signature, select
 from .refinement_policy import _output
 from .refinement_routes import run_route_pair
+from .regional_hierarchy import RegionalHierarchy
 from .session_context import SessionContextState
 
 _SOURCES = (
@@ -62,7 +63,7 @@ _SOURCES = (
 )
 
 
-def _code(*, policy=False):
+def _code(*, policy=False, hierarchy=False):
     sources = _SOURCES + (
         (
             "mars_titan.models.titans.mechanism_policy",
@@ -72,7 +73,8 @@ def _code(*, policy=False):
         if policy
         else ()
     )
-    return _implementation() | {
+    implementation = _implementation(hierarchy=True) if hierarchy else _implementation()
+    return implementation | {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
     }
@@ -195,7 +197,10 @@ class FrozenMechanismConsumer:
         predictor.verify_parameter_identity()
         self._reader_id, self._code, self._flags = (
             _reader_digest(readout),
-            _code(policy=policy is not None),
+            _code(
+                policy=policy is not None,
+                hierarchy=type(predictor.regional_execution) is RegionalHierarchy,
+            ),
             _numerics(),
         )
         self._identity = dict(
@@ -295,7 +300,11 @@ class FrozenMechanismConsumer:
             self.predictor.verify_parameter_identity()
             if (
                 _reader_digest(self.readout) != self._reader_id
-                or _code(policy=self.policy is not None) != self._code
+                or _code(
+                    policy=self.policy is not None,
+                    hierarchy=type(self.predictor.regional_execution) is RegionalHierarchy,
+                )
+                != self._code
             ):
                 raise ValueError("El código o los parámetros cambiaron durante la cohorte")
 

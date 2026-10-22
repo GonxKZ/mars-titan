@@ -150,6 +150,7 @@ def _regional_work(block, descriptor, parent):
         "El bloque regional no conserva sus llamadas acotadas por contexto",
     )
     work = dict.fromkeys(REGIONAL_WORK, 0)
+    prior_availability = None
     for call, context in zip(calls, contexts, strict=True):
         _require(
             type(call) is dict
@@ -168,6 +169,13 @@ def _regional_work(block, descriptor, parent):
             )
             traces.append(row["trace"])
         totals = verify_exported_traces(traces, descriptor)
+        if descriptor["schema_version"] == 2:
+            availability = [trace["availability"] for trace in traces]
+            _require(
+                prior_availability is None or availability == prior_availability,
+                "Las alternativas regionales cambian la disponibilidad de las mismas entradas",
+            )
+            prior_availability = availability
         for trace, flow in zip(traces, flows, strict=True):
             selected = context == "parent" and parent[flow.split("/", 1)[0]]
             _require(

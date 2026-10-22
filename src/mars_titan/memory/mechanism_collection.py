@@ -195,6 +195,11 @@ class MechanismCollector:
                 [r.input_available_at for r in rows], dtype="datetime64[us]"
             ),
         )
+        input_presence = (
+            raw["presence"].tolist()
+            if self._regional is not None and self._regional["schema_version"] == 2
+            else None
+        )
         if not masked_inputs(model.config.inputs.input_policy):
             raw.pop("presence")
         batch = DecisionBatch.from_corpus(
@@ -221,6 +226,11 @@ class MechanismCollector:
                 traces = model.regional_execution.export_trace(
                     prepared.regional_trace, model.regional_fusion
                 )
+                if input_presence is not None and any(
+                    trace["availability"][:5] != present
+                    for trace, present in zip(traces, input_presence, strict=True)
+                ):
+                    raise ValueError("La disponibilidad regional cambió las presencias de entrada")
                 for trace, flow in zip(traces, flows, strict=True):
                     selected = context == "parent" and bool(routes[flow.split("/", 1)[0]])
                     if not selected and trace["context_norm"] != 0:
