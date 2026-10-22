@@ -1,0 +1,27 @@
+{
+  "captured_at_utc": "2026-10-22T21:57:39.340670+00:00",
+  "timing": "after_four_completed_cost_strata",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "logical_cpu_count": 16,
+  "physical_ram_bytes": 32313376768,
+  "loadavg_snapshot": [
+    13.21337890625,
+    15.2412109375,
+    16.05078125
+  ],
+  "own_concurrent_gpu_workloads_during_each_job": 1,
+  "native_binaries": {
+    "episodic": {
+      "filename": "_episodic_native.cpython-312-x86_64-linux-gnu.so",
+      "sha256": "3fdbb5a305f46b3beece8a67f6012db71b00c21fcad13e4dbb937d8d8311b1ac",
+      "recompiled_in_this_change": false
+    },
+    "simulation": {
+      "filename": "libmars_titan_simulation.so",
+      "sha256": "dd27bc0cea98454fc0c2bad84c571986ccc7c7bf0567d4fff128375173de4714",
+      "recompiled_in_this_change": false
+    }
+  },
+  "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics"
+}
