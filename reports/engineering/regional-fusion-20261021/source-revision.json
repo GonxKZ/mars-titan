@@ -1,0 +1,7 @@
+{
+  "measured_sha256": "205a8e4a2cd3a173d32a52f6b6ba5f2ee90b3b1521f4f19f93930b3fd4159922",
+  "published_sha256": "de3179bfb77a93ebc97f4a59172ee6abecb6df907f2072ec514a7bf2cfe91121",
+  "change": "Solo cambia el texto descriptivo del recibo para respetar el vocabulario del proyecto. No cambian operaciones, configuración ni control de flujo.",
+  "reconstruction": "git apply reports/engineering/regional-fusion-20261021/measured-session-source.patch",
+  "patch_sha256": "0d82b91acf35e82178846a5c7f50cc269267afa00cae1019e14e20973cf08a5d"
+}

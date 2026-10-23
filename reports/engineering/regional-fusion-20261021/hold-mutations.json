@@ -1,0 +1,71 @@
+{
+  "recorded_at_utc": "2026-10-21T04:49:28.236084+00:00",
+  "code_commit": "bd1a3a6b5d03a68932bc1277d97d6b7f38fd6be9",
+  "scope": "Mutaciones dirigidas de los tres recuentos del inventario. Solo análisis estático y fixtures locales, sin aprendizaje.",
+  "test": "tests/test_learning_hold_guard.py::test_no_test_benchmark_or_script_lowers_the_hold_outside_the_inventory",
+  "source_sha256": "b39472c733fec4802f0990469c53ab4435e4693c544e517aaadab20d2c430a3e",
+  "hold_before_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 9.840415154932998,
+    "log_sha256": "af16903adc462d049ae837d35e881bb5672f1b8649c0dbc1c333add24bd7a61b",
+    "xml_sha256": "c45bc20e7359d40047e14743f404a87413a1610f94fd01de19db1000032ae2af",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "test_local_capture_study",
+      "before": "\"tests/tooling/test_local_capture_study.py\": (\n        1,",
+      "after": "\"tests/tooling/test_local_capture_study.py\": (\n        0,",
+      "exit_code": 1,
+      "seconds": 10.341950722038746,
+      "log_sha256": "06bad27ebad771b728abf98ac80912ff27f6142d7dcbff1806ccc7d1e96489e8",
+      "xml_sha256": "e42760a272360a975b4112a9349a9ce4ca9c723eef627719b0d0d23c6f35f0c8",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "test_quantile_multiseed_analysis",
+      "before": "\"tests/tooling/test_quantile_multiseed_analysis.py\": (\n        3,",
+      "after": "\"tests/tooling/test_quantile_multiseed_analysis.py\": (\n        2,",
+      "exit_code": 1,
+      "seconds": 9.79044100700412,
+      "log_sha256": "1bf74f3998fb806a2930c03f299aa2e604fcfee3b974d42e105c08bdff5dfced",
+      "xml_sha256": "d2460cc8d1f568ef5e203a09a6348fcfbe18b3d53312c83d5e9abc25486323b6",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "test_quantile_point_analysis",
+      "before": "\"tests/tooling/test_quantile_point_analysis.py\": (\n        1,",
+      "after": "\"tests/tooling/test_quantile_point_analysis.py\": (\n        2,",
+      "exit_code": 1,
+      "seconds": 9.841695919982158,
+      "log_sha256": "ed7310d436a97ea9420eba8aab8e579617eb58f06d88126d0e5de2e8726d43a5",
+      "xml_sha256": "cce3877ba67e4877d94a741f1d4f78db7db70004b5adbb8054903629b6133b77",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 10.542559852008708,
+    "log_sha256": "6c17f41c5dc01d13b1e04d8267ea28263ac641b65e56c13f68db70171ee33b9b",
+    "xml_sha256": "42480952e5adf44aec345adce0380e13b1722dea08c1ba291b77b8441642213e",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "hold_after_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "finished_at_utc": "2026-10-21T04:50:18.605804+00:00"
+}

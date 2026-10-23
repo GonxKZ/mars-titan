@@ -1,0 +1,142 @@
+{
+  "recorded_at_utc": "2026-10-21T03:19:25.711808+00:00",
+  "scope": "Resolución de funciones por clase. Fixtures CPU, sin aprendizaje.",
+  "source_sha256": "a899238edf8fa2f379b243d22bad585187c3e0bc24ddfb2be4ac85a055cff3d7",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.072807432967238,
+    "log_sha256": "4a5c5f4215ae1e7a8d1120929b9d12932dc0006fb5c059f06a5783ffa85d786b",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "ignore_dynamic_metaclass",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "if type(kind) is not type:",
+      "after": "if False:",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_dynamic_metaclass_members_are_not_hidden_from_the_audit",
+      "exit_code": 1,
+      "seconds": 3.022337052039802,
+      "log_sha256": "fcddebdcda58e82653592ff6504ab13e7093f5b1d1017612a3b5e5b278a6c079",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "forget_inherited_functions",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "for base in reversed(kind.__mro__):",
+      "after": "for base in (kind,):",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_mro_shadowing_static_methods_and_class_methods_match_inspect",
+      "exit_code": 1,
+      "seconds": 2.470749896019697,
+      "log_sha256": "fd5f077951f39dace9960aaa79b0cb128125354e9a6301eb9224ba613fafb65f",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reverse_shadowing_priority",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "for base in reversed(kind.__mro__):",
+      "after": "for base in kind.__mro__:",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_mro_shadowing_static_methods_and_class_methods_match_inspect",
+      "exit_code": 1,
+      "seconds": 2.421292328974232,
+      "log_sha256": "1c26c241ab34652afde32cd87b77252ec43d1f026f07c018eb0770eba66572a1",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "forget_static_method",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "functions.append((name, value.__func__))",
+      "after": "pass",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_mro_shadowing_static_methods_and_class_methods_match_inspect",
+      "exit_code": 1,
+      "seconds": 2.470677901059389,
+      "log_sha256": "6ec1e97dfba0007f425f929b40c98f9a4b958ebd80d4ee780701ed6d56a64629",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "treat_classmethod_as_function",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "elif value_type is classmethod and type(value.__func__) is types.FunctionType:\n            continue",
+      "after": "elif value_type is classmethod and type(value.__func__) is types.FunctionType:\n            functions.append((name, value.__func__))",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_mro_shadowing_static_methods_and_class_methods_match_inspect",
+      "exit_code": 1,
+      "seconds": 2.971547274966724,
+      "log_sha256": "9a5e6a5a2ace2f5b2a379caed6eb4109fa2ffd7b7ebefd69bdf3837600feb46a",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_dynamic_descriptor",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "or any(\"__get__\" in vars(base) for base in value_type.__mro__)",
+      "after": "or False",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_dynamic_function_descriptor_uses_the_full_inspection_path",
+      "exit_code": 1,
+      "seconds": 2.920655139023438,
+      "log_sha256": "97fa81af6dd0f2aa27f8947df71aefb2e51fb5e3b3716cf5cda4fc4b759b7d78",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "forget_reference_predicate",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "elif inspect.isfunction(value):",
+      "after": "elif False:",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_function_predicate_keeps_the_reference_class_resolution[False]",
+      "exit_code": 1,
+      "seconds": 2.822767809033394,
+      "log_sha256": "7349dcad314d5d48b66da0da7101274f3062790b91322f46b1320101c7a93bb2",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reuse_functions_between_audits",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "before": "def _class_functions(kind):",
+      "after": "@__import__('functools').lru_cache(maxsize=128)\ndef _class_functions(kind):",
+      "test": "tests/models/titans/test_frozen_class_functions.py::test_an_inherited_method_change_is_seen_on_the_next_audit",
+      "exit_code": 1,
+      "seconds": 2.620990979950875,
+      "log_sha256": "0e519d8a9a82ff695bf1b6041840c4fed5ef4b7245aa015ebc5d5ab542e32c26",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 2.6213165840599686,
+    "log_sha256": "d0fc151df3c6a4ecebd534a872d0f47bb8eb50972f8d1d284727bc0d4a2a7695",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_sources": {
+    "tests/models/titans/test_frozen_class_functions.py": "0072a7d3cb3bfe5121cd1cd1fc7fc43fa109b2b562878d3e78dcb930829faaa9",
+    "tests/models/titans/test_frozen_signature.py": "b1819fce4ed888c9224a4915047734bf98e0ff7eff421b5307d9856c2c7839b8"
+  },
+  "finished_at_utc": "2026-10-21T03:19:53.147040+00:00"
+}

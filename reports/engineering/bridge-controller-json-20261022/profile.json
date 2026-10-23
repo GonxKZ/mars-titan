@@ -1,0 +1,128 @@
+{
+  "instrument": "cProfile",
+  "rows": 64,
+  "route": "k4cr",
+  "cases": [
+    {
+      "mode": "legacy",
+      "stage": "decision",
+      "cumulative_seconds_samples": [
+        {
+          "_json_bytes": 0.191808057,
+          "_payload": 0.467514937,
+          "prepare": 0.053144394000000005,
+          "verify": 0.723275805
+        },
+        {
+          "_json_bytes": 0.10751352700000001,
+          "_payload": 0.262878533,
+          "prepare": 0.024830512000000002,
+          "verify": 0.39797691500000004
+        },
+        {
+          "_json_bytes": 0.107191163,
+          "_payload": 0.266728273,
+          "prepare": 0.021350799,
+          "verify": 0.386995478
+        }
+      ],
+      "cumulative_seconds_medians": {
+        "_json_bytes": 0.10751352700000001,
+        "_payload": 0.266728273,
+        "prepare": 0.024830512000000002,
+        "verify": 0.39797691500000004
+      }
+    },
+    {
+      "mode": "legacy",
+      "stage": "settlement",
+      "cumulative_seconds_samples": [
+        {
+          "_json_bytes": 0.032836103000000005,
+          "_payload": 0.271763215,
+          "prepare": 0,
+          "verify": 0.592256672
+        },
+        {
+          "_json_bytes": 0.018016378,
+          "_payload": 0.164815903,
+          "prepare": 0,
+          "verify": 0.415630543
+        },
+        {
+          "_json_bytes": 0.013649208000000001,
+          "_payload": 0.11518198,
+          "prepare": 0,
+          "verify": 0.24462693500000002
+        }
+      ],
+      "cumulative_seconds_medians": {
+        "_json_bytes": 0.018016378,
+        "_payload": 0.164815903,
+        "prepare": 0,
+        "verify": 0.415630543
+      }
+    },
+    {
+      "mode": "regional",
+      "stage": "decision",
+      "cumulative_seconds_samples": [
+        {
+          "_json_bytes": 1.7266439660000001,
+          "_payload": 1.4521487080000002,
+          "prepare": 0.064896652,
+          "verify": 0.557158932
+        },
+        {
+          "_json_bytes": 2.2099514940000002,
+          "_payload": 1.7754305270000001,
+          "prepare": 0.044061671000000004,
+          "verify": 0.500462084
+        },
+        {
+          "_json_bytes": 2.224846084,
+          "_payload": 1.7829575100000001,
+          "prepare": 0.06900009800000001,
+          "verify": 0.5738445160000001
+        }
+      ],
+      "cumulative_seconds_medians": {
+        "_json_bytes": 2.2099514940000002,
+        "_payload": 1.7754305270000001,
+        "prepare": 0.064896652,
+        "verify": 0.557158932
+      }
+    },
+    {
+      "mode": "regional",
+      "stage": "settlement",
+      "cumulative_seconds_samples": [
+        {
+          "_json_bytes": 0.215899749,
+          "_payload": 0.302637515,
+          "prepare": 0,
+          "verify": 0.341283325
+        },
+        {
+          "_json_bytes": 0.435133924,
+          "_payload": 0.500994936,
+          "prepare": 0,
+          "verify": 0.5597658480000001
+        },
+        {
+          "_json_bytes": 0.23431443100000002,
+          "_payload": 0.344914869,
+          "prepare": 0,
+          "verify": 0.372099923
+        }
+      ],
+      "cumulative_seconds_medians": {
+        "_json_bytes": 0.23431443100000002,
+        "_payload": 0.344914869,
+        "prepare": 0,
+        "verify": 0.372099923
+      }
+    }
+  ],
+  "limits": "Tiempos instrumentados de funciones visibles. No son tiempos de kernels ni categorías sumables."
+}

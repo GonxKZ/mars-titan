@@ -8,6 +8,7 @@ import os
 import pickle
 import re
 import zipfile
+from copy import deepcopy
 from pathlib import Path
 
 import torch
@@ -85,6 +86,7 @@ class SessionArtifacts:
         max_bytes=64 * 1024**2,
         max_files=128,
         max_total_bytes=512 * 1024**2,
+        max_cached_bytes=0,
     ):
         if (
             type(max_bytes) is not int
@@ -93,10 +95,14 @@ class SessionArtifacts:
             or not 1 <= max_files <= 4096
             or type(max_total_bytes) is not int
             or not max_bytes <= max_total_bytes <= 2 * 1024**3
+            or type(max_cached_bytes) is not int
+            or not 0 <= max_cached_bytes <= 64 * 1024**2
         ):
             raise ValueError("El presupuesto de artefactos de sesión no es válido")
         self.native, self.directory = native, Path(directory)
         self.max_bytes, self.max_files, self.max_total_bytes = max_bytes, max_files, max_total_bytes
+        self.max_cached_bytes = max_cached_bytes
+        self._control_cache = None
         native.require_safe_path(str(self.directory))
 
     @staticmethod
@@ -174,6 +180,14 @@ class SessionArtifacts:
 
     def read(self, reference, *, identity, kind):
         content = self._bytes(reference, identity=identity, kind=kind)
+        key = (reference["name"], identity, kind, self.max_bytes)
+        if self._control_cache is not None:
+            previous, charged, cached = self._control_cache
+            if charged > self.max_cached_bytes:
+                self._control_cache = None
+            elif previous == key:
+                # El archivo se relee y verifica arriba, incluso cuando se reutiliza el control.
+                return deepcopy(cached)
         try:
             with zipfile.ZipFile(io.BytesIO(content)) as archive:
                 entries = archive.infolist()
@@ -188,7 +202,12 @@ class SessionArtifacts:
             or _canonical(value["header"]) != _canonical(self._header(identity, kind))
         ):
             raise ValueError("El contenido del artefacto pertenece a otro contrato")
-        return _payload(value["data"], [self.max_bytes - 65536, 1_000_000])
+        budget = [self.max_bytes - 65536, 1_000_000]
+        data = _payload(value["data"], budget)
+        charged = self.max_bytes - 65536 - budget[0] + len(content) + 512
+        if kind == "control" and charged <= self.max_cached_bytes:
+            self._control_cache = key, charged, deepcopy(data)
+        return data
 
     def prune_unreferenced(self, live_references):
         # Las dos generaciones pueden compartir los mismos archivos.
@@ -206,6 +225,8 @@ class SessionArtifacts:
         for path in self._inventory():
             if path.name not in names:
                 path.unlink()
+        if self._control_cache is not None and self._control_cache[0][0] not in names:
+            self._control_cache = None
         if self.directory.exists():
             descriptor = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY)
             try:

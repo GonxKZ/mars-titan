@@ -1,0 +1,588 @@
+{
+  "scope": "Predicciones FP64 exactas, contadores y tamaños serializados. No compara publicaciones durables ni sustituye sus pruebas.",
+  "cases": [
+    {
+      "rows": 64,
+      "kind": "historical_consumer",
+      "prediction_sha256": [
+        "ef981abcc8fa97d16a0444142de7eabb8018b87a441d282471be39ca12007f0a",
+        "49b2c0663f33fd7677c0f0adffee1d7d17cac1d6da5d4b876bea0b2e34ce64c2"
+      ],
+      "work": [],
+      "serialized_sizes": [
+        2108885,
+        2108885,
+        2108885
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "disabled",
+      "prediction_sha256": [
+        "ef981abcc8fa97d16a0444142de7eabb8018b87a441d282471be39ca12007f0a",
+        "49b2c0663f33fd7677c0f0adffee1d7d17cac1d6da5d4b876bea0b2e34ce64c2"
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        2109077,
+        2109077,
+        2109077
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "reader",
+      "prediction_sha256": [
+        "47b6297f5a1518b288780b2ed9468e30b8477479c13e9238b020ecb782ed4f62",
+        "0ab12339b814cd39246b5f3099ffd088f1b4632a80ef9db7e17e9cb806fa13c6"
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        2109077,
+        2109077,
+        2109077
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "context_static",
+      "prediction_sha256": [
+        "f895f5a2bc787d1b8e6cc1ade664d7fc048f3ef38c3b3196f54d8a0c907f2e0c",
+        "743f9d196c3a808463669affb02a8bf869a5320f0f94622aeb81db48106f38d7"
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        }
+      ],
+      "serialized_sizes": [
+        2179571,
+        2179571,
+        2179571
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "context_online",
+      "prediction_sha256": [
+        "3e8d670738b60ca62dbb6459865bf865747a4f615e74d4d7c8abca96d32ef578",
+        "48780e5c48f45f57d1674a9c030170f3b0cf63b03ca2ccb2d5585272a46cad3f"
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        2179571,
+        2187187,
+        2187187
+      ]
+    },
+    {
+      "rows": 64,
+      "kind": "byte_return",
+      "prediction_sha256": [
+        "cc2b1f4d0bb0b226897ebbeac16cd0139680dfcaf9cfa0f12486178da10b82b5",
+        "158bedbdac1799cd77ff69bc3425d8e0005629596520f967625fd95a2f9e9b39"
+      ],
+      "work": [
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 64,
+          "mac_online_observations": 64,
+          "reader_refinements": 256,
+          "reader_searches": 128,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        2179571,
+        2179571,
+        2179571
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "historical_consumer",
+      "prediction_sha256": [
+        "1dedfc1176b562b87d4bbcfd71b9dab98e6cd9df5bdd8047e303d60c332415d8",
+        "68a813551b531aecf1de95888a576723a208b056a27599d5fa7105db0f792f44"
+      ],
+      "work": [],
+      "serialized_sizes": [
+        8414933,
+        8414933,
+        8414933
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "disabled",
+      "prediction_sha256": [
+        "1dedfc1176b562b87d4bbcfd71b9dab98e6cd9df5bdd8047e303d60c332415d8",
+        "68a813551b531aecf1de95888a576723a208b056a27599d5fa7105db0f792f44"
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        8415125,
+        8415125,
+        8415125
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "reader",
+      "prediction_sha256": [
+        "a7f074e9e01b8cea2b04c9feea15b1e7e541ed0ed09d2fa1f91a8a1e4b374672",
+        "ca5e0a341f6e0dcc0fa3fca372306126d8fbbd2800485578e1ec6f8b43a50ff4"
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 0,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        8415125,
+        8415125,
+        8415125
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "context_static",
+      "prediction_sha256": [
+        "d122cebc5922424359e4bd1f95895faf74b4be5e3897cdd946383b2b54f782cd",
+        "659ac55cf776f3858bcb7c8aed853fd1bd1a99152387263c53cd00fb17533afb"
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2,
+          "online_attempts": 0,
+          "online_failures": 0,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 2
+        }
+      ],
+      "serialized_sizes": [
+        8485619,
+        8485619,
+        8485619
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "context_online",
+      "prediction_sha256": [
+        "38b9e0d0a133e107ca1d976b933392a46e3567f34493631cb93a15f73eae87df",
+        "f73db9e2ad2ba7d7449a32c7c8d84cf2391ff9f7349d09d121e0b3b877041aee"
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 2,
+          "online_failures": 0,
+          "online_created_proposals": 2,
+          "online_selected_proposals": 2,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        8485619,
+        8514227,
+        8514227
+      ]
+    },
+    {
+      "rows": 256,
+      "kind": "byte_return",
+      "prediction_sha256": [
+        "5b851ca47963f2517c7682c9bcff80d50c73106ad0b82d2308fbe36f133dd2e8",
+        "4aecd31613322a0e20b54c4ca455fc1054dcd0dbcf5f70eb85752bc12a9b88bf"
+      ],
+      "work": [
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 0,
+          "reader_searches": 0,
+          "context_updates_proposed": 2
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        },
+        {
+          "core_observations": 256,
+          "mac_online_observations": 256,
+          "reader_refinements": 1024,
+          "reader_searches": 512,
+          "context_updates_proposed": 2,
+          "online_attempts": 1,
+          "online_failures": 1,
+          "online_created_proposals": 0,
+          "online_selected_proposals": 0,
+          "online_discarded_proposals": 0,
+          "static_cohorts": 0
+        }
+      ],
+      "serialized_sizes": [
+        8485619,
+        8485619,
+        8485619
+      ]
+    }
+  ],
+  "implementations": {
+    "before": {
+      "mars_titan.calibration.cohort_feedback": "1156ba19b09dae069647775c3b1fac27166fec02e6b35bb04057e0b69e2af33e",
+      "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+      "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+      "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+      "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+      "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+      "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+      "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+      "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+      "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+      "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+      "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+      "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+      "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+      "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+      "mars_titan.models.titans.financial": "eb950231a91c399ef6374879f87b190235e217eac4fcbcccf4cafd6c0f5db44b",
+      "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+      "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+      "mars_titan.models.titans.frozen_financial": "261c71b15f612dd9ba0e4a6b14663c5249ef44412ac7dd9e29321ecbd6b32457",
+      "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+      "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "mars_titan.models.titans.mechanism_catalog": "be754afb519676e6fc6e445797e811739ecdb16e623b26877033d46b8404af84",
+      "mars_titan.models.titans.mechanism_consumer": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "mars_titan.models.titans.mechanism_event": "259b68c65ebb572b89b45965c06b3fc54b3b262bc11f6da08b1a031d373663c0",
+      "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+      "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+      "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+      "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+      "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+      "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+      "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+      "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+    },
+    "after": {
+      "mars_titan.calibration.cohort_feedback": "1156ba19b09dae069647775c3b1fac27166fec02e6b35bb04057e0b69e2af33e",
+      "mars_titan.calibration.cohort_feedback_state": "749e8fb1cb1ce87e4ce9486481311fb60c5d46256c727669cbb4b86ed3cde81c",
+      "mars_titan.calibration.conformal_quantiles": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+      "mars_titan.calibration.online_conformal": "e8aeeb98ba425077f3745eb68ff6e95b624b9f398261d67997637e8721ffe147",
+      "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+      "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+      "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+      "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+      "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+      "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+      "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+      "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+      "mars_titan.models.titans.config": "33cda28dde3b9e57f7fbaff2543fe69c4b04fb27369c2c11c7dad01821ab4ced",
+      "mars_titan.models.titans.episodic_readout": "a094f1c959e810a68144a2e6d731c96b0f78eb2e985df833ffe3b3532f6bba38",
+      "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+      "mars_titan.models.titans.financial": "eb950231a91c399ef6374879f87b190235e217eac4fcbcccf4cafd6c0f5db44b",
+      "mars_titan.models.titans.financial_blocks": "74dfae0ff0278ded9454a985e793c3083628785dde41a08763cc6a5b58d11cb4",
+      "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+      "mars_titan.models.titans.frozen_financial": "105aa9b014b3c5a9d60bcdec5256cc6dacbf50f9b14589488151a6315a80690a",
+      "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+      "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+      "mars_titan.models.titans.mechanism_calibration": "fcebcbf31991ee4e0f869a8bdcb4d0b95cbab36889c5c23b0193522e1d1d959a",
+      "mars_titan.models.titans.mechanism_catalog": "be754afb519676e6fc6e445797e811739ecdb16e623b26877033d46b8404af84",
+      "mars_titan.models.titans.mechanism_consumer": "fed50319efbbe9e262676bdb4aabee59e8c015e0cba24148fc66d68d3aae397c",
+      "mars_titan.models.titans.mechanism_event": "259b68c65ebb572b89b45965c06b3fc54b3b262bc11f6da08b1a031d373663c0",
+      "mars_titan.models.titans.neural_memory": "677d3b4d8d9217894a352c0b6b03a53be7662efb3fb8b0305710aaf4a5e55d01",
+      "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+      "mars_titan.models.titans.refinement_policy": "f7267271abf77f5944709ea4d7035ea20a9dbf542f685f6715e1eb54edef36d4",
+      "mars_titan.models.titans.refinement_routes": "1ca286755e86d62f855bda7dd2a98b4d3bca2b79e44f0cd1a0444a6c3b8ed369",
+      "mars_titan.models.titans.session_context": "b1bf6118ad2094e826dda4313387350155a0ac1b728423856671852f12ffa4c0",
+      "mars_titan.models.titans.state": "f56d035b0b1d2becd2beab41c89eb69adfc7d24c2228edb9d85f3ed3501455ec",
+      "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+      "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+    }
+  },
+  "exact": true
+}

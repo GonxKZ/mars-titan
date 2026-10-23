@@ -1,0 +1,92 @@
+{
+  "recorded_at_utc": "2026-10-21T07:03:36.388057+00:00",
+  "selected_commit": "16cfcd4cecf0bdb165318ac8e9e0ec91b30e0838",
+  "reference_commit": "dc0456ffe",
+  "accepted_tests": {
+    "artifact": "accepted.xml",
+    "sha256": "2c51ea24715d9a01f9911f3dd7ac0340861a1417ce696f91c476b3fc2e22d24c",
+    "tests": 277,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 126.515
+  },
+  "reference_tests": {
+    "tests": 258,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "artifact": "observation-final.xml",
+    "sha256": "ec68dac3ceac97ca64cc4b18004501212ee02991925420ddce22e6637acc8bfb"
+  },
+  "new_tests": 67,
+  "new_cuda_tests": 4,
+  "cuda_marked_tests": 24,
+  "cuda_nodeids": [
+    "tests/memory/test_mechanism_observations.py::test_conversion_cannot_publish_infinity_when_fp64_features_do_not_fit_fp32[cuda:0]",
+    "tests/memory/test_mechanism_observations.py::test_observation_conversion_to_cuda_is_explicit_and_does_not_consume_rng[dtype0]",
+    "tests/memory/test_mechanism_observations.py::test_observation_conversion_to_cuda_is_explicit_and_does_not_consume_rng[dtype1]",
+    "tests/memory/test_mechanism_observations.py::test_real_fixture_rows_and_recovery_preserve_the_next_pre_mac_vector[cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_disabled_session_matches_issued_points_and_next_update_of_the_previous_consumer[cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_online_history_keeps_emitted_quantiles_across_partial_labels_pruning_and_recovery[cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_cut_recovery_preserves_the_next_emission_and_single_feedback[record_written-cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_cut_recovery_preserves_the_next_emission_and_single_feedback[checkpoint_written-cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_cut_recovery_preserves_the_next_emission_and_single_feedback[before_commit-cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_cut_recovery_preserves_the_next_emission_and_single_feedback[committed-cuda:0]",
+    "tests/memory/test_financial_mechanisms.py::test_partition_and_asset_order_keep_one_context_write_and_a_common_snapshot[cuda:0]",
+    "tests/models/titans/test_financial_adapter.py::test_price_encoder_checks_keep_their_message_inside_prepare[prices-^Los precios contienen valores no finitos$-cuda:0]",
+    "tests/models/titans/test_financial_adapter.py::test_price_encoder_checks_keep_their_message_inside_prepare[representation-^La representaci\\xf3n Transformer contiene valores no finitos$-cuda:0]",
+    "tests/models/titans/test_financial_adapter.py::test_cuda_prepare_waits_for_the_device_once[False]",
+    "tests/models/titans/test_financial_adapter.py::test_cuda_prepare_waits_for_the_device_once[True]",
+    "tests/models/titans/test_mechanism_policy.py::test_autocast_is_rejected_before_changing_the_declared_precision[cuda:0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cpu_checkpoint_restores_the_next_cuda_decision[dtype0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cpu_checkpoint_restores_the_next_cuda_decision[dtype1]",
+    "tests/models/titans/test_mechanism_policy.py::test_cuda_matches_cpu_and_preserves_the_cuda_rng[dtype0]",
+    "tests/models/titans/test_mechanism_policy.py::test_cuda_matches_cpu_and_preserves_the_cuda_rng[dtype1]",
+    "tests/models/titans/test_mechanism_losses.py::test_loss_autocast_cannot_change_the_precision_of_the_scores[cuda:0]",
+    "tests/models/titans/test_mechanism_losses.py::test_cuda_losses_match_the_cpu_reference[dtype0]",
+    "tests/models/titans/test_mechanism_losses.py::test_cuda_losses_match_the_cpu_reference[dtype1]",
+    "tests/models/titans/test_refinement_policy.py::test_cuda_rejected_load_is_atomic_even_inside_deferred_checks"
+  ],
+  "test_files": [
+    "tests/memory/test_financial_mechanisms.py",
+    "tests/memory/test_mechanism_observations.py",
+    "tests/models/titans/test_financial_adapter.py",
+    "tests/models/titans/test_mechanism_catalog.py",
+    "tests/models/titans/test_mechanism_losses.py",
+    "tests/models/titans/test_mechanism_policy.py",
+    "tests/models/titans/test_refinement_policy.py",
+    "tests/tooling/test_regional_benchmarks.py"
+  ],
+  "sources": {
+    "src/mars_titan/memory/mechanism_observations.py": "c6b2968d7e256a39e7c47db1e22b4f61c8745b34af22f1640158247d40d97c86",
+    "src/mars_titan/models/titans/mechanism_observation.py": "59583f92564e7dc8be10fedfe1c7253b14f3a9e8b145eb5c692edeb8a03640cb",
+    "tests/memory/test_mechanism_observations.py": "19fccf60c8950b321c4a492d4b616232688cabec2000f6d2ce141a20efee9ba7",
+    "reports/engineering/mechanism-observations-20261021/benchmark.py": "55eb8d62dd45590e213ed2ceb5d1bbf39344b134e6775554852935ad1669841f",
+    "tests/tooling/test_regional_benchmarks.py": "7ceea3b20bd6439537658c512d8ebc0ce15b5ff135bceb8e28c16e5a61c1ff92"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1"
+  },
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_study": false,
+  "real_data_used": false,
+  "optimizer_steps": 0,
+  "automatic_policy_binding": false,
+  "warning": "Una advertencia conocida del diagnóstico experimental de sincronización de PyTorch.",
+  "limits": [
+    "La extracción se llama explícitamente. Las acciones del consumidor financiero siguen fijas.",
+    "Las medidas de coste usan estado inicial sin banco ni pendientes y modalidades pequeñas.",
+    "Las huellas no autentican un host capaz de modificar arbitrariamente código y archivos."
+  ],
+  "checks": {
+    "ruff": "All checks passed!",
+    "format": "1725 files already formatted",
+    "repository": "Verificados 3311 archivos, 361 referencias y 64 tareas."
+  }
+}

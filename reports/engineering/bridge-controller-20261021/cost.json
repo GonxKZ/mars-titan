@@ -1,0 +1,731 @@
+{
+  "scope": "native_fixed_route_cost_not_scientific_evaluation",
+  "runs": [
+    {
+      "status": "running_not_complete",
+      "recorded_at_utc": "2026-10-21T21:07:21.613265+00:00",
+      "parent_commit": "2cb07f69d3678364da38b33637bb98adcdca7933",
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "threads": 2,
+      "device": "cuda:0",
+      "dtype": "float64",
+      "tf32": false,
+      "autocast": false,
+      "warmup": 1,
+      "repetitions": 3,
+      "real_corpus": false,
+      "optimizer_steps": 0,
+      "scope": "native_fixed_mechanism_decision_and_following_settlement",
+      "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+      "source_sha256": {
+        "reports/engineering/bridge-controller-20261021/benchmark.py": "abbcd04c4d3eddf1397d0bd84d894fa4c380afcc87fbb9bc7d935cca336396b4",
+        "reports/engineering/mechanism-window-20261021/benchmark.py": "f1dd5da972a7ee742e780874e5ec7be8af17a86b65294f12accf4c0be8841566",
+        "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be",
+        "src/mars_titan/models/titans/mechanism_consumer.py": "a39642c00b568d9a3eb0c963abe58c5151b186ab4b3c6785600fb10645e54ed8",
+        "src/mars_titan/models/titans/mechanism_catalog.py": "4bda02e1145d897894444883fb82be64d6a7d7813609ec362759881e24706e27",
+        "src/mars_titan/models/titans/regional_routes.py": "8dd4f660484ac7ee5168764c5f5256cba7e5a5373a82bb2e2ddc510c6791222b",
+        "src/mars_titan/models/titans/regional_mechanism_trace.py": "5dff3e85a5bc46181d34c1423ac6b378e402c98860e8c002e13fb42aa25879c2",
+        "src/mars_titan/models/titans/mechanism_policy.py": "ae29d4022f8dce0e87e8f56534c95a6a5787087c507c20a0b52d220a2ccedcff",
+        "src/mars_titan/memory/financial_mechanisms.py": "d00d377716abbff3c5b80a68476d2f48a60ad962391da55884e0404e9ce167a5"
+      },
+      "terminal_status": "failed_work_assertion_not_complete",
+      "terminal_exit_code": 1,
+      "raw_artifact": "cost.json",
+      "raw_sha256": "78b78341ab79d9dc3af7c833260f694ff2950bfa6cc41e18e20005ed82ceb04f",
+      "cases": [
+        {
+          "rows": 4,
+          "route": "k1",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "df66daf43a62d64f61e98c4f12c10fbe753258bb3debe171e52794570d1c15cf",
+          "inputs_id": "8ff8be2ddf11abf85cfb04932a0de77b7254db2db11d24f075fe12149d68819e",
+          "decision": {
+            "samples_ms": [
+              586.002123,
+              605.988846,
+              644.444673
+            ],
+            "p50_ms": 605.988846,
+            "p95_ms": 640.5990903,
+            "p99_ms": 643.6755564599999,
+            "mean_ms": 612.145214,
+            "standard_deviation_ms": 24.252952574057073
+          },
+          "following_settlement": {
+            "samples_ms": [
+              428.078731,
+              434.212388,
+              458.633313
+            ],
+            "p50_ms": 434.212388,
+            "p95_ms": 456.1912205,
+            "p99_ms": 458.14489449999996,
+            "mean_ms": 440.308144,
+            "standard_deviation_ms": 13.197583142563966
+          },
+          "control_bytes": 5165,
+          "allocated_peak_bytes": 67955712,
+          "decision_rows_per_second": 6.534397245160852,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 4,
+            "mac_online_observations": 4,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 4,
+            "reader_searches": 4,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "9eceb40d49cecd1280cf375159219c1257221e438f0e65869b95c33224c0a9d5"
+        },
+        {
+          "rows": 4,
+          "route": "k1",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "df66daf43a62d64f61e98c4f12c10fbe753258bb3debe171e52794570d1c15cf",
+          "inputs_id": "8ff8be2ddf11abf85cfb04932a0de77b7254db2db11d24f075fe12149d68819e",
+          "decision": {
+            "samples_ms": [
+              719.800605,
+              550.500346,
+              351.194448
+            ],
+            "p50_ms": 550.500346,
+            "p95_ms": 702.8705791,
+            "p99_ms": 716.41459982,
+            "mean_ms": 540.4984663333333,
+            "standard_deviation_ms": 150.64893614454994
+          },
+          "following_settlement": {
+            "samples_ms": [
+              479.375464,
+              311.129003,
+              256.191947
+            ],
+            "p50_ms": 311.129003,
+            "p95_ms": 462.5508179,
+            "p99_ms": 476.01053478,
+            "mean_ms": 348.89880466666665,
+            "standard_deviation_ms": 94.94784183461579
+          },
+          "control_bytes": 11757,
+          "allocated_peak_bytes": 68054528,
+          "decision_rows_per_second": 7.400576040734112,
+          "work": {
+            "bridge_value_projections": 4,
+            "context_updates_proposed": 0,
+            "core_observations": 4,
+            "mac_online_observations": 4,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 4,
+            "reader_searches": 4,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "47de4dbd889d274ce16c32d681d45f604de82d5eb1061024079e8b52c4b1ac5a"
+        },
+        {
+          "rows": 4,
+          "route": "k4cr",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "df66daf43a62d64f61e98c4f12c10fbe753258bb3debe171e52794570d1c15cf",
+          "inputs_id": "8ff8be2ddf11abf85cfb04932a0de77b7254db2db11d24f075fe12149d68819e",
+          "decision": {
+            "samples_ms": [
+              332.924299,
+              320.163823,
+              322.562513
+            ],
+            "p50_ms": 322.562513,
+            "p95_ms": 331.8881204,
+            "p99_ms": 332.71706328,
+            "mean_ms": 325.21687833333334,
+            "standard_deviation_ms": 5.537248319562435
+          },
+          "following_settlement": {
+            "samples_ms": [
+              242.647122,
+              249.344279,
+              234.11909
+            ],
+            "p50_ms": 242.647122,
+            "p95_ms": 248.6745633,
+            "p99_ms": 249.21033586,
+            "mean_ms": 242.03683033333334,
+            "standard_deviation_ms": 6.2306199242254285
+          },
+          "control_bytes": 5165,
+          "allocated_peak_bytes": 67955712,
+          "decision_rows_per_second": 12.2994846408315,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 4,
+            "mac_online_observations": 4,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 16,
+            "reader_searches": 8,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "8c624b998d09aa4c172a7ba4e6fbc6b2b90de4e186f8491fb3e5bf7132c3edb3"
+        },
+        {
+          "rows": 4,
+          "route": "k4cr",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "df66daf43a62d64f61e98c4f12c10fbe753258bb3debe171e52794570d1c15cf",
+          "inputs_id": "8ff8be2ddf11abf85cfb04932a0de77b7254db2db11d24f075fe12149d68819e",
+          "decision": {
+            "samples_ms": [
+              387.955474,
+              354.170506,
+              442.081197
+            ],
+            "p50_ms": 387.955474,
+            "p95_ms": 436.66862469999995,
+            "p99_ms": 440.99868253999995,
+            "mean_ms": 394.73572566666667,
+            "standard_deviation_ms": 36.20820586112004
+          },
+          "following_settlement": {
+            "samples_ms": [
+              232.02444,
+              226.751338,
+              292.332911
+            ],
+            "p50_ms": 232.02444,
+            "p95_ms": 286.3020639,
+            "p99_ms": 291.12674158000004,
+            "mean_ms": 250.369563,
+            "standard_deviation_ms": 29.75055554329958
+          },
+          "control_bytes": 28141,
+          "allocated_peak_bytes": 68054528,
+          "decision_rows_per_second": 10.133361993633653,
+          "work": {
+            "bridge_value_projections": 16,
+            "context_updates_proposed": 0,
+            "core_observations": 4,
+            "mac_online_observations": 4,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 16,
+            "reader_searches": 8,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "43f399a10a1084bad100ca630bc840a2e56e48ddcd6811e583426fef3896d3c2"
+        },
+        {
+          "rows": 64,
+          "route": "k1",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "67cd22c43824f428bf8322b351035dbd29982f513d6bef143c875f59bb69f2fe",
+          "inputs_id": "8f88b8e61315999d8ba75e4d366032ca65b4870178b7a0da6fa2b7a01c5befcc",
+          "decision": {
+            "samples_ms": [
+              1114.806206,
+              783.251884,
+              682.627429
+            ],
+            "p50_ms": 783.251884,
+            "p95_ms": 1081.6507738,
+            "p99_ms": 1108.17511956,
+            "mean_ms": 860.2285063333334,
+            "standard_deviation_ms": 184.64140761972544
+          },
+          "following_settlement": {
+            "samples_ms": [
+              414.470375,
+              359.400687,
+              370.742818
+            ],
+            "p50_ms": 370.742818,
+            "p95_ms": 410.09761929999996,
+            "p99_ms": 413.59582386,
+            "mean_ms": 381.53795999999994,
+            "standard_deviation_ms": 23.742633274406874
+          },
+          "control_bytes": 49709,
+          "allocated_peak_bytes": 76191232,
+          "decision_rows_per_second": 74.39883650542544,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 64,
+            "mac_online_observations": 64,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 64,
+            "reader_searches": 64,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "8e24f52093a3ee44cfec20e8f777369ee33105c697009d875ac8ba994ba4a691"
+        },
+        {
+          "rows": 64,
+          "route": "k1",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "67cd22c43824f428bf8322b351035dbd29982f513d6bef143c875f59bb69f2fe",
+          "inputs_id": "8f88b8e61315999d8ba75e4d366032ca65b4870178b7a0da6fa2b7a01c5befcc",
+          "decision": {
+            "samples_ms": [
+              1399.88198,
+              1022.326174,
+              1037.023164
+            ],
+            "p50_ms": 1037.023164,
+            "p95_ms": 1363.5960984,
+            "p99_ms": 1392.62480368,
+            "mean_ms": 1153.077106,
+            "standard_deviation_ms": 174.62051187528905
+          },
+          "following_settlement": {
+            "samples_ms": [
+              529.784962,
+              525.873585,
+              470.491215
+            ],
+            "p50_ms": 525.873585,
+            "p95_ms": 529.3938243,
+            "p99_ms": 529.70673446,
+            "mean_ms": 508.71658733333334,
+            "standard_deviation_ms": 27.076546247327602
+          },
+          "control_bytes": 166253,
+          "allocated_peak_bytes": 76290048,
+          "decision_rows_per_second": 55.50366030769152,
+          "work": {
+            "bridge_value_projections": 64,
+            "context_updates_proposed": 0,
+            "core_observations": 64,
+            "mac_online_observations": 64,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 64,
+            "reader_searches": 64,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "b6d4f87204bbbdb49d132e72081bc07cb7645716c3bee56de1d021a4a8a8a647"
+        },
+        {
+          "rows": 64,
+          "route": "k4cr",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "67cd22c43824f428bf8322b351035dbd29982f513d6bef143c875f59bb69f2fe",
+          "inputs_id": "8f88b8e61315999d8ba75e4d366032ca65b4870178b7a0da6fa2b7a01c5befcc",
+          "decision": {
+            "samples_ms": [
+              1129.00106,
+              1729.860335,
+              2026.016729
+            ],
+            "p50_ms": 1729.860335,
+            "p95_ms": 1996.4010896,
+            "p99_ms": 2020.09360112,
+            "mean_ms": 1628.292708,
+            "standard_deviation_ms": 373.181157749323
+          },
+          "following_settlement": {
+            "samples_ms": [
+              561.718368,
+              1021.84967,
+              1240.824993
+            ],
+            "p50_ms": 1021.84967,
+            "p95_ms": 1218.9274607,
+            "p99_ms": 1236.44548654,
+            "mean_ms": 941.4643436666665,
+            "standard_deviation_ms": 283.0109568515089
+          },
+          "control_bytes": 50093,
+          "allocated_peak_bytes": 76191232,
+          "decision_rows_per_second": 39.30497243251181,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 64,
+            "mac_online_observations": 64,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 256,
+            "reader_searches": 128,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "3288b752d7cf730aab26658c969d3ca0bba1ae73e3f7a3d7351766c99920f3e5"
+        },
+        {
+          "rows": 64,
+          "route": "k4cr",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "67cd22c43824f428bf8322b351035dbd29982f513d6bef143c875f59bb69f2fe",
+          "inputs_id": "8f88b8e61315999d8ba75e4d366032ca65b4870178b7a0da6fa2b7a01c5befcc",
+          "decision": {
+            "samples_ms": [
+              4428.976725,
+              2391.722329,
+              4425.418745
+            ],
+            "p50_ms": 4425.418745,
+            "p95_ms": 4428.620927,
+            "p99_ms": 4428.9055654,
+            "mean_ms": 3748.7059329999997,
+            "standard_deviation_ms": 959.5334077731189
+          },
+          "following_settlement": {
+            "samples_ms": [
+              1661.311094,
+              760.633654,
+              851.328985
+            ],
+            "p50_ms": 851.328985,
+            "p95_ms": 1580.3128831,
+            "p99_ms": 1645.11145182,
+            "mean_ms": 1091.0912443333334,
+            "standard_deviation_ms": 404.90280190164714
+          },
+          "control_bytes": 453101,
+          "allocated_peak_bytes": 76290048,
+          "decision_rows_per_second": 17.072558142426054,
+          "work": {
+            "bridge_value_projections": 256,
+            "context_updates_proposed": 0,
+            "core_observations": 64,
+            "mac_online_observations": 64,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 256,
+            "reader_searches": 128,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "89c73ed1af39e49d66df9b0bed96742ac17ebbd129b7221dcc9759f3425529bf"
+        },
+        {
+          "rows": 256,
+          "route": "k1",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "9f24cf4d4ecf5dc209fb9291da7266adb8c29a3bfb181b55b857c2446a4c9dab",
+          "inputs_id": "01e86ee6d8f6fea8195ed82baa202e93a998bfdef2a437b629be20961805e286",
+          "decision": {
+            "samples_ms": [
+              4794.776009,
+              4738.223199,
+              5060.515144
+            ],
+            "p50_ms": 4794.776009,
+            "p95_ms": 5033.9412305,
+            "p99_ms": 5055.2003613,
+            "mean_ms": 4864.504784000001,
+            "standard_deviation_ms": 140.51002574009019
+          },
+          "following_settlement": {
+            "samples_ms": [
+              1068.88954,
+              1921.439393,
+              1868.001739
+            ],
+            "p50_ms": 1868.001739,
+            "p95_ms": 1916.0956276000002,
+            "p99_ms": 1920.37063992,
+            "mean_ms": 1619.4435573333333,
+            "standard_deviation_ms": 389.9112635952444
+          },
+          "control_bytes": 193133,
+          "allocated_peak_bytes": 78488576,
+          "decision_rows_per_second": 52.62611742967503,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 256,
+            "mac_online_observations": 256,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 256,
+            "reader_searches": 256,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "5e6aba429c7fee680e766d7266c94fb6fcbe5b98d83d0c7c99b197cdb0f9a134"
+        },
+        {
+          "rows": 256,
+          "route": "k1",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "9f24cf4d4ecf5dc209fb9291da7266adb8c29a3bfb181b55b857c2446a4c9dab",
+          "inputs_id": "01e86ee6d8f6fea8195ed82baa202e93a998bfdef2a437b629be20961805e286",
+          "decision": {
+            "samples_ms": [
+              8369.629377,
+              8598.859194,
+              8452.391065
+            ],
+            "p50_ms": 8452.391065,
+            "p95_ms": 8584.2123811,
+            "p99_ms": 8595.92983142,
+            "mean_ms": 8473.626545333334,
+            "standard_deviation_ms": 94.77969708470994
+          },
+          "following_settlement": {
+            "samples_ms": [
+              2509.443209,
+              2484.83568,
+              2586.638902
+            ],
+            "p50_ms": 2509.443209,
+            "p95_ms": 2578.9193327000003,
+            "p99_ms": 2585.09498814,
+            "mean_ms": 2526.972597,
+            "standard_deviation_ms": 43.3699864356003
+          },
+          "control_bytes": 659565,
+          "allocated_peak_bytes": 78587392,
+          "decision_rows_per_second": 30.21138571902091,
+          "work": {
+            "bridge_value_projections": 256,
+            "context_updates_proposed": 0,
+            "core_observations": 256,
+            "mac_online_observations": 256,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 256,
+            "reader_searches": 256,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "9dc15b571431a0b7db5431adeaf7fa988229fdc121077b58612a7422684ad288"
+        },
+        {
+          "rows": 256,
+          "route": "k4cr",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "9f24cf4d4ecf5dc209fb9291da7266adb8c29a3bfb181b55b857c2446a4c9dab",
+          "inputs_id": "01e86ee6d8f6fea8195ed82baa202e93a998bfdef2a437b629be20961805e286",
+          "decision": {
+            "samples_ms": [
+              5185.791301,
+              5134.813446,
+              5166.67907
+            ],
+            "p50_ms": 5166.67907,
+            "p95_ms": 5183.8800779,
+            "p99_ms": 5185.40905638,
+            "mean_ms": 5162.427939,
+            "standard_deviation_ms": 21.027593160490007
+          },
+          "following_settlement": {
+            "samples_ms": [
+              2987.569799,
+              2240.284772,
+              1953.785307
+            ],
+            "p50_ms": 2240.284772,
+            "p95_ms": 2912.8412962999996,
+            "p99_ms": 2972.62409846,
+            "mean_ms": 2393.8799593333333,
+            "standard_deviation_ms": 435.79139134368387
+          },
+          "control_bytes": 194669,
+          "allocated_peak_bytes": 78488576,
+          "decision_rows_per_second": 49.58906991534473,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 256,
+            "mac_online_observations": 256,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 1024,
+            "reader_searches": 512,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "7d6298ad82fd312650272c287f359833e1bdcc7577ce6c492b7202ac4e1d41ed"
+        }
+      ]
+    },
+    {
+      "status": "complete",
+      "requested_rows": [
+        256
+      ],
+      "requested_routes": [
+        "k4cr"
+      ],
+      "reader_max_batch": 64,
+      "recorded_at_utc": "2026-10-21T21:23:34.601574+00:00",
+      "parent_commit": "2cb07f69d3678364da38b33637bb98adcdca7933",
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "threads": 2,
+      "device": "cuda:0",
+      "dtype": "float64",
+      "tf32": false,
+      "autocast": false,
+      "warmup": 1,
+      "repetitions": 3,
+      "real_corpus": false,
+      "optimizer_steps": 0,
+      "scope": "native_fixed_mechanism_decision_and_following_settlement",
+      "native_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+      "source_sha256": {
+        "reports/engineering/bridge-controller-20261021/benchmark.py": "08cd4c9893756347e0ad62996f121e332c85920c7b319a1ec32be676ab475637",
+        "reports/engineering/mechanism-window-20261021/benchmark.py": "f1dd5da972a7ee742e780874e5ec7be8af17a86b65294f12accf4c0be8841566",
+        "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be",
+        "src/mars_titan/models/titans/mechanism_consumer.py": "a39642c00b568d9a3eb0c963abe58c5151b186ab4b3c6785600fb10645e54ed8",
+        "src/mars_titan/models/titans/mechanism_catalog.py": "4bda02e1145d897894444883fb82be64d6a7d7813609ec362759881e24706e27",
+        "src/mars_titan/models/titans/regional_routes.py": "8dd4f660484ac7ee5168764c5f5256cba7e5a5373a82bb2e2ddc510c6791222b",
+        "src/mars_titan/models/titans/regional_mechanism_trace.py": "5dff3e85a5bc46181d34c1423ac6b378e402c98860e8c002e13fb42aa25879c2",
+        "src/mars_titan/models/titans/mechanism_policy.py": "ae29d4022f8dce0e87e8f56534c95a6a5787087c507c20a0b52d220a2ccedcff",
+        "src/mars_titan/memory/financial_mechanisms.py": "d00d377716abbff3c5b80a68476d2f48a60ad962391da55884e0404e9ce167a5"
+      },
+      "elapsed_seconds": 273.0137819770025,
+      "maximum_rss_kib": 1586244,
+      "terminal_status": "complete",
+      "terminal_exit_code": 0,
+      "raw_artifact": "continuation-cost.json",
+      "raw_sha256": "158a6692c71db01876314e8668759496907b0bd427e003a94bef0305672f8af9",
+      "cases": [
+        {
+          "rows": 256,
+          "route": "k4cr",
+          "mode": "legacy",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "02414e2f0faa9581434835e3c62ac859b1643f24833571fbc105f15ab3508c6b",
+          "inputs_id": "d916abdc06a33253077800afc0d12a0fa4f46309495aea33ae69842483f82637",
+          "decision": {
+            "samples_ms": [
+              6161.389739,
+              5640.491087,
+              4819.741138
+            ],
+            "p50_ms": 5640.491087,
+            "p95_ms": 6109.299873800001,
+            "p99_ms": 6150.97176596,
+            "mean_ms": 5540.540654666667,
+            "standard_deviation_ms": 552.2667283321405
+          },
+          "following_settlement": {
+            "samples_ms": [
+              2029.992637,
+              2410.845418,
+              1992.53673
+            ],
+            "p50_ms": 2029.992637,
+            "p95_ms": 2372.7601399,
+            "p99_ms": 2403.22836238,
+            "mean_ms": 2144.4582616666667,
+            "standard_deviation_ms": 188.9838159504987
+          },
+          "control_bytes": 194669,
+          "allocated_peak_bytes": 78488576,
+          "decision_rows_per_second": 46.204877097035144,
+          "work": {
+            "context_updates_proposed": 0,
+            "core_observations": 256,
+            "mac_online_observations": 256,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 1024,
+            "reader_searches": 512,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "581c65208debabd395f5aa99f20cc38a3a2a83bd01b2c0f1203614db10ce18eb"
+        },
+        {
+          "rows": 256,
+          "route": "k4cr",
+          "mode": "regional",
+          "parent_parameter_id": "03088e36dbfe96917a913bff5f205edcfa1514d4d6bf6e502d18e51373a7665f",
+          "bank_sha256": "02414e2f0faa9581434835e3c62ac859b1643f24833571fbc105f15ab3508c6b",
+          "inputs_id": "d916abdc06a33253077800afc0d12a0fa4f46309495aea33ae69842483f82637",
+          "decision": {
+            "samples_ms": [
+              15256.873698,
+              12773.533533,
+              14230.204647
+            ],
+            "p50_ms": 14230.204647,
+            "p95_ms": 15154.206792899999,
+            "p99_ms": 15236.340316979999,
+            "mean_ms": 14086.870625999998,
+            "standard_deviation_ms": 1018.8729312194523
+          },
+          "following_settlement": {
+            "samples_ms": [
+              3715.922055,
+              3336.254384,
+              3745.058284
+            ],
+            "p50_ms": 3715.922055,
+            "p95_ms": 3742.1446611,
+            "p99_ms": 3744.47555942,
+            "mean_ms": 3599.0782409999997,
+            "standard_deviation_ms": 186.22480109865873
+          },
+          "control_bytes": 1807149,
+          "allocated_peak_bytes": 78587392,
+          "decision_rows_per_second": 18.172950316410468,
+          "work": {
+            "bridge_value_projections": 1024,
+            "context_updates_proposed": 0,
+            "core_observations": 256,
+            "mac_online_observations": 256,
+            "online_attempts": 0,
+            "online_created_proposals": 0,
+            "online_discarded_proposals": 0,
+            "online_failures": 0,
+            "online_selected_proposals": 0,
+            "reader_refinements": 1024,
+            "reader_searches": 512,
+            "static_cohorts": 0
+          },
+          "consumer_identity_sha256": "6dbd03419ed6a0ff5c8964953b58faa642cae42bfaf0d600e14728fd8ff14cc1"
+        }
+      ]
+    }
+  ],
+  "compare_only_matched_pairs_within_each_run": true,
+  "first_run_orphan_control": "256/k4cr/legacy_with_planning_256_not_paired_with_later_planning_64"
+}

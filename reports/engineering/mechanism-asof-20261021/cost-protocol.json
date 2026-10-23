@@ -1,0 +1,18 @@
+{
+  "scope": "Lectura técnica de recibos y reconstrucción de prefijos nativos con fixtures manuales",
+  "rows": [4, 64, 256],
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "cpu_threads": 2,
+  "warmup_per_mode": 3,
+  "repetitions_per_mode": 20,
+  "order": "rotación de tres modos",
+  "modes": ["receipt_latest", "asof_complete", "asof_partial"],
+  "events": "Una decisión y dos recepciones parciales, la última en cierre",
+  "parity": "La vista completa debe conservar colección, supervisión y censuras del recibo actual. El prefijo debe ser idéntico antes y después de la recepción tardía.",
+  "timing": "Tiempo de pared por llamada, con sincronización CUDA antes y después. La preparación de sesión se registra aparte.",
+  "memory": "Pico del proceso completo y memoria del allocator CUDA con el predictor residente. No se atribuye toda la memoria a la vista.",
+  "bytes": "El presupuesto suma paquete y registros nativos. Los bloques de trazas se verifican con los límites existentes del archivo y no se suman a ese campo.",
+  "restrictions": "Sin corpus real, ajuste, optimizador ni test final. Sin otras cargas propias mientras se mide. No se detienen aplicaciones ajenas.",
+  "claims": "No es una comparación predictiva, una prueba de novedad ni una aceleración demostrada. Las colas p95/p99 con veinte repeticiones son descriptivas."
+}

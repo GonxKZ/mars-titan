@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "registered_at_utc": "2026-10-21T07:30:03.525519+00:00",
+  "kind": "technical_fixture_cost_not_scientific_study",
+  "controls": [
+    "fixed",
+    "selected"
+  ],
+  "rows": [
+    64,
+    256
+  ],
+  "dtype": "float64",
+  "device": "cuda:0",
+  "warmup_trajectories": 1,
+  "measured_trajectories_per_control_and_size": 4,
+  "order": "alternating_fixed_selected_then_selected_fixed",
+  "selector": "supplied_zero_gains_baseline_choice_not_fitted",
+  "parity": "identical_SHA256_of_all_issued_asset_time_point_tuples_across_controls_and_repetitions",
+  "scope": "open_warmup_three_emissions_feedback_close_history_pruning_recovery_and_trace_reads",
+  "excluded": [
+    "real_corpus",
+    "training",
+    "selector_fitting",
+    "external_encoders",
+    "energy",
+    "test_2024"
+  ],
+  "concurrency": "no_other_own_tests_profiles_mutations_or_benchmarks_in_parallel_including_CPU",
+  "report": [
+    "raw_stage_and_total_times",
+    "empirical_p50_p95_p99",
+    "mean_sample_standard_deviation",
+    "prediction_rows_per_second",
+    "retained_bytes",
+    "process_RSS_peak",
+    "Torch_allocator_VRAM_peaks",
+    "software_hardware_hashes_concurrent_loads"
+  ],
+  "acceptance": "functional_parity_required_no_speedup_or_predictive_improvement_threshold_claimed"
+}

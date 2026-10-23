@@ -1,0 +1,326 @@
+{
+  "tmpfs": [
+    {
+      "prior_events": 8,
+      "rows_per_event": 64,
+      "semantic_sha256": "3b606c4e21b9b66d0470858a122f3fb5ae5987187b764f112ec44c974789eeb1",
+      "dictionary": {
+        "receipt": "cost-tmpfs-dictionary.json",
+        "p50_ms": 312.41805750000003,
+        "p95_ms": 373.2226917,
+        "p99_ms": 393.13814154000005,
+        "mean_ms": 293.6172980833333,
+        "rows_per_second": 217.97080900129995,
+        "strong_recovery_ms": 184.142381,
+        "history_bytes": 454637,
+        "retained_artifact_bytes": 888538
+      },
+      "none": {
+        "receipt": "cost-tmpfs-none.json",
+        "p50_ms": 6.2061385,
+        "p95_ms": 7.752283249999999,
+        "p99_ms": 8.32329985,
+        "mean_ms": 6.205013999999999,
+        "rows_per_second": 10314.239419927177,
+        "strong_recovery_ms": 54.40439,
+        "history_bytes": 754029,
+        "retained_artifact_bytes": 1473818
+      },
+      "zlib1": {
+        "receipt": "cost-tmpfs-zlib1.json",
+        "p50_ms": 7.3509265,
+        "p95_ms": 9.3909967,
+        "p99_ms": 9.54949614,
+        "mean_ms": 7.529743750000001,
+        "rows_per_second": 8499.62523625057,
+        "strong_recovery_ms": 68.593282,
+        "history_bytes": 319341,
+        "retained_artifact_bytes": 624218
+      },
+      "zlib_vs_dictionary_bytes_pct": -29.7591265119205,
+      "zlib_vs_none_bytes_pct": -57.64871112384271
+    },
+    {
+      "prior_events": 8,
+      "rows_per_event": 256,
+      "semantic_sha256": "bde6a8e1b9067473fc1cbd1ecae22a7358786b934becc7855e3f4a7d26d4242c",
+      "dictionary": {
+        "receipt": "cost-tmpfs-dictionary.json",
+        "p50_ms": 1309.7208504999999,
+        "p95_ms": 1517.6130119,
+        "p99_ms": 1517.94916398,
+        "mean_ms": 1226.73435775,
+        "rows_per_second": 208.68413636799028,
+        "strong_recovery_ms": 522.573824,
+        "history_bytes": 1779629,
+        "retained_artifact_bytes": 3477850
+      },
+      "none": {
+        "receipt": "cost-tmpfs-none.json",
+        "p50_ms": 26.859241500000003,
+        "p95_ms": 32.8749381,
+        "p99_ms": 33.294213219999996,
+        "mean_ms": 26.47424608333333,
+        "rows_per_second": 9669.774889686583,
+        "strong_recovery_ms": 271.374388,
+        "history_bytes": 2992493,
+        "retained_artifact_bytes": 5849050
+      },
+      "zlib1": {
+        "receipt": "cost-tmpfs-zlib1.json",
+        "p50_ms": 25.1122445,
+        "p95_ms": 29.7137715,
+        "p99_ms": 29.9365303,
+        "mean_ms": 25.78044841666667,
+        "rows_per_second": 9930.005710626037,
+        "strong_recovery_ms": 333.54838,
+        "history_bytes": 1245485,
+        "retained_artifact_bytes": 2434522
+      },
+      "zlib_vs_dictionary_bytes_pct": -30.014345686657162,
+      "zlib_vs_none_bytes_pct": -58.37968543284813
+    },
+    {
+      "prior_events": 64,
+      "rows_per_event": 64,
+      "semantic_sha256": "371213e6adea1cf4c20d5d85cdcf163b8bb50b9c59b5abe7d8669751128a0d22",
+      "dictionary": {
+        "receipt": "cost-tmpfs-dictionary.json",
+        "p50_ms": 196.1020935,
+        "p95_ms": 338.87981794999996,
+        "p99_ms": 352.71358119,
+        "mean_ms": 197.99303258333336,
+        "rows_per_second": 323.2436978460998,
+        "strong_recovery_ms": 643.883244,
+        "history_bytes": 1614343,
+        "retained_artifact_bytes": 1882612
+      },
+      "none": {
+        "receipt": "cost-tmpfs-none.json",
+        "p50_ms": 8.5573495,
+        "p95_ms": 10.870512849999999,
+        "p99_ms": 11.51149297,
+        "mean_ms": 8.877275083333332,
+        "rows_per_second": 7209.419489563526,
+        "strong_recovery_ms": 191.380288,
+        "history_bytes": 2673671,
+        "retained_artifact_bytes": 3120436
+      },
+      "zlib1": {
+        "receipt": "cost-tmpfs-zlib1.json",
+        "p50_ms": 6.8199749999999995,
+        "p95_ms": 8.85688485,
+        "p99_ms": 9.00304097,
+        "mean_ms": 7.105298166666667,
+        "rows_per_second": 9007.363026684148,
+        "strong_recovery_ms": 199.142885,
+        "history_bytes": 1132231,
+        "retained_artifact_bytes": 1322292
+      },
+      "zlib_vs_dictionary_bytes_pct": -29.864285347042106,
+      "zlib_vs_none_bytes_pct": -57.652568322729316
+    },
+    {
+      "prior_events": 64,
+      "rows_per_event": 256,
+      "semantic_sha256": "d1c91aba087c0556e25cd24476e453138c8ea821d25b5b896aba4947da9210fe",
+      "dictionary": {
+        "receipt": "cost-tmpfs-dictionary.json",
+        "p50_ms": 865.1497025,
+        "p95_ms": 1446.9263348,
+        "p99_ms": 1508.44960056,
+        "mean_ms": 921.1369433333334,
+        "rows_per_second": 277.9174170059976,
+        "strong_recovery_ms": 2395.324927,
+        "history_bytes": 6320903,
+        "retained_artifact_bytes": 7695604
+      },
+      "none": {
+        "receipt": "cost-tmpfs-none.json",
+        "p50_ms": 44.0198135,
+        "p95_ms": 58.08798579999999,
+        "p99_ms": 63.33775956000001,
+        "mean_ms": 44.04172408333333,
+        "rows_per_second": 5812.669810918639,
+        "strong_recovery_ms": 921.794388,
+        "history_bytes": 10613127,
+        "retained_artifact_bytes": 12927412
+      },
+      "zlib1": {
+        "receipt": "cost-tmpfs-zlib1.json",
+        "p50_ms": 24.8678165,
+        "p95_ms": 28.720838699999998,
+        "p99_ms": 29.82446694,
+        "mean_ms": 25.086259583333334,
+        "rows_per_second": 10204.789564167622,
+        "strong_recovery_ms": 764.281571,
+        "history_bytes": 4412487,
+        "retained_artifact_bytes": 5148980
+      },
+      "zlib_vs_dictionary_bytes_pct": -30.19214185061849,
+      "zlib_vs_none_bytes_pct": -58.42425140111863
+    }
+  ],
+  "ext4": [
+    {
+      "prior_events": 8,
+      "rows_per_event": 64,
+      "semantic_sha256": "3b606c4e21b9b66d0470858a122f3fb5ae5987187b764f112ec44c974789eeb1",
+      "dictionary": {
+        "receipt": "cost-ext4-dictionary.json",
+        "p50_ms": 324.07946549999997,
+        "p95_ms": 397.0187782,
+        "p99_ms": 404.96986684,
+        "mean_ms": 318.6096335833333,
+        "rows_per_second": 200.87277110929105,
+        "strong_recovery_ms": 206.70652,
+        "history_bytes": 454637,
+        "retained_artifact_bytes": 888538
+      },
+      "none": {
+        "receipt": "cost-ext4-none.json",
+        "p50_ms": 9.0438525,
+        "p95_ms": 12.186060999999999,
+        "p99_ms": 12.625682600000001,
+        "mean_ms": 9.770125,
+        "rows_per_second": 6550.581492048464,
+        "strong_recovery_ms": 60.013419,
+        "history_bytes": 754029,
+        "retained_artifact_bytes": 1473818
+      },
+      "zlib1": {
+        "receipt": "cost-ext4-zlib1.json",
+        "p50_ms": 9.3156095,
+        "p95_ms": 11.377487299999999,
+        "p99_ms": 12.381617460000001,
+        "mean_ms": 9.344227666666665,
+        "rows_per_second": 6849.148188919342,
+        "strong_recovery_ms": 61.932221,
+        "history_bytes": 319341,
+        "retained_artifact_bytes": 624218
+      },
+      "zlib_vs_dictionary_bytes_pct": -29.7591265119205,
+      "zlib_vs_none_bytes_pct": -57.64871112384271
+    },
+    {
+      "prior_events": 8,
+      "rows_per_event": 256,
+      "semantic_sha256": "bde6a8e1b9067473fc1cbd1ecae22a7358786b934becc7855e3f4a7d26d4242c",
+      "dictionary": {
+        "receipt": "cost-ext4-dictionary.json",
+        "p50_ms": 994.2574480000001,
+        "p95_ms": 1641.0805282,
+        "p99_ms": 1657.91998644,
+        "mean_ms": 1119.75288875,
+        "rows_per_second": 228.62187056804768,
+        "strong_recovery_ms": 567.791586,
+        "history_bytes": 1779629,
+        "retained_artifact_bytes": 3477850
+      },
+      "none": {
+        "receipt": "cost-ext4-none.json",
+        "p50_ms": 40.144344000000004,
+        "p95_ms": 54.0913404,
+        "p99_ms": 54.30347848,
+        "mean_ms": 41.099979,
+        "rows_per_second": 6228.713644841522,
+        "strong_recovery_ms": 346.848198,
+        "history_bytes": 2992493,
+        "retained_artifact_bytes": 5849050
+      },
+      "zlib1": {
+        "receipt": "cost-ext4-zlib1.json",
+        "p50_ms": 30.4865185,
+        "p95_ms": 35.15082705,
+        "p99_ms": 35.21601261,
+        "mean_ms": 29.817621083333332,
+        "rows_per_second": 8585.527305633786,
+        "strong_recovery_ms": 292.164996,
+        "history_bytes": 1245485,
+        "retained_artifact_bytes": 2434522
+      },
+      "zlib_vs_dictionary_bytes_pct": -30.014345686657162,
+      "zlib_vs_none_bytes_pct": -58.37968543284813
+    },
+    {
+      "prior_events": 64,
+      "rows_per_event": 64,
+      "semantic_sha256": "371213e6adea1cf4c20d5d85cdcf163b8bb50b9c59b5abe7d8669751128a0d22",
+      "dictionary": {
+        "receipt": "cost-ext4-dictionary.json",
+        "p50_ms": 148.98064799999997,
+        "p95_ms": 231.47773349999997,
+        "p99_ms": 249.03367630000002,
+        "mean_ms": 140.6301475,
+        "rows_per_second": 455.0944526315028,
+        "strong_recovery_ms": 531.37082,
+        "history_bytes": 1614343,
+        "retained_artifact_bytes": 1882612
+      },
+      "none": {
+        "receipt": "cost-ext4-none.json",
+        "p50_ms": 13.632472499999999,
+        "p95_ms": 15.5890504,
+        "p99_ms": 15.98549568,
+        "mean_ms": 13.977354916666668,
+        "rows_per_second": 4578.834864076183,
+        "strong_recovery_ms": 247.892659,
+        "history_bytes": 2673671,
+        "retained_artifact_bytes": 3120436
+      },
+      "zlib1": {
+        "receipt": "cost-ext4-zlib1.json",
+        "p50_ms": 13.938101,
+        "p95_ms": 17.531503199999996,
+        "p99_ms": 19.132133440000004,
+        "mean_ms": 14.023168333333333,
+        "rows_per_second": 4563.875900132412,
+        "strong_recovery_ms": 270.581128,
+        "history_bytes": 1132231,
+        "retained_artifact_bytes": 1322292
+      },
+      "zlib_vs_dictionary_bytes_pct": -29.864285347042106,
+      "zlib_vs_none_bytes_pct": -57.652568322729316
+    },
+    {
+      "prior_events": 64,
+      "rows_per_event": 256,
+      "semantic_sha256": "d1c91aba087c0556e25cd24476e453138c8ea821d25b5b896aba4947da9210fe",
+      "dictionary": {
+        "receipt": "cost-ext4-dictionary.json",
+        "p50_ms": 879.8816595000001,
+        "p95_ms": 1338.80274105,
+        "p99_ms": 1407.58073781,
+        "mean_ms": 901.2537790833334,
+        "rows_per_second": 284.0487395907266,
+        "strong_recovery_ms": 2002.090083,
+        "history_bytes": 6320903,
+        "retained_artifact_bytes": 7695604
+      },
+      "none": {
+        "receipt": "cost-ext4-none.json",
+        "p50_ms": 48.0596115,
+        "p95_ms": 57.643806149999996,
+        "p99_ms": 59.09536923,
+        "mean_ms": 47.47954549999999,
+        "rows_per_second": 5391.795504866407,
+        "strong_recovery_ms": 922.061015,
+        "history_bytes": 10613127,
+        "retained_artifact_bytes": 12927412
+      },
+      "zlib1": {
+        "receipt": "cost-ext4-zlib1.json",
+        "p50_ms": 30.556858499999997,
+        "p95_ms": 35.4114022,
+        "p99_ms": 36.55123804,
+        "mean_ms": 30.706287333333336,
+        "rows_per_second": 8337.054793403766,
+        "strong_recovery_ms": 950.696396,
+        "history_bytes": 4412487,
+        "retained_artifact_bytes": 5148980
+      },
+      "zlib_vs_dictionary_bytes_pct": -30.19214185061849,
+      "zlib_vs_none_bytes_pct": -58.42425140111863
+    }
+  ]
+}

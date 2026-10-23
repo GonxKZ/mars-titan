@@ -85,6 +85,31 @@
       "control": "El mismo K con selección en cada paso y K=1, que coincide bit a bit en ambos modos",
       "pending": "Ninguno técnico. La comparación espera a la edición histórica"
     },
+    "evidence_bridge": {
+      "connection": "connected",
+      "map_ids": ["I04", "I05", "I07"],
+      "enabled": false,
+      "disabled_value": "absent",
+      "allowed": ["self", "ring", "complete"],
+      "recurrence": {"steps": [1, 2, 4], "max_node_updates_per_row": 1216, "requires_cycles": 0, "default": null},
+      "intervention": {"default": null, "kind": "fixed_reader_mask_and_directed_edge_cuts_v1"},
+      "value": {
+        "regions": ["view_1", "view_2", "view_3"],
+        "topology": "ring",
+        "cycles": 1,
+        "bridge_gain": 0.25,
+        "seed": 42
+      },
+      "requires": "episodic_bank",
+      "phases": ["evaluation", "readout_training"],
+      "state": "working_state",
+      "parameters": "shared_parameters",
+      "insertion": "src/mars_titan/memory/mars_titan_variant.py:MarsTitanVariant.readout_config",
+      "level": "N4",
+      "issues": [701],
+      "control": "El mismo lector sin puente, vistas sin mensajes con cero ciclos y topologías self, ring y complete sobre los mismos episodios, con parámetros y coste registrados",
+      "pending": "Colector y ajuste de alternativas regionales, conexión a la campaña y comparaciones del modelo completo. Las regiones genéricas no acreditan sectores históricos ni especialización aprendida"
+    },
     "associative_memory": {
       "connection": "connected",
       "map_ids": ["I11", "I09"],

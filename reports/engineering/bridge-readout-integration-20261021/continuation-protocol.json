@@ -1,0 +1,27 @@
+{
+  "recorded_at_utc": "2026-10-21T20:21:32.121086+00:00",
+  "reason": "complete_only_two_conditions_missing_after_original_600_second_timeout",
+  "original_protocol_sha256": "e6c1d488e1643184472eb13aac605cea914882753e0482f426d942b6b3956850",
+  "rows": [
+    256
+  ],
+  "refinements": [
+    4
+  ],
+  "modes": [
+    "legacy",
+    "bridge"
+  ],
+  "warmup": 2,
+  "repetitions": 5,
+  "precision": "torch.float64",
+  "device": "cuda:0",
+  "maximum_process_seconds": 600,
+  "original_results_retained": true,
+  "algorithm_or_acceptance_changed": false,
+  "dispatch_change": "explicit_rows_and_refinements_filters_inner_steps_unchanged",
+  "new_archive": true,
+  "own_concurrent_workloads": 0,
+  "source_sha256": "c5dd15d32fc51424470021dae038abe6fa6866fa5b02d02804feb5791c115d9b",
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 5959 MiB, 11 %"
+}

@@ -268,7 +268,7 @@ def parameter_roles(readout, admission):
     """Separar parámetros del lector. Con M0 la lectura de episodios no recibe gradiente."""
     roles = dict(episodic_read=[], refiner=[])
     for name, _ in readout.named_parameters():
-        if name.startswith(("query_projection.", "value_projection.")):
+        if name.startswith(("query_projection.", "value_projection.", "evidence_bridge.")):
             roles["episodic_read"].append(name)
         else:
             roles["refiner"].append(name)

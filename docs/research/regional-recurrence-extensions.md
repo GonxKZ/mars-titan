@@ -1,0 +1,71 @@
+# Contrastar regiones, recurrencia y adaptación acotada
+
+Las dos variantes existentes permiten contrastar tres ampliaciones separadas: recurrencia no lineal, organización por grupos y elección del presupuesto de cálculo. Conviene mantener un único banco episódico, estados temporales por predicción y propuestas limitadas a configuraciones identificadas. Añadir vueltas o regiones no demuestra que el predictor aprenda mejor. El puente lineal contiene una difusión que, bajo una máscara fija, puede absorberse en su salida. Esa reducción proporciona un control antes de introducir más complejidad. La [transición no lineal](../experiments/nonlinear-evidence-bridge-v1.md) está implementada y conectada al presupuesto global, los contratos y la recuperación de sesiones. La organización por grupos y la elección dinámica de J siguen siendo propuestas. Ninguna de las ampliaciones tiene una mejora financiera nueva medida aquí.
+
+## La implementación permite contrastes, sin acreditar utilidad financiera
+
+`regional_fusion_v1` comunica cinco representaciones antes de MAC mediante atención y un resumen. Reinicia sus estados por predicción. `shared_evidence_bridge_v1` obtiene consultas y transformaciones regionales sobre los mismos episodios maduros, sin crear un banco por región. Son componentes implementados con funciones distintas. Las ocho configuraciones de fusión están especificadas, pero su declaración no constituye una comparación financiera ejecutada. ([Fusión](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/docs/experiments/regional-fusion-v1.md), [puente](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/docs/experiments/shared-evidence-bridge-v1.md)).
+
+Los informes existentes contienen pruebas técnicas y costes medidos sobre fixtures. Comprueban, entre otros aspectos, máscaras, gradientes, estados, recuperación y paridad al desactivar ampliaciones. Sus tiempos no demuestran una reducción del error financiero. Tampoco se ha medido aquí un estudio predictivo nuevo. ([Fusión regional](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/reports/engineering/regional-fusion-20261021/README.md), [integración del puente](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/reports/engineering/bridge-readout-integration-20261021/README.md)).
+
+La neurociencia aporta preguntas contrastables. Roy y colaboradores observaron cooperación entre conjuntos de engramas distribuidos, sin demostrar copias completas del recuerdo en cada región. Schmitt y colaboradores distinguieron amplificación selectiva de conectividad de un aumento general de excitabilidad, que tuvo efectos distintos. Estos resultados motivan controles de cooperación y comunicación, sin identificar las regiones del modelo con áreas cerebrales. ([Roy, 2022, figuras 4 a 6](https://www.nature.com/articles/s41467-022-29384-4.pdf), [Schmitt, 2017](https://hearingbrain.org/docs/schmitt_halassa_nature_2017.pdf)).
+
+La utilidad de revisar experiencias necesita controles por tarea y fase. Deceuninck y Kloosterman no detectaron un deterioro global tras interrumpir actividad hipocampal SWR en tres tareas de adquisición repetida. Ese resultado no demuestra que repetir los episodios más erróneos ayude siempre. ([Edición publicada del 15 de abril de 2024](https://elifesciences.org/articles/84004)).
+
+El estudio de Jadhav de 2012 tiene un erratum del 9 de julio de 2026. Su existencia está verificada, pero no se ha podido inspeccionar el contenido de la corrección. El motivo y su efecto sobre el estudio siguen desconocidos en esta revisión. No se utiliza ese artículo para fundamentar estas propuestas. ([Registro del erratum](https://pubmed.ncbi.nlm.nih.gov/42424477/)).
+
+TRM estudia recurrencia compartida con una red pequeña. FractalNet define autosemejanza mediante una regla de expansión estructural. Sus tareas de puzles y visión no validan una arquitectura financiera ni justifican profundidad ilimitada. Aquí esos antecedentes delimitan alternativas sencillas. ([TRM v1, 6 de octubre de 2025](https://arxiv.org/abs/2510.04871v1), [FractalNet v4, 26 de mayo de 2017, sección 3](https://arxiv.org/html/1605.07648v4)).
+
+## Los ciclos lineales del puente admiten una reducción exacta
+
+La siguiente derivación es propia y parte del código actual. El puente calcula atención y tanh antes de los ciclos. Dentro del bucle repite una mezcla lineal y después aplica una proyección lineal O. El exponente C cuenta esas mezclas, con independencia del factor C de CM-v1. P_a es la matriz de mensajes del grafo, normalizada por fila después de enmascarar emisores y receptores ausentes. Para una máscara regional a fija, con P_a constante durante la llamada y estados apilados por región:
+
+$$
+T_a=(1-\gamma)I_R+\gamma P_a,
+\qquad z^C=(T_a^C\otimes I_H)z^0.
+$$
+
+Por sustitución,
+
+$$
+v=Oz^C=O_{\mathrm{ef},a}z^0,
+\qquad O_{\mathrm{ef},a}=O(T_a^C\otimes I_H).
+$$
+
+Para esa máscara y pesos congelados, evaluar los ciclos equivale algebraicamente a utilizar la proyección efectiva. No se absorben las atenciones iniciales ni el refinador que modifica la consulta entre lecturas. Si cambia la máscara, cambia P_a. La derivación no proporciona una única O efectiva válida para todos los patrones. Tampoco prueba igualdad bit a bit en coma flotante ni una aceleración. ([Bucle implementado](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/src/mars_titan/models/titans/evidence_bridge.py#L250)).
+
+La reducción no implica que ambas parametrizaciones se entrenen igual. Puede cambiar la regularización efectiva. Si T_a es singular, también puede perder información regional. El control mínimo conserva episodios, atenciones y pesos, compara ambas evaluaciones y contabiliza construir y amortizar O efectiva. No requiere otro codificador. En `regional_fusion_v1` se recalculan normalizaciones, atención y un resumen con SiLU. Ese recorrido no admite en general la misma absorción lineal. ([Recurrencia de fusión](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/src/mars_titan/models/titans/regional_fusion.py#L178)).
+
+## Tres propuestas separan cálculo, organización y adaptación
+
+| Propuesta propia | Alcance mínimo | Control que puede descartarla |
+| --- | --- | --- |
+| Recurrencia regional no lineal | J=1, 2 o 4 vueltas, parámetros propios por región reutilizados entre sus vueltas, evidencia ya residente | Puente actual, proyección absorbida, varias vistas sin comunicación y transformación única presupuestada. El puente corresponde a [#710](https://github.com/GonxKZ/mars-titan/issues/710) y los bucles regionales a [#709](https://github.com/GonxKZ/mars-titan/issues/709). |
+| Dos grupos y un resumen | Cuatro vistas episódicas, dos estados de grupo y un resumen, todos temporales | Árbol, estrella y aristas reorganizadas con los mismos siete estados y presupuesto. Cooperación y retirada se contrastan en [#710](https://github.com/GonxKZ/mars-titan/issues/710). |
+| Elección del presupuesto | Catálogo finito de J, política congelada durante cada tramo y revisión posterior con resultados maduros | Mejor J fijo, mezcla constante, umbral sencillo y ablación sin error histórico. Vinculada a [#711](https://github.com/GonxKZ/mars-titan/issues/711). |
+
+La transición implementada parte de las vistas iniciales obtenidas de la evidencia fija. Cada paso comunica el estado anterior con las matrices de la región receptora reutilizadas, sin volver a inyectar evidencia. Las regiones ausentes se anulan en la actualización. J cuenta esas vueltas y K sigue contando lecturas episódicas. Los ciclos C y las actualizaciones paramétricas de memoria conservan contadores propios. Aumentar J no repite MAC ni la admisión del episodio. J ya tiene contrato y contabilidad propios. Los estados de grupo propuestos necesitan todavía su contrato, trazas e identidad, con una retirada que recupere la referencia.
+
+Acotar los estados tampoco basta para controlar las derivadas. El ejemplo escalar `z_next=tanh(2*z)`, con `z=0`, mantiene todos sus estados en cero, pero la derivada después de J vueltas vale `2**J`. Con J=4 vale 16. Es un contraejemplo matemático a la identificación de rango acotado con contracción. El análisis de una variante deberá incluir su actualización completa y la composición de sus Jacobianos.
+
+La agrupación se aplicaría inicialmente a vistas del puente, sin eliminar ninguna de las cinco modalidades anteriores. Dos niveles y dos rondas bastan para el primer contraste. Árbol y estrella tendrían seis aristas, doce al hacerlas bidireccionales, además de autoaristas comunes. El límite global incluiría grupos, resumen y reintentos. Un backend de atención densa seguiría pagando la matriz densa aunque oculte aristas. La interpretación anatómica no determina esos números.
+
+Retirar una región o un puente no equivale a borrar el episodio. Otro lector puede seguir consultando el mismo registro canónico. Si se elimina ese registro, las demás vistas no conservan copias persistentes con las que recuperarlo. La retirada de lectores y la pérdida de datos necesitan controles distintos. No se presupone recuperación perfecta.
+
+La reserva de trabajo debe cubrir también colección y emisión. El enlace actual calcula las alternativas y después vuelve a ejecutar la ruta elegida para emitir. Con banco poblado, dos contextos, seis rutas sin compartir prefijos y emisión K4, el máximo conservador es de 38 lecturas por fila: 34 para alternativas y cuatro para la emisión. Si se comparten prefijos, son como máximo 18 y cuatro. Para tres regiones y J=2, la cota conservadora exige 228 actualizaciones regionales nuevas, no 204. La integración propuesta debe reservar ese total antes del primer MAC, sin renovar la cuota en cada ruta. Es una cuenta del recorrido, no una medida de FLOPs. ([Enlace financiero](https://github.com/GonxKZ/mars-titan/blob/2b03cdc6b51641852c89e3e6c647cc36e6ded6ad/src/mars_titan/memory/financial_mechanisms.py#L238)).
+
+La tercera propuesta toma de SEAL el contraste posterior de una propuesta. SEAL v2, del 18 de septiembre de 2025, genera datos y directivas, adapta pesos y utiliza el rendimiento posterior para aprender propuestas. También informa de olvido, sobrecoste y dependencia de una tarea explícita de evaluación. Este diseño financiero no reproduce ese algoritmo. Adaptaría primero la elección entre configuraciones tipadas, fuera de la emisión, sin generar etiquetas ni ejecutar propuestas como código. ([SEAL, secciones 3.1 y 5](https://arxiv.org/html/2506.10943v2)).
+
+La señal de revisión sería la diferencia de pérdida entre predicciones selladas antes de conocer el resultado. Una alternativa no calculada mantiene pérdida desconocida. El error financiero debe haber madurado y haberse recibido, y permanecer separado de la sorpresa asociativa. Una elección combinaría ganancia prevista y coste medido en unidades declaradas. Ese coste interviene en la selección y no sustituye la regularización del ajuste. La proximidad entre iteraciones puede ser un rasgo de parada, sin demostrar acierto. ACT es un antecedente de asignación adaptativa de pasos, no evidencia de ahorro en este sistema. ([ACT v6, sección 2](https://arxiv.org/html/1603.08983v6)).
+
+## Una matriz finita decide qué merece continuar
+
+La matriz propuesta fija K=1 y evita cruzar todos los factores. Su primera fase comprende ocho configuraciones de fusión ya declaradas y siete configuraciones del puente: lectura única, varias vistas con C=0, puente actual, evaluación absorbida y recurrencia no lineal con J=1, 2 y 4. Solo un candidato que supere sus controles pasaría a las tres topologías con siete estados. La última fase compararía la política de presupuesto aprendida y los cuatro controles de la tabla sobre ese candidato. Son como máximo 23 configuraciones por semilla. K=2 y K=4 necesitarían otra comparación declarada. Esta cifra acota un diseño, sin aprobar su coste científico.
+
+Antes de ejecutar habría que fijar semillas emparejadas, cortes internos disjuntos, margen relevante de error y presupuesto total. Los controles usarían las mismas filas, máscaras, padre y snapshots maduros. Los cambios de padre invalidarían señales incompatibles. No se cuentan varias vistas o relecturas como observaciones independientes. La nueva política también debe demostrar un arranque dentro del soporte. El retorno a una referencia que nunca crea el contexto requerido puede impedir su activación autónoma.
+
+El criterio principal sería MAE residual por sesión, con diferencias temporalmente emparejadas e intervalos por bloques. PT2 mantendría interval score, cobertura y anchura separados. La comparación conservaría también la mejor regla fija y el residual cero. Una ampliación se descartaría si no supera el margen previamente declarado o si queda dominada en error y coste por un control sencillo. Reducir MAE no demuestra por sí solo utilidad de una política financiera secuencial.
+
+El frente de calidad y coste incluiría latencia del recorrido completo, caudal, RAM, VRAM, bytes, transferencias y coste de propuestas descartadas. Se registrarían formas, hardware, carga concurrente, calentamiento, repeticiones y orden emparejado. Parámetros almacenados, capacidad efectiva y trabajo ejecutado se informarían por separado. Las reducciones algebraicas y bibliotecas existentes precederían a kernels propios, cuya adopción requeriría perfilado, paridad y mejora total reproducible.
+
+La recurrencia no lineal dispone de verificación técnica con fixtures. La organización por grupos y la elección dinámica de J siguen sin implementación. No se ha ejecutado el estudio financiero propuesto. La edición V3.1 y las vistas históricas desde 2000 están verificadas. Esa verificación no abre automáticamente la campaña completa. La guarda global mantiene el aprendizaje desactivado. Las ejecuciones acotadas ya autorizadas siguen permitidas dentro de su alcance y presupuesto registrados. El estudio de 23 configuraciones es una propuesta, no un presupuesto aprobado. La campaña completa y el test final de 2024 permanecen cerrados. Ese test no interviene en ajustes o selección. La evidencia actual no acredita superioridad, estado del arte, una reproducción cerebral ni consciencia.

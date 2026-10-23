@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T05:18:13.965364+00:00",
+  "parent_commit": "6872449d0c073e0706a0abab752b418bb0c4bede",
+  "implementation_commit": "b19c8b6a42bacce558c502aa5aa2b6d26f24259c",
+  "precision_test_commit": "1a4a2701cf1ed5b988d4dba1e109dcd1d0e42eac",
+  "source_sha256": {
+    "src/mars_titan/memory/financial_mechanisms.py": "0830dcf8ee8f2f742326c2c573fac3c43b7b93b80d99713ccfc1cfea9ccb8464",
+    "src/mars_titan/memory/financial_session.py": "ae50f994610d3dc843b63c088e11fce31306dd1c01673fa2c0b3a25902807f21",
+    "tests/memory/test_mechanism_admission.py": "ec50fd1d0a3544add75e0fe5e15493c5c45250fc87a3764aec20247c780cb4c9",
+    "tests/memory/test_mechanism_admission_online.py": "36bb59cf2477481917ed43de19c2d797568ed8f9c5a42f3121ca566f0f39b67c",
+    "tests/memory/test_regional_mechanism_collection.py": "bec5da0e248915b729f1b5271bed3bc56d9c79f898bc30a9fb9ba6294413423f"
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "regression": {
+    "tests": 133,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "file": "regression.xml",
+    "seconds": 805.352,
+    "cuda_cases": 33,
+    "sha256": "6b0ce03902abab3e1f922159d0f29f16333558dbc65ed1d5fa60a88ad6e30fcd"
+  },
+  "precision_complement": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "file": "precision-release.xml",
+    "seconds": 3.601,
+    "cuda_cases": 1,
+    "sha256": "5456d5b7e44bc3bc084f2ef29d6b9f0e4d121e2019fb51c1dcbf3b933bfafcb4"
+  },
+  "online_complement": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "file": "online-release.xml",
+    "seconds": 39.731,
+    "cuda_cases": 2,
+    "sha256": "f3fe3e527ae0b59cad30281099a22252fba5460fcec4f31475366bb3348b61c9"
+  },
+  "distinct_cases": 139,
+  "cuda_cases": 36,
+  "scope": "Regresión seleccionada, integración nativa con fixtures y complemento de precisión FP64. No es toda la suite ni una evaluación científica.",
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "static_checks": [
+    {
+      "file": "ruff-check.log",
+      "result": "All checks passed!",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "file": "ruff-format.log",
+      "result": "1816 files already formatted",
+      "sha256": "79c47b3e101710b307e7c712d63ad9d8ea5198018db81474649267ee7f0f33f7"
+    },
+    {
+      "file": "repository-check.log",
+      "result": "Verificados 3543 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código.",
+      "sha256": "13de5c3a971576be0f88a2d184b9d8dcf9af229ea2febcea38041a38edd8a663"
+    }
+  ],
+  "new_native_build": false,
+  "optimizer_steps": 0,
+  "scaler_fitting": false,
+  "policy_fitting": false,
+  "real_corpus": false,
+  "final_test_opened": false
+}

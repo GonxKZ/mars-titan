@@ -1,0 +1,5354 @@
+{
+  "recorded_at_utc": "2026-10-21T13:31:58.464304+00:00",
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "torch_git": "08187d9e0fba026dc8217405802ab5381dc88d90",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "device": "cuda:0",
+  "cpu_threads": 2,
+  "warmup": 3,
+  "repetitions": 20,
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "status": "complete",
+  "process_seconds": 19.936441075988114,
+  "process_peak_rss_bytes": 1665724416,
+  "source_sha256": {
+    "reports/engineering/bank-readout-20261021/benchmark.py": "3f7b78faf57d91f6d4b3acad3ab69f150a332ca7156ac2900d4cea57a7df9e5d",
+    "src/mars_titan/models/titans/neural_memory.py": "5896a559780716511bac6a3ad44db45b57eb9cce9a555a0c759e474fdac71914",
+    "src/mars_titan/models/titans/bank_readout.py": "6b14416091ff7e26ad1dd2a72fc461473d06e7f588f222dfca7e42f5a5f6f688",
+    "src/mars_titan/models/titans/financial.py": "94d08c41eedf33961565ca624976661c5d894c354a5dc6c397c51be1a86d171d",
+    "configs/experiments/bank-readout-v1.json": "ed9770420167e95571d11b35ddb602efdeeb4a40ffdba42225dd33c0148eda39"
+  },
+  "raw_sha256": "583c30a1e44a6fccb5b9a59eb914805c3ada851fa74e24cad280eaf7fe5a8989",
+  "registration": {
+    "registered_at_utc": "2026-10-21T13:31:55.388728+00:00",
+    "commit": "c7143fba31667861cab347a1e13d6f6c348ce806",
+    "protocol_sha256": "55850267df38fd415ba2b38220d73f965a8b695e5ceac626dc9b81606e612875",
+    "benchmark_sha256": "3f7b78faf57d91f6d4b3acad3ab69f150a332ca7156ac2900d4cea57a7df9e5d",
+    "reason": "Procesar256 activos lógicos con los bloques64 de la receta. El intento previo excedía max_batch128. No se amplía el límite ni se modifica producción."
+  },
+  "cases": [
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float32",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 0.454779,
+      "p95_ms": 0.5140663,
+      "p99_ms": 0.51636606,
+      "calls_per_second": 2192.873774238382,
+      "allocated_resident_bytes": 67323904,
+      "allocated_peak_bytes": 67389952,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "9717a3fd8407b8f343a139267b0549b3c09937772d6475ee14f9bccfd3c99392"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float32",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.2814775,
+      "p95_ms": 2.0557524,
+      "p99_ms": 2.09581048,
+      "calls_per_second": 737.1362808341803,
+      "allocated_resident_bytes": 67325440,
+      "allocated_peak_bytes": 67335168,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "df732148534f1aa9893b964f650c7c5c142836f923aadbba0c040673821f094b"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float32",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.451181,
+      "p95_ms": 1.6539021500000004,
+      "p99_ms": 2.0924092299999995,
+      "calls_per_second": 668.1234207023856,
+      "allocated_resident_bytes": 67325440,
+      "allocated_peak_bytes": 67334656,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "eee3dc39df8287c436418cd2d77f217d94fc26083172122b639a031f0600b490"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float32",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.4505745,
+      "p95_ms": 1.7836179,
+      "p99_ms": 2.0660779799999998,
+      "calls_per_second": 655.8633296253007,
+      "allocated_resident_bytes": 67325440,
+      "allocated_peak_bytes": 67334656,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "aaeb17b06a0d06767b882811a219cc7a88eaa7498d5a16e64e4a59abf88b12bc"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 0.5882499999999999,
+      "p95_ms": 1.0828087000000002,
+      "p99_ms": 1.17715054,
+      "calls_per_second": 1504.1226497707567,
+      "allocated_resident_bytes": 75597312,
+      "allocated_peak_bytes": 79808000,
+      "reserved_peak_bytes": 90177536,
+      "finite": true,
+      "output_sha256": "cf44ff30d1e815e9ff5cf9200ef739b4882091410a0ab12981bf8c5329718003"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.4752205,
+      "p95_ms": 1.80196595,
+      "p99_ms": 1.81751479,
+      "calls_per_second": 662.883128633366,
+      "allocated_resident_bytes": 75598848,
+      "allocated_peak_bytes": 75780608,
+      "reserved_peak_bytes": 90177536,
+      "finite": true,
+      "output_sha256": "4c4260f78c4de779105a64a94306978f20878016e94579a05092876e6b599759"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.562094,
+      "p95_ms": 2.54888545,
+      "p99_ms": 3.025822689999999,
+      "calls_per_second": 595.6549118537948,
+      "allocated_resident_bytes": 75598848,
+      "allocated_peak_bytes": 75780608,
+      "reserved_peak_bytes": 90177536,
+      "finite": true,
+      "output_sha256": "e5c230e18074f599925517afacb99e92b23998b00461a42b9eb1407d070c7629"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float32",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.520586,
+      "p95_ms": 2.0044022500000005,
+      "p99_ms": 2.544218849999999,
+      "calls_per_second": 611.8248864177689,
+      "allocated_resident_bytes": 75598848,
+      "allocated_peak_bytes": 75780608,
+      "reserved_peak_bytes": 90177536,
+      "finite": true,
+      "output_sha256": "a6c1171343a3ac75b8abcda3d33a00a007aa849f176b111fd1d6e23ba9da7c42"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 0.8026325000000001,
+      "p95_ms": 1.4523120500000002,
+      "p99_ms": 1.5822728099999996,
+      "calls_per_second": 1102.8828088307603,
+      "allocated_resident_bytes": 100813824,
+      "allocated_peak_bytes": 117656576,
+      "reserved_peak_bytes": 174063616,
+      "finite": true,
+      "output_sha256": "81bb5c8bab470a7b9a64ff3a5d62c3964bcd91ee212284f1586c7a2f06aeff49"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.55982,
+      "p95_ms": 1.6870144500000002,
+      "p99_ms": 1.70659889,
+      "calls_per_second": 632.1432183675535,
+      "allocated_resident_bytes": 100815360,
+      "allocated_peak_bytes": 101539840,
+      "reserved_peak_bytes": 174063616,
+      "finite": true,
+      "output_sha256": "0b06e9d39b4c54416fe4945aa792ac71941ee5d05af22896c339688a63afbac1"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.595036,
+      "p95_ms": 1.7902696000000005,
+      "p99_ms": 2.2444851199999993,
+      "calls_per_second": 607.1535744876496,
+      "allocated_resident_bytes": 100815360,
+      "allocated_peak_bytes": 101539840,
+      "reserved_peak_bytes": 174063616,
+      "finite": true,
+      "output_sha256": "c5520d26ebe50de22293061047b590ebc54dcf6fe58e7978693c1c2305ca60ac"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float32",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.5588585,
+      "p95_ms": 1.6915987000000001,
+      "p99_ms": 1.69299254,
+      "calls_per_second": 636.4888829101367,
+      "allocated_resident_bytes": 100815360,
+      "allocated_peak_bytes": 101539840,
+      "reserved_peak_bytes": 174063616,
+      "finite": true,
+      "output_sha256": "b8a632efca59bab7968f255725070ce204b7888aeec8a38f180e52f5d331a2a4"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float64",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 0.6263065,
+      "p95_ms": 0.6539894500000001,
+      "p99_ms": 0.6578114899999999,
+      "calls_per_second": 1590.6725506704763,
+      "allocated_resident_bytes": 67536896,
+      "allocated_peak_bytes": 67668480,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "d28a48ddb6cb0422be4636d2366abd3fc886587ee02b92ea61c20c81411dfb2e"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float64",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.5531525,
+      "p95_ms": 1.6886316500000007,
+      "p99_ms": 2.386093529999999,
+      "calls_per_second": 623.1364520211883,
+      "allocated_resident_bytes": 67538944,
+      "allocated_peak_bytes": 67549184,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "917528a10c3ef2ba664c102be8b061c749c7459fb484f68b793bd4fa9df9db85"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float64",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.6280934999999999,
+      "p95_ms": 2.60265965,
+      "p99_ms": 2.8262311299999996,
+      "calls_per_second": 555.4840986983036,
+      "allocated_resident_bytes": 67538944,
+      "allocated_peak_bytes": 67548672,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "74d86a663ccfb246a8bf6afa44b6e19cc1cae71cd9f8ee3cb338d573a8433db2"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 1,
+      "dtype": "torch.float64",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.52267,
+      "p95_ms": 2.2339204500000003,
+      "p99_ms": 2.26992089,
+      "calls_per_second": 622.5402655931084,
+      "allocated_resident_bytes": 67538944,
+      "allocated_peak_bytes": 67548672,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "output_sha256": "55b6d9827181c4259ca5ef475ba5600cbc598a79a52082cfc0339d582ceaa1c2"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 0.74522,
+      "p95_ms": 0.8029262000000005,
+      "p99_ms": 1.2458876399999992,
+      "calls_per_second": 1290.9404830608921,
+      "allocated_resident_bytes": 84084224,
+      "allocated_peak_bytes": 92505600,
+      "reserved_peak_bytes": 132120576,
+      "finite": true,
+      "output_sha256": "ca8c0c687b37c60bbe1d877022f330cb2ceefa8dfab5c4116f612c93d1391c5b"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.6637005,
+      "p95_ms": 1.77116045,
+      "p99_ms": 1.83503769,
+      "calls_per_second": 595.9714771626859,
+      "allocated_resident_bytes": 84086272,
+      "allocated_peak_bytes": 84448768,
+      "reserved_peak_bytes": 132120576,
+      "finite": true,
+      "output_sha256": "8439ad82d483e86d85d05577c976c59c65d964d20d6d77b3697125401734e4eb"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.7697995,
+      "p95_ms": 2.386072,
+      "p99_ms": 2.6126735999999995,
+      "calls_per_second": 535.285326215323,
+      "allocated_resident_bytes": 84086272,
+      "allocated_peak_bytes": 84448768,
+      "reserved_peak_bytes": 132120576,
+      "finite": true,
+      "output_sha256": "7911773ccb1860b9bbea27f9eb6c89fe212edbebb6a98579531e1f4a0f0117ef"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 64,
+      "dtype": "torch.float64",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.6825860000000001,
+      "p95_ms": 2.4632955500000002,
+      "p99_ms": 2.7022023099999997,
+      "calls_per_second": 556.4363169624854,
+      "allocated_resident_bytes": 84086272,
+      "allocated_peak_bytes": 84448768,
+      "reserved_peak_bytes": 132120576,
+      "finite": true,
+      "output_sha256": "94315a6b99ab8adf742231eea208caa9b4eb805c8bec824daa62fd665c128ab5"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "route": "mean_weights",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "mean_of_levels",
+          "source": "post_titans_pt5_v1"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.5816105,
+      "p95_ms": 1.9806333500000004,
+      "p99_ms": 2.4411834699999995,
+      "calls_per_second": 585.2280824036253,
+      "allocated_resident_bytes": 134515712,
+      "allocated_peak_bytes": 168201216,
+      "reserved_peak_bytes": 299892736,
+      "finite": true,
+      "output_sha256": "170b430f909e777fabee7e9b4538a3b8aa8b478bab41655510265107a6a2d306"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "route": "uniform",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 2.037598,
+      "p95_ms": 2.2432022000000003,
+      "p99_ms": 2.6173380399999995,
+      "calls_per_second": 480.6938796925606,
+      "allocated_resident_bytes": 134517760,
+      "allocated_peak_bytes": 135966208,
+      "reserved_peak_bytes": 301989888,
+      "finite": true,
+      "output_sha256": "477fad804ebd21ac65a2120adba1e8a3e60748e1d5098808261499115df9fd9a"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "route": "constant",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 2.0378425,
+      "p95_ms": 3.0141934500000005,
+      "p99_ms": 3.523461089999999,
+      "calls_per_second": 456.1621866408114,
+      "allocated_resident_bytes": 134517760,
+      "allocated_peak_bytes": 135966208,
+      "reserved_peak_bytes": 301989888,
+      "finite": true,
+      "output_sha256": "23097aaceb5304381c5dd6aea2c50bad5a995da793fde8f8c2c4cca177898c1c"
+    },
+    {
+      "scope": "memory_read",
+      "rows": 256,
+      "dtype": "torch.float64",
+      "route": "query",
+      "configuration": {
+        "dim": 64,
+        "depth": 2,
+        "normalize_qk": true,
+        "theta_max": 0.1,
+        "max_batch": 256,
+        "max_tokens": 8,
+        "max_state_bytes": 134217728,
+        "parameter_seed": 42,
+        "multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625,
+          "levels": 3,
+          "capacities": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "conductances": [
+            0.0625,
+            0.03125,
+            0.015625
+          ],
+          "integration": "explicit_euler_unit_step_after_momentum",
+          "first_level_forgetting": "titans_alpha",
+          "hidden_initial": "copy_of_initial_weights",
+          "read": "bank_readout_v1",
+          "source": "post_titans_pt5_v1"
+        },
+        "bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        },
+        "schema_version": 1,
+        "architecture": "square_mlp",
+        "hidden_activation": "gelu_exact",
+        "bias": false,
+        "residual": false,
+        "layer_norm": false,
+        "normalization_eps": 1e-12,
+        "loss_reduction": "sum_per_token_per_flow",
+        "forgetting_broadcast": "output_rows_each_matrix",
+        "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+        "update_order": "sequential_current_weights",
+        "inner_derivative": "partial_at_fixed_observation",
+        "gradient_policy": "explicit_differentiable_or_detached"
+      },
+      "p50_ms": 1.9906139999999999,
+      "p95_ms": 2.60267765,
+      "p99_ms": 2.6483483299999997,
+      "calls_per_second": 470.4245386234894,
+      "allocated_resident_bytes": 134517760,
+      "allocated_peak_bytes": 135966208,
+      "reserved_peak_bytes": 301989888,
+      "finite": true,
+      "output_sha256": "7cf3c700fd5faa3ad964648402fc79ed82bd039d7635562cd1df794e35dd81b7"
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_weight_mean",
+      "dtype": "torch.float32",
+      "p50_ms": 8.3751565,
+      "p95_ms": 10.5269572,
+      "p99_ms": 10.662088240000001,
+      "calls_per_second": 116.57070731182591,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        }
+      },
+      "parameter_id": "355dcfcb9a2c8da4ef06782b9373614858324681c4e552de28a1480b247738be",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67668480,
+      "allocated_peak_bytes": 68079616,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {},
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 12.497375,
+      "p95_ms": 14.129004100000001,
+      "p99_ms": 15.108432819999997,
+      "calls_per_second": 78.42904920377377,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67670016,
+      "allocated_peak_bytes": 68063744,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_constant",
+      "dtype": "torch.float32",
+      "p50_ms": 12.386517,
+      "p95_ms": 14.733660850000001,
+      "p99_ms": 14.966598569999999,
+      "calls_per_second": 79.42185527595454,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67670016,
+      "allocated_peak_bytes": 68063744,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_query",
+      "dtype": "torch.float32",
+      "p50_ms": 12.2575645,
+      "p95_ms": 13.763724650000002,
+      "p99_ms": 15.132494529999997,
+      "calls_per_second": 81.10544976147172,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67670016,
+      "allocated_peak_bytes": 68063744,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "replica_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 9.3886605,
+      "p95_ms": 10.4932424,
+      "p99_ms": 10.59729248,
+      "calls_per_second": 105.75178289442387,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67670016,
+      "allocated_peak_bytes": 68063744,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "replica_query",
+      "dtype": "torch.float32",
+      "p50_ms": 9.2207805,
+      "p95_ms": 10.595800200000001,
+      "p99_ms": 11.32169444,
+      "calls_per_second": 106.66923696860067,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67670016,
+      "allocated_peak_bytes": 68063744,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_uniform_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 11.880987,
+      "p95_ms": 13.7469286,
+      "p99_ms": 13.86093772,
+      "calls_per_second": 82.11973976155926,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67836416,
+      "allocated_peak_bytes": 68239872,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 20,
+        "regional_summary_evaluations": 2,
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 1,
+      "arm": "ema_query_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 12.380049499999998,
+      "p95_ms": 14.214484150000002,
+      "p99_ms": 15.530897629999998,
+      "calls_per_second": 78.76241778616384,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "c0c05f0e63a6943b4ea3b59685a6e4ea55f9df6092878ff7313265ef782d1bfe",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "44ba58fda923e13e91f977b5bf5ffc5c85138f13e8c65c47548ffa6363496afb",
+      "allocated_resident_bytes": 67836416,
+      "allocated_peak_bytes": 68239872,
+      "reserved_peak_bytes": 69206016,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 20,
+        "regional_summary_evaluations": 2,
+        "bank_function_evaluations": 9,
+        "bank_query_routes": 3,
+        "bank_matrix_updates": 6
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_weight_mean",
+      "dtype": "torch.float32",
+      "p50_ms": 7.6464425,
+      "p95_ms": 8.438045650000001,
+      "p99_ms": 8.63366433,
+      "calls_per_second": 131.25768210195315,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        }
+      },
+      "parameter_id": "355dcfcb9a2c8da4ef06782b9373614858324681c4e552de28a1480b247738be",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76151808,
+      "allocated_peak_bytes": 100078080,
+      "reserved_peak_bytes": 123731968,
+      "finite": true,
+      "counts": {},
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 10.0797185,
+      "p95_ms": 11.04848185,
+      "p99_ms": 11.26988277,
+      "calls_per_second": 99.26248420913788,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76153344,
+      "allocated_peak_bytes": 99109376,
+      "reserved_peak_bytes": 123731968,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_constant",
+      "dtype": "torch.float32",
+      "p50_ms": 10.3309905,
+      "p95_ms": 11.8950686,
+      "p99_ms": 12.63235372,
+      "calls_per_second": 95.89155784820763,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76153344,
+      "allocated_peak_bytes": 99109376,
+      "reserved_peak_bytes": 121634816,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_query",
+      "dtype": "torch.float32",
+      "p50_ms": 13.320421,
+      "p95_ms": 14.894575999999999,
+      "p99_ms": 14.991704,
+      "calls_per_second": 74.33398616041669,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76153344,
+      "allocated_peak_bytes": 99109376,
+      "reserved_peak_bytes": 121634816,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "replica_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 11.797265,
+      "p95_ms": 15.0585507,
+      "p99_ms": 15.679192539999999,
+      "calls_per_second": 81.85591892230168,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76153344,
+      "allocated_peak_bytes": 99109376,
+      "reserved_peak_bytes": 123731968,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "replica_query",
+      "dtype": "torch.float32",
+      "p50_ms": 9.54007,
+      "p95_ms": 10.8243459,
+      "p99_ms": 11.15897238,
+      "calls_per_second": 105.52216037122868,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76153344,
+      "allocated_peak_bytes": 99109376,
+      "reserved_peak_bytes": 121634816,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_uniform_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 11.5786495,
+      "p95_ms": 13.33211735,
+      "p99_ms": 13.512941869999999,
+      "calls_per_second": 85.3283765510539,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76319744,
+      "allocated_peak_bytes": 99285504,
+      "reserved_peak_bytes": 121634816,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 128,
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 64,
+      "arm": "ema_query_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 11.401802499999999,
+      "p95_ms": 12.9077911,
+      "p99_ms": 12.93299422,
+      "calls_per_second": 86.03903994765523,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "62b3abdba706270ea759cbe9c51c971934468c5858fcfdebff2d193ed9916f29",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "e3098f3cb600d46a34c3e7ad8845b577535b073c2b56623a35fd42baa57e0b91",
+      "allocated_resident_bytes": 76319744,
+      "allocated_peak_bytes": 99285504,
+      "reserved_peak_bytes": 121634816,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 128,
+        "bank_function_evaluations": 576,
+        "bank_query_routes": 192,
+        "bank_matrix_updates": 384
+      },
+      "physical_block_rows": 64,
+      "blocks": 1
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_weight_mean",
+      "dtype": "torch.float32",
+      "p50_ms": 28.3697795,
+      "p95_ms": 30.28761855,
+      "p99_ms": 31.29981011,
+      "calls_per_second": 35.337059449566986,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        }
+      },
+      "parameter_id": "355dcfcb9a2c8da4ef06782b9373614858324681c4e552de28a1480b247738be",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101761536,
+      "allocated_peak_bytes": 177116672,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {},
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 43.336878999999996,
+      "p95_ms": 47.2332981,
+      "p99_ms": 49.72644921999999,
+      "calls_per_second": 23.030643989914626,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101763072,
+      "allocated_peak_bytes": 176147968,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_constant",
+      "dtype": "torch.float32",
+      "p50_ms": 49.650914,
+      "p95_ms": 58.87841050000001,
+      "p99_ms": 64.99609889999999,
+      "calls_per_second": 19.858596407532445,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "constant",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101763072,
+      "allocated_peak_bytes": 176147968,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_query",
+      "dtype": "torch.float32",
+      "p50_ms": 46.793396,
+      "p95_ms": 50.0019296,
+      "p99_ms": 50.095981120000005,
+      "calls_per_second": 21.262662570716653,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101763072,
+      "allocated_peak_bytes": 176147968,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "replica_uniform",
+      "dtype": "torch.float32",
+      "p50_ms": 47.542654,
+      "p95_ms": 49.53893665,
+      "p99_ms": 49.85588173,
+      "calls_per_second": 21.046878337212764,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101763072,
+      "allocated_peak_bytes": 176147968,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "replica_query",
+      "dtype": "torch.float32",
+      "p50_ms": 46.6834555,
+      "p95_ms": 50.2612728,
+      "p99_ms": 52.69925856,
+      "calls_per_second": 21.227185721283895,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "replica_bank",
+          "coupling": 0.0625
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "13c5b7ac60cc062c34e0677690d3a3574f81f99a164e9614edf6d0fbc1467589",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101763072,
+      "allocated_peak_bytes": 176147968,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_uniform_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 66.5352905,
+      "p95_ms": 70.19757775000001,
+      "p99_ms": 73.33524915,
+      "calls_per_second": 14.986726174200516,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "uniform",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101929472,
+      "allocated_peak_bytes": 176324096,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 512,
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    },
+    {
+      "scope": "financial_prepare_with_input_validation_and_transfer",
+      "rows": 256,
+      "arm": "ema_query_graph",
+      "dtype": "torch.float32",
+      "p50_ms": 55.258838499999996,
+      "p95_ms": 68.3563184,
+      "p99_ms": 73.10532128,
+      "calls_per_second": 17.605378571320696,
+      "configuration": {
+        "schema_version": 1,
+        "inputs": {
+          "schema_version": 1,
+          "source_sha256": "9ab1fe03a0433a17c1d991d150f12bd77f01f1eaee8f8c085cc067160f0b209b",
+          "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "input_policy": "historical_masked_2000_v1",
+          "representation": {
+            "context_sessions": 64,
+            "encoders": {
+              "version": 1
+            },
+            "fundamental_concepts": [
+              "Assets"
+            ],
+            "input_policy": "historical_masked_2000_v1",
+            "macro_indicators": [
+              "inflation"
+            ],
+            "mask_contract": {
+              "final_test_start": "2024-01-01",
+              "first_prediction": "2000-01-01",
+              "missing_available_at": null,
+              "missing_fill": 0.0,
+              "numeric_layout": "values_observed_log_age",
+              "order": [
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro"
+              ],
+              "version": 1
+            },
+            "news_lookback_sessions": 5,
+            "representation_code": {
+              "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "text_aggregation": "test_mean"
+          },
+          "dimensions": {
+            "prices": 5,
+            "news": 2,
+            "charts": 1,
+            "fundamentals": 3,
+            "macro": 3
+          },
+          "context": 64
+        },
+        "variant": "mac_online",
+        "hidden_size": 64,
+        "layers": 1,
+        "seed": 42,
+        "persistent_tokens": 4,
+        "max_batch": 128,
+        "max_state_bytes": 134217728,
+        "bank_policy": "disabled",
+        "refinements": 1,
+        "segment_length": 1,
+        "dropout": 0.0,
+        "heads": 4,
+        "feedforward_multiplier": 2,
+        "output": "quantile_head_v1",
+        "token_policy": "one_fused_token_per_new_decision",
+        "mask_fusion": "zero_after_projection_then_concat_presence",
+        "output_head": {
+          "schema_version": 1,
+          "name": "quantile_head_v1",
+          "levels": [
+            0.025,
+            0.1,
+            0.5,
+            0.9,
+            0.975
+          ],
+          "columns": [
+            "quantile_0025",
+            "quantile_0100",
+            "quantile_0500",
+            "quantile_0900",
+            "quantile_0975"
+          ],
+          "parametrization": "free_median_softplus_increments_as_native_candidate",
+          "softplus": {
+            "beta": 1,
+            "threshold": 20
+          },
+          "point_prediction": "median",
+          "loss": "mean_pinball_equal_level_weights",
+          "zero_residual_subgradient": "midpoint_tau_minus_half"
+        },
+        "memory_gate_bias": {
+          "alpha_half_life": 256.0,
+          "eta": 0.5,
+          "theta": 0.05
+        },
+        "memory_residual_layer_norm": true,
+        "memory_projections": "titans_mac_paper_projections_v2",
+        "attention_layout": "sequence_contiguous_v1",
+        "memory_multiscale": {
+          "form": "ema_bank",
+          "coupling": 0.0625
+        },
+        "regional_fusion": {
+          "schema_version": 1,
+          "kind": "regional_fusion_v1",
+          "regions": [
+            "prices",
+            "news",
+            "charts",
+            "fundamentals",
+            "macro"
+          ],
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "state": "working_only_reset_per_prediction",
+          "order": "local_steps_then_summary_per_cycle",
+          "global_paths": "summary_hub_connects_present_nodes_when_enabled",
+          "absent_nodes": "no_messages_original_block_unchanged",
+          "parameter_updates": "none_in_forward"
+        },
+        "memory_bank_readout": {
+          "schema_version": 1,
+          "kind": "bank_readout_v1",
+          "routing": "query",
+          "temperature": 1.0,
+          "available": [
+            true,
+            true,
+            true
+          ],
+          "regions": [
+            "level_1",
+            "level_2",
+            "level_3"
+          ],
+          "mixture": "complete_function_outputs",
+          "availability": "read_only_not_erasure",
+          "associative_gradient": "common_translation_sum_of_partials"
+        }
+      },
+      "parameter_id": "1dccd4d437d69d8fd01ea580c7e7b5b118133f00ad0e152dab22884b86236fce",
+      "input_spec_id": "a81475b19825726957b3943122c4573a0aff29d75c1afd1c3643932402126fb3",
+      "allocated_resident_bytes": 101929472,
+      "allocated_peak_bytes": 176324096,
+      "reserved_peak_bytes": 199229440,
+      "finite": true,
+      "counts": {
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 512,
+        "bank_function_evaluations": 2304,
+        "bank_query_routes": 768,
+        "bank_matrix_updates": 1536
+      },
+      "physical_block_rows": 64,
+      "blocks": 4
+    }
+  ],
+  "interpretation": "Primera ejecución completa. Orden secuencial exploratorio, sin inferencia estadística ni afirmación predictiva."
+}

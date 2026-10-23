@@ -1,0 +1,182 @@
+{
+  "recorded_at_utc": "2026-10-22T03:10:31.815663+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "omit_bridge_construction",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "if \"evidence_bridge\" in self.components:",
+      "after": "if False:",
+      "expression": "catalog_builds and 1-ring",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_undeclared_or_foreign_bridge",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "or self._bridge_options(readout) != self.components.get(\"evidence_bridge\")",
+      "after": "or False",
+      "expression": "cannot_be_smuggled",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_physical_module_metadata",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "if canonical(module.config.identity()) != canonical(bridge.identity()):",
+      "after": "if False:",
+      "expression": "disagreement and module_config",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_region_identity",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "components=self.components)",
+      "after": "components={k: v for k, v in self.components.items() if k != \"evidence_bridge\"})",
+      "expression": "identity_is_complete",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "lose_shared_neighbors",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "\"neighbors\",",
+      "after": "",
+      "expression": "catalog_builds and 1-ring",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "replace_k_with_one",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "refinements=self.refinements,",
+      "after": "refinements=1,",
+      "expression": "catalog_builds and 4-ring",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "alias_caller_regions",
+      "path": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "return dict(value, regions=regions, bridge_gain=float(gain))",
+      "after": "return dict(value, regions=value[\"regions\"], bridge_gain=float(gain))",
+      "expression": "identity_is_complete",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "collapse_gain_identity",
+      "path": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "return dict(value, regions=regions, bridge_gain=float(gain))",
+      "after": "return dict(value, regions=regions, bridge_gain=0.25)",
+      "expression": "identity_is_complete",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "collapse_seed_identity",
+      "path": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "return dict(value, regions=regions, bridge_gain=float(gain))",
+      "after": "return dict(value, regions=regions, bridge_gain=float(gain), seed=0)",
+      "expression": "identity_is_complete",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_cycle_limits",
+      "path": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "bounded_integer(value[\"cycles\"], \"ciclos de puente\", 0, 4)",
+      "after": "pass",
+      "expression": "invalid_bridge_geometry",
+      "exit_code": 1,
+      "tests": 17,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_nonfinite_gain",
+      "path": "src/mars_titan/models/titans/evidence_bridge.py",
+      "before": "if type(gain) not in (int, float) or not math.isfinite(gain) or not 0 <= gain <= 1:",
+      "after": "if False:",
+      "expression": "invalid_bridge_geometry",
+      "exit_code": 1,
+      "tests": 17,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "hide_physical_bridge_with_metadata",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "if module is not None:",
+      "after": "if False:",
+      "expression": "undeclared_physical",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "skip_shared_shape_validation",
+      "path": "src/mars_titan/memory/mars_titan_variant.py",
+      "before": "readout.config.__post_init__()",
+      "after": "pass",
+      "expression": "disagreement and metadata_shape_together",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_sha256": {
+    "src/mars_titan/memory/mars_titan_variant.py": "8f1fb788005f7b16210eb9f467de26741142fe02901d27fe0f35e96baee438e7",
+    "src/mars_titan/models/titans/evidence_bridge.py": "50b61229630f9c480017c41496aff64a0cfe68be1245594a0aad19bf0d14d4ae"
+  },
+  "tests_sha256": {
+    "tests/memory/test_shared_bridge_variant.py": "0e307630637e8a2c2c0c8b9242449198414e492da8098096c8f520edec79a31b"
+  }
+}

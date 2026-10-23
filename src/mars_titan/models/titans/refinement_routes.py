@@ -50,7 +50,7 @@ class _Decision:
     """Cachés locales a una llamada. No se pueden reanudar ni reutilizar fuera de ella."""
 
     def __init__(self, model, base, snapshot, context_id, cutoff, steps):
-        if type(model) is not EpisodicReadout:
+        if type(model) is not EpisodicReadout or model.config.evidence_bridge is not None:
             raise ValueError("La ruta necesita un lector episódico identificado")
         # El presupuesto corresponde a la ruta, no al K declarado en el checkpoint.
         model._validate_read(base, snapshot, context_id, cutoff, refinements=steps)
@@ -101,6 +101,21 @@ def run_route(
     model, base, snapshot=None, *, route, context_id=None, cutoff=None, differentiable=False
 ):
     """Ejecutar una ruta identificada sin calcular las alternativas descartadas."""
+    return run_route_pair(
+        model,
+        base,
+        snapshot,
+        route=route,
+        context_id=context_id,
+        cutoff=cutoff,
+        differentiable=differentiable,
+    )[1]
+
+
+def run_route_pair(
+    model, base, snapshot=None, *, route, context_id=None, cutoff=None, differentiable=False
+):
+    """Devolver K1 y la ruta final compartiendo su prefijo, sin otra transición del núcleo."""
     if type(route) is not str or route not in ROUTES:
         raise ValueError("La ruta debe ser k1, k2c, k2r, k4cc, k4cr o k4rc")
     _check_differentiation(differentiable)
@@ -109,9 +124,10 @@ def run_route(
         base = base if differentiable else base.detach()
         decision = _Decision(model, base, snapshot, context_id, cutoff, int(route[1]))
         node = decision.extend()
+        first = node.result
         for index, refresh in enumerate(_ACTIONS[route]):
             node = decision.extend(node, refresh=refresh, steps=1 if index == 0 else 2)
-        return node.result
+        return first, node.result
 
 
 def collect_routes(

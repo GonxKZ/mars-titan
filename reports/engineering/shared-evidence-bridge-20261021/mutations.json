@@ -1,0 +1,177 @@
+{
+  "recorded_at_utc": "2026-10-21T19:16:17.564771+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 3.523585477960296,
+    "log_sha256": "8f770952cf6f4bce67fd30719df74b8b2de1354de50867449aa36ae3fb9db5f5",
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "ignore_regional_query",
+      "before": "raw[:, None] + torch.einsum(\"bh,rhd->brd\", state, self.region_query)",
+      "after": "raw[:, None] + torch.zeros_like(torch.einsum(\"bh,rhd->brd\", state, self.region_query))",
+      "expression": "regions_reference",
+      "exit_code": 1,
+      "seconds": 5.929694527992979,
+      "log_sha256": "456784a8c00b59d372a5be73da5960a309702af10a623c4d4fa964b9dd243e81",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_regional_value",
+      "before": "transformed = torch.einsum(\"brh,rhd->brd\", mixed, self.region_value)",
+      "after": "transformed = mixed",
+      "expression": "equation_reference",
+      "exit_code": 1,
+      "seconds": 8.89478963194415,
+      "log_sha256": "8e0af1359d208e1cdef0f6fd3c0b2a73be1a47348a0b83ba521d05b1b3849953",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "skip_bridges",
+      "before": "for _ in range(self.config.cycles):",
+      "after": "for _ in range(0):",
+      "expression": "single_fact",
+      "exit_code": 1,
+      "seconds": 5.978598520043306,
+      "log_sha256": "28a101c88dff987fc57a1063c85069ab8f88765fd144936feb5cc3db626a8a36",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_graph_mask",
+      "before": "allowed = self.edges[None] & available[:, :, None] & available[:, None, :]",
+      "after": "allowed = self.edges[None].expand(b, -1, -1)",
+      "expression": "masks_empty",
+      "exit_code": 1,
+      "seconds": 4.975821875967085,
+      "log_sha256": "519e29b3f51fa6e974572a3ce48561f91ae8d5d60d11c50490ef78e883b22777",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_snapshot_cut",
+      "before": "        snapshot.check(\n            codec_id=self.config.codec_id,\n            context_id=context_id,\n            cutoff=cutoff,\n            dtype=state.dtype,\n            device=state.device,\n        )\n",
+      "after": "        pass\n",
+      "expression": "inadmissible_inputs and (context or cutoff or modified_snapshot)",
+      "exit_code": 1,
+      "seconds": 5.377103963983245,
+      "log_sha256": "439e03d1bd68c296a5b290f2ea40a643daf39f8fc4f95fc5c2135deb04db0347",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "project_source_twice",
+      "before": "pool = self.value(selected).reshape(b, count, h)",
+      "after": "self.value(selected)\n            pool = self.value(selected).reshape(b, count, h)",
+      "expression": "projection_runs_once",
+      "exit_code": 1,
+      "seconds": 4.977156972978264,
+      "log_sha256": "3db56856aaa37239a5207235b09ea52270cd03d7995defd9429f57d760cc66d8",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_changed_edges",
+      "before": "if not torch.equal(supplied[\"edges\"].cpu(), expected[\"edges\"].cpu()):",
+      "after": "if False:",
+      "expression": "checkpoint_rejection and edges",
+      "exit_code": 1,
+      "seconds": 5.327126887044869,
+      "log_sha256": "29d423f139a9df40601e47ae02de56099face44ee668edae82d5bf686b0e8dce",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "hide_overflow_in_tanh",
+      "before": "check_finite(transformed, \"La transformación regional antes de tanh\")",
+      "after": "pass",
+      "expression": "inadmissible_inputs and overflow",
+      "exit_code": 1,
+      "seconds": 3.522512763971463,
+      "log_sha256": "c5e55da5a0c0e7bc1f022ee5c8763194d5a35a8820231edace2edb42faa39ee6",
+      "tests": 8,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reverse_evidence_ids",
+      "before": "ids.index_select(0, flat).reshape(b, count),",
+      "after": "ids.index_select(0, flat).reshape(b, count).flip(-1),",
+      "expression": "equation_reference",
+      "exit_code": 1,
+      "seconds": 3.423209727043286,
+      "log_sha256": "3b1084906561cefbf5a01052a5e10ac4757834ff9705ca1f8ab73f3dd7f30242",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_work_budget",
+      "before": "> self.config.max_working_bytes",
+      "after": "> 2**63",
+      "expression": "inadmissible_inputs and budget",
+      "exit_code": 1,
+      "seconds": 2.8216282539069653,
+      "log_sha256": "337dbac77b1f395ec24e07d321bc266af63d9457d50feed43876dbde263ef3a6",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_checkpoint_dtype",
+      "before": "or other.dtype != value.dtype",
+      "after": "or False",
+      "expression": "checkpoint_rejection and dtype",
+      "exit_code": 1,
+      "seconds": 3.1722805469762534,
+      "log_sha256": "c444abb5f1432368839b78e5f80719c55bfbbdf8d16202739cf1fb72c4012cd9",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "seconds": 4.022388871992007,
+    "log_sha256": "891a3d7bfac22aea12727e64801c8499eb2d93c7fa358695e328133ef14357fb",
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finished_at_utc": "2026-10-21T19:17:19.550434+00:00",
+  "source_sha256": {
+    "src/mars_titan/models/titans/evidence_bridge.py": "4e818d4bb0d3e87ff846fc3f287576038f6e78e8b96fbe7da1571f52c7102d9d"
+  },
+  "tests_sha256": {
+    "tests/models/titans/test_evidence_bridge.py": "d16d2b58301d012dd5602456c98bae5350941392223cd3d9b65215d8b08e0ef4"
+  },
+  "scope": "targeted_mutations_not_universal_score",
+  "detected": 11,
+  "total": 11,
+  "device": "cpu"
+}

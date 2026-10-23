@@ -1,0 +1,21 @@
+{
+  "scope": "Diagnóstico técnico de lecturas neuronales y preparación completa de una predicción con datos de prueba",
+  "device": "cuda:0",
+  "gpu": "RTX 4070 Laptop",
+  "cpu_threads": 2,
+  "precision": "FP32 estricto y FP64 explícitos en memoria, FP32 estricto en predictor. TF32 y autocast desactivados.",
+  "rows": [1, 64, 256],
+  "memory_dimension": 64,
+  "warmup": 3,
+  "repetitions": 20,
+  "memory_modes": ["mean_weights", "uniform", "constant", "query"],
+  "financial_modes": "Los ocho brazos declarados en bank-readout-v1.json, con el mismo prefix de tres observaciones por flujo",
+  "physical_block_rows": 64,
+  "logical_rows": "Los 256 activos financieros se procesan con los bloques de la receta, sin ampliar max_batch ni descartar filas. Se concatena la salida de todos los bloques.",
+  "timing": "Tiempo de pared por llamada, con sincronización CUDA antes y después. La validación CPU y transferencia se incluyen en el caso financiero.",
+  "order": "Orden secuencial fijo. Diagnóstico inicial, sin inferencia estadística ni promoción por un cociente aislado.",
+  "profile": "Tres llamadas de lectura con el profiler de PyTorch en casos FP32 de una y 256 filas. Esa captura no entra en las latencias.",
+  "memory": "Allocator CUDA residente, pico asignado y reservado por caso, RSS de proceso completo. No equivalen a VRAM total ni memoria exclusiva del mecanismo.",
+  "restrictions": "Una sola carga propia, sin pruebas, mutaciones ni cargas CPU paralelas. No se detienen aplicaciones ajenas. Sin datos reales, ajuste externo, optimizador o test final.",
+  "purpose": "Localizar coste y comprobar ejecución antes de decidir una optimización. No mide calidad predictiva, recuperación semántica, novedad ni SOTA."
+}

@@ -1,0 +1,54 @@
+{
+  "recorded_at_utc": "2026-10-21T19:00:04.874432+00:00",
+  "scope": "selected_regression_not_whole_project",
+  "source_parent_commit": "b449659b3fd1fab21da93aac669545d53df65bed",
+  "counts": {
+    "tests": 180,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "seconds": 284.342,
+  "marked_cuda": 24,
+  "new_cases": 23,
+  "new_marked_cuda": 1,
+  "junit_sha256": "7c0fab57b4e93244f78865c0c3eba3568f1f82173593696121a8ae0300e8198a",
+  "outer_optimizer_steps": 0,
+  "scientific_evaluation": false,
+  "protected_cohort_readers_positive_execution": false,
+  "normalization_executed": false,
+  "solver_executed": false,
+  "source_sha256": {
+    "src/mars_titan/training/mechanism_fit_contract.py": "fed9aea285eabd026fcf66f385c6e748984796168c42044d354fe886c0228801",
+    "src/mars_titan/training/mechanism_fit_window.py": "b3417f9c6dcd5daa23d12f88dcd11a5154ba17ffa84d3e70905f3c13590fe31d",
+    "src/mars_titan/training/mechanism_policy_fit.py": "59e73f940f7c57808be3b4af3727d9e087e02cdcf25ebb9ea44bc65f88153444",
+    "tests/training/learning_hold_inventory.py": "4473e7098c21c3fe83e6fec3946de87c3ac79287caa18a054b6b25ea46feb8bd",
+    "tests/memory/test_mechanism_fit_window.py": "0f964119114e1ace496f89bef4d88031929e9a2f46a51188c6a151d0e1889985",
+    "tests/training/test_mechanism_policy_fit.py": "1587b10fd84f466337dd4cb27fc715388fc926892163562001ad070ae032dba8",
+    "tests/memory/test_mechanism_collection_window.py": "6ea116bddf2fbc9e4cb32e797a1cad4b1b10faefe5ae33a785edaea398400f72",
+    "tests/memory/test_mechanism_collection_asof.py": "65017f8397a627746417cbdd258e3baf9a31ceb5e0d36a410bf4e60f0a0477de",
+    "tests/memory/test_native_mechanism_collection.py": "705d5882313f8a1f061fe33318054857c64ab3a0bcb67a1ea974e309f533d3b0",
+    "tests/models/titans/test_mechanism_policy.py": "c9054e88ae9b4a7ea92514f943fa722c3a8ff32c48be6e22169742558f85aa07",
+    "tests/training/test_learning_hold_inventory.py": "a1e2950164d86eb11633fcabc2ccb5db01bd8bf432b5ff8dfe52aa28d4cf6eb9",
+    "scripts/summarize_python_quality.py": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "cuda_collection_sha256": "94c2478511f52b97a51c940449414774d5adbda7cfef0d772c540a71db5a7bab",
+  "checks": {
+    "ruff_check": {
+      "exit_code": 0,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff_format": {
+      "exit_code": 0,
+      "log_sha256": "201d773e2d22116455f6bf203748f8169796d04a22e498a9ff1e6db9f9704307"
+    },
+    "repository": {
+      "exit_code": 0,
+      "log_sha256": "7f56660c88b98c240baa9e9c8630a55ffb3178ddc81a36f68352f1b956200a5b"
+    },
+    "benchmark_help": {
+      "exit_code": 0,
+      "log_sha256": "974719a580da89c3aac85ccb7896850e9f2c616e7961e5089579b4432f43b316"
+    }
+  }
+}
