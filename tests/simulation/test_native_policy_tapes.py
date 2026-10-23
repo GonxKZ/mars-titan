@@ -704,6 +704,9 @@ def test_group_objectives_reject_lonely_lanes_and_unknown_identities(binaries, t
     assert not (tmp_path / "lonely").exists() and not (tmp_path / "unknown").exists()
 
 
+@pytest.mark.cuda
+@pytest.mark.native("MARS_TITAN_KLPO_EXECUTABLE")
+@lowers_learning_hold(f"{THIS}::test_group_objectives_publish_their_groups_before_any_update")
 @pytest.mark.parametrize(
     "objective",
     ["grpo_outcome_v1", "dr_grpo_outcome_v1", "dapo_outcome_static_v1", "gspo_outcome_v1"],

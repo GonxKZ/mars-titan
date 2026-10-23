@@ -67,6 +67,12 @@ INVENTORY = {
         "ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, para recorrer "
         "la selección cerrada y su evaluación con --audit-run"
     ),
+    _POLICY_TAPES + "test_group_objectives_publish_their_groups_before_any_update": (
+        "lanza el ajuste KLPO de cada objetivo de grupo, que crea su Adam, y lo pausa con "
+        "--stop-after al tener lista la primera oleada, para comprobar que publica sus grupos "
+        "sin ningún paso de optimizador y los repite al reanudar. Supera las 32 transiciones "
+        "del diagnóstico en CPU, así que necesita cuda:0"
+    ),
     _POLICY_TAPES + "test_klpo_collects_a_full_wave_and_pauses_before_update_ready": (
         "recoge una oleada KLPO con el controlador y su Adam terminal y fabrica una selección "
         "cerrada para recorrer --audit-run"
