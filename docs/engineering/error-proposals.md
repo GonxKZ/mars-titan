@@ -4,6 +4,8 @@ Los módulos `mars_titan.proposals.error_rule`, `error_source` y `error_proposer
 
 La pérdida de una acción alternativa del padre no evalúa otra arquitectura, programa regional, semilla o número de iteraciones J. Por eso la utilidad de cada receta propuesta permanece desconocida. Su comparación requiere ejecutar esa receta en un tramo posterior con controles propios.
 
+El [contraste de trayectorias registradas](registered-trajectories.md) documenta ese recorrido posterior con sesiones propias, pesos emparejados y confirmación experimental para una fase que todavía no se ejecuta.
+
 ## Plan y fuente
 
 `ErrorProposalPlan` identifica el contrato de datos, el consumidor padre, la partición de generación, el universo ordenado de flujos y los pesos de mercado. También fija soporte mínimo, margen, candidatas en orden y límites. La configuración basal se resuelve mediante `ProposalRegistry`. Las candidatas deben ser distintas de esa referencia y pertenecer al registro, con un máximo de siete.

@@ -207,27 +207,48 @@ def parent_zero_statistics(review, *, plan):
         and body["review_at"] == plan.generation_end,
         "La revisión no corresponde al padre, contrato o corte del plan",
     )
+    return _point_statistics(
+        body["rows"],
+        flow_ids=plan.flow_ids,
+        generation_start=plan.generation_start,
+        generation_end=plan.generation_end,
+        market_weights=plan.market_weights,
+        min_sessions_per_market=plan.min_sessions_per_market,
+        min_excess_mae=plan.min_excess_mae,
+    )
+
+
+def _point_statistics(
+    values,
+    *,
+    flow_ids,
+    generation_start,
+    generation_end,
+    market_weights,
+    min_sessions_per_market,
+    min_excess_mae,
+):
+    """Aritmética común sobre filas ya verificadas por su lector de procedencia."""
     states = dict.fromkeys(("label", "pending", "excluded", "censored"), 0)
-    flows = set(plan.flow_ids)
+    flows = set(flow_ids)
     groups = {}
-    for row in sorted(body["rows"], key=lambda row: (row["flow_id"], row["prediction_at"])):
+    for row in sorted(values, key=lambda row: (row["flow_id"], row["prediction_at"])):
         require(
-            row["flow_id"] in flows
-            and plan.generation_start <= row["prediction_at"] < plan.generation_end,
+            row["flow_id"] in flows and generation_start <= row["prediction_at"] < generation_end,
             "Una fila está fuera del universo o tramo de generación",
         )
         states[row["status"]] += 1
         key = (row["flow_id"].split("/", 1)[0], row["prediction_at"])
         groups.setdefault(key, []).append(row)
-    weights = dict(plan.market_weights)
+    weights = dict(market_weights)
     sessions = {market: sum(key[0] == market for key in groups) for market in sorted(weights)}
     reason = (
         "incomplete_outcomes"
-        if states["label"] != len(body["rows"])
+        if states["label"] != len(values)
         else "missing_market"
         if any(count == 0 for count in sessions.values())
         else "insufficient_sessions"
-        if any(count < plan.min_sessions_per_market for count in sessions.values())
+        if any(count < min_sessions_per_market for count in sessions.values())
         else "complete"
     )
     complete = reason == "complete"
@@ -266,12 +287,12 @@ def parent_zero_statistics(review, *, plan):
     return dict(
         status="complete" if complete else "incomplete",
         reason=reason,
-        samples=len(body["rows"]),
+        samples=len(values),
         state_counts=states,
         sessions_by_market=sessions,
         parent_mae=parent,
         zero_mae=zero,
         excess_mae=excess,
-        triggered=complete and excess > plan.min_excess_mae,
+        triggered=complete and excess > min_excess_mae,
         cohorts=cohorts,
     )
