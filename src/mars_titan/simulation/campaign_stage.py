@@ -56,7 +56,7 @@ from mars_titan.training import campaign_chain, campaign_schedule, masked_campai
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
-from . import native_policy_runs, window_tapes
+from . import environment_bounds, native_policy_runs, window_tapes
 from .policy_plan import (
     BASE_SELECTED,
     CARRY,
@@ -532,6 +532,32 @@ def _equity(record):
     )
 
 
+def _within_bounds(job, records, tape, environment):
+    """Detener la etapa si un episodio supera lo que permite su cinta de evaluación.
+
+    Ninguna política, aprendida o de referencia, puede crecer más que la cota con
+    información futura ni negociar más de lo que permite la participación declarada. Si un
+    episodio lo hace, el defecto está en el entorno o en la contabilidad y la etapa no
+    confirma el trabajo.
+    """
+    finished = [record for record in records if record["status"] != "failed"]
+    if not finished:
+        return
+    bounds = environment_bounds.tape_bounds(
+        tape, participation=environment["participation"], capital=environment["capital"]
+    )
+    for record in finished:
+        _require(
+            _number(record.get("turnover"), 0),
+            f"{job['id']}: un episodio terminado necesita su rotación finita",
+        )
+        defect = environment_bounds.episode_defect(record, bounds)
+        _require(
+            defect is None,
+            f"{job['id']}: defecto del entorno con coste {record['cost_bps']}: {defect}",
+        )
+
+
 def check_report(stage, job, report, tapes, anchor=None):
     """Exigir el contrato del informe de un ejecutor antes de confirmar el trabajo."""
     policies = stage["policies"]
@@ -553,6 +579,7 @@ def check_report(stage, job, report, tapes, anchor=None):
         failure = tapes.unfit["reason"]
     for record, cost in zip(report["evaluation"], costs, strict=True):
         _record(record, cost, failure)
+    _within_bounds(job, report["evaluation"], tapes.evaluation, policies["environment"])
     if job["kind"] != REFERENCE and tapes.unfit is not None:
         _require(
             report.get("policy") is None
