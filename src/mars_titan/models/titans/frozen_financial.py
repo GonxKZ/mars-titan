@@ -65,6 +65,7 @@ _KRON_MODULES = (
     "mars_titan.models.kronlstm",
     "mars_titan.models.kronlstm.rule",
     "mars_titan.models.kronlstm.price_encoder",
+    "mars_titan.models.kronlstm.precomputed",
 )
 
 

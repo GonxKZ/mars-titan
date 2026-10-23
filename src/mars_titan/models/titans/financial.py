@@ -92,6 +92,12 @@ from .state import (
 )
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
+_TEMPORAL_ENCODERS = {
+    "kronlstm_v1": ("scalar", "reference"),
+    "vector_delta_v1": ("vector", "reference"),
+    "kronlstm_precomputed_v1": ("scalar", "precomputed"),
+    "vector_delta_precomputed_v1": ("vector", "precomputed"),
+}
 # Opciones de MemoryConfig de cada nombre de proyecciones. linear_v1 no añade ninguna y
 # conserva el núcleo anterior a la sección 4.4.
 MEMORY_PROJECTIONS = {
@@ -146,7 +152,7 @@ class FinancialConfig:
     def __post_init__(self):
         if self.temporal_encoder is not None and (
             type(self.temporal_encoder) is not str
-            or self.temporal_encoder not in {"kronlstm_v1", "vector_delta_v1"}
+            or self.temporal_encoder not in _TEMPORAL_ENCODERS
         ):
             raise ValueError("temporal_encoder no identifica un codificador de ventana admitido")
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -499,6 +505,7 @@ class FinancialPredictor(nn.Module):
             from mars_titan.models.kronlstm import CompactPriceKronLSTM
 
             input_projection = self.price_encoder.projection
+            rule, execution = _TEMPORAL_ENCODERS[config.temporal_encoder]
             # La semilla propia no cambia los parámetros de fusión, cabeza ni Titans.
             with torch.device("cpu"), torch.random.fork_rng(devices=[]):
                 torch.random.default_generator.manual_seed(config.seed)
@@ -508,7 +515,8 @@ class FinancialPredictor(nn.Module):
                     hidden_size=config.hidden_size,
                     layers=config.layers,
                     max_batch=config.max_batch,
-                    rule="scalar" if config.temporal_encoder == "kronlstm_v1" else "vector",
+                    rule=rule,
+                    execution=execution,
                 )
             self.price_encoder.projection.load_state_dict(input_projection.state_dict())
         # PT6 se construye después del tronco y sin el generador global, así que el resto de
@@ -602,6 +610,20 @@ class FinancialPredictor(nn.Module):
             for name, value in (*self.named_parameters(), *self.named_buffers())
         )
 
+    def _check_temporal_encoder(self):
+        if self.config.temporal_encoder is None:
+            return
+        from mars_titan.models.kronlstm import CompactPriceKronLSTM
+
+        rule, execution = _TEMPORAL_ENCODERS[self.config.temporal_encoder]
+        module = self.price_encoder
+        if (
+            type(module) is not CompactPriceKronLSTM
+            or module.execution != execution
+            or module.configuration["rule"] != rule
+        ):
+            raise ValueError("La identidad del codificador temporal no corresponde al predictor")
+
     def _regional_component(self):
         declared, module = self.config.regional_fusion, self.regional_fusion
         if declared is None and module is None:
@@ -623,6 +645,7 @@ class FinancialPredictor(nn.Module):
         return module
 
     def _seal_parameters(self):
+        self._check_temporal_encoder()
         if self.head.weight.dtype not in (torch.float32, torch.float64):
             raise ValueError("El predictor admite float32 y float64")
         regional = self._regional_component()
@@ -709,6 +732,7 @@ class FinancialPredictor(nn.Module):
         return result
 
     def _check_parameters(self):
+        self._check_temporal_encoder()
         if self._program_signature() != self._regional_program_signature:
             raise ValueError("El programa regional cambió fuera de una carga identificada")
         if self._signature() != self._parameter_signature:
@@ -717,6 +741,7 @@ class FinancialPredictor(nn.Module):
             raise ValueError("Las vías de la cabeza cambiaron fuera de su configuración")
 
     def get_extra_state(self):
+        self._check_temporal_encoder()
         result = dict(
             configuration=self.config.identity(),
             dtype=str(self.head.weight.dtype),

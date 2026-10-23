@@ -174,7 +174,14 @@ class WindowVariantRecipe:
                 "La ventana efectiva necesita hasta 366 días en total y reserva de 2024"
             )
         if (
-            self.temporal_encoder not in (None, "kronlstm_v1", "vector_delta_v1")
+            self.temporal_encoder
+            not in (
+                None,
+                "kronlstm_v1",
+                "vector_delta_v1",
+                "kronlstm_precomputed_v1",
+                "vector_delta_precomputed_v1",
+            )
             or self.estimator not in ("backprop", "dust")
             or self.optimizer not in ("adamw", "sgd")
             or type(self.final_test_access) is not bool
@@ -354,7 +361,8 @@ def _sources(recipe):
     names = set(_SOURCE_FILES) | set(_REFERENCE_SOURCES)
     if recipe.temporal_encoder is not None:
         names.update(
-            "models/kronlstm/" + name for name in ("__init__.py", "rule.py", "price_encoder.py")
+            "models/kronlstm/" + name
+            for name in ("__init__.py", "rule.py", "price_encoder.py", "precomputed.py")
         )
     if recipe.estimator == "dust":
         names.add("models/titans/frozen_financial.py")

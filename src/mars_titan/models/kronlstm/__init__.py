@@ -26,7 +26,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from .precomputed import kronlstm_scan_precomputed
 from .price_encoder import CompactPriceKronLSTM
 from .rule import kronlstm_scan
 
-__all__ = ["CompactPriceKronLSTM", "kronlstm_scan"]
+__all__ = ["CompactPriceKronLSTM", "kronlstm_scan", "kronlstm_scan_precomputed"]

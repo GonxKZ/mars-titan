@@ -21,6 +21,7 @@ from torch.nn import functional as F
 from mars_titan.models.baselines.transformer import MAX_BATCH_LIMIT, raise_nonfinite
 from mars_titan.models.titans.state import check_finite, deferred_checks
 
+from .precomputed import kronlstm_scan_precomputed
 from .rule import MAX_RECURRENT_ELEMENTS, kronlstm_scan
 
 _UPSTREAM = "3d800c9a153a88ee9624fe6acf7f39a58017a17e"
@@ -56,9 +57,10 @@ class _RMSNorm(nn.Module):
 
 
 class _Block(nn.Module):
-    def __init__(self, hidden, heads, intermediate, rule):
+    def __init__(self, hidden, heads, intermediate, rule, execution="reference"):
         super().__init__()
         self.hidden, self.heads, self.width, self.rule = hidden, heads, hidden // heads, rule
+        self.execution = execution
         self.attn_norm = _RMSNorm(hidden)
         self.qkv_proj = _QKVProjection(hidden, 3 * hidden, bias=False)
         self.qkv_conv1d = nn.Conv1d(3 * hidden, 3 * hidden, 4, groups=3 * hidden, bias=False)
@@ -79,7 +81,7 @@ class _Block(nn.Module):
 
     @property
     def configuration(self):
-        return dict(
+        result = dict(
             kind="kron_block",
             hidden=self.hidden,
             heads=self.heads,
@@ -94,6 +96,9 @@ class _Block(nn.Module):
             cpu_float32_qkv_accumulation="float64",
             activation="swiglu",
         )
+        if self.execution != "reference":
+            result["execution"] = self.execution
+        return result
 
     def reset_gates(self):
         with torch.no_grad():
@@ -134,7 +139,10 @@ class _Block(nn.Module):
             batch, steps, self.heads, self.width
         )
         target = target_projection.sigmoid()
-        output, recurrent = kronlstm_scan(
+        if self.execution not in {"reference", "precomputed"}:
+            raise ValueError("La ejecución KronLSTM no pertenece al contrato")
+        scan = kronlstm_scan if self.execution == "reference" else kronlstm_scan_precomputed
+        output, recurrent = scan(
             q,
             k,
             v,
@@ -178,8 +186,11 @@ class CompactPriceKronLSTM(nn.Module):
         heads=4,
         max_batch=256,
         rule="scalar",
+        execution="reference",
     ):
         super().__init__()
+        if type(execution) is not str or execution not in {"reference", "precomputed"}:
+            raise ValueError("La ejecución KronLSTM debe ser reference o precomputed")
         if (
             type(input_size) is not int
             or not 1 <= input_size <= 2048
@@ -209,9 +220,10 @@ class CompactPriceKronLSTM(nn.Module):
             intermediate_size=intermediate,
         )
         self.max_batch = max_batch
+        self.execution = execution
         self.projection = nn.Linear(input_size, hidden_size)
         self.blocks = nn.ModuleList(
-            [_Block(hidden_size, heads, intermediate, rule) for _ in range(layers)]
+            [_Block(hidden_size, heads, intermediate, rule, execution) for _ in range(layers)]
         )
         self.norm = _RMSNorm(hidden_size)
         self._initialize(layers)
@@ -230,7 +242,8 @@ class CompactPriceKronLSTM(nn.Module):
     @property
     def configuration(self):
         """Devolver una identidad independiente para la escala y semántica completas."""
-        return dict(
+        self._check_execution()
+        result = dict(
             schema_version=1,
             kind="compact_price_kronlstm",
             **self._settings,
@@ -238,7 +251,9 @@ class CompactPriceKronLSTM(nn.Module):
             causal=True,
             state_policy="reset_per_window",
             aggregation="last_token",
-            backend="pytorch_reference_cpu_qkv64_v1",
+            backend="pytorch_reference_cpu_qkv64_v1"
+            if self.execution == "reference"
+            else "pytorch_precomputed_cpu_qkv64_v1",
             cpu_float32_qkv_accumulation="float64",
             conv_size=4,
             normalize_v=True,
@@ -256,6 +271,25 @@ class CompactPriceKronLSTM(nn.Module):
             max_recurrent_elements=MAX_RECURRENT_ELEMENTS,
             dtypes=["float32", "float64"],
         )
+        if self.execution != "reference":
+            result["execution"] = self.execution
+        return result
+
+    def _check_execution(self):
+        if (
+            type(self.execution) is not str
+            or self.execution not in {"reference", "precomputed"}
+            or len(self.blocks) != self._settings["layers"]
+            or any(
+                type(block) is not _Block
+                or block.execution != self.execution
+                or block.rule != self._settings["rule"]
+                for block in self.blocks
+            )
+        ):
+            raise ValueError(
+                "La identidad del contrato de ejecución KronLSTM no coincide con sus bloques"
+            )
 
     def get_extra_state(self):
         return self.configuration
@@ -313,6 +347,7 @@ class CompactPriceKronLSTM(nn.Module):
             raise_nonfinite(group)
 
     def _prices(self, prices, *, complete):
+        self._check_execution()
         settings = self._settings
         if (
             not isinstance(prices, torch.Tensor)
