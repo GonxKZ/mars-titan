@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "E4 · Puerta por evidencia de cambio de régimen (regime_evidence_gate_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "errors", "type": "database", "label": "Errores maduros", "sublabel": "estandarizados", "pos": [40, 230], "size": [180, 72]},
+    {"id": "detector", "type": "security", "label": "CUSUM o BOCPD", "sublabel": "evidencia acumulada", "pos": [300, 230], "size": [180, 72]},
+    {"id": "fast", "type": "database", "label": "Escala rápida", "sublabel": "semivida corta", "pos": [560, 40], "size": [180, 72]},
+    {"id": "gate", "type": "backend", "label": "Puerta", "sublabel": "peso de la escala rápida", "pos": [560, 230], "size": [180, 72]},
+    {"id": "slow", "type": "database", "label": "Escala lenta", "sublabel": "semivida larga", "pos": [560, 420], "size": [180, 72]},
+    {"id": "mix", "type": "frontend", "label": "Combinación", "sublabel": "predicción emitida", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "controls", "type": "security", "label": "Control", "sublabel": "puerta constante, misma media", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "errors-detector", "from": "errors", "to": "detector"},
+    {"id": "detector-gate", "from": "detector", "to": "gate", "label": "evidencia", "variant": "emphasis"},
+    {"id": "fast-mix", "from": "fast", "to": "mix"},
+    {"id": "gate-mix", "from": "gate", "to": "mix", "label": "peso", "variant": "emphasis", "labelDx": -23},
+    {"id": "slow-mix", "from": "slow", "to": "mix"},
+    {"id": "mix-screen", "from": "mix", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Un detector secuencial sobre errores maduros acumula evidencia de cambio",
+        "Solo con evidencia suficiente gana peso la escala rápida",
+        "Fuente: Black-Mamba (2026), Liakoni et al. (2021)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Puerta constante con la misma media", "Ganancia constante sin detector"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Coste despreciable"]
+    }
+  ]
+}

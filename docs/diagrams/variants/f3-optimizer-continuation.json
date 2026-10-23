@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F3 · Optimizador sin calendario y continuación con contracción",
+    "quality_profile": "showcase",
+    "viewBox": [1240, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "recipe", "type": "database", "label": "Receta base", "sublabel": "mismas filas y semillas", "pos": [40, 230], "size": [180, 72]},
+    {"id": "free", "type": "backend", "label": "schedule_free_v1", "sublabel": "sin calendario de tasa", "pos": [300, 40], "size": [180, 72]},
+    {"id": "shrink", "type": "backend", "label": "shrink_perturb_v1", "sublabel": "θ ← λθ + σε", "pos": [300, 420], "size": [180, 72]},
+    {"id": "adamw", "type": "security", "label": "AdamW ajustado", "sublabel": "mismos ensayos", "pos": [560, 40], "size": [180, 72]},
+    {"id": "direct", "type": "security", "label": "Continuación directa", "sublabel": "e inicialización nueva", "pos": [560, 420], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [820, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "recipe-free", "from": "recipe", "to": "free"},
+    {"id": "recipe-shrink", "from": "recipe", "to": "shrink"},
+    {"id": "free-screen", "from": "free", "to": "screen", "variant": "emphasis"},
+    {"id": "shrink-screen", "from": "shrink", "to": "screen", "variant": "emphasis"},
+    {"id": "adamw-screen", "from": "adamw", "to": "screen", "label": "control", "variant": "dashed"},
+    {"id": "direct-screen", "from": "direct", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "schedule_free_v1 promedia iterados y prescinde del calendario",
+        "shrink_perturb_v1 contrae los pesos y añade ruido al continuar",
+        "Fuente: Defazio et al. (2024), Ash y Adams (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["AdamW con los mismos ensayos de búsqueda", "Continuación directa e inicialización nueva"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Biblioteca fijada si existe, un ajuste cada una"]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "E1 · Mezcla de escalas con errores maduros (multiscale_mature_mixture_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "errors", "type": "database", "label": "Errores maduros", "sublabel": "contra lo emitido", "pos": [40, 230], "size": [180, 72]},
+    {"id": "week", "type": "database", "label": "Escala semanal", "sublabel": "semivida fija", "pos": [300, 40], "size": [180, 72]},
+    {"id": "quarter", "type": "database", "label": "Escala trimestral", "sublabel": "semivida fija", "pos": [300, 230], "size": [180, 72]},
+    {"id": "year", "type": "database", "label": "Escala anual", "sublabel": "semivida fija", "pos": [300, 420], "size": [180, 72]},
+    {"id": "mix", "type": "backend", "label": "Pesos de combinación", "sublabel": "solo al madurar", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "corrección combinada", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "cascada PT5 y una escala",
+      "tag": "pesos uniformes",
+      "pos": [820, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "errors-week", "from": "errors", "to": "week"},
+    {"id": "errors-quarter", "from": "errors", "to": "quarter"},
+    {"id": "errors-year", "from": "errors", "to": "year"},
+    {"id": "week-mix", "from": "week", "to": "mix"},
+    {"id": "quarter-mix", "from": "quarter", "to": "mix"},
+    {"id": "year-mix", "from": "year", "to": "mix"},
+    {"id": "mix-emit", "from": "mix", "to": "emit", "variant": "emphasis"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Memorias EMA de semana, trimestre y año con semividas fijas",
+        "Los pesos de combinación solo se actualizan con errores maduros",
+        "Fuente: Benna y Fusi (2016), Nested Learning (2025), Muth (1960)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Cascada PT5 y banco EMA pendiente", "Una escala con iguales parámetros y pesos uniformes fijos"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Parcial sobre PT5, coste estimado de 1,1 a 1,3 ajustes"]
+    }
+  ]
+}

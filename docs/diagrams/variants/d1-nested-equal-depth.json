@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "D1 · Bucles anidados frente a bucle plano (nested_equal_depth_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {"external": {"label": "Entradas"}, "backend": {"label": "Cálculo"}, "frontend": {"label": "Salida"}, "cloud": {"label": "Evaluación"}}
+    }
+  },
+  "components": [
+    {"id": "state", "type": "external", "label": "Estado de la decisión", "sublabel": "salida de MAC", "pos": [40, 230], "size": [180, 72]},
+    {"id": "outer", "type": "backend", "label": "Bucle externo K", "sublabel": "pasos externos", "pos": [300, 40], "size": [180, 72]},
+    {"id": "inner", "type": "backend", "label": "Bucle interno J", "sublabel": "por paso externo", "pos": [560, 40], "size": [180, 72]},
+    {"id": "flat", "type": "backend", "label": "Bucle plano", "sublabel": "K·J aplicaciones", "tag": "control", "pos": [300, 420], "size": [180, 72]},
+    {"id": "head", "type": "frontend", "label": "Cabeza", "sublabel": "supervisión final o por paso", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "state-outer", "from": "state", "to": "outer"},
+    {"id": "outer-inner", "from": "outer", "to": "inner", "label": "K veces", "variant": "emphasis"},
+    {"id": "inner-head", "from": "inner", "to": "head", "label": "estado", "variant": "emphasis"},
+    {"id": "state-flat", "from": "state", "to": "flat", "variant": "dashed"},
+    {"id": "flat-head", "from": "flat", "to": "head", "label": "control", "variant": "dashed"},
+    {"id": "head-screen", "from": "head", "to": "screen", "label": "predicción"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "J pasos internos dentro de cada uno de K pasos externos",
+        "Supervisión final o por paso como factor del diseño",
+        "Fuente: TRM (2025), análisis de HRM de ARC Prize, Saunshi et al. (2025)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Bucle plano con el mismo número de aplicaciones", "Mismos parámetros y misma supervisión"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #751 y #709, pendiente de implementar", "Coste estimado de 1 a 1,3 ajustes"]
+    }
+  ]
+}

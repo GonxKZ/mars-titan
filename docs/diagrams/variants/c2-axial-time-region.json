@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C2 · Atención axial en tiempo y región (axial_time_region_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "tensor", "type": "external", "label": "Tensor tiempo × región", "sublabel": "[T, R, D] por activo", "pos": [40, 40], "size": [180, 72]},
+    {"id": "time", "type": "backend", "label": "Eje temporal", "sublabel": "atención con máscara causal", "pos": [300, 40], "size": [180, 72]},
+    {"id": "region", "type": "backend", "label": "Eje de región", "sublabel": "misma sesión", "pos": [560, 40], "size": [180, 72]},
+    {"id": "state", "type": "backend", "label": "Estado fusionado", "sublabel": "para la cabeza", "pos": [820, 40], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]},
+    {"id": "controls", "type": "security", "label": "Controles", "sublabel": "C1 y atención solo temporal", "pos": [560, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "tensor-time", "from": "tensor", "to": "time"},
+    {"id": "time-region", "from": "time", "to": "region", "label": "alterna", "variant": "emphasis"},
+    {"id": "region-state", "from": "region", "to": "state", "variant": "emphasis"},
+    {"id": "state-screen", "from": "state", "to": "screen", "label": "predicción"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Alterna atención en el eje del tiempo y en el de las regiones",
+        "El eje temporal solo ve instantes anteriores a la emisión",
+        "Fuente: Ho et al. (2019), MASTER de Li et al. (2024)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["C1 con el mismo presupuesto", "Atención solo temporal con iguales parámetros"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #751, pendiente de implementar", "Coste estimado de 1,1 ajustes de referencia"]
+    }
+  ]
+}

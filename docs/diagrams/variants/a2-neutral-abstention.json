@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A2 · Abstención neutral con intervalo calibrado (neutral_abstention_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "Titans-MAC mac_online", "pos": [300, 230], "size": [180, 72]},
+    {"id": "mature", "type": "database", "label": "Errores maduros", "sublabel": "predicciones ya resueltas", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "conformal",
+      "type": "backend",
+      "label": "Conformal en línea PT2",
+      "sublabel": "intervalo [q0,1, q0,9]",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {"id": "decide", "type": "backend", "label": "¿Excluye el cero?", "sublabel": "sí: mediana, no: cero", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "mediana o cero", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "MAE con cobertura completa", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Abstenciones de control",
+      "sublabel": "aleatoria, amplitud, volatilidad",
+      "tag": "misma cobertura",
+      "pos": [820, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "inputs-base", "from": "inputs", "to": "base"},
+    {"id": "base-decide", "from": "base", "to": "decide", "label": "cuantiles", "variant": "emphasis"},
+    {"id": "mature-conformal", "from": "mature", "to": "conformal", "label": "y − ŷ", "variant": "security"},
+    {"id": "conformal-decide", "from": "conformal", "to": "decide", "label": "ajuste", "labelDy": 24},
+    {"id": "decide-emit", "from": "decide", "to": "emit", "variant": "emphasis"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Emite la mediana solo si el intervalo calibrado no contiene el cero",
+        "El intervalo se ajusta en línea con errores maduros de PT2",
+        "Fuente: Romano et al. (2019), Gibbs y Candès (2021), Geifman y El-Yaniv (2017)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": [
+        "Abstención aleatoria, por predicción pequeña, por volatilidad pasada y por desacuerdo entre semillas",
+        "Todas con la misma cobertura, y A1 como alternativa continua"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #748 y en implementación, sin entrenar ni evaluar", "Sin pasos de optimizador: trabaja sobre predicciones de B"]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "E2 · Consolidación por utilidad espaciada (spaced_utility_consolidation_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "bank", "type": "database", "label": "Banco episódico", "sublabel": "episodios maduros", "pos": [40, 230], "size": [180, 72]},
+    {"id": "used", "type": "backend", "label": "Recuperaciones", "sublabel": "episodios usados al emitir", "pos": [300, 230], "size": [180, 72]},
+    {"id": "mature", "type": "security", "label": "Errores maduros", "sublabel": "de esas emisiones", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "utility",
+      "type": "backend",
+      "label": "Utilidad espaciada",
+      "sublabel": "mejora en sesiones separadas",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {"id": "consolidate", "type": "database", "label": "Consolidación", "sublabel": "prototipos o más replay", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "con el banco consolidado", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "utilidad aleatoria, recencia",
+      "tag": "M1 y M2",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "bank-used", "from": "bank", "to": "used"},
+    {"id": "mature-utility", "from": "mature", "to": "utility", "variant": "security"},
+    {"id": "used-utility", "from": "used", "to": "utility", "label": "episodios"},
+    {"id": "utility-consolidate", "from": "utility", "to": "consolidate", "label": "selección", "variant": "emphasis", "labelDy": 24},
+    {"id": "consolidate-emit", "from": "consolidate", "to": "emit"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Un episodio se consolida si su recuperación mejoró el error maduro",
+        "La mejora debe repetirse en varias sesiones separadas",
+        "Fuente: Sun et al. (2023), Mattar y Daw (2018), Cepeda et al. (2006)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Utilidad aleatoria con el mismo recuento", "Consolidación uniforme o por recencia y políticas M1 y M2"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Contabilidad en CPU más el coste de M"]
+    }
+  ]
+}

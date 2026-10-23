@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A4 · Cabezas oponentes con integrador neutral (opponent_heads_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de Titans-MAC", "pos": [300, 230], "size": [180, 72]},
+    {"id": "optimist", "type": "backend", "label": "Cabeza optimista", "sublabel": "expectil 0,75", "pos": [560, 40], "size": [180, 72]},
+    {"id": "pessimist", "type": "backend", "label": "Cabeza pesimista", "sublabel": "expectil 0,25", "pos": [560, 420], "size": [180, 72]},
+    {"id": "neutral", "type": "backend", "label": "Integrador neutral", "sublabel": "combinación fija", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "controls", "type": "security", "label": "Control", "sublabel": "cabeza compartida", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "inputs-trunk", "from": "inputs", "to": "trunk"},
+    {"id": "trunk-optimist", "from": "trunk", "to": "optimist"},
+    {"id": "trunk-pessimist", "from": "trunk", "to": "pessimist"},
+    {"id": "optimist-neutral", "from": "optimist", "to": "neutral", "label": "lectura alta"},
+    {"id": "pessimist-neutral", "from": "pessimist", "to": "neutral", "label": "lectura baja"},
+    {"id": "neutral-screen", "from": "neutral", "to": "screen", "label": "predicción", "variant": "emphasis"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Dos cabezas con parámetros propios leen el mismo dato como bueno y como malo",
+        "Un integrador fijo, sin parámetros aprendidos, emite la predicción",
+        "Fuente: Collins y Frank (2014), Dabney et al. (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Cabeza compartida de cinco cuantiles con los mismos parámetros", "Vías aisladas ya existentes del proyecto"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Coste estimado de un ajuste de referencia por semilla"]
+    }
+  ]
+}
