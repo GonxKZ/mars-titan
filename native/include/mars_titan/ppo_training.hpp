@@ -8,6 +8,7 @@
 #include "mars_titan/learning_replay.hpp"
 
 #include <limits>
+#include <optional>
 #include <string_view>
 
 namespace mars_titan::learning {
@@ -74,6 +75,9 @@ public:
     [[nodiscard]] const DqnUpdateStats& last_dqn_update() const noexcept;
     [[nodiscard]] std::size_t observed_transitions() const noexcept;
     [[nodiscard]] std::size_t auxiliary_samples() const noexcept;
+    // Copia del replay de las variantes de valor o auxiliares, para comprobar qué guarda cada
+    // transición. No existe en las variantes sin replay.
+    [[nodiscard]] std::optional<ReplaySnapshot> replay_snapshot() const;
 
 private:
     std::vector<simulation::BatchInput> inputs_;
