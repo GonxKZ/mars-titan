@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 import scipy
 
@@ -108,15 +109,26 @@ def _panel(tables):
 
 
 def _prediction_key(*panels):
+    """Huella de población y predicciones. Sumar 0,0 convierte −0,0 en +0,0 antes de hashear."""
     digest = hashlib.sha256()
     for panel in panels:
         digest.update(panel.cohort_sha256.encode())
-        digest.update(np.ascontiguousarray(panel.prediction).tobytes())
+        digest.update(np.ascontiguousarray(panel.prediction + 0.0).tobytes())
     return digest.hexdigest()
 
 
 def _past_median_mae(tables, evaluation, parameters):
-    """MAE por sesión del control de mediana pasada del mismo activo."""
+    """MAE por sesión del control de mediana pasada del mismo activo.
+
+    ``tables`` va en orden temporal y termina con la propia evaluación, cuyas filas son las
+    últimas de la concatenación.
+    """
+    _require(tables and tables[-1] is evaluation, "La evaluación debe ser la última partición")
+    for earlier, later in zip(tables, tables[1:], strict=False):
+        _require(
+            pc.max(earlier["prediction_at"]).as_py() < pc.min(later["prediction_at"]).as_py(),
+            "Las particiones del control pasado no están en orden temporal",
+        )
     keys = pa.concat_tables([table.select(KEYS[:5]) for table in tables])
     times = keys["prediction_at"].cast(pa.int64()).to_numpy()
     markets = np.asarray(keys["market"].to_pylist())
@@ -194,6 +206,7 @@ def _diagnose_run(source, record, declaration):
     wide = declaration["sensitivity_fit_partition"]
     if set(wide) <= set(tables):
         panel = _panel([tables[phase] for phase in wide])
+        sd.ensure_before(panel, evaluation)
         factors = sd.market_shrinkage(panel, panel.prediction)
         result["sensitivity_shrinkage"] = factors
         result["series"]["sensitivity"] = sd.session_mae(
@@ -247,6 +260,31 @@ def _summary_row(item, zero):
     )
 
 
+def _best_gain_power(items, zero_series, mde):
+    """Potencia frente al propio diferencial de los predictores con mayor mejora sobre cero."""
+    result = {}
+    for kind in ("shrunk", "bound"):
+        best = min(items, key=lambda item: item["series"][kind].mean())
+        differential = best["series"][kind] - zero_series
+        effect = sd.minimum_detectable_effect(
+            differential, candidates=mde["candidates"], alpha=mde["alpha"], power=mde["power"]
+        )
+        gain = float(-differential.mean())
+        result[kind] = dict(
+            id=best["id"],
+            gain=gain,
+            gain_relative_to_zero=gain / float(zero_series.mean()),
+            standardized_gain=gain / effect["standard_deviation"]
+            if effect["standard_deviation"] > 0
+            else None,
+            detectable_over_gain={
+                count: (value["absolute"] / gain if gain > 0 else None)
+                for count, value in effect["effects"].items()
+            },
+        )
+    return result
+
+
 def _cohort_report(items, tables, evaluation, declaration):
     first = items[0]
     period = evaluation.session_period
@@ -258,6 +296,8 @@ def _cohort_report(items, tables, evaluation, declaration):
         tables[declaration["evaluation_partition"]],
         declaration["past_median"],
     )
+    inventory = {source["name"] for source in declaration["sources"] if "inventory" in source}
+    primary = declaration["rule"]["primary_source"]
     bootstrap = declaration["bootstrap"]
     complete = [item for item in items if item["undefined_ic_sessions"] == 0]
     ic = (
@@ -307,6 +347,18 @@ def _cohort_report(items, tables, evaluation, declaration):
         predictors=[_summary_row(item, zero) for item in items],
         families=dict(
             pearson_ic=dict(members_without_complete_ic=len(items) - len(complete), **ic),
+            # Sensibilidad añadida tras la revisión de la PR: la misma familia limitada a la
+            # fuente principal o a los estudios con inventario publicado.
+            pearson_ic_scopes={
+                scope: _families(
+                    {item["id"]: item["series"]["pearson"] for item in members}, period, bootstrap
+                )
+                for scope, members in (
+                    ("primary_source", [i for i in complete if i["source"] == primary]),
+                    ("inventory_sources", [i for i in complete if i["source"] in inventory]),
+                )
+                if members
+            },
             raw_minus_zero=raw,
             shrunk_minus_zero=shrunk,
         ),
@@ -327,6 +379,7 @@ def _cohort_report(items, tables, evaluation, declaration):
             }
             for kind, values in effects.items()
         },
+        best_gain_power=_best_gain_power(items, zero_series, mde),
         differential_autocorrelation=dict(
             raw_median=float(np.median([e["autocorrelation"] for e in effects["raw"]])),
             shrunk_median=float(np.median([e["autocorrelation"] for e in effects["shrunk"]])),
@@ -334,18 +387,34 @@ def _cohort_report(items, tables, evaluation, declaration):
     )
 
 
+def _signs(members):
+    return dict(
+        size=len(members),
+        positive=sorted(name for name, row in members.items() if row["simultaneous"][0] > 0),
+        negative=sorted(name for name, row in members.items() if row["simultaneous"][1] < 0),
+    )
+
+
 def _verdict(cohorts, declaration):
+    """Decisión con la familia declarada (toda la población) y su sensibilidad a la familia."""
     rule = declaration["rule"]
     primary = next(cohort for cohort in cohorts if rule["primary_source"] in cohort["sources"])
-    members = primary["families"]["pearson_ic"]["members"]
-    positive = sorted(name for name, row in members.items() if row["simultaneous"][0] > 0)
-    negative = sorted(name for name, row in members.items() if row["simultaneous"][1] < 0)
+    declared = _signs(primary["families"]["pearson_ic"]["members"])
+    scopes = {
+        scope: _signs(family["members"])
+        for scope, family in primary["families"]["pearson_ic_scopes"].items()
+    }
     return dict(
         primary_cohort=primary["cohort_sha256"],
-        ic_family_size=len(members),
-        ic_distinguishable_positive=positive,
-        ic_distinguishable_negative=negative,
-        decision=rule["otherwise"] if positive else rule["if_none_distinguishable"],
+        family="whole_cohort",
+        ic_family_size=declared["size"],
+        ic_distinguishable_positive=declared["positive"],
+        ic_distinguishable_negative=declared["negative"],
+        decision=rule["otherwise"] if declared["positive"] else rule["if_none_distinguishable"],
+        family_sensitivity=scopes,
+        robust_to_family=all(
+            bool(scope["positive"]) == bool(declared["positive"]) for scope in scopes.values()
+        ),
     )
 
 
@@ -364,7 +433,6 @@ def run(declaration_path, root, output):
     declaration = json.loads(declaration_path.read_text())
     _require(declaration["kind"] == "scale_diagnostics_phase0", "Declaración inesperada")
     _require(declaration["final_test_opened"] is False, "La fase 0 no abre el test final")
-    _require("torch" not in sys.modules, "La fase 0 no debe cargar PyTorch")
     items, seen, references, skipped = [], {}, {}, []
     for source in declaration["sources"]:
         runs = (
@@ -372,8 +440,9 @@ def run(declaration_path, root, output):
         )
         _require(runs, f"La fuente {source['name']} no tiene ejecuciones")
         for record in runs:
-            # Una carpeta descubierta sin la partición de ajuste (los modelos congelados del
-            # estudio combinado) se registra como omitida. En un inventario sería un error.
+            # Regla añadida tras la declaración: una carpeta descubierta sin la partición de
+            # ajuste (dos celdas congeladas del estudio combinado y una ejecución sin
+            # predicciones) se registra como omitida. En un inventario sería un error.
             needed = {*declaration["fit_partition"], declaration["evaluation_partition"]}
             if "inventory" not in source and not needed <= set(record["files"]):
                 skipped.append(
@@ -402,7 +471,6 @@ def run(declaration_path, root, output):
     reports = [
         _cohort_report(group, *references[cohort], declaration) for cohort, group in cohorts.items()
     ]
-    _require("torch" not in sys.modules, "La fase 0 no debe cargar PyTorch")
     summary = dict(
         schema_version=1,
         kind="scale_diagnostics_phase0_result",
@@ -410,6 +478,11 @@ def run(declaration_path, root, output):
             path=str(declaration_path.relative_to(REPOSITORY)), sha256=sha256(declaration_path)
         ),
         source=_commit(),
+        inventories={
+            source["name"]: sha256(REPOSITORY / source["inventory"])
+            for source in declaration["sources"]
+            if "inventory" in source
+        },
         environment=dict(
             python=platform.python_version(),
             numpy=np.__version__,
@@ -441,7 +514,10 @@ def main(argv=None):
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+    # La ejecución publicada no carga PyTorch, así que no puede dar pasos de optimizador.
+    _require("torch" not in sys.modules, "La fase 0 no debe cargar PyTorch")
     summary = run(args.declaration.resolve(), args.root.resolve(), args.output)
+    _require("torch" not in sys.modules, "La fase 0 no debe cargar PyTorch")
     print(json.dumps(summary["verdict"], ensure_ascii=False, indent=2))
 
 
