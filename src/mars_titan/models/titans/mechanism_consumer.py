@@ -260,6 +260,16 @@ class FrozenMechanismConsumer:
                     schema_version=6,
                     recipe="frozen_pre_mac_hierarchical_bridge_cohort_v1",
                 )
+        if (
+            regional
+            and readout.config.evidence_bridge.recurrence is not None
+            and readout.config.evidence_bridge.recurrence.stopping is not None
+        ):
+            self._identity.update(
+                schema_version=7,
+                recipe="frozen_adaptive_regional_bridge_cohort_v1",
+                node_work="R0_and_observed_selected_and_evaluated_prefix_updates",
+            )
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -705,7 +715,10 @@ class FrozenMechanismConsumer:
                 if not event.warmup
                 else 0
             )
-            work.update(self.readout.recurrence_work(work["bridge_value_projections"]))
+            observed = regional_mechanism_trace.observed_work(
+                self.readout, [row["regional_readout"] for row in rows] if not event.warmup else []
+            )
+            work.update(self.readout.recurrence_work(work["bridge_value_projections"], **observed))
         context = (
             self.predictor.commit_context(event.context) if event.context is not None else None
         )

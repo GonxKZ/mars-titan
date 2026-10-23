@@ -1,20 +1,116 @@
 """Recibos regionales por fila para el archivo JSON del controlador."""
 
 import numpy as np
+import torch
 
+from .config import bounded_integer
 from .episodic_snapshot import _digest_id
-from .evidence_bridge import HierarchyBridgeRead
+from .evidence_bridge import AdaptiveBridgeRead, HierarchyBridgeRead
 from .regional_episode_readout import hierarchy_weights
 from .regional_routes import REFRESH_AT, RegionalRouteResult
 
 KIND = "regional_mechanism_trace_v1"
 HIERARCHY_KIND = "hierarchical_mechanism_trace_v1"
+ADAPTIVE_KIND = "adaptive_regional_mechanism_trace_v1"
+_STOPPING_FIELDS = ("selected_steps", "evaluated_steps", "criterion_met")
 
 
-def verify_work(work, reader, *, value_projections):
+def _stopping_config(reader):
+    if reader is None or reader.config.evidence_bridge is None:
+        return None
+    config = reader.config.evidence_bridge
+    recurrence = config.recurrence
+    if recurrence is None or recurrence.stopping is None:
+        return None
+    config.__post_init__()
+    recurrence.__post_init__()
+    installed = getattr(reader, "evidence_bridge", None)
+    if (
+        config.hierarchy is not None
+        or installed is None
+        or type(installed.config) is not type(config)
+        or installed.config.identity() != config.identity()
+    ):
+        raise ValueError("La parada regional no corresponde al puente plano identificado")
+    return recurrence.stopping
+
+
+def verify_stopping(value, reader, *, episodes):
+    """Validar una decisión escalar por lectura, sin autenticar su residual numérico."""
+    stopping = _stopping_config(reader)
+    bounded_integer(episodes, "episodios de la parada", 0, 1024)
+    if stopping is None:
+        raise ValueError("Los metadatos de parada necesitan un lector adaptativo")
+    if (
+        type(value) is not dict
+        or set(value) != set(_STOPPING_FIELDS)
+        or type(value["selected_steps"]) is not int
+        or type(value["evaluated_steps"]) is not int
+        or type(value["criterion_met"]) is not bool
+    ):
+        raise ValueError("La parada regional necesita pasos enteros y un criterio booleano")
+    selected, evaluated, met = (value[name] for name in _STOPPING_FIELDS)
+    if not episodes:
+        if (selected, evaluated, met) != (0, 0, False):
+            raise ValueError("Una lectura sin episodios no debe inventar trabajo adaptativo")
+        return selected, evaluated
+    if reader.config.mode == "no_bank":
+        raise ValueError("El control sin banco no admite una parada con episodios")
+    maximum = reader.config.evidence_bridge.recurrence.steps
+    expected = maximum if stopping.backend == "adaptive_reference_full" else selected
+    if (
+        selected not in (1, 2, 4)
+        or selected > maximum
+        or evaluated != expected
+        or (not met and selected != maximum)
+    ):
+        raise ValueError("La parada regional no conserva sus prefijos o el trabajo del backend")
+    if not any(reader.config.evidence_bridge.active_views()) and (selected != 1 or not met):
+        raise ValueError("Un pool poblado sin lectores presentes debe elegir J1 con residual cero")
+    return selected, evaluated
+
+
+def observed_work(reader, rows):
+    """Sumar una vez los pasos de cada lectura de las trazas JSON recibidas."""
+    if _stopping_config(reader) is None:
+        return {}
+    if type(rows) not in (list, tuple) or len(rows) > 8192:
+        raise ValueError("El trabajo adaptativo necesita sus trazas por fila acotadas")
+    selected = evaluated = 0
+    for row in rows:
+        if (
+            type(row) is not dict
+            or set(row) != {"kind", "snapshot_sha256", "episodes", "value_projections", "reads"}
+            or row["kind"] != ADAPTIVE_KIND
+            or type(row["episodes"]) is not int
+            or not 0 <= row["episodes"] <= 1024
+            or type(row["value_projections"]) is not int
+            or type(row["reads"]) is not list
+            or len(row["reads"]) not in (1, 2, 4)
+            or row["value_projections"] != (len(row["reads"]) if row["episodes"] else 0)
+        ):
+            raise ValueError("El trabajo adaptativo no corresponde a sus lecturas observadas")
+        for read in row["reads"]:
+            if type(read) is not dict or "stopping" not in read:
+                raise ValueError("Una lectura adaptativa perdió su decisión de parada")
+            chosen, calculated = verify_stopping(read["stopping"], reader, episodes=row["episodes"])
+            selected += chosen
+            evaluated += calculated
+    return dict(selected_steps=selected, evaluated_steps=evaluated)
+
+
+def verify_work(work, reader, *, value_projections, rows=None):
     """Conciliar lecturas, vistas R0 y pasos J con el lector sellado de la sesión."""
+    if type(work) is not dict:
+        raise ValueError("El trabajo regional necesita un diccionario de contadores")
+    observed = observed_work(reader, rows)
+    if observed and (
+        type(value_projections) is not int
+        or sum(row["value_projections"] for row in rows) != value_projections
+    ):
+        raise ValueError("Las proyecciones regionales no concilian con sus trazas observadas")
     expected = dict(bridge_value_projections=value_projections)
-    expected.update(reader.recurrence_work(value_projections))
+    expected.update(reader.recurrence_work(value_projections, **observed))
     if any(
         type(work.get(name)) is not int or work[name] != value for name, value in expected.items()
     ):
@@ -30,6 +126,8 @@ def estimated_bytes(reader, rows, episodes, steps):
     total = 32768 + rows * (1024 + steps * (2048 + 40 * (k * (r + 1) + r * h + h)))
     if reader.config.evidence_bridge.hierarchy is not None:
         total += rows * (2048 + 40 * 65 + steps * (512 + 40 * 3 * h))
+    if _stopping_config(reader) is not None:
+        total += rows * steps * 256
     return total
 
 
@@ -38,9 +136,10 @@ def export(result, snapshot, *, reader=None):
         raise ValueError("El controlador necesita el resultado de una ruta regional")
     full = hierarchy_weights(reader) if reader is not None else None
     hierarchical = full is not None
+    adaptive = _stopping_config(reader) is not None
     rows = [
         dict(
-            kind=HIERARCHY_KIND if hierarchical else KIND,
+            kind=ADAPTIVE_KIND if adaptive else HIERARCHY_KIND if hierarchical else KIND,
             snapshot_sha256=snapshot._digest if snapshot is not None else None,
             episodes=snapshot.count if snapshot is not None else 0,
             value_projections=result.value_projections,
@@ -59,6 +158,8 @@ def export(result, snapshot, *, reader=None):
             raise ValueError("La exportación regional mezcla snapshots")
         if bridge is not None and (type(bridge) is HierarchyBridgeRead) != hierarchical:
             raise ValueError("La exportación jerárquica necesita su lector identificado")
+        if bridge is not None and (type(bridge) is AdaptiveBridgeRead) != adaptive:
+            raise ValueError("La exportación adaptativa necesita su lector identificado")
         if bridge is None:
             parts = [
                 dict(evidence_ids=[], regional_weights=[], regional_values=[], read_values=[])
@@ -93,6 +194,33 @@ def export(result, snapshot, *, reader=None):
                     root_values=bridge.root_values.detach().cpu().tolist(),
                 )
             parts = [{name: value[i] for name, value in arrays.items()} for i in range(len(rows))]
+        if adaptive:
+            if bridge is None:
+                decisions = {
+                    name: [False if name == "criterion_met" else 0] * len(rows)
+                    for name in _STOPPING_FIELDS
+                }
+            else:
+                decisions = {}
+                for name in _STOPPING_FIELDS:
+                    value = getattr(bridge, name)
+                    dtype = torch.bool if name == "criterion_met" else torch.int64
+                    if (
+                        not isinstance(value, torch.Tensor)
+                        or value.layout != torch.strided
+                        or value.shape != (len(rows),)
+                        or value.dtype != dtype
+                        or value.device != read.values.device
+                        or value.requires_grad
+                        or value.grad_fn is not None
+                    ):
+                        raise ValueError(
+                            "La lectura adaptativa perdió sus metadatos detached por fila"
+                        )
+                    decisions[name] = value.detach().cpu().tolist()
+            for index, part in enumerate(parts):
+                part["stopping"] = {name: decisions[name][index] for name in _STOPPING_FIELDS}
+                verify_stopping(part["stopping"], reader, episodes=rows[index]["episodes"])
         for row, part in zip(rows, parts, strict=True):
             row["reads"].append(part)
     return rows
@@ -108,13 +236,15 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
     ):
         raise ValueError("La traza regional necesita una ruta y trabajo válidos")
     full = hierarchy_weights(reader)
+    adaptive = _stopping_config(reader) is not None
+    kind = ADAPTIVE_KIND if adaptive else HIERARCHY_KIND if full is not None else KIND
     fields = {"kind", "snapshot_sha256", "episodes", "value_projections", "reads"}
     if full is not None:
         fields.update(("hierarchy_weights", "bridge_weights"))
     if (
         type(trace) is not dict
         or set(trace) != fields
-        or trace["kind"] != (HIERARCHY_KIND if full is not None else KIND)
+        or trace["kind"] != kind
         or trace["snapshot_sha256"] != snapshot_sha256
         or type(trace["episodes"]) is not int
         or not 0 <= trace["episodes"] <= 1024
@@ -150,8 +280,12 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         }
         if full is not None:
             read_fields.update(("group_values", "root_values"))
+        if adaptive:
+            read_fields.add("stopping")
         if type(read) is not dict or set(read) != read_fields:
             raise ValueError("La lectura regional no conserva su esquema")
+        if adaptive:
+            verify_stopping(read["stopping"], reader, episodes=trace["episodes"])
         ids = read["evidence_ids"]
         if (
             type(ids) is not list

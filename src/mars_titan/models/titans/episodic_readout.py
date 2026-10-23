@@ -276,9 +276,16 @@ class EpisodicReadout(nn.Module):
         if reads > self.node_read_limit(episodes):
             raise ValueError("El presupuesto regional del evento no cabe antes de MAC")
 
-    def recurrence_work(self, value_projections):
+    def recurrence_work(self, value_projections, *, selected_steps=None, evaluated_steps=None):
         """Contar R0 y actualizaciones nuevas J, sin atribuirles todos los FLOPs."""
         bridge = self.config.evidence_bridge
+        adaptive = (
+            bridge is not None
+            and bridge.recurrence is not None
+            and bridge.recurrence.stopping is not None
+        )
+        if not adaptive and (selected_steps is not None or evaluated_steps is not None):
+            raise ValueError("El trabajo observado necesita una parada adaptativa explícita")
         if bridge is None:
             return {}
         if bridge.hierarchy is not None:
@@ -294,6 +301,29 @@ class EpisodicReadout(nn.Module):
             return {}
         bounded_integer(value_projections, "proyecciones del evento", 0, 38 * 8192)
         initial = len(bridge.regions) * value_projections
+        stopping = bridge.recurrence.stopping
+        if stopping is not None:
+            if value_projections == 0:
+                for value in (selected_steps, evaluated_steps):
+                    if value is not None and (type(value) is not int or value != 0):
+                        raise ValueError("Una lectura vacía no declara vueltas adaptativas")
+                selected_steps = evaluated_steps = 0
+            else:
+                maximum = value_projections * bridge.recurrence.steps
+                bounded_integer(selected_steps, "vueltas seleccionadas", value_projections, maximum)
+                bounded_integer(evaluated_steps, "vueltas evaluadas", value_projections, maximum)
+                if bridge.recurrence.steps == 4 and selected_steps == maximum - 1:
+                    raise ValueError("La suma seleccionada no corresponde a prefijos J1, J2 o J4")
+                expected = (
+                    maximum if stopping.backend == "adaptive_reference_full" else selected_steps
+                )
+                if evaluated_steps != expected:
+                    raise ValueError("Las vueltas evaluadas no corresponden al backend declarado")
+            return dict(
+                bridge_initial_views=initial,
+                bridge_selected_node_updates=len(bridge.regions) * selected_steps,
+                bridge_node_updates=len(bridge.regions) * evaluated_steps,
+            )
         return dict(
             bridge_initial_views=initial, bridge_node_updates=initial * bridge.recurrence.steps
         )

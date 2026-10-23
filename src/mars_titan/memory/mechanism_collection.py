@@ -118,7 +118,8 @@ class MechanismCollector:
         trabajo real, pero no renueva ni amplía esta admisión conservadora del evento.
         """
         reader = self.consumer.readout
-        if reader is None or not reader.recurrence_work(1):
+        bridge = None if reader is None else reader.config.evidence_bridge
+        if bridge is None or (bridge.recurrence is None and bridge.hierarchy is None):
             return
         reads = 0
         for context in ("off", "parent"):

@@ -706,7 +706,7 @@ class FinancialSession(EpisodicSession):
             if fault is not None:
                 fault(boundary)
             if boundary == self.native.Boundary.before_commit:
-                self._verify_bundle(self._proposal)
+                self._verify_bundle(self._proposal, event_kind=kind)
                 self._check_observed(self._proposal, self._inflight["before_observed"] + len(rows))
                 self.consumer.verify()
                 for proof in proofs:
@@ -1065,7 +1065,7 @@ class FinancialSession(EpisodicSession):
             bundle = self._binding.resolve(
                 self, bundle, mechanism_rows, outcomes, excluded, finalized
             )
-        self._verify_bundle(bundle)
+        self._verify_bundle(bundle, event_kind=self._inflight["kind"])
         self.consumer.verify()
         self._proposal = bundle
         return _canonical(self._state(bundle["generation"], self._stage(bundle, "bundle")))
@@ -1188,7 +1188,7 @@ class FinancialSession(EpisodicSession):
             self._binding.verify(self, bundle, mechanism_observations)
         elif type(self._binding) is financial_consumers.TitansBinding:
             self._binding.verify_regional_control(
-                control, observed, bundle["cutoff"], self.block_rows
+                control, observed, bundle["cutoff"], self.block_rows, event_kind=event_kind
             )
 
     def _check_observed(self, bundle, observed):
@@ -1265,7 +1265,8 @@ class FinancialSession(EpisodicSession):
             bundle = self._bundle(state)
             if bundle is None:
                 continue
-            self._verify_bundle(bundle)
+            record = json.loads(self._executor.record_json(generation))
+            self._verify_bundle(bundle, event_kind=record["event_kind"])
             names = ("bank", "pending", "fast", "prefix", "control")
             if self.associative is not None:
                 names += ("associative",)
