@@ -268,7 +268,7 @@ def _read_state(output, identity):
             and entry["status"] in ("planned", "running", "failed", "completed")
             and type(entry["attempts"]) is list
             and len(entry["attempts"]) <= MAX_ATTEMPTS,
-            "Un brazo cambió su estado o cuota de ejecución",
+            "Una configuración cambió su estado o cuota de ejecución",
         )
         for attempt in entry["attempts"]:
             _check_attempt(attempt)
@@ -279,7 +279,7 @@ def _read_state(output, identity):
         if entry["status"] == "planned":
             require(
                 not entry["attempts"] and entry["receipt"] is None,
-                "Un brazo pendiente declara ejecución previa",
+                "Una configuración pendiente declara ejecución previa",
             )
         else:
             require(
@@ -292,7 +292,7 @@ def _read_state(output, identity):
                     and type(entry["receipt"]) is dict
                     and entry["receipt"].get("cost", {}).get("native_closed_reconciliation") is True
                 ),
-                "El brazo contradice su último intento",
+                "La configuración contradice su último intento",
             )
             require(
                 (
@@ -300,13 +300,13 @@ def _read_state(output, identity):
                     if entry["status"] == "completed"
                     else entry["receipt"] is None
                 ),
-                "El brazo perdió su recibo terminal",
+                "La configuración perdió su recibo terminal",
             )
     if value["status"] != "running":
         require(
             all(entry["status"] == "completed" for entry in value["arms"])
             and value["result"].get("status") == value["status"],
-            "El contraste terminal conserva brazos pendientes o un resultado incompatible",
+            "El contraste terminal conserva configuraciones pendientes o un resultado incompatible",
         )
     return value
 
@@ -432,13 +432,13 @@ def _arm_session(
 def _audit_arm(output, entry, *, plan, **options):
     require(
         (output / "arms" / entry["configuration_id"]).is_dir(),
-        "Falta la sesión nativa de un brazo terminado",
+        "Falta la sesión nativa de una configuración terminada",
     )
     with _arm_session(output, entry, **options) as (runtime, session):
         require(
             session.snapshot()["phase_closed"] is True
             and session.snapshot()["cursor"] == len(options["source"].metadata["groups"]),
-            "El brazo terminado no conserva su cierre nativo completo",
+            "La configuración terminada no conserva su cierre nativo completo",
         )
         trajectory = read_mature_trajectory(
             session,
@@ -696,7 +696,7 @@ def run_registered_contrast(
             elif entry["status"] != "completed":
                 require(
                     len(entry["attempts"]) < MAX_ATTEMPTS,
-                    "La cuota de ejecución del brazo está agotada",
+                    "La cuota de ejecución de la configuración está agotada",
                 )
                 if entry["status"] == "running":
                     entry["attempts"][-1].update(
