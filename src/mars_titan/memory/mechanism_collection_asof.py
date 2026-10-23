@@ -82,6 +82,19 @@ def _receive(session, states, lookup, record, generation, sha):
         states[key].receive(pairs, generation, sha)
 
 
+def _check_event_order(previous_at, previous_kind, event, before):
+    _require(
+        previous_at <= event["cutoff"],
+        "El registro retrocede respecto al corte histórico anterior",
+    )
+    _require(event["cutoff"] < before, "El registro alcanza el futuro del corte histórico")
+    _require(
+        event["cutoff"] != previous_at
+        or (event["kind"] == "settlement" and previous_kind in ("warmup", "decision")),
+        "El registro repite el corte sin una liquidación posterior admisible",
+    )
+
+
 def _prefix(session, bundle, generations, *, through_generation, before, max_records, max_bytes):
     _require(bundle is not None, "No hay una recogida confirmada")
     bounded_integer(before, "corte histórico exclusivo", 1, FINAL_TEST_US)
@@ -129,12 +142,10 @@ def _prefix(session, bundle, generations, *, through_generation, before, max_rec
             key = _key(row)
             _require(key not in lookup, "Las colecciones repiten una predicción")
             lookup[key] = state, i
-    previous = selected[0]["cutoff"] - 1
+    previous, previous_kind = selected[0]["cutoff"] - 1, None
     for current in range(generations[0], through_generation + 1):
         event = binding.history.read_event(bundle["mechanism_history"], current)
-        _require(
-            previous < event["cutoff"] < before, "El registro alcanza el futuro del corte histórico"
-        )
+        _check_event_order(previous, previous_kind, event, before)
         _require(total < max_bytes, "El prefijo agota sus bytes antes del registro nativo")
         record, sha, size = binding._read_record(
             session, current, maximum=min(max_bytes - total, 64 * 1024**2)
@@ -147,6 +158,10 @@ def _prefix(session, bundle, generations, *, through_generation, before, max_rec
             dict(event["payload"], observations=record["observations_count"]),
             record,
             cutoff=event["cutoff"],
+        )
+        _require(
+            event["kind"] == record["event_kind"],
+            "El tipo del evento histórico contradice su registro nativo",
         )
         if current in states:
             state = states[current]
@@ -161,7 +176,7 @@ def _prefix(session, bundle, generations, *, through_generation, before, max_rec
         _receive(session, states, lookup, record, current, sha)
         total += size
         records.append(dict(generation=current, cutoff=record["cutoff"], sha256=sha, bytes=size))
-        previous = record["cutoff"]
+        previous, previous_kind = record["cutoff"], record["event_kind"]
     return states, records, total
 
 
