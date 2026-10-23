@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Factorial CM-v1: B, B+C, B+M y B+C+M",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 692],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "recipe", "type": "database", "label": "Receta del núcleo", "sublabel": "mac_online, gate_bias", "pos": [40, 200], "size": [180, 72]},
+    {
+      "id": "control",
+      "type": "security",
+      "label": "Control local C",
+      "sublabel": "penalización de RᵀJR",
+      "tag": "rango 4, peso 0,1",
+      "pos": [40, 360],
+      "size": [180, 72]
+    },
+    {"id": "core_b", "type": "backend", "label": "cm_v1_core_b", "sublabel": "C en modo disabled", "pos": [300, 200], "size": [180, 72]},
+    {"id": "core_c", "type": "backend", "label": "cm_v1_core_c", "sublabel": "C en modo penalty", "pos": [300, 360], "size": [180, 72]},
+    {"id": "b", "type": "frontend", "label": "cm_v1_b", "sublabel": "lector con reservoir", "pos": [820, 40], "size": [180, 72]},
+    {"id": "bm", "type": "frontend", "label": "cm_v1_bm", "sublabel": "retención anclada M", "pos": [820, 200], "size": [180, 72]},
+    {"id": "bc", "type": "frontend", "label": "cm_v1_bc", "sublabel": "lector con reservoir", "pos": [820, 360], "size": [180, 72]},
+    {"id": "bcm", "type": "frontend", "label": "cm_v1_bcm", "sublabel": "retención anclada M", "pos": [820, 520], "size": [180, 72]},
+    {
+      "id": "contrast",
+      "type": "cloud",
+      "label": "Contraste factorial",
+      "sublabel": "MAE por sesión emparejado",
+      "pos": [1080, 360],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "recipe-core_b", "from": "recipe", "to": "core_b"},
+    {"id": "recipe-core_c", "from": "recipe", "to": "core_c"},
+    {"id": "control-core_c", "from": "control", "to": "core_c", "label": "C", "variant": "security", "labelDx": -23},
+    {"id": "core_b-b", "from": "core_b", "to": "b"},
+    {"id": "core_b-bm", "from": "core_b", "to": "bm"},
+    {"id": "core_c-bc", "from": "core_c", "to": "bc"},
+    {"id": "core_c-bcm", "from": "core_c", "to": "bcm"},
+    {"id": "b-contrast", "from": "b", "to": "contrast"},
+    {"id": "bm-contrast", "from": "bm", "to": "contrast"},
+    {"id": "bc-contrast", "from": "bc", "to": "contrast"},
+    {"id": "bcm-contrast", "from": "bcm", "to": "contrast"}
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Factor C",
+      "items": [
+        "P_g = peso · Σ max(ŵ(RᵀJR) − umbral, 0)² / n_g",
+        "Solo cambia el ajuste del núcleo, B usa la misma base en modo disabled",
+        "La compresión del Jacobiano no certifica estabilidad global"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Factor M",
+      "items": [
+        "Retención con centros fijos, frontera 8 y ocho intercambios",
+        "Capacidad 1.024 y semilla 73, las del banco de B",
+        "La heurística de medoids no hereda el factor de metric k-median"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Lector M1 con K = 1 sobre cada núcleo congelado",
+        "Ensayo de 64 activos: M reduce el MAE frente a B y C+M es inconcluyente",
+        "Las cuatro variantes tienen más MAE que predecir cero"
+      ]
+    }
+  ]
+}

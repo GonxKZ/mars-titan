@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Referencia GRU con banco episódico",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"}
+      }
+    }
+  },
+  "components": [
+    {"id": "prices", "type": "external", "label": "Ventana de precios", "sublabel": "[N, 64, Dp]", "pos": [40, 40], "size": [180, 72]},
+    {
+      "id": "others",
+      "type": "external",
+      "label": "Otras modalidades",
+      "sublabel": "noticias, gráficos, fund., macro",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "gru", "type": "backend", "label": "GRU de una capa", "sublabel": "128 salidas por ventana", "pos": [300, 40], "size": [180, 72]},
+    {"id": "project", "type": "backend", "label": "Proyecciones con SiLU", "sublabel": "4 × 128", "pos": [300, 230], "size": [180, 72]},
+    {
+      "id": "fusion",
+      "type": "backend",
+      "label": "Fusión lineal con SiLU",
+      "sublabel": "256 valores, estado z de 128",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {
+      "id": "bank",
+      "type": "database",
+      "label": "Banco episódico",
+      "sublabel": "claves 128, valores 256",
+      "tag": "solo episodios maduros",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {"id": "read", "type": "backend", "label": "Lectura de 8 vecinos", "sublabel": "softmax(q·k/τ)", "pos": [820, 40], "size": [180, 72]},
+    {"id": "refine", "type": "backend", "label": "Refinamiento K = 1, 2, 4", "sublabel": "misma instantánea", "pos": [820, 230], "size": [180, 72]},
+    {"id": "head", "type": "frontend", "label": "Cabeza de cuantiles", "sublabel": "0,025 a 0,975", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "prices-gru", "from": "prices", "to": "gru"},
+    {"id": "others-project", "from": "others", "to": "project"},
+    {"id": "gru-fusion", "from": "gru", "to": "fusion"},
+    {"id": "project-fusion", "from": "project", "to": "fusion"},
+    {"id": "bank-read", "from": "bank", "to": "read", "label": "instantánea"},
+    {"id": "fusion-refine", "from": "fusion", "to": "refine", "label": "z", "variant": "emphasis"},
+    {"id": "read-refine", "from": "read", "to": "refine", "label": "lectura", "labelDy": 24},
+    {"id": "refine-head", "from": "refine", "to": "head", "label": "z′", "variant": "emphasis"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Componentes",
+      "items": [
+        "Componente C++20 con LibTorch y adaptador con máscaras históricas",
+        "Codec CPU fijo: rasgos de 256 y claves de 128 con norma uno",
+        "z′ = z + σ(a)·tanh(W[z, h, lectura, presencia] + b)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Banco y admisión",
+      "items": [
+        "Reservorio causal v2 con mt19937_64, el mismo sorteo que el banco de Titans",
+        "Capacidad igualada con M0 a M2 para el contraste",
+        "Las etiquetas se conservan en FP64 y solo entran maduras"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Conectada al mismo FinancialSession que Titans-MAC",
+        "Identidad propia, no sustituye a la referencia B",
+        "Comprobada en CPU y CUDA, sin resultado que acredite mejora"
+      ]
+    }
+  ]
+}
