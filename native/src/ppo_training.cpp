@@ -935,6 +935,12 @@ std::size_t PpoTrainer::invalid_transitions() const noexcept { return invalid_tr
 std::size_t PpoTrainer::partial_ticks() const noexcept { return ticks_; }
 std::size_t PpoTrainer::observed_transitions() const noexcept { return observed_transitions_; }
 std::size_t PpoTrainer::auxiliary_samples() const noexcept { return auxiliary_samples_; }
+std::optional<ReplaySnapshot> PpoTrainer::replay_snapshot() const {
+    if (!replay_) {
+        return std::nullopt;
+    }
+    return replay_->snapshot();
+}
 const PpoUpdateStats& PpoTrainer::last_update() const noexcept { return last_update_; }
 const DqnUpdateStats& PpoTrainer::last_dqn_update() const noexcept { return last_dqn_update_; }
 

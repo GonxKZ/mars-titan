@@ -56,7 +56,7 @@ from mars_titan.training import campaign_chain, campaign_schedule, masked_campai
 from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
-from . import native_policy_runs, window_tapes
+from . import environment_bounds, native_policy_runs, window_tapes
 from .policy_plan import (
     BASE_SELECTED,
     CARRY,
@@ -532,6 +532,59 @@ def _equity(record):
     )
 
 
+def _within_bounds(job, records, tape, environment):
+    """Detener la etapa si un episodio supera lo que permite su cinta de evaluación.
+
+    Ninguna política, aprendida o de referencia, puede crecer más que la cota con
+    información futura ni negociar más de lo que permite la participación declarada. Si un
+    episodio lo hace, el defecto está en el entorno o en la contabilidad y la etapa no
+    confirma el trabajo.
+    """
+    finished = [record for record in records if record["status"] != "failed"]
+    if not finished:
+        return
+    bounds = environment_bounds.tape_bounds(
+        tape, participation=environment["participation"], capital=environment["capital"]
+    )
+    for record in finished:
+        _require(
+            _number(record.get("turnover"), 0),
+            f"{job['id']}: un episodio terminado necesita su rotación finita",
+        )
+        defect = environment_bounds.episode_defect(record, bounds)
+        _require(
+            defect is None,
+            f"{job['id']}: defecto del entorno con coste {record['cost_bps']}: {defect}",
+        )
+
+
+def _groups(job, groups, waves, environments):
+    """Exigir que cada oleada de un objetivo de grupo publique grupos completos.
+
+    Cada carril aporta un episodio por oleada, cada grupo tiene al menos dos episodios con el
+    mismo estado inicial y ninguno se descarta. Un filtrado por resultado, como el muestreo
+    dinámico de DAPO, cambiaría la población de la ventaja y tendría que declararse.
+    """
+    _require(
+        isinstance(groups, list)
+        and len(groups) == waves
+        and all(
+            isinstance(entry, dict)
+            and entry.get("wave") == index
+            and entry.get("episodes") == environments
+            and entry.get("discarded_groups") == 0
+            and isinstance(entry.get("groups"), int)
+            and 1 <= entry["groups"] <= environments // 2
+            and isinstance(entry.get("smallest_group"), int)
+            and entry["smallest_group"] >= 2
+            and isinstance(entry.get("flat_groups"), int)
+            and 0 <= entry["flat_groups"] <= entry["groups"]
+            for index, entry in enumerate(groups)
+        ),
+        f"{job['id']}: el objetivo de grupo no publica grupos completos de cada oleada",
+    )
+
+
 def check_report(stage, job, report, tapes, anchor=None):
     """Exigir el contrato del informe de un ejecutor antes de confirmar el trabajo."""
     policies = stage["policies"]
@@ -553,6 +606,7 @@ def check_report(stage, job, report, tapes, anchor=None):
         failure = tapes.unfit["reason"]
     for record, cost in zip(report["evaluation"], costs, strict=True):
         _record(record, cost, failure)
+    _within_bounds(job, report["evaluation"], tapes.evaluation, policies["environment"])
     if job["kind"] != REFERENCE and tapes.unfit is not None:
         _require(
             report.get("policy") is None
@@ -571,6 +625,8 @@ def check_report(stage, job, report, tapes, anchor=None):
             )
             spent = waves > 0 and report.get("waves") == waves
             spent = spent and 0 < report["transitions"] <= waves * wave
+            if job["engine"] == native_policy_runs.GROUP_KIND:
+                _groups(job, report.get("groups"), waves, budget["environments"])
         else:
             spent = report["transitions"] == budget["transitions"]
         _require(
@@ -1243,6 +1299,8 @@ class _Stage:
             transitions=report["transitions"],
             # Oleadas KLPO consumidas. Los demás modelos no las tienen.
             waves=report.get("waves"),
+            # Grupos de cada oleada de los objetivos de grupo, con los descartados.
+            groups=report.get("groups"),
             updates=report["updates"],
             selection=report["selection"],
             policy=report["policy"],
