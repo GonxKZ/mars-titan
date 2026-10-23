@@ -537,7 +537,10 @@ class MechanismBinding(TitansBinding):
                 projections += row["regional_readout"]["value_projections"]
             if rows or self.consumer.readout.recurrence_work(0):
                 regional_mechanism_trace.verify_work(
-                    control["work"], self.consumer.readout, value_projections=projections
+                    control["work"],
+                    self.consumer.readout,
+                    value_projections=projections,
+                    rows=[row["regional_readout"] for row in rows] if not warmup else [],
                 )
         if self.consumer.policy is not None:
             trace = control.get("selection")

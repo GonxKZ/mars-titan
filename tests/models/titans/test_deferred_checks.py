@@ -70,6 +70,66 @@ def test_cuda_checks_pass_silently_and_deduplicate_unchanged_tensors():
 
 
 @cuda
+def test_cuda_inference_tensor_passes_finite_checks_without_a_version_counter():
+    with torch.inference_mode(), checks.deferred_checks():
+        value = finite("cuda:0")
+        checks.check_finite(value, "Primera")
+        checks.check_finite(value, "Segunda")
+    assert checks._PENDING.get() is None
+
+
+@cuda
+def test_cuda_inference_tensor_can_be_checked_after_leaving_inference_mode():
+    with torch.inference_mode():
+        value = finite("cuda:0")
+    assert value.is_inference() and not torch.is_inference_mode_enabled()
+    with checks.deferred_checks():
+        checks.check_finite(value, "Primera")
+        checks.check_finite(value, "Segunda")
+    assert checks._PENDING.get() is None
+
+
+@cuda
+def test_cuda_normal_tensor_keeps_version_cache_inside_inference_mode():
+    value = finite("cuda:0")
+    assert not value.is_inference()
+    with torch.inference_mode(), checks.deferred_checks():
+        checks.check_finite(value, "Primera")
+        checks.check_finite(value, "Segunda")
+        assert len(checks._PENDING.get().flags) == 1
+    assert checks._PENDING.get() is None
+
+
+@cuda
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")], ids=["nan", "inf"])
+def test_cuda_inference_tensor_mutation_is_seen_by_the_second_check(bad):
+    reached = []
+    with pytest.raises(ValueError, match="^Segunda contiene NaN o infinito$"):
+        with torch.inference_mode(), checks.deferred_checks():
+            value = finite("cuda:0")
+            checks.check_finite(value, "Primera")
+            value[0] = bad
+            checks.check_finite(value, "Segunda")
+            reached.append(True)
+    assert reached == [True]
+    assert checks._PENDING.get() is None
+
+
+@cuda
+def test_cuda_inference_tensor_keeps_the_first_failure_after_becoming_finite():
+    reached = []
+    with pytest.raises(ValueError, match="^Primera contiene NaN o infinito$"):
+        with torch.inference_mode(), checks.deferred_checks():
+            value = broken("cuda:0")
+            checks.check_finite(value, "Primera")
+            value.fill_(1)
+            checks.check_finite(value, "Segunda")
+            reached.append(True)
+    assert reached == [True]
+    assert checks._PENDING.get() is None
+
+
+@cuda
 def test_each_check_sees_the_value_at_its_program_point():
     value = finite("cuda:0")
     with checks.deferred_checks():

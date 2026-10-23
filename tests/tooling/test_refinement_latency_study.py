@@ -182,6 +182,7 @@ def test_deadline_counts_time_and_manual_interruption(monkeypatch):
     assert limit.requested is True
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "case,change",
     [

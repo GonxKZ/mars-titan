@@ -34,7 +34,7 @@ CUDA_CHECK_ENV := MARS_TITAN_GRU_CHECK_DEVICE=cuda:0 MARS_TITAN_M3_CHECK_DEVICE=
 	MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE=cuda:0 MARS_TITAN_READOUT_ADAPTERS_CHECK_DEVICE=cuda:0 \
 	MARS_TITAN_CANDIDATE_ADAPTERS_CHECK_DEVICE=cuda:0
 SUITE_PARTS := data models training simulation memory posttraining evaluation environments \
-	episodes calibration cm integrity learning_traces native tooling hardware
+	episodes calibration cm integrity learning_traces native tooling hardware proposals benchmarks
 CUDA_CHECKS := $(filter-out tests/models/candidate/cuda_candidate_check.py,\
 	$(wildcard tests/*/cuda_*_check.py tests/*/*/cuda_*_check.py))
 ifndef CUDA_CHECK_DIR

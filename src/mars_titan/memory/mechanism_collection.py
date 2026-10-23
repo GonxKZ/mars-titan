@@ -9,7 +9,8 @@ import torch
 
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
 from mars_titan.models.quantile_head import QuantileHead
-from mars_titan.models.titans import refinement_routes, regional_routes
+from mars_titan.models.titans import bridge_stopping_record, refinement_routes, regional_routes
+from mars_titan.models.titans.evidence_bridge import AdaptiveBridgeRead
 from mars_titan.models.titans.financial import _tensor_digest
 from mars_titan.models.titans.financial_inputs import DecisionBatch
 from mars_titan.models.titans.mechanism_calibration import calibrate_event
@@ -23,7 +24,10 @@ from mars_titan.models.titans.refinement_routes import ROUTES
 from . import mechanism_collection_record
 from .episodic_session import DecisionRow
 from .mechanism_collection_record import (
+    ADAPTIVE_KIND,
+    ADAPTIVE_WORK,
     KIND,
+    MAX_BYTES,
     PROTOCOL,
     REGIONAL_KIND,
     REGIONAL_WORK,
@@ -97,8 +101,33 @@ class MechanismCollector:
             if program is not None
             else None
         )
+        self._adaptive = None
+        reader = consumer.readout
+        bridge = None if reader is None else reader.config.evidence_bridge
+        if (
+            bridge is not None
+            and bridge.recurrence is not None
+            and bridge.recurrence.stopping is not None
+        ):
+            self._adaptive = dict(
+                schema_version=1,
+                reader_contract=consumer.catalog.reader_contract,
+                regions=list(bridge.regions),
+                active_views=list(bridge.active_views()),
+                mode=reader.config.mode,
+                recurrence=bridge.recurrence.options(),
+            )
+            if mechanism_collection_record.adaptive_archive_bytes(flows) > min(
+                MAX_BYTES, reader.config.max_working_bytes
+            ):
+                raise ValueError("Las lecturas adaptativas exceden sus bytes antes de MAC")
         self._work = dict.fromkeys(
-            sorted(WORK | (REGIONAL_WORK if self._regional is not None else set())), 0
+            sorted(
+                WORK
+                | (REGIONAL_WORK if self._regional is not None else set())
+                | (ADAPTIVE_WORK if self._adaptive is not None else set())
+            ),
+            0,
         )
         self._anchor = [
             dict(
@@ -118,7 +147,8 @@ class MechanismCollector:
         trabajo real, pero no renueva ni amplía esta admisión conservadora del evento.
         """
         reader = self.consumer.readout
-        if reader is None or not reader.recurrence_work(1):
+        bridge = None if reader is None else reader.config.evidence_bridge
+        if bridge is None or (bridge.recurrence is None and bridge.hierarchy is None):
             return
         reads = 0
         for context in ("off", "parent"):
@@ -163,6 +193,61 @@ class MechanismCollector:
             )
             for market, available in self._availability.items()
         }
+
+    def _adaptive_call(self, context, route, flows, reads):
+        """Archivar solo las profundidades de cada lectura realmente ejecutada."""
+        reader = self.consumer.readout
+        config = reader.config.evidence_bridge.recurrence
+        episodes = self._event.snapshot.count if self._event.snapshot is not None else 0
+        rows = [dict(flow_id=flow, reads=[]) for flow in flows]
+        selected = evaluated = 0
+        for read in reads:
+            bridge = read.bridge
+            if bridge is None:
+                columns = dict(
+                    selected_steps=[0] * len(flows),
+                    evaluated_steps=[0] * len(flows),
+                    criterion_met=[False] * len(flows),
+                )
+            else:
+                if (
+                    type(bridge) is not AdaptiveBridgeRead
+                    or self._event.snapshot is None
+                    or bridge.snapshot_sha256 != self._event.snapshot._digest
+                ):
+                    raise ValueError("La colección adaptativa mezcla lecturas o snapshots")
+                columns = {}
+                for name in bridge_stopping_record.STOPPING_FIELDS:
+                    value = getattr(bridge, name)
+                    if (
+                        not isinstance(value, torch.Tensor)
+                        or value.layout != torch.strided
+                        or value.shape != (len(flows),)
+                        or value.dtype != (torch.bool if name == "criterion_met" else torch.int64)
+                        or value.device != read.values.device
+                        or value.requires_grad
+                        or value.grad_fn is not None
+                    ):
+                        raise ValueError("La lectura adaptativa perdió sus metadatos por fila")
+                    columns[name] = value.detach().cpu().tolist()
+            for index, row in enumerate(rows):
+                decision = {name: values[index] for name, values in columns.items()}
+                chosen, calculated = bridge_stopping_record.verify_stopping_record(
+                    decision,
+                    config,
+                    episodes=episodes,
+                    mode=self._adaptive["mode"],
+                    active_views=self._adaptive["active_views"],
+                )
+                row["reads"].append(decision)
+                selected += chosen
+                evaluated += calculated
+        work = reader.recurrence_work(
+            len(reads) * len(flows) if episodes else 0,
+            selected_steps=selected,
+            evaluated_steps=evaluated,
+        )
+        return dict(context=context, route=route, rows=rows), work
 
     @torch.no_grad()
     def add(self, rows, fast_state):
@@ -209,6 +294,7 @@ class MechanismCollector:
         proposed = {flow: {} for flow in flows}
         work = dict.fromkeys(self._work, 0)
         regional_calls = []
+        adaptive_calls = []
         for context in ("off", "parent"):
             routes = self._routes(context)
             if not any(routes[flow.split("/", 1)[0]] for flow in flows):
@@ -289,6 +375,15 @@ class MechanismCollector:
                     work["reader_searches"] += collected.searches * len(flows)
                     work["reader_value_projections"] += collected.value_projections * len(flows)
                     work["shared_route_batches"] += 1
+                    if self._adaptive is not None:
+                        if type(collected) is not regional_routes.AdaptiveRegionalRouteCollection:
+                            raise ValueError("El DAG adaptativo perdió sus lecturas ejecutadas")
+                        call, measured = self._adaptive_call(
+                            context, "shared", flows, collected.executed_reads
+                        )
+                        adaptive_calls.append(call)
+                        for name, value in measured.items():
+                            work[name] += value
                     del collected
                 else:
                     for route in union:
@@ -305,6 +400,11 @@ class MechanismCollector:
                         work["reader_searches"] += final.searches * len(flows)
                         work["reader_value_projections"] += final.value_projections * len(flows)
                         work["individual_route_batches"] += 1
+                        if self._adaptive is not None:
+                            call, measured = self._adaptive_call(context, route, flows, final.reads)
+                            adaptive_calls.append(call)
+                            for name, value in measured.items():
+                                work[name] += value
                         del final
             for index, flow in enumerate(flows):
                 proposed[flow].update(
@@ -322,6 +422,8 @@ class MechanismCollector:
         block = dict(flow_ids=list(flows), fast_state_sha256=before)
         if self._regional is not None:
             block["regional_execution"] = regional_calls
+        if self._adaptive is not None:
+            block["adaptive_reads"] = adaptive_calls
         self._blocks.append(block)
         for name, value in work.items():
             self._work[name] += value
@@ -423,8 +525,16 @@ class MechanismCollector:
                 dict(market=market, availability=asdict(available), candidates=candidates)
             )
         body = dict(
-            schema_version=2 if self._regional is not None else 1,
-            kind=REGIONAL_KIND if self._regional is not None else KIND,
+            schema_version=(
+                3 if self._adaptive is not None else 2 if self._regional is not None else 1
+            ),
+            kind=(
+                ADAPTIVE_KIND
+                if self._adaptive is not None
+                else REGIONAL_KIND
+                if self._regional is not None
+                else KIND
+            ),
             protocol=PROTOCOL,
             output_dtype=str(self.consumer.predictor.head.weight.dtype),
             execution_device=str(self.consumer.predictor.head.weight.device),
@@ -439,7 +549,15 @@ class MechanismCollector:
             producer_sha256=digest(
                 {
                     str(p.name): hashlib.sha256(p.read_bytes()).hexdigest()
-                    for p in (Path(__file__), Path(mechanism_collection_record.__file__))
+                    for p in (
+                        Path(__file__),
+                        Path(mechanism_collection_record.__file__),
+                        *(
+                            (Path(bridge_stopping_record.__file__),)
+                            if self._adaptive is not None
+                            else ()
+                        ),
+                    )
                 }
             ),
             blocks=sorted(self._blocks, key=lambda b: b["flow_ids"]),
@@ -448,6 +566,8 @@ class MechanismCollector:
         )
         if self._regional is not None:
             body["regional_execution"] = self._regional
+        if self._adaptive is not None:
+            body["adaptive_bridge"] = self._adaptive
         packet = CollectedMechanisms(body)
         self._closed = True
         self._raw.clear()

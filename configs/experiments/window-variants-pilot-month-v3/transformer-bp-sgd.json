@@ -1,0 +1,32 @@
+{
+  "train_start": "2015-01-01",
+  "train_end": "2015-02-01",
+  "validation_start": "2015-02-01",
+  "validation_end": "2015-03-01",
+  "temporal_encoder": null,
+  "estimator": "backprop",
+  "optimizer": "sgd",
+  "seed": 42,
+  "epochs": 2,
+  "batch_size": 32,
+  "learning_rate": 0.01,
+  "weight_decay": 0,
+  "loss": "mae",
+  "huber_delta": 0.01,
+  "max_grad_norm": 1,
+  "hidden_size": 32,
+  "layers": 1,
+  "max_seconds": 600,
+  "max_output_bytes": 268435456,
+  "max_cuda_bytes": 1073741824,
+  "cache_bytes": 268435456,
+  "checkpoint_steps": 32,
+  "selection": {
+    "metric": "session_mae",
+    "stopping": "fixed_budget",
+    "patience": 3,
+    "min_delta": 0.00001
+  },
+  "dust": null,
+  "final_test_access": false
+}

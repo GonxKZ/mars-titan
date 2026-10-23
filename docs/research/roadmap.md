@@ -27,9 +27,17 @@ flowchart LR
 
 Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) desarrolla las tareas, dependencias y prioridades. Las fechas se fijarán cuando se concrete el calendario del proyecto. Las duraciones estimadas no son fechas de entrega confirmadas.
 
-## Estado revisado el 20 de octubre de 2026
+## Estado revisado el 23 de octubre de 2026
 
 La tabla recoge código, datos verificados y estudios exploratorios publicados hasta `997c9eecd`. La edición v3.1 y sus objetivos están generados y verificados. Los pilotos de memoria, refinamientos y plasticidad tienen resultados acotados. Ningún hito científico queda cerrado por ellos. La campaña A v2 del universo completo y el test final de 2024 siguen cerrados.
+
+Entre el 21 y el 23 de octubre se integraron variantes de desarrollo que siguen desactivadas por defecto:
+
+- El [puente de evidencia compartida](../experiments/shared-evidence-bridge-v1.md), con su [jerarquía](../experiments/hierarchical-evidence-bridge-v1.md) y la [parada residual por predicción](../experiments/adaptive-evidence-bridge-v1.md).
+- El [controlador de mecanismos](../engineering/mechanism-controller.md) y las [propuestas finitas desde errores maduros](../engineering/error-proposals.md), inspiradas en SEAL pero limitadas a configuraciones registradas.
+- El codificador [KronLSTM](../experiments/kronlstm/source_audit.md) con su control vectorial, el estimador sin backpropagation [Dust](../experiments/dust/source_audit.md) y el [ejecutor de ventanas](../experiments/window-variants-pilot-month-v3.md) de hasta 366 días anteriores a 2024.
+
+Todas tienen comprobaciones técnicas, pero ninguna evaluación predictiva. El piloto `pilot-month-v3` y el benchmark de la parada esperan a que la GPU quede libre. Antes hay que medir la atención FP32 del Transformer, que en la RTX 4070 usa un kernel con emulación 3xTF32 ([#736](https://github.com/GonxKZ/mars-titan/issues/736)).
 
 | Hito | Evidencia publicada | Pendiente para su criterio de cierre |
 | --- | --- | --- |

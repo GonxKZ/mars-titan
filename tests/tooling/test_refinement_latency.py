@@ -244,6 +244,7 @@ def test_nested_measurements_are_not_counted_twice():
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_instrumentation_preserves_the_real_cpu_reader_and_mature_bank(tmp_path):
     import os
 
@@ -270,6 +271,7 @@ def test_instrumentation_preserves_the_real_cpu_reader_and_mature_bank(tmp_path)
     )
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.cuda
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_real_cuda_reader_keeps_predictions_and_states_when_timed(tmp_path, dtype):

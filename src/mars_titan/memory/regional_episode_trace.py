@@ -6,15 +6,37 @@ import torch
 
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_snapshot import _digest_id
-from mars_titan.models.titans.evidence_bridge import HierarchyBridgeRead
+from mars_titan.models.titans.evidence_bridge import AdaptiveBridgeRead, HierarchyBridgeRead
 from mars_titan.models.titans.regional_episode_readout import (
     BridgedReadoutResult,
     hierarchy_weights,
 )
+from mars_titan.models.titans.regional_mechanism_trace import verify_stopping
 
 KIND = "regional_episode_trace_v1"
 HIERARCHY_KIND = "hierarchical_episode_trace_v1"
+ADAPTIVE_KIND = "adaptive_regional_episode_trace_v1"
 _TENSORS = ("evidence_ids", "regional_weights", "regional_values", "read_values", "presence")
+_STOPPING_TENSORS = ("selected_steps", "evaluated_steps", "criterion_met")
+
+
+def _adaptive(reader):
+    recurrence = reader.config.evidence_bridge.recurrence
+    return recurrence is not None and recurrence.stopping is not None
+
+
+def observed_work(trace, reader):
+    """Sumar las profundidades observadas, sin deducirlas del máximo admitido."""
+    if not _adaptive(reader):
+        return {}
+    return {
+        name: sum(
+            int(read[name].sum().item()) for block in trace["blocks"] for read in block["reads"]
+        )
+        if trace is not None
+        else 0
+        for name in ("selected_steps", "evaluated_steps")
+    }
 
 
 def enabled(reader):
@@ -35,6 +57,9 @@ def estimated_bytes(reader, flows, episodes, block_rows):
     if reader.config.evidence_bridge.hierarchy is not None:
         tensors += len(flows) * steps * 3 * h * size + 49 * size
         metadata += blocks * steps * 2 * 224 + 512
+    if _adaptive(reader):
+        tensors += len(flows) * steps * 17
+        metadata += blocks * steps * 3 * 224
     return 65536 + tensors + metadata + sum(len(flow.encode()) + 512 for flow in flows)
 
 
@@ -48,8 +73,8 @@ def begin(reader, flows, snapshot, *, context_id, cutoff, block_rows):
     if full is not None:
         graph = full[:4, :4].clone()
     result = dict(
-        schema_version=1,
-        kind=KIND if full is None else HIERARCHY_KIND,
+        schema_version=2 if _adaptive(reader) else 1,
+        kind=ADAPTIVE_KIND if _adaptive(reader) else KIND if full is None else HIERARCHY_KIND,
         configuration_sha256=hashlib.sha256(
             canonical(reader.config.identity()).encode()
         ).hexdigest(),
@@ -81,8 +106,11 @@ def append(trace, flows, result):
         if bridge is not None and bridge.snapshot_sha256 != trace["snapshot_sha256"]:
             raise ValueError("La traza mezcla snapshots de evidencia")
         hierarchical = trace["kind"] == HIERARCHY_KIND
+        adaptive = trace["kind"] == ADAPTIVE_KIND
         if bridge is not None and (type(bridge) is HierarchyBridgeRead) != hierarchical:
             raise ValueError("La lectura y la traza no comparten el contrato jerárquico")
+        if bridge is not None and (type(bridge) is AdaptiveBridgeRead) != adaptive:
+            raise ValueError("La lectura y la traza no comparten la parada adaptativa")
         raw = dict(
             evidence_ids=bridge.evidence_ids
             if bridge is not None
@@ -115,6 +143,19 @@ def append(trace, flows, result):
                 if bridge is not None
                 else read.values.new_zeros((b, 1, h)),
             )
+        if adaptive:
+            raw.update(
+                {
+                    name: getattr(bridge, name)
+                    if bridge is not None
+                    else torch.zeros(
+                        b,
+                        dtype=torch.bool if name == "criterion_met" else torch.int64,
+                        device=read.values.device,
+                    )
+                    for name in _STOPPING_TENSORS
+                }
+            )
         reads.append(
             {
                 name: value.detach().to(device="cpu", copy=True).contiguous()
@@ -146,17 +187,19 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
         "blocks",
     }
     hierarchical = reader.config.evidence_bridge.hierarchy is not None
+    adaptive = _adaptive(reader)
     if hierarchical:
         fields.add("hierarchy_weights")
     if (
         type(trace) is not dict
         or set(trace) != fields
-        or trace["schema_version"] != 1
+        or trace["schema_version"] != (2 if adaptive else 1)
         or any(
             type(trace[name]) is not int
             for name in ("schema_version", "hidden_size", "rows", "refinements", "block_rows")
         )
-        or trace["kind"] != (HIERARCHY_KIND if hierarchical else KIND)
+        or trace["kind"]
+        != (ADAPTIVE_KIND if adaptive else HIERARCHY_KIND if hierarchical else KIND)
         or trace["configuration_sha256"]
         != hashlib.sha256(canonical(reader.config.identity()).encode()).hexdigest()
         or trace["context_id"] != context_id
@@ -206,8 +249,11 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
     return True
 
 
-def _verify_read(read, rows, r, h, expected_count, dtype, active, hierarchical=False):
+def _verify_read(read, rows, r, h, expected_count, dtype, active, hierarchical=False, reader=None):
     names = _TENSORS + (("group_values", "root_values") if hierarchical else ())
+    adaptive = reader is not None and _adaptive(reader)
+    if adaptive:
+        names += _STOPPING_TENSORS
     if type(read) is not dict or set(read) != set(names):
         raise ValueError("La lectura regional no conserva sus campos")
     ids = read["evidence_ids"]
@@ -227,6 +273,9 @@ def _verify_read(read, rows, r, h, expected_count, dtype, active, hierarchical=F
     if hierarchical:
         shapes += ((rows, 2, h), (rows, 1, h))
         dtypes += (dtype, dtype)
+    if adaptive:
+        shapes += ((rows,),) * 3
+        dtypes += (torch.int64, torch.int64, torch.bool)
     for name, shape, required_dtype in zip(names, shapes, dtypes, strict=True):
         value = read[name]
         if (
@@ -240,6 +289,10 @@ def _verify_read(read, rows, r, h, expected_count, dtype, active, hierarchical=F
             or not torch.isfinite(value).all()
         ):
             raise ValueError("La traza regional contiene un tensor incompatible")
+    if adaptive:
+        columns = [read[name].tolist() for name in _STOPPING_TENSORS]
+        for values in zip(*columns, strict=True):
+            verify_stopping(dict(zip(_STOPPING_TENSORS, values, strict=True)), reader, episodes=k)
     if k:
         ordered = ids.sort(-1).values
         weights = read["regional_weights"]
@@ -313,6 +366,7 @@ def verify(trace, reader, *, flows, context_id, cutoff, refinements, block_rows)
                 dtype,
                 reader.config.evidence_bridge.active_views(),
                 reader.config.evidence_bridge.hierarchy is not None,
+                reader,
             )
             if first_ids is None:
                 first_ids = ids

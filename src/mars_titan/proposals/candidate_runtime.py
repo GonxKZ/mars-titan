@@ -107,17 +107,26 @@ def _check_candidate(baseline, candidate):
                 bridge.recurrence,
                 steps=requested_bridge.recurrence.steps,
                 max_node_updates_per_row=requested_bridge.recurrence.max_node_updates_per_row,
+                stopping=requested_bridge.recurrence.stopping,
             )
             reader = replace(reader, evidence_bridge=replace(bridge, recurrence=recurrence))
     expected = replace(
         baseline,
         predictor=predictor,
         readout=reader,
-        catalog=replace(baseline.catalog, regional_execution=predictor.regional_execution),
+        catalog=replace(
+            baseline.catalog,
+            regional_execution=predictor.regional_execution,
+            reader_contract=(
+                reader.evidence_bridge.identity()["kind"]
+                if reader is not None and reader.evidence_bridge is not None
+                else baseline.catalog.reader_contract
+            ),
+        ),
     )
     require(
         expected.identity() == candidate.identity(),
-        "La candidata cambia opciones distintas del programa regional o J",
+        "La candidata cambia opciones distintas del programa regional, J o la parada",
     )
 
 
