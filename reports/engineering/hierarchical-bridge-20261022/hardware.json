@@ -1,0 +1,9 @@
+{
+  "system": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "logical_cpus": 16,
+  "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "physical_ram_bytes": 32313376768,
+  "nvidia_smi": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 445 MiB, 595.91.07",
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+}

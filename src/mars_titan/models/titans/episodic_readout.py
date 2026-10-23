@@ -260,10 +260,14 @@ class EpisodicReadout(nn.Module):
     def node_read_limit(self, episodes):
         """Límite por fila del evento completo, sin renovar cuotas por ruta o bloque."""
         bridge = self.config.evidence_bridge
-        if bridge is None or bridge.recurrence is None or episodes == 0:
+        if bridge is None or episodes == 0:
             return 38
-        recurrence = bridge.recurrence
-        return recurrence.max_node_updates_per_row // (len(bridge.regions) * recurrence.steps)
+        recurrence = bridge.hierarchy if bridge.hierarchy is not None else bridge.recurrence
+        if recurrence is None:
+            return 38
+        return recurrence.max_node_updates_per_row // recurrence.node_updates(
+            len(bridge.regions), 1
+        )
 
     def preflight_node_updates(self, reads, episodes):
         """Admitir todas las lecturas previstas antes de ejecutar la primera MAC."""
@@ -275,7 +279,18 @@ class EpisodicReadout(nn.Module):
     def recurrence_work(self, value_projections):
         """Contar R0 y actualizaciones nuevas J, sin atribuirles todos los FLOPs."""
         bridge = self.config.evidence_bridge
-        if bridge is None or bridge.recurrence is None:
+        if bridge is None:
+            return {}
+        if bridge.hierarchy is not None:
+            bounded_integer(value_projections, "proyecciones del evento", 0, 38 * 8192)
+            return dict(
+                bridge_initial_views=4 * value_projections,
+                bridge_local_updates=8 * bridge.hierarchy.local_steps * value_projections,
+                bridge_group_updates=8 * value_projections,
+                bridge_root_updates=2 * value_projections,
+                bridge_node_updates=bridge.hierarchy.node_updates(4, 1) * value_projections,
+            )
+        if bridge.recurrence is None:
             return {}
         bounded_integer(value_projections, "proyecciones del evento", 0, 38 * 8192)
         initial = len(bridge.regions) * value_projections

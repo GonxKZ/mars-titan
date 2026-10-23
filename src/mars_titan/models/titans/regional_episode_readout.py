@@ -7,6 +7,21 @@ import torch
 from .evidence_bridge import BridgeRead
 
 
+def hierarchy_weights(model):
+    """Derivar el grafo efectivo de la sesión sin confiar en buffers mutables."""
+    config = model.config.evidence_bridge.hierarchy
+    if config is None:
+        return None
+    from .bridge_hierarchy import hierarchy_graph
+
+    graph, _ = hierarchy_graph(
+        torch.ones((1, 4), dtype=torch.bool),
+        torch.tensor(config.edges(), dtype=torch.bool),
+        feedback=config.feedback,
+    )
+    return graph[0].to(model.step_logit.dtype)
+
+
 @dataclass(frozen=True)
 class RegionalEpisodeRead:
     values: torch.Tensor
