@@ -57,7 +57,7 @@ def bridge_view_options(value):
         checked = BridgeRecurrenceConfig(**recurrence)
         if value["cycles"] != 0:
             raise ValueError("La recurrencia J requiere cycles=0")
-        result["recurrence"] = asdict(checked)
+        result["recurrence"] = checked.options()
     intervention = value.get("intervention")
     if intervention is not None:
         checked = intervention_options(intervention)
@@ -120,6 +120,8 @@ class EvidenceBridgeConfig:
             if type(self.recurrence) is not BridgeRecurrenceConfig:
                 raise ValueError("La recurrencia necesita BridgeRecurrenceConfig explícito")
             self.recurrence.__post_init__()
+            if self.recurrence.stopping is not None:
+                raise ValueError("La parada residual requiere la lectura adaptativa explícita")
             if self.cycles != 0:
                 raise ValueError("La recurrencia J requiere cycles=0, sin composición implícita")
         if (
