@@ -514,7 +514,9 @@ REDIRECTIONS = {
     "benchmarks/hierarchical_bridge_cuda.py": (1, _REAL_HOLD),
     "benchmarks/nonlinear_bridge_cuda.py": (
         2,
-        "lee la protección real, guarda su huella y la pasa sin cambios a cada proceso hijo",
+        "lee la protección de MARS_TITAN_TRAINING_HOLD o la real, registra su huella antes y"
+        " después y la pasa sin cambios a cada proceso hijo, que no calculan gradientes ni"
+        " usan optimizador",
     ),
     "benchmarks/regional_decision_cuda.py": (1, _REAL_HOLD),
     "benchmarks/regional_program_cuda.py": (1, _REAL_HOLD),
