@@ -1,6 +1,6 @@
 # Dust: verificación técnica y agrupación de probes
 
-El paquete opcional de Dust para `transformer_direct` escalar supera 70 casos técnicos y cinco mutaciones dirigidas. En el perfil sintético, chunk 4 incumple la tolerancia de gradientes y chunk 8 supera una sonda posterior con la misma referencia. Este informe no contiene ajuste sobre datos financieros ni una medida de MAE financiero.
+El paquete opcional de Dust para `transformer_direct` escalar supera 70 casos técnicos y cinco mutaciones dirigidas. En el perfil sintético, chunk 4 incumple la tolerancia de gradientes y chunk 8 supera una comprobación posterior con la misma referencia. Este informe no contiene ajuste sobre datos financieros ni una medida de MAE financiero.
 
 La implementación revisada corresponde al commit `cd44119df34886e093bb34f99edc1556ad8f122a`. El [paquete](https://github.com/GonxKZ/mars-titan/tree/cd44119df34886e093bb34f99edc1556ad8f122a/src/mars_titan/training/dust) adapta el [código mínimo Dust](https://github.com/qlabs-eng/dust/tree/b20f7c03eac630b6441ba6f254128c1761dc45ad), con licencia MIT. El estimador cubre proyecciones, sesgos, LayerNorm y QKV del predictor completo. Devuelve gradientes y contadores sin ejecutar `backward`, asignar `.grad` o aplicar un optimizador. Es una variante no canónica y no cambia el ajuste predeterminado.
 
@@ -30,14 +30,14 @@ Se fijan población 16, sigma 0,01, semilla privada 73, inicialización del mode
 | --- | ---: | --- | ---: |
 | 2 | 64 | Calentamiento y tres medidas con paridad | 106 / 25 / 8 |
 | 4 | 128 | Falla en el primer calentamiento | 54 / 13 / 4 |
-| 8 | 256 | Sonda posterior con paridad | 28 / 7 / 2 |
+| 8 | 256 | Comprobación posterior con paridad | 28 / 7 / 2 |
 | 16 | 512 | No ejecutado, supera `max_batch=256` | No medido |
 
 Cada estimación completada acumula 6.720 exposiciones a filas en recorridos completos del modelo, a partir de las mismas 32 filas lógicas. La agrupación reduce el número de llamadas completas y conserva ese volumen. Las atenciones locales y pérdidas de cabeza tienen contadores separados.
 
 Chunk 4 incumple la tolerancia en dos de 32 componentes de `price_encoder.blocks.0.norm1.bias`, con diferencia absoluta máxima `2.8028152883052826e-6`. No se amplían las tolerancias ni se admite ese chunk. La primera ejecución termina en error después de cinco estimaciones y conserva sus registros.
 
-La sonda de chunk 8 usa una sola referencia de chunk 2, sincronizada y sin tiempos, seguida de un calentamiento y tres medidas de chunk 8. Comprueba las mismas fuentes, configuración, tensores y estado inicial del RNG privado que el perfil anterior. Al completar la sonda, pesos, buffers, inputs, configuración y RNG global permanecen iguales.
+La comprobación de chunk 8 usa una sola referencia de chunk 2, sincronizada y sin tiempos, seguida de un calentamiento y tres medidas de chunk 8. Comprueba las mismas fuentes, configuración, tensores y estado inicial del RNG privado que el perfil anterior. Al completar la comprobación, pesos, buffers, inputs, configuración y RNG global permanecen iguales.
 
 | Chunk | Pared, mediana [mínimo, máximo] en ms | Intervalo CUDA, mediana en ms | Pico asignado / reservado en MiB |
 | --- | ---: | ---: | ---: |
