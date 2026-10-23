@@ -66,7 +66,7 @@ mismas filas y dos épocas. Una ejecución parcial no satisface esa condición.
 ## Presupuesto y recuentos de la vista
 
 El límite global es de 1800 segundos y empieza antes de adquisición, preparación y
-admisión. Incluye ajuste, sondas, evaluaciones, selección, checkpoints y salida. No
+admisión. Incluye ajuste, comprobaciones, evaluaciones, selección, checkpoints y salida. No
 se amplía al cambiar de proceso o configuración. Cada configuración tiene además
 un límite interno de 600 segundos, 1 GiB de allocator CUDA, 256 MiB de caché y
 256 MiB de salida. El supervisor global prevalece. Los seis límites internos no

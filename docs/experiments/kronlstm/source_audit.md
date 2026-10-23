@@ -35,7 +35,7 @@ La configuración del codificador y de cada bloque declara
 nativa. Las puertas de olvido y objetivo siguen su cálculo FP32. Esta ruta de CPU
 es una corrección numérica de la referencia y no una ejecución íntegramente FP32.
 
-En una sonda técnica con las semillas 0..7, la proyección nativa FP32 produjo dos
+En una comprobación técnica con las semillas 0..7, la proyección nativa FP32 produjo dos
 fallos de consistencia entre la ventana completa y su partición 3+5. La candidata
 con QKV en FP64 superó los ocho casos con las tolerancias originales
 `rtol=1e-5` y `atol=1e-6`. Frente a los mismos pesos convertidos a FP64, redujo el
@@ -44,6 +44,6 @@ pasó de `6.11e-6` a `8.58e-6`. Esa referencia conserva las conversiones FP32 de
 las puertas y tampoco constituye un forward íntegramente FP64.
 
 La corrección cambia resultados respecto al backend anterior y tiene identidad
-propia. La sonda no demuestra una reducción universal del error, una aceleración
+propia. La comprobación no demuestra una reducción universal del error, una aceleración
 ni un efecto financiero. El estado de ventana y el contrato de memoria exterior
 no cambian.
