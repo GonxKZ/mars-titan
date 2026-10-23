@@ -14,7 +14,12 @@ from .bridge_hierarchy import (
     hierarchy_options,
 )
 from .bridge_intervention import BridgeInterventionConfig, intervention_options
-from .bridge_recurrence import BridgeRecurrenceConfig, nonlinear_mix
+from .bridge_recurrence import (
+    BridgeRecurrenceConfig,
+    BridgeStoppingConfig,
+    adaptive_mix,
+    nonlinear_mix,
+)
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
 from .episodic_readout import _normalize
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
@@ -52,12 +57,28 @@ def bridge_view_options(value):
     result.update(regions=regions, bridge_gain=float(gain))
     recurrence = value.get("recurrence")
     if recurrence is not None:
-        if type(recurrence) is not dict or set(recurrence) != {"steps", "max_node_updates_per_row"}:
+        required = {"steps", "max_node_updates_per_row"}
+        if (
+            type(recurrence) is not dict
+            or not required <= set(recurrence)
+            or set(recurrence) - required - {"stopping"}
+        ):
             raise ValueError("La recurrencia declara J y su presupuesto explícitos")
-        checked = BridgeRecurrenceConfig(**recurrence)
+        stopping = recurrence.get("stopping")
+        if stopping is not None:
+            if (
+                type(stopping) is not dict
+                or not {"atol", "rtol"} <= set(stopping)
+                or set(stopping) - {"atol", "rtol", "backend"}
+            ):
+                raise ValueError("La parada declara tolerancias y un backend admitido")
+            stopping = BridgeStoppingConfig(**stopping)
+        checked = BridgeRecurrenceConfig(
+            recurrence["steps"], recurrence["max_node_updates_per_row"], stopping=stopping
+        )
         if value["cycles"] != 0:
             raise ValueError("La recurrencia J requiere cycles=0")
-        result["recurrence"] = asdict(checked)
+        result["recurrence"] = checked.options()
     intervention = value.get("intervention")
     if intervention is not None:
         checked = intervention_options(intervention)
@@ -151,9 +172,11 @@ class EvidenceBridgeConfig:
                 bridge="synchronous_receiver_weights_reused_mixture_tanh",
                 recurrence=self.recurrence.identity(),
             )
+            if self.recurrence.stopping is not None:
+                result.update(schema_version=5, kind="shared_evidence_bridge_adaptive_v1")
         if self.intervention is not None:
             result.update(
-                schema_version=3,
+                schema_version=6 if result["schema_version"] == 5 else 3,
                 base_kind=result["kind"],
                 kind="shared_evidence_bridge_intervention_v1",
                 intervention=asdict(self.intervention),
@@ -192,6 +215,13 @@ class HierarchyBridgeRead(BridgeRead):
     group_values: torch.Tensor
     root_values: torch.Tensor
     hierarchy_weights: torch.Tensor
+
+
+@dataclass(frozen=True, kw_only=True)
+class AdaptiveBridgeRead(BridgeRead):
+    selected_steps: torch.Tensor
+    evaluated_steps: torch.Tensor
+    criterion_met: torch.Tensor
 
 
 class SharedEvidenceBridge(nn.Module):
@@ -317,6 +347,12 @@ class SharedEvidenceBridge(nn.Module):
             # Estados completos retenidos y mensajes de todas las fases, además de G.
             phases = 2 * (3 + self.config.hierarchy.local_steps)
             working += batch * size * (49 * 3 + 7 * h * (4 + 3 * phases))
+        recurrence = self.config.recurrence
+        if recurrence is not None and recurrence.stopping is not None and episodes > 0:
+            # Residuales FP64, selección de prefijos e índices y copias de filas activas.
+            working += batch * (
+                8 * (6 * r * h + 20) + size * (r * r + r * h * (recurrence.steps + 4)) + r
+            )
         return 131072 + working * (4 if differentiable else 1)
 
     def forward(self, state, snapshot, *, context_id, cutoff, available=None, positions=None):
@@ -338,6 +374,7 @@ class SharedEvidenceBridge(nn.Module):
         if type(snapshot) is not EpisodeSnapshot:
             raise ValueError("El puente requiere una instantánea episódica común")
         recurrence = self.config.recurrence
+        stopping = None if recurrence is None else recurrence.stopping
         hierarchy = self.config.hierarchy
         if (
             hierarchy is not None
@@ -420,6 +457,18 @@ class SharedEvidenceBridge(nn.Module):
                         root_values=state.new_zeros((b, 1, h)),
                         hierarchy_weights=hierarchy_weights,
                     )
+                if stopping is not None:
+                    return AdaptiveBridgeRead(
+                        torch.zeros_like(state),
+                        state.new_zeros((b, r, h)),
+                        torch.empty((b, 0), dtype=torch.int64, device=state.device),
+                        state.new_empty((b, r, 0)),
+                        graph,
+                        snapshot._digest,
+                        selected_steps=torch.zeros(b, dtype=torch.int64, device=state.device),
+                        evaluated_steps=torch.zeros(b, dtype=torch.int64, device=state.device),
+                        criterion_met=torch.zeros(b, dtype=torch.bool, device=state.device),
+                    )
                 return BridgeRead(
                     torch.zeros_like(state),
                     state.new_zeros((b, r, h)),
@@ -459,6 +508,7 @@ class SharedEvidenceBridge(nn.Module):
             transformed = torch.einsum("brh,rhd->brd", mixed, self.region_value)
             check_finite(transformed, "La transformación regional antes de tanh")
             local = torch.tanh(transformed)
+            adaptive = None
             if hierarchy is not None:
                 full = hierarchy_mix(
                     local,
@@ -474,6 +524,17 @@ class SharedEvidenceBridge(nn.Module):
                     local = (
                         1 - self.config.bridge_gain
                     ) * local + self.config.bridge_gain * torch.bmm(graph, local)
+            elif stopping is not None:
+                adaptive = adaptive_mix(
+                    local,
+                    graph,
+                    self.region_value,
+                    available,
+                    steps=recurrence.steps,
+                    gain=self.config.bridge_gain,
+                    stopping=stopping,
+                )
+                local = adaptive.values
             else:
                 local = nonlinear_mix(
                     local,
@@ -498,6 +559,19 @@ class SharedEvidenceBridge(nn.Module):
                     group_values=full[:, 4:6],
                     root_values=full[:, 6:7],
                     hierarchy_weights=hierarchy_weights,
+                )
+            if adaptive is not None:
+                return AdaptiveBridgeRead(
+                    result,
+                    local,
+                    ids.index_select(0, flat).reshape(b, count),
+                    weights,
+                    graph,
+                    snapshot._digest,
+                    positions,
+                    selected_steps=adaptive.selected_steps,
+                    evaluated_steps=adaptive.evaluated_steps,
+                    criterion_met=adaptive.criterion_met,
                 )
             return BridgeRead(
                 result,

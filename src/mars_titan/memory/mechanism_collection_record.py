@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from mars_titan.calibration.online_conformal import _instant, _require
+from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig, BridgeStoppingConfig
+from mars_titan.models.titans.bridge_stopping_record import verify_stopping_record
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_snapshot import _device, _digest_id
 from mars_titan.models.titans.financial_inputs import FLOW_ID
@@ -19,9 +21,11 @@ from mars_titan.models.titans.mechanism_observation import MechanismObservation
 from mars_titan.models.titans.mechanism_policy import ACTIONS
 from mars_titan.models.titans.mechanism_selection import _calibration_failed, digest
 from mars_titan.models.titans.regional_execution import verify_exported_traces
+from mars_titan.models.titans.regional_routes import REFRESH_AT
 
 KIND = "conditional_mechanism_collection_v1"
 REGIONAL_KIND = "conditional_regional_program_collection_v1"
+ADAPTIVE_KIND = "conditional_adaptive_bridge_collection_v1"
 PROTOCOL = "one_market_deviation_from_frozen_anchor_v1"
 MAX_BYTES = 48 * 1024**2
 ROW_FIELDS = {"flow_id", "sample_id", "prediction_at", "input_available_at", "input_sha256"}
@@ -52,6 +56,172 @@ REGIONAL_WORK = {
     "regional_program_selection_rows",
     "regional_context_query_rows",
 }
+ADAPTIVE_WORK = {
+    "bridge_initial_views",
+    "bridge_selected_node_updates",
+    "bridge_node_updates",
+}
+
+
+def adaptive_archive_bytes(flows):
+    """Acotar los metadatos nuevos con 34 lecturas y hasta doce llamadas por fila."""
+    return 4096 + sum(34 * 96 + 12 * (len(flow.encode()) + 192) for flow in flows)
+
+
+def _adaptive_configuration(body, catalog):
+    descriptor = body["adaptive_bridge"]
+    _require(
+        type(descriptor) is dict
+        and set(descriptor)
+        == {"schema_version", "reader_contract", "regions", "active_views", "mode", "recurrence"}
+        and type(descriptor["schema_version"]) is int
+        and descriptor["schema_version"] == 1
+        and descriptor["reader_contract"] == catalog.reader_contract
+        and catalog.reader_contract
+        in ("shared_evidence_bridge_adaptive_v1", "shared_evidence_bridge_intervention_v1")
+        and type(descriptor["mode"]) is str
+        and descriptor["mode"] in ("bank", "no_bank"),
+        "La colección adaptativa necesita su descriptor cerrado",
+    )
+    regions, active = descriptor["regions"], descriptor["active_views"]
+    _require(
+        type(regions) is list
+        and 1 <= len(regions) <= 8
+        and all(type(name) is str and 0 < len(name) <= 64 for name in regions)
+        and len(set(regions)) == len(regions)
+        and type(active) is list
+        and len(active) == len(regions)
+        and all(type(value) is bool for value in active)
+        and (catalog.reader_contract == "shared_evidence_bridge_intervention_v1" or all(active)),
+        "El descriptor adaptativo cambió sus regiones o disponibilidades",
+    )
+    raw = descriptor["recurrence"]
+    _require(
+        type(raw) is dict and set(raw) == {"steps", "max_node_updates_per_row", "stopping"},
+        "Falta la recurrencia adaptativa explícita",
+    )
+    stopping = raw["stopping"]
+    _require(
+        type(stopping) is dict and set(stopping) == {"atol", "rtol", "backend"},
+        "La parada archivada necesita sus tolerancias y backend canónicos",
+    )
+    config = BridgeRecurrenceConfig(
+        raw["steps"], raw["max_node_updates_per_row"], stopping=BridgeStoppingConfig(**stopping)
+    )
+    _require(
+        canonical(raw) == canonical(config.options()),
+        "La recurrencia archivada no conserva su configuración canónica",
+    )
+    return config
+
+
+def _adaptive_work(body, catalog, config):
+    descriptor = body["adaptive_bridge"]
+    regions, mode, active = descriptor["regions"], descriptor["mode"], descriptor["active_views"]
+    episodes = body["observation"]["observation"]["bank_entries"]
+    _require(mode != "no_bank" or episodes == 0, "El control sin banco no admite episodios")
+    flows = [row["flow_id"] for row in body["rows"]]
+    _require(adaptive_archive_bytes(flows) <= MAX_BYTES, "La traza adaptativa supera 48 MiB")
+    routes = {
+        context: {
+            group["market"]: tuple(
+                route
+                for route in REFRESH_AT
+                if not catalog.resolve(
+                    MechanismAction(context, route),
+                    MechanismAvailability(**group["availability"]),
+                    rows=sum(flow.startswith(group["market"] + "/") for flow in flows),
+                ).reasons
+            )
+            for group in body["groups"]
+        }
+        for context in ("off", "parent")
+    }
+    conservative = sum(
+        int(route[1])
+        for context in routes.values()
+        for route in REFRESH_AT
+        if any(route in allowed for allowed in context.values())
+    )
+    if episodes:
+        for anchor in body["anchor"]:
+            _require(
+                config.node_updates(
+                    len(regions), conservative + int(action(anchor["applied"]).route[1])
+                )
+                <= config.max_node_updates_per_row,
+                "La colección no conserva la reserva de J máximo antes de MAC",
+            )
+    totals = dict.fromkeys(
+        ADAPTIVE_WORK
+        | {
+            "reader_refinements",
+            "reader_searches",
+            "reader_value_projections",
+            "shared_route_batches",
+            "individual_route_batches",
+        },
+        0,
+    )
+    for block in body["blocks"]:
+        calls = block["adaptive_reads"]
+        _require(type(calls) is list and len(calls) <= 12, "Faltan llamadas adaptativas acotadas")
+        position = 0
+        for context in ("off", "parent"):
+            union = tuple(
+                route
+                for route in REFRESH_AT
+                if any(
+                    route in routes[context][flow.split("/", 1)[0]] for flow in block["flow_ids"]
+                )
+            )
+            if not union:
+                continue
+            _require(position < len(calls), "La traza omite un contexto ejecutado")
+            first = calls[position]
+            _require(type(first) is dict, "La llamada adaptativa necesita un objeto")
+            shared = first.get("route") == "shared"
+            _require(not shared or len(union) == 6, "Un DAG compartido necesita las seis rutas")
+            for route in ("shared",) if shared else union:
+                _require(position < len(calls), "La traza omite una ruta ejecutada")
+                call = calls[position]
+                _require(
+                    type(call) is dict
+                    and set(call) == {"context", "route", "rows"}
+                    and call["context"] == context
+                    and call["route"] == route
+                    and type(call["rows"]) is list
+                    and len(call["rows"]) == len(block["flow_ids"]),
+                    "La llamada adaptativa no conserva contexto, ruta y filas",
+                )
+                reads = 9 if shared else int(route[1])
+                count = len(block["flow_ids"])
+                totals["reader_refinements"] += reads * count
+                totals["reader_searches"] += (
+                    (3 if shared else 1 + len(REFRESH_AT[route])) * count if episodes else 0
+                )
+                projections = reads * count if episodes else 0
+                totals["reader_value_projections"] += projections
+                totals["bridge_initial_views"] += len(regions) * projections
+                totals["shared_route_batches" if shared else "individual_route_batches"] += 1
+                for row, flow in zip(call["rows"], block["flow_ids"], strict=True):
+                    _require(
+                        type(row) is dict
+                        and set(row) == {"flow_id", "reads"}
+                        and row["flow_id"] == flow
+                        and type(row["reads"]) is list
+                        and len(row["reads"]) == reads,
+                        "La traza adaptativa duplica u omite lecturas físicas",
+                    )
+                    for decision in row["reads"]:
+                        selected, evaluated = verify_stopping_record(
+                            decision, config, episodes=episodes, mode=mode, active_views=active
+                        )
+                        totals["bridge_selected_node_updates"] += len(regions) * selected
+                        totals["bridge_node_updates"] += len(regions) * evaluated
+                position += 1
+        _require(position == len(calls), "La traza añade llamadas no ejecutadas")
+    return totals
 
 
 def action(key):
@@ -190,12 +360,13 @@ def _regional_work(block, descriptor, parent):
     return work
 
 
-def _work(body, catalog):
+def _work(body, catalog, adaptive=None):
     work = body["work"]
     regional = catalog.regional_execution is not None
     _require(
         type(work) is dict
-        and set(work) == WORK | (REGIONAL_WORK if regional else set())
+        and set(work)
+        == WORK | (REGIONAL_WORK if regional else set()) | (ADAPTIVE_WORK if adaptive else set())
         and all(type(v) is int and v >= 0 for v in work.values()),
         "La colección necesita contadores enteros de trabajo",
     )
@@ -239,6 +410,12 @@ def _work(body, catalog):
             work["reader_value_projections"] == (work["reader_refinements"] if populated else 0),
             "La colección regional debe contar las proyecciones de cada lectura",
         )
+    if adaptive is not None:
+        totals = _adaptive_work(body, catalog, adaptive)
+        _require(
+            all(work[name] == value for name, value in totals.items()),
+            "El trabajo adaptativo no concilia con las lecturas físicas archivadas",
+        )
     for target, source in (
         ("calibration_attempts", "online_attempts"),
         ("calibration_created_proposals", "online_created_proposals"),
@@ -257,6 +434,11 @@ def validate(body):
     _require(type(body) is dict, "La colección necesita un objeto completo")
     catalog = MechanismCatalog.restore(body.get("catalog"))
     regional = catalog.regional_execution is not None
+    adaptive = "adaptive_bridge" in body
+    _require(
+        catalog.reader_contract != "shared_evidence_bridge_adaptive_v1" or adaptive,
+        "La colección adaptativa perdió su descriptor y sus lecturas observadas",
+    )
     _require(
         set(body)
         == {
@@ -275,17 +457,19 @@ def validate(body):
             "groups",
             "work",
         }
-        | ({"regional_execution"} if regional else set()),
+        | ({"regional_execution"} if regional else set())
+        | ({"adaptive_bridge"} if adaptive else set()),
         "La colección no conserva su esquema completo",
     )
     _require(
         type(body["schema_version"]) is int
-        and body["schema_version"] == (2 if regional else 1)
-        and body["kind"] == (REGIONAL_KIND if regional else KIND)
+        and body["schema_version"] == (3 if adaptive else 2 if regional else 1)
+        and body["kind"] == (ADAPTIVE_KIND if adaptive else REGIONAL_KIND if regional else KIND)
         and body["protocol"] == PROTOCOL,
         "La colección pertenece a otro protocolo",
     )
     observed = MechanismObservation.restore(body["observation"]).record()["observation"]
+    adaptive_config = _adaptive_configuration(body, catalog) if adaptive else None
     _require(
         body["output_dtype"] in ("torch.float32", "torch.float64")
         and type(body["execution_device"]) is str
@@ -414,7 +598,9 @@ def validate(body):
         _require(
             type(block) is dict
             and set(block)
-            == {"flow_ids", "fast_state_sha256"} | ({"regional_execution"} if regional else set())
+            == {"flow_ids", "fast_state_sha256"}
+            | ({"regional_execution"} if regional else set())
+            | ({"adaptive_reads"} if adaptive else set())
             and type(block["flow_ids"]) is list
             and block["flow_ids"],
             "Bloque incompleto",
@@ -424,7 +610,7 @@ def validate(body):
     _require(
         sorted(seen) == flows and len(set(seen)) == len(seen), "Los bloques repiten u omiten filas"
     )
-    _work(body, catalog)
+    _work(body, catalog, adaptive_config)
 
 
 @dataclass(frozen=True, init=False)

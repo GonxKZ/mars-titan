@@ -285,22 +285,44 @@ class TitansBinding:
                 if selected
                 else 0,
             )
-            if reader.config.evidence_bridge.hierarchy is not None:
+            if (
+                reader.config.evidence_bridge.hierarchy is not None
+                or reader.config.evidence_bridge.recurrence is not None
+                and reader.config.evidence_bridge.recurrence.stopping is not None
+            ):
                 projections = len(rows) * reader.config.refinements if selected else 0
                 control.update(
-                    bridge_value_projections=projections, **reader.recurrence_work(projections)
+                    bridge_value_projections=projections,
+                    **reader.recurrence_work(
+                        projections, **regional_episode_trace.observed_work(trace, reader)
+                    ),
                 )
         return values, fast, control
 
-    def verify_regional_control(self, control, flows, cutoff, block_rows):
+    def verify_regional_control(self, control, flows, cutoff, block_rows, *, event_kind):
         if regional_episode_trace.enabled(self.consumer.readout):
+            if type(event_kind) is not str or event_kind not in (
+                "decision",
+                "warmup",
+                "settlement",
+            ):
+                raise ValueError("La traza regional necesita el tipo de evento nativo")
+            refinements = (
+                self.consumer.readout.config.refinements
+                if event_kind == "decision" and flows
+                else 0
+            )
+            if type(control.get("refinements")) is not int or control["refinements"] != refinements:
+                raise ValueError("Los refinamientos de la traza contradicen el evento nativo")
+            if refinements and control.get("regional_reads") is None:
+                raise ValueError("Una decisión con refinamientos necesita su traza regional")
             regional_episode_trace.verify(
                 control.get("regional_reads"),
                 self.consumer.readout,
                 flows=flows,
                 context_id=control.get("context_id"),
                 cutoff=cutoff,
-                refinements=control.get("refinements"),
+                refinements=refinements,
                 block_rows=block_rows,
             )
             trace = control.get("regional_reads")
@@ -319,11 +341,17 @@ class TitansBinding:
                     if selected
                     else 0,
                 )
-                if reader.config.evidence_bridge.hierarchy is not None:
+                if (
+                    reader.config.evidence_bridge.hierarchy is not None
+                    or reader.config.evidence_bridge.recurrence is not None
+                    and reader.config.evidence_bridge.recurrence.stopping is not None
+                ):
                     projections = len(flows) * steps if selected else 0
                     expected.update(
                         bridge_value_projections=projections,
-                        **reader.recurrence_work(projections),
+                        **reader.recurrence_work(
+                            projections, **regional_episode_trace.observed_work(trace, reader)
+                        ),
                     )
                 if control["snapshot_bytes"] != episodes * (64 * (8 + size) + 40) or any(
                     type(control.get(name)) is not int or control[name] != value

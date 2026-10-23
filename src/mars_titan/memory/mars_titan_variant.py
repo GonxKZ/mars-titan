@@ -14,7 +14,7 @@ from pathlib import Path
 
 from mars_titan.models.titans.bridge_hierarchy import hierarchy_options
 from mars_titan.models.titans.bridge_intervention import intervention_options
-from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
+from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig, BridgeStoppingConfig
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
 from mars_titan.models.titans.evidence_bridge import (
@@ -50,6 +50,12 @@ WRITES = ("m1", "m2", "m3")
 _BASE_FIELDS = {"architecture", "configuration", "dtype", "parameters_sha256", "recipe"}
 # Opciones del lector que fija la combinación de componentes y no la receta.
 _READOUT_FIELDS = {"mode", "refinements", "episode_selection", "codec_id", "evidence_bridge"}
+_STOPPING_DECLARATION = dict(
+    default=None,
+    backends=["adaptive_reference_full", "adaptive_compact"],
+    criterion="present_coordinate_linf_symmetric_scale_v1",
+    predicate_dtype="torch.float64",
+)
 
 
 def load_declaration(path=DECLARATION):
@@ -163,13 +169,19 @@ def check_components(declaration, components):
         bridge = bridge_view_options(components["evidence_bridge"])
         if bridge["topology"] not in declared["evidence_bridge"]["allowed"]:
             raise ValueError("La topología del puente no está declarada")
-        if "recurrence" in bridge and declared["evidence_bridge"].get("recurrence") != dict(
-            steps=[1, 2, 4],
-            max_node_updates_per_row=1216,
-            requires_cycles=0,
-            default=None,
-        ):
-            raise ValueError("La declaración no admite el contrato recurrente acotado")
+        if "recurrence" in bridge:
+            recurrence = declared["evidence_bridge"].get("recurrence")
+            if type(recurrence) is not dict or {
+                name: value for name, value in recurrence.items() if name != "stopping"
+            } != dict(
+                steps=[1, 2, 4], max_node_updates_per_row=1216, requires_cycles=0, default=None
+            ):
+                raise ValueError("La declaración no admite el contrato recurrente acotado")
+            if (
+                "stopping" in bridge["recurrence"]
+                and recurrence.get("stopping") != _STOPPING_DECLARATION
+            ):
+                raise ValueError("La declaración no admite el contrato de parada adaptativa")
         if "intervention" in bridge and declared["evidence_bridge"].get("intervention") != dict(
             default=None, kind="fixed_reader_mask_and_directed_edge_cuts_v1"
         ):
@@ -255,7 +267,10 @@ class MarsTitanVariant:
         if "evidence_bridge" in self.components:
             geometry = dict(self.components["evidence_bridge"])
             if "recurrence" in geometry:
-                geometry["recurrence"] = BridgeRecurrenceConfig(**geometry["recurrence"])
+                recurrence = dict(geometry["recurrence"])
+                if "stopping" in recurrence:
+                    recurrence["stopping"] = BridgeStoppingConfig(**recurrence["stopping"])
+                geometry["recurrence"] = BridgeRecurrenceConfig(**recurrence)
             if "intervention" in geometry:
                 geometry["intervention"] = intervention_options(geometry["intervention"])
             if "hierarchy" in geometry:
@@ -320,7 +335,7 @@ class MarsTitanVariant:
             raise ValueError("Los metadatos y el módulo del puente no conservan la combinación")
         geometry = {name: getattr(bridge, name) for name in BRIDGE_VIEW_FIELDS}
         if bridge.recurrence is not None:
-            geometry["recurrence"] = asdict(bridge.recurrence)
+            geometry["recurrence"] = bridge.recurrence.options()
         if bridge.intervention is not None:
             geometry["intervention"] = asdict(bridge.intervention)
         if bridge.hierarchy is not None:

@@ -110,6 +110,7 @@ class MechanismCatalog(FingerprintOnce):
             "legacy",
             "shared_evidence_bridge_v1",
             "shared_evidence_bridge_nonlinear_v1",
+            "shared_evidence_bridge_adaptive_v1",
             "shared_evidence_bridge_intervention_v1",
             "shared_evidence_bridge_hierarchy_v1",
         ):

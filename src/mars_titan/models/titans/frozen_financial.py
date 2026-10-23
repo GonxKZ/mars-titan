@@ -46,6 +46,8 @@ _TITANS_MODULES = (
     "bridge_intervention",
     "bridge_hierarchy",
     "bridge_recurrence",
+    "bridge_stopping_record",
+    "regional_mechanism_trace",
     "regional_episode_readout",
     "frozen_financial",
 )
