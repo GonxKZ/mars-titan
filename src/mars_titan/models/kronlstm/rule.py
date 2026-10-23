@@ -87,7 +87,7 @@ def kronlstm_scan(
     """Actualizar y consultar después de escribir, con estado [B,H,K,V] explícito.
 
     q/k/v llegan proyectados. La capa normaliza q/k/v y el operador no repite esa
-    transformación. k se presupone unitario, como en el oráculo upstream. g contiene
+    transformación. k se presupone unitario, como en la referencia publicada. g contiene
     log-olvido por cabeza o dimensión. El suelo de norma afecta solo a la división.
     El control vectorial conserva la escritura y borra el residual vectorial.
     El presupuesto cuenta estados lógicos por paso, no certifica el pico del allocator.

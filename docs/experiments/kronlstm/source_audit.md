@@ -7,7 +7,7 @@ El código inspeccionado corresponde a [NX-AI/KronLSTM en
 3d800c9a153a88ee9624fe6acf7f39a58017a17e](https://github.com/NX-AI/KronLSTM/tree/3d800c9a153a88ee9624fe6acf7f39a58017a17e).
 
 Se han contrastado la [derivación del operador](https://github.com/NX-AI/KronLSTM/blob/3d800c9a153a88ee9624fe6acf7f39a58017a17e/fla/ops/kronlstm/README.md),
-el [oráculo recurrente](https://github.com/NX-AI/KronLSTM/blob/3d800c9a153a88ee9624fe6acf7f39a58017a17e/fla/ops/kronlstm/naive.py),
+la [referencia recurrente](https://github.com/NX-AI/KronLSTM/blob/3d800c9a153a88ee9624fe6acf7f39a58017a17e/fla/ops/kronlstm/naive.py),
 la [capa con puertas y caché](https://github.com/NX-AI/KronLSTM/blob/3d800c9a153a88ee9624fe6acf7f39a58017a17e/fla/layers/kronlstm.py)
 y la [configuración del modelo](https://github.com/NX-AI/KronLSTM/blob/3d800c9a153a88ee9624fe6acf7f39a58017a17e/fla/models/kronlstm/configuration_kronlstm.py).
 El código tiene licencia MIT, con avisos de FLA y NXAI conservados en
