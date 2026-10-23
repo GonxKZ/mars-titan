@@ -623,14 +623,22 @@ def test_six_published_routes_complete_fixture_updates_and_recover_checkpoint(
 
 
 @requires_cuda
-@pytest.mark.parametrize("estimator", ["backprop", "dust"])
+@pytest.mark.parametrize(
+    "estimator,temporal_encoder",
+    [
+        pytest.param("backprop", None, id="backprop"),
+        pytest.param("dust", None, id="dust"),
+        pytest.param("backprop", "kronlstm_precomputed_v1", id="precomputed-scalar"),
+    ],
+)
 def test_resume_restores_exact_optimizer_rng_cursor_and_weights(
-    short_view, tmp_path, monkeypatch, allowed_child, estimator
+    short_view, tmp_path, monkeypatch, allowed_child, estimator, temporal_encoder
 ):
     api = engine()
     configuration = recipe(
         epochs=1,
         estimator=estimator,
+        temporal_encoder=temporal_encoder,
         dust=dust_options() if estimator == "dust" else None,
     )
     reference = api.run_window_variant(short_view, tmp_path / "continuous", configuration)

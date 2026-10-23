@@ -565,12 +565,12 @@
     "synthetic_loss": "mean(point_predictions**2), float32, solo en forward_backward",
     "parity": {
       "forward": {
-        "rtol": 0.00001,
-        "atol": 0.000001
+        "rtol": 1e-05,
+        "atol": 1e-06
       },
       "gradients": {
-        "rtol": 0.00002,
-        "atol": 0.000002
+        "rtol": 2e-05,
+        "atol": 2e-06
       },
       "scope": "Salida de cada forma completa y gradientes de todos los parámetros en forward_backward. También se comprueba cada muestra posterior. No se amplían tolerancias ante un fallo."
     },
@@ -722,7 +722,7 @@
           "decay_gate": "vector",
           "activation": "swiglu",
           "normalization": "rms_norm",
-          "norm_eps": 0.00001,
+          "norm_eps": 1e-05,
           "gate_precision": "float32",
           "v_norm_floor": 1e-18,
           "output_gate_bias": 3,
@@ -757,7 +757,7 @@
           "decay_gate": "vector",
           "activation": "swiglu",
           "normalization": "rms_norm",
-          "norm_eps": 0.00001,
+          "norm_eps": 1e-05,
           "gate_precision": "float32",
           "v_norm_floor": 1e-18,
           "output_gate_bias": 3,
@@ -798,7 +798,7 @@
           "decay_gate": "vector",
           "activation": "swiglu",
           "normalization": "rms_norm",
-          "norm_eps": 0.00001,
+          "norm_eps": 1e-05,
           "gate_precision": "float32",
           "v_norm_floor": 1e-18,
           "output_gate_bias": 3,
@@ -833,7 +833,7 @@
           "decay_gate": "vector",
           "activation": "swiglu",
           "normalization": "rms_norm",
-          "norm_eps": 0.00001,
+          "norm_eps": 1e-05,
           "gate_precision": "float32",
           "v_norm_floor": 1e-18,
           "output_gate_bias": 3,
@@ -5015,9 +5015,9 @@
       "optimizer_attempts": 0
     },
     "final_window": {
-      "stage": "two_separate_successful_runs",
-      "unique_test_cases": 57,
-      "passed": 57,
+      "stage": "three_separate_successful_runs",
+      "unique_test_cases": 58,
+      "passed": 58,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
@@ -5034,13 +5034,14 @@
           "skipped": 0,
           "returncode": 0,
           "supervised_seconds": 65.32129895605613,
-          "pytest_seconds": 63.018,
           "receipt_id": "technical-window-after-adoption-v1",
           "complete_fixture_routes": 6,
           "fixture_authorization_closed": true,
           "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
           "global_hold_unchanged": true,
-          "scope": "Regresiones Window con las seis rutas de las recetas previas sobre fixtures, no una ejecución de la ventana financiera mensual."
+          "scope": "Regresiones Window con las seis rutas de las recetas previas sobre fixtures, no una ejecución de la ventana financiera mensual.",
+          "junit_suite_seconds": 63.018,
+          "console_pytest_seconds": 62.88
         },
         {
           "receipt_id": "technical-scalar-precomputed-window-route-v1",
@@ -5066,9 +5067,32 @@
           "fixture_authorization_closed": true,
           "global_hold_unchanged": true,
           "scope": "Receta precomputed escalar adaptada expresamente a fechas, lote y límites de la fixture. No es ajuste de la ventana financiera real."
+        },
+        {
+          "receipt_id": "technical-scalar-precomputed-resume-v1",
+          "passed": 1,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "returncode": 0,
+          "supervised_seconds": 8.9355010939762,
+          "console_pytest_seconds": 6.31,
+          "junit_suite_seconds": 6.468,
+          "receipt_sha256": "2400062f2c03f52206d8ea2e84638447c54586b9e5730c9c9b695340bed9e541",
+          "xml_sha256": "902af9b4082e222fc68ed4c1b1bb13ac775492a2ffcc3066603bdb25c80d10fc",
+          "test_nodeid": "tests/training/test_window_variants.py::test_resume_restores_exact_optimizer_rng_cursor_and_weights[precomputed-scalar]",
+          "test_file_sha256": "e29c76227572cc24b8bef3bd4ca2082b7daea615719ac12234763ee23fba5c38",
+          "scope": "Continuación escalar precomputed con fixture, una ejecución continua y otra interrumpida tras el primer paso. Reapertura real y comparación exacta de modelo, optimizador, RNG, estimador y predicciones Parquet.",
+          "model_exact": true,
+          "optimizer_exact": true,
+          "rng_exact": true,
+          "estimator_exact": true,
+          "validation_predictions_exact": true,
+          "fixture_authorization_closed": true,
+          "global_hold_unchanged": true
         }
       ],
-      "count_semantics": "Los 57 casos únicos proceden de 56 y 1 aprobados en dos procesos diferentes. No se afirma una corrida conjunta."
+      "count_semantics": "Los 58 casos únicos proceden de 56, 1 y 1 aprobados en tres procesos diferentes. No se afirma una corrida conjunta."
     },
     "directed_mutations": {
       "status": "passed",
@@ -5213,7 +5237,7 @@
         }
       ]
     },
-    "count_semantics": "Los 551 casos históricos del prototipo no se suman a los 545 del contrato final. Los 57 casos Window son 56 previos y un caso nuevo, ejecutados en dos corridas separadas. Las fases G1/M1/G2 no se suman como casos únicos nuevos."
+    "count_semantics": "Los 551 casos históricos del prototipo no se suman a los 545 del contrato final. Los 58 casos Window proceden de tres corridas separadas de 56, 1 y 1. Las fases G1/M1/G2 no se suman como casos únicos nuevos."
   },
   "limits": [
     "Cinco muestras por variante y celda permiten describir mediana y rango, no estimar colas con precisión ni construir intervalos de confianza fiables.",
