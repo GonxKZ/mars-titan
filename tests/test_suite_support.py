@@ -408,6 +408,84 @@ def test_availability_skips_are_found_through_module_constants(tmp_path):
     assert availability_skips(probe, tmp_path) == ["test_probe.py:2", "test_probe.py:4"]
 
 
+def unmarked_native_reads(path, root=ROOT):
+    """Pruebas que leen `os.environ[...]` de un artefacto nativo sin `mark.native`.
+
+    Solo se mira la lectura directa con corchetes, que falla con KeyError si falta la ruta.
+    Una lectura dentro de un fixture o de una función auxiliar no se detecta.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    module_marked = any(
+        isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "pytestmark" for target in node.targets
+        )
+        and "mark.native" in ast.unparse(node.value)
+        for node in tree.body
+    )
+    found = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test_")):
+            continue
+        marked = module_marked or any(
+            "mark.native" in ast.unparse(decorator) for decorator in node.decorator_list
+        )
+        reads = any(
+            isinstance(item, ast.Subscript)
+            and ast.unparse(item.value) == "os.environ"
+            and isinstance(item.slice, ast.Constant)
+            and item.slice.value in NATIVE_ARTIFACTS
+            for item in ast.walk(node)
+        )
+        if reads and not marked:
+            found.append(f"{path.relative_to(root)}::{node.name}")
+    return found
+
+
+def test_native_environment_reads_are_marked():
+    # Sin la marca, la prueba falla con KeyError cuando falta el binario y `-m "not native"`
+    # tampoco la deja fuera de la batería rápida.
+    found = [
+        place
+        for path in sorted((ROOT / "tests").rglob("test_*.py"))
+        for place in unmarked_native_reads(path)
+    ]
+    assert found == [], 'Usar pytest.mark.native("VARIABLE") (tests/README.md)'
+
+
+def test_unmarked_native_reads_respect_function_and_module_marks(tmp_path):
+    source = (
+        "import os\n"
+        "def test_a(): os.environ['MARS_TITAN_EPISODIC_NATIVE']\n"
+        "@pytest.mark.native('MARS_TITAN_EPISODIC_NATIVE')\n"
+        "def test_b(): os.environ['MARS_TITAN_EPISODIC_NATIVE']\n"
+        "def test_c(): os.environ['HOME']\n"
+    )
+    probe = tmp_path / "test_probe.py"
+    probe.write_text(source, encoding="utf-8")
+    assert unmarked_native_reads(probe, tmp_path) == ["test_probe.py::test_a"]
+    probe.write_text(
+        "pytestmark = pytest.mark.native('MARS_TITAN_EPISODIC_NATIVE')\n" + source,
+        encoding="utf-8",
+    )
+    assert unmarked_native_reads(probe, tmp_path) == []
+
+
+def test_test_module_names_are_unique():
+    # Las carpetas de pruebas no son paquetes. Dos módulos con el mismo nombre no pueden
+    # importarse en el mismo proceso y pytest los rechaza con «import file mismatch».
+    paths = sorted(
+        path
+        for pattern in ("test_*.py", "*_test.py")
+        for path in (ROOT / "tests").rglob(pattern)
+        if ".venv" not in path.parts
+    )
+    names = {}
+    for path in paths:
+        names.setdefault(path.name, []).append(str(path.relative_to(ROOT)))
+    assert {name: found for name, found in names.items() if len(found) > 1} == {}
+
+
 def test_slow_registry_lists_existing_test_functions_once():
     lines = [line for line in SLOW_TESTS.read_text(encoding="utf-8").splitlines() if line]
     entries = [line for line in lines if not line.startswith("#")]

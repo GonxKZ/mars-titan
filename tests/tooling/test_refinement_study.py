@@ -709,6 +709,7 @@ def technical_streams(tmp_path_factory):
     return corpus(tmp_path_factory.mktemp("refinement-study-streams"))
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_real_route_collection_matches_exact_view_rows_without_parameter_updates(
     tmp_path, technical_streams, monkeypatch
 ):
@@ -743,6 +744,7 @@ def test_real_route_collection_matches_exact_view_rows_without_parameter_updates
         sink.confirm()
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_per_step_costs_match_executed_nonempty_queries(technical_streams):
     import os
 
@@ -972,6 +974,7 @@ def test_calibrator_is_frozen_before_evaluation_and_never_reads_its_targets(tmp_
     assert first["prediction"].equals(table["prediction"])
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_reconstruction_loads_selected_checkpoints_without_a_new_optimizer(
     tmp_path, learning_doubles
 ):
@@ -1018,6 +1021,7 @@ def test_reconstruction_loads_selected_checkpoints_without_a_new_optimizer(
     assert all(not p.requires_grad for p in engine.readout.parameters())
 
 
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 def test_staged_pipeline_collects_selects_seals_and_resumes_on_real_fixtures(
     tmp_path, monkeypatch, learning_doubles
 ):
