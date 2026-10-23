@@ -6,8 +6,16 @@
     "sha256": "1379c1ae51bcf2f0dad5bd275a86f7286ff002ac43b095092bec21bdb1d8d0c5"
   },
   "source": {
-    "commit": "d14b95ab15ff746ccbf59cae07ce477e1a8f6147",
+    "commit": "ca5c4ab6bbea3758fabe935a0d488dda98de2375",
     "clean": true
+  },
+  "inventories": {
+    "point_loss_controls": "afc0fed5fb3f221358033275f2d7155a824c8acaeef202e655bcb3b4a255843c",
+    "quantile_multiseed": "8bf23196ea5e79933208f590ac3cbfc628c6fd0f433af0dcb90a450ca76dd610",
+    "quantile_routing": "942241b9cab7f5ab616e58f1a69e7f6713f931bf81a8ccca24b46e2846842018",
+    "local_capture": "e566d930de7207273ca5fa14d2a45c9fe1e2f73101fcd34f6c395d61887610fd",
+    "neural_plasticity": "87dce684adc106f7292ab398f66bc8d73c1a0a52eeb62a935bb8c6616e90d581",
+    "key_competition": "cf8e62349cefd062f57928376edb8dd65cf7e12c23987e3ec7563b59bf36b301"
   },
   "environment": {
     "python": "3.12.14",
@@ -16,8 +24,8 @@
     "pyarrow": "25.0.1",
     "machine": "x86_64"
   },
-  "predictors": 544,
-  "aliases": 210,
+  "predictors": 522,
+  "aliases": 232,
   "skipped": [
     {
       "id": "combined_memory/cell0_frozen-42",
@@ -2452,7 +2460,29 @@
           "variant": "linear_v1/k1/scalar",
           "seed": 42,
           "aliases": [
-            "refinement_n64_original/runs/linear_v1-42/evaluate-k4/controls/scalar"
+            "refinement_n64_original/runs/linear_v1-42/evaluate-k4/controls/scalar",
+            "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/scalar",
+            "refinement_n64_original/runs/linear_v1-43/evaluate-k4/controls/scalar",
+            "refinement_n64_original/runs/linear_v1-44/evaluate-k1/controls/scalar",
+            "refinement_n64_original/runs/linear_v1-44/evaluate-k4/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-42/evaluate-k4/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-43/evaluate-k4/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-44/evaluate-k1/controls/scalar",
+            "refinement_n64_original/runs/mac_paper-44/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-42/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-43/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/linear_v1-44/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-42/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-43/evaluate-k4/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar",
+            "refinement_n64_geometry/runs/mac_paper-44/evaluate-k4/controls/scalar"
           ],
           "files": {
             "calibration": "36c5752d7b6a85b5fef560e46bad352d7fb0fd412527adefd5b54bc489922a0b",
@@ -3168,40 +3198,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_original",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n64_original/runs/linear_v1-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "4a9376622cb32eca8ac502fe8324d191bbebfeb0b763cb3811d4fbb1d0c9fb0d",
-            "evaluation": "175a8a448d9a57ea45a57034601ffa8c57f6aed62e822dc223a5448086b3204d"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/threshold",
           "source": "refinement_n64_original",
           "variant": "linear_v1/k1/threshold",
@@ -3619,40 +3615,6 @@
           "pearson_icir": -0.05966365096635119,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.018689943477511406,
-          "target_scale": 0.007949127204792066
-        },
-        {
-          "id": "refinement_n64_original/runs/linear_v1-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_original",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n64_original/runs/linear_v1-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "92a16be6c9f8770d33deb5ddb8a224b5cf4a4540a469345d2a71f1464e9dc268",
-            "evaluation": "36fc6957af9c0d4cd18e5dc529b32a5fc34dc3a79027d13ec186d5cd94be2639"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.007949127204792066
         },
         {
@@ -4364,40 +4326,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n64_original/runs/mac_paper-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "041a5ebf232827368c1fcde45d0d2c0b45625333c39f4e87f4d00f14c597132a",
-            "evaluation": "f2804e9dabbd148ed437a6b30b3235c28d0cf64bffed08520936cc0545a021f3"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/threshold",
           "source": "refinement_n64_original",
           "variant": "mac_paper/k1/threshold",
@@ -4804,40 +4732,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n64_original/runs/mac_paper-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "3ec8b990e1a80efd8c95b8774351fd902bac3a0553f0bfb9f77e499ebd0e000b",
-            "evaluation": "c2426fe23deafa99f4ab600f990825accc674362164a57e640b9a7e722f39b1b"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/threshold",
           "source": "refinement_n64_original",
           "variant": "mac_paper/k1/threshold",
@@ -5225,40 +5119,6 @@
           "pearson_icir": 0.08494877969480853,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.007421192713081837,
-          "target_scale": 0.007949127204792066
-        },
-        {
-          "id": "refinement_n64_original/runs/mac_paper-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n64_original/runs/mac_paper-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "3af293b1e3b7d18cdaee4a91e98a9eb62effc3212c28f479968677105185a330",
-            "evaluation": "a3580b7eef65bd63fe703378a3dd18b3d4f90005860e085aeea045a39211bb01"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.007949127204792066
         },
         {
@@ -5979,40 +5839,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n64_geometry/runs/linear_v1-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "7f69bf063670a7cf30fc60d18ce24352755994360b3015daf390ba30bdb06bf5",
-            "evaluation": "24d2eec21d2b23915eae611d26c4775382c0760d943e417f291bf1ff88c90f08"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold",
           "source": "refinement_n64_geometry",
           "variant": "linear_v1/k1/threshold",
@@ -6430,40 +6256,6 @@
           "pearson_icir": 0.02263056252351018,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.027362310327589512,
-          "target_scale": 0.007949127204792066
-        },
-        {
-          "id": "refinement_n64_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n64_geometry/runs/linear_v1-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "4a58bdd4717c3393cd53de02b944fbcdd159d64f31366d12df8b44495cdefa4a",
-            "evaluation": "dfa22822dfb40c09a79c86d24193165b895a5f19818a9d8dcfa41a22742bff23"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.007949127204792066
         },
         {
@@ -7175,40 +6967,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n64_geometry/runs/linear_v1-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "23d29eea9ae5e804558df65d9b9fe17cbad7e5427cbb7f12d951cbe4123dd775",
-            "evaluation": "d0ee9351394e08cee462c10bc4adf913b8e855386074bb3b037c328a1f60e2e2"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/threshold",
           "source": "refinement_n64_geometry",
           "variant": "linear_v1/k1/threshold",
@@ -7914,40 +7672,6 @@
           "pearson_icir": 0.026738490055311762,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.007813619449734688,
-          "target_scale": 0.007949127204792066
-        },
-        {
-          "id": "refinement_n64_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n64_geometry/runs/mac_paper-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "f70533d73152414b93fbbd59a9ab51e657cbad9307a35554f0f6285551813ffd",
-            "evaluation": "9ff5bd7d2fd84fcf76bac740e9315ef71521f19f6275523c49cda2eaf039023f"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.007949127204792066
         },
         {
@@ -8659,40 +8383,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n64_geometry/runs/mac_paper-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "71ee73e4233af145c2d5cca1adb138e0f1062c2faa98a14afa4607e64a413d32",
-            "evaluation": "adcf7a252c5c50b715a72bc40b1fb4accac4efd209046ae404ca04604d3273de"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/threshold",
           "source": "refinement_n64_geometry",
           "variant": "mac_paper/k1/threshold",
@@ -9401,40 +9091,6 @@
           "target_scale": 0.007949127204792066
         },
         {
-          "id": "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n64_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n64_geometry/runs/mac_paper-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "bf9f1dc4fac43022d040573cc69887d861ea664a3717b64fff6b161a9b857a48",
-            "evaluation": "c7aab3858424440f9837c8022a1a7bba46dc7e6dbe7f5eb8c3b63ce49dccd475"
-          },
-          "raw_mae": 0.01584945129093169,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.01584945129093169,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.007949127204792066
-        },
-        {
           "id": "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold",
           "source": "refinement_n64_geometry",
           "variant": "mac_paper/k1/threshold",
@@ -9789,7 +9445,7 @@
       ],
       "families": {
         "pearson_ic": {
-          "members_without_complete_ic": 12,
+          "members_without_complete_ic": 1,
           "critical": 3.4765098482521277,
           "members": {
             "point_loss_controls/pilot-v2/runs/all_feedback-42": {
@@ -15695,6 +15351,1593 @@
             }
           }
         },
+        "pearson_ic_scopes": {
+          "primary_source": {
+            "critical": 2.997050365784064,
+            "members": {
+              "point_loss_controls/pilot-v2/runs/all_feedback-42": {
+                "estimate": -0.008116816201877389,
+                "interval": [
+                  -0.03578212736997708,
+                  0.013776875669506505
+                ],
+                "simultaneous": [
+                  -0.046407391418415295,
+                  0.030173759014660517
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.04317543814232814,
+                    0.02694180573857336
+                  ],
+                  "32": [
+                    -0.04958480265795822,
+                    0.03335117025420344
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-43": {
+                "estimate": 0.022430419324576838,
+                "interval": [
+                  0.0023675824023453923,
+                  0.041535957815104836
+                ],
+                "simultaneous": [
+                  -0.007806720211688177,
+                  0.05266755886084185
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.0075612946278989165,
+                    0.05242213327705259
+                  ],
+                  "32": [
+                    -0.005913338636446504,
+                    0.05077417728560018
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-44": {
+                "estimate": -0.008932445428198507,
+                "interval": [
+                  -0.021207885261039783,
+                  0.003743691462606799
+                ],
+                "simultaneous": [
+                  -0.028183006327598785,
+                  0.010318115471201773
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.028437188668678413,
+                    0.010572297812281401
+                  ],
+                  "32": [
+                    -0.027006875986786527,
+                    0.009141985130389512
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-45": {
+                "estimate": 0.00032889560548317515,
+                "interval": [
+                  -0.017857801376208817,
+                  0.017333465683554452
+                ],
+                "simultaneous": [
+                  -0.02619569008779655,
+                  0.026853481298762902
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.026142313305503446,
+                    0.0268001045164698
+                  ],
+                  "32": [
+                    -0.027290622011625278,
+                    0.02794841322259163
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-46": {
+                "estimate": 0.00151043182797909,
+                "interval": [
+                  -0.017876756561279936,
+                  0.02079327272078174
+                ],
+                "simultaneous": [
+                  -0.028093187862528186,
+                  0.03111405151848637
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.025630759379148164,
+                    0.028651623035106346
+                  ],
+                  "32": [
+                    -0.030112639935406287,
+                    0.033133503591364466
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-42": {
+                "estimate": 0.0002358837934465033,
+                "interval": [
+                  -0.0178020317134457,
+                  0.01883457098741389
+                ],
+                "simultaneous": [
+                  -0.028086593162724265,
+                  0.02855836074961727
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02800568695181947,
+                    0.028477454538712473
+                  ],
+                  "32": [
+                    -0.030417173069698447,
+                    0.03088894065659145
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-43": {
+                "estimate": 0.006415334318769536,
+                "interval": [
+                  -0.0038613668501568076,
+                  0.01691923480712954
+                ],
+                "simultaneous": [
+                  -0.009692057215011627,
+                  0.0225227258525507
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.010872198566942808,
+                    0.023702867204481882
+                  ],
+                  "32": [
+                    -0.008687981713365992,
+                    0.021518650350905062
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-44": {
+                "estimate": 0.005938448282061371,
+                "interval": [
+                  -0.009279336442434283,
+                  0.02183934916153435
+                ],
+                "simultaneous": [
+                  -0.01794053684044876,
+                  0.0298174334045715
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.019954305192627277,
+                    0.03183120175675002
+                  ],
+                  "32": [
+                    -0.016776989862900014,
+                    0.028653886427022754
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-45": {
+                "estimate": 0.010764507640036473,
+                "interval": [
+                  -0.003789247715682548,
+                  0.025386467899529006
+                ],
+                "simultaneous": [
+                  -0.011849178002033342,
+                  0.03337819328210629
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.014372144732247192,
+                    0.03590116001232014
+                  ],
+                  "32": [
+                    -0.006617143489558849,
+                    0.028146158769631793
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-46": {
+                "estimate": 0.01978585424766493,
+                "interval": [
+                  0.007999073577369929,
+                  0.032882085056633745
+                ],
+                "simultaneous": [
+                  0.0007812204788701579,
+                  0.0387904880164597
+                ],
+                "sensitivity": {
+                  "8": [
+                    0.00013958284229980203,
+                    0.03943212565303006
+                  ],
+                  "32": [
+                    -5.2774404829487864e-05,
+                    0.039624482900159345
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-42": {
+                "estimate": -0.0005389039665415124,
+                "interval": [
+                  -0.011760424789244675,
+                  0.013142378608962437
+                ],
+                "simultaneous": [
+                  -0.01952191985753176,
+                  0.018444111924448732
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02077308041741423,
+                    0.019695272484331203
+                  ],
+                  "32": [
+                    -0.017904309260451366,
+                    0.016826501327368338
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-43": {
+                "estimate": -0.0020395739295006993,
+                "interval": [
+                  -0.019006925772750722,
+                  0.015274370791075213
+                ],
+                "simultaneous": [
+                  -0.028642466790831204,
+                  0.02456331893182981
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02941857256999821,
+                    0.025339424710996813
+                  ],
+                  "32": [
+                    -0.029427096952036096,
+                    0.0253479490930347
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-44": {
+                "estimate": -0.010372860543223755,
+                "interval": [
+                  -0.028979713446625234,
+                  0.009562295661018289
+                ],
+                "simultaneous": [
+                  -0.03887792024004262,
+                  0.01813219915359511
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03892001433330988,
+                    0.018174293246862372
+                  ],
+                  "32": [
+                    -0.03878336479822992,
+                    0.01803764371178241
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-46": {
+                "estimate": -0.007131215404082703,
+                "interval": [
+                  -0.022061776211014572,
+                  0.008998109278439234
+                ],
+                "simultaneous": [
+                  -0.031028849365048357,
+                  0.016766418556882948
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.030625118586873175,
+                    0.016362687778707773
+                  ],
+                  "32": [
+                    -0.03418519320211532,
+                    0.01992276239394991
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-42": {
+                "estimate": 0.0012191617041920138,
+                "interval": [
+                  -0.014002660184198759,
+                  0.017567485386317073
+                ],
+                "simultaneous": [
+                  -0.02236742188719369,
+                  0.024805745295577716
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.023133003706897547,
+                    0.025571327115281574
+                  ],
+                  "32": [
+                    -0.02406707951656087,
+                    0.026505402924944896
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-43": {
+                "estimate": -0.009177535527051917,
+                "interval": [
+                  -0.01729534952145136,
+                  -0.001338248390998014
+                ],
+                "simultaneous": [
+                  -0.021524742847102978,
+                  0.0031696717929991444
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.023245504781302002,
+                    0.004890433727198169
+                  ],
+                  "32": [
+                    -0.01868186314684614,
+                    0.0003267920927423045
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-44": {
+                "estimate": 0.021990725329127724,
+                "interval": [
+                  0.005440709730948576,
+                  0.0376182512187451
+                ],
+                "simultaneous": [
+                  -0.002340238814189325,
+                  0.04632168947244478
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.005913275070056796,
+                    0.049894725728312245
+                  ],
+                  "32": [
+                    0.0002315682896727976,
+                    0.043749882368582654
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-45": {
+                "estimate": -0.0017070072055762168,
+                "interval": [
+                  -0.014581779277429438,
+                  0.011217542177451138
+                ],
+                "simultaneous": [
+                  -0.021568850314543527,
+                  0.018154835903391096
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02172266520104036,
+                    0.01830865078988793
+                  ],
+                  "32": [
+                    -0.018646181471346158,
+                    0.015232167060193725
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-46": {
+                "estimate": -0.016216590816800668,
+                "interval": [
+                  -0.04209895075978214,
+                  0.010290275122590918
+                ],
+                "simultaneous": [
+                  -0.05674979390497502,
+                  0.02431661227137368
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.052505874462100435,
+                    0.020072692828499095
+                  ],
+                  "32": [
+                    -0.05642678978590707,
+                    0.023993608152305727
+                  ]
+                }
+              }
+            }
+          },
+          "inventory_sources": {
+            "critical": 3.317180154616295,
+            "members": {
+              "point_loss_controls/pilot-v2/runs/all_feedback-42": {
+                "estimate": -0.008116816201877389,
+                "interval": [
+                  -0.03578212736997708,
+                  0.013776875669506505
+                ],
+                "simultaneous": [
+                  -0.050497397345001756,
+                  0.03426376494124698
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.046390709782425904,
+                    0.030157077378671127
+                  ],
+                  "32": [
+                    -0.053107100664371666,
+                    0.03687346826061689
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-43": {
+                "estimate": 0.022430419324576838,
+                "interval": [
+                  0.0023675824023453923,
+                  0.041535957815104836
+                ],
+                "simultaneous": [
+                  -0.011036498798376315,
+                  0.05589733744752999
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.01031187357173518,
+                    0.055172712220888855
+                  ],
+                  "32": [
+                    -0.008320862384099754,
+                    0.053181701033253426
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-44": {
+                "estimate": -0.008932445428198507,
+                "interval": [
+                  -0.021207885261039783,
+                  0.003743691462606799
+                ],
+                "simultaneous": [
+                  -0.03023925405235625,
+                  0.01237436319595924
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03022599394160174,
+                    0.012361103085204729
+                  ],
+                  "32": [
+                    -0.028542121272713286,
+                    0.010677230416316274
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-45": {
+                "estimate": 0.00032889560548317515,
+                "interval": [
+                  -0.017857801376208817,
+                  0.017333465683554452
+                ],
+                "simultaneous": [
+                  -0.029028912416588018,
+                  0.02968670362755437
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.028570022170819567,
+                    0.02922781338178592
+                  ],
+                  "32": [
+                    -0.02963662865807475,
+                    0.030294419869041102
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/all_feedback-46": {
+                "estimate": 0.00151043182797909,
+                "interval": [
+                  -0.017876756561279936,
+                  0.02079327272078174
+                ],
+                "simultaneous": [
+                  -0.03125529705775103,
+                  0.0342761607137092
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02811991318887218,
+                    0.031140776844830364
+                  ],
+                  "32": [
+                    -0.03279870916972544,
+                    0.03581957282568361
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-42": {
+                "estimate": 0.0002358837934465033,
+                "interval": [
+                  -0.0178020317134457,
+                  0.01883457098741389
+                ],
+                "simultaneous": [
+                  -0.031111857159184554,
+                  0.03158362474607756
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03059575799463756,
+                    0.031067525581530565
+                  ],
+                  "32": [
+                    -0.03302084906910789,
+                    0.033492616656000895
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-43": {
+                "estimate": 0.006415334318769536,
+                "interval": [
+                  -0.0038613668501568076,
+                  0.01691923480712954
+                ],
+                "simultaneous": [
+                  -0.011412567457087068,
+                  0.02424323609462614
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.012457660605613395,
+                    0.02528832924315247
+                  ],
+                  "32": [
+                    -0.009970860012908367,
+                    0.02280152865044744
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-44": {
+                "estimate": 0.005938448282061371,
+                "interval": [
+                  -0.009279336442434283,
+                  0.02183934916153435
+                ],
+                "simultaneous": [
+                  -0.020491169473143035,
+                  0.032368066037265775
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02232896316043384,
+                    0.03420585972455658
+                  ],
+                  "32": [
+                    -0.018706443143144173,
+                    0.030583339707266913
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-45": {
+                "estimate": 0.010764507640036473,
+                "interval": [
+                  -0.003789247715682548,
+                  0.025386467899529006
+                ],
+                "simultaneous": [
+                  -0.014264657732358249,
+                  0.03579367301243119
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.016677459688347857,
+                    0.0382064749684208
+                  ],
+                  "32": [
+                    -0.008093543969885762,
+                    0.029622559249958706
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/both_isolated-46": {
+                "estimate": 0.01978585424766493,
+                "interval": [
+                  0.007999073577369929,
+                  0.032882085056633745
+                ],
+                "simultaneous": [
+                  -0.0012487585514110097,
+                  0.04082046704674087
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.0016622021619889897,
+                    0.04123391065731885
+                  ],
+                  "32": [
+                    -0.001737870984733745,
+                    0.0413095794800636
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-42": {
+                "estimate": -0.0005389039665415124,
+                "interval": [
+                  -0.011760424789244675,
+                  0.013142378608962437
+                ],
+                "simultaneous": [
+                  -0.021549589775248262,
+                  0.020471781842165235
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.022628782955116108,
+                    0.02155097502203308
+                  ],
+                  "32": [
+                    -0.019379329816659994,
+                    0.018301521883576966
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-43": {
+                "estimate": -0.0020395739295006993,
+                "interval": [
+                  -0.019006925772750722,
+                  0.015274370791075213
+                ],
+                "simultaneous": [
+                  -0.03148405349596361,
+                  0.02740490563696221
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.031929536007539845,
+                    0.02785038814853845
+                  ],
+                  "32": [
+                    -0.031753397937135726,
+                    0.027674250078134326
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-44": {
+                "estimate": -0.010372860543223755,
+                "interval": [
+                  -0.028979713446625234,
+                  0.009562295661018289
+                ],
+                "simultaneous": [
+                  -0.041922686803051466,
+                  0.021176965716603956
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.041538110793081715,
+                    0.020792389706634207
+                  ],
+                  "32": [
+                    -0.041196557987742376,
+                    0.020450836901294865
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_component-46": {
+                "estimate": -0.007131215404082703,
+                "interval": [
+                  -0.022061776211014572,
+                  0.008998109278439234
+                ],
+                "simultaneous": [
+                  -0.033581473972513855,
+                  0.019319043164348453
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03277977488646011,
+                    0.018517344078294702
+                  ],
+                  "32": [
+                    -0.036483162797636644,
+                    0.02222073198947124
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-42": {
+                "estimate": 0.0012191617041920138,
+                "interval": [
+                  -0.014002660184198759,
+                  0.017567485386317073
+                ],
+                "simultaneous": [
+                  -0.024886821664584044,
+                  0.02732514507296807
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02536637234740605,
+                    0.027804695755790077
+                  ],
+                  "32": [
+                    -0.026214897258709447,
+                    0.028653220667093474
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-43": {
+                "estimate": -0.009177535527051917,
+                "interval": [
+                  -0.01729534952145136,
+                  -0.001338248390998014
+                ],
+                "simultaneous": [
+                  -0.02284360919555076,
+                  0.004488538141446927
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.024535696468065606,
+                    0.006180625413961773
+                  ],
+                  "32": [
+                    -0.01948916239353026,
+                    0.0011340913394264282
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-44": {
+                "estimate": 0.021990725329127724,
+                "interval": [
+                  0.005440709730948576,
+                  0.0376182512187451
+                ],
+                "simultaneous": [
+                  -0.004939149563974791,
+                  0.04892060022223024
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.008472387099079728,
+                    0.05245383775733518
+                  ],
+                  "32": [
+                    -0.0016166583065831304,
+                    0.04559810896483858
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-45": {
+                "estimate": -0.0017070072055762168,
+                "interval": [
+                  -0.014581779277429438,
+                  0.011217542177451138
+                ],
+                "simultaneous": [
+                  -0.02369039211873979,
+                  0.02027637770758736
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.023558327128084276,
+                    0.020144312716931845
+                  ],
+                  "32": [
+                    -0.02008499788964038,
+                    0.016670983478487948
+                  ]
+                }
+              },
+              "point_loss_controls/pilot-v2/runs/point_l1-46": {
+                "estimate": -0.016216590816800668,
+                "interval": [
+                  -0.04209895075978214,
+                  0.010290275122590918
+                ],
+                "simultaneous": [
+                  -0.06107934601842992,
+                  0.028646164384828577
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.0558340116815948,
+                    0.023400830047993457
+                  ],
+                  "32": [
+                    -0.05984225110367265,
+                    0.02740906947007132
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/encoder_isolated-42": {
+                "estimate": -0.009053991696662662,
+                "interval": [
+                  -0.028162513539348764,
+                  0.009023572727310733
+                ],
+                "simultaneous": [
+                  -0.040106275724539536,
+                  0.02199829233121421
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.04208065176548291,
+                    0.023972668372157585
+                  ],
+                  "32": [
+                    -0.034894638773648096,
+                    0.016786655380322767
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/encoder_isolated-43": {
+                "estimate": 0.002772574681885715,
+                "interval": [
+                  -0.026149446473597914,
+                  0.038694910547028685
+                ],
+                "simultaneous": [
+                  -0.05408585800663094,
+                  0.05963100737040237
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.0423010646792356,
+                    0.047846214043007027
+                  ],
+                  "32": [
+                    -0.0635741551688247,
+                    0.06911930453259613
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/encoder_isolated-44": {
+                "estimate": -0.01178851751860901,
+                "interval": [
+                  -0.03225848238512611,
+                  0.007219832332450878
+                ],
+                "simultaneous": [
+                  -0.04599309000550136,
+                  0.02241605496828334
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.040956321108892274,
+                    0.017379286071674258
+                  ],
+                  "32": [
+                    -0.04797985807862116,
+                    0.024402823041403142
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/encoder_isolated-45": {
+                "estimate": 0.012172246738045768,
+                "interval": [
+                  0.0005693690615536175,
+                  0.023983329528737704
+                ],
+                "simultaneous": [
+                  -0.007775061129134547,
+                  0.032119554605226086
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.0056152632861305035,
+                    0.02995975676222204
+                  ],
+                  "32": [
+                    -0.00906738378459971,
+                    0.033411877260691246
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/encoder_isolated-46": {
+                "estimate": -0.00034676770295469505,
+                "interval": [
+                  -0.01683693405333176,
+                  0.015890265906744996
+                ],
+                "simultaneous": [
+                  -0.0287338169103435,
+                  0.02804028150443411
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.029148170562068112,
+                    0.02845463515615872
+                  ],
+                  "32": [
+                    -0.022599458091387213,
+                    0.02190592268547782
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/median_isolated-42": {
+                "estimate": -0.019087344205955287,
+                "interval": [
+                  -0.03652694966241475,
+                  -0.0014118341137687018
+                ],
+                "simultaneous": [
+                  -0.0490882474642932,
+                  0.010913559052382633
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.04717160277192818,
+                    0.008996914360017611
+                  ],
+                  "32": [
+                    -0.052796556381515626,
+                    0.014621867969605053
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/median_isolated-43": {
+                "estimate": 0.001210386921868505,
+                "interval": [
+                  -0.015482629966571541,
+                  0.01802819075968016
+                ],
+                "simultaneous": [
+                  -0.02732313809522777,
+                  0.029743911938964782
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.025038913258654875,
+                    0.027459687102391887
+                  ],
+                  "32": [
+                    -0.02966403141428913,
+                    0.03208480525802614
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/median_isolated-44": {
+                "estimate": 0.0010224826169644408,
+                "interval": [
+                  -0.014798202624492492,
+                  0.017672318304280985
+                ],
+                "simultaneous": [
+                  -0.026837080540408877,
+                  0.028882045774337756
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03022105160748622,
+                    0.0322660168414151
+                  ],
+                  "32": [
+                    -0.021185479421538755,
+                    0.023230444655467634
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/median_isolated-45": {
+                "estimate": -0.0076661166411759775,
+                "interval": [
+                  -0.028507226320987414,
+                  0.013022453511892174
+                ],
+                "simultaneous": [
+                  -0.04249073219123489,
+                  0.027158498908882934
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.044616349444416545,
+                    0.029284116162064593
+                  ],
+                  "32": [
+                    -0.04571224960293406,
+                    0.030380016320582102
+                  ]
+                }
+              },
+              "quantile_multiseed/pilot-v1/runs/median_isolated-46": {
+                "estimate": -0.0076632446105371205,
+                "interval": [
+                  -0.034588081846207645,
+                  0.014640285049524719
+                ],
+                "simultaneous": [
+                  -0.04894900493003808,
+                  0.03362251570896384
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.04614637332163741,
+                    0.030819884100563168
+                  ],
+                  "32": [
+                    -0.046020544883080515,
+                    0.030694055662006274
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_constant-42": {
+                "estimate": -0.0026976366712552773,
+                "interval": [
+                  -0.017959284984128545,
+                  0.012726490213076874
+                ],
+                "simultaneous": [
+                  -0.029201981218693003,
+                  0.02380670787618245
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.029492502576055443,
+                    0.02409722923354489
+                  ],
+                  "32": [
+                    -0.03378756326197666,
+                    0.02839228991946611
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_constant-43": {
+                "estimate": -0.008203001863636645,
+                "interval": [
+                  -0.03663328959206879,
+                  0.017697552345226072
+                ],
+                "simultaneous": [
+                  -0.05471376427403215,
+                  0.038307760546758864
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.05254462226421072,
+                    0.036138618536937436
+                  ],
+                  "32": [
+                    -0.05618346704039589,
+                    0.0397774633131226
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_constant-44": {
+                "estimate": 0.0033370615238728137,
+                "interval": [
+                  -0.01370653207899717,
+                  0.020955913940805048
+                ],
+                "simultaneous": [
+                  -0.026274064055545346,
+                  0.03294818710329098
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02424025517579375,
+                    0.030914378223539374
+                  ],
+                  "32": [
+                    -0.027940681540709333,
+                    0.034614804588454964
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_constant-45": {
+                "estimate": -0.0014971123176782482,
+                "interval": [
+                  -0.015553530251662697,
+                  0.011839676748176042
+                ],
+                "simultaneous": [
+                  -0.024916238922045718,
+                  0.021922014286689225
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02769022600948637,
+                    0.024696001374129875
+                  ],
+                  "32": [
+                    -0.02146924832445287,
+                    0.018475023689096377
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_constant-46": {
+                "estimate": -0.009666943205264152,
+                "interval": [
+                  -0.025548541831170186,
+                  0.008021732566715902
+                ],
+                "simultaneous": [
+                  -0.03871155734349946,
+                  0.01937767093297116
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03764677857701143,
+                    0.018312892166483123
+                  ],
+                  "32": [
+                    -0.03666260298676843,
+                    0.017328716576240133
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_global-42": {
+                "estimate": -0.005457910117050058,
+                "interval": [
+                  -0.01822263957975252,
+                  0.007854357492226568
+                ],
+                "simultaneous": [
+                  -0.026980313907177332,
+                  0.016064493673077218
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.025436675306074883,
+                    0.014520855071974769
+                  ],
+                  "32": [
+                    -0.028102678465432157,
+                    0.017186858231332043
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_global-43": {
+                "estimate": 0.001986342686338023,
+                "interval": [
+                  -0.014630666101847222,
+                  0.017637207559108834
+                ],
+                "simultaneous": [
+                  -0.025176772568720696,
+                  0.029149457941396742
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02654806588030046,
+                    0.030520751252976507
+                  ],
+                  "32": [
+                    -0.025774871430756807,
+                    0.029747556803432853
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_global-44": {
+                "estimate": -0.016154388375090145,
+                "interval": [
+                  -0.03606868226106746,
+                  0.004616270564412226
+                ],
+                "simultaneous": [
+                  -0.05026352872225874,
+                  0.01795475197207845
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.05194919682361656,
+                    0.01964042007343627
+                  ],
+                  "32": [
+                    -0.05161382681082898,
+                    0.01930505006064869
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_global-45": {
+                "estimate": 0.005810435646768021,
+                "interval": [
+                  -0.014150568260557083,
+                  0.027416474873791574
+                ],
+                "simultaneous": [
+                  -0.030167785178655173,
+                  0.04178865647219122
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.026250653098122027,
+                    0.03787152439165807
+                  ],
+                  "32": [
+                    -0.03008309042560157,
+                    0.041703961719137615
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_global-46": {
+                "estimate": 0.002932162220106642,
+                "interval": [
+                  -0.01490371560740983,
+                  0.021616488314446528
+                ],
+                "simultaneous": [
+                  -0.028170911429572117,
+                  0.0340352358697854
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.027442584753137877,
+                    0.033306909193351164
+                  ],
+                  "32": [
+                    -0.028564038175294938,
+                    0.034428362615508225
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_local-42": {
+                "estimate": -0.011716334152967025,
+                "interval": [
+                  -0.02774242715544596,
+                  0.0024140573377322643
+                ],
+                "simultaneous": [
+                  -0.037159009162151306,
+                  0.013726340856217255
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.040085284312016266,
+                    0.016652616006082213
+                  ],
+                  "32": [
+                    -0.03868628713518852,
+                    0.015253618829254469
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_local-43": {
+                "estimate": 0.008507379094896388,
+                "interval": [
+                  -0.006996756080647913,
+                  0.025240516032671908
+                ],
+                "simultaneous": [
+                  -0.019015120975058038,
+                  0.036029879164850814
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.01958071537330134,
+                    0.036595473563094116
+                  ],
+                  "32": [
+                    -0.01139742324118316,
+                    0.028412181430975937
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_local-44": {
+                "estimate": -0.014749076582959849,
+                "interval": [
+                  -0.03035638430780771,
+                  0.00025842917269476535
+                ],
+                "simultaneous": [
+                  -0.04040117319871606,
+                  0.010903020032796367
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.039283397566232864,
+                    0.009785244400313168
+                  ],
+                  "32": [
+                    -0.04231030072990062,
+                    0.012812147563980922
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_local-45": {
+                "estimate": 0.010549144506628519,
+                "interval": [
+                  -0.004993430323125419,
+                  0.02661596438410913
+                ],
+                "simultaneous": [
+                  -0.016357996586979104,
+                  0.03745628560023614
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.01498657474926148,
+                    0.036084863762518515
+                  ],
+                  "32": [
+                    -0.013590418061987119,
+                    0.03468870707524416
+                  ]
+                }
+              },
+              "local_capture/pilot-v1/runs/capture_local-46": {
+                "estimate": 0.001928210172139401,
+                "interval": [
+                  -0.014742961843244917,
+                  0.017019966700834617
+                ],
+                "simultaneous": [
+                  -0.024221005914057132,
+                  0.02807742625833593
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.025280888522078913,
+                    0.029137308866357712
+                  ],
+                  "32": [
+                    -0.021866531766792634,
+                    0.025722952111071434
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/cascade_combined-42": {
+                "estimate": -0.011609919290049968,
+                "interval": [
+                  -0.02378700522549802,
+                  0.0005130854952455952
+                ],
+                "simultaneous": [
+                  -0.031861863601577035,
+                  0.008642025021477097
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.034882744614115994,
+                    0.011662906034016056
+                  ],
+                  "32": [
+                    -0.030484709660974767,
+                    0.007264871080874832
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/cascade_fixed_both-42": {
+                "estimate": 0.006866473944290715,
+                "interval": [
+                  -0.006781640254157824,
+                  0.020105611031906234
+                ],
+                "simultaneous": [
+                  -0.01609633812988915,
+                  0.029829286018470583
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.01683756554531793,
+                    0.030570513433899354
+                  ],
+                  "32": [
+                    -0.01014030186161268,
+                    0.023873249750194107
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/cascade_fixed_write-42": {
+                "estimate": 0.010081768972222155,
+                "interval": [
+                  -0.01181425785401357,
+                  0.031708744698534325
+                ],
+                "simultaneous": [
+                  -0.02717065364850714,
+                  0.04733419159295145
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.024236930367071884,
+                    0.04440046831151619
+                  ],
+                  "32": [
+                    -0.025404675806424033,
+                    0.04556821375086834
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/cascade_original-42": {
+                "estimate": 0.015826228235851482,
+                "interval": [
+                  0.00625317298917683,
+                  0.02515091767394066
+                ],
+                "simultaneous": [
+                  4.6941894162964154e-05,
+                  0.03160551457754
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.003517196505024571,
+                    0.035169652976727535
+                  ],
+                  "32": [
+                    0.0015354374225984135,
+                    0.03011701904910455
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/cascade_write-42": {
+                "estimate": 0.005762301042602329,
+                "interval": [
+                  -0.006612667886132449,
+                  0.01884098519859488
+                ],
+                "simultaneous": [
+                  -0.015765773296601518,
+                  0.027290375381806176
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.016779468954545435,
+                    0.028304071039750092
+                  ],
+                  "32": [
+                    -0.016623140902665246,
+                    0.028147742987869904
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/fixed_write-42": {
+                "estimate": -0.004629781898526526,
+                "interval": [
+                  -0.022531442138443346,
+                  0.013184285994806162
+                ],
+                "simultaneous": [
+                  -0.034985621814884016,
+                  0.025726058017830962
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.034633029423528326,
+                    0.025373465626475276
+                  ],
+                  "32": [
+                    -0.03196532203774902,
+                    0.022705758240695963
+                  ]
+                }
+              },
+              "neural_plasticity/pilot-v4/runs/write_coherence-42": {
+                "estimate": -0.019815113923394058,
+                "interval": [
+                  -0.03458699105477991,
+                  -0.005289216318846165
+                ],
+                "simultaneous": [
+                  -0.045185957526086784,
+                  0.005555729679298668
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.04335122005501561,
+                    0.0037209922082275006
+                  ],
+                  "32": [
+                    -0.0460884085849847,
+                    0.006458180738196578
+                  ]
+                }
+              },
+              "key_competition/pilot-v1/runs/centered-42": {
+                "estimate": 0.01269619084486366,
+                "interval": [
+                  -0.005183109550583116,
+                  0.030231716590783005
+                ],
+                "simultaneous": [
+                  -0.016878820960134336,
+                  0.04227120264986165
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.01674100755729039,
+                    0.04213338924701771
+                  ],
+                  "32": [
+                    -0.015278887051273267,
+                    0.040671268741000584
+                  ]
+                }
+              },
+              "key_competition/pilot-v1/runs/centered_competitive-42": {
+                "estimate": -0.008254188129030181,
+                "interval": [
+                  -0.028343966227431093,
+                  0.011500152348689894
+                ],
+                "simultaneous": [
+                  -0.04202387834574725,
+                  0.025515502087686884
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.03865570155116861,
+                    0.022147325293108245
+                  ],
+                  "32": [
+                    -0.04206768189243058,
+                    0.025559305634370217
+                  ]
+                }
+              },
+              "key_competition/pilot-v1/runs/centered_fixed-42": {
+                "estimate": -0.013039444771785877,
+                "interval": [
+                  -0.03806026408081943,
+                  0.011229546886092854
+                ],
+                "simultaneous": [
+                  -0.055609848530573915,
+                  0.029530958987002164
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.055932610265283005,
+                    0.029853720721711254
+                  ],
+                  "32": [
+                    -0.05677584037714265,
+                    0.0306969508335709
+                  ]
+                }
+              },
+              "key_competition/pilot-v1/runs/competitive-42": {
+                "estimate": 0.013978107302240176,
+                "interval": [
+                  -0.0024523274745485734,
+                  0.02992198344615863
+                ],
+                "simultaneous": [
+                  -0.013894506464538945,
+                  0.0418507210690193
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.014749283703188483,
+                    0.042705498307668836
+                  ],
+                  "32": [
+                    -0.009334762372437478,
+                    0.03729097697691783
+                  ]
+                }
+              },
+              "key_competition/pilot-v1/runs/fixed-42": {
+                "estimate": 0.0029344218816133995,
+                "interval": [
+                  -0.01216665240552292,
+                  0.017345096976423478
+                ],
+                "simultaneous": [
+                  -0.02267894715250209,
+                  0.02854779091572889
+                ],
+                "sensitivity": {
+                  "8": [
+                    -0.02016798196272014,
+                    0.02603682572594694
+                  ],
+                  "32": [
+                    -0.02340041020833909,
+                    0.02926925397156589
+                  ]
+                }
+              }
+            }
+          }
+        },
         "raw_minus_zero": {
           "critical": 3.3608890805596894,
           "members": {
@@ -17588,27 +18831,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0006312177876242421,
               "interval": [
@@ -17879,27 +19101,6 @@
                 "32": [
                   0.007545593699394643,
                   0.01397649433312114
-                ]
-              }
-            },
-            "refinement_n64_original/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -18365,27 +19566,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/threshold": {
               "estimate": 0.0010015618998805804,
               "interval": [
@@ -18638,27 +19818,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0005863509530999734,
               "interval": [
@@ -18908,27 +20067,6 @@
                 "32": [
                   0.0024675641052313356,
                   0.006709934351705532
-                ]
-              }
-            },
-            "refinement_n64_original/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -19394,27 +20532,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold": {
               "estimate": 0.0003199846266388551,
               "interval": [
@@ -19685,27 +20802,6 @@
                 "32": [
                   0.013825882374430097,
                   0.017522372423873972
-                ]
-              }
-            },
-            "refinement_n64_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -20171,27 +21267,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/threshold": {
               "estimate": 0.001232339983968447,
               "interval": [
@@ -20651,27 +21726,6 @@
                 "32": [
                   0.003749973791886782,
                   0.0071931022823476885
-                ]
-              }
-            },
-            "refinement_n64_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -21137,27 +22191,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.00018597028713303267,
               "interval": [
@@ -21620,27 +22653,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold": {
               "estimate": 0.0010236717135585086,
               "interval": [
@@ -21753,16 +22765,16 @@
                 0.0014372232446158454
               ],
               "simultaneous": [
-                0.0006933283767846223,
-                0.0016061319958692835
+                0.0006933283767846224,
+                0.0016061319958692833
               ],
               "sensitivity": {
                 "8": [
-                  0.0007820057938132932,
-                  0.0015174545788406125
+                  0.0007820057938132931,
+                  0.0015174545788406127
                 ],
                 "32": [
-                  0.0005981195499151821,
+                  0.0005981195499151822,
                   0.0017013408227387235
                 ]
               }
@@ -21779,7 +22791,7 @@
               ],
               "sensitivity": {
                 "8": [
-                  0.0006703618688205494,
+                  0.0006703618688205493,
                   0.00105668864687471
                 ],
                 "32": [
@@ -21816,12 +22828,12 @@
                 0.0010042234116318727
               ],
               "simultaneous": [
-                0.0006423229746571425,
+                0.0006423229746571426,
                 0.0010844232842053768
               ],
               "sensitivity": {
                 "8": [
-                  0.0006703800258809084,
+                  0.0006703800258809082,
                   0.0010563662329816112
                 ],
                 "32": [
@@ -23746,27 +24758,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -24037,27 +25028,6 @@
                 "32": [
                   2.2530821983553003e-06,
                   3.530894022820862e-05
-                ]
-              }
-            },
-            "refinement_n64_original/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -24523,27 +25493,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/mac_paper-42/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -24796,27 +25745,6 @@
                 ]
               }
             },
-            "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_original/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 5.189954504337129e-07,
               "interval": [
@@ -25066,27 +25994,6 @@
                 "32": [
                   -5.371325330044186e-06,
                   2.2646664571952787e-05
-                ]
-              }
-            },
-            "refinement_n64_original/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -25552,27 +26459,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -25826,27 +26712,6 @@
               }
             },
             "refinement_n64_geometry/runs/linear_v1-43/evaluate-k1/controls/per_step_k4": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
-            "refinement_n64_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar": {
               "estimate": 0.0,
               "interval": [
                 0.0,
@@ -26329,27 +27194,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/linear_v1-44/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -26792,27 +27636,6 @@
               }
             },
             "refinement_n64_geometry/runs/mac_paper-42/evaluate-k1/controls/per_step_k4": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
-            "refinement_n64_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar": {
               "estimate": 0.0,
               "interval": [
                 0.0,
@@ -27295,27 +28118,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -27778,27 +28580,6 @@
                 ]
               }
             },
-            "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n64_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold": {
               "estimate": -2.1846320846284009e-07,
               "interval": [
@@ -28036,41 +28817,65 @@
       "minimum_detectable_effect": {
         "raw": {
           "8": {
-            "median_absolute": 0.0002194229590547495,
-            "median_relative_to_zero": 0.013844199084689639,
-            "median_standardized": 0.25197676940424707
+            "median_absolute": 0.00022680958983150386,
+            "median_relative_to_zero": 0.014310248706292668,
+            "median_standardized": 0.2530989649546598
           },
           "26": {
-            "median_absolute": 0.0002452337530630228,
-            "median_relative_to_zero": 0.015472696723787151,
-            "median_standardized": 0.2816168787072139
+            "median_absolute": 0.0002534892756194491,
+            "median_relative_to_zero": 0.015993567913892625,
+            "median_standardized": 0.2828710784850488
           },
           "32": {
-            "median_absolute": 0.0002494821706603792,
-            "median_relative_to_zero": 0.015740744968447025,
-            "median_standardized": 0.286495595801695
+            "median_absolute": 0.0002578807114876024,
+            "median_relative_to_zero": 0.016270639705688084,
+            "median_standardized": 0.28777152327541267
           }
         },
         "shrunk": {
           "8": {
-            "median_absolute": 1.187417150283093e-06,
-            "median_relative_to_zero": 7.491850212899656e-05,
+            "median_absolute": 1.3494640983973452e-06,
+            "median_relative_to_zero": 8.514263829243383e-05,
             "median_standardized": 0.2116212315274349
           },
           "26": {
-            "median_absolute": 1.3270934157016108e-06,
-            "median_relative_to_zero": 8.373118989052393e-05,
+            "median_absolute": 1.5082019990041966e-06,
+            "median_relative_to_zero": 9.515799451474505e-05,
             "median_standardized": 0.2365143057903193
           },
           "32": {
-            "median_absolute": 1.350083917417554e-06,
-            "median_relative_to_zero": 8.518174494722151e-05,
+            "median_absolute": 1.534330016998893e-06,
+            "median_relative_to_zero": 9.680650697836868e-05,
             "median_standardized": 0.24061166810768309
           }
         }
       },
+      "best_gain_power": {
+        "shrunk": {
+          "id": "refinement_n64_original/runs/linear_v1-44/evaluate-k4/controls/k2c",
+          "gain": 4.398110547657459e-06,
+          "gain_relative_to_zero": 0.00027749292180063366,
+          "standardized_gain": 0.02350422170595981,
+          "detectable_over_gain": {
+            "8": 9.370592583163832,
+            "26": 10.472858435112109,
+            "32": 10.654289724706729
+          }
+        },
+        "bound": {
+          "id": "refinement_n64_geometry/runs/linear_v1-42/evaluate-k1/controls/m0",
+          "gain": 1.0079021732916942e-05,
+          "gain_relative_to_zero": 0.0006359224397051326,
+          "standardized_gain": 0.12179113748356644,
+          "detectable_over_gain": {
+            "8": 1.9261318575566715,
+            "26": 2.1527033741488037,
+            "32": 2.189996702585008
+          }
+        }
+      },
       "differential_autocorrelation": {
-        "raw_median": 0.17278782635147938,
+        "raw_median": 0.1770953176462361,
         "shrunk_median": 0.0
       }
     },
@@ -30474,6 +31279,7 @@
             }
           }
         },
+        "pearson_ic_scopes": {},
         "raw_minus_zero": {
           "critical": 3.138863567991289,
           "members": {
@@ -32306,6 +33112,30 @@
           }
         }
       },
+      "best_gain_power": {
+        "shrunk": {
+          "id": "combined_memory/cell1-44",
+          "gain": 1.609726751232864e-06,
+          "gain_relative_to_zero": 0.00013068059616700488,
+          "standardized_gain": 0.04465280263708179,
+          "detectable_over_gain": {
+            "8": 5.071493322766614,
+            "26": 5.668054731072117,
+            "32": 5.766247835249248
+          }
+        },
+        "bound": {
+          "id": "combined_memory/cell1-44",
+          "gain": 1.6210257289931076e-06,
+          "gain_relative_to_zero": 0.0001315978680882521,
+          "standardized_gain": 0.04843450595143619,
+          "detectable_over_gain": {
+            "8": 4.675059681298203,
+            "26": 5.224988471476733,
+            "32": 5.315505917346027
+          }
+        }
+      },
       "differential_autocorrelation": {
         "raw_median": 0.13893720766990908,
         "shrunk_median": 0.0
@@ -32402,7 +33232,29 @@
           "variant": "linear_v1/k1/scalar",
           "seed": 42,
           "aliases": [
-            "refinement_n256_original/runs/linear_v1-42/evaluate-k4/controls/scalar"
+            "refinement_n256_original/runs/linear_v1-42/evaluate-k4/controls/scalar",
+            "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/scalar",
+            "refinement_n256_original/runs/linear_v1-43/evaluate-k4/controls/scalar",
+            "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/scalar",
+            "refinement_n256_original/runs/linear_v1-44/evaluate-k4/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-42/evaluate-k1/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-42/evaluate-k4/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-43/evaluate-k4/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-44/evaluate-k1/controls/scalar",
+            "refinement_n256_original/runs/mac_paper-44/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-42/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-43/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/linear_v1-44/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-42/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-43/evaluate-k4/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar",
+            "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/scalar"
           ],
           "files": {
             "calibration": "f21380f034799460e56feacffb0c8192fe3ac0a222ef3b49b92644714ac202ea",
@@ -33107,40 +33959,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_original",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n256_original/runs/linear_v1-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "347c4041a54317d6c5acc313cd881721c1b600f020cc34325a6ca0ff12d58ca5",
-            "evaluation": "fc0844d715674657a3b0fcc436a3559d14e3f0ac0cf50eff9a50c08039f1fc51"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/threshold",
           "source": "refinement_n256_original",
           "variant": "linear_v1/k1/threshold",
@@ -33579,40 +34397,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_original",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n256_original/runs/linear_v1-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "72d49d871aba4a5dcec37e919efdba327471cada1c8703623314c554bfa76b87",
-            "evaluation": "ba39faed87cf542b27d958560a2798fb666b1f1762a251e41e3b0c298e79d8ef"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/threshold",
           "source": "refinement_n256_original",
           "variant": "linear_v1/k1/threshold",
@@ -34000,40 +34784,6 @@
           "pearson_icir": -0.05696975556401921,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.030946992337703705,
-          "target_scale": 0.00682025995667614
-        },
-        {
-          "id": "refinement_n256_original/runs/mac_paper-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n256_original/runs/mac_paper-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "036c6eec48eb2dcff2f346852f392353ab6fbb2d9eed1f99258ec469550812c0",
-            "evaluation": "6774165a44ae2d218e35fc12cdc3403cce9e5d853a182249f76e6e4972035ea5"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.00682025995667614
         },
         {
@@ -34745,40 +35495,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n256_original/runs/mac_paper-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "9f01efe5ef8a259c7aefd730eb7fcd39c5ea42ad244f3e192695a640f7f4d0a1",
-            "evaluation": "035bf1a8f9e977f12382e5b5e2bc6756b2abeb072a0be30be06bc1b584784011"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/threshold",
           "source": "refinement_n256_original",
           "variant": "mac_paper/k1/threshold",
@@ -35484,40 +36200,6 @@
           "pearson_icir": 0.0855817185116357,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.012481331825256348,
-          "target_scale": 0.00682025995667614
-        },
-        {
-          "id": "refinement_n256_original/runs/mac_paper-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_original",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n256_original/runs/mac_paper-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "ec2eff2951d9352fa813b978dbe12e26fd38fe6fd33663157ef2b5dbae495834",
-            "evaluation": "9f9ad4facfa24112f594bd4eee92f75d22f6dee911748a69eccef4570a0e3e59"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.00682025995667614
         },
         {
@@ -36238,40 +36920,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n256_geometry/runs/linear_v1-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "6f993cbf2ff91dda5fea45b1c0639d35d3568a373341b78f17441fa3aebe5d33",
-            "evaluation": "f1df0eff6f5eeb6edb27733a4c06a1a37d4dbd9367230d9217e971359238d9e6"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold",
           "source": "refinement_n256_geometry",
           "variant": "linear_v1/k1/threshold",
@@ -36701,40 +37349,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n256_geometry/runs/linear_v1-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "b635124c496d68a37170f336427b7755e162b08461b5c97fa45ecb894df4f3c5",
-            "evaluation": "0e87a7a60334de28dcefd8d61c5ff8ba93e8066061f82cde92d33a6c27186051"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/threshold",
           "source": "refinement_n256_geometry",
           "variant": "linear_v1/k1/threshold",
@@ -36882,40 +37496,6 @@
           "pearson_icir": 0.15537610028915544,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.002094460651278496,
-          "target_scale": 0.00682025995667614
-        },
-        {
-          "id": "refinement_n256_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "linear_v1/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n256_geometry/runs/linear_v1-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "7363c88cf72a2db4b05f66c4b5f0ba33e6243ee4c3779895f33da684188690ca",
-            "evaluation": "58ae45c67ce7974eece269c5055d8383b2602296e6bc0322267669e075ea4bc5"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.00682025995667614
         },
         {
@@ -37306,40 +37886,6 @@
           "pearson_icir": 0.17815841542390867,
           "undefined_ic_sessions": 0,
           "prediction_scale": 0.003665386699140072,
-          "target_scale": 0.00682025995667614
-        },
-        {
-          "id": "refinement_n256_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 42,
-          "aliases": [
-            "refinement_n256_geometry/runs/mac_paper-42/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "3cd980da555951ca703611bd0659f9d7efa6b64026cddf03e472870b33fd8311",
-            "evaluation": "51a9ac2722d4af4c904ef7ebda1589879fec3884f4b75dc46c6e0123e425121e"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
           "target_scale": 0.00682025995667614
         },
         {
@@ -38051,40 +38597,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 43,
-          "aliases": [
-            "refinement_n256_geometry/runs/mac_paper-43/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "387a7ddc3d027e5b2d2529b83f7b4feb824836a9aaee71ac0ee16cc35753fd4a",
-            "evaluation": "8ea3d028c412ac65e3d47e74f6d594b3aefbdbb7e2efaf4be71c8703ae7645fa"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/threshold",
           "source": "refinement_n256_geometry",
           "variant": "mac_paper/k1/threshold",
@@ -38793,40 +39305,6 @@
           "target_scale": 0.00682025995667614
         },
         {
-          "id": "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar",
-          "source": "refinement_n256_geometry",
-          "variant": "mac_paper/k1/scalar",
-          "seed": 44,
-          "aliases": [
-            "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/scalar"
-          ],
-          "files": {
-            "calibration": "4e00e2ca9072e083eee71714cfb53e85b82bb6273f51692adfb9d55474286195",
-            "evaluation": "99565a621f44f77a1b2607fe7d4e1d14976e5679218c8052991088beafb32c15"
-          },
-          "raw_mae": 0.013333458185126127,
-          "raw_excess": 0.0,
-          "shrunk_mae": 0.013333458185126127,
-          "shrunk_excess": 0.0,
-          "sensitivity_excess": null,
-          "bound_excess_with_future_information": 0.0,
-          "shrinkage": {
-            "US": null
-          },
-          "sensitivity_shrinkage": null,
-          "shrinkage_with_future_information": {
-            "US": null
-          },
-          "fit_slope": null,
-          "evaluation_slope": null,
-          "mean_pearson_ic": null,
-          "mean_rank_ic": null,
-          "pearson_icir": null,
-          "undefined_ic_sessions": 249,
-          "prediction_scale": 0.0,
-          "target_scale": 0.00682025995667614
-        },
-        {
           "id": "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold",
           "source": "refinement_n256_geometry",
           "variant": "mac_paper/k1/threshold",
@@ -39181,7 +39659,7 @@
       ],
       "families": {
         "pearson_ic": {
-          "members_without_complete_ic": 12,
+          "members_without_complete_ic": 1,
           "critical": 3.273761640115577,
           "members": {
             "refinement_n256_original/runs/linear_v1-42/evaluate-k1": {
@@ -43323,6 +43801,7 @@
             }
           }
         },
+        "pearson_ic_scopes": {},
         "raw_minus_zero": {
           "critical": 3.169902371580058,
           "members": {
@@ -43830,27 +44309,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": 0.00020043495930057475,
               "interval": [
@@ -44124,27 +44582,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/threshold": {
               "estimate": 0.00026771074316466733,
               "interval": [
@@ -44394,27 +44831,6 @@
                 "32": [
                   0.018891001574462697,
                   0.022284593715735358
-                ]
-              }
-            },
-            "refinement_n256_original/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -44880,27 +45296,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0012500059034813724,
               "interval": [
@@ -45360,27 +45755,6 @@
                 "32": [
                   0.005071628625566716,
                   0.006400919534306543
-                ]
-              }
-            },
-            "refinement_n256_original/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -45846,27 +46220,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold": {
               "estimate": 0.0001694068712973192,
               "interval": [
@@ -46140,27 +46493,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": 0.00017643576394154966,
               "interval": [
@@ -46242,27 +46574,6 @@
                 "32": [
                   0.0002469584595304078,
                   0.0005624720238633213
-                ]
-              }
-            },
-            "refinement_n256_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -46515,27 +46826,6 @@
                 "32": [
                   0.0014401741798209361,
                   0.0019098653878323714
-                ]
-              }
-            },
-            "refinement_n256_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -47001,27 +47291,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.00038403889652670065,
               "interval": [
@@ -47484,27 +47753,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold": {
               "estimate": 0.0006662336201249644,
               "interval": [
@@ -47592,63 +47840,63 @@
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/k2c": {
               "estimate": 0.0011132914029893793,
               "interval": [
-                0.0009756185408883087,
+                0.0009756185408883084,
                 0.0012682546320105623
               ],
               "simultaneous": [
-                0.0008732433563234509,
-                0.0013533394496553076
+                0.0008732433563234507,
+                0.0013533394496553078
               ],
               "sensitivity": {
                 "8": [
-                  0.000898008537499288,
-                  0.0013285742684794705
+                  0.0008980085374992878,
+                  0.0013285742684794708
                 ],
                 "32": [
-                  0.0008452424222026229,
-                  0.0013813403837761357
+                  0.0008452424222026226,
+                  0.0013813403837761359
                 ]
               }
             },
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/k2r": {
               "estimate": 0.0011136509866609536,
               "interval": [
-                0.0009762598243041185,
-                0.0012687802655398355
+                0.0009762598243041186,
+                0.0012687802655398357
               ],
               "simultaneous": [
-                0.0008738781302909358,
-                0.0013534238430309713
+                0.0008738781302909359,
+                0.001353423843030971
               ],
               "sensitivity": {
                 "8": [
-                  0.0008985543635334654,
+                  0.0008985543635334652,
                   0.0013287476097884419
                 ],
                 "32": [
-                  0.0008459138922944085,
-                  0.0013813880810274986
+                  0.0008459138922944087,
+                  0.0013813880810274984
                 ]
               }
             },
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/k4cc": {
               "estimate": 0.0006027278449800722,
               "interval": [
-                0.0005268626129393788,
+                0.0005268626129393787,
                 0.0006770494941712829
               ],
               "simultaneous": [
-                0.0004816772861792069,
-                0.0007237784037809374
+                0.00048167728617920703,
+                0.0007237784037809373
               ],
               "sensitivity": {
                 "8": [
-                  0.0004899971878745317,
-                  0.0007154585020856126
+                  0.0004899971878745318,
+                  0.0007154585020856125
                 ],
                 "32": [
-                  0.00047008158089335665,
-                  0.0007353741090667877
+                  0.00047008158089335676,
+                  0.0007353741090667876
                 ]
               }
             },
@@ -47656,7 +47904,7 @@
               "estimate": 0.0006045415440413516,
               "interval": [
                 0.0005283674675643712,
-                0.0006800759820751505
+                0.0006800759820751506
               ],
               "simultaneous": [
                 0.0004826146014486308,
@@ -47668,29 +47916,29 @@
                   0.0007177776841988769
                 ],
                 "32": [
-                  0.0004700960802562959,
-                  0.0007389870078264073
+                  0.000470096080256296,
+                  0.0007389870078264071
                 ]
               }
             },
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k4/controls/k4rc": {
               "estimate": 0.0006040222406425502,
               "interval": [
-                0.0005277847813585289,
-                0.0006793709227789043
+                0.0005277847813585287,
+                0.0006793709227789036
               ],
               "simultaneous": [
-                0.00048233377601424065,
+                0.0004823337760142407,
                 0.0007257107052708598
               ],
               "sensitivity": {
                 "8": [
-                  0.0004909156392765373,
-                  0.0007171288420085632
+                  0.0004909156392765374,
+                  0.0007171288420085631
                 ],
                 "32": [
-                  0.0004700905949084948,
-                  0.0007379538863766056
+                  0.00047009059490849486,
+                  0.0007379538863766055
                 ]
               }
             },
@@ -48224,27 +48472,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": -5.675257759724151e-07,
               "interval": [
@@ -48518,27 +48745,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/linear_v1-44/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -48788,27 +48994,6 @@
                 "32": [
                   -2.7043630563300622e-08,
                   8.21338333970578e-06
-                ]
-              }
-            },
-            "refinement_n256_original/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -49274,27 +49459,6 @@
                 ]
               }
             },
-            "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_original/runs/mac_paper-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -49754,27 +49918,6 @@
                 "32": [
                   -3.662277584737219e-07,
                   1.2994517448268796e-05
-                ]
-              }
-            },
-            "refinement_n256_original/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -50240,27 +50383,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold": {
               "estimate": -7.051950992842573e-06,
               "interval": [
@@ -50534,27 +50656,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/linear_v1-43/evaluate-k1/controls/threshold": {
               "estimate": 0.0,
               "interval": [
@@ -50636,27 +50737,6 @@
                 "32": [
                   -5.456929405296901e-06,
                   5.543771166199477e-06
-                ]
-              }
-            },
-            "refinement_n256_geometry/runs/linear_v1-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -50909,27 +50989,6 @@
                 "32": [
                   -3.31645854841148e-08,
                   -6.0272543319467145e-09
-                ]
-              }
-            },
-            "refinement_n256_geometry/runs/mac_paper-42/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
                 ]
               }
             },
@@ -51375,27 +51434,6 @@
               }
             },
             "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/per_step_k4": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
-            "refinement_n256_geometry/runs/mac_paper-43/evaluate-k1/controls/scalar": {
               "estimate": 0.0,
               "interval": [
                 0.0,
@@ -51878,27 +51916,6 @@
                 ]
               }
             },
-            "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/scalar": {
-              "estimate": 0.0,
-              "interval": [
-                0.0,
-                0.0
-              ],
-              "simultaneous": [
-                0.0,
-                0.0
-              ],
-              "sensitivity": {
-                "8": [
-                  0.0,
-                  0.0
-                ],
-                "32": [
-                  0.0,
-                  0.0
-                ]
-              }
-            },
             "refinement_n256_geometry/runs/mac_paper-44/evaluate-k1/controls/threshold": {
               "estimate": 1.8163421936094713e-06,
               "interval": [
@@ -52136,19 +52153,19 @@
       "minimum_detectable_effect": {
         "raw": {
           "8": {
-            "median_absolute": 0.0001369540780527112,
-            "median_relative_to_zero": 0.010271459673191728,
-            "median_standardized": 0.24249468293046386
+            "median_absolute": 0.00014704668478594904,
+            "median_relative_to_zero": 0.011028398090300687,
+            "median_standardized": 0.2451235201689776
           },
           "26": {
-            "median_absolute": 0.0001530640307779841,
-            "median_relative_to_zero": 0.01147969481381294,
-            "median_standardized": 0.2710194113188821
+            "median_absolute": 0.00016434383412237106,
+            "median_relative_to_zero": 0.012325672143007997,
+            "median_standardized": 0.27395747953640026
           },
           "32": {
-            "median_absolute": 0.000155715704594322,
-            "median_relative_to_zero": 0.011678568487808178,
-            "median_standardized": 0.2757145384043303
+            "median_absolute": 0.00016719091870262082,
+            "median_relative_to_zero": 0.012539201487062621,
+            "median_standardized": 0.27870350557259094
           }
         },
         "shrunk": {
@@ -52169,23 +52186,65 @@
           }
         }
       },
+      "best_gain_power": {
+        "shrunk": {
+          "id": "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold",
+          "gain": 7.051950992842573e-06,
+          "gain_relative_to_zero": 0.000528891371985494,
+          "standardized_gain": 0.17482410313595542,
+          "detectable_over_gain": {
+            "8": 1.3050616129740384,
+            "26": 1.4585764347852455,
+            "32": 1.483844741921737
+          }
+        },
+        "bound": {
+          "id": "refinement_n256_geometry/runs/linear_v1-42/evaluate-k1/controls/threshold",
+          "gain": 1.0624552622406439e-05,
+          "gain_relative_to_zero": 0.0007968339852191119,
+          "standardized_gain": 0.108363415662669,
+          "detectable_over_gain": {
+            "8": 2.1092476137743654,
+            "26": 2.357359096301533,
+            "32": 2.398197870503394
+          }
+        }
+      },
       "differential_autocorrelation": {
-        "raw_median": 0.13534609808302356,
+        "raw_median": 0.1459144516868783,
         "shrunk_median": 0.0
       }
     }
   ],
   "verdict": {
     "primary_cohort": "5031c8de4f4a7c64fc9a455b13c396bd96c1d0973ad39fce37bb2efde6a56728",
+    "family": "whole_cohort",
     "ic_family_size": 281,
     "ic_distinguishable_positive": [],
     "ic_distinguishable_negative": [],
-    "decision": "La criba usar\u00e1 el IC como contraste principal y el informe dir\u00e1 que batir a cero no es alcanzable con estas entradas"
+    "decision": "La criba usar\u00e1 el IC como contraste principal y el informe dir\u00e1 que batir a cero no es alcanzable con estas entradas",
+    "family_sensitivity": {
+      "primary_source": {
+        "size": 19,
+        "positive": [
+          "point_loss_controls/pilot-v2/runs/both_isolated-46"
+        ],
+        "negative": []
+      },
+      "inventory_sources": {
+        "size": 56,
+        "positive": [
+          "neural_plasticity/pilot-v4/runs/cascade_original-42"
+        ],
+        "negative": []
+      }
+    },
+    "robust_to_family": false
   },
   "cost": {
-    "wall_seconds": 171.3351365319686,
-    "process_seconds": 203.38873324,
-    "max_rss_bytes": 377208832
+    "wall_seconds": 278.9526427539531,
+    "process_seconds": 317.318914882,
+    "max_rss_bytes": 421658624
   },
   "optimizer_steps": 0,
   "final_test_opened": false
