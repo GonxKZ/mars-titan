@@ -180,7 +180,6 @@ class WindowVariantRecipe:
                 "kronlstm_v1",
                 "vector_delta_v1",
                 "kronlstm_precomputed_v1",
-                "vector_delta_precomputed_v1",
             )
             or self.estimator not in ("backprop", "dust")
             or self.optimizer not in ("adamw", "sgd")

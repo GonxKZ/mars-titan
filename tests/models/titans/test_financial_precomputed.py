@@ -9,7 +9,6 @@ from test_financial_adapter import api, raw_batch, setup
 DEVICES = ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)]
 KINDS = [
     ("kronlstm_v1", "kronlstm_precomputed_v1", "scalar"),
-    ("vector_delta_v1", "vector_delta_precomputed_v1", "vector"),
 ]
 
 

@@ -884,3 +884,72 @@ def test_selected_session_artifacts_reuse_predictions_and_completed_resume_verif
         api.run_window_variant(short_view, output, recipe(epochs=1), resume=True)
     assert (output / "checkpoints/latest.json").read_bytes() == index_before
     assert all(path.read_bytes() == values for path, values in prediction_bytes.items())
+
+
+@requires_cuda
+def test_published_precomputed_recipe_completes_fixture_updates_and_checkpoint(
+    short_view, tmp_path, monkeypatch, allowed_child
+):
+    api = engine()
+    path = Path(__file__).resolve().parents[2] / (
+        "configs/experiments/kronlstm-precomputed/window-month.json"
+    )
+    published = json.loads(path.read_text())
+    adapted = dict(
+        train_start="2015-01-01",
+        train_end="2015-04-01",
+        validation_start="2015-04-01",
+        validation_end="2015-05-01",
+        epochs=1,
+        batch_size=2,
+        max_seconds=120.0,
+        max_output_bytes=64 * 1024**2,
+        max_cuda_bytes=512 * 1024**2,
+        cache_bytes=1024**2,
+        checkpoint_steps=1,
+    )
+    configuration = api.WindowVariantRecipe(**(published | adapted))
+    assert configuration.loss == "mae" and configuration.estimator == "backprop"
+    real_update, real_step = api._update_window, torch.optim.AdamW.step
+    updated_ids, steps = [], []
+
+    def observed_update(model, estimator, optimizer, batch, options, device):
+        predictor, encoder = model.predictor, model.predictor.price_encoder
+        assert predictor.config.temporal_encoder == "kronlstm_precomputed_v1"
+        assert encoder.execution == "precomputed" and encoder.configuration["rule"] == "scalar"
+        assert all(b.execution == "precomputed" and b.rule == "scalar" for b in encoder.blocks)
+        assert type(optimizer) is torch.optim.AdamW and estimator is None
+        assert str(device) == "cuda:0" and sum(p.numel() for p in predictor.parameters()) > 1000
+        updated_ids.extend(batch["sample_ids"])
+        return real_update(model, estimator, optimizer, batch, options, device)
+
+    def observed_step(optimizer, *args, **kwargs):
+        steps.append(type(optimizer))
+        return real_step(optimizer, *args, **kwargs)
+
+    monkeypatch.setattr(api, "_update_window", observed_update)
+    monkeypatch.setattr(torch.optim.AdamW, "step", observed_step)
+    output = tmp_path / "precomputed-fixture"
+    report = api.run_window_variant(short_view, output, configuration)
+    assert report["status"] == "completed" and report["device"] == "cuda:0"
+    assert steps == [torch.optim.AdamW] * 3
+    assert report["global_step"] == report["work"]["optimizer_updates"] == 3
+    assert report["samples"] == dict(train=6, validation=4) and len(report["epochs"]) == 1
+    assert len(updated_ids) == len(set(updated_ids)) == 6
+    assert report["identity"]["recipe"] == configuration.identity()
+    assert report["final_test_opened"] is report["identity"]["final_test_access"] is False
+    assert report["evaluation_scope"]["final_test"] == "closed"
+    identifiers = {}
+    for partition, count in (("train", 6), ("validation", 4)):
+        rows = pq.read_table(output / report["predictions"][partition]["path"]).to_pylist()
+        identifiers[partition] = {row["sample_id"] for row in rows}
+        assert len(rows) == len(identifiers[partition]) == count
+    assert identifiers["train"] == set(updated_ids)
+    assert identifiers["train"].isdisjoint(identifiers["validation"])
+    saved = load_training_state(output / "checkpoints", expected_identity=report["identity"])
+    assert saved["global_step"] == 3 and saved["epoch"] == 1 and saved["cursor"] is None
+    assert saved["selection"] == report["selection"] and saved["rng"]
+    assert saved["model"] and saved["optimizer"]["state"] and saved["estimator"] is None
+    contract = saved["model"]["price_encoder._extra_state"]
+    assert contract["execution"] == "precomputed"
+    assert contract["backend"] == "pytorch_precomputed_cpu_qkv64_v1"

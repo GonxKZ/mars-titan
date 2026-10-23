@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-KINDS = ["kronlstm_precomputed_v1", "vector_delta_precomputed_v1"]
+KINDS = ["kronlstm_precomputed_v1"]
 
 
 @pytest.mark.parametrize("kind", KINDS)

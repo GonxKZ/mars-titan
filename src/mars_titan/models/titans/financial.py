@@ -96,7 +96,6 @@ _TEMPORAL_ENCODERS = {
     "kronlstm_v1": ("scalar", "reference"),
     "vector_delta_v1": ("vector", "reference"),
     "kronlstm_precomputed_v1": ("scalar", "precomputed"),
-    "vector_delta_precomputed_v1": ("vector", "precomputed"),
 }
 # Opciones de MemoryConfig de cada nombre de proyecciones. linear_v1 no añade ninguna y
 # conserva el núcleo anterior a la sección 4.4.

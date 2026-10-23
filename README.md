@@ -22,6 +22,8 @@ Las [declaraciones de campaña sequence y paper](docs/engineering/titans-paper-c
 
 Las [variantes de ventanas cortas](docs/experiments/window-variants-pilot-month-v3.md) preparan seis comparaciones entre Transformer, KronLSTM, su control vectorial y Dust, con AdamW y SGD. El piloto fija enero de 2015 para ajuste y febrero para validación, 59 días en total. La [verificación técnica](reports/engineering/kron-window-technical-20261023/README.md) cubre las seis rutas con fixtures. La vista real está preparada, pero su ajuste no se inició por rechazo de admisión CUDA. Estas recetas son experimentales y no modifican las campañas canónicas.
 
+La [precomputación escalar opcional](docs/experiments/kronlstm/precomputed.md) conserva la referencia y añade una receta independiente del mismo tramo. En el perfil técnico del predictor completo redujo un 8,81 % la mediana de inferencia con 256 filas. La precomputación vectorial se descartó por coste. No hay una mejora predictiva medida.
+
 La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia interna de pocos pasos y contexto macroeconómico. La inspiración biológica se traduce en hipótesis sobre retención, adaptación y reaprendizaje. Los antecedentes recientes, incluidos DeepSeek y modelos financieros con memoria, sirven para decidir qué comparar y qué técnicas pueden ser útiles en una GPU pequeña.
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
