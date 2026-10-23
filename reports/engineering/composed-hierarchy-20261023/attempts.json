@@ -1,0 +1,203 @@
+{
+  "scope": "Intentos previos conservados, sin sumarlos como ejecuciones finales aprobadas",
+  "records": [
+    {
+      "id": "check-composed-catalog-red-v1",
+      "returncode": 1,
+      "elapsed_s": 32.01384115801193,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-composed-catalog-red-v1.json",
+          "bytes": 395,
+          "sha256": "f518e33be63b77b525b1cbae80504945addeb96528a948f2bbaf954f9e283b16"
+        },
+        {
+          "name": "check-composed-catalog-red-v1.log",
+          "bytes": 4608,
+          "sha256": "9c22855eae7474af2f16da5ffd5fe4a4be0d6667ee6e2c82444b7e2f1caf0e56"
+        }
+      ]
+    },
+    {
+      "id": "check-composed-consumer-red-v1",
+      "returncode": 1,
+      "elapsed_s": 28.598887118976563,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-composed-consumer-red-v1.json",
+          "bytes": 485,
+          "sha256": "248cb3f1248fbee1e377d3b2a2d79830733f0f7976289de2e52907fe3cc36ba8"
+        },
+        {
+          "name": "check-composed-consumer-red-v1.log",
+          "bytes": 1769,
+          "sha256": "df294d77523f2aea55c1653aeb591591fe0f904642c42ef2132c6e43042d1ff2"
+        }
+      ]
+    },
+    {
+      "id": "check-composed-native-green-v1",
+      "returncode": 1,
+      "elapsed_s": 49.14189327205531,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-composed-native-green-v1.json",
+          "bytes": 457,
+          "sha256": "386f7d33f30b900cc31865297b848108585f8d6cb8ff9a08ddd7c00ed9ab86c1"
+        },
+        {
+          "name": "check-composed-native-green-v1.log",
+          "bytes": 22833,
+          "sha256": "6991843e2b5a649ecd489c9cb1160ff6885378dc220e10d5e1129f2410f42427"
+        }
+      ]
+    },
+    {
+      "id": "check-composed-native-green-v2",
+      "returncode": 1,
+      "elapsed_s": 117.90618499007542,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-composed-native-green-v2.json",
+          "bytes": 461,
+          "sha256": "c5665562490c6d5822022da5b86a8735c23de7e0ae9ad98a7b503853bb3dfead"
+        },
+        {
+          "name": "check-composed-native-green-v2.log",
+          "bytes": 9999,
+          "sha256": "899e53e627a5484e1d1f43452ed3b78b0d91ab080af53413f487dd83eb49b64f"
+        }
+      ]
+    },
+    {
+      "id": "check-composed-identity-green-v1",
+      "returncode": 1,
+      "elapsed_s": 30.522830178029835,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-composed-identity-green-v1.json",
+          "bytes": 403,
+          "sha256": "c42b7f239748f47411e7e26fda9a3dd459b6a10587c1a7cd0ef8802c47f1988d"
+        },
+        {
+          "name": "check-composed-identity-green-v1.log",
+          "bytes": 14038,
+          "sha256": "ac98b1bcb79f084a805c1285eec8f6b8bc2983acf9b91b3168022a78e3ed6375"
+        }
+      ]
+    },
+    {
+      "id": "check-joint-cost-v1",
+      "returncode": 1,
+      "elapsed_s": 107.34428352990653,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-joint-cost-v1.json",
+          "bytes": 494,
+          "sha256": "745558411e172da778ae320dce768a1682127a08d0594279ed307c1faa82c911"
+        },
+        {
+          "name": "check-joint-cost-v1.log",
+          "bytes": 692,
+          "sha256": "59cde357fbfe5328a37f504a9c7928308b239d3a45e1985d9fe3218ea3212951"
+        }
+      ]
+    },
+    {
+      "id": "check-joint-cost-v2",
+      "returncode": 1,
+      "elapsed_s": 248.25395936600398,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-joint-cost-v2.json",
+          "bytes": 497,
+          "sha256": "515e5c90614220a9efb4ea34a548b3e25f23b8685efc72784231cb5403c8161c"
+        },
+        {
+          "name": "check-joint-cost-v2.log",
+          "bytes": 3713,
+          "sha256": "8acf4fadfc2151828b25b203650745c16b69b3ca7bfe485cd94de8797b2fd64d"
+        }
+      ]
+    },
+    {
+      "id": "check-joint-coverage-v1",
+      "returncode": 3,
+      "elapsed_s": 13.640157495974563,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-joint-coverage-v1.json",
+          "bytes": 806,
+          "sha256": "6036d39af2aed1055d1f42640f34c7797ffe914056ae4ac03d6c5ab6599e3323"
+        },
+        {
+          "name": "check-joint-coverage-v1.log",
+          "bytes": 1957,
+          "sha256": "ff4bb863820ba2bab637d4ab7d454d3b995cc77cec0a83419056327eba582e41"
+        }
+      ]
+    },
+    {
+      "id": "check-mutation-recipe-v1",
+      "returncode": 1,
+      "elapsed_s": 64.58912993897684,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-mutation-recipe-v1.json",
+          "bytes": 586,
+          "sha256": "fbef23418e13191d41002636ff07a54fb4445f1c0de7bac775c77f42540fe337"
+        },
+        {
+          "name": "check-mutation-recipe-v1.log",
+          "bytes": 387,
+          "sha256": "5146d3350f076e60916d9b1bd4732d229cf9ec6e12e84bec5f4a8e16ba2da4ba"
+        }
+      ]
+    },
+    {
+      "id": "check-mutation-underestimate_collection_plus_emission_budget-v2",
+      "returncode": 1,
+      "elapsed_s": 0.6263344630133361,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-mutation-underestimate_collection_plus_emission_budget-v2.json",
+          "bytes": 638,
+          "sha256": "5b7bcc4f955cd21fe173dac016dda180a7946b5558dddf5f9b3dfadfd50e9605"
+        },
+        {
+          "name": "check-mutation-underestimate_collection_plus_emission_budget-v2.log",
+          "bytes": 638,
+          "sha256": "b59703ce52988b0898ec868e80cc47fc3280214e510fb7db439de529b5be1586"
+        }
+      ]
+    },
+    {
+      "id": "check-cli-red-v1",
+      "returncode": 1,
+      "elapsed_s": 2.6371633590897545,
+      "approved": false,
+      "artifacts": [
+        {
+          "name": "check-cli-red-v1.json",
+          "bytes": 460,
+          "sha256": "ef123eabc3938f899ff1d23a896c131a34249d5ead19377ee423cd236d5ffce7"
+        },
+        {
+          "name": "check-cli-red-v1.log",
+          "bytes": 14455,
+          "sha256": "c66bcaae623440c0f08f476df392e81b3bcbe3556162a2093e797d720e539b88"
+        }
+      ]
+    }
+  ]
+}

@@ -139,6 +139,8 @@ El Jacobiano debe incluir residual, autoaristas y las dependencias grupo-raíz-g
 
 ## Verificación técnica ejecutada
 
+Los resultados de esta sección y del apartado de coste corresponden al puente individual de `006b8217d602a924fc833f23653d051655ee2ff2`. No acreditan la composición posterior de ambas etapas, que tiene su informe separado.
+
 La selección reúne 685 IDs únicos aprobados, con 210 casos que utilizan CUDA. La tanda principal contiene 676 IDs. Los ocho casos CPU de guardas añaden ocho y la comprobación de límites de artefactos contiene cuatro, con tres solapados. No hubo fallos, errores ni omisiones en esas tandas. No se presenta el recuento como una ejecución de la suite completa del repositorio.
 
 Se comprobaron paridad apagada, configuración, ecuaciones, gradientes, máscaras, finitud, disponibilidad, orden, bloques y RNG. La selección incluye factoría, catálogo, rechazo de geometría, cuotas antes de MAC, ambas trazas y recuperación nativa de la siguiente emisión con feedback único. Las comprobaciones negativas de artefactos incluyen contenido de caché alterado con mtime restaurado, salida privada obligatoria, rechazo de sobrescritura del recibo y rechazo de la carga desde la copia del script situada en el repositorio.
@@ -178,7 +180,7 @@ La preparación mide las llamadas completas a `FrozenFinancialConsumer.prepare` 
 
 Se conservan dos intentos incompletos, detenidos por las guardas de trabajo de 32 MiB. No cuentan como pasadas. La ejecución completa divide en bloques la referencia CPU y la preparación de forma declarada, sin elevar cuotas, retirar filas ni cambiar las guardas. El [script reproducible](../../benchmarks/hierarchical_bridge_cuda.py) solo imprime el protocolo sin `--run`. La carga se ejecuta desde una copia externa, con salida privada nueva y sin sobrescribir recibos.
 
-El experimento financiero no se ha ejecutado. Estos resultados no seleccionan la jerarquía ni acreditan mejora predictiva, ahorro global de memoria o superioridad arquitectónica. El cierre de la revisión y la integración siguen pendientes.
+El experimento financiero no se ha ejecutado. Estos resultados no seleccionan la jerarquía ni acreditan mejora predictiva, ahorro global de memoria o superioridad arquitectónica. La [verificación posterior de la composición](../../reports/engineering/composed-hierarchy-20261023/README.md) conserva sus pruebas, cuotas y coste como un contraste técnico separado.
 
 ## Antecedentes y simplificaciones
 

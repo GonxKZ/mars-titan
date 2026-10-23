@@ -1,0 +1,893 @@
+{
+  "status": "passed",
+  "targets": [
+    {
+      "id": "omit_composed_recipe",
+      "recipe": {
+        "source": "src/mars_titan/models/titans/mechanism_consumer.py",
+        "test": "tests/models/titans/test_composed_hierarchy_identity.py",
+        "before": "            if regional and readout.config.evidence_bridge.hierarchy is not None:\n                self._identity.update(\n                    schema_version=6,\n                    recipe=\"frozen_pre_mac_hierarchical_bridge_cohort_v1\",\n                )\n",
+        "after": "",
+        "nodeid": "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+        "failure": "assert 5 == 6",
+        "failure_type": "AssertionError",
+        "phase_seconds": 45
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_composed_recipe/base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 20.089910394046456,
+          "timeout_s": 45,
+          "source_sha256": "0a9273b404467fab849e913dc54167de67e2a700f1eb8d502894fe4fd06b6136",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "base.phases.json",
+            "sha256": "21d1c75217a5583c0415811fdca386d230d9b81ffa2fd9c3c8f5f349461adcfa",
+            "bytes": 10217
+          },
+          "xml_artifact": {
+            "name": "base.xml",
+            "sha256": "f092a15168090030347382f47ed7dc925090b947a219cf242d6202bfecb8a066",
+            "bytes": 425
+          },
+          "log_artifact": {
+            "name": "base.log",
+            "sha256": "cea56812b2feed537d72f533dcd9bbebe462ea81cec364b5fd190dfe7346f2cf",
+            "bytes": 98
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_composed_recipe/mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 21.549219335080124,
+          "timeout_s": 45,
+          "source_sha256": "1dae83fd41499c529a5f33240af7f74370ebb278ea9c4e93c59a84ae2b66c9b8",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": "AssertionError",
+          "phase_artifact": {
+            "name": "mutant.phases.json",
+            "sha256": "6c987b39c12c63191e02d09cebd437ac5d4815ec4448dbbc232b3cdb4dfd3938",
+            "bytes": 10453
+          },
+          "xml_artifact": {
+            "name": "mutant.xml",
+            "sha256": "a2bbf46a4739133d78f09e53572903fac8847fb1879de4566b37a1501a79c2b9",
+            "bytes": 697
+          },
+          "log_artifact": {
+            "name": "mutant.log",
+            "sha256": "76999adc5414350b262c2d21cc60a4a54c8f61baef7589aebf2342ce30b882e4",
+            "bytes": 716
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_composed_recipe/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_composed_recipe/restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 18.454955279943533,
+          "timeout_s": 45,
+          "source_sha256": "0a9273b404467fab849e913dc54167de67e2a700f1eb8d502894fe4fd06b6136",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "restored.phases.json",
+            "sha256": "21d1c75217a5583c0415811fdca386d230d9b81ffa2fd9c3c8f5f349461adcfa",
+            "bytes": 10217
+          },
+          "xml_artifact": {
+            "name": "restored.xml",
+            "sha256": "5e24b64f5d2dc5ce9e979a1ef5c9202d690ba9b46b2b8eecef633dbd11af493f",
+            "bytes": 425
+          },
+          "log_artifact": {
+            "name": "restored.log",
+            "sha256": "aaafccde9096665c69db6c71db21673fa3fc7c0d0de6dde50e19fc1f5687b682",
+            "bytes": 98
+          }
+        }
+      ],
+      "guards": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "recipes_unchanged": true,
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "2021efa724d5ce6e082d3618570f97d3d6670f4226e2bc7f704e0c66af8a204a",
+        "bytes": 76625
+      },
+      "raw": {
+        "name": "results.json",
+        "sha256": "1c73452d337951c249c725223822e7b453134eae6b8d01ae9809622612ec5746",
+        "bytes": 8848
+      },
+      "supervisor": {
+        "artifact": {
+          "name": "check-mutation-omit_composed_recipe-v2.json",
+          "sha256": "0f48e2df9f41141c5ee4f4d89cc499440364db29e66c4fb8e99a658948f17c98",
+          "bytes": 590
+        },
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "$RUN_ROOT/mutate-composition-v2.py",
+          "--run",
+          "--target",
+          "omit_composed_recipe",
+          "--green-receipt",
+          "$RUN_ROOT/check-composed-identity-green-v2.json",
+          "--output",
+          "$RUN_ROOT/mutations-v2/omit_composed_recipe"
+        ],
+        "elapsed_s": 63.574118681950495,
+        "timeout_s": 300,
+        "log": {
+          "name": "check-mutation-omit_composed_recipe-v2.log",
+          "sha256": "b47349ba23aa8abcadbd37d0ed0b64ce3640dd41c79aa1f943a0f2b4f5a3aef6",
+          "bytes": 383
+        }
+      }
+    },
+    {
+      "id": "omit_catalog_pre_mac_axis",
+      "recipe": {
+        "source": "src/mars_titan/models/titans/mechanism_catalog.py",
+        "test": "tests/models/titans/test_composed_hierarchy_catalog.py",
+        "before": "                regional_execution=self.regional_execution.identity(),\n",
+        "after": "",
+        "nodeid": "tests/models/titans/test_composed_hierarchy_catalog.py::test_hierarchical_reader_and_pre_mac_execution_keep_both_axes[execution0]",
+        "failure": "regional_execution",
+        "failure_type": "KeyError",
+        "phase_seconds": 45
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "tests/models/titans/test_composed_hierarchy_catalog.py::test_hierarchical_reader_and_pre_mac_execution_keep_both_axes[execution0]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 17.338589269900694,
+          "timeout_s": 45,
+          "source_sha256": "d9de9a92211afd966b07dc616e8075430df193584c15cfd38c24f706da87ae1b",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "base.phases.json",
+            "sha256": "589d7e9b939f1893c53c949f0428e5119623522dfbbe0810c412f40d02709589",
+            "bytes": 6597
+          },
+          "xml_artifact": {
+            "name": "base.xml",
+            "sha256": "322a5bc0fad77ab4dad9d32993b7aa92c03199e912dca0f6a4cac63dc5e81e13",
+            "bytes": 416
+          },
+          "log_artifact": {
+            "name": "base.log",
+            "sha256": "036bb9390fb408c39eb19a61d865bc4044aa29eeea8139e62a988a5a83930a4d",
+            "bytes": 98
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "tests/models/titans/test_composed_hierarchy_catalog.py::test_hierarchical_reader_and_pre_mac_execution_keep_both_axes[execution0]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 17.116733688977547,
+          "timeout_s": 45,
+          "source_sha256": "af03139f5e72a86a56a266e4868f5dc68385fc89831def6a7227c919e03428cb",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": "KeyError",
+          "phase_artifact": {
+            "name": "mutant.phases.json",
+            "sha256": "e6c5ca8c00608a869dceca0d1faa631d38fb2150a8a0c8708ee03f7c6e05609f",
+            "bytes": 6872
+          },
+          "xml_artifact": {
+            "name": "mutant.xml",
+            "sha256": "8c6f6f23a5b5ce6dbd39ce1ba54db9be0521d906b96fcc3178ff49b23d76713f",
+            "bytes": 751
+          },
+          "log_artifact": {
+            "name": "mutant.log",
+            "sha256": "cd81c32ebb4ea29eaa7d2b383a12899f9bf4e1447a3843c573e7f0e5dd425f4b",
+            "bytes": 748
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/workspace",
+            "tests/models/titans/test_composed_hierarchy_catalog.py::test_hierarchical_reader_and_pre_mac_execution_keep_both_axes[execution0]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis/restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 17.051088017993607,
+          "timeout_s": 45,
+          "source_sha256": "d9de9a92211afd966b07dc616e8075430df193584c15cfd38c24f706da87ae1b",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "restored.phases.json",
+            "sha256": "e8d5a1eb0bfee3bf75e8bffb60f26089363105494071aac66ff8a596eeeea5b5",
+            "bytes": 6597
+          },
+          "xml_artifact": {
+            "name": "restored.xml",
+            "sha256": "e17b36cf7ba5402793bd77766d3bd7fde76153a945f146cba1b519a92420bf9d",
+            "bytes": 416
+          },
+          "log_artifact": {
+            "name": "restored.log",
+            "sha256": "ac03dc55bdc1ce87ab5a711fdf5a7d72d345e62c471c4cb4e9de283e03475f14",
+            "bytes": 98
+          }
+        }
+      ],
+      "guards": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "recipes_unchanged": true,
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "32ccf3aa72321e0118f48b2bb0c4f524ecd4e3e192491d334b419f06d9201eae",
+        "bytes": 76623
+      },
+      "raw": {
+        "name": "results.json",
+        "sha256": "41bd536c983c85afe87d91e52c8a0239c3bfbc686c105fb108d92ec303516099",
+        "bytes": 8865
+      },
+      "supervisor": {
+        "artifact": {
+          "name": "check-mutation-omit_catalog_pre_mac_axis-v2.json",
+          "sha256": "6ccd0e12222d95ddb23eea29be8bbbfba1b155ae6fb3befdf02737bccee38b08",
+          "bytes": 599
+        },
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "$RUN_ROOT/mutate-composition-v2.py",
+          "--run",
+          "--target",
+          "omit_catalog_pre_mac_axis",
+          "--green-receipt",
+          "$RUN_ROOT/check-composed-catalog-green-v1.json",
+          "--output",
+          "$RUN_ROOT/mutations-v2/omit_catalog_pre_mac_axis"
+        ],
+        "elapsed_s": 54.732162564992905,
+        "timeout_s": 300,
+        "log": {
+          "name": "check-mutation-omit_catalog_pre_mac_axis-v2.log",
+          "sha256": "7872934ef0d6a016dd34d0591a3e11c22c31d8a0edd25fd59ed697339f9dd6c2",
+          "bytes": 403
+        }
+      }
+    },
+    {
+      "id": "omit_bridge_hierarchy_seal",
+      "recipe": {
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "test": "tests/models/titans/test_composed_hierarchy_identity.py",
+        "before": "    \"bridge_hierarchy\",\n",
+        "after": "",
+        "nodeid": "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+        "failure": "mars_titan.models.titans.bridge_hierarchy",
+        "failure_type": "KeyError",
+        "phase_seconds": 45
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 24.41748948895838,
+          "timeout_s": 45,
+          "source_sha256": "695ae27d941e421efaaeeabbd6dc3ce1e69ff0affe54d9b4297cc6c1fcc33044",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "base.phases.json",
+            "sha256": "7d8adb4e6eb8483b9ffd9bf1d44fca1f7a78d6bb5f539b4224175ccb6538591d",
+            "bytes": 10217
+          },
+          "xml_artifact": {
+            "name": "base.xml",
+            "sha256": "8a0dc0664083fabe9cbfb6bc4648a60e388525351cfdc05736f22525aadd13e9",
+            "bytes": 425
+          },
+          "log_artifact": {
+            "name": "base.log",
+            "sha256": "f7337d1714dbc1c20019e93daf849f4f173f2c1bcdf5ecdb32d87cfbbca925de",
+            "bytes": 98
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 19.48059520497918,
+          "timeout_s": 45,
+          "source_sha256": "f8ea8edb867e59c3c34394277ba7a29cb5666cee6f2cb7bee7561a30301cffdd",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": "KeyError",
+          "phase_artifact": {
+            "name": "mutant.phases.json",
+            "sha256": "5e5b63abaf6bb4a8cf749edb109a0d98a472cecb309369dcb420f4f6bfe19bea",
+            "bytes": 10535
+          },
+          "xml_artifact": {
+            "name": "mutant.xml",
+            "sha256": "db9ac5b9806e9b29a7c6bb0e2a871981c266cc1f128afc63680422ca7fbcd8d8",
+            "bytes": 826
+          },
+          "log_artifact": {
+            "name": "mutant.log",
+            "sha256": "39a4315cc93c96ca2093a6e638680234cd803e490082a429a40e82054623eb60",
+            "bytes": 805
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/workspace",
+            "tests/models/titans/test_composed_hierarchy_identity.py::test_frozen_composition_identifies_only_the_active_regional_stages[ambos-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal/restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 18.414265881991014,
+          "timeout_s": 45,
+          "source_sha256": "695ae27d941e421efaaeeabbd6dc3ce1e69ff0affe54d9b4297cc6c1fcc33044",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "restored.phases.json",
+            "sha256": "df22d286c8e2d77a0c52e7484e80f0902b47737a64cc1c72a5b80c77ebf70b06",
+            "bytes": 10217
+          },
+          "xml_artifact": {
+            "name": "restored.xml",
+            "sha256": "13b17fe071290c2615ce7088cd60325c1e2dd2862ada04e1c1c767498c64cbe7",
+            "bytes": 425
+          },
+          "log_artifact": {
+            "name": "restored.log",
+            "sha256": "4014033607bc52eed73602df3126bed197e72abc344415ddfab2bf1d2a06219f",
+            "bytes": 98
+          }
+        }
+      ],
+      "guards": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "recipes_unchanged": true,
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "33f0e1ba2e278d2c0d482c847dfda0ea0b7d2928a16004f814c1796a1c846e10",
+        "bytes": 76623
+      },
+      "raw": {
+        "name": "results.json",
+        "sha256": "7618611c82b5f350e1889e8976fe3846dd96f1ee232a9a2a8dfa82e979beffd6",
+        "bytes": 8900
+      },
+      "supervisor": {
+        "artifact": {
+          "name": "check-mutation-omit_bridge_hierarchy_seal-v2.json",
+          "sha256": "9c9ac0e03950a65283fcd8513641563d715c6b1422b7e24a3682040ad88d6f3e",
+          "bytes": 601
+        },
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "$RUN_ROOT/mutate-composition-v2.py",
+          "--run",
+          "--target",
+          "omit_bridge_hierarchy_seal",
+          "--green-receipt",
+          "$RUN_ROOT/check-composed-identity-green-v2.json",
+          "--output",
+          "$RUN_ROOT/mutations-v2/omit_bridge_hierarchy_seal"
+        ],
+        "elapsed_s": 65.71393914602231,
+        "timeout_s": 300,
+        "log": {
+          "name": "check-mutation-omit_bridge_hierarchy_seal-v2.log",
+          "sha256": "26568454457666a0f793f9baa4ac39d2fa62e91ca0483e5bef23fc208958318a",
+          "bytes": 407
+        }
+      }
+    },
+    {
+      "id": "underestimate_collection_plus_emission_budget",
+      "recipe": {
+        "source": "src/mars_titan/memory/mechanism_collection.py",
+        "test": "tests/memory/test_pre_post_hierarchy_composition.py",
+        "before": "            reader.preflight_node_updates(reads + plan.reader_steps, episodes)\n",
+        "after": "            reader.preflight_node_updates(reads, episodes)\n",
+        "nodeid": "tests/memory/test_pre_post_hierarchy_composition.py::test_collection_checks_post_mac_budget_without_resetting_pre_mac_charges[987-program]",
+        "failure": "DID NOT RAISE",
+        "failure_type": "Failed",
+        "phase_seconds": 120
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "tests/memory/test_pre_post_hierarchy_composition.py::test_collection_checks_post_mac_budget_without_resetting_pre_mac_charges[987-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 50.319837794988416,
+          "timeout_s": 120,
+          "source_sha256": "778530e2591f4254e398b8b529d3c718c5ec3cfc630542c5b28fd6ea088f3dbf",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "base.phases.json",
+            "sha256": "09b1e3fc3f8839be3b30570ee2733abcd16e111433f76216475aae2f8994fcea",
+            "bytes": 14755
+          },
+          "xml_artifact": {
+            "name": "base.xml",
+            "sha256": "00781bfcd253467c62998cf5b8fae9568056d1305515903a45744341d5259a80",
+            "bytes": 427
+          },
+          "log_artifact": {
+            "name": "base.log",
+            "sha256": "887af3280185556b9fe215870f8efb31fbda629b04fd349cf4e6dda5871b79bb",
+            "bytes": 99
+          }
+        },
+        {
+          "phase": "mutant",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "tests/memory/test_pre_post_hierarchy_composition.py::test_collection_checks_post_mac_budget_without_resetting_pre_mac_charges[987-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 56.16645721299574,
+          "timeout_s": 120,
+          "source_sha256": "cf55b2e6eb7484cfb1fc36d0b524a70d7566f765b73e812f7d3a46d2d7c7a823",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": "Failed",
+          "phase_artifact": {
+            "name": "mutant.phases.json",
+            "sha256": "e03bbfd78769c0197e5033ffa722c98447c505455a6cc1d5a63aa9f8fc759aac",
+            "bytes": 15088
+          },
+          "xml_artifact": {
+            "name": "mutant.xml",
+            "sha256": "a23490c27e57ccebb513177904a83d0905768c8f077bcf683228673d17bd76ae",
+            "bytes": 824
+          },
+          "log_artifact": {
+            "name": "mutant.log",
+            "sha256": "e025b298e387dea7854d7923060d0bbcd1114692db7ad73d77c8e4b3318ca97f",
+            "bytes": 827
+          }
+        },
+        {
+          "phase": "restored",
+          "valid": true,
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "--project",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "python",
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "_asof_mutation_scope",
+            "--rootdir",
+            "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/workspace",
+            "tests/memory/test_pre_post_hierarchy_composition.py::test_collection_checks_post_mac_budget_without_resetting_pre_mac_charges[987-program]",
+            "-q",
+            "--tb=short",
+            "--maxfail=1",
+            "--junitxml=$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget/restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 35.04169433109928,
+          "timeout_s": 119.839655941003,
+          "source_sha256": "778530e2591f4254e398b8b529d3c718c5ec3cfc630542c5b28fd6ea088f3dbf",
+          "stopped": null,
+          "cases": 1,
+          "call_reports": 1,
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "collection_errors": 0,
+          "observed_exception_type": null,
+          "phase_artifact": {
+            "name": "restored.phases.json",
+            "sha256": "d85cbaa429c072e8e53a58bc1fb8bbe72095b77ddc963ab105176179d4f9723f",
+            "bytes": 14755
+          },
+          "xml_artifact": {
+            "name": "restored.xml",
+            "sha256": "945d51d576a636ad3a138302acb529796b6ba96035bacbdc4419bf46d762566e",
+            "bytes": 427
+          },
+          "log_artifact": {
+            "name": "restored.log",
+            "sha256": "22dc3ac0d9408f8bbf098f3d54568b996079995eadefb487babe7b8945fe8294",
+            "bytes": 99
+          }
+        }
+      ],
+      "guards": {
+        "original_unchanged": true,
+        "copy_restored": true,
+        "plugin_unchanged": true,
+        "green_receipt_unchanged": true,
+        "hold_unchanged": true,
+        "native_unchanged": true
+      },
+      "recipes_unchanged": true,
+      "source_manifest": {
+        "name": "source-manifest.json",
+        "sha256": "89092b6d225d4faf1a77fd904b4cdcdf01079140a156bbad7b1e60cd5c8cd2f9",
+        "bytes": 76618
+      },
+      "raw": {
+        "name": "results.json",
+        "sha256": "bf0f21cd183456967d73f914993eb8a724df2d8c24722abeba1c3d35a4c2f150",
+        "bytes": 9105
+      },
+      "supervisor": {
+        "artifact": {
+          "name": "check-mutation-budget-v3.json",
+          "sha256": "dcc15fa6c6923da0f8b5eefde0055b31053924cd63f3b366954a8c420e856063",
+          "bytes": 638
+        },
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "$RUN_ROOT/mutate-composition-v2.py",
+          "--run",
+          "--target",
+          "underestimate_collection_plus_emission_budget",
+          "--green-receipt",
+          "$RUN_ROOT/check-composed-budget-green-v3.json",
+          "--output",
+          "$RUN_ROOT/mutations-v3/underestimate_collection_plus_emission_budget"
+        ],
+        "elapsed_s": 145.98899182199966,
+        "timeout_s": 540,
+        "log": {
+          "name": "check-mutation-budget-v3.log",
+          "sha256": "f2a8e8e5dca5cbe92c9729f994aee270ac3e7c96094b1b83620a2089ed26d6ad",
+          "bytes": 483
+        }
+      }
+    }
+  ],
+  "directed_targets": 4,
+  "valid_phases": 12,
+  "limits": "Cuatro objetivos dirigidos. No mide todas las mutaciones del repositorio.",
+  "code_commit": "478b0892ae36f4cd4c02b9c132729a3c8a905dfd"
+}
