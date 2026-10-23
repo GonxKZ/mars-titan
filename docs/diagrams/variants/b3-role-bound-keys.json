@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B3 · Claves ligadas a roles (role_bound_keys_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "key", "type": "external", "label": "Clave del codec", "sublabel": "episodio o consulta", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "roles",
+      "type": "database",
+      "label": "Roles en fecha",
+      "sublabel": "sector, mercado, modalidad",
+      "tag": "y régimen",
+      "pos": [40, 40],
+      "size": [180, 72]
+    },
+    {"id": "bind", "type": "backend", "label": "Ligadura FHRR o HLB", "sublabel": "inversa exacta", "pos": [300, 230], "size": [180, 72]},
+    {"id": "memory", "type": "database", "label": "Memoria B1 o banco", "sublabel": "claves ligadas", "pos": [560, 230], "size": [180, 72]},
+    {"id": "partial", "type": "external", "label": "Pistas parciales", "sublabel": "roles conocidos en t", "pos": [560, 40], "size": [180, 72]},
+    {"id": "unbind", "type": "backend", "label": "Lectura y desligado", "sublabel": "recupera el valor", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "concatenación de igual dimensión",
+      "tag": "roles barajados",
+      "pos": [820, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "key-bind", "from": "key", "to": "bind"},
+    {"id": "roles-bind", "from": "roles", "to": "bind", "label": "roles"},
+    {"id": "bind-memory", "from": "bind", "to": "memory", "label": "escritura", "variant": "emphasis"},
+    {"id": "partial-unbind", "from": "partial", "to": "unbind", "label": "consulta"},
+    {"id": "memory-unbind", "from": "memory", "to": "unbind", "variant": "emphasis"},
+    {"id": "unbind-screen", "from": "unbind", "to": "screen", "label": "predicción"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "La clave se liga con sus roles mediante FHRR o HLB, que tienen inversa exacta",
+        "La consulta puede usar solo una parte de los roles",
+        "Fuente: Plate (1995), Kleyko et al. (2021), Alam et al. (2024)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Concatenación de embeddings con la misma dimensión", "Roles barajados y sin roles"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Coste O(D) por ligadura"]
+    }
+  ]
+}

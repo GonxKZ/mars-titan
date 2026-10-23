@@ -1,0 +1,69 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Orden causal de un evento en FinancialSession",
+    "quality_profile": "showcase",
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "messagebus": {"label": "Cola temporal"},
+        "security": {"label": "Control o protección"}
+      }
+    }
+  },
+  "lanes": [
+    {"id": "event", "label": "Evento con corte t"},
+    {"id": "state", "label": "Generación g − 1"},
+    {"id": "emission", "label": "Emisión"},
+    {"id": "maturity", "label": "Maduración y publicación"}
+  ],
+  "mainPath": ["validate", "route", "snapshot", "prepare", "queue", "resolve", "publish"],
+  "nodes": [
+    {"id": "validate", "lane": "event", "col": 0, "type": "security", "label": "Validar el evento", "sublabel": "corte y prefijo", "width": 176},
+    {"id": "route", "lane": "event", "col": 1, "type": "external", "label": "Ruta de régimen", "sublabel": "si B6 está enrutada", "width": 176},
+    {"id": "snapshot", "lane": "state", "col": 2, "type": "database", "label": "Instantánea y A", "sublabel": "comunes al evento", "width": 176},
+    {"id": "prepare", "lane": "emission", "col": 3, "type": "backend", "label": "prepare por bloque", "sublabel": "MAC, K y cabeza", "width": 176},
+    {"id": "queue", "lane": "emission", "col": 4, "type": "messagebus", "label": "Cola de pendientes", "sublabel": "núcleo separado", "width": 176},
+    {"id": "resolve", "lane": "maturity", "col": 4, "type": "security", "label": "Resolver lo maduro", "sublabel": "contra lo emitido", "width": 176},
+    {"id": "publish", "lane": "maturity", "col": 5, "type": "database", "label": "Publicar g", "sublabel": "atómica", "width": 176}
+  ],
+  "edges": [
+    {"from": "validate", "to": "route"},
+    {"from": "route", "to": "snapshot"},
+    {"from": "snapshot", "to": "prepare", "label": "misma instantánea"},
+    {"from": "prepare", "to": "queue", "label": "emisión"},
+    {"from": "queue", "to": "resolve", "label": "etiqueta en t"},
+    {"from": "resolve", "to": "publish", "label": "escrituras"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Antes de emitir",
+      "items": [
+        "Se valida el corte t y se carga la generación confirmada g − 1",
+        "La instantánea del banco y la matriz A son las mismas para todos los activos y pasos K",
+        "prepare lee M_{t−1}, aplica la atención, escribe M_t una vez y refina sin escribir memoria"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Después de emitir",
+      "items": [
+        "Los resultados que maduran en t se resuelven contra la predicción emitida",
+        "Las escrituras del banco y de A se proponen sobre copias",
+        "La generación g se publica de forma atómica y actúa desde el evento siguiente"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Fuera de la sesión",
+      "items": [
+        "Ajuste de parámetros, replay y adaptadores solo en entrenamiento o postentrenamiento",
+        "Recuperación desde la generación confirmada, con cola, cursor y RNG"
+      ]
+    }
+  ]
+}

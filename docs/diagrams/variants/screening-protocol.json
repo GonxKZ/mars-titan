@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Criba de variantes con orígenes rodantes (#746)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "origins", "type": "database", "label": "Orígenes 2019 a 2022", "sublabel": "uno por año", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "cohort",
+      "type": "security",
+      "label": "Cohorte de 256 activos",
+      "sublabel": "información anterior al origen",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "fit",
+      "type": "backend",
+      "label": "Ajuste G",
+      "sublabel": "hasta 366 días",
+      "tag": "calibración interna",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {"id": "seeds", "type": "external", "label": "5 semillas", "sublabel": "presupuesto fijo", "pos": [300, 420], "size": [180, 72]},
+    {"id": "s_blocks", "type": "backend", "label": "Bloques S", "sublabel": "selección", "pos": [560, 230], "size": [180, 72]},
+    {"id": "family", "type": "cloud", "label": "Romano-Wolf", "sublabel": "Holm como robustez", "pos": [820, 40], "size": [180, 72]},
+    {"id": "e_block", "type": "backend", "label": "Bloque E posterior", "sublabel": "sin intervenir en S", "pos": [820, 230], "size": [180, 72]},
+    {"id": "passed", "type": "frontend", "label": "Finalistas", "sublabel": "3 o 4 variantes", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "sealed", "type": "security", "label": "Test de 2024", "sublabel": "cerrado", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "origins-fit", "from": "origins", "to": "fit"},
+    {"id": "cohort-fit", "from": "cohort", "to": "fit", "label": "activos", "labelDy": 24},
+    {"id": "seeds-fit", "from": "seeds", "to": "fit"},
+    {"id": "fit-s_blocks", "from": "fit", "to": "s_blocks", "variant": "emphasis"},
+    {"id": "s_blocks-family", "from": "s_blocks", "to": "family", "label": "IC por sesión"},
+    {"id": "s_blocks-e_block", "from": "s_blocks", "to": "e_block", "label": "candidatas", "variant": "emphasis", "labelDy": 14},
+    {"id": "family-passed", "from": "family", "to": "passed", "label": "ajustado"},
+    {"id": "e_block-passed", "from": "e_block", "to": "passed", "variant": "emphasis"},
+    {"id": "passed-sealed", "from": "passed", "to": "sealed", "label": "sin acceso", "variant": "dashed", "labelDy": 24}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Diseño",
+      "items": [
+        "Contraste principal: IC medio por sesión frente al control propio",
+        "Secundarios: MAE con λ de G y MAE frente a cero",
+        "Bootstrap circular por bloques de días con sensibilidad a la familia"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Protecciones",
+      "items": [
+        "La cohorte de cada origen no usa activos ni datos posteriores",
+        "GpuLease, protección de aprendizaje y presupuesto antes de ejecutar",
+        "El test de 2024 sigue cerrado"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Protocolo y motor en preparación en #746",
+        "Ejecución pendiente del bloqueo y de la GPU libre",
+        "Coste estimado de 60 a 150 h con 256 activos, sin medir"
+      ]
+    }
+  ]
+}

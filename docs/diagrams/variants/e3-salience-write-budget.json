@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "E3 · Escritura por saliencia con presupuesto fijo (salience_write_budget_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "candidates", "type": "database", "label": "Episodios candidatos", "sublabel": "ya maduros", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "salience",
+      "type": "backend",
+      "label": "Saliencia causal",
+      "sublabel": "error, volatilidad, volumen",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {"id": "rank", "type": "backend", "label": "Admisión por rango", "sublabel": "presupuesto por sesión", "pos": [300, 230], "size": [180, 72]},
+    {"id": "bank", "type": "database", "label": "Banco episódico", "sublabel": "mismas plazas", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "lectura del banco", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "constante, permutada, invertida",
+      "tag": "misma media",
+      "pos": [300, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "candidates-rank", "from": "candidates", "to": "rank"},
+    {"id": "salience-rank", "from": "salience", "to": "rank", "label": "prioridad", "labelDy": 24},
+    {"id": "rank-bank", "from": "rank", "to": "bank", "label": "escritura", "variant": "emphasis"},
+    {"id": "bank-emit", "from": "bank", "to": "emit"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "La admisión ordena por error maduro estandarizado, choque de volatilidad y volumen anormal",
+        "El número de escrituras por sesión es fijo",
+        "Fuente: McGaugh (2004) como motivación, Cosemans y Frehen (2021)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Saliencia constante con la misma media, permutada por bloques, desplazada o invertida", "La saliencia como variable de entrada"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Probabilidad previa baja y coste despreciable"]
+    }
+  ]
+}

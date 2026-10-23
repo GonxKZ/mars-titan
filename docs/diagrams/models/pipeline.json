@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MARS-TITAN: datos, modelos y evaluación",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "prices", "type": "external", "label": "Precios y gráficos", "sublabel": "OHLCV diario y vistas", "pos": [40, 40], "size": [180, 72]},
+    {"id": "news", "type": "external", "label": "Noticias", "sublabel": "fecha de publicación", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "fundamentals",
+      "type": "external",
+      "label": "Fundamentales y macro",
+      "sublabel": "disponibles en su fecha",
+      "pos": [40, 420],
+      "size": [180, 72]
+    },
+    {
+      "id": "edition",
+      "type": "database",
+      "label": "Edición histórica v3.1",
+      "sublabel": "desde 2000, Parquet",
+      "tag": "ausencias con máscara",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {
+      "id": "target",
+      "type": "backend",
+      "label": "Objetivo residual",
+      "sublabel": "market-neutral, sesión siguiente",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "folds",
+      "type": "database",
+      "label": "Pliegues walk-forward",
+      "sublabel": "ajuste, validación y calibración",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "sealed", "type": "security", "label": "Test de 2024", "sublabel": "sellado en la selección", "pos": [560, 420], "size": [180, 72]},
+    {"id": "tabular", "type": "backend", "label": "Comparadores tabulares", "sublabel": "ridge y LightGBM", "pos": [820, 40], "size": [180, 72]},
+    {
+      "id": "models",
+      "type": "backend",
+      "label": "Modelos neuronales",
+      "sublabel": "GRU, Transformer, Titans, CM-v1",
+      "pos": [820, 230],
+      "size": [180, 72]
+    },
+    {"id": "metrics", "type": "cloud", "label": "MAE e IC por sesión", "sublabel": "igual peso por sesión", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "blocks", "type": "cloud", "label": "Bootstrap por bloques", "sublabel": "intervalos simultáneos", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "prices-edition", "from": "prices", "to": "edition"},
+    {"id": "news-edition", "from": "news", "to": "edition"},
+    {"id": "fundamentals-edition", "from": "fundamentals", "to": "edition"},
+    {"id": "edition-target", "from": "edition", "to": "target", "label": "etiquetas"},
+    {"id": "edition-folds", "from": "edition", "to": "folds", "label": "vistas", "variant": "emphasis", "labelDy": 14},
+    {"id": "target-folds", "from": "target", "to": "folds", "label": "y por fila", "labelDy": 24},
+    {"id": "folds-sealed", "from": "folds", "to": "sealed", "label": "cerrado", "variant": "dashed", "labelDy": 24},
+    {"id": "folds-tabular", "from": "folds", "to": "tabular", "label": "mismas filas"},
+    {"id": "folds-models", "from": "folds", "to": "models", "label": "mismas filas", "variant": "emphasis", "labelDy": 14},
+    {"id": "tabular-metrics", "from": "tabular", "to": "metrics"},
+    {"id": "models-metrics", "from": "models", "to": "metrics", "label": "predicciones", "variant": "emphasis", "labelDx": -42, "labelDy": 53},
+    {"id": "metrics-blocks", "from": "metrics", "to": "blocks", "label": "diferencias", "labelDy": 24}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Datos",
+      "items": [
+        "Cuatro modalidades y macro calculadas con las mismas filas para todos los modelos",
+        "Ausencias explícitas con máscara, sin valores inventados",
+        "period_end no equivale a fecha de publicación"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Contrato temporal",
+      "items": [
+        "Cada predicción se emite antes de conocer su etiqueta",
+        "Las etiquetas solo se usan al madurar, con purga por intervalo",
+        "Selección con validación y calibración anteriores a la evaluación"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Estado",
+      "items": [
+        "Campaña completa y test de 2024 cerrados por el bloqueo de aprendizaje",
+        "Ensayos acotados con ventanas de hasta 366 días antes de 2024",
+        "Fase 0 sin optimizador: ningún IC robusto con 64 activos"
+      ]
+    }
+  ]
+}
