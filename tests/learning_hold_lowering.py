@@ -38,6 +38,14 @@ _ADAPTER = (
     "`recorder` registra los gradientes sin cambiar pesos"
 )
 
+# Pruebas CUDA del ejecutor de ventanas que completan actualizaciones reales sobre la vista
+# corta del fixture con la protección permitida de `allowed_child` (#745).
+_WINDOWS = "tests/training/test_window_variants.py::"
+_WINDOW_UPDATES = (
+    "ejecuta en CUDA el ejecutor de variantes por ventana sobre la vista corta del fixture con "
+    "la protección permitida de `allowed_child` y actualiza pesos de verdad"
+)
+
 INVENTORY = {
     "tests/training/test_campaign_a_joint.py::"
     "test_integrity_recounts_the_rows_the_joint_design_drops": (
@@ -235,6 +243,22 @@ INVENTORY = {
         "sus predicciones y comprueba la publicación desde agregados con el historial real "
         "de esos ajustes técnicos"
     ),
+    _WINDOWS + "test_resume_admission_preserves_confirmed_runtime": _WINDOW_UPDATES,
+    _WINDOWS + "test_full_short_epochs_seal_configuration_before_first_update": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_six_published_routes_complete_fixture_updates_and_recover_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS + "test_resume_restores_exact_optimizer_rng_cursor_and_weights": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_selection_can_keep_initial_checkpoint_without_stopping_fixed_updates": _WINDOW_UPDATES,
+    _WINDOWS + "test_timeout_is_partial_and_has_recoverable_confirmed_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS + "test_fp32_strict_is_applied_and_enforced_before_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_selected_session_artifacts_reuse_predictions_and_completed_resume_verifies_them": (
+        _WINDOW_UPDATES
+    ),
+    _WINDOWS + "test_published_precomputed_recipe_completes_fixture_updates_and_checkpoint": (
+        _WINDOW_UPDATES
+    ),
 }
 
 
@@ -317,6 +341,7 @@ _WARMUP = (
     "el entrenador PPO de Python avanza menos transiciones que el calentamiento y el "
     "recorrido, así que no actualiza, y el gancho de torch.optim sigue activo"
 )
+_REAL_HOLD = "lee la protección real por su ruta y se detiene si no bloquea o cambia su huella"
 _RETIRED = "comprueba que la campaña B retirada se rechaza antes de llegar a ningún ejecutor"
 _COUNTED = "las pasadas de ajuste solo cuentan actualizaciones y la validación es fija"
 _CLOSES = "solo apunta la variable a una protección que bloquea"
@@ -336,6 +361,11 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/conftest.py": (2, _DEFINES),
+    "tests/training/test_window_variants.py": (
+        1,
+        "el fixture `allowed_child` escribe la protección permitida. Las pruebas que actualizan "
+        "pesos están en el inventario y las demás se rechazan antes del primer forward",
+    ),
     "tests/tooling/test_neural_plasticity_analysis.py": (
         1,
         "analiza predicciones y checkpoints mínimos escritos por el fixture, sin abrir "
@@ -475,4 +505,19 @@ REDIRECTIONS = {
     "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (1, _RECORDER),
+    "tests/training/test_window_variant_cli.py": (1, _CLOSES),
+    "tests/training/test_window_variants.py": (
+        2,
+        "apunta la variable a la protección permitida de `allowed_child` y, en la prueba del "
+        "orden de comprobaciones, a una que bloquea",
+    ),
+    "benchmarks/hierarchical_bridge_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/nonlinear_bridge_cuda.py": (
+        2,
+        "lee la protección real, guarda su huella y la pasa sin cambios a cada proceso hijo",
+    ),
+    "benchmarks/regional_decision_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/regional_program_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/regional_program_session_cuda.py": (1, _REAL_HOLD),
+    "reports/engineering/regional-geometry-20261022/cost.py": (1, _REAL_HOLD),
 }
