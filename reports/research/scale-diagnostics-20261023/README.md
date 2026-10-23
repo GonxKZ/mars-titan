@@ -16,7 +16,7 @@ Este diagnóstico abre el estudio de variantes de [#742](https://github.com/Gonx
 
 La lectura honesta es que hay, como mucho, una señal de ordenación débil y frágil. No hay evidencia de que no exista, ni de que sea estable. Las dos sensibilidades de familia se añadieron tras la revisión de la PR y no cambian la decisión declarada.
 
-La amplitud explica la pérdida frente a cero. El λ elegido con la partición de calibración tiene una mediana entre 0 y 0,019 según el estudio, y vale exactamente cero en el 43 % de los predictores de la población principal y en el 61 % de los de 256 activos. En la calibración, la pendiente mediana es 0,015 en la población principal y 0,006 con 256 activos. Con esas pendientes, las predicciones tendrían entre 65 y 165 veces la amplitud que les corresponde. En 2023 la pendiente mediana de la población principal es −0,006, negativa en 152 de 282 predictores. La relación que se observa en calibración no se mantiene en la evaluación.
+La amplitud explica la pérdida frente a cero. El λ elegido con la partición de calibración tiene una mediana entre 0 y 0,019 según el estudio, y vale exactamente cero en el 43 % de los predictores de la población principal y en el 61 % de los de 256 activos. En la calibración, la pendiente mediana es 0,015 en la población principal y 0,006 con 256 activos. Con esas pendientes, las predicciones tendrían entre 65 y 165 veces la amplitud que les corresponde. En 2023 la pendiente mediana de la población principal es −0,006, negativa en 152 de los 281 predictores con pendiente definida. La relación que se observa en calibración no se mantiene en la evaluación.
 
 Tras contraer con λ de calibración, el exceso mediano frente a cero es del 0 % porque la predicción queda casi en cero. La mejor mejora frente a cero es del 0,028 % en la población principal y del 0,053 % con 256 activos. Con λ elegido sobre la propia evaluación (una cota con información futura, no un resultado) llega al 0,064 % y al 0,080 %. Frente al efecto mínimo detectable de su propia serie de diferencias, estas mejoras quedan cortas:
 
@@ -27,7 +27,7 @@ Tras contraer con λ de calibración, el exceso mediano frente a cero es del 0 %
 | 256 activos | λ de calibración | 0,053 % | 1,3 / 1,5 / 1,5 |
 | 256 activos | Cota con información futura | 0,080 % | 2,1 / 2,4 / 2,4 |
 
-Batir a cero en MAE no es imposible, pero la mejor mejora observada necesita entre 1,3 y 11 veces más potencia de la que dan 249 sesiones. Con 256 activos la distancia es menor.
+Batir a cero en MAE no es imposible, pero el efecto detectable es entre 1,3 y 11 veces mayor que la mejor mejora observada. Como el número de sesiones necesario crece con el cuadrado de esa razón, harían falta entre unas 1,7 y 115 veces más sesiones que las 249 de 2023. Con 256 activos la distancia es menor.
 
 ## Datos
 
@@ -69,13 +69,14 @@ El estudio combinado usó etiquetas distintas de las de los pilotos posteriores.
 
 Las pruebas de [`scale_diagnostics`](../../../src/mars_titan/evaluation/scale_diagnostics.py) y del [script](../../../scripts/diagnose_prediction_scale.py) cubren:
 
-- λ frente a una rejilla densa, con amplitud conocida, empates y recorte;
-- pesos por sesión en λ y en la pendiente;
-- el retraso de la mediana pasada y su alineación con la evaluación;
-- que la serie contraída usa el λ de calibración;
-- el rechazo de un ajuste posterior o simultáneo a la evaluación;
-- los bloques circulares;
-- el recorte de la autocorrelación;
+- λ frente a una rejilla densa, con amplitud conocida, empates y recorte
+- pesos por sesión en λ y en la pendiente
+- el retraso de la mediana pasada y su alineación con la evaluación
+- que λ sale solo de la calibración y la sensibilidad de validación y calibración
+- que la serie contraída usa el λ de calibración
+- el rechazo de un ajuste posterior o simultáneo a la evaluación
+- los bloques circulares y el recorte de la autocorrelación
+- la decisión de la regla, su sensibilidad a la familia y la mejor mejora frente a cero
 - la huella de los inventarios, el cero con signo y las carpetas omitidas.
 
 ## Población principal por estudio
@@ -121,9 +122,9 @@ La regla se declaró sobre la población principal, así que estos resultados no
 
 | Población | Candidatas | Efecto detectable (% del MAE de cero) | Autocorrelación mediana |
 | --- | ---: | ---: | ---: |
-| Principal | 8 / 26 / 32 | 1,43 / 1,60 / 1,63 | 0,17 |
+| Principal | 8 / 26 / 32 | 1,43 / 1,60 / 1,63 | 0,18 |
 | Estudio combinado | 8 / 26 / 32 | 1,38 / 1,54 / 1,57 | 0,14 |
-| 256 activos | 8 / 26 / 32 | 1,10 / 1,23 / 1,25 | 0,14 |
+| 256 activos | 8 / 26 / 32 | 1,10 / 1,23 / 1,25 | 0,15 |
 
 Estas cifras usan las diferencias de las predicciones en bruto, cuya dispersión es mucho mayor que la de las contraídas. Para una predicción contraída hay que usar su propia serie, como en la tabla de la sección de resultado.
 
@@ -136,7 +137,7 @@ Estas cifras usan las diferencias de las predicciones en bruto, cuya dispersión
 ## Limitaciones
 
 - 2023 se ha usado ya en todos estos pilotos. El diagnóstico describe esos predictores y no estima su rendimiento en datos nuevos.
-- La calibración tiene 62 sesiones, poco para fijar λ. En los 56 predictores con validación, el λ mediano sigue siendo cero en la población principal.
+- La calibración tiene 62 sesiones, poco para fijar λ. En los 56 predictores de la población principal que guardan validación, el λ mediano es 0,0015 con solo la calibración y cero con validación y calibración juntas.
 - Muchos predictores comparten código, padre o semilla. El intervalo simultáneo tiene en cuenta su correlación en el bootstrap, pero el número de familias independientes es menor que el de predictores.
 - Solo hay datos de EE. UU. en estos pilotos. China queda pendiente de la criba.
 
