@@ -4,6 +4,8 @@
 
 Este incremento técnico de [#711](https://github.com/GonxKZ/mars-titan/issues/711) conserva evidencia para una revisión posterior. El ciclo exterior completo, el selector aprendido y la confirmación de un cambio de consumidor siguen sin implementar.
 
+Los [controles finitos desde errores maduros](error-proposals.md) amplían este contrato con una fuente cerrada completa, un plan temporal y generación programada. El vínculo opcional `generation_plan_id` del ledger usa esquema 2. Omitirlo conserva el formato anterior descrito aquí. Los controles no completan el aprendizaje, selección o despliegue del ciclo exterior.
+
 ## API y procedencia de la señal
 
 La función de entrada es `build_mature_review(window, decision_events, *, review_at, parent_consumer_id, expected_window_sha256, expected_events_sha256)`. Devuelve un `MatureReview` con identidad `review_id`. Su método `record()` comprueba el sello y la coherencia interna y devuelve una copia sin alias mutables. El constructor público `MatureReview(body)` también valida el esquema cerrado, los tipos, los enlaces temporales, las pérdidas y el recuento de filas maduras.
