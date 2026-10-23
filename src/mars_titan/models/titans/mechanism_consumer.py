@@ -242,12 +242,24 @@ class FrozenMechanismConsumer:
                     recipe="frozen_intervened_regional_mechanism_cohort_v1",
                     intervention="fixed_reader_mask_and_directed_edge_cuts_dense_work_unchanged",
                 )
+            if readout.config.evidence_bridge.hierarchy is not None:
+                self._identity.update(
+                    schema_version=5,
+                    recipe="frozen_hierarchical_regional_mechanism_cohort_v1",
+                    node_work="R0_separate_local_group_root_updates_per_value_projection",
+                    node_budget="conservative_collection_plus_final_emission_per_row_before_mac",
+                )
         if predictor.regional_execution is not None:
             self._identity.update(
                 schema_version=5,
                 recipe="frozen_pre_mac_regional_program_cohort_v1",
                 regional_execution=predictor.regional_execution.get_extra_state(),
             )
+            if regional and readout.config.evidence_bridge.hierarchy is not None:
+                self._identity.update(
+                    schema_version=6,
+                    recipe="frozen_pre_mac_hierarchical_bridge_cohort_v1",
+                )
         self.model_id = _digest(self._identity)
         self._methods = _methods(self)
 
@@ -592,7 +604,9 @@ class FrozenMechanismConsumer:
                     final.searches,
                 )
                 if regional:
-                    regional_rows = regional_mechanism_trace.export(final, event.snapshot)
+                    regional_rows = regional_mechanism_trace.export(
+                        final, event.snapshot, reader=self.readout
+                    )
             if self.readout is None:
                 initial_points = prepared.point_predictions.index_select(0, index)
                 initial_quantiles = (

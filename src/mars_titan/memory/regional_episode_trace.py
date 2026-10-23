@@ -6,9 +6,14 @@ import torch
 
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.episodic_snapshot import _digest_id
-from mars_titan.models.titans.regional_episode_readout import BridgedReadoutResult
+from mars_titan.models.titans.evidence_bridge import HierarchyBridgeRead
+from mars_titan.models.titans.regional_episode_readout import (
+    BridgedReadoutResult,
+    hierarchy_weights,
+)
 
 KIND = "regional_episode_trace_v1"
+HIERARCHY_KIND = "hierarchical_episode_trace_v1"
 _TENSORS = ("evidence_ids", "regional_weights", "regional_values", "read_values", "presence")
 
 
@@ -27,6 +32,9 @@ def estimated_bytes(reader, flows, episodes, block_rows):
     tensors = len(flows) * steps * (k * 8 + size * (r * k + r * h + h) + 1)
     blocks = (len(flows) + block_rows - 1) // block_rows
     metadata = blocks * (512 + steps * 5 * 224)
+    if reader.config.evidence_bridge.hierarchy is not None:
+        tensors += len(flows) * steps * 3 * h * size + 49 * size
+        metadata += blocks * steps * 2 * 224 + 512
     return 65536 + tensors + metadata + sum(len(flow.encode()) + 512 for flow in flows)
 
 
@@ -36,9 +44,12 @@ def begin(reader, flows, snapshot, *, context_id, cutoff, block_rows):
         raise ValueError("La traza regional del evento supera su presupuesto antes de emitir")
     edges = reader.evidence_bridge.edges.detach().cpu().to(reader.step_logit.dtype)
     graph = edges / edges.sum(-1, keepdim=True).clamp_min(1)
-    return dict(
+    full = hierarchy_weights(reader)
+    if full is not None:
+        graph = full[:4, :4].clone()
+    result = dict(
         schema_version=1,
-        kind=KIND,
+        kind=KIND if full is None else HIERARCHY_KIND,
         configuration_sha256=hashlib.sha256(
             canonical(reader.config.identity()).encode()
         ).hexdigest(),
@@ -54,6 +65,9 @@ def begin(reader, flows, snapshot, *, context_id, cutoff, block_rows):
         bridge_weights=graph,
         blocks=[],
     )
+    if full is not None:
+        result["hierarchy_weights"] = full
+    return result
 
 
 def append(trace, flows, result):
@@ -66,6 +80,9 @@ def append(trace, flows, result):
         bridge = read.bridge
         if bridge is not None and bridge.snapshot_sha256 != trace["snapshot_sha256"]:
             raise ValueError("La traza mezcla snapshots de evidencia")
+        hierarchical = trace["kind"] == HIERARCHY_KIND
+        if bridge is not None and (type(bridge) is HierarchyBridgeRead) != hierarchical:
+            raise ValueError("La lectura y la traza no comparten el contrato jerárquico")
         raw = dict(
             evidence_ids=bridge.evidence_ids
             if bridge is not None
@@ -79,6 +96,25 @@ def append(trace, flows, result):
             read_values=read.values,
             presence=read.presence,
         )
+        if hierarchical:
+            if bridge is not None and (
+                not torch.equal(
+                    bridge.hierarchy_weights.detach().cpu(),
+                    trace["hierarchy_weights"].expand(b, -1, -1),
+                )
+                or not torch.equal(
+                    bridge.bridge_weights.detach().cpu(), trace["bridge_weights"].expand(b, -1, -1)
+                )
+            ):
+                raise ValueError("La lectura no conserva el grafo jerárquico efectivo de la sesión")
+            raw.update(
+                group_values=bridge.group_values
+                if bridge is not None
+                else read.values.new_zeros((b, 2, h)),
+                root_values=bridge.root_values
+                if bridge is not None
+                else read.values.new_zeros((b, 1, h)),
+            )
         reads.append(
             {
                 name: value.detach().to(device="cpu", copy=True).contiguous()
@@ -109,6 +145,9 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
         "bridge_weights",
         "blocks",
     }
+    hierarchical = reader.config.evidence_bridge.hierarchy is not None
+    if hierarchical:
+        fields.add("hierarchy_weights")
     if (
         type(trace) is not dict
         or set(trace) != fields
@@ -117,7 +156,7 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
             type(trace[name]) is not int
             for name in ("schema_version", "hidden_size", "rows", "refinements", "block_rows")
         )
-        or trace["kind"] != KIND
+        or trace["kind"] != (HIERARCHY_KIND if hierarchical else KIND)
         or trace["configuration_sha256"]
         != hashlib.sha256(canonical(reader.config.identity()).encode()).hexdigest()
         or trace["context_id"] != context_id
@@ -148,19 +187,28 @@ def _verify_header(trace, reader, *, flows, context_id, cutoff, refinements, blo
     dtype = reader.step_logit.dtype
     graph = reader.evidence_bridge.edges.detach().cpu().to(dtype)
     graph /= graph.sum(-1, keepdim=True).clamp_min(1)
-    if (
-        not isinstance(trace["bridge_weights"], torch.Tensor)
-        or trace["bridge_weights"].device.type != "cpu"
-        or trace["bridge_weights"].layout != torch.strided
-        or trace["bridge_weights"].dtype != dtype
-        or not torch.equal(trace["bridge_weights"], graph)
-    ):
-        raise ValueError("La traza regional cambió los puentes")
+    graphs = dict(bridge_weights=graph)
+    if hierarchical:
+        full = hierarchy_weights(reader)
+        graphs.update(bridge_weights=full[:4, :4], hierarchy_weights=full)
+    for name, expected in graphs.items():
+        value = trace[name]
+        if (
+            not isinstance(value, torch.Tensor)
+            or value.device.type != "cpu"
+            or value.layout != torch.strided
+            or value.dtype != dtype
+            or value.requires_grad
+            or value.grad_fn is not None
+            or not torch.equal(value, expected)
+        ):
+            raise ValueError("La traza regional cambió los puentes")
     return True
 
 
-def _verify_read(read, rows, r, h, expected_count, dtype, active):
-    if type(read) is not dict or set(read) != set(_TENSORS):
+def _verify_read(read, rows, r, h, expected_count, dtype, active, hierarchical=False):
+    names = _TENSORS + (("group_values", "root_values") if hierarchical else ())
+    if type(read) is not dict or set(read) != set(names):
         raise ValueError("La lectura regional no conserva sus campos")
     ids = read["evidence_ids"]
     if not isinstance(ids, torch.Tensor) or ids.ndim != 2 or ids.shape[0] != rows:
@@ -175,9 +223,11 @@ def _verify_read(read, rows, r, h, expected_count, dtype, active):
         (rows, h),
         (rows, 1),
     )
-    for name, shape, required_dtype in zip(
-        _TENSORS, shapes, (torch.int64, dtype, dtype, dtype, torch.bool), strict=True
-    ):
+    dtypes = (torch.int64, dtype, dtype, dtype, torch.bool)
+    if hierarchical:
+        shapes += ((rows, 2, h), (rows, 1, h))
+        dtypes += (dtype, dtype)
+    for name, shape, required_dtype in zip(names, shapes, dtypes, strict=True):
         value = read[name]
         if (
             not isinstance(value, torch.Tensor)
@@ -219,6 +269,12 @@ def _verify_read(read, rows, r, h, expected_count, dtype, active):
         or read["read_values"].count_nonzero()
     ):
         raise ValueError("Una lectura ausente debe conservar valores cero")
+    if (
+        hierarchical
+        and not k
+        and (read["group_values"].count_nonzero() or read["root_values"].count_nonzero())
+    ):
+        raise ValueError("Una lectura ausente no debe inventar auxiliares jerárquicos")
     return ids
 
 
@@ -256,6 +312,7 @@ def verify(trace, reader, *, flows, context_id, cutoff, refinements, block_rows)
                 min(trace["episodes"], reader.config.neighbors),
                 dtype,
                 reader.config.evidence_bridge.active_views(),
+                reader.config.evidence_bridge.hierarchy is not None,
             )
             if first_ids is None:
                 first_ids = ids

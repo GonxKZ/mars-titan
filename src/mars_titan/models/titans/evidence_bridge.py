@@ -7,6 +7,12 @@ from dataclasses import asdict, dataclass
 import torch
 from torch import nn
 
+from .bridge_hierarchy import (
+    BridgeHierarchyConfig,
+    hierarchy_graph,
+    hierarchy_mix,
+    hierarchy_options,
+)
 from .bridge_intervention import BridgeInterventionConfig, intervention_options
 from .bridge_recurrence import BridgeRecurrenceConfig, nonlinear_mix
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
@@ -20,7 +26,7 @@ BRIDGE_VIEW_FIELDS = ("regions", "topology", "cycles", "bridge_gain", "seed")
 
 def bridge_view_options(value):
     """Validar las vistas y devolver sus opciones propias, sin codec ni formas del lector."""
-    if type(value) is not dict or set(value) - {"recurrence", "intervention"} != set(
+    if type(value) is not dict or set(value) - {"recurrence", "intervention", "hierarchy"} != set(
         BRIDGE_VIEW_FIELDS
     ):
         raise ValueError("El puente declara regiones, topología, ciclos, ganancia y semilla")
@@ -57,7 +63,19 @@ def bridge_view_options(value):
         checked = intervention_options(intervention)
         checked.edges(len(regions), topology)
         result["intervention"] = asdict(checked)
+    hierarchy = value.get("hierarchy")
+    if hierarchy is not None:
+        checked = hierarchy_options(hierarchy)
+        _check_hierarchy(len(regions), topology, value["cycles"], recurrence, intervention)
+        result["hierarchy"] = asdict(checked)
     return result
+
+
+def _check_hierarchy(regions, topology, cycles, recurrence, intervention):
+    if regions != 4 or topology != "self" or cycles != 0:
+        raise ValueError("La jerarquía requiere cuatro vistas, topology=self y cycles=0")
+    if recurrence is not None or intervention is not None:
+        raise ValueError("La jerarquía no compone recurrencia plana ni lesiones fijas")
 
 
 @dataclass(frozen=True)
@@ -75,6 +93,7 @@ class EvidenceBridgeConfig:
     max_working_bytes: int = 32 * 1024**2
     recurrence: BridgeRecurrenceConfig | None = None
     intervention: BridgeInterventionConfig | None = None
+    hierarchy: BridgeHierarchyConfig | None = None
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec de evidencia")
@@ -85,6 +104,13 @@ class EvidenceBridgeConfig:
         if type(self.regions) is not tuple:
             raise ValueError("Se necesitan entre una y ocho regiones distintas identificadas")
         bridge_view_options({name: getattr(self, name) for name in BRIDGE_VIEW_FIELDS})
+        if self.hierarchy is not None:
+            if type(self.hierarchy) is not BridgeHierarchyConfig:
+                raise ValueError("La jerarquía necesita BridgeHierarchyConfig explícito")
+            self.hierarchy.__post_init__()
+            _check_hierarchy(
+                len(self.regions), self.topology, self.cycles, self.recurrence, self.intervention
+            )
         if self.intervention is not None:
             if type(self.intervention) is not BridgeInterventionConfig:
                 raise ValueError("La intervención necesita BridgeInterventionConfig explícito")
@@ -107,6 +133,7 @@ class EvidenceBridgeConfig:
         fields = asdict(self)
         fields.pop("recurrence")
         fields.pop("intervention")
+        fields.pop("hierarchy")
         result = dict(
             schema_version=1,
             kind=KIND,
@@ -131,6 +158,13 @@ class EvidenceBridgeConfig:
                 kind="shared_evidence_bridge_intervention_v1",
                 intervention=asdict(self.intervention),
             )
+        if self.hierarchy is not None:
+            result.update(
+                schema_version=4,
+                kind="shared_evidence_bridge_hierarchy_v1",
+                bridge="fixed_group_root_group_local_two_rounds",
+                hierarchy=self.hierarchy.identity(),
+            )
         return result
 
     def active_views(self):
@@ -151,6 +185,13 @@ class BridgeRead:
     bridge_weights: torch.Tensor
     snapshot_sha256: str
     selected_positions: torch.Tensor | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class HierarchyBridgeRead(BridgeRead):
+    group_values: torch.Tensor
+    root_values: torch.Tensor
+    hierarchy_weights: torch.Tensor
 
 
 class SharedEvidenceBridge(nn.Module):
@@ -193,6 +234,8 @@ class SharedEvidenceBridge(nn.Module):
             if config.intervention is not None:
                 self.edges.copy_(torch.tensor(config.intervention.edges(regions, config.topology)))
                 self.register_buffer("active_regions", torch.tensor(config.active_views()))
+            if config.hierarchy is not None:
+                self.register_buffer("hierarchy_edges", torch.tensor(config.hierarchy.edges()))
         self.to(device=device)
 
     def get_extra_state(self):
@@ -234,6 +277,16 @@ class SharedEvidenceBridge(nn.Module):
             supplied["active_regions"].cpu(), torch.tensor(self.config.active_views())
         ):
             raise ValueError("El checkpoint cambió las regiones activas declaradas")
+        if self.config.hierarchy is not None:
+            if (
+                supplied["edges"].dtype != torch.bool
+                or supplied["hierarchy_edges"].dtype != torch.bool
+                or not torch.equal(supplied["edges"].cpu(), torch.eye(4, dtype=torch.bool))
+                or not torch.equal(
+                    supplied["hierarchy_edges"].cpu(), torch.tensor(self.config.hierarchy.edges())
+                )
+            ):
+                raise ValueError("El checkpoint cambió la geometría jerárquica declarada")
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         self.validate_payload(state_dict, prefix)
@@ -260,6 +313,10 @@ class SharedEvidenceBridge(nn.Module):
             + k * (64 * (8 + size) + (65 + h) * size + 32)
             + size * (r * (128 + k + h * (steps + 4)) + r * r)
         )
+        if self.config.hierarchy is not None:
+            # Estados completos retenidos y mensajes de todas las fases, además de G.
+            phases = 2 * (3 + self.config.hierarchy.local_steps)
+            working += batch * size * (49 * 3 + 7 * h * (4 + 3 * phases))
         return 131072 + working * (4 if differentiable else 1)
 
     def forward(self, state, snapshot, *, context_id, cutoff, available=None, positions=None):
@@ -281,6 +338,13 @@ class SharedEvidenceBridge(nn.Module):
         if type(snapshot) is not EpisodeSnapshot:
             raise ValueError("El puente requiere una instantánea episódica común")
         recurrence = self.config.recurrence
+        hierarchy = self.config.hierarchy
+        if (
+            hierarchy is not None
+            and snapshot.count > 0
+            and hierarchy.node_updates(4, 1) > hierarchy.max_node_updates_per_row
+        ):
+            raise ValueError("La lectura supera su presupuesto de actualizaciones jerárquicas")
         if (
             recurrence is not None
             and snapshot.count > 0
@@ -336,7 +400,26 @@ class SharedEvidenceBridge(nn.Module):
                 check_finite(value, "Los parámetros del puente")
             allowed = self.edges[None] & available[:, :, None] & available[:, None, :]
             graph = allowed.to(state.dtype) / allowed.sum(-1, keepdim=True).clamp_min(1)
+            hierarchy_weights = None
+            if hierarchy is not None:
+                hierarchy_weights, _ = hierarchy_graph(
+                    available, self.hierarchy_edges, feedback=hierarchy.feedback
+                )
+                hierarchy_weights = hierarchy_weights.to(state.dtype)
+                graph = hierarchy_weights[:, :4, :4]
             if count == 0:
+                if hierarchy is not None:
+                    return HierarchyBridgeRead(
+                        torch.zeros_like(state),
+                        state.new_zeros((b, r, h)),
+                        torch.empty((b, 0), dtype=torch.int64, device=state.device),
+                        state.new_empty((b, r, 0)),
+                        graph,
+                        snapshot._digest,
+                        group_values=state.new_zeros((b, 2, h)),
+                        root_values=state.new_zeros((b, 1, h)),
+                        hierarchy_weights=hierarchy_weights,
+                    )
                 return BridgeRead(
                     torch.zeros_like(state),
                     state.new_zeros((b, r, h)),
@@ -376,7 +459,17 @@ class SharedEvidenceBridge(nn.Module):
             transformed = torch.einsum("brh,rhd->brd", mixed, self.region_value)
             check_finite(transformed, "La transformación regional antes de tanh")
             local = torch.tanh(transformed)
-            if recurrence is None:
+            if hierarchy is not None:
+                full = hierarchy_mix(
+                    local,
+                    hierarchy_weights,
+                    self.region_value,
+                    available,
+                    local_steps=hierarchy.local_steps,
+                    gain=self.config.bridge_gain,
+                )
+                local = full[:, :4]
+            elif recurrence is None:
                 for _ in range(self.config.cycles):
                     local = (
                         1 - self.config.bridge_gain
@@ -393,6 +486,19 @@ class SharedEvidenceBridge(nn.Module):
             result = self.output(local.reshape(b, r * h))
             check_finite(local, "Las vistas regionales")
             check_finite(result, "La salida del puente")
+            if hierarchy is not None:
+                return HierarchyBridgeRead(
+                    result,
+                    local,
+                    ids.index_select(0, flat).reshape(b, count),
+                    weights,
+                    graph,
+                    snapshot._digest,
+                    positions,
+                    group_values=full[:, 4:6],
+                    root_values=full[:, 6:7],
+                    hierarchy_weights=hierarchy_weights,
+                )
             return BridgeRead(
                 result,
                 local,

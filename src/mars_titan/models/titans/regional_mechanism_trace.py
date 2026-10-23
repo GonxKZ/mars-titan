@@ -3,9 +3,12 @@
 import numpy as np
 
 from .episodic_snapshot import _digest_id
+from .evidence_bridge import HierarchyBridgeRead
+from .regional_episode_readout import hierarchy_weights
 from .regional_routes import REFRESH_AT, RegionalRouteResult
 
 KIND = "regional_mechanism_trace_v1"
+HIERARCHY_KIND = "hierarchical_mechanism_trace_v1"
 
 
 def verify_work(work, reader, *, value_projections):
@@ -24,15 +27,20 @@ def estimated_bytes(reader, rows, episodes, steps):
     r, h = len(reader.config.evidence_bridge.regions), reader.config.hidden_size
     k = min(episodes, reader.config.neighbors)
     # Estimación conservadora de números y metadatos JSON, no del asignador de Python.
-    return 32768 + rows * (1024 + steps * (2048 + 40 * (k * (r + 1) + r * h + h)))
+    total = 32768 + rows * (1024 + steps * (2048 + 40 * (k * (r + 1) + r * h + h)))
+    if reader.config.evidence_bridge.hierarchy is not None:
+        total += rows * (2048 + 40 * 65 + steps * (512 + 40 * 3 * h))
+    return total
 
 
-def export(result, snapshot):
+def export(result, snapshot, *, reader=None):
     if type(result) is not RegionalRouteResult:
         raise ValueError("El controlador necesita el resultado de una ruta regional")
+    full = hierarchy_weights(reader) if reader is not None else None
+    hierarchical = full is not None
     rows = [
         dict(
-            kind=KIND,
+            kind=HIERARCHY_KIND if hierarchical else KIND,
             snapshot_sha256=snapshot._digest if snapshot is not None else None,
             episodes=snapshot.count if snapshot is not None else 0,
             value_projections=result.value_projections,
@@ -40,17 +48,25 @@ def export(result, snapshot):
         )
         for _ in range(len(result.state))
     ]
+    if hierarchical:
+        for row in rows:
+            row.update(hierarchy_weights=full.tolist(), bridge_weights=full[:4, :4].tolist())
     for read in result.reads:
         bridge = read.bridge
         if (bridge is None) != (snapshot is None) or (
             bridge is not None and bridge.snapshot_sha256 != snapshot._digest
         ):
             raise ValueError("La exportación regional mezcla snapshots")
+        if bridge is not None and (type(bridge) is HierarchyBridgeRead) != hierarchical:
+            raise ValueError("La exportación jerárquica necesita su lector identificado")
         if bridge is None:
             parts = [
                 dict(evidence_ids=[], regional_weights=[], regional_values=[], read_values=[])
                 for _ in rows
             ]
+            if hierarchical:
+                for part in parts:
+                    part.update(group_values=[], root_values=[])
         else:
             arrays = {
                 name: value.detach().cpu().tolist()
@@ -61,6 +77,21 @@ def export(result, snapshot):
                     read_values=read.values,
                 ).items()
             }
+            if hierarchical:
+                if not np.array_equal(
+                    bridge.hierarchy_weights.detach().cpu().numpy(),
+                    full.expand(len(rows), -1, -1).numpy(),
+                ) or not np.array_equal(
+                    bridge.bridge_weights.detach().cpu().numpy(),
+                    full[:4, :4].expand(len(rows), -1, -1).numpy(),
+                ):
+                    raise ValueError(
+                        "La lectura no conserva el grafo jerárquico efectivo de la sesión"
+                    )
+                arrays.update(
+                    group_values=bridge.group_values.detach().cpu().tolist(),
+                    root_values=bridge.root_values.detach().cpu().tolist(),
+                )
             parts = [{name: value[i] for name, value in arrays.items()} for i in range(len(rows))]
         for row, part in zip(rows, parts, strict=True):
             row["reads"].append(part)
@@ -76,10 +107,14 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         or type(searches) is not int
     ):
         raise ValueError("La traza regional necesita una ruta y trabajo válidos")
+    full = hierarchy_weights(reader)
+    fields = {"kind", "snapshot_sha256", "episodes", "value_projections", "reads"}
+    if full is not None:
+        fields.update(("hierarchy_weights", "bridge_weights"))
     if (
         type(trace) is not dict
-        or set(trace) != {"kind", "snapshot_sha256", "episodes", "value_projections", "reads"}
-        or trace["kind"] != KIND
+        or set(trace) != fields
+        or trace["kind"] != (HIERARCHY_KIND if full is not None else KIND)
         or trace["snapshot_sha256"] != snapshot_sha256
         or type(trace["episodes"]) is not int
         or not 0 <= trace["episodes"] <= 1024
@@ -89,6 +124,11 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         or len(trace["reads"]) != steps
     ):
         raise ValueError("El recibo regional no corresponde al trabajo declarado")
+    if full is not None:
+        for name, expected in (("hierarchy_weights", full), ("bridge_weights", full[:4, :4])):
+            value = np.asarray(trace[name])
+            if value.dtype.kind != "f" or not np.array_equal(value, expected.numpy()):
+                raise ValueError("El recibo cambió el grafo jerárquico efectivo")
     if reader.config.mode == "no_bank":
         if snapshot_sha256 is not None or trace["episodes"] != 0:
             raise ValueError("El control regional sin banco no puede atribuirse episodios")
@@ -102,12 +142,15 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         raise ValueError("El recibo regional no conserva las búsquedas de su ruta")
     previous_ids = None
     for step, read in enumerate(trace["reads"]):
-        if type(read) is not dict or set(read) != {
+        read_fields = {
             "evidence_ids",
             "regional_weights",
             "regional_values",
             "read_values",
-        }:
+        }
+        if full is not None:
+            read_fields.update(("group_values", "root_values"))
+        if type(read) is not dict or set(read) != read_fields:
             raise ValueError("La lectura regional no conserva su esquema")
         ids = read["evidence_ids"]
         if (
@@ -120,11 +163,14 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
         if previous_ids is not None and step not in REFRESH_AT[route] and ids != previous_ids:
             raise ValueError("El bloque regional fijo cambió de episodios")
         previous_ids = ids
-        for name, shape in (
+        shapes = (
             ("regional_weights", (r, k)),
             ("regional_values", (r, h)),
             ("read_values", (h,)),
-        ):
+        )
+        if full is not None:
+            shapes += (("group_values", (2, h)), ("root_values", (1, h)))
+        for name, shape in shapes:
             if snapshot_sha256 is None:
                 if read[name] != []:
                     raise ValueError("El recibo sin banco no debe inventar vistas")
@@ -146,6 +192,8 @@ def verify(trace, reader, *, snapshot_sha256, steps, searches, route):
             ):
                 raise ValueError("Una región retirada debe conservar valores cero")
             if not k and any(
-                np.count_nonzero(read[name]) for name in ("regional_values", "read_values")
+                np.count_nonzero(read[name])
+                for name in ("regional_values", "read_values")
+                + (("group_values", "root_values") if full is not None else ())
             ):
                 raise ValueError("Una lectura regional vacía debe conservar ceros")
