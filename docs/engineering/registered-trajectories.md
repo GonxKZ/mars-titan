@@ -96,3 +96,5 @@ El contrato de recuperación exige reconstruir las trayectorias desde el archivo
 Antes de publicar una confirmación se validan el estado y el resultado recuperados. La confirmación fija únicamente la configuración experimental destinada a E, ligada al padre esperado y a las trayectorias comparadas. Repetir la operación conserva su identidad. Otro padre o resultado incompatible produce rechazo. E permanece preparada por sus límites y sin ejecutar.
 
 Las huellas comprueban coherencia local y enlaces con el archivo verificado. No autentican al host ni garantizan detectar una restauración coherente de todo el estado local. La preparación y las comprobaciones técnicas de este recorrido tampoco acreditan un proponente aprendido, una reproducción de SEAL o una mejora financiera observada.
+
+El [informe técnico del 23 de octubre](../../reports/engineering/registered-trajectories-20261023/README.md) conserva pruebas, cobertura, CRAP, mutación dirigida y una ejecución pequeña de las trayectorias.
