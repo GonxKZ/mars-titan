@@ -12,6 +12,7 @@ import json
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
+from mars_titan.models.titans.bridge_hierarchy import hierarchy_options
 from mars_titan.models.titans.bridge_intervention import intervention_options
 from mars_titan.models.titans.bridge_recurrence import BridgeRecurrenceConfig
 from mars_titan.models.titans.config import canonical
@@ -173,6 +174,10 @@ def check_components(declaration, components):
             default=None, kind="fixed_reader_mask_and_directed_edge_cuts_v1"
         ):
             raise ValueError("La declaración no admite las intervenciones regionales fijas")
+        if "hierarchy" in bridge and declared["evidence_bridge"].get("hierarchy") != dict(
+            default=None, kind="fixed_two_level_hierarchy_v1"
+        ):
+            raise ValueError("La declaración no admite la jerarquía temporal fija")
         components["evidence_bridge"] = bridge
     if "associative_memory" in components:
         if "episodic_bank" in components:
@@ -253,6 +258,8 @@ class MarsTitanVariant:
                 geometry["recurrence"] = BridgeRecurrenceConfig(**geometry["recurrence"])
             if "intervention" in geometry:
                 geometry["intervention"] = intervention_options(geometry["intervention"])
+            if "hierarchy" in geometry:
+                geometry["hierarchy"] = hierarchy_options(geometry["hierarchy"])
             bridge = EvidenceBridgeConfig(
                 codec_id,
                 **geometry,
@@ -316,6 +323,8 @@ class MarsTitanVariant:
             geometry["recurrence"] = asdict(bridge.recurrence)
         if bridge.intervention is not None:
             geometry["intervention"] = asdict(bridge.intervention)
+        if bridge.hierarchy is not None:
+            geometry["hierarchy"] = asdict(bridge.hierarchy)
         return bridge_view_options(geometry)
 
     def session_options(self, *, capacity, seed, policy="reservoir", **retention):

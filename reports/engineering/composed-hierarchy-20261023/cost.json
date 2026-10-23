@@ -1,0 +1,2209 @@
+{
+  "status": "passed",
+  "protocol": {
+    "kind": "joint_hierarchy_resident_cost_v1",
+    "controls": [
+      "flat",
+      "pre_only",
+      "post_only",
+      "both"
+    ],
+    "rows": [
+      4,
+      64,
+      256
+    ],
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "hidden_size": 32,
+    "seed": 42,
+    "fixture_seed": 23,
+    "fixture_event": 0,
+    "cpu_threads": 2,
+    "interop_threads": 1,
+    "predictor_max_batch": 256,
+    "reader_max_batch": 64,
+    "physical_block_rows": 64,
+    "pre": "RegionalHierarchyConfig(tree), self/uniform operator, two rounds",
+    "post": "BridgeHierarchyConfig(tree,local_steps=2), four views, quota988",
+    "flat": "four views, BridgeRecurrenceConfig(steps=4), quota988, cycles0",
+    "action": "off/k1/none",
+    "pt4": false,
+    "episodes": 8,
+    "optimizer_steps": 0,
+    "orders": [
+      [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ]
+    ],
+    "warmup": 1,
+    "samples": 3,
+    "records": 24,
+    "cohort_invocations": 96,
+    "physical_prepare_invocations": 192,
+    "timing": "begin + all physical prepare blocks + finish, CUDA synchronized",
+    "percentiles": "linear interpolation of three exploratory samples per order",
+    "tail_precision_claim": false,
+    "predictive_comparison": false,
+    "paired_parameters": false,
+    "allocator_cap_bytes": 536870912,
+    "free_margin_bytes": 268435456,
+    "retained_cpu_tensor_cap_bytes": 67108864,
+    "internal_seconds": 480,
+    "external_seconds": 510,
+    "initial_state": "new fast state, no own prefix, common mature fixture snapshot",
+    "excluded": [
+      "durable commit/reopen/prune",
+      "collection",
+      "feedback",
+      "corpus encoding",
+      "initial construction from sample latency",
+      "energy",
+      "physical transfers"
+    ]
+  },
+  "records": [
+    {
+      "arm": "flat",
+      "rows": 4,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 1.143465987057425,
+      "construction_memory": {
+        "allocated_bytes": 586240,
+        "reserved_bytes": 2097152,
+        "peak_allocated_bytes": 676352,
+        "peak_reserved_bytes": 2097152,
+        "free_global_vram_bytes": 1816854528,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 552040,
+      "frozen_sha256": "43c179b26505ad2648dd9ab515bc545f2ad0916ebab8466ef5cb5b2b30f8a2a6",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1029246976,
+        "process_lifetime_peak_rss_bytes": 1027510272
+      },
+      "result_sha256": "661e3961a1e181d3136b881a3146f5340196fb0954cfd105922f1ba447776539",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_node_updates": 64,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.15491263300646096,
+      "median_seconds": 0.19989903701934963,
+      "max_seconds": 0.3265531890792772,
+      "p50_seconds": 0.19989903701934963,
+      "p95_seconds": 0.3138877738732845,
+      "p99_seconds": 0.3240201060380787,
+      "throughput_rows_per_second": 20.010101397400987,
+      "ram_after": {
+        "rss_bytes": 1528315904,
+        "process_lifetime_peak_rss_bytes": 1526005760
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.3265531890792772,
+        0.15491263300646096,
+        0.19989903701934963
+      ],
+      "warmup_seconds": [
+        8.637250058003701
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 4,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.33013366092927754,
+      "construction_memory": {
+        "allocated_bytes": 67780096,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67870208,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 635073,
+      "frozen_sha256": "97d85f2de0f77baf355e6577983ca060663033583023f75cfd3167d2f6dd85d9",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1559814144,
+        "process_lifetime_peak_rss_bytes": 1557450752
+      },
+      "result_sha256": "81031c19059031bd15e36299c234d0373e70507d717ad46768767a29313e91c7",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 80,
+        "regional_summary_evaluations": 40,
+        "regional_program_selection_rows": 4,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_node_updates": 64,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.2358044149586931,
+      "median_seconds": 0.24432762595824897,
+      "max_seconds": 0.2490386099088937,
+      "p50_seconds": 0.24432762595824897,
+      "p95_seconds": 0.24856751151382922,
+      "p99_seconds": 0.2489443902298808,
+      "throughput_rows_per_second": 16.371460183072074,
+      "ram_after": {
+        "rss_bytes": 1560801280,
+        "process_lifetime_peak_rss_bytes": 1558368256
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.24432762595824897,
+        0.2358044149586931,
+        0.2490386099088937
+      ],
+      "warmup_seconds": [
+        0.2082688909722492
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 4,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.31697761500254273,
+      "construction_memory": {
+        "allocated_bytes": 67695616,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67785728,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 552089,
+      "frozen_sha256": "2cba4055c62b208e41d0045dbadfec81aff542893c8a6e4e8b7930bc5987892a",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1560805376,
+        "process_lifetime_peak_rss_bytes": 1558368256
+      },
+      "result_sha256": "baacf8450354c14edcbe9ac27a01390dec8f3a3da336a99074bb2a497f236617",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_local_updates": 64,
+        "bridge_group_updates": 32,
+        "bridge_root_updates": 8,
+        "bridge_node_updates": 104,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.13687505107373,
+      "median_seconds": 0.21059605199843645,
+      "max_seconds": 0.23320774093735963,
+      "p50_seconds": 0.21059605199843645,
+      "p95_seconds": 0.2309465720434673,
+      "p99_seconds": 0.23275550715858118,
+      "throughput_rows_per_second": 18.9937083912176,
+      "ram_after": {
+        "rss_bytes": 1561288704,
+        "process_lifetime_peak_rss_bytes": 1558892544
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.13687505107373,
+        0.23320774093735963,
+        0.21059605199843645
+      ],
+      "warmup_seconds": [
+        0.18510234996210784
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 4,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.505303188925609,
+      "construction_memory": {
+        "allocated_bytes": 67780608,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67870720,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 635122,
+      "frozen_sha256": "b18865be5ad4bd2ed0c35ffc1fd3b44dcdd246bdaecc895956af72765091d18d",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1561288704,
+        "process_lifetime_peak_rss_bytes": 1558892544
+      },
+      "result_sha256": "9ac46ec4de50d834e1b565d7c8dc0778fc64ae09b790e8f6df409e8e72ffd3d8",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 80,
+        "regional_summary_evaluations": 40,
+        "regional_program_selection_rows": 4,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_local_updates": 64,
+        "bridge_group_updates": 32,
+        "bridge_root_updates": 8,
+        "bridge_node_updates": 104,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.21016433206386864,
+      "median_seconds": 0.24969714903272688,
+      "max_seconds": 0.34224165591876954,
+      "p50_seconds": 0.24969714903272688,
+      "p95_seconds": 0.3329872052301653,
+      "p99_seconds": 0.34039076578104865,
+      "throughput_rows_per_second": 16.01940597037307,
+      "ram_after": {
+        "rss_bytes": 1561620480,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.34224165591876954,
+        0.21016433206386864,
+        0.24969714903272688
+      ],
+      "warmup_seconds": [
+        0.25700038904324174
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 4,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.24134772398974746,
+      "construction_memory": {
+        "allocated_bytes": 67780608,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67870720,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 635122,
+      "frozen_sha256": "b18865be5ad4bd2ed0c35ffc1fd3b44dcdd246bdaecc895956af72765091d18d",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1561620480,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "result_sha256": "9ac46ec4de50d834e1b565d7c8dc0778fc64ae09b790e8f6df409e8e72ffd3d8",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 80,
+        "regional_summary_evaluations": 40,
+        "regional_program_selection_rows": 4,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_local_updates": 64,
+        "bridge_group_updates": 32,
+        "bridge_root_updates": 8,
+        "bridge_node_updates": 104,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.1599168999819085,
+      "median_seconds": 0.23969813797157258,
+      "max_seconds": 0.24379047099500895,
+      "p50_seconds": 0.23969813797157258,
+      "p95_seconds": 0.24338123769266531,
+      "p99_seconds": 0.2437086243345402,
+      "throughput_rows_per_second": 16.687655706672142,
+      "ram_after": {
+        "rss_bytes": 1561698304,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.1599168999819085,
+        0.24379047099500895,
+        0.23969813797157258
+      ],
+      "warmup_seconds": [
+        0.15115215606056154
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 4,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.14285230403766036,
+      "construction_memory": {
+        "allocated_bytes": 67695616,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67785728,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 552089,
+      "frozen_sha256": "2cba4055c62b208e41d0045dbadfec81aff542893c8a6e4e8b7930bc5987892a",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1561698304,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "result_sha256": "baacf8450354c14edcbe9ac27a01390dec8f3a3da336a99074bb2a497f236617",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_local_updates": 64,
+        "bridge_group_updates": 32,
+        "bridge_root_updates": 8,
+        "bridge_node_updates": 104,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.17751938698347658,
+      "median_seconds": 0.18042404996231198,
+      "max_seconds": 0.21558505098801106,
+      "p50_seconds": 0.18042404996231198,
+      "p95_seconds": 0.21206895088544114,
+      "p99_seconds": 0.21488183096749708,
+      "throughput_rows_per_second": 22.169993417371703,
+      "ram_after": {
+        "rss_bytes": 1561710592,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.21558505098801106,
+        0.17751938698347658,
+        0.18042404996231198
+      ],
+      "warmup_seconds": [
+        0.23696670099161565
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 4,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.12458959000650793,
+      "construction_memory": {
+        "allocated_bytes": 67780096,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67870208,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 635073,
+      "frozen_sha256": "97d85f2de0f77baf355e6577983ca060663033583023f75cfd3167d2f6dd85d9",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1561710592,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "result_sha256": "81031c19059031bd15e36299c234d0373e70507d717ad46768767a29313e91c7",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 80,
+        "regional_summary_evaluations": 40,
+        "regional_program_selection_rows": 4,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_node_updates": 64,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.22189683094620705,
+      "median_seconds": 0.3008489210624248,
+      "max_seconds": 0.31751342792995274,
+      "p50_seconds": 0.3008489210624248,
+      "p95_seconds": 0.31584697724319993,
+      "p99_seconds": 0.3171801377926022,
+      "throughput_rows_per_second": 13.295709972548043,
+      "ram_after": {
+        "rss_bytes": 1561710592,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.31751342792995274,
+        0.3008489210624248,
+        0.22189683094620705
+      ],
+      "warmup_seconds": [
+        0.14465909695718437
+      ]
+    },
+    {
+      "arm": "flat",
+      "rows": 4,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.24189440300688148,
+      "construction_memory": {
+        "allocated_bytes": 67695104,
+        "reserved_bytes": 69206016,
+        "peak_allocated_bytes": 67785216,
+        "peak_reserved_bytes": 69206016,
+        "free_global_vram_bytes": 1680539648,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 131136,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 552040,
+      "frozen_sha256": "43c179b26505ad2648dd9ab515bc545f2ad0916ebab8466ef5cb5b2b30f8a2a6",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1561710592,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "result_sha256": "661e3961a1e181d3136b881a3146f5340196fb0954cfd105922f1ba447776539",
+      "result_logical_tensor_bytes": 131136,
+      "work": {
+        "core_observations": 4,
+        "mac_online_observations": 4,
+        "reader_refinements": 4,
+        "reader_searches": 4,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 4,
+        "bridge_initial_views": 16,
+        "bridge_node_updates": 64,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.14280777191743255,
+      "median_seconds": 0.1739807849517092,
+      "max_seconds": 0.29013103200122714,
+      "p50_seconds": 0.1739807849517092,
+      "p95_seconds": 0.27851600729627535,
+      "p99_seconds": 0.2878080270602368,
+      "throughput_rows_per_second": 22.991044678354886,
+      "ram_after": {
+        "rss_bytes": 1561710592,
+        "process_lifetime_peak_rss_bytes": 1559285760
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.14280777191743255,
+        0.1739807849517092,
+        0.29013103200122714
+      ],
+      "warmup_seconds": [
+        0.17822344996966422
+      ]
+    },
+    {
+      "arm": "flat",
+      "rows": 64,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.4103240789845586,
+      "construction_memory": {
+        "allocated_bytes": 69974528,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70695424,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2836480,
+      "frozen_sha256": "d74a006d39a6dfd44cf9c758118fbe6be0afa86c6940cb0856b028efb5ed8391",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1562406912,
+        "process_lifetime_peak_rss_bytes": 1559941120
+      },
+      "result_sha256": "af4d9b69498ca86a0272e1c9da9a726e63077250e0102a7bc8ecdf2c50d2e2d8",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_node_updates": 1024,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.07056372403167188,
+      "median_seconds": 0.12938682700041682,
+      "max_seconds": 0.2567609359975904,
+      "p50_seconds": 0.12938682700041682,
+      "p95_seconds": 0.24402352509787306,
+      "p99_seconds": 0.25421345381764693,
+      "throughput_rows_per_second": 494.64077204547124,
+      "ram_after": {
+        "rss_bytes": 1572577280,
+        "process_lifetime_peak_rss_bytes": 1570111488
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.12938682700041682,
+        0.2567609359975904,
+        0.07056372403167188
+      ],
+      "warmup_seconds": [
+        0.19847919896710664
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 64,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.3541624449426308,
+      "construction_memory": {
+        "allocated_bytes": 70059520,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70780416,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2919513,
+      "frozen_sha256": "11484f39299189293bd473d02903369b07984ca6a53758b5b687af42466a2ad1",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1571549184,
+        "process_lifetime_peak_rss_bytes": 1570111488
+      },
+      "result_sha256": "380c738f179acf96648d5af71497ec176493d856bd9050bd64017bfc769756da",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 640,
+        "regional_program_selection_rows": 64,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_node_updates": 1024,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.1518766509834677,
+      "median_seconds": 0.22710666502825916,
+      "max_seconds": 0.2276306189596653,
+      "p50_seconds": 0.22710666502825916,
+      "p95_seconds": 0.22757822356652468,
+      "p99_seconds": 0.2276201398810372,
+      "throughput_rows_per_second": 281.80590821513937,
+      "ram_after": {
+        "rss_bytes": 1575866368,
+        "process_lifetime_peak_rss_bytes": 1573765120
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.22710666502825916,
+        0.1518766509834677,
+        0.2276306189596653
+      ],
+      "warmup_seconds": [
+        0.7382565359584987
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 64,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.26449829596094787,
+      "construction_memory": {
+        "allocated_bytes": 69975040,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70695936,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2836529,
+      "frozen_sha256": "d44ff55fea96bddb73cd7da9453d8531989e153df34d583c2fad7671f09cf844",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1570746368,
+        "process_lifetime_peak_rss_bytes": 1573765120
+      },
+      "result_sha256": "557ac01a53bcf871b7146ab0744657220eb1a18380f05d32519e9e8dd263c149",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_local_updates": 1024,
+        "bridge_group_updates": 512,
+        "bridge_root_updates": 128,
+        "bridge_node_updates": 1664,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.07060093595646322,
+      "median_seconds": 0.13950398296583444,
+      "max_seconds": 0.21693189605139196,
+      "p50_seconds": 0.13950398296583444,
+      "p95_seconds": 0.2091891047428362,
+      "p99_seconds": 0.2153833377896808,
+      "throughput_rows_per_second": 458.768263381226,
+      "ram_after": {
+        "rss_bytes": 1577947136,
+        "process_lifetime_peak_rss_bytes": 1575817216
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.13950398296583444,
+        0.07060093595646322,
+        0.21693189605139196
+      ],
+      "warmup_seconds": [
+        0.1585560409585014
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 64,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.3081085610901937,
+      "construction_memory": {
+        "allocated_bytes": 70060032,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70780928,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2919562,
+      "frozen_sha256": "8759ad7032d504f3aa69538dabd40d9ed5467c441f23ea479feb157942f05b86",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1572823040,
+        "process_lifetime_peak_rss_bytes": 1575817216
+      },
+      "result_sha256": "90e37a7cd96e962dfdc163374e4a6e3b90f4562fa130f3c7098e3ba238abed03",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 640,
+        "regional_program_selection_rows": 64,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_local_updates": 1024,
+        "bridge_group_updates": 512,
+        "bridge_root_updates": 128,
+        "bridge_node_updates": 1664,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.17215004505123943,
+      "median_seconds": 0.18978034297470003,
+      "max_seconds": 0.28173165407497436,
+      "p50_seconds": 0.18978034297470003,
+      "p95_seconds": 0.2725365229649469,
+      "p99_seconds": 0.27989262785296887,
+      "throughput_rows_per_second": 337.2319756452962,
+      "ram_after": {
+        "rss_bytes": 1580027904,
+        "process_lifetime_peak_rss_bytes": 1578037248
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.18978034297470003,
+        0.28173165407497436,
+        0.17215004505123943
+      ],
+      "warmup_seconds": [
+        0.20184066507499665
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 64,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.26814681000541896,
+      "construction_memory": {
+        "allocated_bytes": 70060032,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70780928,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2919562,
+      "frozen_sha256": "8759ad7032d504f3aa69538dabd40d9ed5467c441f23ea479feb157942f05b86",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1575428096,
+        "process_lifetime_peak_rss_bytes": 1578037248
+      },
+      "result_sha256": "90e37a7cd96e962dfdc163374e4a6e3b90f4562fa130f3c7098e3ba238abed03",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 640,
+        "regional_program_selection_rows": 64,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_local_updates": 1024,
+        "bridge_group_updates": 512,
+        "bridge_root_updates": 128,
+        "bridge_node_updates": 1664,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.21112991694826633,
+      "median_seconds": 0.22223296202719212,
+      "max_seconds": 0.2458429679973051,
+      "p50_seconds": 0.22223296202719212,
+      "p95_seconds": 0.2434819674002938,
+      "p99_seconds": 0.24537076787790282,
+      "throughput_rows_per_second": 287.9860818854093,
+      "ram_after": {
+        "rss_bytes": 1580036096,
+        "process_lifetime_peak_rss_bytes": 1578074112
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.22223296202719212,
+        0.2458429679973051,
+        0.21112991694826633
+      ],
+      "warmup_seconds": [
+        0.29098781291395426
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 64,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.24188174295704812,
+      "construction_memory": {
+        "allocated_bytes": 69975040,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70695936,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2836529,
+      "frozen_sha256": "d44ff55fea96bddb73cd7da9453d8531989e153df34d583c2fad7671f09cf844",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1574912000,
+        "process_lifetime_peak_rss_bytes": 1578074112
+      },
+      "result_sha256": "557ac01a53bcf871b7146ab0744657220eb1a18380f05d32519e9e8dd263c149",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_local_updates": 1024,
+        "bridge_group_updates": 512,
+        "bridge_root_updates": 128,
+        "bridge_node_updates": 1664,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.07270013901870698,
+      "median_seconds": 0.15349393303040415,
+      "max_seconds": 0.1543815489858389,
+      "p50_seconds": 0.15349393303040415,
+      "p95_seconds": 0.15429278739029542,
+      "p99_seconds": 0.1543637966667302,
+      "throughput_rows_per_second": 416.95459055911255,
+      "ram_after": {
+        "rss_bytes": 1580036096,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.1543815489858389,
+        0.07270013901870698,
+        0.15349393303040415
+      ],
+      "warmup_seconds": [
+        0.16518694499973208
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 64,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.14429162698797882,
+      "construction_memory": {
+        "allocated_bytes": 70059520,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70780416,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2919513,
+      "frozen_sha256": "11484f39299189293bd473d02903369b07984ca6a53758b5b687af42466a2ad1",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1575960576,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "result_sha256": "380c738f179acf96648d5af71497ec176493d856bd9050bd64017bfc769756da",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 1280,
+        "regional_summary_evaluations": 640,
+        "regional_program_selection_rows": 64,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_node_updates": 1024,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.10472587496042252,
+      "median_seconds": 0.1635727360844612,
+      "max_seconds": 0.18495904805604368,
+      "p50_seconds": 0.1635727360844612,
+      "p95_seconds": 0.18282041685888545,
+      "p99_seconds": 0.18453132181661203,
+      "throughput_rows_per_second": 391.26324797155337,
+      "ram_after": {
+        "rss_bytes": 1580036096,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.10472587496042252,
+        0.1635727360844612,
+        0.18495904805604368
+      ],
+      "warmup_seconds": [
+        0.26733110391069204
+      ]
+    },
+    {
+      "arm": "flat",
+      "rows": 64,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.13683437707368284,
+      "construction_memory": {
+        "allocated_bytes": 69974528,
+        "reserved_bytes": 71303168,
+        "peak_allocated_bytes": 70695424,
+        "peak_reserved_bytes": 71303168,
+        "free_global_vram_bytes": 1678442496,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 2098176,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 2836480,
+      "frozen_sha256": "d74a006d39a6dfd44cf9c758118fbe6be0afa86c6940cb0856b028efb5ed8391",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1575960576,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "result_sha256": "af4d9b69498ca86a0272e1c9da9a726e63077250e0102a7bc8ecdf2c50d2e2d8",
+      "result_logical_tensor_bytes": 2098176,
+      "work": {
+        "core_observations": 64,
+        "mac_online_observations": 64,
+        "reader_refinements": 64,
+        "reader_searches": 64,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 64,
+        "bridge_initial_views": 256,
+        "bridge_node_updates": 1024,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.06543098203837872,
+      "median_seconds": 0.1277228209655732,
+      "max_seconds": 0.14162584394216537,
+      "p50_seconds": 0.1277228209655732,
+      "p95_seconds": 0.14023554164450616,
+      "p99_seconds": 0.14134778348263352,
+      "throughput_rows_per_second": 501.08508030253074,
+      "ram_after": {
+        "rss_bytes": 1579388928,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.1277228209655732,
+        0.06543098203837872,
+        0.14162584394216537
+      ],
+      "warmup_seconds": [
+        0.08621737791690975
+      ]
+    },
+    {
+      "arm": "flat",
+      "rows": 256,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.555674334987998,
+      "construction_memory": {
+        "allocated_bytes": 77283840,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78184960,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1670053888,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10146688,
+      "frozen_sha256": "159f585585e1efabb5dc73035f9f6264891edc0e4d21c724fc1011bb294b7fad",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1576013824,
+        "process_lifetime_peak_rss_bytes": 1578176512
+      },
+      "result_sha256": "8712ab33aec7b8a0a0872c94cf651357ab03a2881cd97cd01ea0ada416e23278",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_node_updates": 4096,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.304353576968424,
+      "median_seconds": 0.32340231293346733,
+      "max_seconds": 0.4886051219655201,
+      "p50_seconds": 0.32340231293346733,
+      "p95_seconds": 0.4720848410623148,
+      "p99_seconds": 0.485301065784879,
+      "throughput_rows_per_second": 791.5837016684113,
+      "ram_after": {
+        "rss_bytes": 1596047360,
+        "process_lifetime_peak_rss_bytes": 1604456448
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.304353576968424,
+        0.4886051219655201,
+        0.32340231293346733
+      ],
+      "warmup_seconds": [
+        0.24747910699807107
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 256,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.8466423759236932,
+      "construction_memory": {
+        "allocated_bytes": 77368832,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78269952,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1670053888,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10229721,
+      "frozen_sha256": "97e3c5c2ea0e7a54a34f0430d8e0b0bde2df06bdb3a283f4c03b7d60ded2c747",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1582956544,
+        "process_lifetime_peak_rss_bytes": 1604456448
+      },
+      "result_sha256": "15dd4ac236257ac069148a9213af6257796fadf8d8b15673c0dd9a6479822cff",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 2560,
+        "regional_program_selection_rows": 256,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_node_updates": 4096,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.368728194036521,
+      "median_seconds": 0.5067636939929798,
+      "max_seconds": 1.1078335440251976,
+      "p50_seconds": 0.5067636939929798,
+      "p95_seconds": 1.0477265590219758,
+      "p99_seconds": 1.0958121470245532,
+      "throughput_rows_per_second": 505.1664178680218,
+      "ram_after": {
+        "rss_bytes": 1598840832,
+        "process_lifetime_peak_rss_bytes": 1616019456
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.368728194036521,
+        0.5067636939929798,
+        1.1078335440251976
+      ],
+      "warmup_seconds": [
+        0.6142723020166159
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 256,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.7671650820411742,
+      "construction_memory": {
+        "allocated_bytes": 77284352,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78185472,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1672675328,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10146737,
+      "frozen_sha256": "f7473b7c46e55396c46b56d3325c585f7fa92cdbda060da995b0b4c888ae519f",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1593946112,
+        "process_lifetime_peak_rss_bytes": 1616019456
+      },
+      "result_sha256": "1cd5acba908e81a3f39d1fc98173cd73d86ea107a13cae5de695e3b77802c898",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_local_updates": 4096,
+        "bridge_group_updates": 2048,
+        "bridge_root_updates": 512,
+        "bridge_node_updates": 6656,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.506806971039623,
+      "median_seconds": 0.5217056489782408,
+      "max_seconds": 0.6698944841045886,
+      "p50_seconds": 0.5217056489782408,
+      "p95_seconds": 0.6550756005919538,
+      "p99_seconds": 0.6669307074020616,
+      "throughput_rows_per_second": 490.69815613723057,
+      "ram_after": {
+        "rss_bytes": 1605652480,
+        "process_lifetime_peak_rss_bytes": 1623744512
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.5217056489782408,
+        0.506806971039623,
+        0.6698944841045886
+      ],
+      "warmup_seconds": [
+        0.5494233949575573
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 256,
+      "order": 0,
+      "actual_order": [
+        "flat",
+        "pre_only",
+        "post_only",
+        "both"
+      ],
+      "status": "passed",
+      "init_seconds": 0.6661145950201899,
+      "construction_memory": {
+        "allocated_bytes": 77369344,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78270464,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1681457152,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10229770,
+      "frozen_sha256": "4f63db828ab395ab52fb0e14480ff3051a7b774b9767997994fbc9776fb89093",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1592516608,
+        "process_lifetime_peak_rss_bytes": 1623744512
+      },
+      "result_sha256": "bd704a20c7acaef1245a407f64759e05e1cc2ee6fa2177e8ba1a7829c71d78b7",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 2560,
+        "regional_program_selection_rows": 256,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_local_updates": 4096,
+        "bridge_group_updates": 2048,
+        "bridge_root_updates": 512,
+        "bridge_node_updates": 6656,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.8139880780363455,
+      "median_seconds": 0.8567383500048891,
+      "max_seconds": 0.999216859927401,
+      "p50_seconds": 0.8567383500048891,
+      "p95_seconds": 0.9849690089351497,
+      "p99_seconds": 0.9963672897289507,
+      "throughput_rows_per_second": 298.8076814800448,
+      "ram_after": {
+        "rss_bytes": 1607569408,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.8139880780363455,
+        0.999216859927401,
+        0.8567383500048891
+      ],
+      "warmup_seconds": [
+        0.6369307819986716
+      ]
+    },
+    {
+      "arm": "both",
+      "rows": 256,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.9962613610550761,
+      "construction_memory": {
+        "allocated_bytes": 77369344,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78270464,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1682112512,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10229770,
+      "frozen_sha256": "4f63db828ab395ab52fb0e14480ff3051a7b774b9767997994fbc9776fb89093",
+      "consumer_id": "62a5d84dcb595bdf2b7278e17856aba74387638e238de3076b343c49d053e813",
+      "ram_before": {
+        "rss_bytes": 1607569408,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "result_sha256": "bd704a20c7acaef1245a407f64759e05e1cc2ee6fa2177e8ba1a7829c71d78b7",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 2560,
+        "regional_program_selection_rows": 256,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_local_updates": 4096,
+        "bridge_group_updates": 2048,
+        "bridge_root_updates": 512,
+        "bridge_node_updates": 6656,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.7632969950791448,
+      "median_seconds": 0.8078090160852298,
+      "max_seconds": 0.9687428239267319,
+      "p50_seconds": 0.8078090160852298,
+      "p95_seconds": 0.9526494431425817,
+      "p99_seconds": 0.9655241477699019,
+      "throughput_rows_per_second": 316.9065891844293,
+      "ram_after": {
+        "rss_bytes": 1609715712,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "4f99268747ca64ee88fa0449bca6c1b46f0c6e39147f77fadff8c831ee49663c",
+      "sample_seconds": [
+        0.7632969950791448,
+        0.9687428239267319,
+        0.8078090160852298
+      ],
+      "warmup_seconds": [
+        0.9490105159347877
+      ]
+    },
+    {
+      "arm": "post_only",
+      "rows": 256,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.6352660480188206,
+      "construction_memory": {
+        "allocated_bytes": 77284352,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78185472,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1681391616,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10146737,
+      "frozen_sha256": "f7473b7c46e55396c46b56d3325c585f7fa92cdbda060da995b0b4c888ae519f",
+      "consumer_id": "2061d09f58df95895d240afdb18298d016dfc386ac397bd7a2ffeed74443f4b1",
+      "ram_before": {
+        "rss_bytes": 1609715712,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "result_sha256": "1cd5acba908e81a3f39d1fc98173cd73d86ea107a13cae5de695e3b77802c898",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_local_updates": 4096,
+        "bridge_group_updates": 2048,
+        "bridge_root_updates": 512,
+        "bridge_node_updates": 6656,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.6442842480028048,
+      "median_seconds": 0.7447783109964803,
+      "max_seconds": 0.7498750650556758,
+      "p50_seconds": 0.7447783109964803,
+      "p95_seconds": 0.7493653896497563,
+      "p99_seconds": 0.7497731299744919,
+      "throughput_rows_per_second": 343.72644345333225,
+      "ram_after": {
+        "rss_bytes": 1611980800,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "f32ad25d4ea229be627053fd1a34bfd3bb44a7ef8b8b97a715fd5e69e5f88cd2",
+      "sample_seconds": [
+        0.7498750650556758,
+        0.7447783109964803,
+        0.6442842480028048
+      ],
+      "warmup_seconds": [
+        0.6233403780497611
+      ]
+    },
+    {
+      "arm": "pre_only",
+      "rows": 256,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.7350140700582415,
+      "construction_memory": {
+        "allocated_bytes": 77368832,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78269952,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1682046976,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 59270,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [
+        "predictor/regional_fusion.local_norm.bias",
+        "predictor/regional_fusion.local_norm.weight",
+        "predictor/regional_fusion.local_out.weight",
+        "predictor/regional_fusion.qkv.weight",
+        "predictor/regional_fusion.readout.weight",
+        "predictor/regional_fusion.summary_norm.bias",
+        "predictor/regional_fusion.summary_norm.weight",
+        "predictor/regional_fusion.summary_to_local.weight",
+        "predictor/regional_fusion.summary_update.0.weight",
+        "predictor/regional_fusion.summary_update.2.weight"
+      ],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10229721,
+      "frozen_sha256": "97e3c5c2ea0e7a54a34f0430d8e0b0bde2df06bdb3a283f4c03b7d60ded2c747",
+      "consumer_id": "5c316d2e05c27e037e77838dccfdb017c1ac8e31421d85ec2c9eadd72b7fe5e2",
+      "ram_before": {
+        "rss_bytes": 1610924032,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "result_sha256": "15dd4ac236257ac069148a9213af6257796fadf8d8b15673c0dd9a6479822cff",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "regional_local_node_evaluations": 5120,
+        "regional_summary_evaluations": 2560,
+        "regional_program_selection_rows": 256,
+        "regional_context_query_rows": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_node_updates": 4096,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.729920151992701,
+      "median_seconds": 0.8711319069843739,
+      "max_seconds": 1.1156795989954844,
+      "p50_seconds": 0.8711319069843739,
+      "p95_seconds": 1.0912248297943734,
+      "p99_seconds": 1.1107886451552622,
+      "throughput_rows_per_second": 293.8705355038638,
+      "ram_after": {
+        "rss_bytes": 1610956800,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "parameters_sha256": "ccbce99926fc96478283f1df010294814abe34359c9d0ec6bcd3b8c0a5152b89",
+      "buffers_sha256": "269a90751845865205a0ac44c872e60b11b15514efa3a7271945d4dd0d7155ba",
+      "sample_seconds": [
+        0.8711319069843739,
+        1.1156795989954844,
+        0.729920151992701
+      ],
+      "warmup_seconds": [
+        1.2446584099670872
+      ]
+    },
+    {
+      "arm": "flat",
+      "rows": 256,
+      "order": 1,
+      "actual_order": [
+        "both",
+        "post_only",
+        "pre_only",
+        "flat"
+      ],
+      "status": "passed",
+      "init_seconds": 0.939839267055504,
+      "construction_memory": {
+        "allocated_bytes": 77283840,
+        "reserved_bytes": 79691776,
+        "peak_allocated_bytes": 78184960,
+        "peak_reserved_bytes": 79691776,
+        "free_global_vram_bytes": 1682046976,
+        "total_global_vram_bytes": 8183676928
+      },
+      "parameter_count": 48902,
+      "state_logical_tensor_bytes": 8392704,
+      "shared_names": 49,
+      "changed_common_names": [],
+      "shared_equal": 49,
+      "extra_names": [],
+      "missing_names": [],
+      "frozen_logical_tensor_bytes": 10146688,
+      "frozen_sha256": "159f585585e1efabb5dc73035f9f6264891edc0e4d21c724fc1011bb294b7fad",
+      "consumer_id": "0ca80c2f424c58bbc63d57648ffa85827890892e40d4ca37fce373ddaaa82aab",
+      "ram_before": {
+        "rss_bytes": 1597820928,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "result_sha256": "8712ab33aec7b8a0a0872c94cf651357ab03a2881cd97cd01ea0ada416e23278",
+      "result_logical_tensor_bytes": 8392704,
+      "work": {
+        "core_observations": 256,
+        "mac_online_observations": 256,
+        "reader_refinements": 256,
+        "reader_searches": 256,
+        "context_updates_proposed": 0,
+        "bridge_value_projections": 256,
+        "bridge_initial_views": 1024,
+        "bridge_node_updates": 4096,
+        "online_attempts": 0,
+        "online_failures": 0,
+        "online_created_proposals": 0,
+        "online_selected_proposals": 0,
+        "online_discarded_proposals": 0,
+        "static_cohorts": 0
+      },
+      "min_seconds": 0.48474924301262945,
+      "median_seconds": 0.5521669799927622,
+      "max_seconds": 0.7239676530007273,
+      "p50_seconds": 0.5521669799927622,
+      "p95_seconds": 0.7067875856999308,
+      "p99_seconds": 0.720531639540568,
+      "throughput_rows_per_second": 463.6278685178814,
+      "ram_after": {
+        "rss_bytes": 1609879552,
+        "process_lifetime_peak_rss_bytes": 1632071680
+      },
+      "parameters_sha256": "08d7141c2295162cfe38fff24f7b34cdb151d35b286e57958c48b8ba52bb4d93",
+      "buffers_sha256": "7022fb7bb35c4e6d42e7494d155ad5c6457a033bdbf060fa08832aeb8a8a25b5",
+      "sample_seconds": [
+        0.5521669799927622,
+        0.48474924301262945,
+        0.7239676530007273
+      ],
+      "warmup_seconds": [
+        0.9422083860263228
+      ]
+    }
+  ],
+  "condition_records": 24,
+  "timed_samples": 72,
+  "warmup_samples": 24,
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cpu_count": 16,
+    "loadavg_start": [
+      23.30908203125,
+      22.880859375,
+      23.5380859375
+    ],
+    "loadavg_end": [
+      22.41259765625,
+      22.7197265625,
+      23.349609375
+    ],
+    "before": {
+      "gpu": [
+        {
+          "index": "0",
+          "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+          "memory.total [MiB]": "8188 MiB",
+          "memory.free [MiB]": "1886 MiB",
+          "driver_version": "595.91.07"
+        }
+      ],
+      "reported_gpu_processes": [
+        {
+          "process": "llama-server",
+          "used_gpu_memory": "5438 MiB"
+        },
+        {
+          "process": "xdg-desktop-portal-gnome",
+          "used_gpu_memory": "6 MiB"
+        },
+        {
+          "process": "gnome-text-editor",
+          "used_gpu_memory": "46 MiB"
+        },
+        {
+          "process": "nautilus",
+          "used_gpu_memory": "48 MiB"
+        }
+      ]
+    },
+    "after": {
+      "gpu": [
+        {
+          "index": "0",
+          "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+          "memory.total [MiB]": "8188 MiB",
+          "memory.free [MiB]": "1575 MiB",
+          "driver_version": "595.91.07"
+        }
+      ],
+      "reported_gpu_processes": [
+        {
+          "process": "llama-server",
+          "used_gpu_memory": "5438 MiB"
+        },
+        {
+          "process": "xdg-desktop-portal-gnome",
+          "used_gpu_memory": "6 MiB"
+        },
+        {
+          "process": "gnome-text-editor",
+          "used_gpu_memory": "46 MiB"
+        },
+        {
+          "process": "nautilus",
+          "used_gpu_memory": "48 MiB"
+        },
+        {
+          "process": "python",
+          "used_gpu_memory": "318 MiB"
+        }
+      ]
+    }
+  },
+  "elapsed_process_s": 269.4891036429908,
+  "elapsed_supervision_s": 275.3088802200509,
+  "supervisor": {
+    "artifact": {
+      "name": "check-joint-cost-v3.json",
+      "sha256": "30ecb1754c013da72514511202a31fe8960ab8074ba254911f443218cd494a9d",
+      "bytes": 521
+    },
+    "command": [
+      "timeout",
+      "--kill-after=5s",
+      "510s",
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "$RUN_ROOT/cost-run/composed_hierarchy_cuda.py",
+      "--run",
+      "--repository",
+      "$REPOSITORY",
+      "--output",
+      "$RUN_ROOT/joint-cost-v3.json"
+    ],
+    "elapsed_s": 275.3088802200509,
+    "timeout_s": 540,
+    "log": {
+      "name": "check-joint-cost-v3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "peaks": {
+    "torch_allocated_bytes": 90123264,
+    "torch_reserved_bytes": 111149056,
+    "sampled_rss_bytes": 1633800192,
+    "reported_process_lifetime_peak_rss_bytes": 1632071680
+  },
+  "memory_scope": "Torch es el allocator del proceso. RSS muestreado y máximo de vida del proceso son observaciones distintas.",
+  "raw": {
+    "name": "joint-cost-v3.json",
+    "sha256": "e064abdac7a779a5191c42454d95958611f4f0dd527ebc238223b4d0a8ee6f87",
+    "bytes": 647602
+  },
+  "script_sha256": "dad9eaee2579591a5e6a44a8f9e6419da85c3b4e795b915d67be485fddf14e2e",
+  "helper_sha256": "e182ae45ef52c5e99b960ad34ea6d61c7303086f466b486408124a62f53611e3",
+  "script": {
+    "name": "composed_hierarchy_cuda.py",
+    "sha256": "dad9eaee2579591a5e6a44a8f9e6419da85c3b4e795b915d67be485fddf14e2e",
+    "bytes": 24077
+  },
+  "helper": {
+    "name": "regional_decision_cuda.py",
+    "sha256": "e182ae45ef52c5e99b960ad34ea6d61c7303086f466b486408124a62f53611e3",
+    "bytes": 34169
+  },
+  "limits": "Sonda técnica residente con tres muestras por orden. Sin precisión de cola, comparación predictiva ni paridad completa de capacidad o presupuesto entre controles.",
+  "code_commit": "478b0892ae36f4cd4c02b9c132729a3c8a905dfd"
+}

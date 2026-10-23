@@ -32,6 +32,8 @@ Los presupuestos distinguen refinamientos y búsquedas por fila, mercados con es
 
 El predictor puede incorporar la [fusión regional](../experiments/regional-fusion-v1.md) antes de PT4 y MAC. Es una opción de arquitectura fija, no otra acción aprendida del catálogo. Sus contadores distinguen evaluaciones de nodos locales y del resumen, con un límite conjunto por fila. El enlace los conserva en la misma traza confirmada. Los estados intermedios se reinician en cada predicción y no se añaden al estado histórico del banco ni a los pesos rápidos.
 
+El lector posterior a MAC admite también la [jerarquía episódica fija](../experiments/hierarchical-evidence-bridge-v1.md), con contrato de catálogo propio. No añade acciones al selector. Dos rondas de grupo, raíz, grupo y L pasos locales mantienen K separado de ese calendario. Para L2, la reserva conjunta de 38 lecturas requiere 988 actualizaciones por fila, contando locales, grupos y raíz. Las vistas iniciales y el trabajo real del DAG se registran aparte. Las [pruebas y medidas](../../reports/engineering/hierarchical-bridge-20261022/README.md) usan fixtures, sin ajustar una política ni un predictor financiero.
+
 Cuando falta un mecanismo o presupuesto, se registra el motivo y se emite K1 sin calibración. Si el fallo se conoce después de elegir el contexto, se conserva ese contexto pre-MAC. No se recalcula la transición para aparentar que la decisión anterior no ocurrió. Una entrada inválida, una identidad incompatible o un valor no finito producen un error, no un retorno silencioso.
 
 ## Consumidor provisional y estado

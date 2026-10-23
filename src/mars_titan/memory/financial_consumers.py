@@ -285,6 +285,11 @@ class TitansBinding:
                 if selected
                 else 0,
             )
+            if reader.config.evidence_bridge.hierarchy is not None:
+                projections = len(rows) * reader.config.refinements if selected else 0
+                control.update(
+                    bridge_value_projections=projections, **reader.recurrence_work(projections)
+                )
         return values, fast, control
 
     def verify_regional_control(self, control, flows, cutoff, block_rows):
@@ -314,6 +319,12 @@ class TitansBinding:
                     if selected
                     else 0,
                 )
+                if reader.config.evidence_bridge.hierarchy is not None:
+                    projections = len(flows) * steps if selected else 0
+                    expected.update(
+                        bridge_value_projections=projections,
+                        **reader.recurrence_work(projections),
+                    )
                 if control["snapshot_bytes"] != episodes * (64 * (8 + size) + 40) or any(
                     type(control.get(name)) is not int or control[name] != value
                     for name, value in expected.items()
