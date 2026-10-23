@@ -7,6 +7,7 @@ memoria histórica, etiquetas financieras ni actualización de parámetros.
 
 import hashlib
 import math
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 
 import torch
@@ -15,9 +16,63 @@ from torch.nn import functional as F
 
 from ..baselines.multimodal import MODALITIES
 from .config import MAX_BLOCK_ROWS, bounded_integer, require_identity
-from .state import check_finite, deferred_checks
+from .state import check_finite, deferred_checks, finite_indicator, is_finite
 
 REGIONAL_FUSION = "regional_fusion_v1"
+
+
+def _topology_edges(topology, *, device):
+    indices = torch.arange(len(MODALITIES), device=device)
+    difference = (indices[:, None] - indices[None, :]) % len(MODALITIES)
+    if topology == "complete":
+        return torch.ones_like(difference, dtype=torch.bool)
+    if topology == "self":
+        return difference == 0
+    return (difference == 0) | (difference == 1) | (difference == len(MODALITIES) - 1)
+
+
+def validate_assignment(state_dict, prefix, local_metadata):
+    """Rechazar asignaciones con dispositivos mezclados antes de sustituir tensores.
+
+    La copia ordinaria admite orígenes distintos. La asignación exige un dispositivo
+    común y no admite activación parcial mediante metadatos de un descendiente.
+    """
+    assign = local_metadata.get("assign_to_params_buffers", False)
+    if type(assign) is not bool:
+        raise ValueError("La asignación del checkpoint necesita un booleano explícito")
+    metadata = getattr(state_dict, "_metadata", {})
+    if not assign and any(
+        item.get("assign_to_params_buffers", False)
+        for name, item in metadata.items()
+        if name.startswith(prefix) and name != prefix.removesuffix(".")
+    ):
+        raise ValueError("El checkpoint no admite asignaciones parciales por módulo")
+    if assign:
+        devices = {
+            value.device
+            for name, value in state_dict.items()
+            if name.startswith(prefix) and isinstance(value, torch.Tensor)
+        }
+        if len(devices) > 1:
+            raise ValueError("La asignación del checkpoint necesita un dispositivo común")
+
+
+def validate_assignment_request(state_dict, assign):
+    """Exigir que los metadatos no contradigan la asignación pedida explícitamente."""
+    if type(assign) is not bool:
+        raise ValueError("La asignación del checkpoint necesita un booleano explícito")
+    metadata = getattr(state_dict, "_metadata", None)
+    if metadata is None:
+        return
+    if not isinstance(metadata, Mapping):
+        raise ValueError("Los metadatos del checkpoint deben ser un mapa")
+    for item in metadata.values():
+        if not isinstance(item, Mapping):
+            raise ValueError("Los metadatos de cada módulo deben ser un mapa")
+        if "assign_to_params_buffers" in item:
+            flag = item["assign_to_params_buffers"]
+            if type(flag) is not bool or flag != assign:
+                raise ValueError("Los metadatos contradicen la asignación solicitada")
 
 
 @dataclass(frozen=True)
@@ -76,6 +131,7 @@ class RegionalFusion(nn.Module):
         bounded_integer(max_batch, "lote regional", 1, MAX_BLOCK_ROWS)
         if type(config) is not RegionalFusionConfig:
             raise ValueError("La fusión regional necesita su configuración identificada")
+        config.__post_init__()
         self.hidden_size, self.max_batch, self.config = hidden_size, max_batch, config
         derived = hashlib.sha256(f"{REGIONAL_FUSION}/{seed}".encode()).digest()
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -91,16 +147,7 @@ class RegionalFusion(nn.Module):
                 nn.Linear(2 * hidden_size, hidden_size, bias=False),
             )
             self.readout = nn.Linear(hidden_size, hidden_size, bias=False)
-            indices = torch.arange(len(MODALITIES))
-            difference = (indices[:, None] - indices[None, :]) % len(MODALITIES)
-            edges = (
-                torch.ones_like(difference, dtype=torch.bool)
-                if config.topology == "complete"
-                else difference == 0
-                if config.topology == "self"
-                else (difference == 0) | (difference == 1) | (difference == len(MODALITIES) - 1)
-            )
-            self.register_buffer("edges", edges)
+            self.register_buffer("edges", _topology_edges(config.topology, device="cpu"))
 
     def get_extra_state(self):
         return dict(
@@ -127,7 +174,63 @@ class RegionalFusion(nn.Module):
     def set_extra_state(self, state):
         require_identity(state, self.get_extra_state())
 
-    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        validate_assignment_request(state_dict, assign)
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
+
+    def validate_structure(self):
+        """Validar el buffer físico sin impedir que una carga repare sus valores."""
+        if type(self.config) is not RegionalFusionConfig:
+            raise ValueError("La fusión regional necesita su configuración identificada")
+        self.config.__post_init__()
+        bounded_integer(self.hidden_size, "dimensión regional", 1, 512)
+        bounded_integer(self.max_batch, "lote regional", 1, MAX_BLOCK_ROWS)
+        dim = self.hidden_size
+        shapes = {
+            "local_norm.weight": (dim,),
+            "local_norm.bias": (dim,),
+            "qkv.weight": (3 * dim, dim),
+            "local_out.weight": (dim, dim),
+            "summary_to_local.weight": (dim, dim),
+            "summary_norm.weight": (dim,),
+            "summary_norm.bias": (dim,),
+            "summary_update.0.weight": (2 * dim, dim),
+            "summary_update.2.weight": (dim, 2 * dim),
+            "readout.weight": (dim, dim),
+        }
+        parameters = dict(self.named_parameters())
+        if set(parameters) != set(shapes):
+            raise ValueError("Los parámetros regionales no conservan su estructura declarada")
+        reference = parameters["qkv.weight"]
+        if any(
+            value.shape != shapes[name]
+            or value.layout != torch.strided
+            or value.device != reference.device
+            or value.dtype != reference.dtype
+            for name, value in parameters.items()
+        ):
+            raise ValueError("Los parámetros regionales no conservan sus formas y precisión")
+        edges = self._buffers.get("edges")
+        if (
+            not isinstance(edges, torch.Tensor)
+            or edges.dtype != torch.bool
+            or edges.layout != torch.strided
+            or edges.shape != (len(MODALITIES), len(MODALITIES))
+            or edges.device != self.qkv.weight.device
+            or "edges" in self._non_persistent_buffers_set
+            or set(dict(self.named_buffers())) != {"edges"}
+        ):
+            raise ValueError("El buffer regional no conserva su estructura declarada")
+
+    def validate_geometry(self):
+        """Comprobar las aristas instaladas antes de confirmar una identidad."""
+        self.validate_structure()
+        expected = _topology_edges(self.config.topology, device=self.edges.device)
+        if not torch.equal(self.edges, expected):
+            raise ValueError("Las aristas regionales no corresponden a su configuración")
+
+    def validate_payload(self, state_dict, prefix=""):
+        self.validate_structure()
         supplied = {
             key[len(prefix) :]: value for key, value in state_dict.items() if key.startswith(prefix)
         }
@@ -143,12 +246,20 @@ class RegionalFusion(nn.Module):
                 not isinstance(other, torch.Tensor)
                 or other.shape != value.shape
                 or other.dtype != value.dtype
+                or other.layout != torch.strided
             ):
                 raise ValueError("El checkpoint regional no conserva formas y precisión")
-            check_finite(other, "El checkpoint regional")
-        if not torch.equal(supplied["edges"].cpu(), self.edges.cpu()):
+            # Una carga no puede aplazar el rechazo hasta después de copiar parámetros.
+            if not is_finite(finite_indicator(other)):
+                raise ValueError("El checkpoint regional contiene NaN o infinito")
+        edges = supplied["edges"]
+        if not torch.equal(edges, _topology_edges(self.config.topology, device=edges.device)):
             raise ValueError("El checkpoint no conserva las aristas de su configuración")
-        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, *args, **kwargs):
+        validate_assignment(state_dict, prefix, local_metadata)
+        self.validate_payload(state_dict, prefix)
+        super()._load_from_state_dict(state_dict, prefix, local_metadata, *args, **kwargs)
 
     def _checked_presence(self, blocks, presence):
         if (

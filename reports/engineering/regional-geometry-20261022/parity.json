@@ -1,0 +1,154 @@
+{
+  "cases": [
+    {
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "topology": null,
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "topology": "self",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "topology": "ring",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "topology": "complete",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float64",
+      "topology": null,
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float64",
+      "topology": "self",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float64",
+      "topology": "ring",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cpu",
+      "dtype": "torch.float64",
+      "topology": "complete",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "topology": null,
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "topology": "self",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "topology": "ring",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float32",
+      "topology": "complete",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "topology": null,
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "topology": "self",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "topology": "ring",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    },
+    {
+      "device": "cuda:0",
+      "dtype": "torch.float64",
+      "topology": "complete",
+      "checkpoint_exact": true,
+      "first_exact": true,
+      "second_exact": true,
+      "cpu_rng_exact": true
+    }
+  ],
+  "count": 16,
+  "baseline": "baseline.pt",
+  "old_source_commit": "bbb2b51c423bf09b27d617d9667802bcaa1af9df",
+  "cross_device_tolerance_comparison": false,
+  "real_corpus": false,
+  "optimizer_steps": 0
+}

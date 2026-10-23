@@ -1,0 +1,7 @@
+{
+  "original_sha256": "ed93d58ba9c3483424ce0cd1a15dfe497ceb77f0054e5fc583b6c20f7e536c8a",
+  "published_sha256": "a300e9834c518fcc5a3d5af3880037f1916a685ba4c2b813357c143fcfa44bca",
+  "protocol_sha256": "f9fe45eaeaf9f9841c47ade543568369a2517a79af407cadc6c3b22839fcc6b3",
+  "normalized_ast_equal": true,
+  "normalization": "Excluir docstring inicial y ordenar grupos consecutivos de imports. Sin otras modificaciones."
+}

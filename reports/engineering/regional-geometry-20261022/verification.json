@@ -1,0 +1,41 @@
+{
+  "source_commit": "8e3dc4c8433bfcd9ebdb54ddce0b03b22cab60a0",
+  "source_and_test_sha256": {
+    "src/mars_titan/models/titans/regional_fusion.py": "5ca4f1105fdaa010828bdae3acd4ad25ed79e5a37d9b7d32d6e53e3098fa5a11",
+    "src/mars_titan/models/titans/financial.py": "c2142dd2dad556abd15f867bcae52a5007fa23290cd4b1d80b7942f2d8881c78",
+    "tests/models/titans/test_regional_geometry_contract.py": "695197a69d51b143656cc57b694bae25d6e99eb6cb20d81a4c1c259e037de473",
+    "tests/models/titans/test_financial_checkpoint_finiteness.py": "3ba8f66f281f712a3d185e78f4306a87f3f02aeeabd86cd90ec3a5e64eefb4ae"
+  },
+  "final_suite": {
+    "cases": 348,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "warnings": 1,
+    "junit_sha256": "dafe13e535639e1fb861546308401c9ea6ea87d65eb657e32d4edda7a6e87562",
+    "scope": "Siete archivos técnicos, sin optimizadores ni corpus real"
+  },
+  "regressions": {
+    "initial_red": {
+      "failed": 20
+    },
+    "extended_red": {
+      "failed": 10,
+      "passed": 138
+    },
+    "parent_finiteness_red": {
+      "failed": 4
+    },
+    "assignment_metadata_red": {
+      "failed": 2
+    }
+  },
+  "optimizer_steps": 0,
+  "scientific_evaluation": false,
+  "final_test_access": false,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "La selección no es toda la suite del repositorio.",
+    "El contrato cubre las APIs directas revisadas, no hooks arbitrarios o contenedores que eludan la frontera pública."
+  ]
+}
