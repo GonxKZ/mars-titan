@@ -1,0 +1,523 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "scope": "Verificación y perfil técnico sintético de una variante opcional no canónica. No contiene ajuste sobre datos financieros.",
+  "project_commit": "cd44119df34886e093bb34f99edc1556ad8f122a",
+  "source": {
+    "upstream_code_url": "https://github.com/qlabs-eng/dust/tree/b20f7c03eac630b6441ba6f254128c1761dc45ad",
+    "upstream_license": "MIT",
+    "research_url": "https://qlabs.sh/research/dust/",
+    "file_sha256": {
+      "src/mars_titan/training/dust/__init__.py": "7604a9cfbe03fe9966428063a34e23db21ae62eefbb38570e578cca9a14ff83d",
+      "src/mars_titan/training/dust/config.py": "568748bf4c87b9584041a48f999e7e57bcebf90fbe32ce92ee2c243fc1a113a9",
+      "src/mars_titan/training/dust/financial.py": "898dd18cf1e06ae3feaee48e557f99fe2ff8662d668ca8637e3a65591764b4a4",
+      "src/mars_titan/training/dust/estimator.py": "b4dd78463da3b110a354d9985743ac1b920ca66f20e2aa373f9c689413cff571",
+      "src/mars_titan/models/titans/frozen_financial.py": "695ae27d941e421efaaeeabbd6dc3ce1e69ff0affe54d9b4297cc6c1fcc33044",
+      "tests/training/test_dust_financial.py": "1596b8d8b4faee861cb6b1ad7cd3e3b99f44ceb00dfc2f97b05e1127f6ea4d53",
+      "tests/training/test_dust_inputs.py": "1b4ae85894c722c4750b7252eddf78943f935d10113645ba90ec2a7f7abee476",
+      "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be",
+      "pyproject.toml": "00847fec9265422ad2e024ec0d2cd7a9766edddcf1ca913c5c5c7d47ddb1c2a7",
+      "docs/licenses/dust-mit.txt": "67d79f85900c4cdc96017fd80bf4caeb8226520503cb03c5eef8c8e6ca926b1b"
+    }
+  },
+  "tests": {
+    "unique_passed": 70,
+    "cuda_passed": 10,
+    "files": [
+      {
+        "file": "tests/training/test_dust_financial.py",
+        "passed": 46,
+        "cuda_passed": 7,
+        "supervised_wall_seconds": 25.05644980003126
+      },
+      {
+        "file": "tests/training/test_dust_inputs.py",
+        "passed": 24,
+        "cuda_passed": 3,
+        "supervised_wall_seconds": 62.01931629702449
+      }
+    ],
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "coverage_scope": "src/mars_titan/training/dust, cuatro archivos"
+  },
+  "diagnostics": {
+    "coverage_version": "7.16.1",
+    "radon_version": "6.0.1",
+    "statements": {
+      "covered": 428,
+      "total": 451,
+      "percent": 94.90022172949001
+    },
+    "branches": {
+      "covered": 113,
+      "total": 136,
+      "percent": 83.08823529411765
+    },
+    "max_crap": 23.436504324078285,
+    "max_crap_function": "DustEstimator.load_state_dict",
+    "max_crap_complexity": 19,
+    "crap_convention": "v**2*(1-c)**3+v, con c=cobertura de sentencias en el rango de función Radon, ramas separadas",
+    "added_exclusions": 0,
+    "diagnostic_only": true
+  },
+  "mutation_testing": {
+    "unique_targets": 5,
+    "valid_green_mutant_restored_triplets": 5,
+    "targets": [
+      {
+        "id": "D1_head_gradient_sign",
+        "selector": "tests/training/test_dust_financial.py::test_closed_scalar_head_credit_preserves_sign_population_and_centering_scale[1]",
+        "batch": "v1",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "passed": 0,
+            "call_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "exception": "AssertionError",
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          }
+        ]
+      },
+      {
+        "id": "D2_head_population_divided_twice",
+        "selector": "tests/training/test_dust_financial.py::test_closed_scalar_head_credit_preserves_sign_population_and_centering_scale[1]",
+        "batch": "v1",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "passed": 0,
+            "call_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "exception": "AssertionError",
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          }
+        ]
+      },
+      {
+        "id": "D3_dropout_admission_guard_disabled",
+        "selector": "tests/training/test_dust_financial.py::test_nonzero_dropout_is_rejected_at_admission_without_consuming_parent_rng[True]",
+        "batch": "remainder_v3",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "passed": 0,
+            "call_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "exception": "Failed",
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          }
+        ]
+      },
+      {
+        "id": "D4_checkpoint_schema_type_guard_disabled",
+        "selector": "tests/training/test_dust_financial.py::test_checkpoint_schema_requires_an_integer_before_replacing_private_rng[True]",
+        "batch": "remainder_v3",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "passed": 0,
+            "call_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "exception": "Failed",
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          }
+        ]
+      },
+      {
+        "id": "D5_private_rng_rollback_disabled",
+        "selector": "tests/training/test_dust_financial.py::test_probe_failure_restores_private_rng_counters_weights_and_pending_gradients",
+        "batch": "remainder_v3",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "passed": 0,
+            "call_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "exception": "AssertionError",
+            "optimizer_attempts": 0
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "passed": 1,
+            "call_failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "exception": null,
+            "optimizer_attempts": 0
+          }
+        ]
+      }
+    ],
+    "invalid_attempts_preserved": [
+      {
+        "target": "D3_dropout_admission_guard_disabled",
+        "batch": "v1",
+        "status": "incomplete_not_counted",
+        "reason": "El formato esperado de DID NOT RAISE no coincidía con pytest. Se conservó el fallo y se repitió en remainder_v3."
+      }
+    ],
+    "additional_mutation_runs_are_not_additional_unique_tests": true,
+    "universal_mutation_resistance_claim": false
+  },
+  "profile": {
+    "model": {
+      "variant": "transformer_direct",
+      "hidden_size": 32,
+      "layers": 1,
+      "heads": 4,
+      "feedforward_multiplier": 2,
+      "context": 64,
+      "max_batch": 256,
+      "input_widths": {
+        "prices": 6,
+        "news": 384,
+        "charts": 512,
+        "fundamentals": 78,
+        "macro": 420
+      },
+      "head": "scalar",
+      "seed": 42
+    },
+    "fixture": {
+      "kind": "synthetic_window_geometry_v1",
+      "rows": 32,
+      "sha256": "e3f949044e4de7b5ee75df882bec7791bd8ce14b3fb938b485b34049611b9858",
+      "financial_targets": false,
+      "target": "linspace(-0.02,0.02,32), float32",
+      "generator_seed_rule": "991 + rows"
+    },
+    "dust": {
+      "population": 16,
+      "sigma": 0.01,
+      "seed": 73,
+      "loss": "mae",
+      "max_forward_calls": 128,
+      "max_workspace_bytes": 536870912
+    },
+    "runtime": {
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "driver": "595.91.07",
+      "reported_vram_total_mib": 8188,
+      "precision": "fp32_strict",
+      "dtype": "float32",
+      "cpu_threads": 2,
+      "interop_threads": 1,
+      "allocator_cap_bytes": 1073741824,
+      "kernel_policy": {
+        "schema_version": 1,
+        "precision": "fp32_strict",
+        "matmul_allow_tf32": false,
+        "cudnn_allow_tf32": false,
+        "float32_matmul_precision": "highest",
+        "retired_native_overrides": [
+          "bmm"
+        ],
+        "native_overrides": [
+          "_foreach_mm/CUDA/native",
+          "linalg_polar.out/CUDA/native",
+          "linalg_polar/CUDA/native"
+        ]
+      }
+    },
+    "concurrency": {
+      "policy": "technical_contended",
+      "snapshots_before_after": true,
+      "continuous_monitoring": false,
+      "exclusive_performance_claim": false
+    },
+    "parity": {
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "reference_chunk": 2,
+      "private_rng_reset_before_every_estimate": true
+    },
+    "outcomes": [
+      {
+        "chunk": 2,
+        "physical_probe_rows": 64,
+        "status": "passed",
+        "warmups": 1,
+        "measured": 3,
+        "measured_wall_ms": [
+          1643.334885011427,
+          1600.0154069624841,
+          1390.5313219875097
+        ],
+        "measured_cuda_stream_span_ms": [
+          1643.1591796875,
+          1599.7723388671875,
+          1390.318359375
+        ],
+        "statistics": {
+          "wall_ms": {
+            "median": 1600.0154069624841,
+            "minimum": 1390.5313219875097,
+            "maximum": 1643.334885011427,
+            "sample_stdev": 135.19726360262308
+          },
+          "cuda_stream_span_ms": {
+            "median": 1599.7723388671875,
+            "minimum": 1390.318359375,
+            "maximum": 1643.1591796875,
+            "sample_stdev": 135.20470153177536
+          }
+        },
+        "counters_per_estimate": {
+          "full_forward_calls": 106,
+          "full_forward_rows": 6720,
+          "local_attention_calls": 25,
+          "head_loss_calls": 8,
+          "workspace_bound_bytes": 124414480,
+          "population": 16,
+          "logical_rows": 32
+        },
+        "peak_allocated_bytes": 46392320,
+        "peak_reserved_bytes": 62914560,
+        "rss_sampled_max_bytes": 1242251264,
+        "rss_process_lifetime_peak_bytes": 1239945216
+      },
+      {
+        "chunk": 4,
+        "physical_probe_rows": 128,
+        "status": "failed_parity",
+        "warmup_estimates_completed": 1,
+        "valid_measured_samples": 0,
+        "counters_per_estimate": {
+          "full_forward_calls": 54,
+          "full_forward_rows": 6720,
+          "local_attention_calls": 13,
+          "head_loss_calls": 4,
+          "workspace_bound_bytes": 197538320,
+          "population": 16,
+          "logical_rows": 32
+        },
+        "failure": {
+          "parameter": "price_encoder.blocks.0.norm1.bias",
+          "mismatched_elements": 2,
+          "total_elements": 32,
+          "max_absolute_error": 2.8028152883052826e-06,
+          "max_relative_error": 0.006728470791131258
+        },
+        "admitted_for_recipe": false
+      },
+      {
+        "chunk": 8,
+        "physical_probe_rows": 256,
+        "status": "passed_followup",
+        "untimed_reference_estimates_chunk2": 1,
+        "warmups": 1,
+        "measured": 3,
+        "measured_wall_ms": [
+          383.4578220266849,
+          480.66481901332736,
+          736.9229389587417
+        ],
+        "measured_cuda_stream_span_ms": [
+          383.2686462402344,
+          480.4913024902344,
+          736.70703125
+        ],
+        "statistics": {
+          "wall_ms": {
+            "median": 480.66481901332736,
+            "minimum": 383.4578220266849,
+            "maximum": 736.9229389587417,
+            "sample_stdev": 182.59929407900793
+          },
+          "cuda_stream_span_ms": {
+            "median": 480.4913024902344,
+            "minimum": 383.2686462402344,
+            "maximum": 736.70703125,
+            "sample_stdev": 182.58214432163348
+          }
+        },
+        "counters_per_estimate": {
+          "full_forward_calls": 28,
+          "full_forward_rows": 6720,
+          "local_attention_calls": 7,
+          "head_loss_calls": 2,
+          "workspace_bound_bytes": 343786000,
+          "population": 16,
+          "logical_rows": 32
+        },
+        "peak_allocated_bytes": 61218304,
+        "peak_reserved_bytes": 62914560,
+        "rss_sampled_max_bytes": 1243742208,
+        "rss_process_lifetime_peak_bytes": 1242152960
+      },
+      {
+        "chunk": 16,
+        "physical_probe_rows": 512,
+        "status": "not_run_not_admitted",
+        "reason": "Supera max_batch=256"
+      }
+    ],
+    "runs": [
+      {
+        "status": "error_after_chunk4_parity",
+        "completed_estimates": 5,
+        "total_full_forwards_including_clean_audits": 480,
+        "clean_audit_forwards": 2,
+        "counters": {
+          "full_forward_calls": 478,
+          "full_forward_rows": 33600,
+          "local_attention_calls": 113,
+          "head_loss_calls": 36,
+          "logical_rows": 160
+        },
+        "internal_process_wall_seconds": 31.41505060403142,
+        "supervised_process_wall_seconds": 34.35393102595117,
+        "process_lifetime_peak_rss_bytes": 1241010176,
+        "optimizer_steps": 0
+      },
+      {
+        "status": "passed_chunk8_followup",
+        "completed_estimates": 5,
+        "total_full_forwards_including_clean_audits": 220,
+        "clean_audit_forwards": 2,
+        "counters": {
+          "full_forward_calls": 218,
+          "full_forward_rows": 33600,
+          "local_attention_calls": 53,
+          "head_loss_calls": 16,
+          "logical_rows": 160
+        },
+        "internal_process_wall_seconds": 26.557762264972553,
+        "supervised_process_wall_seconds": 30.55342594604008,
+        "process_lifetime_peak_rss_bytes": 1242152960,
+        "optimizer_steps": 0
+      }
+    ],
+    "final_followup_invariants": {
+      "weights_buffers_inputs_and_configuration_unchanged": true,
+      "global_rng_unchanged": true,
+      "source_manifest_unchanged": true
+    },
+    "timing_scope": "estimate completo con validaciones internas. Reset del RNG, construcción, transferencias y auditorías quedan fuera de las muestras e incluidos en el tiempo interno del proceso.",
+    "cuda_timing_scope": "Intervalo del stream con huecos de lanzamiento, distinto del tiempo exclusivo de kernels.",
+    "rss_scope": "Muestreo de RSS y máximo de vida del proceso proceden de interfaces diferentes y se conservan por separado.",
+    "energy_measured": false,
+    "full_fit_measured": false,
+    "financial_mae_measured": false,
+    "predictive_superiority_claim": false,
+    "global_speedup_claim": false
+  },
+  "evidence_sha256": {
+    "tests_financial_receipt": "2c67a28685b5a85a1d5509a541413b8bed85e76f01f3e943bca93442599995b5",
+    "tests_inputs_receipt": "5893bfc2d221fb2bebbfdbf810b231546e503391b46491a475364786195dfad4",
+    "coverage": "6d927236b87f64ec3861f10c1741a67434dcd9e9df67d6f6d61ee91a1d42e320",
+    "quality": "a23f3287b5820560669a0155fe0ca861df810f5986ea34c33869e6d4ed5ca422",
+    "mutation_v1": "00c7abd871674f08583b454fdc10a740945ae94b17ba16525dd353bb1df35202",
+    "mutation_remainder_v3": "1e5c7df5ccb3e50620d1c58e19303df4f055ec1e9aa94bd42da0fdd27e3c83fa",
+    "initial_profile": "cd6921eccc159341ef037c5e477a0c596d00995b4f26142ed53e4e74dee44136",
+    "chunk8_probe": "098a193da9b4eecf71ad3f4dc0e45c9e676e4b36ca3ded525806ed051f8ecc7c",
+    "profile_driver": "4605578c118097f4f68530d9f2aed4c7385f3fb72b8b3892182875a0e9973dcc",
+    "probe_driver": "99ac4d99e5c028f9b5db5f5ca840e14aaefa0e42ea8f2619c0adcd83762516dc"
+  }
+}
