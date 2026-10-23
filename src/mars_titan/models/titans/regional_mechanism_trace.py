@@ -3,7 +3,7 @@
 import numpy as np
 import torch
 
-from .config import bounded_integer
+from .bridge_stopping_record import verify_stopping_record
 from .episodic_snapshot import _digest_id
 from .evidence_bridge import AdaptiveBridgeRead, HierarchyBridgeRead
 from .regional_episode_readout import hierarchy_weights
@@ -38,36 +38,15 @@ def _stopping_config(reader):
 def verify_stopping(value, reader, *, episodes):
     """Validar una decisión escalar por lectura, sin autenticar su residual numérico."""
     stopping = _stopping_config(reader)
-    bounded_integer(episodes, "episodios de la parada", 0, 1024)
     if stopping is None:
         raise ValueError("Los metadatos de parada necesitan un lector adaptativo")
-    if (
-        type(value) is not dict
-        or set(value) != set(_STOPPING_FIELDS)
-        or type(value["selected_steps"]) is not int
-        or type(value["evaluated_steps"]) is not int
-        or type(value["criterion_met"]) is not bool
-    ):
-        raise ValueError("La parada regional necesita pasos enteros y un criterio booleano")
-    selected, evaluated, met = (value[name] for name in _STOPPING_FIELDS)
-    if not episodes:
-        if (selected, evaluated, met) != (0, 0, False):
-            raise ValueError("Una lectura sin episodios no debe inventar trabajo adaptativo")
-        return selected, evaluated
-    if reader.config.mode == "no_bank":
-        raise ValueError("El control sin banco no admite una parada con episodios")
-    maximum = reader.config.evidence_bridge.recurrence.steps
-    expected = maximum if stopping.backend == "adaptive_reference_full" else selected
-    if (
-        selected not in (1, 2, 4)
-        or selected > maximum
-        or evaluated != expected
-        or (not met and selected != maximum)
-    ):
-        raise ValueError("La parada regional no conserva sus prefijos o el trabajo del backend")
-    if not any(reader.config.evidence_bridge.active_views()) and (selected != 1 or not met):
-        raise ValueError("Un pool poblado sin lectores presentes debe elegir J1 con residual cero")
-    return selected, evaluated
+    return verify_stopping_record(
+        value,
+        reader.config.evidence_bridge.recurrence,
+        episodes=episodes,
+        mode=reader.config.mode,
+        active_views=reader.config.evidence_bridge.active_views(),
+    )
 
 
 def observed_work(reader, rows):

@@ -29,6 +29,11 @@ class RegionalRouteCollection:
     value_projections: int
 
 
+@dataclass(frozen=True, kw_only=True)
+class AdaptiveRegionalRouteCollection(RegionalRouteCollection):
+    executed_reads: tuple[RegionalEpisodeRead, ...]
+
+
 @dataclass(frozen=True)
 class _Node:
     result: RegionalRouteResult
@@ -46,6 +51,10 @@ class _Decision:
         self.context_id, self.cutoff = context_id, cutoff
         self.populated = snapshot is not None and snapshot.count > 0
         self.steps = self.searches = 0
+        recurrence = model.config.evidence_bridge.recurrence
+        self.executed_reads = (
+            [] if recurrence is not None and recurrence.stopping is not None else None
+        )
 
     def extend(self, parent=None, *, refresh=False, steps=1):
         state = self.base if parent is None else parent.result.state
@@ -64,6 +73,8 @@ class _Decision:
             )
             state = self.model._step(state, self.base, read)
             reads += (read,)
+            if self.executed_reads is not None:
+                self.executed_reads.append(read)
             searches += searching
             self.steps += 1
             self.searches += searching
@@ -121,9 +132,14 @@ def collect_routes(
             decision.extend(retained, refresh=True, steps=2),
             decision.extend(renewed, steps=2),
         )
-        return RegionalRouteCollection(
+        fields = (
             dict(zip(ROUTES, (node.result for node in nodes), strict=True)),
             decision.steps,
             decision.searches,
             decision.steps if decision.populated else 0,
         )
+        if decision.executed_reads is not None:
+            return AdaptiveRegionalRouteCollection(
+                *fields, executed_reads=tuple(decision.executed_reads)
+            )
+        return RegionalRouteCollection(*fields)
