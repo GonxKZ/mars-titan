@@ -1,0 +1,326 @@
+[
+  {
+    "admission": "m2",
+    "device": "cpu",
+    "differences": [
+      {
+        "path": "/points/('US/T0003', 1625688300000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.15115342508841942,
+        "right": 0.1511534250884194
+      },
+      {
+        "path": "/points/('US/T0002', 1625774700000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.16721278750108465,
+        "right": 0.16721278750108462
+      },
+      {
+        "path": "/fast/mac/memory/weights/0",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/weights/1",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/0",
+        "kind": "tensor",
+        "max_abs": 4.743384504624082e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/1",
+        "kind": "tensor",
+        "max_abs": 2.846030702774449e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      }
+    ]
+  },
+  {
+    "admission": "m2",
+    "device": "cuda:0",
+    "differences": [
+      {
+        "path": "/points/('US/T0003', 1625688300000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.15115342508841942,
+        "right": 0.1511534250884194
+      },
+      {
+        "path": "/points/('US/T0001', 1625774700000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.16721295326613686,
+        "right": 0.16721295326613683
+      },
+      {
+        "path": "/fast/mac/memory/weights/0",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/weights/1",
+        "kind": "tensor",
+        "max_abs": 6.938893903907228e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/0",
+        "kind": "tensor",
+        "max_abs": 5.421010862427522e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/1",
+        "kind": "tensor",
+        "max_abs": 2.710505431213761e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      }
+    ]
+  },
+  {
+    "admission": "m3",
+    "device": "cpu",
+    "differences": [
+      {
+        "path": "/points/('US/T0003', 1625688300000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.15115342508841942,
+        "right": 0.1511534250884194
+      },
+      {
+        "path": "/points/('US/T0002', 1625774700000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.16721278750108465,
+        "right": 0.16721278750108462
+      },
+      {
+        "path": "/banks/2/receipt/components/3/1",
+        "kind": "float",
+        "max_abs": 1.1102230246251565e-16,
+        "left": 0.5825308009202317,
+        "right": 0.5825308009202318
+      },
+      {
+        "path": "/banks/2/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/banks/3/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/banks/4/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/fast/mac/memory/weights/0",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/weights/1",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/0",
+        "kind": "tensor",
+        "max_abs": 4.743384504624082e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/1",
+        "kind": "tensor",
+        "max_abs": 2.846030702774449e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      }
+    ]
+  },
+  {
+    "admission": "m3",
+    "device": "cuda:0",
+    "differences": [
+      {
+        "path": "/points/('US/T0003', 1625688300000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.15115342508841942,
+        "right": 0.1511534250884194
+      },
+      {
+        "path": "/points/('US/T0001', 1625774700000000)",
+        "kind": "float",
+        "max_abs": 2.7755575615628914e-17,
+        "left": 0.16721295326613686,
+        "right": 0.16721295326613683
+      },
+      {
+        "path": "/banks/2/receipt/components/3/1",
+        "kind": "float",
+        "max_abs": 1.1102230246251565e-16,
+        "left": 0.5825308009202317,
+        "right": 0.5825308009202318
+      },
+      {
+        "path": "/banks/2/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/banks/3/receipt/components/1/1",
+        "kind": "float",
+        "max_abs": 8.326672684688674e-17,
+        "left": 0.24876883744838088,
+        "right": 0.24876883744838096
+      },
+      {
+        "path": "/banks/3/receipt/components/1/4",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.4652247348420249,
+        "right": 0.465224734842025
+      },
+      {
+        "path": "/banks/3/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/banks/4/receipt/components/1/1",
+        "kind": "float",
+        "max_abs": 8.326672684688674e-17,
+        "left": 0.24876883744838088,
+        "right": 0.24876883744838096
+      },
+      {
+        "path": "/banks/4/receipt/components/1/4",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.4652247348420249,
+        "right": 0.465224734842025
+      },
+      {
+        "path": "/banks/4/features/8/0",
+        "kind": "float",
+        "max_abs": 5.551115123125783e-17,
+        "left": 0.34884657491158055,
+        "right": 0.3488465749115806
+      },
+      {
+        "path": "/fast/mac/memory/weights/0",
+        "kind": "tensor",
+        "max_abs": 5.204170427930421e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/weights/1",
+        "kind": "tensor",
+        "max_abs": 6.938893903907228e-18,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/0",
+        "kind": "tensor",
+        "max_abs": 5.421010862427522e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      },
+      {
+        "path": "/fast/mac/memory/momentum/1",
+        "kind": "tensor",
+        "max_abs": 2.710505431213761e-19,
+        "shape": [
+          4,
+          32,
+          32
+        ]
+      }
+    ]
+  }
+]

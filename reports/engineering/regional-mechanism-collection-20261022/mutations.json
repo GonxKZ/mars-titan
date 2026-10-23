@@ -1,0 +1,351 @@
+{
+  "recorded_at_utc": "2026-10-22T03:52:07.472428+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "reselect_on_every_step",
+      "path": "src/mars_titan/models/titans/regional_routes.py",
+      "before": "positions = None if parent is None or refresh else parent.positions",
+      "after": "positions = None",
+      "expression": "shared_regional_prefixes or routes_preserve",
+      "exit_code": 1,
+      "tests": 9,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reuse_regional_values",
+      "path": "src/mars_titan/models/titans/regional_routes.py",
+      "before": "state = self.model._step(state, self.base, read)",
+      "after": "read = reads[-1] if reads else read\n            state = self.model._step(state, self.base, read)",
+      "expression": "shared_regional_prefixes or routes_preserve",
+      "exit_code": 1,
+      "tests": 9,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_refresh",
+      "path": "src/mars_titan/models/titans/regional_routes.py",
+      "before": "node = decision.extend(node, refresh=step in REFRESH_AT[route])",
+      "after": "node = decision.extend(node, refresh=False)",
+      "expression": "shared_regional_prefixes or routes_preserve",
+      "exit_code": 1,
+      "tests": 9,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "lose_shared_gradient",
+      "path": "src/mars_titan/models/titans/regional_routes.py",
+      "before": "base = base if differentiable else base.detach()",
+      "after": "base = base.detach()",
+      "expression": "shared_regional_prefixes or routes_preserve",
+      "exit_code": 1,
+      "tests": 9,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "report_searches_as_projections",
+      "path": "src/mars_titan/models/titans/regional_routes.py",
+      "before": "decision.steps if decision.populated else 0,",
+      "after": "decision.searches,",
+      "expression": "shared_regional_prefixes or routes_preserve",
+      "exit_code": 1,
+      "tests": 9,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "use_legacy_collection",
+      "path": "src/mars_titan/memory/mechanism_collection.py",
+      "before": "regional_routes\n                    if reader.config.evidence_bridge is not None",
+      "after": "regional_routes\n                    if False",
+      "expression": "matches_all_fixed_emissions",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_modified_catalogue",
+      "path": "src/mars_titan/models/titans/mechanism_catalog.py",
+      "before": "if not matches:",
+      "after": "if False:",
+      "expression": "catalogue_restore_rejects_changed",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "erase_regional_contract",
+      "path": "src/mars_titan/models/titans/mechanism_catalog.py",
+      "before": "reader_contract=identity.get(\"reader_contract\", \"legacy\"),",
+      "after": "reader_contract=\"legacy\",",
+      "expression": "catalogue_restore_rejects_changed",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "ignore_projection_cost_integrity",
+      "path": "src/mars_titan/memory/mechanism_collection_record.py",
+      "before": "if catalog.reader_contract == \"shared_evidence_bridge_v1\":",
+      "after": "if False:",
+      "expression": "cannot_claim_cached",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_unbound_regional_fit",
+      "path": "src/mars_titan/training/mechanism_fit_contract.py",
+      "before": "if catalog.reader_contract != \"legacy\":",
+      "after": "if False:",
+      "expression": "fit_contract_requires",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_foreign_fit_catalogue",
+      "path": "src/mars_titan/training/mechanism_fit_contract.py",
+      "before": "elif catalog.fingerprint() != self.catalog_id:",
+      "after": "elif False:",
+      "expression": "fit_contract_requires",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "read_before_catalogue_binding",
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "before": "config.check_catalog(session.consumer.catalog)",
+      "after": "pass",
+      "expression": "rejects_before_opening_window",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_sha256": {
+    "src/mars_titan/models/titans/regional_routes.py": "bb4417d459dc440bfc9ab857a84cc178c14a94665822dc4fe9c7597ade83048d",
+    "src/mars_titan/models/titans/mechanism_catalog.py": "d52e565840cfcb9ab1962e2d4aa56303dce399ea25df172265b610fc3587d8de",
+    "src/mars_titan/memory/mechanism_collection.py": "f05850fb9084d2bf252f0025f01807621fb64be55ee750708249cbaead97abe9",
+    "src/mars_titan/memory/mechanism_collection_record.py": "1db955d8c0f00fbc162f85a2d472e0576885aa141a4851e32dd915cd3b7398ec",
+    "src/mars_titan/training/mechanism_fit_contract.py": "f2f6c91476b86b75b5ce7667e7be2fadb6a48db612ba56cf2a4346140d0e72f7",
+    "src/mars_titan/training/mechanism_fit_window.py": "16c838af74b3da95bd2057dbceecae6499b6bccb67b33865ad862becd1bc51a3"
+  },
+  "tests_sha256": {
+    "tests/memory/test_regional_mechanism_collection.py": "9f34e6fcdf45de38f0e15f823017952ea631043404dfcea5eb57de36c7d7cf9d",
+    "tests/memory/test_regional_mechanism_fit_window.py": "a1c7a59d3ad91e4c92e4b3275a887602914624d8cafe3a9d08bc67a75c1611bd",
+    "tests/models/titans/test_bridge_mechanism_routes.py": "b1175636ea3d360be63be2891b80dd632ae5c6878dbe2acb053b0d4036518c8b"
+  },
+  "initial_selection": {
+    "recorded_at_utc": "2026-10-22T03:49:12.105667+00:00",
+    "baseline": {
+      "exit_code": 0,
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "mutations": [
+      {
+        "name": "reselect_on_every_step",
+        "path": "src/mars_titan/models/titans/regional_routes.py",
+        "before": "positions = None if parent is None or refresh else parent.positions",
+        "after": "positions = None",
+        "expression": "shared_regional_prefixes",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "reuse_regional_values",
+        "path": "src/mars_titan/models/titans/regional_routes.py",
+        "before": "state = self.model._step(state, self.base, read)",
+        "after": "read = reads[-1] if reads else read\n            state = self.model._step(state, self.base, read)",
+        "expression": "shared_regional_prefixes",
+        "exit_code": 0,
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "omit_refresh",
+        "path": "src/mars_titan/models/titans/regional_routes.py",
+        "before": "node = decision.extend(node, refresh=step in REFRESH_AT[route])",
+        "after": "node = decision.extend(node, refresh=False)",
+        "expression": "shared_regional_prefixes",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "lose_shared_gradient",
+        "path": "src/mars_titan/models/titans/regional_routes.py",
+        "before": "base = base if differentiable else base.detach()",
+        "after": "base = base.detach()",
+        "expression": "shared_regional_prefixes",
+        "exit_code": 0,
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "report_searches_as_projections",
+        "path": "src/mars_titan/models/titans/regional_routes.py",
+        "before": "decision.steps if decision.populated else 0,",
+        "after": "decision.searches,",
+        "expression": "shared_regional_prefixes",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "use_legacy_collection",
+        "path": "src/mars_titan/memory/mechanism_collection.py",
+        "before": "regional_routes\n                    if reader.config.evidence_bridge is not None",
+        "after": "regional_routes\n                    if False",
+        "expression": "matches_all_fixed_emissions",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "accept_modified_catalogue",
+        "path": "src/mars_titan/models/titans/mechanism_catalog.py",
+        "before": "if not matches:",
+        "after": "if False:",
+        "expression": "catalogue_restore_rejects_changed",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "erase_regional_contract",
+        "path": "src/mars_titan/models/titans/mechanism_catalog.py",
+        "before": "reader_contract=identity.get(\"reader_contract\", \"legacy\"),",
+        "after": "reader_contract=\"legacy\",",
+        "expression": "catalogue_restore_rejects_changed",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ignore_projection_cost_integrity",
+        "path": "src/mars_titan/memory/mechanism_collection_record.py",
+        "before": "if catalog.reader_contract == \"shared_evidence_bridge_v1\":",
+        "after": "if False:",
+        "expression": "cannot_claim_cached",
+        "exit_code": 1,
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "accept_unbound_regional_fit",
+        "path": "src/mars_titan/training/mechanism_fit_contract.py",
+        "before": "if catalog.reader_contract != \"legacy\":",
+        "after": "if False:",
+        "expression": "fit_contract_requires",
+        "exit_code": 1,
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "accept_foreign_fit_catalogue",
+        "path": "src/mars_titan/training/mechanism_fit_contract.py",
+        "before": "elif catalog.fingerprint() != self.catalog_id:",
+        "after": "elif False:",
+        "expression": "fit_contract_requires",
+        "exit_code": 1,
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "read_before_catalogue_binding",
+        "path": "src/mars_titan/training/mechanism_fit_window.py",
+        "before": "config.check_catalog(session.consumer.catalog)",
+        "after": "pass",
+        "expression": "rejects_before_opening_window",
+        "exit_code": 1,
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "restored": {
+      "exit_code": 0,
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "source_sha256": {
+      "src/mars_titan/models/titans/regional_routes.py": "bb4417d459dc440bfc9ab857a84cc178c14a94665822dc4fe9c7597ade83048d",
+      "src/mars_titan/models/titans/mechanism_catalog.py": "d52e565840cfcb9ab1962e2d4aa56303dce399ea25df172265b610fc3587d8de",
+      "src/mars_titan/memory/mechanism_collection.py": "f05850fb9084d2bf252f0025f01807621fb64be55ee750708249cbaead97abe9",
+      "src/mars_titan/memory/mechanism_collection_record.py": "1db955d8c0f00fbc162f85a2d472e0576885aa141a4851e32dd915cd3b7398ec",
+      "src/mars_titan/training/mechanism_fit_contract.py": "f2f6c91476b86b75b5ce7667e7be2fadb6a48db612ba56cf2a4346140d0e72f7",
+      "src/mars_titan/training/mechanism_fit_window.py": "16c838af74b3da95bd2057dbceecae6499b6bccb67b33865ad862becd1bc51a3"
+    },
+    "tests_sha256": {
+      "tests/memory/test_regional_mechanism_collection.py": "9f34e6fcdf45de38f0e15f823017952ea631043404dfcea5eb57de36c7d7cf9d",
+      "tests/memory/test_regional_mechanism_fit_window.py": "a1c7a59d3ad91e4c92e4b3275a887602914624d8cafe3a9d08bc67a75c1611bd"
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "raw_measurements": {
+    "float32-1": {
+      "original_sha256": "0367e6fe7c74dac65402b778cc76b9c95a297d33cbab45f168071aec7ec3c159",
+      "published_sha256": "7b7223be7a9245d09b8fbb9b058b221f0025cdf763cbe51ba88578cdefcb5738",
+      "records_numerically_unchanged": true,
+      "transformations": [
+        {
+          "field": "hardware_before/applications/stdout",
+          "rule": "executable_basename_only"
+        },
+        {
+          "field": "hardware_after/applications/stdout",
+          "rule": "executable_basename_only"
+        }
+      ]
+    },
+    "float32-256": {
+      "original_sha256": "4c21d5baf61e8ef8ce239869baf88405df49f34cfc20f122e5566366d51d8d3f",
+      "published_sha256": "dc1a2193f739769ccd1efc136323a03e3b7c3a847f2ebc52537fe73a72e2e097",
+      "records_numerically_unchanged": true,
+      "transformations": [
+        {
+          "field": "hardware_before/applications/stdout",
+          "rule": "executable_basename_only"
+        },
+        {
+          "field": "hardware_after/applications/stdout",
+          "rule": "executable_basename_only"
+        }
+      ]
+    },
+    "float64-1": {
+      "original_sha256": "c6362b02e1d1045978e5bd0b56da40981b40accb45e20fe2e0941c0ff42e6f78",
+      "published_sha256": "f3ad99ed5b1611132ca8afb0b0ca60daca0410cdb515f7b66d5911b3c27f5d4d",
+      "records_numerically_unchanged": true,
+      "transformations": [
+        {
+          "field": "hardware_before/applications/stdout",
+          "rule": "executable_basename_only"
+        },
+        {
+          "field": "hardware_after/applications/stdout",
+          "rule": "executable_basename_only"
+        }
+      ]
+    },
+    "float64-256": {
+      "original_sha256": "02df136420f86bf229b39b611b67e8f769d3dd9f20ca30572c51d7df78e64be5",
+      "published_sha256": "1f3ff8d411f91672aaa87b4bd51cb55c220e1e834855ffd152ae43f8e3b75182",
+      "records_numerically_unchanged": true,
+      "transformations": [
+        {
+          "field": "hardware_before/applications/stdout",
+          "rule": "executable_basename_only"
+        },
+        {
+          "field": "hardware_after/applications/stdout",
+          "rule": "executable_basename_only"
+        }
+      ]
+    }
+  },
+  "original_summary_sha256": "a69383bf4a1263fe5ab42c4080451d40c517a8ad032a99d231e7ca997dc41425",
+  "measured_source_commit": "96609c5deb7f8396c0106ad1fc828a69fc21705c",
+  "measured_benchmark_sha256": "7f13c11e4e5f53602fe4e27b733be00378ea95bc368498395fca2a3ddfb0cd87",
+  "note": "El guion, la declaración y la prueba del payload se midieron antes de su commit de empaquetado. Se conservan las huellas de todas las fuentes medidas. Las rutas de ejecutables se limitan a su nombre. Los registros numéricos no cambian.",
+  "aggregation_coverage_relocation": {
+    "original_sha256": "483ecafec1156e3a1db63afb7d26ba7f442bd0c64e59a9ba27f8757f1dc16f15",
+    "published_sha256": "6521701653f8a1bb431132bfe7bd6f2c5faf7152f1846b58998a9e9fe9075c9e",
+    "transformation": "source_location_rebased_to_report_relative_path",
+    "source_content_unchanged": true
+  },
+  "published_summary_sha256": "e7651417da113edf7aca9587ad661f10d0eeed9e1924ae3229e4f05667285602",
+  "summary_publication_transformation": {
+    "rule": "reaggregate_published_input_bytes_and_sha256",
+    "changed_fields": [
+      "/input_artifacts/float32-1/measurement.json/bytes",
+      "/input_artifacts/float32-1/measurement.json/sha256",
+      "/input_artifacts/float32-256/measurement.json/bytes",
+      "/input_artifacts/float32-256/measurement.json/sha256",
+      "/input_artifacts/float64-1/measurement.json/bytes",
+      "/input_artifacts/float64-1/measurement.json/sha256",
+      "/input_artifacts/float64-256/measurement.json/bytes",
+      "/input_artifacts/float64-256/measurement.json/sha256"
+    ],
+    "numerical_records_unchanged": true
+  },
+  "prepared_at_utc": "2026-10-22T22:09:32.755244+00:00"
+}

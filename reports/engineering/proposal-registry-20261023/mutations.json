@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "kind": "proposal_registry_directed_mutations_v2",
+  "status": "passed",
+  "verified_targets": 4,
+  "verified_phases": 12,
+  "scope": "Cuatro objetivos dirigidos del registro. No cubre todas las mutaciones posibles.",
+  "execution_scope": "Pruebas de configuraciones y metadatos, sin construir predictores o ejecutar forwards.",
+  "plan": {
+    "name": "plan-v2.json",
+    "sha256": "ed6cb612eb45e1baefb4c6975d2ff016e7f7bc27145f36790f0cde8966f7b695",
+    "bytes": 5503
+  },
+  "driver_revision": 2,
+  "pytest": "9.1.1",
+  "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+  "test_sha256": "b9fd23593f13c0f0f399bd6de364d75e356c08033d0429f796cf83f477d12e48",
+  "records": [
+    {
+      "id": "omit_entry_seal",
+      "status": "killed",
+      "needle": "        if current != self._sealed:\n",
+      "replacement": "        if False:\n",
+      "nodeid": "tests/proposals/test_proposal_registry.py::test_registry_cannot_resolve_coherently_mutated_sealed_configs",
+      "expected_call_failure": "Failed: DID NOT RAISE ValueError",
+      "result": {
+        "name": "results.json",
+        "sha256": "b6b0d0352cf4480033c0a5e729a8cbec03d9742b525036865dfcdc3083b6f799",
+        "bytes": 1911
+      },
+      "supervisor": {
+        "name": "check-registry-mutation-seal-v2.json",
+        "sha256": "ae3a56dca12e24e7cffdfdb83541819153b6de2e32604efeddf96eb346869bf8",
+        "bytes": 280,
+        "returncode": 0,
+        "supervision_seconds": 52.63850426103454,
+        "timeout_seconds": 240
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 16.00724107597489,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "base.json",
+            "sha256": "e3a8b90ef978562d3a5f82840f16e023732c691ece9e4bee6f6c6b08aa30211e",
+            "bytes": 1231
+          }
+        },
+        {
+          "phase": "mutant",
+          "returncode": 1,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 16.677163660991937,
+          "call_outcome": "failed",
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "376da94816a2b948c86d14b388b2b3c6a9352be9fd482eb7f6283e95fab50c78",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "mutant.json",
+            "sha256": "15780ccd2f976c6ecbf0f94ae3c96641bedd6511dc2d033e07dd0119bc60173e",
+            "bytes": 1454
+          }
+        },
+        {
+          "phase": "restored",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 19.453650407027453,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "restored.json",
+            "sha256": "ddbd4240ca29bb52a74ff566dc4be2232418bb43201a8e4190d07707b53926c2",
+            "bytes": 1235
+          }
+        }
+      ]
+    },
+    {
+      "id": "omit_reader_contract",
+      "status": "killed",
+      "needle": "        if self.catalog.reader_contract != reader_contract:\n",
+      "replacement": "        if False:\n",
+      "nodeid": "tests/proposals/test_proposal_registry.py::test_incompatible_configurations_are_rejected_before_model_construction[reader]",
+      "expected_call_failure": "Failed: DID NOT RAISE ValueError",
+      "result": {
+        "name": "results.json",
+        "sha256": "b4e298a37032bdd2f958ca50bdba30324af5981014fb8d5ca513f9c1102871d0",
+        "bytes": 1982
+      },
+      "supervisor": {
+        "name": "check-registry-mutation-reader-v2.json",
+        "sha256": "439692e4ff24ac3318402cb2d48a0d18211d2810ba8af590fce93e9fe9b8a470",
+        "bytes": 285,
+        "returncode": 0,
+        "supervision_seconds": 58.86627794790547,
+        "timeout_seconds": 240
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 17.568037980003282,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "base.json",
+            "sha256": "cedabd2e142e033ae3bf24aaeaa818d13b3c55d01c814e0aa58f81bc7e5b09cb",
+            "bytes": 1287
+          }
+        },
+        {
+          "phase": "mutant",
+          "returncode": 1,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 20.10018730291631,
+          "call_outcome": "failed",
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "71d1746076d1cc88089d7ac10ebb58a81e029eb8f1e94c109816ed748be440dc",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "mutant.json",
+            "sha256": "897f974d545c3609aeb2d8990d0c7bae6d6e2f4cb7e9d18e318e4adb38e91fa2",
+            "bytes": 1519
+          }
+        },
+        {
+          "phase": "restored",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 20.779686728026718,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "restored.json",
+            "sha256": "7e36a225394f752597f01135d86717e16ba5c7bf82988547b61adebea478ac61",
+            "bytes": 1291
+          }
+        }
+      ]
+    },
+    {
+      "id": "allow_nine_entries",
+      "status": "killed",
+      "needle": "MAX_CONFIGURATIONS = 8\n",
+      "replacement": "MAX_CONFIGURATIONS = 9\n",
+      "nodeid": "tests/proposals/test_proposal_registry.py::test_registry_rejects_duplicate_unknown_baseline_and_excess_entries",
+      "expected_call_failure": "Failed: DID NOT RAISE ValueError",
+      "result": {
+        "name": "results.json",
+        "sha256": "bcfda3092a98e37378ab02c888fc4850d263bb78f38e54e8674005aee4ec03cf",
+        "bytes": 1937
+      },
+      "supervisor": {
+        "name": "check-registry-mutation-capacity-v2.json",
+        "sha256": "47a93e8dc071738bff739785218e9a3fe7c49eb4f48578fe533bb843a6a8433e",
+        "bytes": 282,
+        "returncode": 0,
+        "supervision_seconds": 66.5467037439812,
+        "timeout_seconds": 240
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 21.786741463001817,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "base.json",
+            "sha256": "f2e3bb491bbb27b36bfb21faa266778b7ffedad182d5bdf165c1c1d4708cb9f4",
+            "bytes": 1249
+          }
+        },
+        {
+          "phase": "mutant",
+          "returncode": 1,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 21.17093942302745,
+          "call_outcome": "failed",
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "208d3f2fa07c2774acf2f3090a34f6760e82e9ac9446026dfe9d0465b22da7bd",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "mutant.json",
+            "sha256": "bd204f20e215e500f93dcc2d002cbfda55bb941aca51f6de35af96aa75a23e0d",
+            "bytes": 1477
+          }
+        },
+        {
+          "phase": "restored",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 23.13592973293271,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "restored.json",
+            "sha256": "52391f08911ce5d12bf409d4320c937aed60d4174c48903fa9da2bb8a55729e5",
+            "bytes": 1253
+          }
+        }
+      ]
+    },
+    {
+      "id": "omit_identity_type_validation",
+      "status": "killed",
+      "needle": "        self._validate()\n        return json.loads(self._sealed)\n",
+      "replacement": "        return json.loads(self._sealed)\n",
+      "nodeid": "tests/proposals/test_proposal_registry.py::test_equal_json_does_not_allow_invalid_mutable_component_types[regions]",
+      "expected_call_failure": "Failed: DID NOT RAISE ValueError",
+      "result": {
+        "name": "results.json",
+        "sha256": "98161e8720f5b5a0a229ffcf1f15eae11dfe05822bccac0d0003f89958e5fc4c",
+        "bytes": 1994
+      },
+      "supervisor": {
+        "name": "check-registry-mutation-types-v2.json",
+        "sha256": "ad732fb3aaee4fd948bd58945493bb4b6e94bbf2e0d2835127ed0a35c1804dae",
+        "bytes": 308,
+        "returncode": 0,
+        "supervision_seconds": 37.6774992949795,
+        "timeout_seconds": 180.26942781708203
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 17.124095244100317,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "base.json",
+            "sha256": "3edb0d917cea929d2af2570166e70d6f7f82dba3a288ccbf30a26a52e180ccb7",
+            "bytes": 1272
+          }
+        },
+        {
+          "phase": "mutant",
+          "returncode": 1,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 8.793637805967592,
+          "call_outcome": "failed",
+          "failed_calls": 1,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "44b593188961e2c71ec15d0f9ecc0326d10b41069aaea3774d67b9498ce226eb",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "mutant.json",
+            "sha256": "11d59e7b089ccfcf9d595d5d3981a4ca3e0c85d0df85b7d7b7665a8e6136b79d",
+            "bytes": 1495
+          }
+        },
+        {
+          "phase": "restored",
+          "returncode": 0,
+          "valid": true,
+          "phase_contract_satisfied": true,
+          "elapsed_seconds": 11.318000957951881,
+          "call_outcome": "passed",
+          "failed_calls": 0,
+          "failed_non_calls": 0,
+          "skips": 0,
+          "source_sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+          "original_source_unchanged": true,
+          "hold_unchanged": true,
+          "dont_write_bytecode": true,
+          "receipt": {
+            "name": "restored.json",
+            "sha256": "97f0e6478fb239bb49717896fc72fff9c29966074e90db2b31464219a3ca7e39",
+            "bytes": 1276
+          }
+        }
+      ]
+    }
+  ]
+}

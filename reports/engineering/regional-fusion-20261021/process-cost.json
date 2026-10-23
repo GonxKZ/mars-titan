@@ -1,0 +1,18 @@
+{
+  "operator": {
+    "external_wall_seconds": 12.9,
+    "external_peak_rss_bytes": 1660604416,
+    "user_cpu_seconds": 12.03,
+    "system_cpu_seconds": 1.31,
+    "exit_status": 0,
+    "measurement": "GNU /usr/bin/time -v, proceso completo, RSS en KiB convertido a bytes"
+  },
+  "session": {
+    "external_wall_seconds": 249.63,
+    "external_peak_rss_bytes": 1696722944,
+    "user_cpu_seconds": 267.03,
+    "system_cpu_seconds": 18.68,
+    "exit_status": 0,
+    "measurement": "GNU /usr/bin/time -v, proceso completo, RSS en KiB convertido a bytes"
+  }
+}

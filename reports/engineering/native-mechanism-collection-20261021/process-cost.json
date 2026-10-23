@@ -1,0 +1,14 @@
+{
+  "internal_seconds": 151.6928114319453,
+  "external_elapsed": "2:35.27",
+  "external_peak_rss_bytes": 1739902976,
+  "internal_peak_rss_bytes": 1654013952,
+  "exit_code": 0,
+  "output_filesystem": {
+    "path": "/tmp",
+    "type": "tmpfs"
+  },
+  "physical_ssd_io_measured": false,
+  "energy_measured": false,
+  "external_receipt_sha256": "842c85c4b77323d580a187a2d9e293734fe7a72ac1e262ff709197ba3c3b6d23"
+}

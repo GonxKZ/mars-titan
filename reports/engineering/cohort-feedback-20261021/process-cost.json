@@ -1,0 +1,67 @@
+{
+  "tool": "/usr/bin/time -v",
+  "wall_resolution_seconds": 0.01,
+  "processes": [
+    {
+      "version": 1,
+      "elapsed_seconds": 10.98,
+      "command_peak_rss_bytes": 678412288,
+      "receipt": "benchmark-process.txt",
+      "receipt_sha256": "45073abece69528cc3863e8b5d20c164f70586e5860024982b07285f5a017157",
+      "exit_code": 0,
+      "python_peak_rss_bytes": 555823104,
+      "internal_seconds": 9.269558522035368,
+      "concurrent_project_checks": false,
+      "use": "baseline"
+    },
+    {
+      "version": 2,
+      "elapsed_seconds": 6.41,
+      "command_peak_rss_bytes": 678420480,
+      "receipt": "benchmark-process-v2.txt",
+      "receipt_sha256": "b4df31b7e68a27d1df52395e842592d09b7af344fc23886e2f77531e38609756",
+      "exit_code": 0,
+      "python_peak_rss_bytes": 555651072,
+      "internal_seconds": 4.848767820978537,
+      "concurrent_project_checks": false,
+      "use": "replication_after"
+    },
+    {
+      "version": 3,
+      "elapsed_seconds": 7.45,
+      "command_peak_rss_bytes": 678825984,
+      "receipt": "benchmark-process-v3.txt",
+      "receipt_sha256": "38e774bbe0e2a5dfa1f657cde256ffb8748049cc16730c9ce03688edde239697",
+      "exit_code": 0,
+      "python_peak_rss_bytes": 556163072,
+      "internal_seconds": 5.963154515950009,
+      "concurrent_project_checks": false,
+      "use": "replication_after"
+    },
+    {
+      "version": 4,
+      "elapsed_seconds": 7.42,
+      "command_peak_rss_bytes": 678182912,
+      "receipt": "benchmark-process-v4.txt",
+      "receipt_sha256": "bb2418cb610bf19c307e2c6f2f7d1d9d38e17d4c1b37b85c661dd6fdd0302c48",
+      "exit_code": 0,
+      "python_peak_rss_bytes": 555499520,
+      "internal_seconds": 5.678905082982965,
+      "concurrent_project_checks": true,
+      "use": "concurrency_diagnostic"
+    },
+    {
+      "version": 5,
+      "elapsed_seconds": 7.6,
+      "command_peak_rss_bytes": 678285312,
+      "receipt": "benchmark-process-v5.txt",
+      "receipt_sha256": "b16f856a7231d8714e4130c8f276a560551217c6cd005d88690db8d3ee1fdbee",
+      "exit_code": 0,
+      "python_peak_rss_bytes": 555724800,
+      "internal_seconds": 5.981936255004257,
+      "concurrent_project_checks": false,
+      "use": "primary_after"
+    }
+  ],
+  "scope": "El tiempo externo incluye uv, imports, inicialización, auditorías, serialización y salida. El interno está incluido en él. Los dos contadores RSS no se suman. La ronda 4 coincidió con Ruff, formato y check_repository y queda como diagnóstico de concurrencia, fuera del contraste principal. La ronda 5 se inició después de confirmar esos procesos cerrados. Sin control de frecuencia de CPU ni interrupción del escritorio."
+}

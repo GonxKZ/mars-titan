@@ -1,0 +1,1268 @@
+{
+  "scope": "targeted_behavioral_mutations_not_exhaustive",
+  "mutants": 15,
+  "base_cases": 81,
+  "restored_cases": 81,
+  "failed_mutant_calls": 73,
+  "records": [
+    {
+      "id": "read_stages_pending",
+      "source_sha256": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "mutated_sha256": "b9525182e1ca51d03f111405db07b6764bb8b67c9b8d3fb6b04ae8e2e94e01bf",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_repeated_queries_preserve_both_confirmed_and_pending_state",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_stages_pending-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 6.930481099989265,
+          "cases": 4,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_repeated_queries_preserve_both_confirmed_and_pending_state",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_stages_pending-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 6.129037379985675,
+          "cases": 4,
+          "failed_calls": 4
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_repeated_queries_preserve_both_confirmed_and_pending_state",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_stages_pending-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 6.836330821970478,
+          "cases": 4,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "stage_ignores_duplicates",
+      "source_sha256": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "mutated_sha256": "4da7cd15289b882128bc844aadd5f5e72897555526a193d5440c2bb8a767cb9f",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staging_uses_the_write_tokens_once_and_does_not_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_ignores_duplicates-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 5.6283008510945365,
+          "cases": 4,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staging_uses_the_write_tokens_once_and_does_not_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_ignores_duplicates-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 5.627703610924073,
+          "cases": 4,
+          "failed_calls": 4
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staging_uses_the_write_tokens_once_and_does_not_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_ignores_duplicates-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.024563691928051,
+          "cases": 4,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "read_detaches_query_path",
+      "source_sha256": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "mutated_sha256": "d74faf62eda4b7d3b83df590e6783193db40080a9ec6b9fce1141fad2d0f07bb",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_market_queries_keep_gradients_to_the_query_and_output",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_detaches_query_path-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.9752667209831998,
+          "cases": 2,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_market_queries_keep_gradients_to_the_query_and_output",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_detaches_query_path-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 4.024425245006569,
+          "cases": 2,
+          "failed_calls": 2
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_market_queries_keep_gradients_to_the_query_and_output",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/read_detaches_query_path-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.473597466945648,
+          "cases": 2,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "stage_detaches_write_path",
+      "source_sha256": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "mutated_sha256": "baa2b1e656edc83125a46da01b13df51f3873604a533e729e951a18b721614d6",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staged_tokens_remain_differentiable_through_a_later_committed_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_detaches_write_path-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.7240184750407934,
+          "cases": 4,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staged_tokens_remain_differentiable_through_a_later_committed_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_detaches_write_path-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 3.92412920598872,
+          "cases": 4,
+          "failed_calls": 4
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_context_query_stage.py",
+            "-k",
+            "test_staged_tokens_remain_differentiable_through_a_later_committed_read",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/stage_detaches_write_path-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.325103921932168,
+          "cases": 4,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "ledger_refund_after_reopen",
+      "source_sha256": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "mutated_sha256": "7efeede120ba18ca96ad76387caf2d719347725c9aab51503c65558d6837b067",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_reopen_after_before_predictions_failure_keeps_charge_and_unknown_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_refund_after_reopen-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.2710265290224925,
+          "cases": 1,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_reopen_after_before_predictions_failure_keeps_charge_and_unknown_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_refund_after_reopen-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 2.1199606539448723,
+          "cases": 1,
+          "failed_calls": 1
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_reopen_after_before_predictions_failure_keeps_charge_and_unknown_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_refund_after_reopen-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.5207083439454436,
+          "cases": 1,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "ledger_archived_summary_unanchored",
+      "source_sha256": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "mutated_sha256": "99093f2b805d998ef74eddf8fc14fd9daaafa3f0235a1ab7e5f41aa43e623e79",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_archived_accumulators_must_match_the_retained_sealed_receipt[charged_units]",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_archived_summary_unanchored-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.4211137430975214,
+          "cases": 1,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_archived_accumulators_must_match_the_retained_sealed_receipt[charged_units]",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_archived_summary_unanchored-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 2.3202382649760693,
+          "cases": 1,
+          "failed_calls": 1
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_archived_accumulators_must_match_the_retained_sealed_receipt[charged_units]",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_archived_summary_unanchored-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.0199902389431372,
+          "cases": 1,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "ledger_compaction_discards_unconfirmed",
+      "source_sha256": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "mutated_sha256": "4d37e5fa3e52c4e3ba500fb7be862627cd302729cdcac4ca6d49fcc02a47bf7e",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_compaction_preserves_an_abandoned_active_cohort_and_its_quota",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_compaction_discards_unconfirmed-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.0196456449339166,
+          "cases": 1,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_compaction_preserves_an_abandoned_active_cohort_and_its_quota",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_compaction_discards_unconfirmed-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 1.9690627160016447,
+          "cases": 1,
+          "failed_calls": 1
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_work_reservation.py::test_compaction_preserves_an_abandoned_active_cohort_and_its_quota",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/ledger_compaction_discards_unconfirmed-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 2.2194945570081472,
+          "cases": 1,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "program_discards_context",
+      "source_sha256": "64b4c2c97a484a7bb97d86b684c76b6edfaf8adc321347faa202c10c43529f43",
+      "mutated_sha256": "736b3dc0c8059b0a3a9ab8067e6a7284d0d9056bdae2571ac65190283f40e34b",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/program_discards_context-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 7.684838818968274,
+          "cases": 20,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/program_discards_context-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 6.630725743016228,
+          "cases": 20,
+          "failed_calls": 20
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/program_discards_context-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 7.383128183078952,
+          "cases": 20,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "summary_discards_context_after_first_cycle",
+      "source_sha256": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+      "mutated_sha256": "7069ccac84d914646b6eee212b30f5210bef071dec063faa7b39ef18cc7ad4f0",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/summary_discards_context_after_first_cycle-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 5.578258870984428,
+          "cases": 20,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/summary_discards_context_after_first_cycle-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 3.825644663069397,
+          "cases": 20,
+          "failed_calls": 12
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution.py",
+            "-k",
+            "test_fixed_program_matches_independent_masked_reference",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/summary_discards_context_after_first_cycle-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.025439155986533,
+          "cases": 20,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "archive_trusts_changed_fixed_program",
+      "source_sha256": "64b4c2c97a484a7bb97d86b684c76b6edfaf8adc321347faa202c10c43529f43",
+      "mutated_sha256": "6550505eaf22d464bde84ba59053ce743f9abec5c97912d183c9f446b3f47f24",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution_archive.py",
+            "-k",
+            "archive_rejects_changed_fixed_program",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/archive_trusts_changed_fixed_program-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.4766168089117855,
+          "cases": 4,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution_archive.py",
+            "-k",
+            "archive_rejects_changed_fixed_program",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/archive_trusts_changed_fixed_program-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 4.376742239925079,
+          "cases": 4,
+          "failed_calls": 4
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_regional_execution_archive.py",
+            "-k",
+            "archive_rejects_changed_fixed_program",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-final/archive_trusts_changed_fixed_program-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.874341465998441,
+          "cases": 4,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "binding_ignores_emitted_program_work",
+      "source_sha256": "98414692b3ae1bb24f4d13fcb76f2c26e7314ab445a40eb6edd338a8042a17ac",
+      "mutated_sha256": "7850ef94e03fc9b38a3c0bf8cc9d8703293d6e340a4638bee3dba7e31a48c2da",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "durable_binding",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/binding_ignores_emitted_program_work-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.823892600950785,
+          "cases": 10,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "durable_binding",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/binding_ignores_emitted_program_work-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 3.6235687899170443,
+          "cases": 10,
+          "failed_calls": 10
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "durable_binding",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/binding_ignores_emitted_program_work-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 6.279318573069759,
+          "cases": 10,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "collection_ignores_phase_totals",
+      "source_sha256": "520cd8dd4418562a059de761754674e13fd56a8095de11f3c1355de6cf13f1f2",
+      "mutated_sha256": "a570a09e469b851ec1f82ae83935942c02e25510abad682346e5148b7011cce4",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_program_collection.py",
+            "-k",
+            "test_resealed_packet_rejects_changed_regional_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/collection_ignores_phase_totals-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.571690983022563,
+          "cases": 4,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_program_collection.py",
+            "-k",
+            "test_resealed_packet_rejects_changed_regional_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/collection_ignores_phase_totals-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 3.724270900944248,
+          "cases": 4,
+          "failed_calls": 4
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/memory/test_regional_program_collection.py",
+            "-k",
+            "test_resealed_packet_rejects_changed_regional_work",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations/collection_ignores_phase_totals-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.226043159957044,
+          "cases": 4,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "consumer_uses_numeric_program_equality",
+      "source_sha256": "6260d4091b930ecbde6c2ac89f7fb17f29b9b4f13a042045334f8d77ab5454be",
+      "mutated_sha256": "a9071b9e287e90db6ea81fd62f26207f1c7fbbe92855df3ad2f52131fbeb01f7",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and catalog",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/consumer_uses_numeric_program_equality-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 6.992047916981392,
+          "cases": 2,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and catalog",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/consumer_uses_numeric_program_equality-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 5.839613452088088,
+          "cases": 2,
+          "failed_calls": 2
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and catalog",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/consumer_uses_numeric_program_equality-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.626580105046742,
+          "cases": 2,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "program_seal_ignores_threshold_type",
+      "source_sha256": "cd770b79b56fb099678e34f57b4d802589b2106c54f06287c2d3a082fdc6d1af",
+      "mutated_sha256": "4a875b5969ec46837a6ba767ba7468e6562da6500c7055a41ecd95f092b11959",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and sealed_shared",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_seal_ignores_threshold_type-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 5.427890058024786,
+          "cases": 2,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and sealed_shared",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_seal_ignores_threshold_type-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 3.472453093971126,
+          "cases": 2,
+          "failed_calls": 2
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and sealed_shared",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_seal_ignores_threshold_type-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 4.476131596020423,
+          "cases": 2,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    },
+    {
+      "id": "program_parent_ignores_threshold_type",
+      "source_sha256": "cd770b79b56fb099678e34f57b4d802589b2106c54f06287c2d3a082fdc6d1af",
+      "mutated_sha256": "b39f05cb3f7017ce932c585f4252c6158723eaa2448cb1474a1d7a0a79e5c4f6",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and parent",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_parent_ignores_threshold_type-base.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 6.030109097016975,
+          "cases": 2,
+          "failed_calls": 0
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and parent",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_parent_ignores_threshold_type-mutant.xml"
+          ],
+          "returncode": 1,
+          "elapsed_s": 5.378471954027191,
+          "cases": 2,
+          "failed_calls": 2
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/models/titans/test_financial_regional_program.py",
+            "-k",
+            "threshold_representation and parent",
+            "-p",
+            "_phase",
+            "--junitxml=local-artifacts/mutations-identity/program_parent_ignores_threshold_type-restored.xml"
+          ],
+          "returncode": 0,
+          "elapsed_s": 3.8235769900493324,
+          "cases": 2,
+          "failed_calls": 0
+        }
+      ],
+      "status": "killed"
+    }
+  ],
+  "plan": [
+    {
+      "id": "read_stages_pending",
+      "source": "src/mars_titan/models/titans/session_context.py",
+      "source_sha": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "old": "        sessions = tuple(self._session_rows(tokens, flow_ids, prediction_at, state))",
+      "new": "        state = self.stage_tokens(tokens, flow_ids, prediction_at, state)\n        sessions = tuple(self._session_rows(tokens, flow_ids, prediction_at, state))",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "-k",
+        "test_repeated_queries_preserve_both_confirmed_and_pending_state"
+      ],
+      "messages": [
+        "Un flujo no puede aparecer dos veces en la misma sesión"
+      ]
+    },
+    {
+      "id": "stage_ignores_duplicates",
+      "source": "src/mars_titan/models/titans/session_context.py",
+      "source_sha": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "old": "            if len(set(names) | set(flows[market])) != len(names) + len(flows[market]):",
+      "new": "            if False:",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "-k",
+        "test_staging_uses_the_write_tokens_once_and_does_not_read"
+      ],
+      "messages": [
+        "DID NOT RAISE",
+        "ValueError"
+      ]
+    },
+    {
+      "id": "read_detaches_query_path",
+      "source": "src/mars_titan/models/titans/session_context.py",
+      "source_sha": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "old": "        return context @ self.output.T",
+      "new": "        return context.detach() @ self.output.T",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "-k",
+        "test_market_queries_keep_gradients_to_the_query_and_output"
+      ],
+      "messages": [
+        "not have been used in the graph"
+      ]
+    },
+    {
+      "id": "stage_detaches_write_path",
+      "source": "src/mars_titan/models/titans/session_context.py",
+      "source_sha": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+      "old": "            selected = tokens.index_select(0, index)\n            pending_at[market] = moment",
+      "new": "            selected = tokens.index_select(0, index).detach()\n            pending_at[market] = moment",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_context_query_stage.py",
+        "-k",
+        "test_staged_tokens_remain_differentiable_through_a_later_committed_read"
+      ],
+      "messages": [
+        "assert all"
+      ]
+    },
+    {
+      "id": "ledger_refund_after_reopen",
+      "source": "src/mars_titan/memory/regional_work.py",
+      "source_sha": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "old": "        charged = {name: cohort[\"charged_units\"][name] + units[name] for name in self.limits}\n",
+      "new": "        charged = dict(units)\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_reservation.py::test_reopen_after_before_predictions_failure_keeps_charge_and_unknown_work"
+      ],
+      "messages": [
+        "La cohorte regional perdió cargos reservados"
+      ]
+    },
+    {
+      "id": "ledger_archived_summary_unanchored",
+      "source": "src/mars_titan/memory/regional_work.py",
+      "source_sha": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "old": "            cohort[\"history_before\"] == history,\n",
+      "new": "            True,\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_reservation.py::test_archived_accumulators_must_match_the_retained_sealed_receipt[charged_units]"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ]
+    },
+    {
+      "id": "ledger_compaction_discards_unconfirmed",
+      "source": "src/mars_titan/memory/regional_work.py",
+      "source_sha": "4cb036f915e52b9c0e048895b094fbcbf2d4dbe987499f01aeb39b90f16d641d",
+      "old": "        state.update(archived=summary, archive=deepcopy(archive), cohorts=state[\"cohorts\"][count:])\n",
+      "new": "        state.update(archived=summary, archive=deepcopy(archive), cohorts=confirmed[count:])\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_work_reservation.py::test_compaction_preserves_an_abandoned_active_cohort_and_its_quota"
+      ],
+      "messages": [
+        "assert 2 == 3"
+      ]
+    },
+    {
+      "id": "program_discards_context",
+      "source": "src/mars_titan/models/titans/regional_execution.py",
+      "source_sha": "64b4c2c97a484a7bb97d86b684c76b6edfaf8adc321347faa202c10c43529f43",
+      "old": "context_seed=context.index_select(0, indices),",
+      "new": "context_seed=torch.zeros_like(context.index_select(0, indices)),",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_regional_execution.py",
+        "-k",
+        "test_fixed_program_matches_independent_masked_reference"
+      ],
+      "messages": [
+        "AssertionError"
+      ]
+    },
+    {
+      "id": "summary_discards_context_after_first_cycle",
+      "source": "src/mars_titan/models/titans/regional_fusion.py",
+      "source_sha": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+      "old": "context = context_seed.unsqueeze(1) + context",
+      "new": "context = context",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_regional_execution.py",
+        "-k",
+        "test_fixed_program_matches_independent_masked_reference"
+      ],
+      "messages": [
+        "AssertionError"
+      ]
+    },
+    {
+      "id": "archive_trusts_changed_fixed_program",
+      "source": "src/mars_titan/models/titans/regional_execution.py",
+      "source_sha": "64b4c2c97a484a7bb97d86b684c76b6edfaf8adc321347faa202c10c43529f43",
+      "old": "program = config.program",
+      "new": "program = row[\"program\"]",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_regional_execution_archive.py",
+        "-k",
+        "archive_rejects_changed_fixed_program"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ]
+    },
+    {
+      "id": "binding_ignores_emitted_program_work",
+      "source": "src/mars_titan/memory/financial_mechanisms.py",
+      "source_sha": "98414692b3ae1bb24f4d13fcb76f2c26e7314ab445a40eb6edd338a8042a17ac",
+      "old": "        self._check_regional_program(control)\n",
+      "new": "        pass\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_financial_regional_program.py",
+        "-k",
+        "durable_binding"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ]
+    },
+    {
+      "id": "collection_ignores_phase_totals",
+      "source": "src/mars_titan/memory/mechanism_collection_record.py",
+      "source_sha": "520cd8dd4418562a059de761754674e13fd56a8095de11f3c1355de6cf13f1f2",
+      "old": "all(work[name] == value for name, value in regional_totals.items()),",
+      "new": "True,",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/memory/test_regional_program_collection.py",
+        "-k",
+        "test_resealed_packet_rejects_changed_regional_work"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ]
+    },
+    {
+      "id": "consumer_uses_numeric_program_equality",
+      "source": "src/mars_titan/models/titans/mechanism_consumer.py",
+      "old": "        if canonical(None if program is None else program.identity()) != canonical(\n            None if registered is None else registered.identity()\n        ):\n",
+      "new": "        if program != registered:\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_financial_regional_program.py",
+        "-k",
+        "threshold_representation and catalog"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ],
+      "source_sha": "6260d4091b930ecbde6c2ac89f7fb17f29b9b4f13a042045334f8d77ab5454be"
+    },
+    {
+      "id": "program_seal_ignores_threshold_type",
+      "source": "src/mars_titan/models/titans/financial.py",
+      "old": "                type(module.config.context_threshold).__name__,\n",
+      "new": "                \"\",\n",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_financial_regional_program.py",
+        "-k",
+        "threshold_representation and sealed_shared"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ],
+      "source_sha": "cd770b79b56fb099678e34f57b4d802589b2106c54f06287c2d3a082fdc6d1af"
+    },
+    {
+      "id": "program_parent_ignores_threshold_type",
+      "source": "src/mars_titan/models/titans/financial.py",
+      "old": "            or type(module.config.context_threshold) is not type(declared.context_threshold)\n",
+      "new": "",
+      "selection": [
+        "pytest",
+        "-q",
+        "tests/models/titans/test_financial_regional_program.py",
+        "-k",
+        "threshold_representation and parent"
+      ],
+      "messages": [
+        "DID NOT RAISE"
+      ],
+      "source_sha": "cd770b79b56fb099678e34f57b4d802589b2106c54f06287c2d3a082fdc6d1af"
+    }
+  ],
+  "limits": [
+    "Una ejecución de caso puede repetirse entre selectores. No son 150 casos únicos adicionales.",
+    "Solo cuentan fallos en call con mensaje semántico esperado. No hubo errores de colección ni omisiones en esos controles.",
+    "La puntuación de este conjunto no cubre todas las mutaciones posibles ni todo el repositorio."
+  ]
+}

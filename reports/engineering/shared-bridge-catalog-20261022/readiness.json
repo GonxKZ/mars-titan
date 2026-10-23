@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-22T03:21:37.467850+00:00",
+  "published_data_receipts": [
+    "reports/data/edition-v3-1-verification-20261011.json",
+    "reports/data/campaign-a-v2-views-v31-20261014.json"
+  ],
+  "current_manifest_and_receipt_checks": [
+    {
+      "name": "edition_manifest",
+      "expected_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+      "actual_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+      "matches": true
+    },
+    {
+      "name": "targets_manifest",
+      "expected_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+      "actual_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+      "matches": true
+    },
+    {
+      "name": "edition",
+      "expected_sha256": "fd201e8f5f3b1fdcb1845f47f79cbaf7a3126398c5acb4f98952ff4582bb1846",
+      "actual_sha256": "fd201e8f5f3b1fdcb1845f47f79cbaf7a3126398c5acb4f98952ff4582bb1846",
+      "matches": true
+    },
+    {
+      "name": "vectors",
+      "expected_sha256": "ce38a7bcbfbec0db9ae910588cc5c6cd2a35330694ee3cf660f1667fef8883b5",
+      "actual_sha256": "ce38a7bcbfbec0db9ae910588cc5c6cd2a35330694ee3cf660f1667fef8883b5",
+      "matches": true
+    },
+    {
+      "name": "targets",
+      "expected_sha256": "24ac829b166d5aa7d1264531d7d207c5ec5cc4660d3a8c910f96d762801c5c26",
+      "actual_sha256": "24ac829b166d5aa7d1264531d7d207c5ec5cc4660d3a8c910f96d762801c5c26",
+      "matches": true
+    }
+  ],
+  "data_check_scope": "No se han releído ahora todos los Parquet ni recalculado la codificación. Se ha comprobado la correspondencia actual de manifiestos y recibos de la verificación completa previa.",
+  "campaign_static_check": {
+    "status": "checked",
+    "launch_blockers": [],
+    "pending_families": {},
+    "scope_limit": "Valida y cuenta la declaración sin leer datos, ejecutar modelos o validar toda la declaración operativa."
+  },
+  "campaign_plan_parity": {
+    "complete_plan_unchanged": true,
+    "input_policy": "historical_masked_2000_v1",
+    "launch_blockers": [],
+    "pending_families": {},
+    "final_test_opened": false,
+    "scientific_training_started": false
+  },
+  "launch_requirements_issue": 363,
+  "operational_checks_pending": [
+    "Coste completo y memoria sobre las vistas v3.1",
+    "Regeneración CUDA con estados reales y coste",
+    "Configuración, retención, precisión, huellas y recursos de la ejecución concreta"
+  ],
+  "scientific_training_started": false,
+  "final_test_opened": false
+}

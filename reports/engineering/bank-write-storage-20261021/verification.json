@@ -1,0 +1,46 @@
+{
+  "recorded_at_utc": "2026-10-21T18:05:25.502071+00:00",
+  "adopted": false,
+  "active_source_unchanged": true,
+  "active_source_sha256": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+  "candidate_full_source_sha256": "9bb8c89bcd619dce6e98eb4dd524e897735f122c06c5ef07bbaf8126dcfae2b1",
+  "candidate_function_ast_matches": true,
+  "runs": [
+    {
+      "name": "quality",
+      "counts": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 94.983,
+      "junit_sha256": "e64f2f81692dcd490dda7fcf3055d419183d250e7973a8e918964b56b3cbb6ef"
+    },
+    {
+      "name": "release",
+      "counts": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "seconds": 93.92,
+      "junit_sha256": "8ee94237dc76b97a79172b28b913e55a54190718ba8ad0acc2057af61910034a"
+    }
+  ],
+  "scope": "selected_regression_not_whole_project",
+  "distinct_cases_per_run": 440,
+  "marked_cuda": 84,
+  "candidate_cases": 16,
+  "candidate_marked_cuda": 8,
+  "outer_optimizer_steps": 0,
+  "scientific_evaluation": false,
+  "warning": "torch_sync_debug_mode_experimental",
+  "source_sha256": {
+    "src/mars_titan/models/titans/neural_memory.py": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+    "reports/engineering/bank-write-storage-20261021/borrowed_candidate.py": "5af50bb3fa6976e3047ffbfde164bc258ab0264ccfda4160fffb53f791cf0a7a",
+    "tests/models/titans/test_bank_write_storage_candidate.py": "f9cd334fcf51513fb87d294a80b237a1f40f003f849bb0293337f0a7a90caf10"
+  },
+  "cuda_collection_sha256": "563afc23d291f039a86d2f1d74a049e4ad0043580b9ba2fc5fc112be068893bc"
+}

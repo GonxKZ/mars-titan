@@ -1,0 +1,41 @@
+{
+  "scope": "Selección local de trece archivos de pruebas, no suite completa ni evaluación financiera",
+  "tests": 402,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "cuda_marked": 75,
+  "new_cases": 54,
+  "new_cuda_marked": 18,
+  "warning": "Aviso de PyTorch sobre su detector experimental de sincronizaciones, conservado en final.log.",
+  "production_commit": "c7143fba31667861cab347a1e13d6f6c348ce806",
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "scientific_training": false,
+  "final_test_access": false,
+  "artifacts": {
+    "final.xml": "743ebeed1ea2cd2105c9e5ccae7518c0debce68ba8cc21f1a95a64a3d850ee79",
+    "final.log": "adda38e0b5943f629d9e49cd813350658a2f2b687f4cd4372967373739abacec",
+    "cuda-collection.log": "274fa7b0ed0aa0926ac06653558192b69a680fd01b7a34aa506b391c77155293",
+    "coverage.json": "b1f25115f779d8084f1ff76f138e4391e818325b4baa1fdd7f2027185296f6b9"
+  },
+  "static_checks": {
+    "ruff.log": {
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "summary": "All checks passed!"
+    },
+    "format.log": {
+      "sha256": "665129a742bd4657ec579f34dd47ba7119a18ac0353b1849909b442312ea840c",
+      "summary": "1763 files already formatted"
+    },
+    "repository.log": {
+      "sha256": "4c0dea2ad9e280dee22ca664fbfc04fd7539691634526e0d6d7a3c17bbfcc75f",
+      "status": "failed_initial_lexical_check",
+      "corrected_in": "repository-final.log"
+    },
+    "repository-final.log": {
+      "sha256": "0ea750c5663c4fcd12ad6b4263b52e1dd365c77c9acfd2ef2b0a5585c3b467ee",
+      "summary": "Verificados 3400 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código."
+    }
+  }
+}

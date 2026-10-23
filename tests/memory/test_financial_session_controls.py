@@ -142,11 +142,17 @@ def manual_supervision(manifest, prepared, output):
 @pytest.fixture(scope="module")
 def four_flow_source(tmp_path_factory):
     root = tmp_path_factory.mktemp("four_flow_controls")
+    return flow_source(root)
+
+
+def flow_source(root, *, flows=FLOWS):
+    """Construir flujos técnicos con supervisión manual y el mismo calendario."""
+    root.mkdir(parents=True, exist_ok=True)
     manifest, prepared = historical_edition(root)
     metadata = json.loads(manifest.read_text())
     asset, coverage = metadata["assets"][0], metadata["coverage"][0]
     assets, rows = [], []
-    for flow in FLOWS:
+    for flow in flows:
         symbol = flow.split("/")[1]
         for base in (prepared, root / "samples"):
             destination = base / flow
@@ -156,7 +162,9 @@ def four_flow_source(tmp_path_factory):
             path.write_text(json.dumps(dict(value, symbol=symbol)))
         assets.append(dict(asset, symbol=symbol))
         rows.append(dict(coverage, symbol=symbol))
-    metadata.update(assets=assets, coverage=rows, candidate_count=4, samples=16)
+    metadata.update(
+        assets=assets, coverage=rows, candidate_count=len(flows), samples=4 * len(flows)
+    )
     manifest.write_text(json.dumps(metadata))
     output = root / "supervised"
     dataset = CorpusDataset(

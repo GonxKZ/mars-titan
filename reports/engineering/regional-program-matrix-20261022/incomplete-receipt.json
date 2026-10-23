@@ -1,0 +1,21 @@
+{
+  "raw_local_sha256": "4fbd681e1b715bfd12a4e17d835c0837a4fffc7115d44a3fd2d3e00e16586558",
+  "normalization": "Rutas del repositorio relativas, artefactos locales etiquetados y procesos GPU identificados por su ejecutable.",
+  "data": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "local-artifacts/regional_program_matrix_cuda.py",
+      "--run",
+      "--repository",
+      ".",
+      "--output",
+      "local-artifacts/matrix-v1"
+    ],
+    "elapsed_s": 180.03490881610196,
+    "returncode": 124,
+    "timeout_s": 180
+  }
+}

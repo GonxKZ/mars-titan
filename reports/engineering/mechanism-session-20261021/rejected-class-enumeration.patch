@@ -1,0 +1,225 @@
+--- a/src/mars_titan/models/titans/frozen_financial.py
++++ b/src/mars_titan/models/titans/frozen_financial.py
+@@ -6,0 +7 @@
++import types
+@@ -126,0 +128,41 @@
++
++
++def _class_functions(kind):
++    """Funciones actuales de la clase, con la misma resolución que inspect.
++
++    Las clases ordinarias se resuelven por MRO sin enlazar cada atributo. Los
++    descriptores no estándar y las metaclases mantienen la inspección completa.
++    No se conserva una caché entre auditorías.
++    """
++    if type(kind) is not type:
++        return tuple(inspect.getmembers(kind, inspect.isfunction))
++    resolved = {}
++    for base in reversed(kind.__mro__):
++        resolved.update(vars(base))
++    functions = []
++    ordinary_descriptors = (
++        property,
++        types.GetSetDescriptorType,
++        types.MemberDescriptorType,
++        types.MethodDescriptorType,
++        types.WrapperDescriptorType,
++        types.ClassMethodDescriptorType,
++        types.BuiltinFunctionType,
++    )
++    for name, value in resolved.items():
++        value_type = type(value)
++        if value_type is types.FunctionType:
++            functions.append((name, value))
++        elif value_type is staticmethod:
++            if inspect.isfunction(value.__func__):
++                functions.append((name, value.__func__))
++        elif value_type is classmethod and type(value.__func__) is types.FunctionType:
++            continue
++        elif value_type not in ordinary_descriptors and (
++            type(value_type) is not type
++            or any("__get__" in vars(base) for base in value_type.__mro__)
++        ):
++            return tuple(inspect.getmembers(kind, inspect.isfunction))
++        elif inspect.isfunction(value):
++            functions.append((name, value))
++    return tuple(sorted(functions))
+@@ -176 +218 @@
+-                    for key, value in inspect.getmembers(kind, inspect.isfunction)
++                    for key, value in _class_functions(kind)
+--- a/tests/models/titans/test_frozen_signature.py
++++ b/tests/models/titans/test_frozen_signature.py
+@@ -3 +2,0 @@
+-import inspect
+@@ -10,0 +10,2 @@
++from mars_titan.models.titans import frozen_financial
++
+@@ -15 +16 @@
+-    original = inspect.getmembers
++    original = frozen_financial._class_functions
+@@ -17 +18 @@
+-    def counted(kind, predicate=None):
++    def counted(kind):
+@@ -19 +20 @@
+-        return original(kind, predicate)
++        return original(kind)
+@@ -21 +22 @@
+-    monkeypatch.setattr(inspect, "getmembers", counted)
++    monkeypatch.setattr(frozen_financial, "_class_functions", counted)
+--- /dev/null
++++ b/tests/models/titans/test_frozen_class_functions.py
+@@ -0,0 +1,154 @@
++"""Equivalencia de métodos inspeccionados, incluidos descriptores y metaclases."""
++
++import inspect
++import types
++
++import pytest
++import torch
++from test_frozen_financial import frozen
++from test_frozen_financial import frozen_backend as frozen_backend
++
++from mars_titan.models.titans import frozen_financial
++
++
++def functions(kind):
++    implementation = getattr(frozen_financial, "_class_functions", None)
++    assert implementation is not None, "Falta la enumeración equivalente de métodos"
++    return implementation(kind)
++
++
++def test_known_model_classes_have_exactly_the_same_function_objects_as_inspect():
++    engine, _ = frozen()
++    kinds = {type(module) for module in engine.predictor.modules()}
++    assert torch.nn.Linear in kinds and len(kinds) > 5
++    for kind in kinds:
++        assert functions(kind) == tuple(inspect.getmembers(kind, inspect.isfunction))
++
++
++@pytest.mark.parametrize(
++    "variant", ["transformer_direct", "mac_disabled", "mac_frozen", "mac_online"]
++)
++def test_complete_execution_signature_matches_the_reference_inspection(monkeypatch, variant):
++    engine, _ = frozen(variant)
++    models = (("predictor", engine.predictor),)
++    actual = frozen_financial._execution_signature(models)
++    monkeypatch.setattr(
++        frozen_financial,
++        "_class_functions",
++        lambda kind: tuple(inspect.getmembers(kind, inspect.isfunction)),
++    )
++    assert frozen_financial._execution_signature(models) == actual
++
++
++def test_mro_shadowing_static_methods_and_class_methods_match_inspect():
++    class Base:
++        def hidden(self):
++            return 1
++
++        @staticmethod
++        def static():
++            return 2
++
++        @classmethod
++        def bound(cls):
++            return 3
++
++    class Child(Base):
++        hidden = property(lambda self: 4)
++
++        def added(self):
++            return 5
++
++    assert functions(Child) == tuple(inspect.getmembers(Child, inspect.isfunction))
++    assert "hidden" not in dict(functions(Child))
++    assert "static" in dict(functions(Child)) and "bound" not in dict(functions(Child))
++
++
++def test_dynamic_function_descriptor_uses_the_full_inspection_path():
++    calls = []
++
++    def returned():
++        return 1
++
++    class Descriptor:
++        def __get__(self, instance, owner):
++            calls.append(owner)
++            return returned
++
++    class Described:
++        dynamic = Descriptor()
++
++    assert functions(Described) == tuple(inspect.getmembers(Described, inspect.isfunction))
++    assert len(calls) == 2
++    assert dict(functions(Described))["dynamic"] is returned
++
++
++def test_dynamic_metaclass_members_are_not_hidden_from_the_audit():
++    def returned():
++        return 1
++
++    class Meta(type):
++        def __dir__(cls):
++            return [*super().__dir__(), "dynamic"]
++
++        def __getattr__(cls, name):
++            if name == "dynamic":
++                return returned
++            raise AttributeError(name)
++
++    class Dynamic(metaclass=Meta):
++        pass
++
++    assert functions(Dynamic) == tuple(inspect.getmembers(Dynamic, inspect.isfunction))
++    assert dict(functions(Dynamic))["dynamic"] is returned
++
++
++def test_an_inherited_method_change_is_seen_on_the_next_audit(monkeypatch):
++    class Base:
++        def operation(self):
++            return 1
++
++    class Child(Base):
++        pass
++
++    original = functions(Child)
++
++    def changed(self):
++        return 2
++
++    with monkeypatch.context() as patch:
++        patch.setattr(Base, "operation", changed)
++        assert functions(Child) != original
++        assert dict(functions(Child))["operation"] is changed
++    assert functions(Child) == original
++
++
++def test_readonly_builtin_descriptors_do_not_become_python_functions():
++    class Slotted:
++        __slots__ = ("value", "__weakref__")
++
++        def operation(self):
++            return self.value
++
++    assert functions(Slotted) == tuple(inspect.getmembers(Slotted, inspect.isfunction))
++
++
++@pytest.mark.parametrize("wrapped", [False, True])
++def test_function_predicate_keeps_the_reference_class_resolution(wrapped):
++    class FunctionLike:
++        @property
++        def __class__(self):
++            return types.FunctionType
++
++    value = FunctionLike()
++
++    class Described:
++        candidate = staticmethod(value) if wrapped else value
++
++    assert inspect.isfunction(value)
++    assert functions(Described) == tuple(inspect.getmembers(Described, inspect.isfunction))
++
++
++@pytest.mark.parametrize("value", [1, None, object()])
++def test_non_classes_keep_the_reference_inspection_contract(value):
++    assert functions(value) == tuple(inspect.getmembers(value, inspect.isfunction))

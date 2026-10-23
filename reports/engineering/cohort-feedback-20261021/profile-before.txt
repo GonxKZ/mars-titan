@@ -1,0 +1,26 @@
+         12492681 function calls (10094781 primitive calls) in 2.770 seconds
+
+   Ordered by: cumulative time
+   List reduced from 130 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       20    0.004    0.000    2.774    0.139 benchmark.py:37(trajectory)
+2230000/380    1.210    0.000    2.424    0.006 copy.py:118(deepcopy)
+173360/5960    0.437    0.000    2.412    0.000 copy.py:217(_deepcopy_dict)
+ 1340/700    0.042    0.000    2.403    0.003 copy.py:191(_deepcopy_list)
+       40    0.016    0.000    1.634    0.041 cohort_feedback.py:157(feedback)
+       80    0.001    0.000    1.529    0.019 cohort_feedback.py:238(export)
+       60    0.001    0.000    1.083    0.018 cohort_feedback.py:87(_fork)
+       20    0.006    0.000    0.788    0.039 cohort_feedback.py:104(emit)
+  4460100    0.361    0.000    0.361    0.000 {method 'get' of 'dict' objects}
+       80    0.000    0.000    0.220    0.003 cohort_feedback_state.py:83(seal)
+      360    0.000    0.000    0.216    0.001 online_conformal.py:72(_canonical)
+      360    0.001    0.000    0.216    0.001 __init__.py:183(dumps)
+      360    0.001    0.000    0.215    0.001 encoder.py:183(encode)
+      360    0.214    0.001    0.214    0.001 encoder.py:205(iterencode)
+  2580060    0.172    0.000    0.172    0.000 {built-in method builtins.id}
+  2055020    0.104    0.000    0.104    0.000 copy.py:172(_deepcopy_atomic)
+       40    0.004    0.000    0.080    0.002 cohort_feedback.py:201(_drain)
+   174980    0.051    0.000    0.078    0.000 copy.py:231(_keep_alive)
+      140    0.002    0.000    0.039    0.000 online_conformal.py:364(export)
+       80    0.004    0.000    0.032    0.000 cohort_feedback_state.py:102(packed_calibrator)

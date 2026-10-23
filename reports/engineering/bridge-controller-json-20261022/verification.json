@@ -1,0 +1,44 @@
+{
+  "scope": "selected_history_and_native_mechanism_tests",
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "cuda_tests": 9,
+  "tests": [
+    {
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "final-unit.xml",
+      "seconds": 0.267,
+      "sha256": "355cd8a400bf00e84e7539c0e99ec5fee388a0a87dd7e86a7d4b4a14bb1fb316"
+    },
+    {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "native.xml",
+      "seconds": 168.429,
+      "sha256": "fc9ba06364c256c1625dc8b7d105ed1c68f586f9ccdc4239193a59a99419d8a7"
+    }
+  ],
+  "static_checks": [
+    {
+      "file": "ruff-check.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "result": "All checks passed!"
+    },
+    {
+      "file": "ruff-format.log",
+      "sha256": "fd9e994170e45d4591ad0d93350d2087a8ec9e16b7cbe5984896ce686e4ff06e",
+      "result": "1808 files already formatted"
+    },
+    {
+      "file": "repository.log",
+      "sha256": "dfa8a9c9a96ed40f332b276be42839fd3015abe31c7b45e7ba3dd94fe8bbcb1d",
+      "result": "Verificados 3517 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código."
+    }
+  ],
+  "production_sha256": "437cf6f8c2d08b8a7468e340b4a6516ab546f81d4abca96d3e00744eb634dcd5"
+}

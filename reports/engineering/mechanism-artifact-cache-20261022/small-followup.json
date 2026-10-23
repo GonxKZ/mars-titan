@@ -1,0 +1,185 @@
+{
+  "recorded_at_utc": "2026-10-22T05:56:46.998646+00:00",
+  "device": "cuda:0",
+  "dtype": "torch.float64",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_before": "name, driver_version, memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 6020 MiB, 12 %\n",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+  "capacity": 16,
+  "hidden_size": 32,
+  "physical_block_rows": 64,
+  "reader_budget_bytes": 134217728,
+  "cache_budget_bytes": 8388608,
+  "warmup": 1,
+  "repetitions": 9,
+  "maximum_seconds": 240,
+  "cases": [
+    {
+      "name": "m3-4-fixed-k4cc",
+      "assets": 4,
+      "admission": "m3",
+      "manual_policy": false,
+      "max_prediction_abs_difference": 0.0,
+      "exact_snapshot_parity": true,
+      "samples": {
+        "uncached": [
+          {
+            "milliseconds": 3222.0539699774235,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2564.942904980853,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2873.4808469889686,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 3890.0120930047706,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 3454.1569110006094,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2643.128774012439,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 3388.6327620130032,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2526.4061180641875,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2777.3994859308004,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 0,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          }
+        ],
+        "cached": [
+          {
+            "milliseconds": 2513.303318992257,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2516.591959982179,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2122.3863899940625,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2357.1375450119376,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 3119.8059779126197,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2288.6005130130798,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2993.8852899940684,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2702.599256997928,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          },
+          {
+            "milliseconds": 2941.105091944337,
+            "peak_allocated_bytes": 68340224,
+            "incremental_peak_bytes": 685056,
+            "peak_control_cache_charge_bytes": 124093,
+            "final_snapshot_sha256": "f6342a381fc472fbf4aba822bce3afcba3e473eaa3042e274e0e2bb3bcb68b6d"
+          }
+        ]
+      },
+      "median_ms": {
+        "uncached": 2873.4808469889686,
+        "cached": 2516.591959982179
+      }
+    }
+  ],
+  "incomplete": [],
+  "processes_before": "pid, process_name, used_gpu_memory [MiB]\n17860, /usr/bin/nautilus, 51 MiB\n2878860, /home/gonzalo/.local/share/kaizten-local-model/runtime/b11118/llama-b11118/llama-server, 5424 MiB\n2962019, /home/gonzalo/.local/share/mars-titan/worktrees/convergence-runtime-20261001/.venv/bin/python, 128 MiB\n",
+  "total_process_seconds": 59.70491321804002,
+  "process_peak_rss_bytes": 1517527040,
+  "native_binary_sha256": "1173d056f08b9865ec63c60d40d9dd96a14effebf700e7ada0503730b97c6d0a",
+  "gpu_after": "name, driver_version, memory.used [MiB], utilization.gpu [%]\nNVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 6170 MiB, 2 %\n",
+  "source_sha256": {
+    "src/mars_titan/memory/session_artifacts.py": "58e8cac888d0522234ecebbd48e126a0ad4341825f796740199ccd98df3b322b",
+    "src/mars_titan/memory/financial_session.py": "1a100025ea9737f7b68194c015451b9a67514ff0c0c06886a6fb0a1eba9aedb8",
+    "src/mars_titan/memory/financial_mechanisms.py": "0830dcf8ee8f2f742326c2c573fac3c43b7b93b80d99713ccfc1cfea9ccb8464",
+    "tests/memory/test_mechanism_admission.py": "ec50fd1d0a3544add75e0fe5e15493c5c45250fc87a3764aec20247c780cb4c9",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/memory/test_mars_titan_session_parity.py": "a6d9c3dcf3683701bcb92961f3dc97ffdd116a285a2d1fe37d832baa3dc6969d"
+  },
+  "benchmark_script_sha256": "ed1ab8b31799b24fa14f70bb6f415659e71b85496faf317122210c9e56f94baa",
+  "scope": "Fases t\u00e9cnicas con cinco observaciones, cuatro decisiones y cierre. Un calentamiento y nueve pares de cuatro activos, orden alternado. Sin corpus real, optimizador, ajuste ni acceso a 2024.",
+  "memory_scope": "VRAM son asignaciones de PyTorch. RAM es pico global del proceso. El cargo de cach\u00e9 usa la convenci\u00f3n del validador m\u00e1s archivo y margen, no el heap exacto de Python.",
+  "concurrency_scope": "Otro modelo local segu\u00eda en la GPU. No hab\u00eda otras pruebas, mutaciones o consultas propias en paralelo.",
+  "optimizer_steps": 0,
+  "real_corpus": false,
+  "final_test_opened": false
+}

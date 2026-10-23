@@ -1,0 +1,170 @@
+{
+  "files": [
+    {
+      "name": "coverage-final.json",
+      "sha256": "2f1ccb52bbb38404657d81cd987f0f6324888821eaa0ad8119a80bfeedb614e5",
+      "bytes": 5830984
+    },
+    {
+      "name": "quality-final.json",
+      "sha256": "da1b22ada3a755f5378b332738b7cdd57ccef9ae30874dc5db96fc4e70d6e7e4",
+      "bytes": 39864
+    },
+    {
+      "name": "analytical-results-v2.json",
+      "sha256": "dd71064364954d8649bc8f2c0c3f8864ae9ba896238b0ca0dab095edf2f53347",
+      "bytes": 553587
+    },
+    {
+      "name": "independent-review.md",
+      "sha256": "441a59da1e1b18888f1c07de1b78f78df9411adc2234d74f2a84263caee8f8d8",
+      "bytes": 6387
+    },
+    {
+      "name": "mutations-final/results.json",
+      "sha256": "68c21f3e9b9b0d878dd3881015013ecc215d4a3e2ffca8cab84b704c363cd70c",
+      "bytes": 8834
+    },
+    {
+      "name": "mutations-final/source-manifest.json",
+      "sha256": "597ba1d79e2258f450edea9fe3fc2bb478ee22dd8d6fe351ce6379e36cb7bb30",
+      "bytes": 151800
+    },
+    {
+      "name": "forward-run-1/execution.json",
+      "sha256": "93ae5d99475b6228ce282965b64d182d859347492a28a696ffad10c821b02857",
+      "bytes": 4626
+    },
+    {
+      "name": "forward-run-1/source-manifest.json",
+      "sha256": "6631dd92741e16c25326ee412b8d6b0c02966d9dc5eee2ab818191e7ad6b4e5b",
+      "bytes": 50666
+    },
+    {
+      "name": "forward-run-1/normal/results.json",
+      "sha256": "29154f503cd6f726a8f60d840ec44bf5f51798551469a378e756a34c4779132d",
+      "bytes": 382684
+    },
+    {
+      "name": "forward-run-1/reverse/results.json",
+      "sha256": "d6536ca9bf2cfa99be461684ffe2759b2218be5c2d68355c0fb9ebba4cc25bee",
+      "bytes": 382623
+    },
+    {
+      "name": "decision-run-02/execution.json",
+      "sha256": "c02588d71877fe48903deb0a5f65650e21595f58033affd6b317b613be5c1bd2",
+      "bytes": 4672
+    },
+    {
+      "name": "decision-run-02/measurement.json",
+      "sha256": "e78dfce9106401b44217733b561a159c0fa289e83747dd04941705bfa3ef435f",
+      "bytes": 367041
+    },
+    {
+      "name": "decision-run-02/source-manifest.json",
+      "sha256": "ef40ec66b4e4be161f16422ea9c9ea129118525c269e153c9ee44c091fb01b03",
+      "bytes": 151800
+    },
+    {
+      "name": "decision-benchmark-public.py",
+      "sha256": "e182ae45ef52c5e99b960ad34ea6d61c7303086f466b486408124a62f53611e3",
+      "bytes": 34169
+    },
+    {
+      "name": "capture-analytic-v2.py",
+      "sha256": "b91077404c687e9f974735a3a9f849e69778f0d544ff1ec638abfad4c0ef5a4e",
+      "bytes": 11586
+    },
+    {
+      "name": "suite-final-b.xml",
+      "sha256": "3c70af3073a06398a34c3e723a58a8544d4474607aad4e1af40bc2ac9cae1059",
+      "bytes": 24279
+    },
+    {
+      "name": "suite-final-c.xml",
+      "sha256": "bc9bd90a63220a5bfa91c2b113cfdef142d989856d9d273c1e743abd424c533f",
+      "bytes": 47150
+    },
+    {
+      "name": "suite-final-d.xml",
+      "sha256": "8fba2770da52e39013bc9ab765d358006d973f7ebbe8a50164a25544e631594b",
+      "bytes": 2192
+    },
+    {
+      "name": "suite-final-e.xml",
+      "sha256": "0ea283a64e6b1ce02a162c8edcae3c9e6468e187107a8725592152e55380ea3f",
+      "bytes": 942
+    },
+    {
+      "name": "suite-final-f.xml",
+      "sha256": "9b30e83b91c20ef2a162e629def4cb7d7a1c920102463d67dbec72345937670a",
+      "bytes": 7471
+    },
+    {
+      "name": "confirmation-mutation/results.json",
+      "sha256": "a17aa0f59a965524dafc84998d9eea784bcb5e119d6da75ae1bbf282d80d5c30",
+      "bytes": 720
+    },
+    {
+      "name": "confirmation-mutation/change.json",
+      "sha256": "cb07f827b850066a989396d52bb1e42e4f780715ce2b037ad643d50d18b4149a",
+      "bytes": 565
+    },
+    {
+      "name": "confirmation-mutation/baseline.xml",
+      "sha256": "41d7d7913fae9b2e9b500ab47ba5b90960ce83d84edcd0c2f9711763989cdd02",
+      "bytes": 423
+    },
+    {
+      "name": "confirmation-mutation/repeated-settlement.xml",
+      "sha256": "0996e72ff5e75dce391dbaf965f8db564eb3ec66eee5a5481235f4716d97c82d",
+      "bytes": 6731
+    },
+    {
+      "name": "confirmation-mutation/restored.xml",
+      "sha256": "00e26b716643d9670e721c8751ed95f708e22a666f3e32e03e4f270fbc40fb0b",
+      "bytes": 423
+    },
+    {
+      "name": "mutations/results.json",
+      "sha256": "5c6f8e82d455cc0e6ac92c9893c20128e5a4bd53011a78ebc52c8d10a32bdac4",
+      "bytes": 8763
+    },
+    {
+      "name": "mutations/source-manifest.json",
+      "sha256": "1f272397377150c6ed627f6dc44a9450cad68c6c124b79016f065be22750b6d4",
+      "bytes": 151800
+    },
+    {
+      "name": "analytical-results.json",
+      "sha256": "2685d64cda3903ea9599cec1b956d8ca97ca64419a6007ba69e60e34a268a333",
+      "bytes": 480015
+    },
+    {
+      "name": "capture-analytic.py",
+      "sha256": "d1813d9006a0f3c51739b6e6e13ac775273f2704c46af4a33878d4b1b7557171",
+      "bytes": 10707
+    },
+    {
+      "name": "decision-run-01/execution.json",
+      "sha256": "ffea08a92fb42ff6673279f5a88361eec63e4cb8ae0b32722d6e0dc354e103be",
+      "bytes": 4665
+    },
+    {
+      "name": "decision-run-01/measurement.json",
+      "sha256": "8f68be3bb301b984dd5ee5d28141d7e7186bc0ab92b59fd48c4f5f5a7e5970e7",
+      "bytes": 367023
+    },
+    {
+      "name": "decision-benchmark.py",
+      "sha256": "9318a14feb62e15e36f14f6b043c3f649a6eb1d832cfe9b5df92fd3610911f7d",
+      "bytes": 34512
+    },
+    {
+      "name": "run-check.py",
+      "sha256": "e0ac102190f40d37014d8706ae1282487f54d19a0c836383635ef6c9a41704e3",
+      "bytes": 2443
+    }
+  ],
+  "note": "Originales conservados fuera del repositorio. No se sustituyen por métricas de ejemplo."
+}

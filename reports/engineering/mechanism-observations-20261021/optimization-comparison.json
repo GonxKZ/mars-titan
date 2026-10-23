@@ -1,0 +1,223 @@
+{
+  "selected_validation_rows": 16,
+  "rule": "Media de ratios p50 frente a la media de dos referencias <= 0,90 y p95 por condición <= 1,10. Bloque menor dentro de un 5 % del más rápido.",
+  "selected_source_sha256": "c6b2968d7e256a39e7c47db1e22b4f61c8745b34af22f1640158247d40d97c86",
+  "candidates": [
+    {
+      "validation_rows": 16,
+      "mean_p50_ratio": 0.5094805089146662,
+      "accepted": true,
+      "comparisons": [
+        {
+          "rows": 64,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 12.95193875,
+          "candidate_p50_ms": 6.7453915,
+          "p50_ratio": 0.5208016830684904,
+          "p95_ratio": 0.5612711175058165,
+          "reference_order_p50_ratio": 0.765322580425326
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 12.819461749999999,
+          "candidate_p50_ms": 7.891534,
+          "p50_ratio": 0.6155901202326222,
+          "p95_ratio": 0.6680944429465537,
+          "reference_order_p50_ratio": 0.7677556586069527
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 36.95611325,
+          "candidate_p50_ms": 13.216747999999999,
+          "p50_ratio": 0.3576336047730885,
+          "p95_ratio": 0.40336673976522847,
+          "reference_order_p50_ratio": 0.791585442574205
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 36.196782750000004,
+          "candidate_p50_ms": 14.3668275,
+          "p50_ratio": 0.39690896285526917,
+          "p95_ratio": 0.43089398730042017,
+          "reference_order_p50_ratio": 0.7772804919046208
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 13.318671250000001,
+          "candidate_p50_ms": 7.3805689999999995,
+          "p50_ratio": 0.554152051767176,
+          "p95_ratio": 0.6111671557346623,
+          "reference_order_p50_ratio": 0.8127039878226403
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 13.9189545,
+          "candidate_p50_ms": 7.2728865,
+          "p50_ratio": 0.5225167235082204,
+          "p95_ratio": 0.5807674243788807,
+          "reference_order_p50_ratio": 0.8571515679599412
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 32.505686,
+          "candidate_p50_ms": 18.4021605,
+          "p50_ratio": 0.5661212779819507,
+          "p95_ratio": 0.5090195320817037,
+          "reference_order_p50_ratio": 1.0131073717284251
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 32.112496,
+          "candidate_p50_ms": 17.408815,
+          "p50_ratio": 0.5421196471305127,
+          "p95_ratio": 0.5422687594297952,
+          "reference_order_p50_ratio": 1.0321272958235863
+        }
+      ]
+    },
+    {
+      "validation_rows": 64,
+      "mean_p50_ratio": 0.5483477845816066,
+      "accepted": true,
+      "comparisons": [
+        {
+          "rows": 64,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 12.95193875,
+          "candidate_p50_ms": 7.2168,
+          "p50_ratio": 0.5571984348675213,
+          "p95_ratio": 0.5930616078574179,
+          "reference_order_p50_ratio": 0.765322580425326
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 12.819461749999999,
+          "candidate_p50_ms": 7.1282485,
+          "p50_ratio": 0.5560489698407189,
+          "p95_ratio": 0.5702440212840401,
+          "reference_order_p50_ratio": 0.7677556586069527
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 36.95611325,
+          "candidate_p50_ms": 16.725904999999997,
+          "p50_ratio": 0.45258831432983543,
+          "p95_ratio": 0.4692451908030682,
+          "reference_order_p50_ratio": 0.791585442574205
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float32",
+          "reference_p50_ms": 36.196782750000004,
+          "candidate_p50_ms": 16.251689499999998,
+          "p50_ratio": 0.4489816018248195,
+          "p95_ratio": 0.45688687893676894,
+          "reference_order_p50_ratio": 0.7772804919046208
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 13.318671250000001,
+          "candidate_p50_ms": 8.7057065,
+          "p50_ratio": 0.6536467742606079,
+          "p95_ratio": 0.7037789477387519,
+          "reference_order_p50_ratio": 0.8127039878226403
+        },
+        {
+          "rows": 64,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 13.9189545,
+          "candidate_p50_ms": 9.212272500000001,
+          "p50_ratio": 0.6618508954821284,
+          "p95_ratio": 0.648830916466168,
+          "reference_order_p50_ratio": 0.8571515679599412
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 32.505686,
+          "candidate_p50_ms": 17.136025,
+          "p50_ratio": 0.527170077259714,
+          "p95_ratio": 0.4560627039645735,
+          "reference_order_p50_ratio": 1.0131073717284251
+        },
+        {
+          "rows": 256,
+          "markets": [
+            "CN",
+            "US"
+          ],
+          "dtype": "torch.float64",
+          "reference_p50_ms": 32.112496,
+          "candidate_p50_ms": 16.997054499999997,
+          "p50_ratio": 0.5292972087875074,
+          "p95_ratio": 0.5361374307390971,
+          "reference_order_p50_ratio": 1.0321272958235863
+        }
+      ]
+    }
+  ],
+  "scientific_study": false,
+  "predictive_error_measured": false
+}

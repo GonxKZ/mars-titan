@@ -1,0 +1,30 @@
+{
+  "cost": {
+    "external_wall_seconds": 9.8,
+    "external_peak_rss_bytes": 1050259456,
+    "user_seconds": 8.88,
+    "system_seconds": 0.98,
+    "exit_status": 0
+  },
+  "cost-chunk16": {
+    "external_wall_seconds": 6.18,
+    "external_peak_rss_bytes": 1050578944,
+    "user_seconds": 5.28,
+    "system_seconds": 0.93,
+    "exit_status": 0
+  },
+  "cost-chunk64": {
+    "external_wall_seconds": 6.4,
+    "external_peak_rss_bytes": 1050943488,
+    "user_seconds": 5.53,
+    "system_seconds": 0.91,
+    "exit_status": 0
+  },
+  "cost-reference-post": {
+    "external_wall_seconds": 9.13,
+    "external_peak_rss_bytes": 1050312704,
+    "user_seconds": 8.2,
+    "system_seconds": 0.99,
+    "exit_status": 0
+  }
+}

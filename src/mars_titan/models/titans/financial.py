@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
     MAX_BLOCK_ROWS,
@@ -59,12 +60,31 @@ from .presence_modulation import (
     wide_parameters_per_unit,
     wide_units,
 )
+from .regional_execution import (
+    RegionalExecution,
+    RegionalExecutionConfig,
+    build_regional_execution,
+    parse_regional_execution_config,
+)
+from .regional_fusion import (
+    RegionalFusion,
+    RegionalFusionConfig,
+    validate_assignment,
+    validate_assignment_request,
+)
+from .regional_hierarchy import (
+    RegionalHierarchy,
+    RegionalHierarchyConfig,
+    validate_hierarchy_operator_config,
+)
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
     MACState,
     check_differentiable,
     check_finite,
     deferred_checks,
+    finite_indicator,
+    is_finite,
     mac_tensors,
     map_mac_rows,
     require_finite,
@@ -117,6 +137,10 @@ class FinancialConfig:
     session_context: str | None = None
     sector_map: SectorMap | None = None
     attention_layout: str = "batch_first_v1"
+    # Grafo de evidencia con memoria de trabajo reiniciada por decisión.
+    regional_fusion: RegionalFusionConfig | None = None
+    regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
+    memory_bank_readout: BankReadoutConfig | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -222,6 +246,59 @@ class FinancialConfig:
             raise ValueError(
                 "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
             )
+        if isinstance(self.regional_fusion, dict):
+            if set(self.regional_fusion) != {field.name for field in fields(RegionalFusionConfig)}:
+                raise ValueError("regional_fusion debe declarar toda su configuración")
+            object.__setattr__(
+                self, "regional_fusion", RegionalFusionConfig(**self.regional_fusion)
+            )
+        if self.regional_fusion is not None:
+            if type(self.regional_fusion) is not RegionalFusionConfig:
+                raise ValueError(
+                    "regional_fusion necesita RegionalFusionConfig, sus valores o None"
+                )
+            if self.presence_modulation is not None:
+                raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
+        if isinstance(self.regional_execution, dict):
+            object.__setattr__(
+                self,
+                "regional_execution",
+                parse_regional_execution_config(self.regional_execution),
+            )
+        if self.regional_execution is not None:
+            if (
+                type(self.regional_execution)
+                not in (RegionalExecutionConfig, RegionalHierarchyConfig)
+                or self.regional_fusion is None
+            ):
+                raise ValueError(
+                    "El programa regional necesita configuración y operador explícitos"
+                )
+            self.regional_execution.__post_init__()
+            if type(self.regional_execution) is RegionalHierarchyConfig:
+                validate_hierarchy_operator_config(self.regional_fusion)
+            if (
+                type(self.regional_execution) is RegionalExecutionConfig
+                and self.regional_execution.selection == "context_norm_v1"
+                and self.session_context is None
+            ):
+                raise ValueError("La selección contextual necesita un padre PT4 explícito")
+        if isinstance(self.memory_bank_readout, dict):
+            expected = {f.name for f in fields(BankReadoutConfig)}
+            if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
+                raise ValueError("memory_bank_readout debe declarar toda su configuración")
+            object.__setattr__(
+                self, "memory_bank_readout", BankReadoutConfig(**self.memory_bank_readout)
+            )
+        if self.memory_bank_readout is not None:
+            if (
+                type(self.memory_bank_readout) is not BankReadoutConfig
+                or self.memory_multiscale is None
+                or self.memory_multiscale.form not in ("ema_bank", "replica_bank")
+            ):
+                raise ValueError("El lector necesita bancos EMA o réplicas identificados")
+            if self.memory_plasticity is not None or self.memory_stability is not None:
+                raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -290,6 +367,12 @@ class FinancialConfig:
             result.update(memory_plasticity=self.memory_plasticity.configuration())
         if self.memory_key_competition is not None:
             result.update(memory_key_competition=asdict(self.memory_key_competition))
+        if self.regional_fusion is not None:
+            result.update(regional_fusion=self.regional_fusion.identity())
+        if self.regional_execution is not None:
+            result.update(regional_execution=self.regional_execution.identity())
+        if self.memory_bank_readout is not None:
+            result.update(memory_bank_readout=self.memory_bank_readout.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -344,6 +427,11 @@ class PreparedDecisions:
     quantiles: torch.Tensor | None = None
     # Solo con PT4: el contexto con los tokens de este bloque pendientes de su sesión.
     next_context: object = None
+
+
+@dataclass(frozen=True)
+class RegionalPreparedDecisions(PreparedDecisions):
+    regional_trace: dict | None = None
 
 
 def _tensor_digest(value):
@@ -406,6 +494,23 @@ class FinancialPredictor(nn.Module):
             if config.presence_modulation == WIDE_FUSION
             else None
         )
+        self.regional_fusion = (
+            RegionalFusion(
+                config.hidden_size,
+                config.regional_fusion,
+                seed=config.seed,
+                max_batch=config.max_batch,
+            )
+            if config.regional_fusion is not None
+            else None
+        )
+        self.regional_execution = (
+            build_regional_execution(
+                config.hidden_size, config.regional_execution, max_batch=config.max_batch
+            )
+            if config.regional_execution is not None
+            else None
+        )
         # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
         self.session_context = (
             SessionContext(
@@ -424,6 +529,8 @@ class FinancialPredictor(nn.Module):
         )
         if self.session_context is not None and local_control is not None:
             raise ValueError("PT4 no se combina con el control local C")
+        if config.memory_bank_readout is not None and local_control is not None:
+            raise ValueError("El lector de bancos con C local necesita otro contraste")
         self.mac = None
         if config.variant != "transformer_direct":
             self.mac = TitansMAC(
@@ -442,6 +549,7 @@ class FinancialPredictor(nn.Module):
                         multiscale=config.memory_multiscale,
                         plasticity=config.memory_plasticity,
                         key_competition=config.memory_key_competition,
+                        bank_readout=config.memory_bank_readout,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -467,14 +575,41 @@ class FinancialPredictor(nn.Module):
             for name, value in (*self.named_parameters(), *self.named_buffers())
         )
 
+    def _regional_component(self):
+        declared, module = self.config.regional_fusion, self.regional_fusion
+        if declared is None and module is None:
+            return None
+        if (
+            type(declared) is not RegionalFusionConfig
+            or type(module) is not RegionalFusion
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+        ):
+            raise ValueError("El módulo regional no corresponde a la configuración del predictor")
+        module.validate_structure()
+        if (
+            module.qkv.weight.device != self.head.weight.device
+            or module.qkv.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("El módulo regional no conserva dispositivo y precisión del predictor")
+        return module
+
     def _seal_parameters(self):
         if self.head.weight.dtype not in (torch.float32, torch.float64):
             raise ValueError("El predictor admite float32 y float64")
+        regional = self._regional_component()
+        if regional is not None:
+            regional.validate_geometry()
+        execution = self._regional_execution_component()
+        if type(execution) is RegionalHierarchy:
+            execution.validate_payload(execution.state_dict(), "")
         # Una carga o un cambio de tipo o dispositivo vuelve a sellar y a calcular la identidad.
         self._config_ids = {}
         self._metadata_sizes = {}
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
+        self._regional_program_signature = self._program_signature()
 
     def _parameter_digest(self):
         fingerprints = {
@@ -482,6 +617,53 @@ class FinancialPredictor(nn.Module):
             for name, value in (*self.named_parameters(), *self.named_buffers())
         }
         return hashlib.sha256(canonical(fingerprints).encode()).hexdigest()
+
+    def _regional_execution_component(self):
+        declared, module = self.config.regional_execution, self.regional_execution
+        if declared is None and module is None:
+            return None
+        expected = {
+            RegionalExecutionConfig: RegionalExecution,
+            RegionalHierarchyConfig: RegionalHierarchy,
+        }.get(type(declared))
+        if (
+            expected is None
+            or type(module) is not expected
+            or type(module.config) is not type(declared)
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+            or self.regional_fusion is None
+        ):
+            raise ValueError("El ejecutor regional no corresponde al predictor declarado")
+        declared.__post_init__()
+        module.config.__post_init__()
+        if type(declared) is RegionalExecutionConfig:
+            compatible = module.config == declared and type(
+                module.config.context_threshold
+            ) is type(declared.context_threshold)
+        else:
+            compatible = canonical(module.config.identity()) == canonical(declared.identity())
+            validate_hierarchy_operator_config(self.regional_fusion.config)
+        if not compatible:
+            raise ValueError("El ejecutor regional no conserva la identidad declarada")
+        return module
+
+    def _program_signature(self):
+        module = self._regional_execution_component()
+        if type(module) is RegionalHierarchy:
+            return module.hidden_size, module.max_batch, canonical(module.config.identity())
+        return (
+            (
+                module.hidden_size,
+                module.max_batch,
+                module.config.selection,
+                module.config.program,
+                type(module.config.context_threshold).__name__,
+                module.config.context_threshold,
+            )
+            if module is not None
+            else None
+        )
 
     def verify_parameter_identity(self):
         """Comprobar bytes en una frontera de sesión o recuperación, fuera de prepare."""
@@ -500,6 +682,8 @@ class FinancialPredictor(nn.Module):
         return result
 
     def _check_parameters(self):
+        if self._program_signature() != self._regional_program_signature:
+            raise ValueError("El programa regional cambió fuera de una carga identificada")
         if self._signature() != self._parameter_signature:
             raise ValueError("Los parámetros cambiaron fuera de una carga o copia identificada")
         if self.config.head == QUANTILE_HEAD and self.head.routing != self.config.quantile_routing:
@@ -531,8 +715,23 @@ class FinancialPredictor(nn.Module):
         self._validate_extra_state(state)
         self.train(state["training"])
 
-    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        validate_assignment_request(state_dict, assign)
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, *args, **kwargs):
+        execution = self._regional_execution_component()
+        if type(execution) is RegionalHierarchy:
+            execution.validate_payload(state_dict, prefix + "regional_execution.")
+        regional = self._regional_component()
+        if regional is not None:
+            validate_assignment(state_dict, prefix, local_metadata)
+            regional.validate_payload(state_dict, prefix + "regional_fusion.")
         expected = self.state_dict()
+        if self.mac is not None and self.mac.memory.bank_readout is not None:
+            self.mac.memory.bank_readout.validate_payload(
+                state_dict, prefix + "mac.memory.bank_readout."
+            )
         if self.local_control is not None:
             self.local_control.validate_payload(state_dict, prefix + "local_control.")
         actual = {
@@ -552,13 +751,14 @@ class FinancialPredictor(nn.Module):
                     or supplied.layout != torch.strided
                 ):
                     raise ValueError("Los parámetros no tienen forma o precisión compatibles")
-                check_finite(supplied, "Los parámetros guardados")
+                if not is_finite(finite_indicator(supplied)):
+                    raise ValueError("Los parámetros guardados contienen NaN o infinito")
             else:
                 if name == "_extra_state":
                     self._validate_extra_state(supplied)
                 else:
                     require_identity(supplied, value)
-        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
+        super()._load_from_state_dict(state_dict, prefix, local_metadata, *args, **kwargs)
 
     def _config_id(self):
         """Huella del contrato de `get_extra_state`, calculada una vez por modo train/eval.
@@ -572,23 +772,35 @@ class FinancialPredictor(nn.Module):
             self._config_ids[self.training] = cached
         return cached
 
+    def operation_counts(self, rows):
+        """Evaluaciones del grafo y de bancos con un avance MAC por fila financiera."""
+        bounded_integer(rows, "observaciones financieras", 0, 16384)
+        result = (
+            self.regional_fusion.operation_counts(rows)
+            if self.regional_fusion is not None and self.regional_execution is None
+            else {}
+        )
+        if self.mac is not None and self.mac.memory.bank_readout is not None:
+            result.update(
+                self.mac.memory.bank_readout.operation_counts(
+                    rows, mode=self.mac.config.memory_mode, depth=self.mac.config.memory.depth
+                )
+            )
+        return result
+
     def _tensor_bytes_per_flow(self):
+        memory = None if self.mac is None else self.mac.config.memory
         fast = (
             0
-            if self.mac is None
+            if memory is None
             else (
-                4 * self.config.hidden_size
-                + self.mac.config.memory.depth
-                * self.mac.config.memory.hidden_levels
-                * self.config.hidden_size
-                + 3 * self.mac.config.memory.window
+                memory.matrix_elements
+                + 3 * memory.window * self.config.hidden_size
+                + memory.modulation_elements
             )
-            * self.config.hidden_size
             * self.head.weight.element_size()
             + 8
         )
-        if self.mac is not None:
-            fast += self.mac.config.memory.modulation_elements * self.head.weight.element_size()
         return fast + 8
 
     def _metadata(self, flows, ids, moments):
@@ -804,6 +1016,57 @@ class FinancialPredictor(nn.Module):
         if self.session_context is None:
             raise ValueError("El predictor no declara contexto de sesión")
 
+    def _program_fusion(self, price, batch, context, selection):
+        """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
+        execution = None
+        rows = (
+            list(range(len(batch.flow_ids)))
+            if selection is None
+            else [i for i, use in enumerate(selection) if use]
+        )
+
+        def modulate(blocks, presence):
+            nonlocal execution
+            mask = (
+                torch.ones(blocks.shape[:2], dtype=torch.bool, device=blocks.device)
+                if presence is None
+                else presence
+            )
+            seed = torch.where(mask.unsqueeze(-1), blocks, torch.zeros_like(blocks)).sum(1)
+            seed = seed / mask.sum(1, keepdim=True).clamp_min(1).to(blocks.dtype)
+            extra = torch.zeros_like(seed)
+            if context is not None and rows:
+                index = torch.tensor(rows, dtype=torch.int64, device=seed.device)
+                value = self.session_context.read_confirmed(
+                    seed.index_select(0, index),
+                    tuple(batch.flow_ids[i] for i in rows),
+                    tuple(batch.prediction_at[i] for i in rows),
+                    context,
+                )
+                extra = extra.index_copy(0, index, value)
+            execution = self.regional_execution(self.regional_fusion, blocks, presence, extra)
+            return execution.blocks
+
+        token = fuse_modalities(
+            price,
+            batch.inputs,
+            self.encoders,
+            self.fusion,
+            batch.presence if self.masked else None,
+            modulation=modulate,
+            branch=self.fusion_branch,
+        )
+        pending = context
+        if context is not None and rows:
+            index = torch.tensor(rows, dtype=torch.int64, device=token.device)
+            pending = self.session_context.stage_tokens(
+                token.index_select(0, index),
+                tuple(batch.flow_ids[i] for i in rows),
+                tuple(batch.prediction_at[i] for i in rows),
+                context,
+            )
+        return token, pending, execution.trace
+
     def prepare(
         self,
         batch,
@@ -813,6 +1076,7 @@ class FinancialPredictor(nn.Module):
         control_selection=None,
         control_context_id=None,
         context=None,
+        context_selection=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -827,10 +1091,19 @@ class FinancialPredictor(nn.Module):
                 control_selection=control_selection,
                 control_context_id=control_context_id,
                 context=context,
+                context_selection=context_selection,
             )
 
     def _prepare(
-        self, batch, state, *, differentiable, control_selection, control_context_id, context
+        self,
+        batch,
+        state,
+        *,
+        differentiable,
+        control_selection,
+        control_context_id,
+        context,
+        context_selection=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -868,8 +1141,19 @@ class FinancialPredictor(nn.Module):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
             self.session_context.validate(context, self._parameter_id)
+        if context_selection is not None:
+            if context is None:
+                raise ValueError("La selección de contexto necesita un padre con PT4")
+            if (
+                type(context_selection) is not tuple
+                or len(context_selection) != len(batch.flow_ids)
+                or any(type(value) is not bool for value in context_selection)
+            ):
+                raise ValueError(
+                    "La selección de contexto debe ser una tupla de booleanos por fila"
+                )
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
-        local_result = None
+        local_result, regional_trace = None, None
         with torch.set_grad_enabled(differentiable), backend:
             # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
             # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
@@ -879,22 +1163,45 @@ class FinancialPredictor(nn.Module):
             )
             for value, message in encoder_checks:
                 require_finite(value, message)
-            token = fuse_modalities(
-                price,
-                batch.inputs,
-                self.encoders,
-                self.fusion,
-                batch.presence if self.masked else None,
-                modulation=self.presence_modulation,
-                branch=self.fusion_branch,
-            )
-            check_finite(token, "El token fusionado")
-            observed, next_context = token, None
-            if context is not None:
-                # La lectura solo usa sesiones ya confirmadas y deja este bloque pendiente.
-                extra, next_context = self.session_context.read(
-                    token, batch.flow_ids, batch.prediction_at, context
+            if self.regional_execution is not None:
+                token, next_context, regional_trace = self._program_fusion(
+                    price, batch, context, context_selection
                 )
+            else:
+                token = fuse_modalities(
+                    price,
+                    batch.inputs,
+                    self.encoders,
+                    self.fusion,
+                    batch.presence if self.masked else None,
+                    modulation=self.regional_fusion
+                    if self.regional_fusion is not None
+                    else self.presence_modulation,
+                    branch=self.fusion_branch,
+                )
+                next_context = context
+            check_finite(token, "El token fusionado")
+            observed = token
+            if (
+                self.regional_execution is None
+                and context is not None
+                and (context_selection is None or any(context_selection))
+            ):
+                # La lectura solo usa sesiones ya confirmadas y deja este bloque pendiente.
+                if context_selection is None or all(context_selection):
+                    extra, next_context = self.session_context.read(
+                        token, batch.flow_ids, batch.prediction_at, context
+                    )
+                else:
+                    selected = [i for i, value in enumerate(context_selection) if value]
+                    positions = torch.tensor(selected, dtype=torch.int64, device=token.device)
+                    part, next_context = self.session_context.read(
+                        token.index_select(0, positions),
+                        tuple(batch.flow_ids[i] for i in selected),
+                        tuple(batch.prediction_at[i] for i in selected),
+                        context,
+                    )
+                    extra = torch.zeros_like(token).index_copy(0, positions, part)
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
             if self.mac:
@@ -930,7 +1237,10 @@ class FinancialPredictor(nn.Module):
             observed_steps=state.observed_steps + 1,
             mac=next_mac,
         )
-        return PreparedDecisions(
+        prepared_type = (
+            RegionalPreparedDecisions if regional_trace is not None else PreparedDecisions
+        )
+        return prepared_type(
             point,
             token.detach().clone(),
             next_state,
@@ -940,6 +1250,7 @@ class FinancialPredictor(nn.Module):
             local_result,
             quantiles,
             next_context,
+            **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
     def export_state(self, state):

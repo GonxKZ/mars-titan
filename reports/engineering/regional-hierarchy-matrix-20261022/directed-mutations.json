@@ -1,0 +1,365 @@
+{
+  "scope": "12 objetivos del proyecto y 2 del agregador",
+  "groups": [
+    {
+      "group": "finiteness",
+      "artifact_sha256": "7aa99de919de6c30158196ced3c8cad2e0f6f0b07a179253c1e28836f26596fd",
+      "records": [
+        {
+          "id": "omit_qkv_finiteness",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 24,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 24,
+              "failed_calls": 24
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 24,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "omit_residual_finiteness",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 2,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 2,
+              "failed_calls": 2
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 2,
+              "failed_calls": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "memory",
+      "artifact_sha256": "54c9dcc952d3fe21c3109952f8cd2a7961153da3fc54b1c7516db7704caba8ab",
+      "records": [
+        {
+          "id": "hierarchy_summary_underreservation",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 1,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "live_availability_not_bound_to_input",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 1,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "archive_availability_changes_between_contexts",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 1,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "protocol",
+      "artifact_sha256": "52a029bd91c179139bd5029c5c77f093d9f461b755cdc5ceb1c8b634c6eb56a4",
+      "records": [
+        {
+          "id": "forward_order_twice",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "retain_foreign_geometry",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "allow_changed_parameter_shape",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "authorize_optimizer",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "change_cublas_workspace",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "hide_failed_when_over_budget",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "forget_environment_update",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 11,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 11,
+              "failed_calls": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "aggregation",
+      "artifact_sha256": "614294e6a9befdfa148d96e06d0f61b0d395906210eba0034231df90c4c764d6",
+      "records": [
+        {
+          "id": "invert_latency_ratio",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 1,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            }
+          ]
+        },
+        {
+          "id": "conflate_memory_interfaces",
+          "status": "killed",
+          "phases": [
+            {
+              "phase": "base",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            },
+            {
+              "phase": "mutant",
+              "returncode": 1,
+              "cases": 1,
+              "failed_calls": 1
+            },
+            {
+              "phase": "restored",
+              "returncode": 0,
+              "cases": 1,
+              "failed_calls": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

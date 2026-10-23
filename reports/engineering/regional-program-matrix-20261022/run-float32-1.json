@@ -1,0 +1,25 @@
+{
+  "raw_local_sha256": "bd33b49754b6cf608ef7797bc5a97f996a8f74814921204fdce4cc70cc8fc6b5",
+  "normalization": "Rutas del repositorio relativas, artefactos locales etiquetados y procesos GPU identificados por su ejecutable.",
+  "data": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "local-artifacts/strata-v2-prepared/regional_program_matrix_cuda.py",
+      "--run",
+      "--dtype",
+      "float32",
+      "--batch",
+      "1",
+      "--repository",
+      ".",
+      "--output",
+      "local-artifacts/matrix-v2-float32-1"
+    ],
+    "elapsed_s": 140.0090546620777,
+    "returncode": 0,
+    "timeout_s": 300
+  }
+}

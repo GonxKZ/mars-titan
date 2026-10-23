@@ -3,6 +3,7 @@
 import hashlib
 import math
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
@@ -12,6 +13,10 @@ from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_id
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
 from .state import check_differentiable, check_finite, deferred_checks, require_true
+
+if TYPE_CHECKING:
+    from .evidence_bridge import EvidenceBridgeConfig
+    from .regional_episode_readout import BridgedReadoutResult
 
 # `per_step` vuelve a seleccionar episodios en cada refinamiento. `first_read` fija en los
 # pasos siguientes los episodios de la primera lectura y solo recalcula sus pesos.
@@ -32,6 +37,7 @@ class EpisodicReadoutConfig:
     max_working_bytes: int = 32 * 1024**2
     episode_selection: str = "per_step"
     refinement_initialization: str = "pytorch_default"
+    evidence_bridge: "EvidenceBridgeConfig | None" = None
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec")
@@ -58,12 +64,31 @@ class EpisodicReadoutConfig:
         ):
             raise ValueError("La temperatura debe ser finita y pertenecer a [1e-4, 100]")
         object.__setattr__(self, "temperature", float(self.temperature))
+        if self.evidence_bridge is not None:
+            from .evidence_bridge import EvidenceBridgeConfig
+
+            if type(self.evidence_bridge) is not EvidenceBridgeConfig:
+                raise ValueError("El puente necesita EvidenceBridgeConfig explícito")
+            self.evidence_bridge.__post_init__()
+            for name in (
+                "codec_id",
+                "hidden_size",
+                "neighbors",
+                "temperature",
+                "max_batch",
+                "max_working_bytes",
+            ):
+                if getattr(self.evidence_bridge, name) != getattr(self, name):
+                    raise ValueError(
+                        "El puente y lector deben compartir formas, codec y presupuestos"
+                    )
 
     def identity(self):
         fields = asdict(self)
         # El modo anterior conserva literalmente su identidad y su huella.
         episodes = fields.pop("episode_selection")
         initialization = fields.pop("refinement_initialization")
+        fields.pop("evidence_bridge")
         result = dict(
             **fields,
             schema_version=1,
@@ -84,6 +109,17 @@ class EpisodicReadoutConfig:
             )
         if initialization != "pytorch_default":
             result["refinement_initialization"] = initialization
+        if self.evidence_bridge is not None:
+            result.update(
+                schema_version=2,
+                evidence_bridge=self.evidence_bridge.identity(),
+                attention="regional_weights_in_separate_typed_result",
+                selection="common_bridge_query_fp64_stable_low_id_" + episodes,
+                projection_initialization="paired_legacy_query_value_and_refiner",
+                regional_availability="all_configured_views",
+            )
+            if self.evidence_bridge.intervention is not None:
+                result["regional_availability"] = "fixed_declared_active_views"
         return result
 
 
@@ -111,7 +147,7 @@ class ReadoutResult:
 @dataclass(frozen=True)
 class EpisodicPrediction:
     point_predictions: torch.Tensor
-    readout: ReadoutResult | None
+    readout: "ReadoutResult | BridgedReadoutResult | None"
     # Solo con `quantile_head_v1`: [flujos, 5]. La predicción puntual es su mediana.
     quantiles: torch.Tensor | None = None
 
@@ -143,6 +179,14 @@ class EpisodicReadout(nn.Module):
                 # Se conservan los sorteos de las proyecciones y la ruta anterior del RNG.
                 nn.init.zeros_(self.refinement.weight)
                 nn.init.zeros_(self.refinement.bias)
+        self.evidence_bridge = None
+        if config.evidence_bridge is not None:
+            from .evidence_bridge import SharedEvidenceBridge
+
+            self.evidence_bridge = SharedEvidenceBridge(config.evidence_bridge, dtype=dtype)
+            self.evidence_bridge.query.load_state_dict(self.query_projection.state_dict())
+            self.evidence_bridge.value.load_state_dict(self.value_projection.state_dict())
+            del self.query_projection, self.value_projection
         self.to(device=device, dtype=dtype)
 
     def get_extra_state(self):
@@ -159,6 +203,8 @@ class EpisodicReadout(nn.Module):
         if set(supplied) != set(expected):
             raise ValueError("El archivo no conserva todos los campos del lector")
         require_identity(supplied["_extra_state"], self.get_extra_state())
+        if self.evidence_bridge is not None:
+            self.evidence_bridge.validate_payload(state_dict, prefix + "evidence_bridge.")
         for name, value in self.named_parameters():
             other = supplied[name]
             if (
@@ -201,10 +247,41 @@ class EpisodicReadout(nn.Module):
         per_step = batch * (
             neighbors * (64 * (8 + size) + (65 + width) * size + 32) + (12 * width + 128) * size
         )
-        return 65536 + selection + per_step * refinements * (4 if differentiable else 1)
+        total = 65536 + selection + per_step * refinements * (4 if differentiable else 1)
+        if self.evidence_bridge is not None:
+            total += refinements * self.evidence_bridge.estimated_bytes(
+                batch, episodes, differentiable=differentiable
+            )
+        return total
 
     def read(self, state, snapshot=None, *, context_id=None, cutoff=None):
         return self._read(state, snapshot, context_id, cutoff)[0]
+
+    def node_read_limit(self, episodes):
+        """Límite por fila del evento completo, sin renovar cuotas por ruta o bloque."""
+        bridge = self.config.evidence_bridge
+        if bridge is None or bridge.recurrence is None or episodes == 0:
+            return 38
+        recurrence = bridge.recurrence
+        return recurrence.max_node_updates_per_row // (len(bridge.regions) * recurrence.steps)
+
+    def preflight_node_updates(self, reads, episodes):
+        """Admitir todas las lecturas previstas antes de ejecutar la primera MAC."""
+        bounded_integer(reads, "lecturas del evento", 0, 38)
+        bounded_integer(episodes, "episodios", 0, 1024)
+        if reads > self.node_read_limit(episodes):
+            raise ValueError("El presupuesto regional del evento no cabe antes de MAC")
+
+    def recurrence_work(self, value_projections):
+        """Contar R0 y actualizaciones nuevas J, sin atribuirles todos los FLOPs."""
+        bridge = self.config.evidence_bridge
+        if bridge is None or bridge.recurrence is None:
+            return {}
+        bounded_integer(value_projections, "proyecciones del evento", 0, 38 * 8192)
+        initial = len(bridge.regions) * value_projections
+        return dict(
+            bridge_initial_views=initial, bridge_node_updates=initial * bridge.recurrence.steps
+        )
 
     def _read(self, state, snapshot, context_id, cutoff, positions=None, *, repeated=False):
         """Leer y devolver también las posiciones elegidas en la instantánea.
@@ -225,6 +302,12 @@ class EpisodicReadout(nn.Module):
         """Conservar proyecciones solo durante una decisión con pesos e instantánea fijos."""
         if not repeated:
             self._validate_read(state, snapshot, context_id, cutoff)
+        if self.evidence_bridge is not None:
+            from .regional_episode_readout import regional_read
+
+            if cached is not None:
+                raise ValueError("Las rutas con caché anterior no admiten vistas regionales")
+            return regional_read(self, state, snapshot, context_id, cutoff, positions)
         count = 0 if snapshot is None else min(snapshot.count, self.config.neighbors)
         if count == 0:
             return (
@@ -302,6 +385,9 @@ class EpisodicReadout(nn.Module):
     def _validate_read(self, state, snapshot, context_id, cutoff, *, refinements=None):
         self._state(state)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
+        self.preflight_node_updates(
+            self.config.refinements if refinements is None else refinements, episodes
+        )
         if (
             self.estimated_bytes(
                 len(state),
@@ -330,8 +416,10 @@ class EpisodicReadout(nn.Module):
         check_finite(self.step_logit, "La puerta de refinamiento")
         self._state(state)
         self._state(base)
+        from .regional_episode_readout import RegionalEpisodeRead
+
         if (
-            not isinstance(read, EpisodeRead)
+            not isinstance(read, (EpisodeRead, RegionalEpisodeRead))
             or read.values.shape != state.shape
             or base.shape != state.shape
         ):
@@ -374,6 +462,7 @@ class EpisodicReadout(nn.Module):
             raise ValueError("inference_mode no permite la diferenciación solicitada")
         self._state(z_base)
         episodes = snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0
+        self.preflight_node_updates(self.config.refinements, episodes)
         if (
             self.estimated_bytes(len(z_base), episodes, differentiable=differentiable)
             > self.config.max_working_bytes
@@ -398,6 +487,10 @@ class EpisodicReadout(nn.Module):
                 # que el refinamiento no vuelve a validarla.
                 state = self._step(state, base, read)
                 reads.append(read)
+        if self.evidence_bridge is not None:
+            from .regional_episode_readout import BridgedReadoutResult
+
+            return BridgedReadoutResult(state, tuple(reads))
         return ReadoutResult(state, tuple(reads))
 
 

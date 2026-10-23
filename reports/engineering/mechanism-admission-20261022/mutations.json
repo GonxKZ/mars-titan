@@ -1,0 +1,146 @@
+{
+  "recorded_at_utc": "2026-10-22T04:27:15.484225+00:00",
+  "baseline": {
+    "exit_code": 0,
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutations": [
+    {
+      "name": "restore_m0_m1_only",
+      "path": "src/mars_titan/memory/financial_mechanisms.py",
+      "before": "super().__init__(consumer, codec, retention, admission)",
+      "after": "super().__init__(consumer, codec, retention, admission)\n        if admission not in {\"m0\", \"m1\"}:\n            raise ValueError(\"Solo M0/M1\")",
+      "expression": "fixed_reader and False-True-m2-cpu",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_write_policy_provenance",
+      "path": "src/mars_titan/memory/financial_mechanisms.py",
+      "before": "super().code(),",
+      "after": "{},",
+      "expression": "fixed_reader and False-True-m2-cpu",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_write_scores_provenance",
+      "path": "src/mars_titan/memory/financial_mechanisms.py",
+      "before": "super().code(),",
+      "after": "{k:v for k,v in super().code().items() if k != \"write_scores\"},",
+      "expression": "fixed_reader and False-True-m3-cpu",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "accept_future_scaling_range",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "if admission == \"m3\":",
+      "after": "if False:",
+      "expression": "rejects_a_declared_scaling",
+      "exit_code": 1,
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reject_exclusive_boundary",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "if retention.scalers.decision_end > scaling_end:",
+      "after": "if retention.scalers.decision_end >= scaling_end:",
+      "expression": "accepts_the_exclusive_end",
+      "exit_code": 1,
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "use_evaluation_end_for_scaling",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "scaling_end = phase.decision_end if phase.partition == \"train\" else phase.decision_start",
+      "after": "scaling_end = phase.decision_end",
+      "expression": "rejects_a_declared_scaling and validation",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reject_whole_training_range",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "scaling_end = phase.decision_end if phase.partition == \"train\" else phase.decision_start",
+      "after": "scaling_end = phase.decision_start",
+      "expression": "accepts_the_exclusive_end and train",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "use_label_as_error",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "error=item.label.value - prediction.value,",
+      "after": "error=item.label.value,",
+      "expression": "fixed_reader and False-True-m2-cpu",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "omit_bank_emission_check",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "self._binding.check_bank(bank, episodes)",
+      "after": "pass",
+      "expression": "rebased",
+      "exit_code": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "reverse_m3_decision_features",
+      "path": "src/mars_titan/memory/financial_session.py",
+      "before": "ordered = [rows[index] for index in indices]",
+      "after": "ordered = [rows[index] for index in reversed(indices)]",
+      "expression": "fixed_reader and False-True-m3-cpu",
+      "exit_code": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "restored": {
+    "exit_code": 0,
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_sha256": {
+    "src/mars_titan/memory/financial_mechanisms.py": "0830dcf8ee8f2f742326c2c573fac3c43b7b93b80d99713ccfc1cfea9ccb8464",
+    "src/mars_titan/memory/financial_session.py": "ae50f994610d3dc843b63c088e11fce31306dd1c01673fa2c0b3a25902807f21"
+  },
+  "tests_sha256": {
+    "tests/memory/test_mechanism_admission.py": "ec50fd1d0a3544add75e0fe5e15493c5c45250fc87a3764aec20247c780cb4c9"
+  }
+}

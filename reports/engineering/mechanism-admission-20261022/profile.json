@@ -1,0 +1,741 @@
+{
+  "scope": "cProfile sobre una fase M3 de 64 flujos. Sus tiempos incluyen instrumentación y esperas. No son latencias del benchmark ni una prueba de cuello de botella GPU.",
+  "cases": {
+    "controller": {
+      "total_seconds": 20.589076920000018,
+      "total_calls": 41697802,
+      "top_cumulative": [
+        {
+          "file": "src/mars_titan/memory/session_artifacts.py",
+          "line": 20,
+          "function": "_payload",
+          "primitive_calls": 536,
+          "total_calls": 2637201,
+          "self_seconds": 3.1517278550000003,
+          "cumulative_seconds": 4.318281325
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 258,
+          "function": "evidence",
+          "primitive_calls": 1792,
+          "total_calls": 1792,
+          "self_seconds": 0.038532887,
+          "cumulative_seconds": 2.215884167
+        },
+        {
+          "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+          "line": 216,
+          "function": "verify",
+          "primitive_calls": 172,
+          "total_calls": 172,
+          "self_seconds": 0.041101427,
+          "cumulative_seconds": 1.847109668
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 194,
+          "function": "_returns",
+          "primitive_calls": 3584,
+          "total_calls": 3584,
+          "self_seconds": 0.008424525,
+          "cumulative_seconds": 1.611942084
+        },
+        {
+          "file": "src/mars_titan/memory/episodic_session.py",
+          "line": 742,
+          "function": "snapshot",
+          "primitive_calls": 13,
+          "total_calls": 13,
+          "self_seconds": 0.005711662,
+          "cumulative_seconds": 1.490784224
+        },
+        {
+          "file": "src/mars_titan/memory/mechanism_history.py",
+          "line": 218,
+          "function": "_decode",
+          "primitive_calls": 35,
+          "total_calls": 35,
+          "self_seconds": 0.000979896,
+          "cumulative_seconds": 1.4477653110000002
+        },
+        {
+          "file": "src/mars_titan/models/titans/mechanism_consumer.py",
+          "line": 460,
+          "function": "prepare",
+          "primitive_calls": 5,
+          "total_calls": 5,
+          "self_seconds": 0.0014687790000000001,
+          "cumulative_seconds": 1.291702334
+        },
+        {
+          "file": "src/mars_titan/memory/financial_session.py",
+          "line": 620,
+          "function": "<genexpr>",
+          "primitive_calls": 260,
+          "total_calls": 260,
+          "self_seconds": 0.00044036300000000004,
+          "cumulative_seconds": 1.287577709
+        },
+        {
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "line": 144,
+          "function": "_execution_signature",
+          "primitive_calls": 172,
+          "total_calls": 172,
+          "self_seconds": 0.16200367200000002,
+          "cumulative_seconds": 1.2452743960000001
+        },
+        {
+          "file": "src/mars_titan/models/titans/financial.py",
+          "line": 870,
+          "function": "prepare",
+          "primitive_calls": 5,
+          "total_calls": 5,
+          "self_seconds": 5.902e-05,
+          "cumulative_seconds": 1.13482386
+        },
+        {
+          "file": "src/mars_titan/models/titans/financial.py",
+          "line": 897,
+          "function": "_prepare",
+          "primitive_calls": 5,
+          "total_calls": 5,
+          "self_seconds": 0.0005515920000000001,
+          "cumulative_seconds": 1.132946343
+        },
+        {
+          "file": "module.py",
+          "line": 1779,
+          "function": "_wrapped_call_impl",
+          "primitive_calls": 110,
+          "total_calls": 224,
+          "self_seconds": 0.000392498,
+          "cumulative_seconds": 1.123144951
+        },
+        {
+          "file": "module.py",
+          "line": 1787,
+          "function": "_call_impl",
+          "primitive_calls": 110,
+          "total_calls": 224,
+          "self_seconds": 0.0007100380000000001,
+          "cumulative_seconds": 1.1229135860000001
+        },
+        {
+          "file": "src/mars_titan/memory/mechanism_history.py",
+          "line": 155,
+          "function": "_event",
+          "primitive_calls": 41,
+          "total_calls": 41,
+          "self_seconds": 0.00044088000000000005,
+          "cumulative_seconds": 1.114643816
+        },
+        {
+          "file": "src/mars_titan/memory/mechanism_history.py",
+          "line": 79,
+          "function": "_json_bytes",
+          "primitive_calls": 41,
+          "total_calls": 41,
+          "self_seconds": 0.000314317,
+          "cumulative_seconds": 1.113795381
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "primitive_calls": 10520240,
+          "total_calls": 10520890,
+          "self_seconds": 1.059806626,
+          "cumulative_seconds": 1.070256083
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 183,
+          "function": "_confirm",
+          "primitive_calls": 7680,
+          "total_calls": 7680,
+          "self_seconds": 0.009310766,
+          "cumulative_seconds": 0.987126719
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 36,
+          "function": "_signature",
+          "primitive_calls": 7680,
+          "total_calls": 7680,
+          "self_seconds": 0.008618925000000001,
+          "cumulative_seconds": 0.976084936
+        },
+        {
+          "file": "src/mars_titan/models/titans/mac.py",
+          "line": 89,
+          "function": "forward",
+          "primitive_calls": 5,
+          "total_calls": 5,
+          "self_seconds": 0.000572661,
+          "cumulative_seconds": 0.97604743
+        },
+        {
+          "file": "tests/memory/test_mechanism_admission.py",
+          "line": 98,
+          "function": "feedback",
+          "primitive_calls": 4,
+          "total_calls": 4,
+          "self_seconds": 0.004823186,
+          "cumulative_seconds": 0.976006078
+        },
+        {
+          "file": "tests/memory/test_financial_session.py",
+          "line": 29,
+          "function": "moment",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.001346816,
+          "cumulative_seconds": 0.9711828920000001
+        },
+        {
+          "file": "src/mars_titan/data/temporal.py",
+          "line": 20,
+          "function": "__init__",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.601236148,
+          "cumulative_seconds": 0.9698360760000001
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 277,
+          "function": "verify",
+          "primitive_calls": 1536,
+          "total_calls": 1536,
+          "self_seconds": 0.003061704,
+          "cumulative_seconds": 0.9367091750000001
+        },
+        {
+          "file": "src/mars_titan/data/cohort_files.py",
+          "line": 26,
+          "function": "safe_destination",
+          "primitive_calls": 7745,
+          "total_calls": 7745,
+          "self_seconds": 0.022546990000000003,
+          "cumulative_seconds": 0.91311529
+        },
+        {
+          "file": "src/mars_titan/models/titans/neural_memory.py",
+          "line": 642,
+          "function": "update",
+          "primitive_calls": 5,
+          "total_calls": 5,
+          "self_seconds": 0.0006753530000000001,
+          "cumulative_seconds": 0.88995265
+        }
+      ],
+      "top_self": [
+        {
+          "file": "_weights_only_unpickler.py",
+          "line": 315,
+          "function": "load",
+          "primitive_calls": 0,
+          "total_calls": 312,
+          "self_seconds": 4.048672858000001,
+          "cumulative_seconds": 0.0
+        },
+        {
+          "file": "src/mars_titan/memory/session_artifacts.py",
+          "line": 20,
+          "function": "_payload",
+          "primitive_calls": 536,
+          "total_calls": 2637201,
+          "self_seconds": 3.1517278550000003,
+          "cumulative_seconds": 4.318281325
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "primitive_calls": 10520240,
+          "total_calls": 10520890,
+          "self_seconds": 1.059806626,
+          "cumulative_seconds": 1.070256083
+        },
+        {
+          "file": "encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "primitive_calls": 19169,
+          "total_calls": 19169,
+          "self_seconds": 0.847554004,
+          "cumulative_seconds": 0.847554004
+        },
+        {
+          "file": "src/mars_titan/memory/mechanism_history.py",
+          "line": 43,
+          "function": "_json_only",
+          "primitive_calls": 41,
+          "total_calls": 1282573,
+          "self_seconds": 0.6451968770000001,
+          "cumulative_seconds": 0.7581266870000001
+        },
+        {
+          "file": "src/mars_titan/data/temporal.py",
+          "line": 20,
+          "function": "__init__",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.601236148,
+          "cumulative_seconds": 0.9698360760000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'read' of '_io.BytesIO' objects>",
+          "primitive_calls": 6030774,
+          "total_calls": 6030774,
+          "self_seconds": 0.515658988,
+          "cumulative_seconds": 0.515658988
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'update' of '_hashlib.HASH' objects>",
+          "primitive_calls": 44316,
+          "total_calls": 44316,
+          "self_seconds": 0.413549382,
+          "cumulative_seconds": 0.413549382
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _struct.unpack>",
+          "primitive_calls": 2309123,
+          "total_calls": 2309123,
+          "self_seconds": 0.343144712,
+          "cumulative_seconds": 0.343144712
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'append' of 'list' objects>",
+          "primitive_calls": 2974676,
+          "total_calls": 2974676,
+          "self_seconds": 0.310287974,
+          "cumulative_seconds": 0.310287974
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "primitive_calls": 98131,
+          "total_calls": 98131,
+          "self_seconds": 0.300123629,
+          "cumulative_seconds": 0.34513403600000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'read' of '_io.BufferedReader' objects>",
+          "primitive_calls": 5065,
+          "total_calls": 5065,
+          "self_seconds": 0.279665153,
+          "cumulative_seconds": 0.279665153
+        },
+        {
+          "file": "datetimes.py",
+          "line": 670,
+          "function": "__iter__",
+          "primitive_calls": 488254,
+          "total_calls": 488254,
+          "self_seconds": 0.272287814,
+          "cumulative_seconds": 0.27513982800000003
+        },
+        {
+          "file": "inspect.py",
+          "line": 569,
+          "function": "_getmembers",
+          "primitive_calls": 3305,
+          "total_calls": 3305,
+          "self_seconds": 0.251498158,
+          "cumulative_seconds": 0.6271538080000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _episodic_native.seal_blob>",
+          "primitive_calls": 67,
+          "total_calls": 67,
+          "self_seconds": 0.247257935,
+          "cumulative_seconds": 0.247257935
+        }
+      ]
+    },
+    "fixed_reader": {
+      "total_seconds": 5.370726816000004,
+      "total_calls": 10783299,
+      "top_cumulative": [
+        {
+          "file": "tests/memory/test_mechanism_admission.py",
+          "line": 98,
+          "function": "feedback",
+          "primitive_calls": 4,
+          "total_calls": 4,
+          "self_seconds": 0.0046012380000000005,
+          "cumulative_seconds": 0.993593724
+        },
+        {
+          "file": "tests/memory/test_financial_session.py",
+          "line": 29,
+          "function": "moment",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.0011286380000000002,
+          "cumulative_seconds": 0.9889924860000001
+        },
+        {
+          "file": "src/mars_titan/data/temporal.py",
+          "line": 20,
+          "function": "__init__",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.564149472,
+          "cumulative_seconds": 0.987863848
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 258,
+          "function": "evidence",
+          "primitive_calls": 1792,
+          "total_calls": 1792,
+          "self_seconds": 0.032302662,
+          "cumulative_seconds": 0.9863766060000001
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 277,
+          "function": "verify",
+          "primitive_calls": 1536,
+          "total_calls": 1536,
+          "self_seconds": 0.0028031920000000004,
+          "cumulative_seconds": 0.8589142280000001
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 183,
+          "function": "_confirm",
+          "primitive_calls": 7168,
+          "total_calls": 7168,
+          "self_seconds": 0.007927818,
+          "cumulative_seconds": 0.841966042
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 36,
+          "function": "_signature",
+          "primitive_calls": 7168,
+          "total_calls": 7168,
+          "self_seconds": 0.007305336000000001,
+          "cumulative_seconds": 0.8325439130000001
+        },
+        {
+          "file": "src/mars_titan/data/cohort_files.py",
+          "line": 26,
+          "function": "safe_destination",
+          "primitive_calls": 7168,
+          "total_calls": 7168,
+          "self_seconds": 0.018762545000000002,
+          "cumulative_seconds": 0.7683120870000001
+        },
+        {
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "line": 299,
+          "function": "verify",
+          "primitive_calls": 94,
+          "total_calls": 94,
+          "self_seconds": 0.015749958,
+          "cumulative_seconds": 0.7407642050000001
+        },
+        {
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "line": 144,
+          "function": "_execution_signature",
+          "primitive_calls": 94,
+          "total_calls": 94,
+          "self_seconds": 0.08057033100000001,
+          "cumulative_seconds": 0.621626931
+        },
+        {
+          "file": "src/mars_titan/memory/financial_state_artifacts.py",
+          "line": 44,
+          "function": "_header",
+          "primitive_calls": 65,
+          "total_calls": 65,
+          "self_seconds": 0.005028259,
+          "cumulative_seconds": 0.566196385
+        },
+        {
+          "file": "src/mars_titan/memory/session_artifacts.py",
+          "line": 20,
+          "function": "_payload",
+          "primitive_calls": 399,
+          "total_calls": 258180,
+          "self_seconds": 0.304716352,
+          "cumulative_seconds": 0.548253944
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "primitive_calls": 48712,
+          "total_calls": 53640,
+          "self_seconds": 0.050332704000000006,
+          "cumulative_seconds": 0.47836879400000004
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 194,
+          "function": "_returns",
+          "primitive_calls": 3584,
+          "total_calls": 3584,
+          "self_seconds": 0.00513187,
+          "cumulative_seconds": 0.44352143400000005
+        },
+        {
+          "file": "src/mars_titan/training/prefix_eligibility.py",
+          "line": 229,
+          "function": "_position",
+          "primitive_calls": 1792,
+          "total_calls": 1792,
+          "self_seconds": 0.00398318,
+          "cumulative_seconds": 0.411530518
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1022,
+          "function": "__iter__",
+          "primitive_calls": 71680,
+          "total_calls": 71680,
+          "self_seconds": 0.023553043000000003,
+          "cumulative_seconds": 0.38940190100000005
+        },
+        {
+          "file": "pathlib.py",
+          "line": 277,
+          "function": "__getitem__",
+          "primitive_calls": 71680,
+          "total_calls": 71680,
+          "self_seconds": 0.057465306,
+          "cumulative_seconds": 0.365848858
+        },
+        {
+          "file": "src/mars_titan/data/cohort_files.py",
+          "line": 27,
+          "function": "<genexpr>",
+          "primitive_calls": 78848,
+          "total_calls": 78848,
+          "self_seconds": 0.028484164000000003,
+          "cumulative_seconds": 0.33419951000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 909,
+          "function": "is_symlink",
+          "primitive_calls": 71680,
+          "total_calls": 71680,
+          "self_seconds": 0.040451022,
+          "cumulative_seconds": 0.305715346
+        },
+        {
+          "file": "inspect.py",
+          "line": 611,
+          "function": "getmembers",
+          "primitive_calls": 1728,
+          "total_calls": 1728,
+          "self_seconds": 0.002902029,
+          "cumulative_seconds": 0.30409752
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "primitive_calls": 88591,
+          "total_calls": 88591,
+          "self_seconds": 0.022640818,
+          "cumulative_seconds": 0.303152674
+        },
+        {
+          "file": "inspect.py",
+          "line": 569,
+          "function": "_getmembers",
+          "primitive_calls": 1728,
+          "total_calls": 1728,
+          "self_seconds": 0.12004141900000001,
+          "cumulative_seconds": 0.30119549100000004
+        },
+        {
+          "file": "src/mars_titan/memory/episodic_session.py",
+          "line": 742,
+          "function": "snapshot",
+          "primitive_calls": 13,
+          "total_calls": 13,
+          "self_seconds": 0.004632758000000001,
+          "cumulative_seconds": 0.297430593
+        },
+        {
+          "file": "datetimes.py",
+          "line": 670,
+          "function": "__iter__",
+          "primitive_calls": 434304,
+          "total_calls": 434304,
+          "self_seconds": 0.28370868,
+          "cumulative_seconds": 0.28549634500000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "primitive_calls": 88591,
+          "total_calls": 88591,
+          "self_seconds": 0.24371363000000001,
+          "cumulative_seconds": 0.280511856
+        }
+      ],
+      "top_self": [
+        {
+          "file": "src/mars_titan/data/temporal.py",
+          "line": 20,
+          "function": "__init__",
+          "primitive_calls": 192,
+          "total_calls": 192,
+          "self_seconds": 0.564149472,
+          "cumulative_seconds": 0.987863848
+        },
+        {
+          "file": "src/mars_titan/memory/session_artifacts.py",
+          "line": 20,
+          "function": "_payload",
+          "primitive_calls": 399,
+          "total_calls": 258180,
+          "self_seconds": 0.304716352,
+          "cumulative_seconds": 0.548253944
+        },
+        {
+          "file": "datetimes.py",
+          "line": 670,
+          "function": "__iter__",
+          "primitive_calls": 434304,
+          "total_calls": 434304,
+          "self_seconds": 0.28370868,
+          "cumulative_seconds": 0.28549634500000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "primitive_calls": 88591,
+          "total_calls": 88591,
+          "self_seconds": 0.24371363000000001,
+          "cumulative_seconds": 0.280511856
+        },
+        {
+          "file": "_weights_only_unpickler.py",
+          "line": 315,
+          "function": "load",
+          "primitive_calls": 0,
+          "total_calls": 168,
+          "self_seconds": 0.227704607,
+          "cumulative_seconds": 0.0
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _episodic_native.seal_blob>",
+          "primitive_calls": 50,
+          "total_calls": 50,
+          "self_seconds": 0.178434228,
+          "cumulative_seconds": 0.178434228
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "primitive_calls": 1760621,
+          "total_calls": 1760621,
+          "self_seconds": 0.168024385,
+          "cumulative_seconds": 0.16928694600000002
+        },
+        {
+          "file": "inspect.py",
+          "line": 569,
+          "function": "_getmembers",
+          "primitive_calls": 1728,
+          "total_calls": 1728,
+          "self_seconds": 0.12004141900000001,
+          "cumulative_seconds": 0.30119549100000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _hashlib.openssl_sha256>",
+          "primitive_calls": 11684,
+          "total_calls": 11684,
+          "self_seconds": 0.113947643,
+          "cumulative_seconds": 0.113947643
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'astimezone' of 'datetime.datetime' objects>",
+          "primitive_calls": 289152,
+          "total_calls": 289152,
+          "self_seconds": 0.10766060400000001,
+          "cumulative_seconds": 0.10766060400000001
+        },
+        {
+          "file": "serialization.py",
+          "line": 2183,
+          "function": "persistent_load",
+          "primitive_calls": 1,
+          "total_calls": 181,
+          "self_seconds": 0.082735584,
+          "cumulative_seconds": 0.00022204800000000003
+        },
+        {
+          "file": "src/mars_titan/models/titans/frozen_financial.py",
+          "line": 144,
+          "function": "_execution_signature",
+          "primitive_calls": 94,
+          "total_calls": 94,
+          "self_seconds": 0.08057033100000001,
+          "cumulative_seconds": 0.621626931
+        },
+        {
+          "file": "encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "primitive_calls": 13861,
+          "total_calls": 13861,
+          "self_seconds": 0.07916092000000001,
+          "cumulative_seconds": 0.07916092000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'read' of '_io.BytesIO' objects>",
+          "primitive_calls": 849666,
+          "total_calls": 849666,
+          "self_seconds": 0.069089512,
+          "cumulative_seconds": 0.069089512
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "primitive_calls": 407279,
+          "total_calls": 543476,
+          "self_seconds": 0.06583889100000001,
+          "cumulative_seconds": 0.089008262
+        }
+      ]
+    }
+  }
+}

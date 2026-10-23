@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "kind": "native_asof_order_quality_v1",
+  "coverage_input": {
+    "name": "coverage-complete.json",
+    "sha256": "1534059899d2d663d120e8c6702e18bcde38bb70b088c81f39d23201f2510d1c",
+    "bytes": 15866
+  },
+  "crap_input": {
+    "name": "crap-complete.json",
+    "sha256": "6b8bd4760bd207b8c39774c5f89182f85d75886a7107adfe17d5337b05ec34d6",
+    "bytes": 6607
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "totals": {
+    "statements": 184,
+    "covered_statements": 184,
+    "branches": 34,
+    "covered_branches": 34
+  },
+  "functions_measured": 13,
+  "files": [
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "source_sha256": "8524998af87040ca2390cfa44fd84bc8bdb98d76ef20caf989a4314ac5c36ca7",
+      "summary": {
+        "covered_lines": 104,
+        "num_statements": 104,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 20,
+        "num_partial_branches": 0,
+        "covered_branches": 20,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      }
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "source_sha256": "16c838af74b3da95bd2057dbceecae6499b6bccb67b33865ad862becd1bc51a3",
+      "summary": {
+        "covered_lines": 80,
+        "num_statements": 80,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 14,
+        "num_partial_branches": 0,
+        "covered_branches": 14,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      }
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_receive",
+      "start_line": 41,
+      "end_line": 82,
+      "cyclomatic_complexity": 12,
+      "statements": 18,
+      "covered_statements": 18,
+      "coverage_fraction": 1.0,
+      "branches": 10,
+      "covered_branches": 10,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_prefix",
+      "start_line": 98,
+      "end_line": 180,
+      "cyclomatic_complexity": 12,
+      "statements": 48,
+      "covered_statements": 48,
+      "coverage_fraction": 1.0,
+      "branches": 10,
+      "covered_branches": 10,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "function": "iter_fit_windows",
+      "start_line": 55,
+      "end_line": 153,
+      "cyclomatic_complexity": 11,
+      "statements": 40,
+      "covered_statements": 40,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 11.0
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "function": "audit_fit_windows",
+      "start_line": 156,
+      "end_line": 176,
+      "cyclomatic_complexity": 9,
+      "statements": 13,
+      "covered_statements": 13,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 9.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "collections_at",
+      "start_line": 227,
+      "end_line": 266,
+      "cyclomatic_complexity": 5,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 5.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_Collection.receive",
+      "start_line": 20,
+      "end_line": 28,
+      "cyclomatic_complexity": 3,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_check_event_order",
+      "start_line": 85,
+      "end_line": 95,
+      "cyclomatic_complexity": 3,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "function": "MechanismFitWindow.__post_init__",
+      "start_line": 27,
+      "end_line": 43,
+      "cyclomatic_complexity": 3,
+      "statements": 7,
+      "covered_statements": 7,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "function": "_require",
+      "start_line": 14,
+      "end_line": 16,
+      "cyclomatic_complexity": 2,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_Collection.__init__",
+      "start_line": 14,
+      "end_line": 18,
+      "cyclomatic_complexity": 1,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "_Collection.record",
+      "start_line": 30,
+      "end_line": 38,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/memory/mechanism_collection_asof.py",
+      "function": "collection_at",
+      "start_line": 183,
+      "end_line": 224,
+      "cyclomatic_complexity": 1,
+      "statements": 6,
+      "covered_statements": 6,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/training/mechanism_fit_window.py",
+      "function": "_read",
+      "start_line": 46,
+      "end_line": 52,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "limits": [
+    "Solo se midieron las dos fuentes enumeradas, no todo el repositorio.",
+    "La cobertura de sentencias y ramas no acredita todas las combinaciones booleanas.",
+    "CRAP combina complejidad y cobertura observada. No demuestra ausencia de errores.",
+    "Los tiempos instrumentados no son costes de ejecución del lector."
+  ]
+}

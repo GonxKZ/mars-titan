@@ -1,0 +1,39 @@
+{
+  "recorded_at_utc": "2026-10-21T21:20:32.242141+00:00",
+  "scope": "separate_paired_256_k4_run_with_explicit_64_row_planning",
+  "reason": "original_run_stopped_because_regional_planning_256_requested_K4_fell_back_to_K1_with_reader_budget",
+  "original_protocol_sha256": "b5f5f6fe9f432ec6ad38cf588281ec022b59a34f05760431ed4159dc21e23b1e",
+  "original_source_sha256": "abbcd04c4d3eddf1397d0bd84d894fa4c380afcc87fbb9bc7d935cca336396b4",
+  "source_sha256": "08cd4c9893756347e0ad62996f121e332c85920c7b319a1ec32be676ab475637",
+  "rows": [
+    256
+  ],
+  "routes": [
+    "k4cr"
+  ],
+  "modes": [
+    "legacy",
+    "regional"
+  ],
+  "reader_max_batch": 64,
+  "physical_block_rows": 64,
+  "max_working_bytes": 33554432,
+  "precision": "float64",
+  "device": "cuda:0",
+  "warmup": 1,
+  "repetitions": 3,
+  "maximum_process_seconds": 300,
+  "requested_work_assertion_preserved": true,
+  "original_run_retained": true,
+  "production_sources_changed": false,
+  "dispatch_and_configuration_changes": [
+    "explicit_size_and_route_filters",
+    "explicit_reader_max_batch_64_both_modes"
+  ],
+  "not_pooled_with_original_run": true,
+  "new_archive": true,
+  "own_concurrent_workloads": 0,
+  "scientific_evaluation": false,
+  "optimizer_steps": 0,
+  "hardware_before": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 5966 MiB, 13 %, 595.91.07"
+}

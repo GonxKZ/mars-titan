@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "status": "technical_fixture_protocol_not_predictive_evaluation",
+  "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+  "arms": {
+    "legacy_self_uniform_interleaved": {"selection": "fixed", "program": "summary_interleaved_v1", "context_threshold": null},
+    "hierarchy_tree_local": {"topology": "tree", "groups": [[0, 2], [1, 3, 4]], "feedback": true, "readout": "local_only"},
+    "hierarchy_star_local": {"topology": "star", "groups": [[0, 2], [1, 3, 4]], "feedback": true, "readout": "local_only"},
+    "hierarchy_permuted_tree_local": {"topology": "tree", "groups": [[0, 1], [2, 3, 4]], "feedback": true, "readout": "local_only"},
+    "hierarchy_tree_no_feedback_local": {"topology": "tree", "groups": [[0, 2], [1, 3, 4]], "feedback": false, "readout": "local_only"},
+    "hierarchy_flat_local": {"topology": "flat_control", "groups": [[0, 2], [1, 3, 4]], "feedback": true, "readout": "local_only"},
+    "hierarchy_tree_common_skip": {"topology": "tree", "groups": [[0, 2], [1, 3, 4]], "feedback": true, "readout": "common_skip"},
+    "hierarchy_flat_common_skip": {"topology": "flat_control", "groups": [[0, 2], [1, 3, 4]], "feedback": true, "readout": "common_skip"}
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "registered_at_utc": "2026-10-21T16:25:59.002709+00:00",
+  "code_commit": "84778ea236558e57e1640cf807d63f36501b7799",
+  "source_sha256": {
+    "reports/engineering/bank-write-20261021/benchmark.py": "2e8f4bf7e5205dc5624decab29d633566df02d44bbbdde6ae90b3a04f28b70ae",
+    "reports/engineering/bank-readout-20261021/benchmark.py": "3f7b78faf57d91f6d4b3acad3ab69f150a332ca7156ac2900d4cea57a7df9e5d",
+    "reports/engineering/mechanism-session-20261021/benchmark.py": "3cd54926c7a12b33ba90eaea9b4c4d5a0444ce2727b2a145edd497de63f8c3bf",
+    "configs/experiments/bank-write-v1.json": "188b9ab0a4478ffc3f26464a6486cff730f0880f03f674545a149f27c64209f6",
+    "configs/experiments/bank-readout-v1.json": "ed9770420167e95571d11b35ddb602efdeeb4a40ffdba42225dd33c0148eda39",
+    "configs/experiments/bank-readout-recipe-v1.json": "4c00f470d8f19580880fb7f15e6951829f887cb620a6a57200c3527c8da8ccaa",
+    "src/mars_titan/models/titans/bank_readout.py": "eb8853e99e7de816197d19dc3a957db8d7ed00d69d638ab29e7aca3bda17e8a3",
+    "src/mars_titan/models/titans/config.py": "119f71fd5dfb4a8e81633bbd1c6ba1e06e04ecdfcbd2c8edd94871bdbd390780",
+    "src/mars_titan/models/titans/neural_memory.py": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+    "src/mars_titan/models/titans/financial.py": "b76a2c92e4953c8338bca2bcd603515c4da0bd66f0fc9245bac8bc3609963701",
+    "src/mars_titan/models/titans/financial_blocks.py": "20debec174fe1196f18bb66566153a3fd780ca189fcbb316d58d5c7665753a15",
+    "src/mars_titan/models/titans/state.py": "01c17150f6f15d179d8cdd1ef03abcef8ca66fcace2095345702860bdefa24e2",
+    "src/mars_titan/models/titans/transition_jacobian.py": "cfc97424ab8493c6e8919a4464db5ae1351f4f625d076852cc0d5363864a30f5"
+  },
+  "memory": {
+    "rows": [
+      1,
+      64,
+      256
+    ],
+    "dtype": [
+      "float32",
+      "float64"
+    ],
+    "rules": [
+      "common_translation",
+      "mean_partial",
+      "per_bank"
+    ],
+    "hidden_size": 64,
+    "depth": 2,
+    "warmup": 3,
+    "repetitions": 20,
+    "initial_state": "same_weights_zero_momentum"
+  },
+  "financial": {
+    "rows": [
+      1,
+      64,
+      256
+    ],
+    "dtype": "float32",
+    "arms": 7,
+    "block_rows": 64,
+    "prefix_observations": 3,
+    "warmup": 3,
+    "repetitions": 20,
+    "scope": "input_validation_h2d_internal_encoders_mac_head_proposal",
+    "max_batch": 128
+  },
+  "native": {
+    "rows": [
+      4,
+      256
+    ],
+    "dtype": "float32",
+    "rules": [
+      "mean_partial",
+      "per_bank"
+    ],
+    "block_rows": 64,
+    "warmup": 1,
+    "repetitions": 4,
+    "scope": "existing_trajectory_open_warmup_three_decisions_feedback_close_publication_trace_disk_accounting_and_closed_phase_recovery",
+    "resident_models": 2,
+    "max_batch": 256
+  },
+  "expected_conditions": 43,
+  "expected_timed_calls": 796,
+  "order": "memory_and_financial_fixed_descriptive_native_alternated",
+  "device": "cuda:0",
+  "real_corpus": false,
+  "optimizer_steps": 0,
+  "tf32": false,
+  "autocast": false,
+  "own_parallel_workloads": false,
+  "other_apps_stopped": false,
+  "energy_measured": false,
+  "scientific_budget_unchanged": true,
+  "previous_incomplete_run_sha256": "e47ecb0d32f847d337994ac174db61dfa0658d5bf70723d9e6169f50bb3817ed",
+  "change_before_complete_run": "La cohorte nativa de 256 flujos superó max_batch=128. Su configuración de coste declara max_batch=256 en las dos reglas, bloques de 64 y el mismo límite de estado de 128 MiB. La receta de entrenamiento y la preparación financiera siguen en 128. No se modificó el guardia ni el código de producción.",
+  "raw_registration_sha256": "658f9ae54869d7df2ac414a62be422b02a0db452d0783fd1735c611546b104bf",
+  "post_measurement_clarification": "El componente neuronal aislado usa max_batch256 desde el primer intento, como muestra su configuración y fuente. La frase anterior sobre componentes128 se refiere a la preparación financiera. No se cambió ese parámetro después de medir.",
+  "presentation": "Resumen en español de los valores registrados. El SHA identifica el registro original conservado fuera de Git."
+}

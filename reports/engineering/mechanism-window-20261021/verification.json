@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-21T15:03:50.251708+00:00",
+  "code_commit": "abd288ee0d29087e2c621f6d82cfb6b25a314d20",
+  "counts": {
+    "tests": 222,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "marked_cuda": 33,
+  "new_tests": 24,
+  "new_marked_cuda": 2,
+  "warnings": 0,
+  "seconds": 464.896,
+  "scope": "selected_regression_not_entire_repository",
+  "scientific_evaluation": false,
+  "optimizer_steps": 0,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "sources": {
+    "src/mars_titan/memory/financial_session.py": "8e6385b54774237e98b8e734cda0483f39d1c70b4682e78bdacba3556fb33a6b",
+    "src/mars_titan/memory/mechanism_collection_asof.py": "a174426d46f3ff528e3545985e5975e5b1eeb975ad5ddafd5c18fa44ac9d006f"
+  },
+  "junit_sha256": "47acef80aafe95bde470fbcb65b0eefc7ff43fba12a461ff8f803592d20915fc",
+  "cuda_collection_sha256": "ff2152e36ba541a3f210b81ae1e52366189b91acbee05807580528de2e9a27ef",
+  "learning": "No se ha ejecutado el lector científico, la normalización o el solver de ajuste del selector."
+}

@@ -17,7 +17,7 @@ from mars_titan.models.candidate.frozen_consumer import FrozenCandidateConsumer
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import candidate_bank, flow_cursors, write_policy, write_scores
+from . import candidate_bank, flow_cursors, regional_episode_trace, write_policy, write_scores
 from .candidate_bank import CandidateBankConfig, CandidateEpisodeBank, CandidateEpisodes
 from .episodic_codec import FrozenEpisodeCodec
 from .financial_state_artifacts import FinancialStateArtifacts
@@ -201,6 +201,16 @@ class TitansBinding:
 
     def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
         model = self.consumer.predictor
+        trace = None
+        if regional_episode_trace.enabled(self.consumer.readout) and not warmup:
+            trace = regional_episode_trace.begin(
+                self.consumer.readout,
+                tuple(row.flow_id for row in rows),
+                snapshot,
+                context_id=context_id,
+                cutoff=rows[0].prediction_at,
+                block_rows=batch_rows,
+            )
         selection = None
         if model.local_control is not None and model.local_control.config.mode != "disabled":
             steps = torch.tensor(
@@ -229,6 +239,8 @@ class TitansBinding:
             fast = session._fast_store.replace(fast, previous, result.next_state)
             if not warmup:
                 values.extend(result.point_predictions.detach().cpu().tolist())
+                if trace is not None:
+                    regional_episode_trace.append(trace, batch.flow_ids, result.readout)
             if result.local_control is not None:
                 measured = result.local_control
                 measurements.append(
@@ -256,7 +268,59 @@ class TitansBinding:
             reevaluations=sum(m["reevaluations"] for m in measurements),
             group_estimated_bytes=selection.estimated_bytes if selection else 0,
         )
+        control.update(model.operation_counts(len(rows)))
+        if trace is not None:
+            control["regional_reads"] = trace
+            reader = self.consumer.readout
+            selected = 0 if snapshot is None else min(snapshot.count, reader.config.neighbors)
+            searches = (
+                1 if reader.config.episode_selection == "first_read" else reader.config.refinements
+            )
+            control.update(
+                bridge_candidate_queries=len(rows) * searches if selected else 0,
+                bridge_projected_episode_rows=len(rows) * selected * reader.config.refinements,
+                bridge_region_reads=len(rows)
+                * len(reader.config.evidence_bridge.regions)
+                * reader.config.refinements
+                if selected
+                else 0,
+            )
         return values, fast, control
+
+    def verify_regional_control(self, control, flows, cutoff, block_rows):
+        if regional_episode_trace.enabled(self.consumer.readout):
+            regional_episode_trace.verify(
+                control.get("regional_reads"),
+                self.consumer.readout,
+                flows=flows,
+                context_id=control.get("context_id"),
+                cutoff=cutoff,
+                refinements=control.get("refinements"),
+                block_rows=block_rows,
+            )
+            trace = control.get("regional_reads")
+            if trace is not None:
+                reader = self.consumer.readout
+                size = reader.step_logit.element_size()
+                episodes, steps = trace["episodes"], reader.config.refinements
+                selected = min(episodes, reader.config.neighbors)
+                searches = 1 if reader.config.episode_selection == "first_read" else steps
+                expected = dict(
+                    bridge_candidate_queries=len(flows) * searches if selected else 0,
+                    bridge_projected_episode_rows=len(flows) * selected * steps,
+                    bridge_region_reads=len(flows)
+                    * len(reader.config.evidence_bridge.regions)
+                    * steps
+                    if selected
+                    else 0,
+                )
+                if control["snapshot_bytes"] != episodes * (64 * (8 + size) + 40) or any(
+                    type(control.get(name)) is not int or control[name] != value
+                    for name, value in expected.items()
+                ):
+                    raise ValueError("Los contadores regionales contradicen la traza y snapshot")
+        elif "regional_reads" in control:
+            raise ValueError("El lector anterior no acepta trazas regionales implícitas")
 
     def propose(self, native, bank, pending, admitted, episodes, *, confirmed_at, features=None):
         incoming = [
@@ -396,4 +460,10 @@ def bind_consumer(consumer, codec, retention, admission):
         return TitansBinding(consumer, codec, retention, admission)
     if type(consumer) is FrozenCandidateConsumer:
         return CandidateBinding(consumer, codec, retention, admission)
+    from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
+
+    if type(consumer) is FrozenMechanismConsumer:
+        from .financial_mechanisms import MechanismBinding
+
+        return MechanismBinding(consumer, codec, retention, admission)
     raise ValueError(ADMISSION_ERROR)

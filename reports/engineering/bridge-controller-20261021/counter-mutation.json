@@ -1,0 +1,39 @@
+{
+  "scope": "strict_integer_projection_counter",
+  "baseline": {
+    "exit_code": 0,
+    "seconds": 11.698454617056996,
+    "log_sha256": "e4c0661ecdd15bff35c853836eed868840c393802bb1ea13871ff2bec921ff0a",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mutation": {
+    "name": "accept_boolean_or_float_zero_counter",
+    "before": "type(control[\"work\"].get(\"bridge_value_projections\")) is not int",
+    "after": "False",
+    "exit_code": 1,
+    "seconds": 12.450857150019147,
+    "log_sha256": "bc593961840ee1dab8d754700960608b89cb2254f6082c05c34083d418a7c152",
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "restored": {
+    "exit_code": 0,
+    "seconds": 12.048245504964143,
+    "log_sha256": "0d94bbd31c4aa9be0b14d59acecc4922cd250d2e64d2ee5984f0dae3aaabba24",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_sha256": {
+    "src/mars_titan/memory/financial_mechanisms.py": "c4445ab7f314fc8402fcba91d29909842799564b574e5d31e35becdcca7d96a2"
+  },
+  "tests_sha256": {
+    "tests/memory/test_bridge_mechanism_session.py": "55d722d58cdae5d6c631f93bcf80c89309f2ede8156401b9f7c8962e8f95ef61"
+  }
+}

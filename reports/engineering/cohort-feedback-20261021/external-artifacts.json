@@ -1,0 +1,70 @@
+{
+  "storage": "Artefactos locales fuera de Git. Rutas relativas al directorio de esta ejecución.",
+  "artifacts": [
+    {
+      "relative_path": "final.xml",
+      "bytes": 12146,
+      "sha256": "e1c38e44c57c6ed62655044fc8c936addfa9c6904c8bb8b623bcd03778721f86"
+    },
+    {
+      "relative_path": "coverage-final.json",
+      "bytes": 42345,
+      "sha256": "d5ca8970bdae63f03186fbd4adbd5810c296516c6e442a6e4d2fd57636903525"
+    },
+    {
+      "relative_path": "benchmark.py",
+      "bytes": 6434,
+      "sha256": "d7469d283bfaa0eb7dab24f1c6ad3e33183cfd84af9fd32e2b9920170a24b9e5"
+    },
+    {
+      "relative_path": "benchmark-v2-executed.py",
+      "bytes": 7601,
+      "sha256": "2dbf0be453f8b6ebfd3222f7f924886fa3a778df3b00c57f304b7d503168e05e"
+    },
+    {
+      "relative_path": "mutate.py",
+      "bytes": 5559,
+      "sha256": "a8137e0b75af158f3f85aa2d2bdaf37d8a47359b6a258cbf40d5a9ee639cb481"
+    },
+    {
+      "relative_path": "mutate-v2.py",
+      "bytes": 5789,
+      "sha256": "032c1cf165b401b78c348d5be0201e7f670b3d75f8c40e21932f085db8747fb0"
+    },
+    {
+      "relative_path": "profile-v1.pstats",
+      "bytes": 19673,
+      "sha256": "463cc2f9336dacb70d4297df77d7a50345f83567c3392850f7fa30f25d2eff23"
+    },
+    {
+      "relative_path": "benchmark-process.txt",
+      "bytes": 918,
+      "sha256": "45073abece69528cc3863e8b5d20c164f70586e5860024982b07285f5a017157"
+    },
+    {
+      "relative_path": "benchmark-process-v2.txt",
+      "bytes": 894,
+      "sha256": "b4df31b7e68a27d1df52395e842592d09b7af344fc23886e2f77531e38609756"
+    },
+    {
+      "relative_path": "benchmark-process-v3.txt",
+      "bytes": 893,
+      "sha256": "38e774bbe0e2a5dfa1f657cde256ffb8748049cc16730c9ce03688edde239697"
+    },
+    {
+      "relative_path": "benchmark-v3-executed.py",
+      "bytes": 7701,
+      "sha256": "0b733547d713548405dc2e3b1005f9f4dcf79ab3a6b149ba47fd561684e34a2c"
+    },
+    {
+      "relative_path": "benchmark-process-v4.txt",
+      "bytes": 895,
+      "sha256": "bb2418cb610bf19c307e2c6f2f7d1d9d38e17d4c1b37b85c661dd6fdd0302c48"
+    },
+    {
+      "relative_path": "benchmark-process-v5.txt",
+      "bytes": 895,
+      "sha256": "b16f856a7231d8714e4130c8f276a560551217c6cd005d88690db8d3ee1fdbee"
+    }
+  ]
+}
