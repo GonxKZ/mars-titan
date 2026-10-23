@@ -511,6 +511,118 @@ def test_full_short_epochs_seal_configuration_before_first_update(
 
 
 @requires_cuda
+@pytest.mark.parametrize(
+    "arm",
+    [
+        "transformer-bp-adamw",
+        "kronlstm-bp-adamw",
+        "vector-delta-bp-adamw",
+        "transformer-dust-adamw",
+        "transformer-bp-sgd",
+        "transformer-dust-sgd",
+    ],
+)
+def test_six_published_routes_complete_fixture_updates_and_recover_checkpoint(
+    short_view, tmp_path, monkeypatch, allowed_child, arm
+):
+    from mars_titan.models.baselines.transformer import CompactPriceTransformer
+    from mars_titan.models.kronlstm import CompactPriceKronLSTM
+    from mars_titan.training.dust import DustEstimator, FinancialDustAdapter
+
+    api = engine()
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "configs/experiments/window-variants-pilot-month-v3"
+        / f"{arm}.json"
+    )
+    published = json.loads(path.read_text())
+    # Solo se adapta el intervalo de la fixture, una época, su lote y los límites técnicos.
+    adapted = dict(
+        train_start="2015-01-01",
+        train_end="2015-04-01",
+        validation_start="2015-04-01",
+        validation_end="2015-05-01",
+        epochs=1,
+        batch_size=2,
+        max_seconds=120.0,
+        max_output_bytes=64 * 1024**2,
+        max_cuda_bytes=512 * 1024**2,
+        cache_bytes=1024**2,
+        checkpoint_steps=1,
+    )
+    configuration = api.WindowVariantRecipe(**(published | adapted))
+    assert configuration.loss == published["loss"] == "mae"
+    optimizer_type = torch.optim.AdamW if published["optimizer"] == "adamw" else torch.optim.SGD
+    real_update, real_step = api._update_window, optimizer_type.step
+    seen, steps = [], []
+
+    def observed_update(model, estimator, optimizer, batch, options, device):
+        predictor = model.predictor
+        encoder = predictor.price_encoder
+        expected_encoder = (
+            CompactPriceTransformer
+            if published["temporal_encoder"] is None
+            else CompactPriceKronLSTM
+        )
+        assert type(encoder) is expected_encoder
+        assert predictor.config.temporal_encoder == published["temporal_encoder"]
+        if published["temporal_encoder"] is not None:
+            expected_rule = "scalar" if arm.startswith("kronlstm") else "vector"
+            assert encoder.configuration["rule"] == expected_rule
+            assert all(block.rule == expected_rule for block in encoder.blocks)
+        assert type(optimizer) is optimizer_type
+        parameters = sum(p.numel() for p in predictor.parameters())
+        assert parameters > 1000 and str(device) == "cuda:0"
+        if published["estimator"] == "dust":
+            assert type(estimator) is DustEstimator
+            assert type(estimator.adapter) is FinancialDustAdapter
+            assert estimator.loss == "mae"
+            assert estimator.config.population == 16 and estimator.config.chunk_size == 8
+            assert estimator.config.max_workspace_bytes == 512 * 1024**2
+        else:
+            assert estimator is None
+        result = real_update(model, estimator, optimizer, batch, options, device)
+        seen.append((tuple(batch["sample_ids"]), parameters))
+        return result
+
+    def observed_step(optimizer, *args, **kwargs):
+        steps.append(type(optimizer))
+        return real_step(optimizer, *args, **kwargs)
+
+    monkeypatch.setattr(api, "_update_window", observed_update)
+    monkeypatch.setattr(optimizer_type, "step", observed_step)
+    output = tmp_path / arm
+    report = api.run_window_variant(short_view, output, configuration)
+    assert report["status"] == "completed" and report["device"] == "cuda:0"
+    assert report["global_step"] == report["work"]["optimizer_updates"] == 3
+    assert steps == [optimizer_type] * 3 and len(seen) == 3
+    assert report["parameters"] == seen[0][1] > 1000
+    assert report["samples"] == dict(train=6, validation=4)
+    assert len(report["epochs"]) == 1 and report["epochs"][0]["train"]["samples"] == 6
+    assert report["identity"]["recipe"] == configuration.identity()
+    assert report["final_test_opened"] is False
+    assert report["identity"]["final_test_access"] is False
+    assert report["evaluation_scope"]["final_test"] == "closed"
+    trained_ids = [sample for samples, _ in seen for sample in samples]
+    assert len(trained_ids) == len(set(trained_ids)) == 6
+    for partition, count in (("train", 6), ("validation", 4)):
+        reference = report["predictions"][partition]
+        prediction = output / reference["path"]
+        rows = pq.read_table(prediction).to_pylist()
+        assert len(rows) == len({row["sample_id"] for row in rows}) == count
+        if partition == "train":
+            assert {row["sample_id"] for row in rows} == set(trained_ids)
+    saved = load_training_state(output / "checkpoints", expected_identity=report["identity"])
+    assert saved["global_step"] == 3 and saved["epoch"] == 1 and saved["cursor"] is None
+    assert {"model", "optimizer", "rng", "selection", "estimator"} <= saved.keys()
+    if published["estimator"] == "dust":
+        assert saved["estimator"]["steps"] == 3
+        assert saved["estimator"]["totals"]["logical_rows"] == 6
+    else:
+        assert saved["estimator"] is report["estimator"] is None
+
+
+@requires_cuda
 @pytest.mark.parametrize("estimator", ["backprop", "dust"])
 def test_resume_restores_exact_optimizer_rng_cursor_and_weights(
     short_view, tmp_path, monkeypatch, allowed_child, estimator
