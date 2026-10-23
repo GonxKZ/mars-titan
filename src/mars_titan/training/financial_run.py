@@ -857,10 +857,12 @@ class ChronologicalTrainer(ChronologicalInference):
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
-    @staticmethod
-    def _code():
+    def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        return {**_implementation(), **own}
+        return {
+            **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
+            **own,
+        }
 
     def _check_runtime(self):
         if (

@@ -63,7 +63,7 @@ _SOURCES = (
 )
 
 
-def _code(*, policy=False, hierarchy=False):
+def _code(*, policy=False, hierarchy=False, kronlstm=False):
     sources = _SOURCES + (
         (
             "mars_titan.models.titans.mechanism_policy",
@@ -73,7 +73,7 @@ def _code(*, policy=False, hierarchy=False):
         if policy
         else ()
     )
-    implementation = _implementation(hierarchy=True) if hierarchy else _implementation()
+    implementation = _implementation(hierarchy=hierarchy, kronlstm=kronlstm)
     return implementation | {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -200,6 +200,7 @@ class FrozenMechanismConsumer:
             _code(
                 policy=policy is not None,
                 hierarchy=type(predictor.regional_execution) is RegionalHierarchy,
+                kronlstm=predictor.config.temporal_encoder is not None,
             ),
             _numerics(),
         )
@@ -315,6 +316,7 @@ class FrozenMechanismConsumer:
                 or _code(
                     policy=self.policy is not None,
                     hierarchy=type(self.predictor.regional_execution) is RegionalHierarchy,
+                    kronlstm=self.predictor.config.temporal_encoder is not None,
                 )
                 != self._code
             ):

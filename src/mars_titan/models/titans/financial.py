@@ -141,8 +141,14 @@ class FinancialConfig:
     regional_fusion: RegionalFusionConfig | None = None
     regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
     memory_bank_readout: BankReadoutConfig | None = None
+    temporal_encoder: str | None = None
 
     def __post_init__(self):
+        if self.temporal_encoder is not None and (
+            type(self.temporal_encoder) is not str
+            or self.temporal_encoder not in {"kronlstm_v1", "vector_delta_v1"}
+        ):
+            raise ValueError("temporal_encoder no identifica un codificador de ventana admitido")
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
             raise ValueError("El predictor necesita una entrada y un control identificados")
         if not isinstance(self.head, str) or self.head not in HEADS:
@@ -345,6 +351,11 @@ class FinancialConfig:
             result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
         if self.quantile_routing is not None:
             result.update(quantile_routing=self.quantile_routing.identity())
+        if self.temporal_encoder is not None:
+            result.update(
+                temporal_encoder=self.temporal_encoder,
+                temporal_input_projection="shared_transformer_initialization_v1",
+            )
         # Sin bias declarado la identidad no cambia. Se registra en todas las variantes para
         # que el emparejamiento desde mac_online compare la misma configuración.
         if self.gate_bias is not None:
@@ -484,6 +495,22 @@ class FinancialPredictor(nn.Module):
             # iniciales que la variante escalar con la misma semilla.
             if config.head == QUANTILE_HEAD:
                 self.head = QuantileHead(config.hidden_size, routing=config.quantile_routing)
+        if config.temporal_encoder is not None:
+            from mars_titan.models.kronlstm import CompactPriceKronLSTM
+
+            input_projection = self.price_encoder.projection
+            # La semilla propia no cambia los parámetros de fusión, cabeza ni Titans.
+            with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+                torch.random.default_generator.manual_seed(config.seed)
+                self.price_encoder = CompactPriceKronLSTM(
+                    config.inputs.dimensions["prices"],
+                    context=config.inputs.context,
+                    hidden_size=config.hidden_size,
+                    layers=config.layers,
+                    max_batch=config.max_batch,
+                    rule="scalar" if config.temporal_encoder == "kronlstm_v1" else "vector",
+                )
+            self.price_encoder.projection.load_state_dict(input_projection.state_dict())
         # PT6 se construye después del tronco y sin el generador global, así que el resto de
         # pesos coincide con el control de la misma semilla.
         self.presence_modulation = (
@@ -720,6 +747,8 @@ class FinancialPredictor(nn.Module):
         return super().load_state_dict(state_dict, strict=strict, assign=assign)
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, *args, **kwargs):
+        if self.config.temporal_encoder is not None:
+            self.price_encoder.validate_payload(state_dict, prefix + "price_encoder.")
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(state_dict, prefix + "regional_execution.")
