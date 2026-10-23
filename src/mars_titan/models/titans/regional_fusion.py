@@ -287,6 +287,14 @@ class RegionalFusion(nn.Module):
         return presence
 
     def forward(self, blocks, presence):
+        return self._execute(
+            blocks,
+            presence,
+            cycles=self.config.cycles,
+            local_steps=self.config.local_steps,
+        )
+
+    def _execute(self, blocks, presence, *, cycles, local_steps, context_seed=None, observe=None):
         presence = self._checked_presence(blocks, presence)
         if torch.is_autocast_enabled(blocks.device.type):
             raise ValueError("La fusión regional exige FP32 o FP64 explícitos, sin autocast")
@@ -296,15 +304,17 @@ class RegionalFusion(nn.Module):
             initial = torch.where(mask, blocks, torch.zeros_like(blocks))
             local = initial
             summary = blocks.new_zeros(len(blocks), self.hidden_size)
-            context = summary.unsqueeze(1)
+            context = summary.unsqueeze(1) if context_seed is None else context_seed.unsqueeze(1)
             count = presence.sum(1, keepdim=True).clamp_min(1).to(blocks.dtype)
             active = presence.any(1, keepdim=True)
             allowed = self.edges.unsqueeze(0) & presence.unsqueeze(1)
             # Las consultas ausentes solo ven su propio cero y se anulan después.
             diagonal = torch.eye(len(MODALITIES), dtype=torch.bool, device=blocks.device)
             allowed = allowed | (diagonal.unsqueeze(0) & ~presence.unsqueeze(-1))
-            for _ in range(self.config.cycles):
-                for _ in range(self.config.local_steps):
+            for _ in range(cycles):
+                for _ in range(local_steps):
+                    if observe is not None:
+                        observe("local")
                     normalized = self.local_norm(local + context)
                     check_finite(normalized, "La normalización regional")
                     normalized = torch.where(mask, normalized, torch.zeros_like(normalized))
@@ -322,6 +332,8 @@ class RegionalFusion(nn.Module):
                     local = torch.where(mask, updated, torch.zeros_like(updated))
                     check_finite(local, "El estado regional local")
                 if self.config.summary:
+                    if observe is not None:
+                        observe("summary")
                     pooled = local.sum(1) / count
                     update = self.summary_update(self.summary_norm(summary) + pooled)
                     check_finite(update, "La actualización del resumen regional")
@@ -329,6 +341,8 @@ class RegionalFusion(nn.Module):
                         active, summary + self.config.summary_gain * update, summary
                     )
                     context = self.summary_to_local(summary).unsqueeze(1)
+                    if context_seed is not None:
+                        context = context_seed.unsqueeze(1) + context
                     check_finite(summary, "El resumen regional")
             projected = self.readout(local - initial + context)
             check_finite(projected, "La proyección regional")

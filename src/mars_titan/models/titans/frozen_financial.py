@@ -19,6 +19,7 @@ from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
+from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
@@ -34,6 +35,7 @@ _TITANS_MODULES = (
     "financial_blocks",
     "presence_modulation",
     "regional_fusion",
+    "regional_execution",
     "bank_readout",
     "session_context",
     "local_control",
@@ -135,6 +137,9 @@ def _module_settings(module):
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
         settings["regional_fusion"] = module.config.identity()
+    elif type(module) is RegionalExecution:
+        fields = ("hidden_size", "max_batch")
+        settings["regional_execution"] = module.config.identity()
     elif type(module) is BankReadout:
         fields = ("dim",)
         settings["bank_readout"] = module.config.identity()
@@ -281,6 +286,10 @@ class FrozenFinancialConsumer:
             raise ValueError("El consumidor necesita el predictor y lector identificados")
         if predictor.config.session_context is not None:
             raise ValueError("Este consumidor no gestiona el ciclo de sesión del contexto PT4")
+        if predictor.regional_execution is not None:
+            raise ValueError(
+                "El programa regional requiere el consumidor de mecanismos y su archivo"
+            )
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

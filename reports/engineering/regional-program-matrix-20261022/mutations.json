@@ -1,0 +1,540 @@
+{
+  "scope": "targeted_protocol_mutants_only",
+  "mutants": 4,
+  "killed": 4,
+  "base_case_executions": 52,
+  "restored_case_executions": 52,
+  "failed_mutant_calls": 22,
+  "records": [
+    {
+      "id": "matrix_underreports_condition_records",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "37887f2c9d9e2103713b2752dcdba4f8a3ae60088b23eb24f00c70dda8c4cc3c",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 29.625524906092323,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 5,
+          "elapsed_s": 28.779228217084892,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_work_totals_follow_admitted_cells_and_keep_the_declared_resource_limits",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 29.41747701598797,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    },
+    {
+      "id": "matrix_reverses_only_within_variants",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "1efc5e436d9903e8d16a3aaf287a5aa44654f22e90d90e1ab6d6324dcbf02211",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 27.97034638596233,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 5,
+          "elapsed_s": 29.92574534099549,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_second_pass_reverses_all_26_admitted_cells_without_loss_or_duplicates",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 27.390195284970105,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    },
+    {
+      "id": "matrix_admits_contextual_rule_without_context",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "0b35d1d5aae6209fd9c323bc0f329b3ad58c053a63460668b4eff572d2fdabf7",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_admits_contextual_rule_without_context-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 10.901169975986704,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_admits_contextual_rule_without_context-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 6,
+          "elapsed_s": 8.237686036969535,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_all_48_cells_and_their_rejections_match_the_real_configuration_api",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_second_pass_reverses_all_26_admitted_cells_without_loss_or_duplicates",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_admits_contextual_rule_without_context-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 7.135028769029304,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    },
+    {
+      "id": "matrix_default_imports_torch",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "9fa933d3907fc61e10eda46ab9d50a012738385633de0fd3959a4d3679b7222d",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_default_imports_torch-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 9.502683526952751,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_default_imports_torch-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 6,
+          "elapsed_s": 12.610762572963722,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_default_cli_prints_protocol_without_torch_or_creating_output[False]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_default_cli_prints_protocol_without_torch_or_creating_output[True]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_invalid_cli_stratum_is_rejected_before_torch_or_output[arguments0]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_invalid_cli_stratum_is_rejected_before_torch_or_output[arguments1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_invalid_cli_stratum_is_rejected_before_torch_or_output[arguments2]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_invalid_cli_stratum_is_rejected_before_torch_or_output[arguments3]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=verification-artifacts/protocol-mutations-pending-v1/matrix_default_imports_torch-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 13.724474921938963,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    }
+  ],
+  "incomplete_prior_attempt": [
+    {
+      "id": "matrix_underreports_condition_records",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "37887f2c9d9e2103713b2752dcdba4f8a3ae60088b23eb24f00c70dda8c4cc3c",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 29.625524906092323,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 5,
+          "elapsed_s": 28.779228217084892,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_work_totals_follow_admitted_cells_and_keep_the_declared_resource_limits",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_underreports_condition_records-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 29.41747701598797,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    },
+    {
+      "id": "matrix_reverses_only_within_variants",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "1efc5e436d9903e8d16a3aaf287a5aa44654f22e90d90e1ab6d6324dcbf02211",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 27.97034638596233,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 5,
+          "elapsed_s": 29.92574534099549,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_second_pass_reverses_all_26_admitted_cells_without_loss_or_duplicates",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        },
+        {
+          "phase": "restored",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_reverses_only_within_variants-restored.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 27.390195284970105,
+          "failed_nodeids": []
+        }
+      ],
+      "status": "killed",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    },
+    {
+      "id": "matrix_admits_contextual_rule_without_context",
+      "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "mutated_sha256": "0b35d1d5aae6209fd9c323bc0f329b3ad58c053a63460668b4eff572d2fdabf7",
+      "test_sha256": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36",
+      "runs": [
+        {
+          "phase": "base",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_admits_contextual_rule_without_context-base.xml"
+          ],
+          "returncode": 0,
+          "cases": 13,
+          "failed_calls": 0,
+          "elapsed_s": 28.585838273051195,
+          "failed_nodeids": []
+        },
+        {
+          "phase": "mutant",
+          "command": [
+            "uv",
+            "run",
+            "--no-sync",
+            "pytest",
+            "-q",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py",
+            "-p",
+            "_matrix_phase",
+            "--junitxml=local-artifacts/protocol-mutations-v2/matrix_admits_contextual_rule_without_context-mutant.xml"
+          ],
+          "returncode": 1,
+          "cases": 13,
+          "failed_calls": 6,
+          "elapsed_s": 29.06879286793992,
+          "failed_nodeids": [
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_all_48_cells_and_their_rejections_match_the_real_configuration_api",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_second_pass_reverses_all_26_admitted_cells_without_loss_or_duplicates",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float32-256]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-1]",
+            "tests/benchmarks/test_regional_program_matrix_protocol.py::test_each_stratum_covers_both_global_orders_and_its_complete_call_budget[float64-256]"
+          ]
+        }
+      ],
+      "status": "unverified",
+      "error": "Command '['uv', 'run', '--no-sync', 'pytest', '-q', 'tests/benchmarks/test_regional_program_matrix_protocol.py', '-p', '_matrix_phase', '--junitxml=local-artifacts/protocol-mutations-v2/matrix_admits_contextual_rule_without_context-restored.xml']' timed out after 8.99664353497792 seconds",
+      "copy_restored_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_source_sha256_after": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+      "original_test_sha256_after": "f38c95258ac828a0854f24ae08c3765e09f07774c416ed041f23cfc59f6dab36"
+    }
+  ],
+  "incomplete_receipt": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "local-artifacts/mutate_protocol.py",
+      "--run"
+    ],
+    "elapsed_s": 240.7427662970731,
+    "returncode": 1,
+    "timeout_s": 300
+  },
+  "limits": [
+    "Los controles repiten los mismos 13 casos. No son nuevos casos únicos.",
+    "Solo se cuentan cuatro objetivos dirigidos, no todas las mutaciones posibles del repositorio.",
+    "El intento previo de admisión carecía de restauración verificada y no se cuenta como aprobado."
+  ]
+}

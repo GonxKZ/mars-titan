@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "regional_program_variants",
+  "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-v1",
+  "variant": "mac_online",
+  "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_executed",
+  "executions": 0,
+  "confirmed_hypotheses": [],
+  "common_predictor": {
+    "session_context": "market_memory_v1"
+  },
+  "mechanism_action": {
+    "context": "parent",
+    "route": "k1",
+    "calibration": "none"
+  },
+  "construction": [
+    "FinancialConfig recibe las opciones predictor de base_recipe, después common_predictor y finalmente predictor_changes de cada configuración. dtype pertenece a la construcción del modelo y no se pasa a FinancialConfig.",
+    "session_context es configuración común del predictor. No se incluye en predictor_changes porque ese campo no pertenece a su registro de cambios permitidos.",
+    "El control omite regional_execution y conserva su valor None. Con PT4 consulta el contexto después de la fusión. Los programas activos consultan antes del operador regional.",
+    "Esta declaración no es una receta ejecutable del runner ni habilita entrenamientos, pilotos o evaluaciones científicas."
+  ],
+  "arms": {
+    "legacy_post_fusion": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-LEGACY-v1",
+      "role": "Control con PT4 posterior a la fusión regional",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        }
+      }
+    },
+    "fixed_at_end": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-AT-END-v1",
+      "role": "Cuatro pasos locales y un resumen final con contexto confirmado anterior",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        },
+        "regional_execution": {
+          "selection": "fixed",
+          "program": "summary_at_end_v1",
+          "context_threshold": null
+        }
+      }
+    },
+    "fixed_interleaved": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-INTERLEAVED-v1",
+      "role": "Dos ciclos de dos pasos locales con resumen entre ciclos",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        },
+        "regional_execution": {
+          "selection": "fixed",
+          "program": "summary_interleaved_v1",
+          "context_threshold": null
+        }
+      }
+    },
+    "contextual_norm": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-CONTEXT-NORM-v1",
+      "role": "Regla fija sobre la norma del contexto confirmado, con umbral 1e-9",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        },
+        "regional_execution": {
+          "selection": "context_norm_v1",
+          "program": "summary_at_end_v1",
+          "context_threshold": 1e-9
+        }
+      }
+    },
+    "fixed_at_end_no_summary": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-AT-END-NO-SUMMARY-v1",
+      "role": "Ablación del resumen del calendario de un ciclo y cuatro pasos locales",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": false,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        },
+        "regional_execution": {
+          "selection": "fixed",
+          "program": "summary_at_end_v1",
+          "context_threshold": null
+        }
+      }
+    },
+    "fixed_interleaved_no_summary": {
+      "variant_id": "MARS-TITAN-REGIONAL-PROGRAM-INTERLEAVED-NO-SUMMARY-v1",
+      "role": "Ablación del resumen del calendario de dos ciclos y dos pasos locales",
+      "baseline_explicit": "legacy_post_fusion",
+      "predictor_changes": {
+        "regional_fusion": {
+          "topology": "ring",
+          "routing": "attention",
+          "cycles": 2,
+          "local_steps": 2,
+          "summary": false,
+          "local_gain": 0.25,
+          "summary_gain": 0.25
+        },
+        "regional_execution": {
+          "selection": "fixed",
+          "program": "summary_interleaved_v1",
+          "context_threshold": null
+        }
+      }
+    }
+  },
+  "limits": [
+    "Todas las configuraciones conservan PT4 de mercado, MAC online, codificador, cabeza y opciones compartidas de la receta base. Cambian únicamente el programa regional y la presencia del resumen.",
+    "Los programas sustituyen cycles y local_steps durante su ejecución sin modificar los valores almacenados del operador.",
+    "La regla contextual es programada y no aprende de errores financieros. Sus resultados deben compararse con los dos calendarios fijos.",
+    "Sin resumen, los dos programas ejecutan los mismos cuatro pasos locales. Se conservan identidades distintas para comprobar esta ablación.",
+    "No hay hipótesis predictivas confirmadas ni una comparación financiera ejecutada para estas configuraciones."
+  ]
+}

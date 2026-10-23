@@ -22,7 +22,14 @@ from mars_titan.models.titans.refinement_routes import ROUTES
 
 from . import mechanism_collection_record
 from .episodic_session import DecisionRow
-from .mechanism_collection_record import KIND, PROTOCOL, WORK, CollectedMechanisms
+from .mechanism_collection_record import (
+    KIND,
+    PROTOCOL,
+    REGIONAL_KIND,
+    REGIONAL_WORK,
+    WORK,
+    CollectedMechanisms,
+)
 from .mechanism_observations import _row_features, extract_observation
 
 
@@ -84,7 +91,15 @@ class MechanismCollector:
         self._state = state
         self._before = state_digest(consumer.export_state(state))
         self._blocks, self._raw, self._closed = [], {}, False
-        self._work = dict.fromkeys(sorted(WORK), 0)
+        program = consumer.predictor.regional_execution
+        self._regional = (
+            program.trace_descriptor(consumer.predictor.regional_fusion)
+            if program is not None
+            else None
+        )
+        self._work = dict.fromkeys(
+            sorted(WORK | (REGIONAL_WORK if self._regional is not None else set())), 0
+        )
         self._anchor = [
             dict(
                 market=market,
@@ -188,6 +203,7 @@ class MechanismCollector:
         before = state_digest(model.export_state(fast_state))
         proposed = {flow: {} for flow in flows}
         work = dict.fromkeys(self._work, 0)
+        regional_calls = []
         for context in ("off", "parent"):
             routes = self._routes(context)
             if not any(routes[flow.split("/", 1)[0]] for flow in flows):
@@ -201,6 +217,29 @@ class MechanismCollector:
                     ),
                 )
             prepared = model.prepare(batch, fast_state, differentiable=False, **options)
+            if self._regional is not None:
+                traces = model.regional_execution.export_trace(
+                    prepared.regional_trace, model.regional_fusion
+                )
+                for trace, flow in zip(traces, flows, strict=True):
+                    selected = context == "parent" and bool(routes[flow.split("/", 1)[0]])
+                    if not selected and trace["context_norm"] != 0:
+                        raise ValueError("Una alternativa sin consulta conserva contexto regional")
+                    work["regional_local_node_evaluations"] += trace["work"][
+                        "local_node_evaluations"
+                    ]
+                    work["regional_summary_evaluations"] += trace["work"]["summary_evaluations"]
+                    work["regional_program_selection_rows"] += 1
+                    work["regional_context_query_rows"] += int(selected)
+                regional_calls.append(
+                    dict(
+                        context=context,
+                        rows=[
+                            dict(flow_id=flow, trace=trace)
+                            for flow, trace in zip(flows, traces, strict=True)
+                        ],
+                    )
+                )
             work["core_observations"] += len(flows)
             work["mac_online_observations"] += (
                 len(flows) if model.config.variant == "mac_online" else 0
@@ -270,7 +309,10 @@ class MechanismCollector:
         self._verify_prefix()
         # Solo se incorporan bloques completos. Un error anterior no deja medias filas.
         self._raw.update(proposed)
-        self._blocks.append(dict(flow_ids=list(flows), fast_state_sha256=before))
+        block = dict(flow_ids=list(flows), fast_state_sha256=before)
+        if self._regional is not None:
+            block["regional_execution"] = regional_calls
+        self._blocks.append(block)
         for name, value in work.items():
             self._work[name] += value
 
@@ -371,8 +413,8 @@ class MechanismCollector:
                 dict(market=market, availability=asdict(available), candidates=candidates)
             )
         body = dict(
-            schema_version=1,
-            kind=KIND,
+            schema_version=2 if self._regional is not None else 1,
+            kind=REGIONAL_KIND if self._regional is not None else KIND,
             protocol=PROTOCOL,
             output_dtype=str(self.consumer.predictor.head.weight.dtype),
             execution_device=str(self.consumer.predictor.head.weight.device),
@@ -394,6 +436,8 @@ class MechanismCollector:
             groups=groups,
             work=work,
         )
+        if self._regional is not None:
+            body["regional_execution"] = self._regional
         packet = CollectedMechanisms(body)
         self._closed = True
         self._raw.clear()

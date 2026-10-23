@@ -1,0 +1,54 @@
+{
+  "checked_at_utc": "2026-10-22T18:16:08.828637+00:00",
+  "commands": [
+    {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "returncode": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "returncode": 0,
+      "stdout": "1861 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "python",
+        "scripts/check_repository.py"
+      ],
+      "returncode": 0,
+      "stdout": "Verificados 3634 archivos, 361 referencias y 64 tareas.\nCatálogo macroeconómico: 140 entradas con dependencias válidas.\nEnlaces locales, formatos, BibTeX y dependencias de tareas correctos.\nÓrdenes documentadas y tabla de variables de entorno coherentes con el código.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

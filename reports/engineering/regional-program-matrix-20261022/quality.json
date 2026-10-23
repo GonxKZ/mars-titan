@@ -1,0 +1,244 @@
+{
+  "raw_local_sha256": "71570f76c801441c887c671ac40b2e3492b9d03d78a6b31a24970f801103f815",
+  "data": {
+    "schema_version": 1,
+    "measured_at": "2026-10-22T21:34:00.831193",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [
+      "benchmarks/regional_program_matrix_cuda.py"
+    ],
+    "totals": {
+      "statements": 342,
+      "covered_statements": 297,
+      "branches": 120,
+      "covered_branches": 84
+    },
+    "files": [
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "source_sha256": "6e6f8dad50c1e04393054a4a4ced55617d6c0fc0c10444dad3800655c2deaa7e",
+        "statements": 342,
+        "covered_statements": 297,
+        "branches": 120,
+        "covered_branches": 84
+      }
+    ],
+    "functions": [
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "condition",
+        "start_line": 212,
+        "end_line": 380,
+        "cyclomatic_complexity": 52,
+        "statements": 109,
+        "covered_statements": 99,
+        "coverage_fraction": 0.908256880733945,
+        "branches": 38,
+        "covered_branches": 28,
+        "crap": 54.08798413008512
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "run",
+        "start_line": 383,
+        "end_line": 583,
+        "cyclomatic_complexity": 38,
+        "statements": 110,
+        "covered_statements": 91,
+        "coverage_fraction": 0.8272727272727273,
+        "branches": 42,
+        "covered_branches": 27,
+        "crap": 45.44131930879038
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "condition.observe",
+        "start_line": 275,
+        "end_line": 277,
+        "cyclomatic_complexity": 3,
+        "statements": 2,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 2,
+        "covered_branches": 0,
+        "crap": 12.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "execution_scope",
+        "start_line": 129,
+        "end_line": 152,
+        "cyclomatic_complexity": 11,
+        "statements": 10,
+        "covered_statements": 10,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 11.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "protocol",
+        "start_line": 48,
+        "end_line": 126,
+        "cyclomatic_complexity": 10,
+        "statements": 10,
+        "covered_statements": 10,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 10.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "main",
+        "start_line": 586,
+        "end_line": 611,
+        "cyclomatic_complexity": 7,
+        "statements": 25,
+        "covered_statements": 17,
+        "coverage_fraction": 0.68,
+        "branches": 10,
+        "covered_branches": 5,
+        "crap": 8.605632
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "admission",
+        "start_line": 180,
+        "end_line": 203,
+        "cyclomatic_complexity": 7,
+        "statements": 21,
+        "covered_statements": 19,
+        "coverage_fraction": 0.9047619047619048,
+        "branches": 8,
+        "covered_branches": 6,
+        "crap": 7.042328042328042
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "execution_order",
+        "start_line": 155,
+        "end_line": 159,
+        "cyclomatic_complexity": 6,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 6.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "load",
+        "start_line": 162,
+        "end_line": 168,
+        "cyclomatic_complexity": 3,
+        "statements": 6,
+        "covered_statements": 5,
+        "coverage_fraction": 0.8333333333333334,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 3.0416666666666665
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "cache_bytes",
+        "start_line": 206,
+        "end_line": 209,
+        "cyclomatic_complexity": 3,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "save",
+        "start_line": 171,
+        "end_line": 177,
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 5,
+        "coverage_fraction": 0.8333333333333334,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 2.0185185185185186
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "run.alarm",
+        "start_line": 408,
+        "end_line": 409,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "run.blocked",
+        "start_line": 458,
+        "end_line": 459,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "digest",
+        "start_line": 30,
+        "end_line": 31,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "benchmarks/regional_program_matrix_cuda.py",
+        "function": "declaration",
+        "start_line": 34,
+        "end_line": 45,
+        "cyclomatic_complexity": 1,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "ec5cd90ec032f3d8aebc33e3dc00d7e4f102cee3854bb770d10dfd481341b603",
+    "functions_measured": 15
+  }
+}

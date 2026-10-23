@@ -5,6 +5,7 @@ from itertools import product
 
 from .config import FingerprintOnce, bounded_integer, canonical
 from .refinement_routes import ROUTES
+from .regional_execution import RegionalExecutionConfig
 
 CONTEXT_ACTIONS = ("off", "parent")
 CALIBRATION_ACTIONS = ("none", "static", "online")
@@ -92,10 +93,15 @@ def reader_work(route, availability):
 class MechanismCatalog(FingerprintOnce):
     budget: MechanismBudget = MechanismBudget()
     reader_contract: str = "legacy"
+    regional_execution: RegionalExecutionConfig | None = None
 
     def __post_init__(self):
         if type(self.budget) is not MechanismBudget:
             raise ValueError("El catálogo necesita su presupuesto identificado")
+        if self.regional_execution is not None:
+            if type(self.regional_execution) is not RegionalExecutionConfig:
+                raise ValueError("El catálogo necesita el contrato identificado del programa")
+            self.regional_execution.__post_init__()
         if type(self.reader_contract) is not str or self.reader_contract not in (
             "legacy",
             "shared_evidence_bridge_v1",
@@ -131,6 +137,13 @@ class MechanismCatalog(FingerprintOnce):
                 reader_route_semantics="c_reuses_positions_r_reselects_values_reprojected_each_step",
                 regional_trace="common_ids_separate_regional_weights_and_derived_views",
             )
+        if self.regional_execution is not None:
+            result.update(
+                schema_version=5,
+                kind="pre_mac_regional_mechanism_catalog_v1",
+                regional_execution=self.regional_execution.identity(),
+                program_axis="orthogonal_fixed_or_contextual_rule_no_extra_learned_actions",
+            )
         return result
 
     @classmethod
@@ -142,6 +155,11 @@ class MechanismCatalog(FingerprintOnce):
             catalog = cls(
                 MechanismBudget(**identity["budget"]),
                 reader_contract=identity.get("reader_contract", "legacy"),
+                regional_execution=(
+                    RegionalExecutionConfig.restore(identity["regional_execution"])
+                    if "regional_execution" in identity
+                    else None
+                ),
             )
             matches = canonical(identity) == canonical(catalog.identity())
         except (TypeError, KeyError) as error:

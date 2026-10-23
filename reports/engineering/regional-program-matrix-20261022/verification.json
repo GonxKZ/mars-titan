@@ -1,0 +1,102 @@
+{
+  "unique_protocol_test_cases": 13,
+  "errors": 0,
+  "skipped": 0,
+  "protocol_tests_receipt": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "--with",
+      "coverage==7.16.1",
+      "--with",
+      "radon==6.0.1",
+      "python",
+      "-m",
+      "coverage",
+      "run",
+      "--branch",
+      "--data-file",
+      "local-artifacts/.coverage",
+      "--include",
+      "*/benchmarks/regional_program_matrix_cuda.py",
+      "-m",
+      "pytest",
+      "tests/benchmarks/test_regional_program_matrix_protocol.py",
+      "-q"
+    ],
+    "elapsed_s": 41.86105409904849,
+    "returncode": 0,
+    "timeout_s": 300
+  },
+  "instrumented_runtime": {
+    "records": 52,
+    "prefix_calls": 104,
+    "timed_calls": 364,
+    "no_summary_pairs": 10,
+    "status": "passed",
+    "hold_unchanged": true,
+    "source_manifest_unchanged": true,
+    "receipt": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "coverage==7.16.1",
+        "--with",
+        "radon==6.0.1",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "--branch",
+        "--append",
+        "--data-file",
+        "local-artifacts/.coverage",
+        "--include",
+        "*/benchmarks/regional_program_matrix_cuda.py",
+        "benchmarks/regional_program_matrix_cuda.py",
+        "--run",
+        "--dtype",
+        "float32",
+        "--batch",
+        "1",
+        "--output",
+        "verification-artifacts/coverage-runtime"
+      ],
+      "elapsed_s": 224.7336794929579,
+      "returncode": 0,
+      "timeout_s": 300
+    },
+    "included_in_cost_comparison": false
+  },
+  "final_mutation_receipt": {
+    "command": [
+      "uv",
+      "run",
+      "--no-sync",
+      "python",
+      "verification-artifacts/mutate_protocol_pending.py",
+      "--run"
+    ],
+    "elapsed_s": 62.3270613909699,
+    "returncode": 0,
+    "timeout_s": 300
+  },
+  "original_matrix_phase_supervised_seconds": 1151.9065733186435,
+  "additional_verification_phase_supervised_seconds": 287.0607408839278,
+  "optimizer_steps": 0,
+  "scientific_evaluations": 0,
+  "final_test_access": false,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "La cobertura instrumenta el benchmark, no vuelve a medir la cobertura de todas las fuentes del predictor.",
+    "La ejecución instrumentada se conserva fuera de las 208 condiciones y de sus costes publicados.",
+    "El observador de sys.setprofile registra llamadas, pero sus líneas no aparecen ejecutadas en coverage.py."
+  ],
+  "benchmark_commit": "830e6802bd7a26bbf4e23065ac50a085c2307e34",
+  "measurement_checkout_parent": "6e12bfff4d8625909c338c413979ea91f29b1669",
+  "benchmark_committed_after_measurement": true,
+  "committed_sources_match_measurements": true
+}

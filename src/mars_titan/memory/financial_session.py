@@ -26,6 +26,8 @@ from . import (
     episodic_session,
     financial_consumers,
     financial_state_artifacts,
+    regional_session_work,
+    regional_work,
     write_scores,
 )
 from .associative_memory import AssociativeMemory, MatureCorrection
@@ -98,6 +100,11 @@ def _binding_signature(binding):
 
 
 def _check_callbacks(instance):
+    if (instance._regional_config is None) != (instance._regional_work is None) or (
+        instance._regional_work is not None
+        and type(instance._regional_work) is not regional_work.RegionalWorkLedger
+    ):
+        raise ValueError("La reserva regional no corresponde al contrato de la sesión")
     if (
         _callback_signature(instance) != instance._callback_versions
         or _binding_signature(instance._binding) != instance._binding_versions
@@ -114,6 +121,7 @@ def _check_callbacks(instance):
         instance.max_input_blocks,
         instance._history_config.fingerprint() if instance._history_config is not None else None,
         asdict(instance._collection_config) if instance._collection_config is not None else None,
+        _canonical(instance._regional_config),
     )
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
@@ -184,6 +192,8 @@ class FinancialSession(EpisodicSession):
         associative=None,
         mechanism_history=None,
         mechanism_collection=None,
+        regional_work_limits=None,
+        regional_max_attempts=2,
     ):
         if (
             type(self) is not FinancialSession
@@ -206,6 +216,10 @@ class FinancialSession(EpisodicSession):
             raise ValueError("Solo el consumidor de mecanismos admite la recogida de alternativas")
         self._history_config = mechanism_history
         self._collection_config = mechanism_collection
+        self._regional_config = regional_session_work.configuration(
+            consumer, regional_work_limits, regional_max_attempts
+        )
+        self._regional_work = None
         if associative is not None and (
             type(associative) is not MatureCorrection
             or binding.kind != "titans_mac"
@@ -245,6 +259,11 @@ class FinancialSession(EpisodicSession):
             )
         }
         code.update(binding.code())
+        if self._regional_config is not None:
+            for module in (regional_session_work, regional_work):
+                code[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
+                    Path(module.__file__).read_bytes()
+                ).hexdigest()
         if associative is not None:
             code["associative_memory"] = hashlib.sha256(
                 Path(associative_memory.__file__).read_bytes()
@@ -284,6 +303,8 @@ class FinancialSession(EpisodicSession):
         # Sin B6 el contrato no cambia. Con B6 la generación guarda A y el núcleo pendiente.
         if associative is not None:
             contract["associative"] = associative.identity()
+        if self._regional_config is not None:
+            contract["regional_work"] = self._regional_config
         if type(binding) is MechanismBinding:
             contract["mechanisms"] = dict(
                 history=mechanism_history.identity(),
@@ -306,6 +327,7 @@ class FinancialSession(EpisodicSession):
             max_input_blocks,
             mechanism_history.fingerprint() if mechanism_history is not None else None,
             asdict(mechanism_collection) if mechanism_collection is not None else None,
+            _canonical(self._regional_config),
         )
         self._prototype = binding.bank(
             native,
@@ -357,11 +379,22 @@ class FinancialSession(EpisodicSession):
             resume,
         )
         try:
+            if self._regional_config is not None:
+                self._regional_work = regional_session_work.ledger(self)
+                if not resume:
+                    head = regional_session_work.latest(self)
+                    self._regional_work.initialize(
+                        {name: head[name] for name in ("generation", "cursor", "checkpoint_sha256")}
+                    )
             self._verify_confirmed()
+            if self._regional_work is not None and resume:
+                self._regional_work.resume(regional_session_work.latest(self))
             if type(binding) is MechanismBinding and binding.collections is not None:
                 bundle = self._bundle(self.snapshot()["state"])
                 if bundle is not None:
                     binding.collections.verify(self, bundle, strong=True)
+            if self._regional_work is not None:
+                regional_session_work.compact(self)
             self._prune()
         except Exception:
             self.close()
@@ -387,6 +420,8 @@ class FinancialSession(EpisodicSession):
             fields.add("associative")
         if type(self._binding) is MechanismBinding:
             fields.update(self._binding.bundle_fields())
+        if self._regional_config is not None:
+            fields.add("regional_work")
         if (
             not isinstance(value, dict)
             or set(value) != fields
@@ -396,6 +431,8 @@ class FinancialSession(EpisodicSession):
             or not 0 < value["cutoff"] <= self.phase.close_at
         ):
             raise ValueError("El bundle financiero no conserva sus campos, generación y corte")
+        if self._regional_config is not None:
+            regional_session_work.check_link(value["regional_work"])
         return value
 
     def _input_rows(self, reference, **_):
@@ -659,6 +696,13 @@ class FinancialSession(EpisodicSession):
             self._inflight.update(close_phase=close_phase, mechanism_before=before)
 
         def guarded(boundary):
+            if (
+                self._regional_work is not None
+                and boundary == self.native.Boundary.before_predictions
+            ):
+                self._inflight["regional_work"] = regional_session_work.reserve(
+                    self, self._inflight["regional_head"], rows, kind=kind, cutoff=cutoff
+                )
             if fault is not None:
                 fault(boundary)
             if boundary == self.native.Boundary.before_commit:
@@ -671,8 +715,16 @@ class FinancialSession(EpisodicSession):
                     )
 
         try:
+            if self._regional_work is not None:
+                self._inflight["regional_head"] = regional_session_work.latest(self, before)
             result = self._executor.step(cohort, feedback, self.block_rows, guarded)
             self._verify_confirmed()
+            if self._regional_work is not None:
+                self._regional_work.confirm(
+                    self._inflight["regional_work"]["reservation_id"], result.generation
+                )
+                self._regional_work.reconcile(regional_session_work.latest(self))
+                regional_session_work.compact(self)
             self._prune()
             return result
         except Exception:
@@ -801,6 +853,9 @@ class FinancialSession(EpisodicSession):
                 extra["mechanism_collections"] = (
                     bundle["mechanism_collections"] if bundle else self._binding.collections.empty()
                 )
+        if self._regional_work is not None:
+            control["regional_work"] = self._inflight["regional_work"]
+            extra["regional_work"] = self._inflight["regional_work"]
         proposal = dict(
             **extra,
             generation=state["generation"] + 1,
@@ -865,6 +920,20 @@ class FinancialSession(EpisodicSession):
                 if bundle is None
                 else bundle["associative"]
             )
+        control = (
+            self._binding.settlement_control()
+            if type(self._binding) is MechanismBinding
+            else dict(
+                observations=0,
+                mac_updates=0,
+                refinements=0,
+                reevaluations=0,
+                group_estimated_bytes=0,
+            )
+        )
+        if self._regional_work is not None:
+            control["regional_work"] = self._inflight["regional_work"]
+            extra["regional_work"] = self._inflight["regional_work"]
         return dict(
             **extra,
             generation=state["generation"] + 1,
@@ -875,18 +944,7 @@ class FinancialSession(EpisodicSession):
             inputs=bundle["inputs"] if bundle else [],
             current_inputs=[],
             prefix=self._stage([], "prefix"),
-            control=self._stage(
-                self._binding.settlement_control()
-                if type(self._binding) is MechanismBinding
-                else dict(
-                    observations=0,
-                    mac_updates=0,
-                    refinements=0,
-                    reevaluations=0,
-                    group_estimated_bytes=0,
-                ),
-                "control",
-            ),
+            control=self._stage(control, "control"),
         )
 
     def _resolve(self, proposed_json, outcomes, excluded, finalized):
@@ -1055,7 +1113,7 @@ class FinancialSession(EpisodicSession):
             raise ValueError("La compactación no conserva los inputs pendientes")
         return result
 
-    def _verify_bundle(self, bundle):
+    def _verify_bundle(self, bundle, *, event_kind=None):
         self._bank(bundle["bank"])
         fast = self._read(bundle["fast"], "fast")
         self._fast_store.verify(fast)
@@ -1076,6 +1134,7 @@ class FinancialSession(EpisodicSession):
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
         mechanism_observations = [] if type(self._binding) is MechanismBinding else None
+        regional_rows = [] if self._regional_work is not None else None
         for reference in bundle["current_inputs"]:
             rows = self._input_rows(reference)
             if any(row.prediction_at != bundle["cutoff"] for row in rows):
@@ -1097,6 +1156,8 @@ class FinancialSession(EpisodicSession):
                 observed.append(row.flow_id)
                 if mechanism_observations is not None:
                     mechanism_observations.append(row.metadata())
+                if regional_rows is not None:
+                    regional_rows.append(row.metadata())
         if observed != sorted(set(observed)):
             raise ValueError("Las observaciones confirmadas repiten o desordenan un flujo")
         proofs = self._read(bundle["prefix"], "prefix")
@@ -1119,6 +1180,10 @@ class FinancialSession(EpisodicSession):
             or (seen and seen != set(observed))
         ):
             raise ValueError("Las evidencias y el control no concilian con las observaciones")
+        if self._regional_work is not None:
+            regional_session_work.verify_bundle(
+                self, bundle, control, regional_rows, event_kind=event_kind
+            )
         if type(self._binding) is MechanismBinding:
             self._binding.verify(self, bundle, mechanism_observations)
         elif type(self._binding) is financial_consumers.TitansBinding:
@@ -1139,9 +1204,9 @@ class FinancialSession(EpisodicSession):
         bundle = self._bundle(snapshot["state"])
         if bundle is None:
             return
-        self._verify_bundle(bundle)
-        self._check_observed(bundle, snapshot["observed"])
         record = json.loads(self._executor.record_json(snapshot["cursor"]))
+        self._verify_bundle(bundle, event_kind=record["event_kind"])
+        self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
                 bundle["mechanism_history"], snapshot["cursor"]
@@ -1179,7 +1244,11 @@ class FinancialSession(EpisodicSession):
 
     def _prune(self):
         head = json.loads(self.native.read_blob(str(self.output / "latest.json"), 65536))
-        references = {}
+        references = (
+            {reference["name"]: reference for reference in self._regional_work.references()}
+            if self._regional_work is not None
+            else {}
+        )
         for generation, digest in (
             (head["generation"], head["checkpoint_sha256"]),
             (head["generation"] - 1, head["previous_sha256"]),

@@ -162,45 +162,70 @@ class SessionContext(nn.Module):
     def _market(self, flow):
         return MARKETS.index(flow.split("/", 1)[0])
 
-    def read(self, tokens, flow_ids, prediction_at, state):
-        """Contexto de cada fila y estado con sus tokens pendientes, sin escribir nada.
-
-        Cada fila de un mercado debe pertenecer a la sesión pendiente o abrir una nueva
-        posterior a la última confirmada. Un mercado no puede abrir otra sesión con la
-        anterior aún pendiente, ni repetir un flujo dentro de la misma.
-        """
+    def _session_rows(self, tokens, flow_ids, prediction_at, state):
+        if (
+            not isinstance(tokens, Tensor)
+            or tokens.layout != torch.strided
+            or tokens.ndim != 2
+            or tokens.shape != (len(flow_ids), self.hidden_size)
+            or len(flow_ids) != len(prediction_at)
+            or not flow_ids
+            or tokens.dtype != self.output.dtype
+            or tokens.device != self.output.device
+        ):
+            raise ValueError("Los tokens y las filas del contexto no corresponden al módulo")
+        check_finite(tokens, "Los tokens del contexto")
         markets = [self._market(flow) for flow in flow_ids]
-        committed, pending_at = list(state.committed_at), list(state.pending_at)
-        flows, pending = list(state.pending_flows), list(state.pending_tokens)
-        context = torch.zeros_like(tokens)
         for market in sorted(set(markets)):
             rows = [i for i, value in enumerate(markets) if value == market]
             moments = {prediction_at[i] for i in rows}
             if len(moments) != 1:
                 raise ValueError("Las filas de un mercado en un bloque deben ser de una sesión")
             (moment,) = moments
-            if moment <= committed[market]:
+            if moment <= state.committed_at[market]:
                 raise ValueError("La sesión ya se confirmó: no puede leer ni escribir de nuevo")
-            if pending_at[market] not in (-1, moment):
+            if state.pending_at[market] not in (-1, moment):
                 raise ValueError("La sesión anterior sigue pendiente de confirmar")
             names = tuple(flow_ids[i] for i in rows)
+            yield market, rows, moment, names
+
+    def read_confirmed(self, tokens, flow_ids, prediction_at, state):
+        """Leer el snapshot confirmado sin preparar tokens ni consumir flujos pendientes."""
+        sessions = tuple(self._session_rows(tokens, flow_ids, prediction_at, state))
+        context = torch.zeros_like(tokens)
+        for market, rows, _, names in sessions:
+            index = torch.tensor(rows, device=tokens.device)
+            selected = tokens.index_select(0, index)
+            context = context.index_copy(0, index, self._read(selected, names, market, state))
+        return context @ self.output.T
+
+    def stage_tokens(self, tokens, flow_ids, prediction_at, state):
+        """Preparar una sola alta por flujo y sesión, sin leer ni confirmar la memoria."""
+        pending_at = list(state.pending_at)
+        flows, pending = list(state.pending_flows), list(state.pending_tokens)
+        for market, rows, moment, names in self._session_rows(
+            tokens, flow_ids, prediction_at, state
+        ):
             if len(set(names) | set(flows[market])) != len(names) + len(flows[market]):
                 raise ValueError("Un flujo no puede aparecer dos veces en la misma sesión")
             index = torch.tensor(rows, device=tokens.device)
             selected = tokens.index_select(0, index)
-            context = context.index_copy(0, index, self._read(selected, names, market, state))
             pending_at[market] = moment
             flows[market] = flows[market] + names
             pending[market] = (
                 selected if pending[market] is None else torch.cat((pending[market], selected))
             )
-        next_state = replace(
+        return replace(
             state,
             pending_at=tuple(pending_at),
             pending_flows=tuple(flows),
             pending_tokens=tuple(pending),
         )
-        return context @ self.output.T, next_state
+
+    def read(self, tokens, flow_ids, prediction_at, state):
+        """Leer el contexto y preparar sus tokens, conservando el contrato anterior."""
+        pending = self.stage_tokens(tokens, flow_ids, prediction_at, state)
+        return self.read_confirmed(tokens, flow_ids, prediction_at, state), pending
 
     def _read(self, tokens, flows, market, state):
         if self.kind == MARKET_MEMORY:
