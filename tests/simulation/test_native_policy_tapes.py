@@ -131,6 +131,14 @@ def sealed(path):
     return read(path)["payload"]
 
 
+def reseal(path, **changes):
+    """Cambiar campos de un archivo sellado y volver a sellarlo como lo hace el binario."""
+    payload = dict(sealed(path), **changes)
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    digest = hashlib.sha256(encoded.encode()).hexdigest()
+    path.write_text(json.dumps(dict(payload=payload, sha256=digest)))
+
+
 def latest_metadata(output):
     bundle = read(output / "ppo-index.json")["payload"]["recent"][0]["bundle"]
     return read(output / bundle / "metadata.json")
@@ -696,6 +704,75 @@ def test_group_objectives_reject_lonely_lanes_and_unknown_identities(binaries, t
     assert not (tmp_path / "lonely").exists() and not (tmp_path / "unknown").exists()
 
 
+@pytest.mark.parametrize(
+    "objective",
+    ["grpo_outcome_v1", "dr_grpo_outcome_v1", "dapo_outcome_static_v1", "gspo_outcome_v1"],
+)
+def test_group_objectives_publish_their_groups_before_any_update(
+    binaries, tapes, tmp_path, learning_hold, objective
+):
+    """Cada oleada lista publica sus grupos, también con --stop-after y sin actualizar.
+
+    Dos carriles por cinta forman un grupo por cinta de ajuste. Ningún grupo se descarta,
+    tampoco en el DAPO estático, y al reanudar la misma oleada debe formar los mismos grupos.
+    """
+    hold = learning_hold(True)
+    us = tapes["US"]
+    # Cuatro carriles recorren las dos cintas de ajuste dos veces cada una.
+    wave = 2 * sum(len(us["train"][index][1]) - 1 for index in (0, 1))
+    stage = diagnostic_stage(environments=4, transitions=wave, evaluation_transitions=wave)
+    config = group_config(tmp_path / "group.json", stage, objective=objective)
+    output = tmp_path / "out"
+    arguments = ["--config", config, "--output", output, *sources(us)]
+    result = run(binaries["native_klpo"], hold, *arguments, "--stop-after", wave)
+    assert result.returncode == 2, result.stderr
+    report = read(output / "run.json")
+    assert (report["optimizer_steps"], report["consumed_waves"]) == (0, 0)
+    assert report["collected_transitions"] == wave
+    [groups] = report["group_waves"]
+    assert groups["wave"] == 0 and groups["discarded_groups"] == 0
+    assert (groups["groups"], groups["episodes"]) == (2, 4)
+    assert groups["smallest_group"] == groups["largest_group"] == 2
+    assert 0 <= groups["flat_groups"] <= 2 and groups["sampled_decisions"] > 0
+    # La reanudación repite la oleada desde su punto de control y forma los mismos grupos.
+    again = run(binaries["native_klpo"], hold, *arguments, "--stop-after", wave, "--resume")
+    assert again.returncode == 2, again.stderr
+    assert read(output / "run.json")["group_waves"] == [groups]
+    # La evaluación congelada del actor inicial solo admite cintas posteriores a la selección.
+    # La selección se cierra a mano para auditarla sin haber actualizado nada.
+    closed = tmp_path / "closed"
+    shutil.copytree(output, closed)
+    planned = sealed(closed / "experiment.json")["planned_waves"]
+    reseal(closed / "selection.json", status="completed", evaluated_waves=planned)
+    us_tapes = tapes["US"]
+    early = ["--audit-run", closed, "--audit-tape", us_tapes["early_evaluation"][0][0]]
+    result = run(
+        binaries["native_klpo"], hold, "--config", config, "--output", tmp_path / "early", *early
+    )
+    assert result.returncode == 1 and "posterior a la selección" in result.stderr
+    later = ["--audit-run", closed, "--audit-tape", us_tapes["evaluation"][0][0]]
+    audited = tmp_path / "audit"
+    result = run(binaries["native_klpo"], hold, "--config", config, "--output", audited, *later)
+    assert result.returncode == 0, result.stderr
+    assert sealed(audited / "evaluation.json")["identity"]["optimizer_steps"] == 0
+    # Unos grupos publicados que no corresponden a la oleada detienen la reanudación.
+    path = output / "selection.json"
+    changed = sealed(path)["group_waves"]
+    changed[0]["groups"] = 3
+    reseal(path, group_waves=changed)
+    forged = run(binaries["native_klpo"], hold, *arguments, "--stop-after", wave, "--resume")
+    assert forged.returncode == 1 and "los mismos grupos" in forged.stderr
+    # KLPO, sin objetivo de grupo, no publica grupos.
+    klpo = write_config(
+        tmp_path / "klpo.json",
+        native_policy_runs.klpo_config(stage, job("klpo_terminal", "native_klpo")),
+    )
+    plain = ["--config", klpo, "--output", tmp_path / "klpo", *sources(us)]
+    result = run(binaries["native_klpo"], hold, *plain, "--stop-after", wave)
+    assert result.returncode == 2, result.stderr
+    assert "group_waves" not in read(tmp_path / "klpo/run.json")
+
+
 def blocking(tmp_path):
     path = tmp_path / "hold.json"
     path.write_text(json.dumps({"training_allowed": False}))
@@ -769,13 +846,39 @@ def without_rules(source, folder):
     return folder
 
 
+def engine_config(path, engine):
+    """Binario y configuración de diagnóstico de cada familia de la etapa de políticas."""
+    if engine in ("double_dqn", "qr_dqn", "qr_dqn_cvar"):
+        document = native_policy_runs.ppo_config(
+            diagnostic_stage(rollout_transitions=16), job("double_dqn", "native_ppo")
+        )
+        document["agent"]["variant"] = engine
+        return "native_ppo", write_config(path, document)
+    stage = diagnostic_stage(environments=4)
+    if engine == "klpo_terminal":
+        document = native_policy_runs.klpo_config(stage, job(engine, "native_klpo"))
+        return "native_klpo", write_config(path, document)
+    return "native_klpo", group_config(path, stage, objective=engine)
+
+
+ENGINES = (
+    "double_dqn",
+    "qr_dqn",
+    "qr_dqn_cvar",
+    "klpo_terminal",
+    "grpo_outcome_v1",
+    "dr_grpo_outcome_v1",
+    "dapo_outcome_static_v1",
+    "gspo_outcome_v1",
+)
+
+
 @pytest.mark.native("MARS_TITAN_PPO_EXECUTABLE", "MARS_TITAN_KLPO_EXECUTABLE")
-def test_reconstructed_sources_keep_role_order_basis_and_rules(binaries, tapes, tmp_path):
+@pytest.mark.parametrize("engine", ENGINES)
+def test_reconstructed_sources_keep_role_order_basis_and_rules(binaries, tapes, tmp_path, engine):
+    """Todas las familias leen solo cintas de ajuste en orden y validan después."""
     hold = blocking(tmp_path)
-    stage = diagnostic_stage(rollout_transitions=16)
-    config = write_config(
-        tmp_path / "dqn.json", native_policy_runs.ppo_config(stage, job("double_dqn", "native_ppo"))
-    )
+    binary, config = engine_config(tmp_path / "config.json", engine)
     us, lagged, cn = tapes["US"], tapes["US-lag1"], tapes["CN"]
     train = [us["train"][0][0], us["train"][1][0]]
     validation = us["validation"][0][0]
@@ -802,7 +905,7 @@ def test_reconstructed_sources_keep_role_order_basis_and_rules(binaries, tapes, 
         for path in train_paths:
             arguments += ["--train-tape", path]
         # Los lectores son los del ajuste, que la comprobación recorre sin la protección.
-        result = run(binaries["native_ppo"], hold, *arguments, "--check-sources")
+        result = run(binaries[binary], hold, *arguments, "--check-sources")
         assert result.returncode == 1 and message in result.stderr, (name, result.stderr)
         assert not output.exists(), name
 
