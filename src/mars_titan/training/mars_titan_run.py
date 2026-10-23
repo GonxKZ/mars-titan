@@ -889,10 +889,12 @@ class ReadoutTrainer(MarsTitanInference):
         roles, inert = parameter_roles(readout, admission)
         return roles, inert, dict(readout.named_parameters())
 
-    @staticmethod
-    def _code():
+    def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        return {**_implementation(), **own}
+        return {
+            **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
+            **own,
+        }
 
     def _check_runtime(self):
         if (

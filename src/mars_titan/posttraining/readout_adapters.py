@@ -139,10 +139,9 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             named.update({f"core.{name}": values[name] for name in names})
         return roles, [], named
 
-    @staticmethod
-    def _code():
+    def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN}
-        return {**ReadoutTrainer._code(), **own}
+        return {**super()._code(), **own}
 
     def _check_runtime(self):
         if not self.core:

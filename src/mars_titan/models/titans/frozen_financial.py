@@ -61,10 +61,18 @@ _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_M
     "mars_titan.data.audited_prices",
     "mars_titan.data.temporal",
 )
+_KRON_MODULES = (
+    "mars_titan.models.kronlstm",
+    "mars_titan.models.kronlstm.rule",
+    "mars_titan.models.kronlstm.price_encoder",
+    "mars_titan.models.kronlstm.precomputed",
+)
 
 
-def _implementation(*, hierarchy=False):
+def _implementation(*, hierarchy=False, kronlstm=False):
     sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
+    if kronlstm:
+        sources += _KRON_MODULES
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -107,6 +115,20 @@ def _module_settings(module):
     elif isinstance(module, nn.LayerNorm):
         fields = ("normalized_shape", "eps", "elementwise_affine")
         settings["bias"] = module.bias is not None
+    elif isinstance(module, nn.RMSNorm):
+        fields = ("normalized_shape", "eps", "elementwise_affine")
+    elif isinstance(module, nn.Conv1d):
+        fields = (
+            "in_channels",
+            "out_channels",
+            "kernel_size",
+            "stride",
+            "padding",
+            "dilation",
+            "groups",
+            "padding_mode",
+        )
+        settings["bias"] = module.bias is not None
     elif isinstance(module, nn.MultiheadAttention):
         fields = (
             "embed_dim",
@@ -148,6 +170,8 @@ def _module_settings(module):
         settings["bank_readout"] = module.config.identity()
     elif type(module) is SharedEvidenceBridge:
         settings["evidence_bridge"] = module.config.identity()
+    elif type(module).__module__ in _KRON_MODULES:
+        settings["kronlstm"] = module.configuration
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -209,6 +233,14 @@ def _execution_signature(models):
     ):
         raise ValueError("El consumidor no admite hooks globales")
     signatures, modes = [], {}
+    sources = _SOURCE_MODULES + (
+        _KRON_MODULES
+        if any(
+            type(model) is FinancialPredictor and model.config.temporal_encoder is not None
+            for _, model in models
+        )
+        else ()
+    )
     # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
     class_methods = {}
     for prefix, model in models:
@@ -218,7 +250,7 @@ def _execution_signature(models):
             if (
                 not (
                     kind.__module__.startswith("torch.nn.")
-                    or kind.__module__ in _SOURCE_MODULES
+                    or kind.__module__ in sources
                     or kind is RegionalHierarchy
                 )
                 or origin is None
@@ -324,7 +356,7 @@ class FrozenFinancialConsumer:
         self._flags = _numerics()
         predictor.verify_parameter_identity()
         self._readout_id = self._readout_digest()
-        self._code = _implementation()
+        self._code = _implementation(kronlstm=predictor.config.temporal_encoder is not None)
         self._identity = dict(
             schema_version=1,
             recipe="frozen_financial_mac_then_episodic_v1",
@@ -371,7 +403,11 @@ class FrozenFinancialConsumer:
             raise ValueError("El cálculo del consumidor cambió respecto de su identidad")
         if strong:
             self.predictor.verify_parameter_identity()
-            if self._readout_digest() != self._readout_id or _implementation() != self._code:
+            if (
+                self._readout_digest() != self._readout_id
+                or _implementation(kronlstm=self.predictor.config.temporal_encoder is not None)
+                != self._code
+            ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")
 
     def prepare(self, batch, state, *, context_id, snapshot=None, warmup=False, selection=None):

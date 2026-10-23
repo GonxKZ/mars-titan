@@ -56,6 +56,7 @@ PREDICTOR_CHANGES = (
     "regional_fusion",
     "regional_execution",
     "memory_bank_readout",
+    "temporal_encoder",
 )
 
 
@@ -69,7 +70,7 @@ def checked_predictor_changes(changes):
         and set(changes) <= set(PREDICTOR_CHANGES)
         and all(
             (type(value) is str and bool(value))
-            if name in ("presence_modulation", "attention_layout")
+            if name in ("presence_modulation", "attention_layout", "temporal_encoder")
             else (isinstance(value, dict) and bool(value))
             for name, value in changes.items()
         )
@@ -79,7 +80,7 @@ def checked_predictor_changes(changes):
             "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion "
             "regional_execution y memory_bank_readout "
             "como objetos no vacíos, "
-            "y presence_modulation y attention_layout como nombres no vacíos"
+            "y presence_modulation, attention_layout y temporal_encoder como nombres no vacíos"
         )
     return changes
 

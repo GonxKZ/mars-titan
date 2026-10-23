@@ -171,15 +171,17 @@ def check_finite(value: Tensor, name: str) -> None:
 def require_finite(value: Tensor, message: str) -> None:
     """Exigir valores finitos con su propio mensaje, diferido en CUDA dentro de `deferred_checks`.
 
-    Dentro del tramo, un mismo tensor sin cambios solo se comprueba una vez. Si falla, el
-    primer mensaje registrado es también el que daría la comprobación inmediata.
+    Dentro del tramo, un tensor con contador de versión y sin cambios solo se comprueba
+    una vez. Los tensores de inferencia carecen de ese contador y se comprueban en cada
+    llamada. Si falla, se conserva el primer mensaje de la comprobación inmediata.
     """
     pending = _PENDING.get()
     if pending is not None and value.device.type == "cuda":
-        key = (id(value), value._version)
-        if key in pending.seen:
-            return
-        pending.seen[key] = value
+        if not value.is_inference():
+            key = (id(value), value._version)
+            if key in pending.seen:
+                return
+            pending.seen[key] = value
         pending.add(finite_indicator(value), message)
         return
     if not is_finite(finite_indicator(value)):

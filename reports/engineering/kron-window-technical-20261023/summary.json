@@ -1,0 +1,678 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "scope": "Verificación técnica de variantes no canónicas, fixtures y preparación real con admisión CUDA rechazada antes del ajuste. Sin resultado predictivo ni promoción del baseline.",
+  "commits": {
+    "kron": "056b2c5401fdce7533e6d85bbe4ad4d2c9bbe24b",
+    "readout": "df32bfd357b52f85c8edf933ea4c34f4587eebf0",
+    "window": "b19e01ffca35d39d689f4cc63295caf59a8448ce",
+    "inference_finite": "6385f3890406d5a6a0e77a0d2be1e49939277614"
+  },
+  "source_sha256": {
+    "src/mars_titan/models/kronlstm/rule.py": "89bb8bfaf4a267f50a42982984bc32cfeb22aabd5e3e1b66c1f1037ecadb11fa",
+    "src/mars_titan/models/kronlstm/price_encoder.py": "1ad218fb8e5866c1e4d49378c689bcca7cf404fb9f291411a3a9cbd16d60707b",
+    "src/mars_titan/models/titans/financial.py": "d363bff968da4c35bfbb429611cfbceaae83e09e3d88c6baa304e0183d770961",
+    "src/mars_titan/training/window_variant_run.py": "bd960ccf006017496536143070e8af2bc322d6dba7ce940b095e6a31f2b64237",
+    "src/mars_titan/posttraining/readout_adapters.py": "2257b7e07e79a29ff8a5e7d956320232f7e3b66ab54d6461a5e5cbcf127a9fa5",
+    "scripts/run_window_variant.py": "61e1e21733c04335f7f845437369a477271d26fad4bfdb0fbf595732ac66e88b",
+    "tests/test_kronlstm.py": "44e7df008e0992c881dd13f40ad3dc66c85eca3bc59dd984a036ec48ae492d4f",
+    "tests/models/titans/test_financial_kronlstm.py": "96a5d8978bf105b82bd5a3dbeb0de819b789bf0c96f5bea2b5399b87aaab6754",
+    "tests/training/test_window_variants.py": "0f17b7153211a0667d4f69efcbb0d7d194c8332326741eb3ebac8d6cffa1a2c0",
+    "tests/training/test_window_variant_cli.py": "3fbe588b36697a272396a3df0c37db240478f27863768fb6d07af50412dfa261",
+    "tests/posttraining/test_readout_adapter_sources.py": "8d605d618f866eaf4f656cdbfadfbc2557566d3c407e9dd819200e9c309f7009",
+    "docs/experiments/kronlstm/source_audit.md": "c6e2afb76412a8989fb32c08dcddd26636e583bf6dd01ab690253da964da1d3e",
+    "docs/experiments/window-variants-pilot-month-v3.md": "effd4c8e4eb397696a1f2f3e52a2ca4cd9cc85be6b3617c2430ee3bb3d9daf96",
+    "src/mars_titan/models/titans/state.py": "c0b40f3240be3177e9e636e82c4b988ccb4703fcfe5c5a1c3b71e070be68b0b1",
+    "tests/models/titans/test_deferred_checks.py": "551c45c80dca8f1d3948b971a99e5258c1af14a5560389c671aa829f45212a7c"
+  },
+  "tests": [
+    {
+      "group": "Kron, regresiones y finitud diferida",
+      "passed": 275,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "composition": {
+        "Kron_and_previous_regressions": 248,
+        "deferred_finiteness": 27
+      },
+      "components_not_additional_cases": true,
+      "supervised_seconds": 13.599196397932246,
+      "receipt_sha256": "5ead7db730e11f8e0dd3f1a6dff08b4e21c47d9d6cea999a5f837bebbed58b06",
+      "xml_sha256": "adcfb987882ef22bc3decc57333e786668d05c293f1cdcde14944540784e346e"
+    },
+    {
+      "group": "Window",
+      "passed": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 83.77328486205079,
+      "receipt_sha256": "9d354fef5f8d1c1f3401a728cd698b507e0d3328d0d651dd702604233270879a",
+      "xml_sha256": "b54f33d6fd35aa370e6be664934e146e6021fb65846d8bc002db2def812a475a",
+      "optimizer_post_hook_events_in_fixtures": 87,
+      "unique_optimizer_update_count_established": false,
+      "optimizer_counter_scope": "Eventos post-hook de diagnóstico. Los espías que llaman a optimizer.step envuelto pueden duplicarlos.",
+      "financial_development_fit": false,
+      "end_to_end_routes_exercised": [
+        "transformer-bp-adamw",
+        "kronlstm-bp-adamw",
+        "vector-delta-bp-adamw",
+        "transformer-dust-adamw",
+        "transformer-bp-sgd",
+        "transformer-dust-sgd"
+      ],
+      "all_six_recipe_routes_exercised": true,
+      "updates_verified_per_route": 3,
+      "per_route_update_evidence": [
+        "optimizer.step spy",
+        "checkpoint global_step and cursor",
+        "report global_step and work.optimizer_updates"
+      ],
+      "per_route_update_check_test": "test_six_published_routes_complete_fixture_updates_and_recover_checkpoint"
+    },
+    {
+      "group": "CLI",
+      "passed": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 18.462107729981653,
+      "receipt_sha256": "4b2afccf8f186484592f1c694c85336554b22b6375fa384e3a2b2d88768ff9cd",
+      "xml_sha256": "b51c502649813c031a5c82bf5c745063405ae12a94eaaf1b5f8e219aadbedaa0"
+    },
+    {
+      "group": "Readout",
+      "passed": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 39.25699374999385,
+      "receipt_sha256": "758cb65f70e0b18b0795705c39f4cb4c1a84a2af8600846cbf9ed6df84c978b3",
+      "xml_sha256": "21543e97bdb1bf74a49b8f476da7a3525a002e899899f645a5fe69141d045a6b"
+    }
+  ],
+  "count_convention": "El grupo de 275 contiene los 248 anteriores y los 27 de finitud diferida. Esos componentes no se vuelven a sumar. Window56, CLI19 y Readout3 se informan por separado. Las repeticiones de cobertura y mutación no añaden casos únicos.",
+  "diagnostics": {
+    "coverage_version": "7.16.1",
+    "radon_version": "6.0.1",
+    "crap_convention": "v**2*(1-c)**3+v, c es cobertura de sentencias dentro del rango de función Radon. Ramas separadas.",
+    "Kron": {
+      "files": 2,
+      "statements": 360,
+      "covered_statements": 336,
+      "branches": 130,
+      "covered_branches": 110,
+      "max_crap": 44.00580847050754,
+      "quality_sha256": "ba02d8b5c1d10a46f441b6b06ab89c661f2cb4a1c9fe36379e82fcd95840ca78",
+      "final_regression_after_finite_fix_verified": true
+    },
+    "Window": {
+      "files": 1,
+      "statements": 496,
+      "covered_statements": 454,
+      "branches": 178,
+      "covered_branches": 134,
+      "max_crap": 53.53552197835955,
+      "quality_sha256": "b9782224388404ed3bf722b1852ae15d6ccfcd0c5b4781a742475469d0ba0548"
+    },
+    "Readout_code": {
+      "function": "ReadoutAdapterTrainer._code",
+      "file": "src/mars_titan/posttraining/readout_adapters.py",
+      "line": 142,
+      "end_line": 144,
+      "statements": 3,
+      "covered_statements": 3,
+      "branches": 0,
+      "covered_branches": 0,
+      "complexity": 2,
+      "crap": 2,
+      "repeated_cases": 3,
+      "new_unique_cases": 0,
+      "supervised_seconds": 4.124971322948113,
+      "whole_trainer_validation_claim": false,
+      "other_routes_not_exercised": true,
+      "quality_sha256": "71d578ed98e3f9eec4d584ee17aad5ea79229c5450ed25b4ffd046eee8a8aeb2",
+      "receipt_sha256": "7223e227bd252da5e22fdc01dae9c6f5db92159217d9170fdc24c912461c8b24",
+      "xml_sha256": "0fd616c6a8d1384e9469ffaad1c2f171b18335fa80304213d93e56bb0b731f28"
+    },
+    "State": {
+      "file": "src/mars_titan/models/titans/state.py",
+      "statements": 137,
+      "covered_statements": 127,
+      "branches": 44,
+      "covered_branches": 38,
+      "max_crap": 92.060546875,
+      "max_crap_function": "join_mac_rows",
+      "other_routes_remain_partially_uncovered": true,
+      "require_finite": {
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 10,
+        "covered_branches": 10,
+        "complexity": 7,
+        "crap": 7,
+        "line": 171,
+        "end_line": 190
+      },
+      "quality_sha256": "ba02d8b5c1d10a46f441b6b06ab89c661f2cb4a1c9fe36379e82fcd95840ca78"
+    }
+  },
+  "mutation_testing": {
+    "Kron": {
+      "targets": 4,
+      "status": "passed",
+      "ids": [
+        "K1_scalar_erase_sign",
+        "K2_write_must_not_multiply_beta",
+        "K3_cache_omits_installed_semantics",
+        "K4_cache_capacity_relaxed"
+      ],
+      "summary_sha256": "b7103e6f0db53c263f0f51af14af4fc223b83db47ea50d43d6b5fd823d70ea53"
+    },
+    "Window": {
+      "targets": 1,
+      "status": "passed",
+      "id": "W1_total_window_limit_relaxed",
+      "mutant_call_exception": "Failed",
+      "summary_sha256": "150e3a0ba3ab11c24dbb406b8ca6aa90a89d3799fc584a6c69628621bf16f9d9"
+    },
+    "Readout": {
+      "targets": 1,
+      "status": "passed",
+      "id": "R1_parent_sources_called_without_instance",
+      "mutant_call_exception": "TypeError",
+      "summary_sha256": "420d13c73a74837efdb1923151eb94336580ccb8ac19565818dad1390eeb6d22"
+    },
+    "convention": "Cada objetivo requiere G1 aprobado, fallo CALL semántico en M1 y G2 aprobado, sin errores ni omisiones.",
+    "optimizer_attempts": 0,
+    "universal_mutation_resistance_claim": false,
+    "FiniteChecks": {
+      "targets": 2,
+      "status": "passed",
+      "ids": [
+        "Q1_inference_version_counter_access",
+        "Q2_inference_cached_without_version"
+      ],
+      "mutant_call_exceptions": [
+        "RuntimeError",
+        "Failed"
+      ],
+      "summary_sha256": "f85d4fc470284ea184436d556178889115eb73f66e7d7431b26c63985487d916",
+      "optimizer_attempts": 0,
+      "original_sources_unchanged": true,
+      "global_hold_unchanged": true
+    }
+  },
+  "related_Dust": {
+    "tests": 70,
+    "cuda_tests": 10,
+    "groups": [
+      {
+        "tests": 46,
+        "cuda_tests": 7
+      },
+      {
+        "tests": 24,
+        "cuda_tests": 3
+      }
+    ],
+    "directed_mutants": 5,
+    "not_added_to_Kron_counts": true,
+    "input_summary_sha256": "29a121b53d6a70cd02b2cf3ceeaaebf3aa365869df04a95a873b7fe737bb42bf",
+    "input_summary_scope": "Resumen privado revisado que dio origen al informe publicado, sin atribuirle la huella del JSON público.",
+    "public_report_url": "https://github.com/GonxKZ/mars-titan/blob/3e4b6979fee0c008a78aaa8df30f07d47bcf1af3/reports/engineering/dust-technical-20261023/README.md"
+  },
+  "profile": {
+    "status": "passed",
+    "policy": "technical_contended",
+    "synthetic_inputs": true,
+    "financial_targets": false,
+    "hidden_size": 32,
+    "layers": 1,
+    "context": 64,
+    "batches": [
+      32,
+      256
+    ],
+    "device": "cuda:0",
+    "precision": "fp32_strict",
+    "warmup_per_cell": 1,
+    "measured_per_cell": 5,
+    "cells": 12,
+    "counts": {
+      "prepare_completed": 78,
+      "backward_completed": 42,
+      "warmup_completed": 12,
+      "measured_completed": 60,
+      "prepared_row_exposures": 10380,
+      "optimizer_steps": 0
+    },
+    "internal_seconds": 37.58409687096719,
+    "supervised_seconds": 41.221903753932565,
+    "peak_process_rss_bytes": 1472942080,
+    "parity": {
+      "output_rtol": 0.0002,
+      "output_atol": 1e-06,
+      "gradient_rtol": 0.001,
+      "gradient_atol": 2e-06,
+      "status": "passed"
+    },
+    "source_price_sha256": "1ad218fb8e5866c1e4d49378c689bcca7cf404fb9f291411a3a9cbd16d60707b",
+    "source_rule_sha256": "91c9f300de063b4953a6ab62f753f5a0e21ea2d86fc1383d30b9e8c7bddb6695",
+    "script_sha256": "f47e81cac77eb8de2e14a6a3f148e1382f29be2d04137883ddb3cfa9ad0a0758",
+    "source_scope": "Fuentes fijadas por el perfil. Las huellas del árbol posterior se registran por separado y no se sustituyen.",
+    "records": [
+      {
+        "arm": null,
+        "batch": 32,
+        "backward": false,
+        "wall_ms": {
+          "median": 14.260114985518157,
+          "minimum": 10.86784596554935,
+          "maximum": 19.975868985056877,
+          "sample_stdev": 3.421933034626949
+        },
+        "peak_allocated_bytes": 68722176,
+        "peak_reserved_bytes": 69206016
+      },
+      {
+        "arm": null,
+        "batch": 32,
+        "backward": true,
+        "wall_ms": {
+          "median": 29.934603022411466,
+          "minimum": 28.157397056929767,
+          "maximum": 89.92465899791569,
+          "sample_stdev": 26.88157746242455
+        },
+        "peak_allocated_bytes": 71606784,
+        "peak_reserved_bytes": 92274688
+      },
+      {
+        "arm": null,
+        "batch": 256,
+        "backward": false,
+        "wall_ms": {
+          "median": 12.863003998063505,
+          "minimum": 10.585413896478713,
+          "maximum": 31.07133402954787,
+          "sample_stdev": 8.598034587173068
+        },
+        "peak_allocated_bytes": 78200832,
+        "peak_reserved_bytes": 92274688
+      },
+      {
+        "arm": null,
+        "batch": 256,
+        "backward": true,
+        "wall_ms": {
+          "median": 16.098888008855283,
+          "minimum": 12.616791063919663,
+          "maximum": 30.058986973017454,
+          "sample_stdev": 6.8308980333376565
+        },
+        "peak_allocated_bytes": 99683328,
+        "peak_reserved_bytes": 111149056
+      },
+      {
+        "arm": "kronlstm_v1",
+        "batch": 32,
+        "backward": false,
+        "wall_ms": {
+          "median": 148.0030519887805,
+          "minimum": 109.69512001611292,
+          "maximum": 231.12000001128763,
+          "sample_stdev": 45.395222255769525
+        },
+        "peak_allocated_bytes": 82262016,
+        "peak_reserved_bytes": 96468992
+      },
+      {
+        "arm": "kronlstm_v1",
+        "batch": 32,
+        "backward": true,
+        "wall_ms": {
+          "median": 399.7818110510707,
+          "minimum": 321.6411849716678,
+          "maximum": 492.6686689723283,
+          "sample_stdev": 73.52698047696389
+        },
+        "peak_allocated_bytes": 93046784,
+        "peak_reserved_bytes": 104857600
+      },
+      {
+        "arm": "kronlstm_v1",
+        "batch": 256,
+        "backward": false,
+        "wall_ms": {
+          "median": 119.67790708877146,
+          "minimum": 108.97762596141547,
+          "maximum": 159.7604809794575,
+          "sample_stdev": 19.562892356022942
+        },
+        "peak_allocated_bytes": 185211392,
+        "peak_reserved_bytes": 209715200
+      },
+      {
+        "arm": "kronlstm_v1",
+        "batch": 256,
+        "backward": true,
+        "wall_ms": {
+          "median": 408.0234069842845,
+          "minimum": 352.846416993998,
+          "maximum": 650.8429000386968,
+          "sample_stdev": 132.9762095094728
+        },
+        "peak_allocated_bytes": 270601216,
+        "peak_reserved_bytes": 322961408
+      },
+      {
+        "arm": "vector_delta_v1",
+        "batch": 32,
+        "backward": false,
+        "wall_ms": {
+          "median": 102.85447293426841,
+          "minimum": 99.16868200525641,
+          "maximum": 189.0590920811519,
+          "sample_stdev": 38.44875191765509
+        },
+        "peak_allocated_bytes": 82262016,
+        "peak_reserved_bytes": 96468992
+      },
+      {
+        "arm": "vector_delta_v1",
+        "batch": 32,
+        "backward": true,
+        "wall_ms": {
+          "median": 333.5242319153622,
+          "minimum": 237.29643900878727,
+          "maximum": 388.7992250965908,
+          "sample_stdev": 55.208224438724905
+        },
+        "peak_allocated_bytes": 92817408,
+        "peak_reserved_bytes": 104857600
+      },
+      {
+        "arm": "vector_delta_v1",
+        "batch": 256,
+        "backward": false,
+        "wall_ms": {
+          "median": 70.80017798580229,
+          "minimum": 46.988315996713936,
+          "maximum": 107.23088402301073,
+          "sample_stdev": 24.841995601937953
+        },
+        "peak_allocated_bytes": 185211392,
+        "peak_reserved_bytes": 211812352
+      },
+      {
+        "arm": "vector_delta_v1",
+        "batch": 256,
+        "backward": true,
+        "wall_ms": {
+          "median": 318.7859730096534,
+          "minimum": 219.78933608625084,
+          "maximum": 660.8655520249158,
+          "sample_stdev": 167.639381567844
+        },
+        "peak_allocated_bytes": 268766208,
+        "peak_reserved_bytes": 320864256
+      }
+    ],
+    "profile_sha256": "6a932a999e78474f141b4514ad2192414640b6314c89816824c4eac9d2b5680b",
+    "receipt_sha256": "2a36c75121aabeb4f50e87907678ba773f993fd3ae3b477e5ee1d196e84f981d",
+    "cuda_time_scope": "Intervalo de stream, con huecos de lanzamiento. No es tiempo exclusivo de kernels.",
+    "memory_scope": "Picos Torch asignado/reservado y RSS máximo de vida del proceso por separado.",
+    "energy_measured": false,
+    "global_speedup_claim": false,
+    "financial_mae_measured": false
+  },
+  "previous_attempts": [
+    {
+      "scope": "Window50",
+      "status": "failed_infrastructure",
+      "passed": 43,
+      "failures": 1,
+      "errors": 6,
+      "reason": "Errno 122, cuota de almacenamiento temporal",
+      "receipt_sha256": "209da489ba7a78765cc5b71585594198c92c8cb86ca605d68a9116dde8343d8b",
+      "xml_sha256": "50c973fabeac53cc47a8afad66a7ec4924728a6b96b655ffe155403adfc04a95"
+    },
+    {
+      "scope": "Regresión amplia previa",
+      "status": "timeout",
+      "returncode": 124,
+      "supervised_seconds": 541.1247989030089,
+      "not_counted_as_green": true
+    },
+    {
+      "scope": "CPU FP32 QKV antes de corrección",
+      "status": "chunk_parity_failed",
+      "seeds": [
+        1,
+        2
+      ],
+      "separate_identity_after_fix": true
+    },
+    {
+      "scope": "Window56, ampliación de seis rutas",
+      "status": "failed_not_approved",
+      "passed": 54,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "returncode": 1,
+      "supervised_seconds": 82.22849342599511,
+      "failed_routes": [
+        "kronlstm-bp-adamw",
+        "vector-delta-bp-adamw"
+      ],
+      "failure_stage": "Evaluación inicial",
+      "exception_type": "RuntimeError",
+      "message": "Inference tensors do not track version counter.",
+      "cause": "state.require_finite accede a _version de un tensor creado bajo inference_mode.",
+      "fix_and_green_pending": false,
+      "not_counted_as_green": true,
+      "receipt_sha256": "1c701c90bd8be944033d0e1e36dfc6e3b8a5530c64b9c601e7c43dfc1564bd0b",
+      "xml_sha256": "b91255ab2897772fdddfbd3119c832627f366885d3d542449e49789cd6e12a28",
+      "log_sha256": "a59c56293ba73a7ef400a7cb99103988de879e457348654ac8a0189b6c094e6b",
+      "subsequent_green_receipt_sha256": "9d354fef5f8d1c1f3401a728cd698b507e0d3328d0d651dd702604233270879a"
+    },
+    {
+      "scope": "Coverage finitud, módulo como fuente, primer intento",
+      "status": "infrastructure_failure_before_cases",
+      "returncode": 139,
+      "supervised_seconds": 1.818933387985453,
+      "message": "PyTorch INTERNAL ASSERT en conversión NumPy durante importación anticipada de Torch.",
+      "completed_cases": 0,
+      "receipt_sha256": "d30ca0c67ff8e02c063a8506cb98754900fda141993c9d87eca71c505394cbce",
+      "log_sha256": "eff49c62621ea5efb7d8b800725498a306a964238371ba9f61d2aed88f0a1706",
+      "not_counted_as_green": true,
+      "global_environment_fix_claim": false
+    },
+    {
+      "scope": "Coverage finitud, módulo como fuente, segundo intento",
+      "status": "infrastructure_failure_before_cases",
+      "returncode": 139,
+      "supervised_seconds": 1.6182827859884128,
+      "completed_cases": 0,
+      "log_empty": true,
+      "receipt_sha256": "62d743f405c9d15d7fa609765fccb349301a54badf87a4c165a682d74efc61df",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "not_counted_as_green": true,
+      "global_environment_fix_claim": false
+    }
+  ],
+  "development_trials_reported": false,
+  "full_campaign_allowed": false,
+  "automatic_resume_allowed": false,
+  "final_test_access": false,
+  "development_attempt": {
+    "protocol": "pilot-month-v3",
+    "status": "blocked_gpu_no_training",
+    "head": "b19e01ffca35d39d689f4cc63295caf59a8448ce",
+    "supervisor_sha256": "efb22ffe163e12331f6f2d8ddfea20e75e4325e505b067408573143f1df4e384",
+    "global_budget_seconds": 1800,
+    "interval": {
+      "train_start": "2015-01-01",
+      "train_end": "2015-02-01",
+      "validation_start": "2015-02-01",
+      "validation_end": "2015-03-01",
+      "total_days": 59
+    },
+    "manifest_sha256": "b4e970cc67c629e2579c6ff050fd514ba0311ae46dc96ad8f8141c55757caa8f",
+    "prepare": {
+      "returncode": 0,
+      "elapsed_seconds": 30.292686600005254,
+      "log_sha256": "9495cd5ccdd8558fcad4a4605c09729a4ccf845c29cd9085740a4c1c3b18677e"
+    },
+    "gpu_admission": {
+      "status": "gpu_admission_rejected",
+      "reason": "another_compute_process",
+      "returncode": 75,
+      "elapsed_seconds": 1.768865993944928,
+      "log_sha256": "227fb29fa10041ba2028b416084d49e85014b27ffb074e5b35d4b0255072ec4e"
+    },
+    "total_elapsed_seconds": 32.084835432935506,
+    "fit_process_started": false,
+    "arms_started": 0,
+    "confirmed_optimizer_updates": 0,
+    "scoped_grant_closed": true,
+    "global_hold_unchanged": true,
+    "registered_inputs_and_sources_unchanged": true,
+    "automatic_resume": false,
+    "final_test_access": false,
+    "receipt_sha256": "f43c1d3efc1f949e0532a86f1ed1e5676fe9791f7f1b78b265555209e0b17a58",
+    "input_audit": {
+      "kind": "real_input_admission_without_predictor",
+      "manifest_sha256": "b4e970cc67c629e2579c6ff050fd514ba0311ae46dc96ad8f8141c55757caa8f",
+      "populations": {
+        "train": {
+          "samples": 3249,
+          "sample_ids_sha256": "dedf9b9806305c2c9b9235b198ae8e9f4c434b84de6d236747e772391fb3274a",
+          "inputs_sha256": "e68cbc991cc99468d69e33a23aabd15b1069d92bf13e37311c43df914e9cdd21",
+          "targets_sha256": "42287bde3213b2664ce46fec902773ae57bfeb2e2adece5ecbf554281fc76c3b"
+        },
+        "validation": {
+          "samples": 3078,
+          "sample_ids_sha256": "c85b548dbb935f64d0ef19b293575125834fa7f52bc92516cb012bd2d3bd4600",
+          "inputs_sha256": "4bf66f43503c2827fc5b86232130b16fc2d45c5c528ebf5f03e46f5aee5c45f0",
+          "targets_sha256": "12f0ed4fd84fc72cc0a6f31c845a5564d23e80cfd8e0a4e9b632f5a07b04c101"
+        }
+      },
+      "declared_assets": 256,
+      "contributing_assets": {
+        "train": 171,
+        "validation": 171
+      },
+      "recipe_sha256": {
+        "transformer-bp-adamw": "aeae1282a4c436da2855ae3dadc0325a638927897282c0b5b85c9846c922a42c",
+        "kronlstm-bp-adamw": "da54070c82a21258b07fc8a398824496cbb577e1d468a0c95a5b9ea6d1a04994",
+        "vector-delta-bp-adamw": "ecd4e2438b21f0ecda4cf90e1f9ff8f707b8e8c209b9d7cabac82a0ee38f9fa8",
+        "transformer-dust-adamw": "2745cea3d59913901a180fda8bbae35def271c59f71ca829ec21567bf919388d",
+        "transformer-bp-sgd": "85d661980f56eb1ba8a45c8253c69c3c1a3cbf3660861083caa01d921f49bef8",
+        "transformer-dust-sgd": "3d195140636273cbf7be7637ba5bc9165da355753fd88b5c77acf658b7e1a209"
+      },
+      "predictor_constructed": false,
+      "predictions_emitted": 0,
+      "optimizer_updates": 0,
+      "final_test_opened": false,
+      "global_hold_unchanged": true,
+      "elapsed_seconds": 5.041105745942332,
+      "supervised_seconds": 7.08231855800841,
+      "process_lifetime_peak_rss_bytes": 758120448,
+      "memory_scope": "Auditoría de entradas. No es memoria ni coste de entrenamiento.",
+      "table_cache_limit_bytes": 268435456,
+      "audit_sha256": "98247b71d8c30946b39bfe08dad787430dd894429adbdd6619ee0bdb916fcd1f",
+      "receipt_sha256": "eec2eb98c8e34b1d8d680b04fcde251f02bc7e4a98580b7f71c6f7a7734d4a5a"
+    },
+    "projection": {
+      "completed_epochs_required": 2,
+      "batch_size": 32,
+      "updates_per_completed_arm": 204,
+      "logical_train_row_exposures_per_completed_arm": 6498,
+      "two_dust_full_batches_partial_projection_seconds": 194.18858688138425,
+      "source": "Mediana del perfil sintético Dust, solo lotes completos de dos configuraciones y dos épocas.",
+      "includes_partial_batches": false,
+      "includes_backprop_controls": false,
+      "includes_optimizer_validation_checkpoint_or_io": false,
+      "total_training_cost_estimate": false,
+      "executed": false
+    },
+    "financial_mae_measured": false,
+    "predictive_superiority_claim": false
+  },
+  "historical_qa_runs": [
+    {
+      "group": "Window",
+      "passed": 50,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 67.82611881091725,
+      "financial_development_fit": false,
+      "receipt_sha256": "f08864ac3520704b62a792c2c003e8db0c1b0b1fce9c3576acf32aedf7b8eb67",
+      "xml_sha256": "b06b2a5828e731d21bc647d056b381caa21d3ed437f982d840cb9d28189a957e",
+      "result_scope": "Histórico aprobado. No equivale a ejecución de las seis rutas completas.",
+      "end_to_end_routes_exercised": [
+        "transformer-bp-adamw",
+        "transformer-dust-adamw"
+      ],
+      "all_six_recipe_routes_exercised": false,
+      "optimizer_post_hook_events_in_fixtures": 57,
+      "unique_optimizer_update_count_established": false,
+      "optimizer_counter_scope": "Eventos post-hook de diagnóstico, posiblemente duplicados por espías que invocan optimizer.step envuelto. No son un recuento de actualizaciones físicas únicas."
+    },
+    {
+      "group": "Kron y regresiones",
+      "passed": 248,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 88.44188668997958,
+      "receipt_sha256": "c0e27439d8dd500af64268d46877d62968439af0793df24ee712145482091ee1",
+      "xml_sha256": "752a287c0d988333ab879a905f016c089110ce44e30cfa8cdfe8b0b9137e577a"
+    },
+    {
+      "group": "Finitud diferida",
+      "passed": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "supervised_seconds": 5.077106635901146,
+      "receipt_sha256": "b9d62ed937bc83a8e650a571c830f48995677d89f1f7e980b932012fe0144ce7",
+      "xml_sha256": "375c13896216faeff57597d4fdb5bc22e1ea19a54e8eb9a2ab9e22e1f08c4476",
+      "coverage_source_kind": "directory",
+      "source_directory": "src/mars_titan/models/titans",
+      "cases_not_added_again_when_combined_suite_runs": true
+    }
+  ],
+  "source_sha256_scope": "Huellas de código, pruebas y documentos de base del commit 6385f3890406d5a6a0e77a0d2be1e49939277614. No son las del futuro commit documental.",
+  "verification_summary": {
+    "counts_frozen": true,
+    "primary_test_groups": [
+      275,
+      56,
+      19,
+      3
+    ],
+    "combined_regression_composition": {
+      "Kron_and_legacy": 248,
+      "deferred_finiteness": 27
+    },
+    "components_not_added_again": true,
+    "six_fixture_routes_green": true,
+    "updates_verified_per_route": 3,
+    "mutation_targets": {
+      "Kron": 4,
+      "Window": 1,
+      "Readout": 1,
+      "FiniteChecks": 2,
+      "Dust_separate": 5
+    },
+    "post_hook_diagnostic_not_unique_update_count": true,
+    "real_prepare_and_failed_gpu_admission_unchanged": true,
+    "scientific_acceptance_criteria_closed": false
+  }
+}
