@@ -104,7 +104,9 @@ class ProposalReceipt:
 class ProposalLedger:
     """Una ejecución finita con un solo intento pendiente y cargos sin reembolso."""
 
-    def __init__(self, directory, *, registry, review, limits, resume=False):
+    def __init__(
+        self, directory, *, registry, review, limits, resume=False, generation_plan_id=None
+    ):
         require(type(registry) is ProposalRegistry, "Falta el registro tipado de configuraciones")
         require(type(review) is MatureReview, "Falta la revisión madura tipada")
         require(type(resume) is bool, "resume debe ser booleano")
@@ -114,6 +116,7 @@ class ProposalLedger:
         for name, maximum in LIMIT_MAXIMA.items():
             bounded_integer(limits[name], name, 1, maximum)
         self.registry, self.review, self.limits = registry, review, dict(limits)
+        self.generation_plan_id = generation_plan_id
         registry.identity()
         require(
             len(registry.entries) <= limits["max_candidates"], "El registro supera sus candidatas"
@@ -127,7 +130,7 @@ class ProposalLedger:
         self.path = self.directory / "state.json"
         initial = self._sealed(
             dict(
-                schema_version=1,
+                schema_version=self._version(),
                 kind=KIND,
                 identity=self._identity,
                 review=value,
@@ -153,7 +156,7 @@ class ProposalLedger:
 
     def _bindings(self):
         review = self.review.record()
-        return dict(
+        result = dict(
             registry_id=self.registry.registry_id,
             baseline_id=self.registry.baseline_id,
             review_id=review["review_id"],
@@ -162,11 +165,19 @@ class ProposalLedger:
             events_sha256=review["events_sha256"],
             limits=self.limits,
         )
+        if self.generation_plan_id is not None:
+            result["generation_plan_id"] = identifier(
+                self.generation_plan_id, "El plan de generación"
+            )
+        return result
+
+    def _version(self):
+        return 2 if "generation_plan_id" in self._identity else 1
 
     def _check_bindings(self):
         require(
             encoded(self._bindings(), MAX_REVIEW_BYTES) == self._identity_json,
-            "El registro, revisión o cuota cambió durante la ejecución",
+            "La ejecución cambió de registro, revisión, cuota o plan",
         )
 
     @contextmanager
@@ -204,8 +215,8 @@ class ProposalLedger:
         )
 
     def _receipt(self, ordinal, configuration_id, request_id, previous):
-        return dict(
-            schema_version=1,
+        result = dict(
+            schema_version=self._version(),
             kind=RECEIPT_KIND,
             proposal_id=self._proposal_id(ordinal, configuration_id, request_id),
             ordinal=ordinal,
@@ -227,6 +238,9 @@ class ProposalLedger:
             selection_performed=False,
             deployment_performed=False,
         )
+        if "generation_plan_id" in self._identity:
+            result["generation_plan_id"] = self._identity["generation_plan_id"]
+        return result
 
     def _check_attempts(self, state):
         attempts = state["attempts"]
@@ -237,9 +251,12 @@ class ProposalLedger:
         )
         previous, requests = None, set()
         eligible = self.review.record()["mature_rows"] > 0
+        fields = RECEIPT_FIELDS | {"receipt_sha256"}
+        if "generation_plan_id" in self._identity:
+            fields.add("generation_plan_id")
         for ordinal, receipt in enumerate(attempts, 1):
             require(
-                type(receipt) is dict and set(receipt) == RECEIPT_FIELDS | {"receipt_sha256"},
+                type(receipt) is dict and set(receipt) == fields,
                 "Un recibo cambió su esquema",
             )
             request = receipt["request_id"]
@@ -303,7 +320,7 @@ class ProposalLedger:
         )
         require(
             type(state["schema_version"]) is int
-            and state["schema_version"] == 1
+            and state["schema_version"] == self._version()
             and state["kind"] == KIND
             and state["identity"] == self._identity
             and state["review"] == self.review.record()
