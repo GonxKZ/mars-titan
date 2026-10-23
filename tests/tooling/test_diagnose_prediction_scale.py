@@ -97,6 +97,7 @@ def test_runner_deduplicates_signed_zero_and_records_skipped_folders(isolated):
     _write_run(root / "layout/positive-1", lambda t, r: np.zeros(len(t)))
     _write_run(root / "layout/negative-2", lambda t, r: -np.zeros(len(t)))
     _write_run(root / "layout/frozen-3", _noise, phases=["evaluation"])
+    _write_run(root / "layout/other-4", _noise, seed=7)
     inventory = _inventory(isolated, "pilot", ["signal-42", "noise-43"])
     path = _declaration(
         isolated,
@@ -117,6 +118,28 @@ def test_runner_deduplicates_signed_zero_and_records_skipped_folders(isolated):
     assert verdict["ic_distinguishable_positive"] == ["pilot/runs/signal-42"]
     assert set(verdict["family_sensitivity"]) == {"primary_source", "inventory_sources"}
     assert verdict["robust_to_family"] is True
+    assert verdict["decision"] == DECLARATION["rule"]["otherwise"]
+    # La familia declarada es toda la población. Los alcances solo la restringen.
+    assert verdict["ic_family_size"] == 3
+    assert {k: v["size"] for k, v in verdict["family_sensitivity"].items()} == {
+        "primary_source": 2,
+        "inventory_sources": 2,
+    }
+    cohort = summary["cohorts"][0]
+    best = min(cohort["predictors"], key=lambda p: p["shrunk_mae"])
+    assert cohort["best_gain_power"]["shrunk"]["id"] == best["id"]
+    # λ sale solo de la calibración y la sensibilidad de validación y calibración juntas.
+    signal = predictors["pilot/runs/signal-42"]
+    folder = root / "pilot/runs/signal-42"
+
+    def panel(*phases):
+        tables = [pq.read_table(folder / f"{p}-predictions.parquet") for p in phases]
+        return runner.ForecastPanel.from_arrow(pa.concat_tables(tables))
+
+    calibration, wide = panel("calibration"), panel("validation", "calibration")
+    assert signal["shrinkage"] == sd.market_shrinkage(calibration, calibration.prediction)
+    assert signal["sensitivity_shrinkage"] == sd.market_shrinkage(wide, wide.prediction)
+    assert signal["shrinkage"] != signal["sensitivity_shrinkage"]
 
 
 def test_runner_rejects_a_changed_inventory_file(isolated):
@@ -159,3 +182,59 @@ def test_past_median_uses_the_evaluation_rows_in_time_order():
             tables[2],
             dict(lag_sessions=2, window=60, min_labels=20),
         )
+
+
+def test_an_inventory_with_a_missing_partition_is_an_error(isolated):
+    root = isolated / "root"
+    _write_run(root / "pilot/runs/signal-42", _signal)
+    inventory = _inventory(isolated, "pilot", ["signal-42"])
+    document = json.loads(inventory.read_text())
+    document["artifacts"] = [i for i in document["artifacts"] if i["phase"] != "calibration"]
+    inventory.write_text(json.dumps(document))
+    path = _declaration(isolated, [dict(name="pilot", inventory=inventory.name, directory="pilot")])
+    with pytest.raises(ValueError, match="Faltan particiones"):
+        runner.run(path, root, isolated / "out")
+
+
+def test_the_sensitivity_partition_must_precede_the_evaluation(isolated):
+    root = isolated / "root"
+    folder = root / "pilot/runs/signal-42"
+    _write_run(folder, _signal)
+    # La validación repite las fechas de la evaluación: λ de calibración vale, la
+    # sensibilidad con validación y calibración debe rechazarse.
+    pq.write_table(_table("evaluation", _signal), folder / "validation-predictions.parquet")
+    inventory = _inventory(isolated, "pilot", ["signal-42"])
+    path = _declaration(isolated, [dict(name="pilot", inventory=inventory.name, directory="pilot")])
+    with pytest.raises(ValueError, match="anterior a la evaluación"):
+        runner.run(path, root, isolated / "out")
+
+
+def _cohort(declared, scopes):
+    def members(values):
+        return {name: dict(simultaneous=bounds) for name, bounds in values.items()}
+
+    return dict(
+        cohort_sha256="c",
+        sources=["pilot"],
+        families=dict(
+            pearson_ic=dict(members=members(declared)),
+            pearson_ic_scopes={scope: dict(members=members(v)) for scope, v in scopes.items()},
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "declared,scope,decision,robust",
+    [
+        ({"a": [0.01, 0.02]}, {"a": [0.01, 0.02]}, "otherwise", True),
+        ({"a": [-0.01, 0.02]}, {"a": [-0.01, 0.02]}, "if_none_distinguishable", True),
+        ({"a": [-0.01, 0.02]}, {"a": [0.001, 0.02]}, "if_none_distinguishable", False),
+    ],
+    ids=["positive", "none", "family-dependent"],
+)
+def test_the_verdict_follows_the_declared_family(declared, scope, decision, robust):
+    declaration = json.loads(json.dumps(DECLARATION))
+    declaration["rule"]["primary_source"] = "pilot"
+    verdict = runner._verdict([_cohort(declared, {"primary_source": scope})], declaration)
+    assert verdict["decision"] == declaration["rule"][decision]
+    assert verdict["robust_to_family"] is robust

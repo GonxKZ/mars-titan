@@ -280,3 +280,17 @@ def test_shrunk_series_applies_the_fitted_factor():
     assert np.array_equal(
         result["series"]["bound"], sd.session_mae(evaluation, bound * evaluation.prediction)
     )
+
+
+def test_mean_ic_ignores_sessions_without_a_defined_correlation():
+    target = [1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0]
+    prediction = [1.0, 2.0, 3.0, 3.0, 2.0, 0.0, 5.0, 5.0, 5.0]
+    fit = _panel(target, prediction, sessions=3)
+    evaluation = _panel(target, prediction, sessions=3, start=10)
+    result = sd.diagnose_predictor(
+        fit, evaluation, fit_prediction=fit.prediction, prediction=evaluation.prediction
+    )
+    values, defined = sd.session_correlations(evaluation, evaluation.prediction)
+    assert defined.tolist() == [True, True, False]
+    assert result["undefined_ic_sessions"] == 1
+    assert result["mean_pearson_ic"] == pytest.approx(values[:2].mean())
