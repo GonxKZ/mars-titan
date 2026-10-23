@@ -1,0 +1,145 @@
+{
+ "schema_version": 1,
+ "kind": "output_stage_cost",
+ "issue": 748,
+ "measured_at": "2026-10-23T21:05:56+00:00",
+ "commit": "1d00c8768cd0e6872c2e33b00929a949caf48b85",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/neutral_abstention.py": "5c920072506ad605520264f25a9d469ded9d7b5ac1153ba345f7130253764204",
+  "src/mars_titan/calibration/conformal_quantiles.py": "364ecd27c39babfe815ac08bd79bac2627fa7dc125a5f0b56148cbf706a2b8ca",
+  "benchmarks/output_stage_cost.py": "aa41119908e739b4019428e6ceb4e49bf9c80fc55422e2988515d3e820f7d421"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": "2",
+   "openblas": "2"
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   20.9580078125,
+   16.6416015625,
+   13.92724609375
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver load_average_at_start"
+ },
+ "not_measured": [
+  "forward y backward, porque la etapa no tiene tensores ni parámetros entrenables",
+  "GPU, por el mismo motivo",
+  "lectura de Parquet y alineación con la vista, que hace la criba",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "s_block_256": {
+   "assets": 256,
+   "sessions": 63,
+   "rows": 16128,
+   "calibration_rows": 16128,
+   "history_rows": 32256,
+   "seeds": 5,
+   "fit": {
+    "median_s": 0.017848630901426077,
+    "min_s": 0.015699935029260814,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 0.013415024033747613,
+    "min_s": 0.011792870005592704,
+    "repeats": 5
+   },
+   "past_volatility": {
+    "median_s": 0.05788799608126283,
+    "min_s": 0.05578369402792305,
+    "repeats": 5
+   },
+   "seed_disagreement": {
+    "median_s": 0.005332549102604389,
+    "min_s": 0.005220156977884471,
+    "repeats": 5
+   },
+   "emit_with_four_controls": {
+    "median_s": 0.04423771903384477,
+    "min_s": 0.04295312997419387,
+    "repeats": 5
+   },
+   "emit_numpy_peak_bytes": 2598869,
+   "volatility_numpy_peak_bytes": 2936852,
+   "abstained_fraction": 0.9956597222222222
+  },
+  "year_256": {
+   "assets": 256,
+   "sessions": 252,
+   "rows": 64512,
+   "calibration_rows": 16128,
+   "history_rows": 80640,
+   "seeds": 5,
+   "fit": {
+    "median_s": 0.015598183032125235,
+    "min_s": 0.01150496897753328,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 0.04820333304814994,
+    "min_s": 0.034146641031838953,
+    "repeats": 5
+   },
+   "past_volatility": {
+    "median_s": 0.12073549604974687,
+    "min_s": 0.08447255997452885,
+    "repeats": 5
+   },
+   "seed_disagreement": {
+    "median_s": 0.01677615102380514,
+    "min_s": 0.01493160892277956,
+    "repeats": 5
+   },
+   "emit_with_four_controls": {
+    "median_s": 0.21054145402740687,
+    "min_s": 0.18923941405955702,
+    "repeats": 5
+   },
+   "emit_numpy_peak_bytes": 10388693,
+   "volatility_numpy_peak_bytes": 8839700,
+   "abstained_fraction": 0.9959232390873016
+  },
+  "population_4200": {
+   "assets": 4200,
+   "sessions": 252,
+   "rows": 1058400,
+   "calibration_rows": 264600,
+   "history_rows": 1323000,
+   "seeds": 5,
+   "fit": {
+    "median_s": 0.13144069898407906,
+    "min_s": 0.12713053601328284,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 1.3986939489841461,
+    "min_s": 1.0500716340029612,
+    "repeats": 5
+   },
+   "past_volatility": {
+    "median_s": 3.0620324059855193,
+    "min_s": 2.0704002149868757,
+    "repeats": 5
+   },
+   "seed_disagreement": {
+    "median_s": 1.007753654033877,
+    "min_s": 0.4584857349982485,
+    "repeats": 5
+   },
+   "emit_with_four_controls": {
+    "median_s": 4.676117529976182,
+    "min_s": 3.690993449999951,
+    "repeats": 5
+   },
+   "emit_numpy_peak_bytes": 170404645,
+   "volatility_numpy_peak_bytes": 145002356,
+   "abstained_fraction": 0.9962008692365836
+  }
+ }
+}
