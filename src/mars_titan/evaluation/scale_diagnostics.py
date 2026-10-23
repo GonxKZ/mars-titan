@@ -194,7 +194,8 @@ def minimum_detectable_effect(differential, *, candidates, alpha, power):
     """Diferencia media por sesión detectable con Bonferroni unilateral y autocorrelación AR(1).
 
     El tamaño efectivo es n(1 − ρ)/(1 + ρ) con la autocorrelación de orden uno ρ recortada
-    a [0, 0,99). Devuelve el efecto en unidades de la serie y en desviaciones típicas.
+    a [0, 0,99]. Devuelve el efecto en unidades de la serie y en desviaciones típicas. Es una
+    aproximación optimista frente al intervalo simultáneo bilateral que decide en la familia.
     """
     differential = np.asarray(differential, dtype=np.float64)
     _require(differential.ndim == 1 and len(differential) >= 3, "La serie es demasiado corta")
@@ -219,7 +220,8 @@ def minimum_detectable_effect(differential, *, candidates, alpha, power):
     )
 
 
-def _ensure_before(earlier, later):
+def ensure_before(earlier, later):
+    """Exigir que la partición que elige λ termine antes de que empiece la evaluación."""
     _require(
         int(earlier.prediction_at.max()) < int(later.prediction_at.min()),
         "La partición que elige λ debe ser anterior a la evaluación",
@@ -233,7 +235,7 @@ def _mean_or_none(values, defined):
 
 def diagnose_predictor(fit, evaluation, *, fit_prediction, prediction):
     """Medidas de un predictor con λ elegido en ``fit`` y aplicado sin cambios a ``evaluation``."""
-    _ensure_before(fit, evaluation)
+    ensure_before(fit, evaluation)
     factors = market_shrinkage(fit, fit_prediction)
     shrunk = apply_shrinkage(evaluation, prediction, factors)
     bound = market_shrinkage(evaluation, prediction)

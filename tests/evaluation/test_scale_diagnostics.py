@@ -199,3 +199,84 @@ def test_scale_diagnostics_do_not_import_pytorch():
         )
     }
     assert "torch" not in modules
+
+
+def test_ensure_before_rejects_overlapping_partitions():
+    first = _panel([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], sessions=1)
+    same_day = _panel([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], sessions=1)
+    with pytest.raises(ValueError, match="anterior"):
+        sd.ensure_before(first, same_day)
+    sd.ensure_before(first, _panel([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], sessions=1, start=1))
+
+
+def test_session_correlations_need_three_assets():
+    two = _panel([1.0, 2.0, 1.0, 2.0], [1.0, 2.0, 2.0, 1.0], sessions=2)
+    assert not sd.session_correlations(two, two.prediction)[1].any()
+    three = _panel([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], sessions=1)
+    assert sd.session_correlations(three, three.prediction)[1].all()
+
+
+def test_icir_uses_the_sample_deviation():
+    target = np.tile([1.0, 2.0, 3.0, 4.0], 4)
+    prediction = np.concatenate(
+        [[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 4.0, 3.0], [2.0, 1.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]]
+    )
+    fit = _panel(target, prediction, sessions=4)
+    evaluation = _panel(target, prediction, sessions=4, start=10)
+    result = sd.diagnose_predictor(
+        fit, evaluation, fit_prediction=fit.prediction, prediction=evaluation.prediction
+    )
+    values = result["series"]["pearson"]
+    assert result["pearson_icir"] == pytest.approx(values.mean() / np.std(values, ddof=1))
+
+
+def test_calibration_slope_weights_sessions_and_not_rows():
+    # La sesión de un activo pesa lo mismo que la de tres: la pendiente no es la de filas.
+    times = np.array([0, DAY, DAY, DAY])
+    panel = ForecastPanel.from_columns(
+        ["a", "b", "c", "d"],
+        np.array(["US"] * 4),
+        times,
+        np.array([2.0, 1.0, 1.0, 1.0]),
+        np.ones(4),
+    )
+    assert sd.calibration_slope(panel, panel.prediction) == pytest.approx(1.5)
+
+
+def test_effective_sessions_clip_strong_autocorrelation():
+    series = np.arange(2000, dtype=np.float64)
+    result = sd.minimum_detectable_effect(series, candidates=[8], alpha=0.05, power=0.8)
+    assert result["autocorrelation"] > 0.99
+    assert result["effective_sessions"] == pytest.approx(2000 * 0.01 / 1.99)
+
+
+def test_block_family_matches_explicit_circular_blocks():
+    rng = np.random.default_rng(5)
+    values = rng.normal(size=(30, 2))
+    period = np.arange(30)
+    result = sd.block_family(values, period, block_length=4, replicates=50, seed=9, confidence=0.9)
+    from mars_titan.evaluation.paired_comparisons import circular_block_indices
+
+    index = circular_block_indices(np.random.default_rng(9), 50, 30, 4)
+    draws = values[index].mean(axis=1)
+    lower, upper = np.quantile(draws, [0.05, 0.95], axis=0, method="linear")
+    assert np.allclose(result["lower"], lower) and np.allclose(result["upper"], upper)
+    wider = sd.block_family(values, period, block_length=1, replicates=50, seed=9, confidence=0.9)
+    assert not np.allclose(wider["lower"], result["lower"])
+
+
+def test_shrunk_series_applies_the_fitted_factor():
+    rng = np.random.default_rng(2)
+    signal = rng.normal(size=(2, 10 * 8))
+    fit = _panel(0.3 * signal[0] + rng.normal(size=80), 2 * signal[0], sessions=10)
+    evaluation = _panel(0.3 * signal[1] + rng.normal(size=80), 2 * signal[1], sessions=10, start=20)
+    result = sd.diagnose_predictor(
+        fit, evaluation, fit_prediction=fit.prediction, prediction=evaluation.prediction
+    )
+    factor = sd.market_shrinkage(fit, fit.prediction)["US"]
+    expected = sd.session_mae(evaluation, factor * evaluation.prediction)
+    assert np.array_equal(result["series"]["shrunk"], expected)
+    bound = result["shrinkage_with_future_information"]["US"]
+    assert np.array_equal(
+        result["series"]["bound"], sd.session_mae(evaluation, bound * evaluation.prediction)
+    )
