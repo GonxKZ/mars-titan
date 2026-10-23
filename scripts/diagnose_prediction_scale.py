@@ -57,18 +57,29 @@ def _inventory_runs(source, root):
     return [dict(run=run, name=Path(run).name, files=files) for run, files in sorted(runs.items())]
 
 
+def _phase_files(folder):
+    """Predicciones por partición en cualquiera de las tres estructuras que usan los pilotos."""
+    files = {}
+    for phase in ("validation", "calibration", "evaluation"):
+        candidates = (
+            folder / f"{phase}-predictions.parquet",
+            folder / phase / "predictions.parquet",
+            folder / "run" / f"{phase}-predictions.parquet",
+        )
+        present = [path for path in candidates if path.exists()]
+        _require(len(present) <= 1, f"Hay varias predicciones de {phase} en {folder.name}")
+        if present:
+            files[phase] = (present[0], None)
+    return files
+
+
 def _layout_runs(source, root):
     """Ejecuciones descubiertas por su estructura de carpetas, sin huella previa publicada."""
     base = root / source["directory"]
     found = []
     if source["layout"] == "runs":
         for folder in sorted(path for path in base.iterdir() if path.is_dir()):
-            files = {
-                phase: (folder / f"{phase}-predictions.parquet", None)
-                for phase in ("validation", "calibration", "evaluation")
-                if (folder / f"{phase}-predictions.parquet").exists()
-            }
-            found.append(dict(run=folder.name, name=folder.name, files=files))
+            found.append(dict(run=folder.name, name=folder.name, files=_phase_files(folder)))
         return found
     _require(source["layout"] == "refinement", f"Estructura desconocida: {source['layout']}")
     for evaluate in sorted(base.glob("runs/*/evaluate-k*")):
@@ -80,13 +91,8 @@ def _layout_runs(source, root):
             if control.is_dir()
         ]
         for variant, folder in folders:
-            files = {
-                phase: (folder / phase / "predictions.parquet", None)
-                for phase in ("calibration", "evaluation")
-                if (folder / phase / "predictions.parquet").exists()
-            }
             run = str(folder.relative_to(base))
-            found.append(dict(run=run, name=f"{variant}-{seed}", files=files))
+            found.append(dict(run=run, name=f"{variant}-{seed}", files=_phase_files(folder)))
     return found
 
 
@@ -359,13 +365,24 @@ def run(declaration_path, root, output):
     _require(declaration["kind"] == "scale_diagnostics_phase0", "Declaración inesperada")
     _require(declaration["final_test_opened"] is False, "La fase 0 no abre el test final")
     _require("torch" not in sys.modules, "La fase 0 no debe cargar PyTorch")
-    items, seen, references = [], {}, {}
+    items, seen, references, skipped = [], {}, {}, []
     for source in declaration["sources"]:
         runs = (
             _inventory_runs(source, root) if "inventory" in source else _layout_runs(source, root)
         )
         _require(runs, f"La fuente {source['name']} no tiene ejecuciones")
         for record in runs:
+            # Una carpeta descubierta sin la partición de ajuste (los modelos congelados del
+            # estudio combinado) se registra como omitida. En un inventario sería un error.
+            needed = {*declaration["fit_partition"], declaration["evaluation_partition"]}
+            if "inventory" not in source and not needed <= set(record["files"]):
+                skipped.append(
+                    dict(
+                        id=f"{source['name']}/{record['run']}",
+                        partitions=sorted(record["files"]),
+                    )
+                )
+                continue
             item = _diagnose_run(source, record, declaration)
             # Solo se conservan las tablas de una ejecución por población, la que tenga más
             # particiones, para el control de mediana pasada. El resto se libera al momento.
@@ -402,6 +419,7 @@ def run(declaration_path, root, output):
         ),
         predictors=len(items),
         aliases=sum(len(item["aliases"]) for item in items),
+        skipped=skipped,
         cohorts=reports,
         verdict=_verdict(reports, declaration),
         cost=dict(
