@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "kind": "proposal_registry_verification_v1",
+  "status": "passed",
+  "implemented_types": [
+    "RegisteredConfiguration",
+    "ProposalRegistry"
+  ],
+  "source": {
+    "name": "contracts.py",
+    "sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+    "bytes": 6675,
+    "repository_path": "src/mars_titan/proposals/contracts.py"
+  },
+  "test": {
+    "name": "test_proposal_registry.py",
+    "sha256": "b9fd23593f13c0f0f399bd6de364d75e356c08033d0429f796cf83f477d12e48",
+    "bytes": 9538,
+    "repository_path": "tests/proposals/test_proposal_registry.py"
+  },
+  "unique_cases": 27,
+  "passed_nodeids": [
+    "tests.proposals.test_proposal_registry::test_calibration_is_not_an_unrecorded_component_of_the_recipe",
+    "tests.proposals.test_proposal_registry::test_contract_is_available_in_call",
+    "tests.proposals.test_proposal_registry::test_equal_json_does_not_allow_invalid_mutable_component_types[entries]",
+    "tests.proposals.test_proposal_registry::test_equal_json_does_not_allow_invalid_mutable_component_types[regions]",
+    "tests.proposals.test_proposal_registry::test_identities_are_canonical_and_return_no_mutable_alias",
+    "tests.proposals.test_proposal_registry::test_incompatible_configurations_are_rejected_before_model_construction[dtype]",
+    "tests.proposals.test_proposal_registry::test_incompatible_configurations_are_rejected_before_model_construction[k]",
+    "tests.proposals.test_proposal_registry::test_incompatible_configurations_are_rejected_before_model_construction[program]",
+    "tests.proposals.test_proposal_registry::test_incompatible_configurations_are_rejected_before_model_construction[reader]",
+    "tests.proposals.test_proposal_registry::test_plain_reference_without_reader_or_regional_program_remains_available",
+    "tests.proposals.test_proposal_registry::test_reader_and_predictor_dimensions_must_match_with_a_legacy_catalog",
+    "tests.proposals.test_proposal_registry::test_recipe_rejects_untyped_components[action]",
+    "tests.proposals.test_proposal_registry::test_recipe_rejects_untyped_components[catalog]",
+    "tests.proposals.test_proposal_registry::test_recipe_rejects_untyped_components[predictor]",
+    "tests.proposals.test_proposal_registry::test_recipe_rejects_untyped_components[readout]",
+    "tests.proposals.test_proposal_registry::test_registry_cannot_resolve_coherently_mutated_sealed_configs",
+    "tests.proposals.test_proposal_registry::test_registry_distinguishes_real_programs_and_j_without_changing_k",
+    "tests.proposals.test_proposal_registry::test_registry_enforces_its_serialized_byte_budget",
+    "tests.proposals.test_proposal_registry::test_registry_rejects_a_different_reference_after_sealing",
+    "tests.proposals.test_proposal_registry::test_registry_rejects_duplicate_unknown_baseline_and_excess_entries",
+    "tests.proposals.test_proposal_registry::test_registry_rejects_empty_mutable_or_untyped_entries[entries0]",
+    "tests.proposals.test_proposal_registry::test_registry_rejects_empty_mutable_or_untyped_entries[entries1]",
+    "tests.proposals.test_proposal_registry::test_registry_rejects_empty_mutable_or_untyped_entries[entries2]",
+    "tests.proposals.test_proposal_registry::test_replacing_a_typed_component_cannot_renew_its_seal[action]",
+    "tests.proposals.test_proposal_registry::test_replacing_a_typed_component_cannot_renew_its_seal[catalog]",
+    "tests.proposals.test_proposal_registry::test_replacing_a_typed_component_cannot_renew_its_seal[predictor]",
+    "tests.proposals.test_proposal_registry::test_replacing_a_typed_component_cannot_renew_its_seal[readout]"
+  ],
+  "final_xml": {
+    "name": "registry-v4-tests.xml",
+    "sha256": "ca37deda163b86a6500bab23cab91d1506a96b8516d1697e152fa44ce55f2a2b",
+    "bytes": 4197,
+    "cases": 27,
+    "unique_cases": 27,
+    "failures": [],
+    "errors": 0,
+    "skipped": 0
+  },
+  "final_receipt": {
+    "name": "check-registry-complete-coverage-v4.json",
+    "sha256": "6656baad9a773395ff9c262a2ea6a1ebc7901477fc1fbed69aa22446bd940ff3",
+    "bytes": 642,
+    "returncode": 0,
+    "supervision_seconds": 26.610789751051925,
+    "timeout_seconds": 240
+  },
+  "execution_scope": {
+    "kind": "configuration_metadata_cpu",
+    "model_predictors_constructed": 0,
+    "forward_calls": 0,
+    "optimizer_steps": 0,
+    "cuda_test_cases": 0,
+    "note": "Son 27 casos de metadatos y configuraciones. No son 27 pruebas CUDA."
+  },
+  "previous_cuda_preflight": {
+    "available": true,
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "evidence": {
+      "name": "check-cuda-runtime-v1.log",
+      "sha256": "b77f04e523d1af954a15c8aa485db98f753f2dbe82468ee2f1932da2c7c35dd3",
+      "bytes": 179
+    },
+    "receipt": {
+      "name": "check-cuda-runtime-v1.json",
+      "sha256": "f4821e5e26cea29f347014f23ac1d98d6be4c026564369a78349cfb73e04d3c7",
+      "bytes": 233
+    },
+    "scope": "Disponibilidad CUDA comprobada antes de estas pruebas, separada de su ejecución de metadatos CPU."
+  },
+  "initial_red": [
+    {
+      "reason": "Faltaba el módulo del contrato.",
+      "xml": {
+        "name": "registry-red-tests.xml",
+        "sha256": "b29bdf9b2f94d3b8b9e3a471f7b8d0962b2046187a3bd7f0cfd82f6287955ab3",
+        "bytes": 1123,
+        "cases": 1,
+        "unique_cases": 1,
+        "failures": [
+          {
+            "test": "tests.proposals.test_proposal_registry::test_contract_is_available_in_call",
+            "message": "AssertionError: Falta el contrato de registro de propuestas\nassert None is not None"
+          }
+        ],
+        "errors": 0,
+        "skipped": 0
+      },
+      "receipt": {
+        "name": "check-registry-red-v1.json",
+        "sha256": "d3561315c24deef52d287f34dc3e3895a4993ea3939da53dabfcbabbde42eff1",
+        "bytes": 427,
+        "returncode": 1,
+        "supervision_seconds": 16.108824850060046,
+        "timeout_seconds": 240
+      }
+    },
+    {
+      "reason": "Dos cambios de tipo interno conservaron JSON equivalente sin producir ValueError.",
+      "xml": {
+        "name": "registry-types-red.xml",
+        "sha256": "a959fd40f13543ddf328bc7560ba61085e73f87da20195efba0e21010683cf94",
+        "bytes": 2188,
+        "cases": 2,
+        "unique_cases": 2,
+        "failures": [
+          {
+            "test": "tests.proposals.test_proposal_registry::test_equal_json_does_not_allow_invalid_mutable_component_types[regions]",
+            "message": "Failed: DID NOT RAISE ValueError"
+          },
+          {
+            "test": "tests.proposals.test_proposal_registry::test_equal_json_does_not_allow_invalid_mutable_component_types[entries]",
+            "message": "Failed: DID NOT RAISE ValueError"
+          }
+        ],
+        "errors": 0,
+        "skipped": 0
+      },
+      "receipt": {
+        "name": "check-registry-types-red-v1.json",
+        "sha256": "f536a26a7bd5646ec31f8362ce00aae074dafb4e354eff52eb106d64c360e9d0",
+        "bytes": 455,
+        "returncode": 1,
+        "supervision_seconds": 11.479665077989921,
+        "timeout_seconds": 240
+      }
+    }
+  ],
+  "directed_mutations": {
+    "status": "passed",
+    "verified_targets": 4,
+    "verified_phases": 12,
+    "evidence": "mutations.json",
+    "scope": "Cuatro objetivos dirigidos, no todas las mutaciones posibles.",
+    "unapproved_v1": {
+      "id": "omit_entry_seal",
+      "status": "not_approved",
+      "cause": "El formato del informe de fallo de pytest impidió validar la fase mutante. No cuenta como detección.",
+      "result": {
+        "name": "results.json",
+        "sha256": "23e3212429199fd00afb137fd22d188896d06d76ef943eef257d7ed99976741c",
+        "bytes": 1895
+      },
+      "supervisor": {
+        "name": "check-registry-mutation-seal-v1.json",
+        "sha256": "960e2565111c7ed679a055e2c5d87a6eb48e32329b871fa1170beb70e0970749",
+        "bytes": 278,
+        "returncode": 1,
+        "supervision_seconds": 54.618713121977635,
+        "timeout_seconds": 240
+      },
+      "phases": [
+        {
+          "phase": "base",
+          "returncode": 0,
+          "valid": true,
+          "elapsed_s": 16.382623874000274
+        },
+        {
+          "phase": "mutant",
+          "returncode": 3,
+          "valid": false,
+          "elapsed_s": 17.443224348011427
+        },
+        {
+          "phase": "restored",
+          "returncode": 0,
+          "valid": true,
+          "elapsed_s": 20.018110712058842
+        }
+      ]
+    }
+  },
+  "full_proposal_cycle_implemented": false,
+  "deployment_authorized": false,
+  "learned_selector_implemented": false,
+  "scientific_evaluation": false,
+  "final_test_access": false,
+  "performance_benchmark_executed": false
+}

@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "kind": "proposal_registry_quality_v1",
+  "coverage_input": {
+    "name": "registry-coverage-v4.json",
+    "sha256": "d7784ef4b3b18bcb17fa5f1a88bf06b8097a8c28e14c2873c9e0ca58ad6d3249",
+    "bytes": 14626
+  },
+  "crap_input": {
+    "name": "registry-crap-v4.json",
+    "sha256": "2799c53a62f7fa93f45ac8018a739c50a49f37b2e5455c18f99ea925aa261c5a",
+    "bytes": 6608
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "totals": {
+    "statements": 93,
+    "covered_statements": 93,
+    "branches": 28,
+    "covered_branches": 28
+  },
+  "functions_measured": 13,
+  "maximum_crap": 20,
+  "files": [
+    {
+      "repository_path": "src/mars_titan/proposals/__init__.py",
+      "source": {
+        "name": "__init__.py",
+        "sha256": "33d4e8e3a172a242e008b4f0ec7ec86102e69299f7613a16975b5be2bdccfe2c",
+        "bytes": 79
+      },
+      "summary": {
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      }
+    },
+    {
+      "repository_path": "src/mars_titan/proposals/contracts.py",
+      "source": {
+        "name": "contracts.py",
+        "sha256": "fa660e8ce2d989032e6c40806e956a40681c60e3746795d7a74182f6be4dffe4",
+        "bytes": 6675
+      },
+      "summary": {
+        "covered_lines": 93,
+        "num_statements": 93,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 28,
+        "num_partial_branches": 0,
+        "covered_branches": 28,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      }
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "RegisteredConfiguration._validate",
+      "start_line": 48,
+      "end_line": 75,
+      "cyclomatic_complexity": 20,
+      "statements": 16,
+      "covered_statements": 16,
+      "coverage_fraction": 1.0,
+      "branches": 14,
+      "covered_branches": 14,
+      "crap": 20.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry._validate_entries",
+      "start_line": 127,
+      "end_line": 133,
+      "cyclomatic_complexity": 5,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 5.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry.__post_init__",
+      "start_line": 119,
+      "end_line": 125,
+      "cyclomatic_complexity": 4,
+      "statements": 6,
+      "covered_statements": 6,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "RegisteredConfiguration.identity",
+      "start_line": 94,
+      "end_line": 103,
+      "cyclomatic_complexity": 3,
+      "statements": 8,
+      "covered_statements": 8,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry.resolve",
+      "start_line": 154,
+      "end_line": 161,
+      "cyclomatic_complexity": 3,
+      "statements": 6,
+      "covered_statements": 6,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "_bounded_identity",
+      "start_line": 17,
+      "end_line": 21,
+      "cyclomatic_complexity": 2,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "RegisteredConfiguration._current_identity",
+      "start_line": 77,
+      "end_line": 92,
+      "cyclomatic_complexity": 2,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry._current_identity",
+      "start_line": 135,
+      "end_line": 141,
+      "cyclomatic_complexity": 2,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry.identity",
+      "start_line": 143,
+      "end_line": 147,
+      "cyclomatic_complexity": 2,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "_fingerprint",
+      "start_line": 24,
+      "end_line": 25,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "RegisteredConfiguration.__post_init__",
+      "start_line": 44,
+      "end_line": 46,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "RegisteredConfiguration.configuration_id",
+      "start_line": 106,
+      "end_line": 108,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/proposals/contracts.py",
+      "function": "ProposalRegistry.registry_id",
+      "start_line": 150,
+      "end_line": 152,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "limits": [
+    "Alcance limitado al paquete proposals. __init__.py no tiene sentencias medibles.",
+    "La cobertura observada no acredita todas las combinaciones de tipos o estados.",
+    "CRAP no demuestra ausencia de errores.",
+    "Los tiempos instrumentados son de supervisión de pruebas, no latencia o rendimiento del registro."
+  ]
+}
