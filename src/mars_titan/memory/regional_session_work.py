@@ -3,6 +3,8 @@
 import hashlib
 import json
 
+from mars_titan.models.titans.regional_execution import regional_work_per_row
+
 from .regional_work import MAX_INTEGER, RESOURCES, RegionalWorkLedger
 
 
@@ -72,12 +74,13 @@ def bounds(consumer, rows, *, collection, kind):
     has_context = model.session_context is not None
     collecting = collection and kind != "warmup"
     core = count * (2 + int(has_context) if collecting else 1)
+    per_row = regional_work_per_row(model.config.regional_execution, model.regional_fusion.config)
     units.update(
         core_observations=core,
         context_queries=core if has_context else 0,
         selector_decisions=core,
-        local_node_evaluations=20 * core,
-        summary_evaluations=2 * core if model.regional_fusion.config.summary else 0,
+        local_node_evaluations=per_row["local_node_evaluations"] * core,
+        summary_evaluations=per_row["summary_evaluations"] * core,
         mac_observations=core if model.mac is not None else 0,
         context_commits=len({row.flow_id.split("/", 1)[0] for row in rows}) if has_context else 0,
     )

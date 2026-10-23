@@ -5,7 +5,8 @@ from itertools import product
 
 from .config import FingerprintOnce, bounded_integer, canonical
 from .refinement_routes import ROUTES
-from .regional_execution import RegionalExecutionConfig
+from .regional_execution import RegionalExecutionConfig, regional_execution_from_identity
+from .regional_hierarchy import RegionalHierarchyConfig
 
 CONTEXT_ACTIONS = ("off", "parent")
 CALIBRATION_ACTIONS = ("none", "static", "online")
@@ -93,13 +94,16 @@ def reader_work(route, availability):
 class MechanismCatalog(FingerprintOnce):
     budget: MechanismBudget = MechanismBudget()
     reader_contract: str = "legacy"
-    regional_execution: RegionalExecutionConfig | None = None
+    regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
 
     def __post_init__(self):
         if type(self.budget) is not MechanismBudget:
             raise ValueError("El catálogo necesita su presupuesto identificado")
         if self.regional_execution is not None:
-            if type(self.regional_execution) is not RegionalExecutionConfig:
+            if type(self.regional_execution) not in (
+                RegionalExecutionConfig,
+                RegionalHierarchyConfig,
+            ):
                 raise ValueError("El catálogo necesita el contrato identificado del programa")
             self.regional_execution.__post_init__()
         if type(self.reader_contract) is not str or self.reader_contract not in (
@@ -156,7 +160,7 @@ class MechanismCatalog(FingerprintOnce):
                 MechanismBudget(**identity["budget"]),
                 reader_contract=identity.get("reader_contract", "legacy"),
                 regional_execution=(
-                    RegionalExecutionConfig.restore(identity["regional_execution"])
+                    regional_execution_from_identity(identity["regional_execution"])
                     if "regional_execution" in identity
                     else None
                 ),

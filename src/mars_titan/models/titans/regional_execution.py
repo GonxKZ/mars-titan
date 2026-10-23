@@ -10,6 +10,12 @@ from torch import nn
 
 from .config import MAX_BLOCK_ROWS, bounded_integer, canonical, require_identity
 from .regional_fusion import RegionalFusion, RegionalFusionConfig
+from .regional_hierarchy import (
+    RegionalHierarchy,
+    RegionalHierarchyConfig,
+    validate_hierarchy_operator_config,
+    verify_hierarchy_traces,
+)
 from .state import deferred_checks, finite_indicator, is_finite
 
 PROGRAMS = MappingProxyType(
@@ -75,6 +81,57 @@ class RegionalExecutionResult:
     trace: dict
 
 
+def parse_regional_execution_config(raw):
+    """Aceptar una familia completa sin mezclar opciones de los dos contratos."""
+    if raw is None:
+        return None
+    if type(raw) in (RegionalExecutionConfig, RegionalHierarchyConfig):
+        raw.__post_init__()
+        return raw
+    if isinstance(raw, dict):
+        for config_type in (RegionalExecutionConfig, RegionalHierarchyConfig):
+            if set(raw) == {field.name for field in fields(config_type)}:
+                return config_type(**raw)
+    raise ValueError("regional_execution debe declarar una configuración regional completa")
+
+
+def regional_execution_from_identity(identity):
+    """Restaurar exclusivamente identidades completas de una familia registrada."""
+    if type(identity) is not dict:
+        raise ValueError("Falta la identidad completa del ejecutor regional")
+    if identity.get("kind") == "pre_mac_regional_program_v1":
+        return RegionalExecutionConfig.restore(identity)
+    if identity.get("kind") == "pre_mac_regional_hierarchy_v1":
+        return RegionalHierarchyConfig.restore(identity)
+    raise ValueError("La familia de ejecución regional no pertenece al registro")
+
+
+def build_regional_execution(hidden_size, config, *, max_batch):
+    """Construir el módulo físico correspondiente a su configuración identificada."""
+    if type(config) is RegionalExecutionConfig:
+        return RegionalExecution(hidden_size, config, max_batch=max_batch)
+    if type(config) is RegionalHierarchyConfig:
+        return RegionalHierarchy(hidden_size, config, max_batch=max_batch)
+    raise ValueError("El ejecutor necesita una configuración regional identificada")
+
+
+def regional_work_per_row(config, operator_config):
+    """Cotas conservadoras de evaluaciones por preparación de una fila."""
+    if type(operator_config) is not RegionalFusionConfig:
+        raise ValueError("La cuota necesita el operador regional identificado")
+    operator_config.__post_init__()
+    if type(config) is RegionalHierarchyConfig:
+        config.__post_init__()
+        validate_hierarchy_operator_config(operator_config)
+        summaries = 10
+    elif type(config) is RegionalExecutionConfig:
+        config.__post_init__()
+        summaries = 2 if operator_config.summary else 0
+    else:
+        raise ValueError("La cuota necesita un programa regional identificado")
+    return dict(local_node_evaluations=20, summary_evaluations=summaries)
+
+
 def _descriptor_contract(descriptor):
     if (
         type(descriptor) is not dict
@@ -124,6 +181,12 @@ def _descriptor_contract(descriptor):
 
 def verify_exported_traces(rows, descriptor):
     """Comprobar el contrato archivado, sin autenticar contextos o kernels no guardados."""
+    if (
+        type(descriptor) is dict
+        and type(descriptor.get("schema_version")) is int
+        and descriptor["schema_version"] == 2
+    ):
+        return verify_hierarchy_traces(rows, descriptor)
     config, summary, identity, operator_id, _, threshold = _descriptor_contract(descriptor)
     if type(rows) not in (tuple, list) or len(rows) > 8192:
         raise ValueError("La traza excede el tamaño de cohorte admitido")

@@ -60,12 +60,22 @@ from .presence_modulation import (
     wide_parameters_per_unit,
     wide_units,
 )
-from .regional_execution import RegionalExecution, RegionalExecutionConfig
+from .regional_execution import (
+    RegionalExecution,
+    RegionalExecutionConfig,
+    build_regional_execution,
+    parse_regional_execution_config,
+)
 from .regional_fusion import (
     RegionalFusion,
     RegionalFusionConfig,
     validate_assignment,
     validate_assignment_request,
+)
+from .regional_hierarchy import (
+    RegionalHierarchy,
+    RegionalHierarchyConfig,
+    validate_hierarchy_operator_config,
 )
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
@@ -129,7 +139,7 @@ class FinancialConfig:
     attention_layout: str = "batch_first_v1"
     # Grafo de evidencia con memoria de trabajo reiniciada por decisión.
     regional_fusion: RegionalFusionConfig | None = None
-    regional_execution: RegionalExecutionConfig | None = None
+    regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
     memory_bank_readout: BankReadoutConfig | None = None
 
     def __post_init__(self):
@@ -250,24 +260,26 @@ class FinancialConfig:
             if self.presence_modulation is not None:
                 raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
         if isinstance(self.regional_execution, dict):
-            if set(self.regional_execution) != {
-                field.name for field in fields(RegionalExecutionConfig)
-            }:
-                raise ValueError("regional_execution debe declarar toda su configuración")
             object.__setattr__(
-                self, "regional_execution", RegionalExecutionConfig(**self.regional_execution)
+                self,
+                "regional_execution",
+                parse_regional_execution_config(self.regional_execution),
             )
         if self.regional_execution is not None:
             if (
-                type(self.regional_execution) is not RegionalExecutionConfig
+                type(self.regional_execution)
+                not in (RegionalExecutionConfig, RegionalHierarchyConfig)
                 or self.regional_fusion is None
             ):
                 raise ValueError(
                     "El programa regional necesita configuración y operador explícitos"
                 )
             self.regional_execution.__post_init__()
+            if type(self.regional_execution) is RegionalHierarchyConfig:
+                validate_hierarchy_operator_config(self.regional_fusion)
             if (
-                self.regional_execution.selection == "context_norm_v1"
+                type(self.regional_execution) is RegionalExecutionConfig
+                and self.regional_execution.selection == "context_norm_v1"
                 and self.session_context is None
             ):
                 raise ValueError("La selección contextual necesita un padre PT4 explícito")
@@ -493,7 +505,7 @@ class FinancialPredictor(nn.Module):
             else None
         )
         self.regional_execution = (
-            RegionalExecution(
+            build_regional_execution(
                 config.hidden_size, config.regional_execution, max_batch=config.max_batch
             )
             if config.regional_execution is not None
@@ -589,7 +601,9 @@ class FinancialPredictor(nn.Module):
         regional = self._regional_component()
         if regional is not None:
             regional.validate_geometry()
-        self._regional_execution_component()
+        execution = self._regional_execution_component()
+        if type(execution) is RegionalHierarchy:
+            execution.validate_payload(execution.state_dict(), "")
         # Una carga o un cambio de tipo o dispositivo vuelve a sellar y a calcular la identidad.
         self._config_ids = {}
         self._metadata_sizes = {}
@@ -608,21 +622,36 @@ class FinancialPredictor(nn.Module):
         declared, module = self.config.regional_execution, self.regional_execution
         if declared is None and module is None:
             return None
+        expected = {
+            RegionalExecutionConfig: RegionalExecution,
+            RegionalHierarchyConfig: RegionalHierarchy,
+        }.get(type(declared))
         if (
-            type(declared) is not RegionalExecutionConfig
-            or type(module) is not RegionalExecution
-            or module.config != declared
-            or type(module.config.context_threshold) is not type(declared.context_threshold)
+            expected is None
+            or type(module) is not expected
+            or type(module.config) is not type(declared)
             or module.hidden_size != self.config.hidden_size
             or module.max_batch != self.config.max_batch
             or self.regional_fusion is None
         ):
             raise ValueError("El ejecutor regional no corresponde al predictor declarado")
         declared.__post_init__()
+        module.config.__post_init__()
+        if type(declared) is RegionalExecutionConfig:
+            compatible = module.config == declared and type(
+                module.config.context_threshold
+            ) is type(declared.context_threshold)
+        else:
+            compatible = canonical(module.config.identity()) == canonical(declared.identity())
+            validate_hierarchy_operator_config(self.regional_fusion.config)
+        if not compatible:
+            raise ValueError("El ejecutor regional no conserva la identidad declarada")
         return module
 
     def _program_signature(self):
         module = self._regional_execution_component()
+        if type(module) is RegionalHierarchy:
+            return module.hidden_size, module.max_batch, canonical(module.config.identity())
         return (
             (
                 module.hidden_size,
@@ -691,7 +720,9 @@ class FinancialPredictor(nn.Module):
         return super().load_state_dict(state_dict, strict=strict, assign=assign)
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, *args, **kwargs):
-        self._regional_execution_component()
+        execution = self._regional_execution_component()
+        if type(execution) is RegionalHierarchy:
+            execution.validate_payload(state_dict, prefix + "regional_execution.")
         regional = self._regional_component()
         if regional is not None:
             validate_assignment(state_dict, prefix, local_metadata)

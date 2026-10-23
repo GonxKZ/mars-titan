@@ -21,6 +21,7 @@ from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
+from .regional_hierarchy import RegionalHierarchy
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -61,10 +62,11 @@ _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_M
 )
 
 
-def _implementation():
+def _implementation(*, hierarchy=False):
+    sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
-        for name in _SOURCE_MODULES
+        for name in sources
     }
 
 
@@ -137,7 +139,7 @@ def _module_settings(module):
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
         settings["regional_fusion"] = module.config.identity()
-    elif type(module) is RegionalExecution:
+    elif type(module) in (RegionalExecution, RegionalHierarchy):
         fields = ("hidden_size", "max_batch")
         settings["regional_execution"] = module.config.identity()
     elif type(module) is BankReadout:
@@ -201,7 +203,11 @@ def _execution_signature(models):
             kind = type(module)
             origin = inspect.getmodule(kind)
             if (
-                not (kind.__module__.startswith("torch.nn.") or kind.__module__ in _SOURCE_MODULES)
+                not (
+                    kind.__module__.startswith("torch.nn.")
+                    or kind.__module__ in _SOURCE_MODULES
+                    or kind is RegionalHierarchy
+                )
                 or origin is None
                 or getattr(origin, kind.__name__, None) is not kind
                 or module.training
