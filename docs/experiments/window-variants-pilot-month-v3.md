@@ -1,6 +1,7 @@
 # Piloto de desarrollo sobre enero y febrero de 2015
 
-`pilot-month-v3` está registrado y aún no se ha ejecutado. Solo usa la ventana A:
+`pilot-month-v3` preparó la vista real y terminó antes de iniciar el ajuste por
+rechazo de admisión CUDA. Solo usa la ventana A:
 ajuste `[2015-01-01, 2015-02-01)` y validación `[2015-02-01, 2015-03-01)`, 59 días
 en total. Conserva los mismos 256 activos declarados por el padre, las seis
 configuraciones, la semilla 42, dos épocas y los hiperparámetros anteriores. El
@@ -62,7 +63,7 @@ entre Transformer y Kron. Las proyecciones compatibles mantienen una inicializac
 común. La igualdad de exposición exige que las seis configuraciones completen las
 mismas filas y dos épocas. Una ejecución parcial no satisface esa condición.
 
-## Presupuesto y recuento previo
+## Presupuesto y recuentos de la vista
 
 El límite global es de 1800 segundos y empieza antes de adquisición, preparación y
 admisión. Incluye ajuste, sondas, evaluaciones, selección, checkpoints y salida. No
@@ -71,15 +72,16 @@ un límite interno de 600 segundos, 1 GiB de allocator CUDA, 256 MiB de caché y
 256 MiB de salida. El supervisor global prevalece. Los seis límites internos no
 son una estimación del coste total.
 
-Antes del primer ajuste se obtendrán de la vista real los recuentos de train y
-validación. Para N filas de train, el lector actual forma `ceil(N/32)` lotes por
-época y la planificación completa requiere `2*ceil(N/32)` actualizaciones por
-configuración. El registro conserva estos valores pendientes hasta disponer de N
-y se contrastarán con los cursores reales. No se supone un número de filas a
-partir de 256 activos ni del calendario.
+La vista real contiene 3249 filas de train y 3078 de validación. De los 256 activos
+declarados, 171 aportan filas en cada partición. Con lote 32, el lector forma
+`ceil(3249/32)=102` lotes por época. Completar las dos épocas requeriría 204
+actualizaciones y 6498 exposiciones lógicas a filas de train por configuración.
+Son cantidades proyectadas, no ejecutadas. Se contrastarán con los cursores si se
+inicia otro intento. No se deducen filas a partir del universo ni del calendario.
 
-Como proyección parcial baja, los lotes completos de las dos configuraciones Dust
-costarían `0,48066481901332736 * 4 * floor(N/32)` segundos usando la mediana técnica.
+Como proyección parcial, los lotes completos de las dos configuraciones Dust
+costarían `0,48066481901332736 * 4 * floor(3249/32) = 194,189` segundos usando la
+mediana técnica.
 Faltan los posibles lotes parciales, todos los controles BP y el resto del recorrido.
 Esta proyección no es una cota temporal certificada ni garantiza completar el piloto.
 El coste total observado y la exposición efectivamente completada se registrarán
@@ -115,11 +117,33 @@ congelado tampoco acredita una selección histórica de activos. El tramo corto 
 elimina estas limitaciones. La preparación puede recorrer artefactos de otros años,
 aunque solo admita para el ajuste y la validación las filas del intervalo declarado.
 
-## Comandos preparados
+## Estado del intento y auditoría de entradas
 
-Estos comandos no se han ejecutado para `pilot-month-v3`. La vista se prepara una
-sola vez y se reutiliza. Las variables de padre y catálogo deben identificar los
-manifiestos anteriores. La salida debe ser nueva y externa al repositorio.
+La etapa `prepare` terminó con código 0 en 30,293 segundos y produjo la vista con
+SHA-256 `b4e970cc67c629e2579c6ff050fd514ba0311ae46dc96ad8f8141c55757caa8f`.
+El intento completo duró 32,085 segundos. La admisión mediante `GpuLease` rechazó
+el inicio con `another_compute_process` y código 75. No se inició el proceso de
+ajuste, ninguna configuración produjo actualizaciones y el contador confirmado quedó en
+cero. El permiso acotado del proceso quedó cerrado y la protección global de
+aprendizaje permaneció intacta. No se detuvo ninguna carga ajena.
+
+La auditoría posterior reconcilió todas las 3249 filas de train y 3078 de
+validación. Conserva huellas de los IDs, inputs y objetivos de ambas particiones
+y de las seis recetas. No construyó predictores, no emitió predicciones ni aplicó
+actualizaciones. Duró 5,041 segundos internamente y 7,082 segundos supervisados.
+Su pico RSS de vida de proceso fue 758120448 bytes. Esa memoria corresponde a la
+auditoría de entradas, no a un entrenamiento. No hay MAE financiero observado ni
+comparación de resultados entre configuraciones.
+
+El [informe técnico](../../reports/engineering/kron-window-technical-20261023/README.md)
+recoge las comprobaciones CUDA, las mutaciones dirigidas y los límites de las medidas.
+
+## Comandos
+
+La vista se preparó una sola vez. Los comandos siguientes describen la preparación
+y el ajuste, pero la etapa `run` no se inició en el intento registrado. Las
+variables de padre y catálogo deben identificar los manifiestos anteriores. Las
+salidas de un nuevo intento deben ser nuevas y externas al repositorio.
 
 ```bash
 uv run --no-sync scripts/run_window_variant.py prepare \

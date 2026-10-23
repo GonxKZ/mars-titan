@@ -20,7 +20,7 @@ La [dirección arquitectónica](docs/research/titans-mac-architecture.md) conser
 
 Las [declaraciones de campaña sequence y paper](docs/engineering/titans-paper-campaign.md) conectan las proyecciones del artículo con sus cuatro controles, ampliaciones y factorial propio. Comparan las proyecciones con el mismo layout de atención y conservan A v2 y su B histórica. Están declaradas, sin ejecutar ni promover una referencia nueva por defecto.
 
-Las [variantes de ventanas cortas](docs/experiments/window-variants-pilot-month-v3.md) preparan seis comparaciones entre Transformer, KronLSTM, su control vectorial y Dust, con AdamW y SGD. El piloto fija enero de 2015 para ajuste y febrero para validación, 59 días en total. Estas recetas son experimentales y no modifican las campañas canónicas.
+Las [variantes de ventanas cortas](docs/experiments/window-variants-pilot-month-v3.md) preparan seis comparaciones entre Transformer, KronLSTM, su control vectorial y Dust, con AdamW y SGD. El piloto fija enero de 2015 para ajuste y febrero para validación, 59 días en total. La [verificación técnica](reports/engineering/kron-window-technical-20261023/README.md) cubre las seis rutas con fixtures. La vista real está preparada, pero su ajuste no se inició por rechazo de admisión CUDA. Estas recetas son experimentales y no modifican las campañas canónicas.
 
 La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia interna de pocos pasos y contexto macroeconómico. La inspiración biológica se traduce en hipótesis sobre retención, adaptación y reaprendizaje. Los antecedentes recientes, incluidos DeepSeek y modelos financieros con memoria, sirven para decidir qué comparar y qué técnicas pueden ser útiles en una GPU pequeña.
 
