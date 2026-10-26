@@ -26,7 +26,7 @@ La regla de orden de `conformal_quantiles` ensancha un extremo hasta la mediana 
 
 ## Controles con la misma cobertura
 
-Cada control se abstiene en el mismo número de filas de cada sesión que la variante y emite la mediana sin cambios en las demás. La cobertura coincide sesión a sesión, no solo en total. Como el MAE por sesión da el mismo peso a cada sesión, un control que igualara solo la cobertura total podría concentrar sus abstenciones en otras sesiones y cambiar el resultado por esa vía.
+Cada control emite cero en el mismo número de filas de cada sesión que la variante y emite la mediana sin cambios en las demás. Las medianas que ya son cero quedan fuera del presupuesto de abstenciones adicionales. La fracción de emisiones no nulas coincide sesión a sesión. Como el MAE por sesión da el mismo peso a cada sesión, un control que igualara solo la cobertura total podría concentrar sus abstenciones en otras sesiones y cambiar el resultado por esa vía.
 
 | Control | Filas que deja en cero | Información que usa |
 | --- | --- | --- |
@@ -70,12 +70,12 @@ Las pruebas están en `tests/evaluation/test_neutral_abstention.py`.
 - La garantía de cobertura de la CQR exige intercambiabilidad y la dependencia temporal no la asegura. El registro conserva `coverage_guaranteed=False`.
 - La calibración es la CQR estática de G, no la calibración en línea de PT2 ([#454](https://github.com/GonxKZ/mars-titan/issues/454)). Así la decisión de abstenerse queda fijada en G, igual que λ en A1.
 - La volatilidad pasada usa las etiquetas residuales maduras, no precios, y es la raíz de la media de los cuadrados, sin restar la media.
-- Una mediana exactamente nula cuenta como abstención en cualquier salida. Con salidas continuas es un caso de medida nula, pero un control podría tener entonces un cero más que la variante en esa sesión.
+- Una mediana exactamente nula cuenta como abstención en todas las salidas. Los controles solo deciden qué otras medianas pasan a cero. No usan el objetivo para igualar esa fracción. La métrica de cobertura de llamadas excluye los objetivos exactamente nulos y, por ello, puede diferir entre controles aunque emitan el mismo número de valores no nulos.
 - La lectura de los Parquet y la alineación de la madurez con la vista de cada ventana las hará la criba, con la misma comprobación de filas que `walk_forward_comparison`.
 
 ## Coste medido
 
-Sin tensores ni parámetros entrenables no hay forward ni backward. `benchmarks/output_stage_cost.py` mide la etapa en CPU con datos sintéticos de semilla fija que solo fijan las formas, cinco semillas y dos hilos. El recibo está en `reports/engineering/output-stages-20261023/neutral-abstention-cost.json`. Son medianas de cinco repeticiones con otras sesiones compartiendo la máquina (carga media de 21,0 al empezar), así que son cotas superiores ruidosas.
+Sin tensores ni parámetros entrenables no hay forward ni backward. `benchmarks/output_stage_cost.py` mide la etapa en CPU con datos sintéticos de semilla fija que solo fijan las formas, cinco semillas y dos hilos. El recibo histórico está en `reports/engineering/output-stages-20261023/neutral-abstention-cost.json`. Son medianas de cinco repeticiones con otras sesiones compartiendo la máquina (carga media de 21,0 al empezar). La carga concurrente limita la comparación y esas medidas no constituyen cotas superiores.
 
 | Caso | Filas evaluadas | Ajuste en G | Variante | Volatilidad pasada | Desacuerdo entre 5 semillas | Variante y cuatro controles | Pico de NumPy en la emisión |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -85,7 +85,7 @@ Sin tensores ni parámetros entrenables no hay forward ni backward. `benchmarks/
 
 La columna «Variante y cuatro controles» incluye la emisión de la variante y no incluye la volatilidad ni el desacuerdo, que se calculan una vez por ventana. La fracción de filas abstenidas de estos datos sintéticos depende de cómo se generaron y no dice nada de los pilotos.
 
-En la población de la criba (256 activos) la etapa completa con sus cuatro controles cuesta décimas de segundo por año, frente a horas de ajuste por trabajo. No es un cuello de botella y no se ha optimizado. En el caso de 4.200 activos domina la ordenación por sesión. `matched_abstention` reutiliza la de `forecast_scores`, que con un millón de filas tardó 0,69-0,75 s frente a 1,00-1,06 s de `np.lexsort` con el mismo resultado.
+Estas cifras corresponden al posprocesado de una ventana completa. El coste del ajuste de un modelo no se midió con este benchmark. En el caso de 4.200 activos domina la ordenación por sesión. `matched_abstention` reutiliza la de `forecast_scores`, que con un millón de filas tardó 0,69-0,75 s frente a 1,00-1,06 s de `np.lexsort` con el mismo resultado.
 
 No se midieron la GPU, la lectura de Parquet ni la energía.
 
@@ -105,6 +105,35 @@ Se aplicaron a mano 18 mutaciones sobre la lógica crítica y se revirtieron des
 - Quitar la comprobación de que la predicción puntual es la mediana, la de madurez duplicada y la de huella del registro.
 - Invertir el orden dentro de la sesión.
 - Signo de la puntuación de `small_prediction`.
+
+## Revisión numérica del 26 de octubre
+
+La revisión detectó que los controles podían emitir menos valores no nulos que la variante cuando algunas medianas eran exactamente cero. Ahora esas filas quedan fuera del presupuesto de abstenciones adicionales. También se rechaza una fecha `uint64` fuera del rango de `int64` antes de convertirla, para que no pueda interpretarse como una etiqueta antigua.
+
+La volatilidad anterior restaba sumas acumuladas de cuadrados. Un valor grande ya fuera de la ventana podía hacer que las etiquetas recientes desaparecieran por redondeo. El cálculo actual divide la historia de cada activo en bloques de anchura igual a la ventana. Una ventana ocupa un sufijo de un bloque y un prefijo del siguiente, o un único prefijo al comienzo. Sus normas se calculan con `hypot`, escalando primero por la raíz del tamaño de ventana. Así se evita la resta de acumulaciones y el cuadrado de valores extremos. El trabajo es O(n) y los temporales son O(n + ventana) por activo. Ningún sufijo usado alcanza etiquetas posteriores a la consulta.
+
+El [recibo de revisión](../../reports/engineering/neutral-abstention-review-20261026.json) registra 64 pruebas correctas, cinco mutaciones dirigidas detectadas y cobertura de 159/159 sentencias y 18/18 ramas en los dos módulos. Incluye ventanas vacías, una sola etiqueta, límites de bloques, medianas nulas, madurez y amplitudes entre 10⁻³⁰⁰ y 10³⁰⁰. La primera versión de la corrección falló con ventanas de una etiqueta negativa. La prueba detectó que `hypot.accumulate` conserva su primer elemento y se corrigió tomando el valor absoluto antes de acumular.
+
+Se midió el recorrido completo de salida en CPU, incluyendo calibración sintética, volatilidad, desacuerdo entre cinco semillas y emisión con cuatro controles. Son cinco repeticiones tras un calentamiento, alternando el orden de las dos implementaciones. La preparación de entradas queda fuera del cronómetro.
+
+| Activos | Sesiones | Versión anterior | Versión corregida |
+| ---: | ---: | ---: | ---: |
+| 256 | 63 | 0,130 s | 0,187 s |
+| 256 | 252 | 0,443 s | 0,555 s |
+| 4.200 | 252 | 4,058 s | 4,371 s |
+
+Son medianas del tiempo observado. La corrección aumenta el coste. En estos paneles ordinarios las salidas finales coinciden exactamente y la diferencia de volatilidad queda dentro de las tolerancias declaradas. Los casos extremos se contrastan con normas directas porque la resta anterior era incorrecta. No se ha medido un efecto predictivo, energía ni rendimiento GPU.
+
+`benchmarks/neutral_abstention_review.py` reproduce la comparación. La referencia se extrae del commit anterior a la corrección y el programa comprueba su SHA-256 antes de cargarla. Las variables de ruta deben apuntar a una copia local de esa fuente y a un recibo nuevo:
+
+```bash
+git show 2c99fd33e:src/mars_titan/evaluation/neutral_abstention.py \
+  > "${MARS_ABSTENTION_REFERENCE:?}"
+OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \
+  uv run python -m benchmarks.neutral_abstention_review \
+    --reference "${MARS_ABSTENTION_REFERENCE:?}" \
+    --output "${MARS_ABSTENTION_COST:?}" --repeats 5
+```
 
 ## Pendiente
 

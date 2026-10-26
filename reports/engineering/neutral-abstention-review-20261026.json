@@ -1,0 +1,825 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "neutral_abstention_numerics_and_matched_calls",
+  "issue": 748,
+  "source_sha256": "c9443bffd53e66e1b9810f6f31d2925daca5cc9fae947c556a24cc2275dd6403",
+  "tests": {
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "xml_sha256": "93664fdfcbc4c6952aed361eaf1d8b1a72b5416e5a9328ffa27f95ac846956e6",
+    "initial_edge_failures": 10,
+    "initial_edge_xml_sha256": "d44381557bab06cb17d71ddf7a49b5a6d064842656f04d3c67c92ea40948d61e",
+    "first_rms_correction_failures": 2,
+    "first_rms_xml_sha256": "68b43b7dde4dee4e6c51c40acf59a918a6779646ecd0a3766eac1a35b325d0ee",
+    "command": "uv run --with coverage==7.16.1 coverage run --branch --source=mars_titan.evaluation.neutral_abstention,mars_titan.evaluation.output_stages -m pytest -q tests/evaluation/test_neutral_abstention.py tests/evaluation/test_neutral_abstention_edges.py"
+  },
+  "quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-26T11:07:57.348514",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [],
+    "totals": {
+      "statements": 159,
+      "covered_statements": 159,
+      "branches": 18,
+      "covered_branches": 18
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "source_sha256": "c9443bffd53e66e1b9810f6f31d2925daca5cc9fae947c556a24cc2275dd6403",
+        "statements": 151,
+        "covered_statements": 151,
+        "branches": 14,
+        "covered_branches": 14
+      },
+      {
+        "path": "src/mars_titan/evaluation/output_stages.py",
+        "source_sha256": "1c8ff42e34e362d512ab644e5c0883dd0e61651f7a747fc2f9933ed8a1d3014e",
+        "statements": 8,
+        "covered_statements": 8,
+        "branches": 4,
+        "covered_branches": 4
+      }
+    ],
+    "functions": [
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "checked_config",
+        "start_line": 72,
+        "end_line": 98,
+        "cyclomatic_complexity": 8,
+        "statements": 7,
+        "covered_statements": 7,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 8.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "matched_abstention",
+        "start_line": 214,
+        "end_line": 248,
+        "cyclomatic_complexity": 7,
+        "statements": 20,
+        "covered_statements": 20,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 7.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "past_volatility",
+        "start_line": 276,
+        "end_line": 322,
+        "cyclomatic_complexity": 7,
+        "statements": 27,
+        "covered_statements": 27,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 7.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "checked_record",
+        "start_line": 170,
+        "end_line": 186,
+        "cyclomatic_complexity": 6,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/output_stages.py",
+        "function": "checked_output_stages",
+        "start_line": 18,
+        "end_line": 26,
+        "cyclomatic_complexity": 6,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "seed_disagreement",
+        "start_line": 325,
+        "end_line": 336,
+        "cyclomatic_complexity": 4,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_instants",
+        "start_line": 101,
+        "end_line": 113,
+        "cyclomatic_complexity": 3,
+        "statements": 6,
+        "covered_statements": 6,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_median",
+        "start_line": 116,
+        "end_line": 127,
+        "cyclomatic_complexity": 3,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "fit",
+        "start_line": 134,
+        "end_line": 167,
+        "cyclomatic_complexity": 3,
+        "statements": 8,
+        "covered_statements": 8,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "emit",
+        "start_line": 352,
+        "end_line": 386,
+        "cyclomatic_complexity": 3,
+        "statements": 12,
+        "covered_statements": 12,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_require",
+        "start_line": 63,
+        "end_line": 65,
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_rolling_rms",
+        "start_line": 251,
+        "end_line": 273,
+        "cyclomatic_complexity": 2,
+        "statements": 14,
+        "covered_statements": 14,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "control_scores",
+        "start_line": 339,
+        "end_line": 349,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_canonical",
+        "start_line": 68,
+        "end_line": 69,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "_groups",
+        "start_line": 130,
+        "end_line": 131,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "stage_sha256",
+        "start_line": 189,
+        "end_line": 191,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/neutral_abstention.py",
+        "function": "apply",
+        "start_line": 194,
+        "end_line": 211,
+        "cyclomatic_complexity": 1,
+        "statements": 8,
+        "covered_statements": 8,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "27472f0ed75ca54d64dbe53d13cf97bd75c7921bf062e77decc60da4f6e891b5",
+    "functions_measured": 17
+  },
+  "mutations": [
+    {
+      "id": "allow_unsigned_wrap",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "18cad4eba9267687c3baba4e7601199130f4dec57492c7eb0eff01ae6a582438"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "8a64b48cccd9447eb69fd89d9de4c3b1b2f9743e8b398cef6c4d5a6eaaa19dfe"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "346c090911d920a5abc749203827304d0a8219a42172f1a6988f13cbb83041be"
+        }
+      ]
+    },
+    {
+      "id": "spend_budget_on_zero_medians",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "b359f166cac0cff843f294bb658f26c568d58aded535b128e472b9bd65d629a8"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "0c4b4b61d7d83184af4b60252ba128ccfa94b272bd8297965f30b808c2e9c064"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "ea41bc87aeae4b3e92fc50e9feaec59822d6e02c231043536243f29746403c59"
+        }
+      ]
+    },
+    {
+      "id": "omit_left_window_suffix",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "441b0784a7ef45381fa867bc6b6d3fbc2ffb7ed985dc03b86ad6eb15d775c844"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "c8135c5387645d018fd4aeca17a81a3667fc44a65d9d633b9e765d96bb587427"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "6116bceb52456ea3c696ce4d2b523991e2944ecc108bfdadbcd0dba49e9eff8b"
+        }
+      ]
+    },
+    {
+      "id": "negative_singleton_norm",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "01c09d1fca5f193b30503f355b0b2ed5e85d01f98bbe6a29975f6323ab294f42"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "9a05a43616ab87b92fcb37be50b972e54f8f45e9837d6e85a7f17d70600ca141"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "b193a83c50c816bb48e770bef5e838a11707d56efa84010a24f7c2c02c13747a"
+        }
+      ]
+    },
+    {
+      "id": "scale_norm_as_a_mean",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "07f33b1434f8b635ae55ccdef7861309c520a82ed46a1ef30569b6ecfbe378ea"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "496f160dfcd459eba93aab605b5db0206180b46615a56ecd5d0429424b3074a5"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "0d189e2a19d556277864e0a0f6c11d1e040c409c9eb890e60b6730666aa78618"
+        }
+      ]
+    }
+  ],
+  "mutation_scope": "Cinco alteraciones dirigidas de las correcciones. No es un porcentaje global de mutación.",
+  "cost": {
+    "measured_at_utc": "2026-10-26T10:06:27.331604+00:00",
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "device": "cpu",
+    "gpu_used": false,
+    "threads": 2,
+    "load_average_start": [
+      15.0673828125,
+      7.9287109375,
+      4.37158203125
+    ],
+    "repetitions": 5,
+    "warmup": 1,
+    "timing": "perf_counter_complete_output_pipeline",
+    "input_preparation_in_timing": false,
+    "memory": "tracemalloc_peak_in_pipeline",
+    "optimizer_steps": 0,
+    "scientific_data": false,
+    "reference_sha256": "5c920072506ad605520264f25a9d469ded9d7b5ac1153ba345f7130253764204",
+    "source_sha256": "c9443bffd53e66e1b9810f6f31d2925daca5cc9fae947c556a24cc2275dd6403",
+    "cases": [
+      {
+        "assets": 256,
+        "sessions": 63,
+        "rows": 16128,
+        "calibration_rows": 16128,
+        "seeds": 5,
+        "history_rows": 32256,
+        "elapsed_seconds": {
+          "reference": [
+            0.1550336719956249,
+            0.10818170988932252,
+            0.1433762579690665,
+            0.12852887203916907,
+            0.1303859818726778
+          ],
+          "corrected": [
+            0.1906673579942435,
+            0.19514998700469732,
+            0.18696468719281256,
+            0.17739643203094602,
+            0.1782824811525643
+          ]
+        },
+        "median_seconds": {
+          "reference": 0.1303859818726778,
+          "corrected": 0.18696468719281256
+        },
+        "traced_peak_bytes": {
+          "reference": 2938953,
+          "corrected": 2938953
+        },
+        "outputs_exact": true,
+        "volatility_max_abs_difference": 4.85722573273506e-17
+      },
+      {
+        "assets": 256,
+        "sessions": 252,
+        "rows": 64512,
+        "calibration_rows": 16128,
+        "seeds": 5,
+        "history_rows": 80640,
+        "elapsed_seconds": {
+          "reference": [
+            0.46234668092802167,
+            0.4678265720140189,
+            0.442567422054708,
+            0.3867960690986365,
+            0.35537860984914005
+          ],
+          "corrected": [
+            0.6072645641397685,
+            0.5844205231405795,
+            0.5545152688864619,
+            0.487628947943449,
+            0.3634011319372803
+          ]
+        },
+        "median_seconds": {
+          "reference": 0.442567422054708,
+          "corrected": 0.5545152688864619
+        },
+        "traced_peak_bytes": {
+          "reference": 11424440,
+          "corrected": 11423722
+        },
+        "outputs_exact": true,
+        "volatility_max_abs_difference": 9.020562075079397e-17
+      },
+      {
+        "assets": 4200,
+        "sessions": 252,
+        "rows": 1058400,
+        "calibration_rows": 264600,
+        "seeds": 5,
+        "history_rows": 1323000,
+        "elapsed_seconds": {
+          "reference": [
+            7.166389400139451,
+            5.54725688113831,
+            4.0584983609151095,
+            3.9225236820057034,
+            3.5851168208755553
+          ],
+          "corrected": [
+            13.273677387973294,
+            10.823317802045494,
+            4.370855741202831,
+            4.0843306018505245,
+            4.029734591022134
+          ]
+        },
+        "median_seconds": {
+          "reference": 4.0584983609151095,
+          "corrected": 4.370855741202831
+        },
+        "traced_peak_bytes": {
+          "reference": 187341733,
+          "corrected": 187341866
+        },
+        "outputs_exact": true,
+        "volatility_max_abs_difference": 2.0122792321330962e-16
+      }
+    ],
+    "global_hold_unchanged": true,
+    "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "process_elapsed_seconds": 229.34924074914306,
+    "process_peak_ram_bytes": 1893175296,
+    "load_average_end": [
+      10.6630859375,
+      9.60546875,
+      5.88037109375
+    ]
+  },
+  "numerical_tolerances": {
+    "ordinary_volatility_rtol": 2e-12,
+    "ordinary_volatility_atol": 1e-15,
+    "direct_extreme_norm_rtol": 2e-14,
+    "direct_extreme_norm_atol": 0.0,
+    "ordinary_emitted_outputs": "exact"
+  },
+  "learning": {
+    "optimizer_steps": 0,
+    "scientific_runs": 0,
+    "final_test_opened": false,
+    "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+  },
+  "limits": [
+    "Los paneles son sintéticos. Las medidas no acreditan un cambio predictivo.",
+    "El cálculo corregido tarda más. Se conserva por los errores numéricos y de cobertura que corrige.",
+    "La lectura de Parquet, GPU, energía y latencias de cola no se han medido.",
+    "La comparación tuvo carga concurrente de otras aplicaciones. Los cinco tiempos brutos quedan registrados.",
+    "La comparación de llamadas usa todas las filas. La métrica que excluye objetivos nulos puede diferir entre controles sin usarlos para seleccionar."
+  ],
+  "benchmark_verification": {
+    "tests": [
+      {
+        "name": "abstention-cli-tests",
+        "passed": 5,
+        "xml_sha256": "e5d6a3edafdca3b51245e15c396459ff186ebf4322313b508017e8b98c425e8c"
+      },
+      {
+        "name": "abstention-cli-parity-tests",
+        "passed": 2,
+        "xml_sha256": "bec5db3bad9ebbb7853b9217d06fa1480e58c53d6842a577e90d69141de0ab4f"
+      }
+    ],
+    "quality": {
+      "schema_version": 1,
+      "measured_at": "2026-10-26T11:26:27.369114",
+      "tools": {
+        "coverage": "7.16.1",
+        "radon": "6.0.1",
+        "branch_coverage": true,
+        "python": "3.12.14",
+        "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+      },
+      "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+      "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+      "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+      "limits": [
+        "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+        "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+        "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+        "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+        "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+        "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+      ],
+      "include": [],
+      "totals": {
+        "statements": 81,
+        "covered_statements": 81,
+        "branches": 20,
+        "covered_branches": 20
+      },
+      "files": [
+        {
+          "path": "benchmarks/neutral_abstention_review.py",
+          "source_sha256": "865ddbaaeb9dee501311edbeac02702733d2a566d32fadc81c78efe2212f7c10",
+          "statements": 81,
+          "covered_statements": 81,
+          "branches": 20,
+          "covered_branches": 20
+        }
+      ],
+      "functions": [
+        {
+          "path": "benchmarks/neutral_abstention_review.py",
+          "function": "measure",
+          "start_line": 37,
+          "end_line": 106,
+          "cyclomatic_complexity": 10,
+          "statements": 27,
+          "covered_statements": 27,
+          "coverage_fraction": 1.0,
+          "branches": 10,
+          "covered_branches": 10,
+          "crap": 10.0
+        },
+        {
+          "path": "benchmarks/neutral_abstention_review.py",
+          "function": "main",
+          "start_line": 109,
+          "end_line": 162,
+          "cyclomatic_complexity": 5,
+          "statements": 19,
+          "covered_statements": 19,
+          "coverage_fraction": 1.0,
+          "branches": 4,
+          "covered_branches": 4,
+          "crap": 5.0
+        },
+        {
+          "path": "benchmarks/neutral_abstention_review.py",
+          "function": "load_reference",
+          "start_line": 25,
+          "end_line": 34,
+          "cyclomatic_complexity": 4,
+          "statements": 8,
+          "covered_statements": 8,
+          "coverage_fraction": 1.0,
+          "branches": 4,
+          "covered_branches": 4,
+          "crap": 4.0
+        },
+        {
+          "path": "benchmarks/neutral_abstention_review.py",
+          "function": "measure.pipeline",
+          "start_line": 62,
+          "end_line": 71,
+          "cyclomatic_complexity": 1,
+          "statements": 5,
+          "covered_statements": 5,
+          "coverage_fraction": 1.0,
+          "branches": 0,
+          "covered_branches": 0,
+          "crap": 1.0
+        }
+      ],
+      "shadowed_regions": [],
+      "coverage_sha256": "a6ee4af8910825f6fe1f3fe2ef17f480964100e5600d51f620b9b236f200dc4c",
+      "functions_measured": 4
+    },
+    "executor_sha256": "865ddbaaeb9dee501311edbeac02702733d2a566d32fadc81c78efe2212f7c10",
+    "original_measurement_executor_sha256": "d52755f8d442ebb57a3b645e89e3e6a9496ece5c47178a18851e4b32b4b92ecc",
+    "full_cli_run": {
+      "measured_at_utc": "2026-10-26T10:19:16.551901+00:00",
+      "python": "3.12.14",
+      "numpy": "2.5.3",
+      "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+      "device": "cpu",
+      "gpu_used": false,
+      "thread_environment": {
+        "OMP_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2"
+      },
+      "load_average_start": [
+        2.19970703125,
+        4.17626953125,
+        4.7998046875
+      ],
+      "repetitions": 1,
+      "warmup": 1,
+      "timing": "perf_counter_complete_output_pipeline",
+      "input_preparation_in_timing": false,
+      "memory": "tracemalloc_peak_in_pipeline",
+      "optimizer_steps": 0,
+      "scientific_data": false,
+      "reference_sha256": "5c920072506ad605520264f25a9d469ded9d7b5ac1153ba345f7130253764204",
+      "source_sha256": "c9443bffd53e66e1b9810f6f31d2925daca5cc9fae947c556a24cc2275dd6403",
+      "cases": [
+        {
+          "assets": 256,
+          "sessions": 63,
+          "rows": 16128,
+          "calibration_rows": 16128,
+          "seeds": 5,
+          "history_rows": 32256,
+          "elapsed_seconds": {
+            "reference": [
+              0.022268671076744795
+            ],
+            "corrected": [
+              0.03910955390892923
+            ]
+          },
+          "median_seconds": {
+            "reference": 0.022268671076744795,
+            "corrected": 0.03910955390892923
+          },
+          "traced_peak_bytes": {
+            "reference": 2940145,
+            "corrected": 2950814
+          },
+          "outputs_exact": true,
+          "volatility_max_abs_difference": 4.85722573273506e-17
+        },
+        {
+          "assets": 256,
+          "sessions": 252,
+          "rows": 64512,
+          "calibration_rows": 16128,
+          "seeds": 5,
+          "history_rows": 80640,
+          "elapsed_seconds": {
+            "reference": [
+              0.06702607800252736
+            ],
+            "corrected": [
+              0.08434200496412814
+            ]
+          },
+          "median_seconds": {
+            "reference": 0.06702607800252736,
+            "corrected": 0.08434200496412814
+          },
+          "traced_peak_bytes": {
+            "reference": 11424885,
+            "corrected": 11425042
+          },
+          "outputs_exact": true,
+          "volatility_max_abs_difference": 9.020562075079397e-17
+        },
+        {
+          "assets": 4200,
+          "sessions": 252,
+          "rows": 1058400,
+          "calibration_rows": 264600,
+          "seeds": 5,
+          "history_rows": 1323000,
+          "elapsed_seconds": {
+            "reference": [
+              2.9448261871002614
+            ],
+            "corrected": [
+              3.566926582949236
+            ]
+          },
+          "median_seconds": {
+            "reference": 2.9448261871002614,
+            "corrected": 3.566926582949236
+          },
+          "traced_peak_bytes": {
+            "reference": 187343045,
+            "corrected": 187343186
+          },
+          "outputs_exact": true,
+          "volatility_max_abs_difference": 2.0122792321330962e-16
+        }
+      ],
+      "process_elapsed_seconds": 46.484664840158075,
+      "process_peak_ram_bytes": 1921142784,
+      "load_average_end": [
+        2.953125,
+        4.078125,
+        4.7353515625
+      ]
+    },
+    "alternating_order_check": {
+      "assets": 16,
+      "sessions": 3,
+      "rows": 48,
+      "calibration_rows": 1008,
+      "seeds": 5,
+      "history_rows": 1056,
+      "elapsed_seconds": {
+        "reference": [
+          0.002186441095545888,
+          0.0020019342191517353
+        ],
+        "corrected": [
+          0.0033451279159635305,
+          0.0034470411483198404
+        ]
+      },
+      "median_seconds": {
+        "reference": 0.0020941876573488116,
+        "corrected": 0.0033960845321416855
+      },
+      "traced_peak_bytes": {
+        "reference": 165444,
+        "corrected": 165412
+      },
+      "outputs_exact": true,
+      "volatility_max_abs_difference": 1.734723475976807e-17
+    },
+    "interpretation": "La orden pública recorre las tres formas con una repetición instrumentada y confirma paridad. La comprobación reducida ejercita el orden alterno. Estas duraciones no sustituyen la comparación de cinco repeticiones."
+  }
+}

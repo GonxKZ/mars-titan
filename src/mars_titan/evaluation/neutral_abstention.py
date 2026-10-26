@@ -104,6 +104,10 @@ def _instants(values, rows, name):
         values.shape == (rows,) and values.dtype.kind in "iu",
         f"{name} debe tener una fila por predicción en microsegundos UTC",
     )
+    _require(
+        values.dtype.kind != "u" or np.all(values <= np.iinfo(np.int64).max),
+        f"{name} supera el rango de microsegundos UTC con signo",
+    )
     values = values.astype(np.int64)
     _require(np.all(values < FINAL_TEST_START_US), f"{name} entra en el test reservado de 2024")
     return values
@@ -207,12 +211,14 @@ def apply(record, panel):
     return np.where(claim, median, 0.0), ~claim
 
 
-def matched_abstention(panel, abstained, score):
+def matched_abstention(panel, abstained, score, *, eligible=None):
     """Abstenerse en tantas filas de cada sesión como `abstained`, las de mayor `score`.
 
     Una puntuación NaN no está definida y queda detrás de todas las definidas. Los empates
     siguen el orden canónico de las filas. La ordenación por sesión es la de
     `forecast_scores`, medida un 30 % más rápida que `np.lexsort` con un millón de filas.
+    Si se declara `eligible`, las demás filas siempre se abstienen y no consumen el
+    presupuesto de las elegibles. Así una mediana nula no reduce las llamadas de un control.
     """
     abstained = np.asarray(abstained)
     score = np.asarray(score, dtype=np.float64)
@@ -221,12 +227,50 @@ def matched_abstention(panel, abstained, score):
         "La abstención y la puntuación deben tener una fila por predicción",
     )
     _require(not np.isinf(score).any(), "La puntuación de un control no puede ser infinita")
+    if eligible is not None:
+        eligible = np.asarray(eligible)
+        _require(
+            eligible.shape == (panel.rows,) and eligible.dtype == bool,
+            "La elegibilidad del control debe ser una máscara por fila",
+        )
+        abstained = abstained & eligible
     counts = np.bincount(panel.session[abstained], minlength=panel.sessions)
     key = np.where(np.isnan(score), np.inf, -score)
     order, position = forecast_scores._within_session_order(panel, key)
+    if eligible is not None and not eligible.all():
+        active = eligible[order]
+        prefix = np.cumsum(active)
+        before = prefix[panel.session_starts] - active[panel.session_starts]
+        position = prefix - np.repeat(before, panel.session_samples) - 1
     rank = np.empty(panel.rows, dtype=np.int64)
     rank[order] = position
-    return rank < counts[panel.session]
+    chosen = rank < counts[panel.session]
+    return chosen if eligible is None else chosen | ~eligible
+
+
+def _rolling_rms(values, window):
+    """RMS móvil en O(n), sin restar acumulaciones dominadas por datos ya descartados.
+
+    Una ventana ocupa como mucho dos bloques de anchura `window`. Se unen las normas de
+    su sufijo izquierdo y su prefijo derecho con `hypot`. Los prefijos iniciales solo
+    usan su propio bloque. Escalar antes de acumular evita elevar retornos grandes al cuadrado.
+    """
+    if not len(values):
+        return np.empty(0, dtype=np.float64)
+    scaled = np.pad(np.abs(values) / np.sqrt(window), (0, -len(values) % window)).reshape(
+        -1, window
+    )
+    prefix = np.hypot.accumulate(scaled, axis=1).ravel()
+    suffix = np.hypot.accumulate(scaled[:, ::-1], axis=1)[:, ::-1].ravel()
+    last = np.arange(len(values))
+    first = np.maximum(last + 1 - window, 0)
+    count = last + 1 - first
+    crossing = first // window != last // window
+    norms = prefix[: len(values)].copy()
+    norms[crossing] = np.hypot(suffix[first[crossing]], prefix[last[crossing]])
+    result = norms / np.sqrt(count / window)
+    _require(np.isfinite(result).all(), "La volatilidad calculada no es finita")
+    return result
 
 
 def past_volatility(assets, prediction_at, history, *, window, min_labels):
@@ -237,6 +281,13 @@ def past_volatility(assets, prediction_at, history, *, window, min_labels):
     emitida en t solo cuentan las del mismo activo con madurez <= t, las `window` más
     recientes por madurez. Con menos de `min_labels` el valor es NaN.
     """
+    _require(
+        type(window) is int
+        and 1 <= window <= 10_000
+        and type(min_labels) is int
+        and 1 <= min_labels <= window,
+        "La ventana de volatilidad y su mínimo de etiquetas no son válidos",
+    )
     assets = np.asarray(assets, dtype=str)
     rows = len(assets)
     prediction_at = _instants(prediction_at, rows, "Los instantes de emisión")
@@ -249,6 +300,8 @@ def past_volatility(assets, prediction_at, history, *, window, min_labels):
     )
     _require(np.isfinite(target).all(), "El historial contiene objetivos no finitos")
     result = np.full(rows, np.nan)
+    if not rows:
+        return result
     order = np.lexsort((matures_at, labels))
     labels, target, matures_at = labels[order], target[order], matures_at[order]
     _require(
@@ -262,13 +315,10 @@ def past_volatility(assets, prediction_at, history, *, window, min_labels):
         selected = queries[begin:end]
         low = np.searchsorted(labels, names[begin], side="left")
         high = np.searchsorted(labels, names[begin], side="right")
-        squares = np.concatenate(([0.0], np.cumsum(target[low:high] ** 2)))
         seen = np.searchsorted(matures_at[low:high], prediction_at[selected], side="right")
-        first = np.maximum(seen - window, 0)
-        count = seen - first
-        defined = count >= min_labels
-        mean = (squares[seen] - squares[first]) / np.maximum(count, 1)
-        result[selected[defined]] = np.sqrt(np.maximum(mean[defined], 0.0))
+        defined = np.minimum(seen, window) >= min_labels
+        rms = _rolling_rms(target[low:high], window)
+        result[selected[defined]] = rms[seen[defined] - 1]
     return result
 
 
@@ -313,8 +363,10 @@ def emit(record, panel, *, stream, volatility, disagreement):
         record, panel, stream=stream, volatility=volatility, disagreement=disagreement
     )
     outputs = {IDENTITY: prediction}
+    eligible = median != 0
     for name in CONTROLS:
-        outputs[name] = np.where(matched_abstention(panel, abstained, scores[name]), 0.0, median)
+        chosen = matched_abstention(panel, abstained, scores[name], eligible=eligible)
+        outputs[name] = np.where(chosen, 0.0, median)
     eligible = int(np.count_nonzero(panel.target != 0))
     coverage = {
         name: abstention_coverage.call_coverage(
