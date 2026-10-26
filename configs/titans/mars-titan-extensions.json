@@ -134,6 +134,7 @@
       "kernel_value": {"rule": "nadaraya_watson", "key": ["codec"], "bandwidth": "tau", "forgetting": "lambda_below_one", "capacity": [1, 65536]},
       "query_bridge_value": {"kind": "area_query_bridge_v1", "requires": "areas", "gain": [0.0, 1.0], "steps": [1, 4], "targets": ["aligned", "shuffled_within_cohort"], "seed": "uint32", "topology": "directed_ring", "write_rule": "same_as_area_memory"},
       "role_binding_value": {"source": ["regime", "calendar"], "mode": ["bipolar", "constant_role", "projected_concat"], "seed": "uint32", "key": ["codec"]},
+      "multiscale_value": {"kind": "multiscale_mature_mixture_v1", "experts": [1, 4], "half_lives_days": [0.01, 1000000.0], "weighting": ["hedge", "uniform"], "weight_rate": [0.0, 100.0], "loss_scale": [0.000001, 10.0], "clock": "publication_cutoff_in_utc_microseconds", "discrete_forgetting": 0.0},
       "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix_or_area_matrices_or_kernel_records",

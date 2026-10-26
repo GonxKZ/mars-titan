@@ -1,0 +1,624 @@
+{
+  "groups": [
+    {
+      "group": "core",
+      "planned": [
+        "ignore_calendar_decay",
+        "recompute_experts_at_maturity",
+        "rebase_clock_on_read",
+        "ignore_issued_row_alignment",
+        "hide_nonfinite_errors"
+      ],
+      "killed": 5,
+      "summary_sha256": "ee69cccf45a2d4428da304a3529392e800ce85481e394210b27c5c806f31aa1d",
+      "recipes_sha256": "e8e964ebb48200a4588a7be32bd3a8cf59ade19be2a3d7ff490d9fd1433a1432",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "cases": [
+        {
+          "id": "ignore_calendar_decay",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.4707993580959737,
+              "log_sha256": "63203b4ec2b29e7ab8c45616e4d500960794bb60488784fb13fb7fe05b0386bf",
+              "xml_sha256": "29aac48b23f3d9e7fe58cf097bee8ecb8783805f380526fad57452e61f96b2c6",
+              "events_sha256": "eb2cf924b8cd1c957187fad858c8086d65131851410a4b39e0f5503e846384d3",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 2.420738955028355,
+              "log_sha256": "596c4889b8ede95a6bd82877f3abbc81ea8762fd35cd170bd8ee403cc112109e",
+              "xml_sha256": "dd0c67014c6b2a7497718436d01ead2d4ff2b278387d7dda257c7275f681047d",
+              "events_sha256": "f914bb526dadec62e393dd5d9057bbb2f55d04337f9c122acb01be8a00ae4cd1",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.7696080529130995,
+              "log_sha256": "0234d51de03c8da96792f0ed8d0043697c9f1b2888dbf66e9cf6b5620819903b",
+              "xml_sha256": "46be08e80dbff62bf34cf82073da863d49695c079182c50890797a98bccfc58b",
+              "events_sha256": "cb13ea4ac94cda2ef603a674c506a40ca5764b33c2d060efa10fdac43034aa9d",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "recompute_experts_at_maturity",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_hedge_uses_the_issued_experts_not_current_memories",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.8211349798366427,
+              "log_sha256": "41c3b06b1f0237013bf2a2d9555cfc394501d11435eed1ea4fe0a018aef42c2e",
+              "xml_sha256": "f8aca3e9d1ab2b3d7d62610b0af50a60c4dc375ec3497d8649674d4040b38380",
+              "events_sha256": "83ece0368ba747add9bce8d75bfbf6530cd93ebd48276be072f4e8b4f0dd86cf",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_hedge_uses_the_issued_experts_not_current_memories",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 2.521374807925895,
+              "log_sha256": "3552a20f38e09b87580a155b77ecd8f012bdab327f0207e0456569d4bd9eea37",
+              "xml_sha256": "ded03f7541c4b70c206f7331eb3e0f642faf23bbf8401f5d6f958f11e1d6cc25",
+              "events_sha256": "f62bf6fae6eb93c3a4f0a02093686f51752bc7ceb92350ddb8a304189e632db7",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_hedge_uses_the_issued_experts_not_current_memories",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.3707803268916905,
+              "log_sha256": "0d70d5e3025d41820ee8d7865e5ffaa062debd9f4fd30ca4b26f7820dfb180f9",
+              "xml_sha256": "42a10f9a9aafb8af84a77b023d4b7de58355a759977b74afa8d30d1e9651f61c",
+              "events_sha256": "8600ea426a379c5d0869822044f2fa4e8ded9cf6c7ae022bd6b31c79548ce4d3",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "rebase_clock_on_read",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.320730454986915,
+              "log_sha256": "0cddb2f9522c5fc98e9503738cea759bed811b3ad3b391083a46a5d5f403e174",
+              "xml_sha256": "67ef307baa6c9ca083029a7ff543d69afee0984837e053adeab9acb5d5041d74",
+              "events_sha256": "8c4cb26bf550417260417687c9096b124020b0104106d7e45d7470fee7637095",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 1.9193753059953451,
+              "log_sha256": "c3ae74a7e132a4419a3328e9837ea19492f8084f6500c6fd1d2054ebbcb723d2",
+              "xml_sha256": "e32fd32ab5818f66d3c6f6939186e4ecbba0c38caa00ce32e33c10829a97f925",
+              "events_sha256": "31be10bec96e26a19dfc5aa299349241bceb3738db2647419c4f5cb40c3649dd",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.769987303065136,
+              "log_sha256": "730410d23add507d10274b5400f29dd16f80db2f65bf9ef1c50a875848f3486b",
+              "xml_sha256": "1d3f2688e28ee33bc3b8c6a9324a348d1a9cac1b99cbd4c503f88be54f203494",
+              "events_sha256": "d2f8c4cff7e98fb32242c341b203bcdfa9e26cf54a6a51c966a701bb32d94ab1",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "ignore_issued_row_alignment",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_order_of_assets_does_not_change_the_published_state",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.2690342830028385,
+              "log_sha256": "976ea3fe6dfa65b827ec05fc16bf49cec94d3fda3b2d6ad4719708e74a38b32d",
+              "xml_sha256": "9f976a1f4dd8f5636494790c87795880002552a6fe2d342e3856497841953003",
+              "events_sha256": "d784100581a168595ffcff990dd451d3abcea102455bb420be937fe411f6514e",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_order_of_assets_does_not_change_the_published_state",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 1.9189007631503046,
+              "log_sha256": "563ce35ab07c2656f1e39c6645567ad773c5130db984d7a7d4c05dbeef7fdabc",
+              "xml_sha256": "4ca8de3512def69c6294aa9c10b71893bb3298a6b8861d01421b7612adc353c0",
+              "events_sha256": "79429246c0660be098d152b281fb0c8d952aa33f7e9dcb4315b087a885a231f3",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_order_of_assets_does_not_change_the_published_state",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 1.8180808420293033,
+              "log_sha256": "e596cce97643441f2f2c7ef01ee068b6705ce1e028a07a32ba3bd3b3d35d7353",
+              "xml_sha256": "4798d591194e0a262ff0638f3d8e94a2c462b14108fb31ae8bbac7eddfae3da9",
+              "events_sha256": "2dd96c70bffd5ad4ff6fdd0a23696908de3df1ec0922ce4fc1c3f135e8502602",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "hide_nonfinite_errors",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_bad_mature_results_or_issued_parts_are_rejected[overflow]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 1.918595879105851,
+              "log_sha256": "e596cce97643441f2f2c7ef01ee068b6705ce1e028a07a32ba3bd3b3d35d7353",
+              "xml_sha256": "cae381e8da0c5af7cf7cf761459a2e6638793724cd8f80a6dd7adc860afdbb7c",
+              "events_sha256": "02bbe169933ce4974126eeb0fde6932afa6c8b86c012a9e67cb81a0e4dd82791",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_bad_mature_results_or_issued_parts_are_rejected[overflow]",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 1.8684815920423716,
+              "log_sha256": "97de17ad3c59c5c3eae480f1dc5b167f21646e578d27480497f260a3f3bf68fd",
+              "xml_sha256": "cbef152b5ec46b2c95e655a142301fec0bc73c211d2ea7b88523e9e0bc9e9e52",
+              "events_sha256": "4161b341a83a55225f490dda62017f781160f967ffa6e7c2bd3413fee2913f41",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_mixture.py::test_bad_mature_results_or_issued_parts_are_rejected[overflow]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 2.1688139128964394,
+              "log_sha256": "76af71df60bb5f93ea635e8763126ecf98e837672c9980e80aefde989b203765",
+              "xml_sha256": "80c5fa58f6b616d0ae4e3e82301dd84d9154917bf9023f590e427db80cf22f87",
+              "events_sha256": "32cef075bb32c963397c10a3874731846c5bbef0cd14ffab09d57e0a1600a43d",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "published_recipes_sha256": "2b1fc90113fb3726e2cc19b29a381e098246e143731e99e271dce1c4c69e0835"
+    },
+    {
+      "group": "ledger",
+      "planned": [
+        "discard_window_components",
+        "discard_session_components",
+        "omit_mixture_source_pin",
+        "omit_artifact_budget"
+      ],
+      "killed": 4,
+      "summary_sha256": "a9f8e6c9c17d7fa50899006761f7dd4a609748ab3c5c0a3d2b015ecbe514049a",
+      "recipes_sha256": "9f2d3123e76641d8b32b82873ce1927b5ad1a7f4e3da5e67f94d79066ff8db17",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "cases": [
+        {
+          "id": "discard_window_components",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_linear_window_matches_independent_calendar_and_issued_loss_recurrence[unclipped_fixture]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 6.080484837992117,
+              "log_sha256": "1b0a6e83dbd3855e492cbe1c6dcb640f53cbc1f640a701d8a46adedd4f31d9ca",
+              "xml_sha256": "0e7d1b8f53c0113eac11fc42663c10826edcdeb3b77231c36d2844fe9b3c0b17",
+              "events_sha256": "35e97443bcc2574d53b60f9eb39061a8e7b1df2382037417ee13a8899dbe99f8",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_linear_window_matches_independent_calendar_and_issued_loss_recurrence[unclipped_fixture]",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 5.378318519098684,
+              "log_sha256": "036c15dfdfcd808da103e8204fc8043b4e4dfc73b65f5d425e9ea3d5fcbc4afe",
+              "xml_sha256": "3180d37a27ddad26fcb2caa120f2daa8c8fd058f9312766d91e7b12e45046a03",
+              "events_sha256": "9ea0994828d3217c3d3ef1a5d59281f75138b408911e2e0b784d8807cdbafe3c",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_linear_window_matches_independent_calendar_and_issued_loss_recurrence[unclipped_fixture]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 6.433515839045867,
+              "log_sha256": "d75f24109b330b5925db942b8956d9758c13d5f5102920d8a97687fb7df45420",
+              "xml_sha256": "5326eb264d627d204c3c5edc3a2d27cf2b210ffe51e0950ba670fc0c45d4b29e",
+              "events_sha256": "12c2f25638bca05243da575d7d66617efececfae4992e2a4f0cc9cc09d91cf53",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "discard_session_components",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_missing_or_misaligned_pending_experts",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.676297205965966,
+              "log_sha256": "bb33dffc7f90fa16dec2c04086faaaa37e7df0e6208cdd382848b30ddc128470",
+              "xml_sha256": "f42350f3a0c0f7b1ecfd905d7bc01d0370ac73ba24ed2ee6f86dc681ea6a1358",
+              "events_sha256": "f8e99bdc9b9d6b5498383918f5f52d4d367bf4d6f925054e8e883a0d44dc5722",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_missing_or_misaligned_pending_experts",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 4.624773157062009,
+              "log_sha256": "715d9751a78fcbefda17e494137a4f972df89d7dd71fb5e5daf1ca8f33d12519",
+              "xml_sha256": "40d166b87076fec821924210df3ebdae9e1c75bca21921005dcb39648b9be617",
+              "events_sha256": "436c2c6a27dfa3fe5b511c1dfc7176e2380672e867fe6f14cb841281a18cf411",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_missing_or_misaligned_pending_experts",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.62829702696763,
+              "log_sha256": "8d0fc2ae780aef1fbd746826fc1566f484552cdc25736fe51e820e810ea5b4ab",
+              "xml_sha256": "a3ea658e9617739a221ed8ce1907a6ab799b7e79d6b8900b5d8952ba417372f3",
+              "events_sha256": "b6ed9a70450171a132c9278d2e8b5dea63e14d24c723b5575201f89e1ff661ab",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "omit_mixture_source_pin",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_identity_pins_the_mixture_source",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.526320775039494,
+              "log_sha256": "d115dd7c7d49e0deb2e27e0217db7970ceb83172451eddf7f360bbe3c6e4e2d6",
+              "xml_sha256": "4c108037843e9e52b3812d8bc51989db02697a4f03bdb178e3be44e9f2c3be99",
+              "events_sha256": "1af358ed4d7f8e9a8b0e9e0be25171acf9c876d3690efad041980525402ad823",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_identity_pins_the_mixture_source",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 4.776440141955391,
+              "log_sha256": "ba59562823718883a0194daa80331b1a3186ddb15271398d2f20188fafed8b9b",
+              "xml_sha256": "e8ffe72c64c8e36960cd67efc0d8d811bcb5019d4344d3623fe7d8a3e68fc547",
+              "events_sha256": "6172c9638e9d5370d179503040329be0682b79932573b7dcddd4864bb7da223c",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_identity_pins_the_mixture_source",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.378572555957362,
+              "log_sha256": "f7d618344af9292ddfb7681250c084f5027f863d31b128bb9964c163c514d0ef",
+              "xml_sha256": "d430bbe5fe5563cdf8f2939e6a95ab85f3ce7197934c8e40ab99e06dd64da59e",
+              "events_sha256": "8850dd75291c640f58ba5f13f928351c17dc8a96662bd8aff72fb20a83ef7282",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "omit_artifact_budget",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_a_mixture_that_cannot_fit_its_artifact_budget",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.525884567992762,
+              "log_sha256": "5b6af0c27926dd8cda5be8713c0e3453a7a3aa2596b5f86eefbc382c5b177fff",
+              "xml_sha256": "b0b207aa1aa17d58d76468c5fac32e5bb44559a38f35fc491fed778d6d560ea3",
+              "events_sha256": "b60ef03e9d084eed023b21b678189035c39ccbfd01692392cf91b6af5878d47d",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_a_mixture_that_cannot_fit_its_artifact_budget",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 4.726036020088941,
+              "log_sha256": "5c55b4473802c2f4456035b255d5c9ed935c9a52d4f4d02b51a8ae1851a0339b",
+              "xml_sha256": "05c6ca301b3dd4ce485416b2c664091bd21b0aa80a7995b8d509b8dd7798a1a6",
+              "events_sha256": "32970745c7c9b3b7f7af6b567edbe8f85ca982ad78fe6f7cd8472b516b745ddb",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_a_mixture_that_cannot_fit_its_artifact_budget",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.529089345131069,
+              "log_sha256": "8d0fc2ae780aef1fbd746826fc1566f484552cdc25736fe51e820e810ea5b4ab",
+              "xml_sha256": "cee8791235380f1a5237049db05660b6d7d66c992c8b8756ccd3883baddc410f",
+              "events_sha256": "700b771910a4f911b4f969b004ef150f2eafe7f130ca05d539bb21106fcf2969",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "published_recipes_sha256": "59ae4c2b80aa45a14197eb3d9b55817b6e48ae1fd49ab83c794efa334803dcd7"
+    },
+    {
+      "group": "bridge",
+      "planned": [
+        "omit_bridge_decay"
+      ],
+      "killed": 1,
+      "summary_sha256": "e97db9ba1a2d5137bcaa25aa0147d79278da2f33afefc318781eb2a8efd220b8",
+      "recipes_sha256": "a91a6f683d4aef00f509b9a97e75d03e7eb8ea547b85bbcf57138aa41dd8f7a8",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "cases": [
+        {
+          "id": "omit_bridge_decay",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_coefficient_decay.py::test_decay_preserves_metadata_and_scales_all_coefficients[areas2-bridge2-None]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 1.7192517530638725,
+              "log_sha256": "99a24796443a1d07f66a424f8116a06a2079063af758e7d3c87801c191ad2ecd",
+              "xml_sha256": "31fe6bc2416aaff499a17ee64e8b616a55e3008e0d2e34d4ea47d42304339a57",
+              "events_sha256": "01fb6eec4e18a2af6370cc3def79765b0cab8809de211cfba5d739b8decb3a80",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_coefficient_decay.py::test_decay_preserves_metadata_and_scales_all_coefficients[areas2-bridge2-None]",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 1.7190541070885956,
+              "log_sha256": "0a936df97ad54f866337c26717f3ed03e3ca1d73211d157769dded1267b32c7f",
+              "xml_sha256": "5a192ec9ef4000caa7cf542f821b052074739c27569dec94d1d6c2e97b83649a",
+              "events_sha256": "6597b456bf8a21080ed0ee42f265341ea614a106b5ca9bb59bd72c480af2d8aa",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_coefficient_decay.py::test_decay_preserves_metadata_and_scales_all_coefficients[areas2-bridge2-None]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 1.7185900220647454,
+              "log_sha256": "99a24796443a1d07f66a424f8116a06a2079063af758e7d3c87801c191ad2ecd",
+              "xml_sha256": "79755b1b09b29d1940a0b3e15047d2aa8c65612a2cca816f9a9e7b85a2d83e3e",
+              "events_sha256": "0b09add76955d3bb57b2c6776545dfb40da63fdfdcefa080e48836d9fbfdb9d1",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "published_recipes_sha256": "a4149388f58cc48a51169335a260a76f57418a43ec481f08a1881b1d68e98f58"
+    }
+  ],
+  "planned": 10,
+  "killed": 10,
+  "optimizer_attempts": 0,
+  "scope": "Diez fallos dirigidos, con referencia verde antes y después. No es mutación exhaustiva."
+}

@@ -161,6 +161,7 @@ _CODE = (
     "mars_titan.memory.area_query_bridge",
     "mars_titan.memory.paired_proximal",
     "mars_titan.memory.role_binding",
+    "mars_titan.memory.multiscale_mixture",
     "mars_titan.memory.regimes",
     "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
@@ -261,7 +262,11 @@ def arm_components(components, values, noise=None):
     rule = memory.get("rule") if isinstance(memory, dict) else None
     fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
     # Solo las reglas delta y proximal admiten el reparto por áreas de B1 en el modelo.
-    optional = {"areas", "query_bridge", "role_binding"} if rule in ("delta", "proximal") else set()
+    optional = (
+        {"areas", "query_bridge", "role_binding", "multiscale"}
+        if rule in ("delta", "proximal")
+        else set()
+    )
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}
@@ -350,6 +355,7 @@ class CorrectionInference(ChronologicalInference):
         # emisión corregida, y en el compartimento del instante de la decisión.
         self._core = {}
         self._staged = []
+        self._issued_experts, self._mature_experts = {}, {}
         self._routing = _RoutingLog()
         self.kalman = correction.memory.rule == "kalman"
         self._reset_delay()
@@ -389,7 +395,12 @@ class CorrectionInference(ChronologicalInference):
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
         keys = self.correction.keys(inputs, routes)
-        corrections = self.memory.read(keys)[:, 0].tolist()
+        parts = None
+        if self.correction.multiscale is not None:
+            corrections, parts = self.memory.predict(keys, at=event.at)
+            corrections = corrections[:, 0].tolist()
+        else:
+            corrections = self.memory.read(keys)[:, 0].tolist()
         if self.delayed is not None:
             extra = zip(
                 self.memory.variance(keys).tolist(),
@@ -403,8 +414,8 @@ class CorrectionInference(ChronologicalInference):
         else:
             extra = [None] * len(decisions)
         rows = routes.tolist() if routes is not None else [None] * len(decisions)
-        for decision, key, route, correction, more in zip(
-            decisions, inputs, rows, corrections, extra, strict=True
+        for index, (decision, key, route, correction, more) in enumerate(
+            zip(decisions, inputs, rows, corrections, extra, strict=True)
         ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
@@ -413,6 +424,8 @@ class CorrectionInference(ChronologicalInference):
                 variance, delayed = more
                 self.extra[decision] = (variance, core + delayed)
             self._core[decision] = (core, key, route)
+            if parts is not None:
+                self._issued_experts[decision] = parts[index].detach().clone()
             run.pending[decision] = core + correction
             if decision in run.levels:
                 run.levels[decision] = [level + correction for level in run.levels[decision]]
@@ -427,6 +440,10 @@ class CorrectionInference(ChronologicalInference):
         for flow, decision_at, value in event.labels:
             core, key, route = self._core.pop((flow, decision_at))
             self._staged.append((decision_at, flow, value - core, key, route))
+            if self.correction.multiscale is not None:
+                self._mature_experts[flow, decision_at] = self._issued_experts.pop(
+                    (flow, decision_at)
+                )
             if self.delayed is not None:
                 self._incoming.append(self._staged[-1])
 
@@ -481,11 +498,20 @@ class CorrectionInference(ChronologicalInference):
             keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
             values=[value for _, _, value, _, _ in staged],
         )
+        if self.correction.multiscale is not None:
+            decisions = [(flow, decision_at) for decision_at, flow, *_ in staged]
+            issued = torch.stack([self._mature_experts[key] for key in decisions])
+            updated = memory.write(feedback, cutoff=at, issued_predictions=issued)
+            for key in decisions:
+                del self._mature_experts[key]
+            return updated, feedback
         return memory.write(feedback, cutoff=at), feedback
 
     def _close(self, run):
         super()._close(run)
         self._core.clear()
+        self._issued_experts.clear()
+        self._mature_experts.clear()
         # Las decisiones cuya etiqueta no madura en el tramo no llegan a ser filas.
         self.extra.clear()
 
@@ -513,6 +539,7 @@ class CorrectionInference(ChronologicalInference):
         run = _Pass(rows=rows)
         self.memory = self.correction.empty()
         self._core, self._staged = {}, []
+        self._issued_experts, self._mature_experts = {}, {}
         self._routing = _RoutingLog()
         self._reset_delay()
         self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
@@ -541,6 +568,12 @@ class CorrectionInference(ChronologicalInference):
         if self.delayed is not None:
             # Las etiquetas que siguen retenidas al cerrar el tramo no llegan a escribirse.
             metrics["label_delay_writes"] = self.delayed.writes
+        if self.correction.multiscale is not None:
+            metrics["multiscale"] = dict(
+                weights=self.memory.weights.tolist(),
+                clock=self.memory.clock,
+                cohorts=self.memory.cohorts,
+            )
         return metrics
 
     def predict(self, source, rows, *, stop=None):

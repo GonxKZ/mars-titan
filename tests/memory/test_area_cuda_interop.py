@@ -10,6 +10,7 @@ from test_mars_titan_correction_parity import RECIPE, SOURCE, core, emitted
 from test_mars_titan_session_parity import events
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
+from mars_titan.memory.multiscale_mixture import MultiscaleMixtureConfig
 from mars_titan.memory.role_binding import RoleBindingConfig
 from mars_titan.training.mars_titan_correction import CorrectionInference
 
@@ -17,8 +18,18 @@ from mars_titan.training.mars_titan_correction import CorrectionInference
 @pytest.mark.cuda
 @pytest.mark.parametrize(
     "correction",
-    [AREAS, KERNEL, BRIDGED, replace(BRIDGED, role_binding=RoleBindingConfig())],
-    ids=["areas", "kernel", "bridge", "role_bridge"],
+    [
+        AREAS,
+        KERNEL,
+        BRIDGED,
+        replace(BRIDGED, role_binding=RoleBindingConfig()),
+        replace(
+            AREAS,
+            memory=replace(AREAS.memory, forgetting=0.0),
+            multiscale=MultiscaleMixtureConfig(),
+        ),
+    ],
+    ids=["areas", "kernel", "bridge", "role_bridge", "multiscale"],
 )
 def test_cuda_parent_and_cpu_memory_preserve_the_cpu_trajectory(four_flow_source, correction):
     results = {}

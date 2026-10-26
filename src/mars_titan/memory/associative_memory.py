@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from .area_memory import AreaLayout
     from .area_query_bridge import AreaQueryBridgeConfig
     from .kernel_memory import KernelMemoryConfig
+    from .multiscale_mixture import MultiscaleMixtureConfig
     from .role_binding import RoleBindingConfig
 
 RULES = ("delta", "proximal", "kalman")
@@ -333,6 +334,17 @@ class AssociativeMemory:
     def matrix(self):
         return self._matrix.clone(memory_format=torch.contiguous_format)
 
+    def decay_coefficients(self, factor):
+        """Decaer la parte homogénea de delta/proximal sin escribir ni avanzar el cursor."""
+        factor = _finite(factor, "El factor de decaimiento", 0.0, 1.0)
+        if self.config.rule == "kalman":
+            raise ValueError("El decaimiento escalar no define la dinámica de la covarianza kalman")
+        if factor == 1.0:
+            return self
+        return AssociativeMemory(
+            self.config, self._matrix * factor, writes=self.writes, cursor=self.cursor
+        )
+
     @property
     def covariance(self):
         """Copia de P con la regla kalman. None con las reglas delta y proximal."""
@@ -570,14 +582,25 @@ class MatureCorrection:
     areas: "AreaLayout | None" = None
     query_bridge: "AreaQueryBridgeConfig | None" = None
     role_binding: "RoleBindingConfig | None" = None
+    multiscale: "MultiscaleMixtureConfig | None" = None
 
     def __post_init__(self):
         from .area_memory import AREA_RULES, AreaLayout
         from .area_query_bridge import AreaQueryBridgeConfig
         from .kernel_memory import KernelMemoryConfig
+        from .multiscale_mixture import MultiscaleMixtureConfig
         from .role_binding import SOURCES, RoleBindingConfig
 
         kernel = type(self.memory) is KernelMemoryConfig
+        if self.multiscale is not None and (
+            type(self.multiscale) is not MultiscaleMixtureConfig
+            or type(self.memory) is not AssociativeMemoryConfig
+            or self.memory.rule not in AREA_RULES
+            or self.memory.forgetting != 0.0
+        ):
+            raise ValueError(
+                "La mezcla multiescala necesita delta o proximal con olvido discreto cero"
+            )
         if self.role_binding is not None and (
             type(self.role_binding) is not RoleBindingConfig
             or type(self.memory) is not AssociativeMemoryConfig
@@ -654,7 +677,15 @@ class MatureCorrection:
                 role_binding=self.role_binding.identity(),
                 key_normalization="role_operator_of_l2_fp64_of_codec_key_inputs",
             )
+        if self.multiscale is not None:
+            identity["multiscale"] = self.multiscale.identity()
         return identity
+
+    def _unmixed(self):
+        """Corrector de cada experto, sin otra mezcla que produzca recursión."""
+        from dataclasses import replace
+
+        return replace(self, multiscale=None)
 
     def _unbound(self):
         """Backend de la corrección ligada. Sus claves ya llegan transformadas."""
@@ -664,6 +695,10 @@ class MatureCorrection:
 
     def empty(self):
         """Memoria vacía de la corrección: A en cero, las áreas en cero o sin episodios."""
+        if self.multiscale is not None:
+            from .multiscale_mixture import MultiscaleMemory
+
+            return MultiscaleMemory(self._unmixed(), self.multiscale)
         if self.role_binding is not None:
             from .role_binding import RoleBoundMemory
 
@@ -680,6 +715,10 @@ class MatureCorrection:
 
     def restore(self, payload):
         """Recuperar la memoria exportada por `export()` de la misma corrección."""
+        if self.multiscale is not None:
+            from .multiscale_mixture import MultiscaleMemory
+
+            return MultiscaleMemory.restore(self._unmixed(), self.multiscale, payload)
         if self.role_binding is not None:
             from .role_binding import RoleBoundMemory
 

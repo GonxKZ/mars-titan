@@ -202,6 +202,8 @@ La [memoria por áreas B1](docs/experiments/redundant-area-memory-v1.md) añade 
 
 [B3](docs/experiments/role-bound-keys-v1.md) liga esas claves al régimen observable de cada decisión mediante códigos bipolares. Se contrasta con calendario, rol constante y concatenación proyectada. La ruta queda guardada hasta la maduración de la etiqueta. El factor puede combinarse con B1 o B2 y permanece desactivado por defecto. No se utilizan sectores actuales como clasificaciones históricas ni se ha medido una mejora predictiva.
 
+[E1](docs/experiments/multiscale-mature-mixture-v1.md) combina correctores con semividas de calendario distintas y pesos actualizados con sus errores emitidos maduros. Conserva los componentes de cada decisión hasta disponer de su etiqueta. Tiene controles uniformes y de una sola escala, recuperación y costes CPU medidos. La comparación predictiva y la interoperabilidad CUDA siguen pendientes.
+
 | Antes del lanzamiento de la campaña A v2 | Estado | Tarea |
 | --- | --- | --- |
 | Completar la codificación y verificar la edición con los 5.676 candidatos | Hecho el 9 de octubre con la v3 y repetido el 11 de octubre con la v3.1 ([recibo](reports/data/edition-v3-1-verification-20261011.json)) | [#171](https://github.com/GonxKZ/mars-titan/issues/171), [#428](https://github.com/GonxKZ/mars-titan/issues/428) |

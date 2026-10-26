@@ -27,7 +27,14 @@ from mars_titan.models.titans.evidence_bridge import (
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import area_memory, area_query_bridge, kernel_memory, role_binding, write_scores
+from . import (
+    area_memory,
+    area_query_bridge,
+    kernel_memory,
+    multiscale_mixture,
+    role_binding,
+    write_scores,
+)
 from .area_memory import AreaLayout
 from .area_query_bridge import AreaQueryBridgeConfig
 from .associative_memory import (
@@ -39,6 +46,7 @@ from .associative_memory import (
 )
 from .financial_consumers import bank_retention
 from .kernel_memory import KERNEL_RULE, KernelMemoryConfig
+from .multiscale_mixture import MultiscaleMixtureConfig
 from .role_binding import RoleBindingConfig
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
@@ -96,6 +104,7 @@ def load_declaration(path=DECLARATION):
         or associative.get("kernel_value") != kernel_memory.declaration()
         or associative.get("query_bridge_value") != area_query_bridge.declaration()
         or associative.get("role_binding_value") != role_binding.declaration()
+        or associative.get("multiscale_value") != multiscale_mixture.declaration()
     ):
         raise ValueError("La declaración de B1 y de su control no coincide con el código")
     return document
@@ -141,7 +150,7 @@ def _associative(value, component):
         fields = {"rule", "key", "rate", "forgetting"}
         if (
             not isinstance(value, dict)
-            or set(value) - {"areas", "query_bridge", "role_binding"} != fields
+            or set(value) - {"areas", "query_bridge", "role_binding", "multiscale"} != fields
             or rule not in component["allowed"]
         ):
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
@@ -176,8 +185,20 @@ def _associative(value, component):
         }:
             raise ValueError("La ligadura B3 declara source, mode y seed")
         binding = RoleBindingConfig(**binding)
+    multiscale = value.get("multiscale")
+    if multiscale is not None:
+        if not isinstance(multiscale, dict) or set(multiscale) != {
+            f.name for f in fields_of(MultiscaleMixtureConfig)
+        }:
+            raise ValueError("E1 declara half_lives_days, weighting, weight_rate y loss_scale")
+        multiscale = MultiscaleMixtureConfig(**multiscale)
     return MatureCorrection(
-        memory, key=value["key"], areas=areas, query_bridge=bridge, role_binding=binding
+        memory,
+        key=value["key"],
+        areas=areas,
+        query_bridge=bridge,
+        role_binding=binding,
+        multiscale=multiscale,
     )
 
 
@@ -198,6 +219,8 @@ def _normalized(correction):
         normalized["query_bridge"] = asdict(correction.query_bridge)
     if correction.role_binding is not None:
         normalized["role_binding"] = asdict(correction.role_binding)
+    if correction.multiscale is not None:
+        normalized["multiscale"] = asdict(correction.multiscale)
     return normalized
 
 

@@ -211,6 +211,16 @@ class AreaMemory:
     def writes(self):
         return self._areas[0].writes
 
+    def decay_coefficients(self, factor):
+        """Decaer W y los mapas T de todas las áreas, conservando sus metadatos."""
+        areas = tuple(area.decay_coefficients(factor) for area in self._areas)
+        if all(left is right for left, right in zip(areas, self._areas, strict=True)):
+            return self
+        bridge = None if self._bridge is None else self._bridge.decay_coefficients(factor)
+        return AreaMemory(
+            self.config, self.layout, areas, query_bridge=self.query_bridge, bridge_state=bridge
+        )
+
     @property
     def cursor(self):
         return self._areas[0].cursor

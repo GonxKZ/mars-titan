@@ -165,6 +165,11 @@ class RoleBoundMemory:
     def read(self, keys):
         return self._backend.read(keys)
 
+    def decay_coefficients(self, factor):
+        """Conservar el contrato de roles al decaer los coeficientes del backend."""
+        updated = self._backend.decay_coefficients(factor)
+        return self if updated is self._backend else RoleBoundMemory(self.correction, updated)
+
     def write(self, feedback, *, cutoff):
         updated = self._backend.write(feedback, cutoff=cutoff)
         return self if updated is self._backend else RoleBoundMemory(self.correction, updated)

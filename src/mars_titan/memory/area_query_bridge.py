@@ -127,6 +127,13 @@ class AreaQueryBridgeState:
     def writes(self):
         return self._maps[0].writes
 
+    def decay_coefficients(self, factor):
+        """Decaer los mapas sin modificar contadores ni correspondencias de su contrato."""
+        maps = tuple(item.decay_coefficients(factor) for item in self._maps)
+        if all(left is right for left, right in zip(maps, self._maps, strict=True)):
+            return self
+        return AreaQueryBridgeState(self.rule, self.areas, self.config, maps=maps)
+
     @property
     def cursor(self):
         return self._maps[0].cursor
