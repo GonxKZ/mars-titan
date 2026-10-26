@@ -7,6 +7,10 @@ entradas de los `warmup_months` previos a su tramo, sin etiquetas ni prediccione
 emitidas, y el calentamiento nunca empieza antes del origen del ajuste. Ninguna fase
 termina después del final de su tramo, que es también el corte de maduración de sus
 etiquetas en las vistas v2.
+
+Una receta experimental puede acotar el ajuste a los `fit_months` meses finales del tramo de
+entrenamiento. Entonces el ajuste también lee antes, sin etiquetas, sus meses de
+calentamiento, como los tramos medidos. Validación, calibración y evaluación no cambian.
 """
 
 from datetime import date
@@ -18,6 +22,8 @@ from mars_titan.memory.financial_session import FinancialPhase
 PREDICTED = ("validation", "calibration", "evaluation")
 # La receta admite como mucho cinco años de entradas antes del tramo medido.
 MAX_WARMUP_MONTHS = 60
+# Un ajuste acotado cubre como mucho doce meses, es decir, hasta 366 días.
+MAX_FIT_MONTHS = 12
 
 
 def micros(day):
@@ -39,11 +45,24 @@ def checked_warmup(months):
     return months
 
 
-def window_phases(fold, warmup_months):
+def checked_fit_months(months):
+    """Lee el ajuste acotado de una receta: None o un entero de meses entre 1 y 12."""
+    if months is not None and (type(months) is not int or not 1 <= months <= MAX_FIT_MONTHS):
+        raise ValueError("La receta necesita walk_forward.fit_months entero entre 1 y 12")
+    return months
+
+
+def window_phases(fold, warmup_months, fit_months=None):
     """Construye las fases del ajuste y de los tres tramos medidos con el calentamiento acotado."""
     checked_warmup(warmup_months)
+    checked_fit_months(fit_months)
     origin, train_end = (micros(day) for day in fold["train"])
     phases = {"train": FinancialPhase("train", origin, origin, train_end, train_end)}
+    if fit_months is not None:
+        first = months_before(fold["train"][1], fit_months)
+        since = max(origin, micros(first))
+        warmup = max(origin, micros(months_before(first, warmup_months)))
+        phases["train"] = FinancialPhase("train", warmup, since, train_end, train_end)
     for name in PREDICTED:
         start, end = (micros(day) for day in fold[name])
         warmup = max(origin, micros(months_before(fold[name][0], warmup_months)))

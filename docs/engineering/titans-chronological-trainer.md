@@ -118,6 +118,27 @@ El orden es fijo:
 
 Una pausa durante el ajuste se reanuda desde su último checkpoint coherente. Una pausa entre tramos conserva los ya escritos y continúa con el siguiente.
 
+### Ajuste experimental de uno a doce meses
+
+La sección `walk_forward` de una receta experimental puede declarar `fit_months` para ajustar solo los últimos meses del tramo de entrenamiento. Admite enteros entre 1 y 12. Los límites del protocolo son comienzos de mes, así que el ajuste abarca como máximo 366 días. Si ese comienzo precede al origen de los datos, se recorta al origen.
+
+```json
+"walk_forward": {
+  "warmup_months": 12,
+  "fit_months": 12
+}
+```
+
+El ajuste acotado observa primero las entradas de sus meses de calentamiento, sin etiquetas financieras ni pasos del optimizador. El calentamiento también se recorta al origen de los datos. Puede observar historia anterior al año ajustado y se declara por separado. El contexto de precios de una fila conserva su historial admisible. Acotar el ajuste no significa borrar ese contexto ni inventar modalidades ausentes.
+
+Validación, calibración y evaluación mantienen sus fechas y filas. La selección sigue usando la regla del protocolo. El lector de MARS-TITAN hereda el límite de la receta de su padre, comprueba la igualdad de fases y usa los mismos índices. La receta, los índices y la política de memoria identifican el límite aplicado. Reanudar con otro límite requiere otra ejecución.
+
+Sin `fit_months`, las fases y la política conservan el ajuste desde el origen. Solo aceptan la opción los recorridos que la aplican. Los traslados, la corrección posterior y los medidores que todavía no la incorporan rechazan esa receta. La opción no activa una campaña ni abre el test final.
+
+Las pruebas comprueban los cortes, los valores inválidos, la invariancia ante cambios anteriores al calentamiento y la recuperación del lector con las mismas filas del padre. Los recorridos técnicos registran gradientes con un optimizador sustituto que no modifica pesos.
+
+El [recibo del 26 de octubre](../../reports/engineering/bounded-fit-20261026.json) registra 118 casos distintos comprobados y cuatro mutaciones dirigidas detectadas, con controles verdes antes y después. La cobertura de las tres fuentes es 556/712 sentencias y 89/116 ramas. Las nuevas funciones de límites y opciones recorren todas sus sentencias y ramas en esta selección. El CRAP máximo del archivo completo corresponde a un recorrido de traslado anterior que no se ejecutó en esta batería. El recibo conserva esa limitación y las incidencias iniciales resueltas. No constituye un resultado predictivo ni una medida de rendimiento.
+
 ### Política de memoria en inferencia
 
 La política `reset_each_pass_then_input_warmup_v1` es la misma para los cuatro controles:
