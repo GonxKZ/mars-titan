@@ -1,0 +1,191 @@
+{
+  "planned": 3,
+  "killed": 3,
+  "scope": "Tres fallos dirigidos en código reutilizado, sin cobertura de mutación exhaustiva.",
+  "groups": [
+    {
+      "group": "regularization",
+      "planned": 2,
+      "killed": 2,
+      "executed_recipes_sha256": "36b2125da9166a9041adf367b52016c55153d90a9c526e2a9a09c1b65a574f76",
+      "published_recipes_sha256": "34bd4852fd0a3477645d502692e1ac4b59d5b71391166f69852a35455ce6c27e",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "summary_sha256": "d4328424fc3358b2679db7644a4c38d1a4fe443872e0d4b0bada9916101119be",
+      "cases": [
+        {
+          "id": "ignore_weight_decay",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_profile_reaches_adamw_and_has_its_own_identity_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 4.42453491082415,
+              "log_sha256": "571224b4c9989e45e77f6090414706d799e33bd8e62b02fc07f880ab74b77724",
+              "xml_sha256": "34c1b7709c8170a4eb13d84583e6955908e5b2af0562c377e7db873685958646",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_profile_reaches_adamw_and_has_its_own_identity_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 1,
+              "status": "finished",
+              "elapsed_s": 4.523524960037321,
+              "log_sha256": "ee7cfc9d7dcb0577e788ac5314f56d5d8a2cdfd53a45d5ea1fbe296cfdc94b76",
+              "xml_sha256": "11e3b2e95fa2fb1a60b4904ed433d6f869b6a375ddbe44c95f99dfbf2cfacf1f",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_profile_reaches_adamw_and_has_its_own_identity_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 3.823717452120036,
+              "log_sha256": "faa6fbf2c36cbfd5fcd2722fbc0a0bf355b513efd3012ae1c4563fdc4127b14f",
+              "xml_sha256": "77c8b96aefe6e77f2d962660dc6830004093ba5f5fb68f6731b2490614bee6ed",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "remove_fusion_dropout",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_reference_dropout_stays_in_fusion_and_is_disabled_for_evaluation[0.1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 2.6211550219450146,
+              "log_sha256": "f110ea65f6d33cdc6322b155f056abd01a7abd63e18b0f61e05569402024ad9d",
+              "xml_sha256": "8c71008742f797495635b08075674e46835c33141c2bc0ce22f7eb6d81e699cd",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_reference_dropout_stays_in_fusion_and_is_disabled_for_evaluation[0.1]",
+              "returncode": 1,
+              "status": "finished",
+              "elapsed_s": 3.122640128014609,
+              "log_sha256": "8bb19ba4e02338fb1c081d998c2a3de35aec3b8bc61c2f3ec7205b9fe1816ea9",
+              "xml_sha256": "6f1d2016348a53955b3e3b442c7a1ddef4fb08bc28946cf2a3199c02dedc075a",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/training/test_regularization_profiles.py::test_reference_dropout_stays_in_fusion_and_is_disabled_for_evaluation[0.1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 3.2725365890655667,
+              "log_sha256": "63666262609cff772df33f9b25c9d6a2f55668c9028953f476842f31ddc09e3b",
+              "xml_sha256": "63bdba196e6964768d34a89dcabb2be713a415e064cde05bedc90788ca99b0b9",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "selection",
+      "planned": 1,
+      "killed": 1,
+      "executed_recipes_sha256": "d82b0f5faf66163c755c7e3f4d83272083cea2dab2ac783fc6eb3d13722f78fb",
+      "published_recipes_sha256": "5ec8ca68b2ec96e2d66901731fba67c544bf3e0b1ffa377bdd4339b324d236f4",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "summary_sha256": "18e43a8419a757757026d62bd27f4ed2deb90e321c671c2491ded3babe3ef95e",
+      "cases": [
+        {
+          "id": "select_last_instead_of_best",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/training/test_selection_budget.py::test_parent_can_remain_selected_without_consuming_the_budget",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 2.119182834168896,
+              "log_sha256": "3605abb09038ce24e90d81df8f7c0d87bb6f647a5e016bf461d8a8fcb408f6e9",
+              "xml_sha256": "f2d6b061ad1da67e494321ef4e953972a266204dc56ca6fa64afa706733d92c2",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/training/test_selection_budget.py::test_parent_can_remain_selected_without_consuming_the_budget",
+              "returncode": 1,
+              "status": "finished",
+              "elapsed_s": 2.0694702500477433,
+              "log_sha256": "4b6eaedd1f1ede12731b19981099de0fc2a8361ab824ab9b432bb358adb6d51e",
+              "xml_sha256": "4fa4d7469db6e0fdfcaf1900667818ef88f16f32c8a8b728a5b3e7e0d043a7d1",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/training/test_selection_budget.py::test_parent_can_remain_selected_without_consuming_the_budget",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 2.3202943860087544,
+              "log_sha256": "e8c2ebdecc6c68bd31c948de0b0c1dd4c57dd47d093194a6c1d241c65727824d",
+              "xml_sha256": "673f6c947b7434b8012035b0620b0b14816d1f0e908669d40f8ec3e7e13a02c9",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
