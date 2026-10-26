@@ -109,7 +109,9 @@ CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS
     --output "${MARS_OBJECTIVE_COST:?}"
 ```
 
-## Pendiente
+## Comprobación y trabajo pendiente
+
+El [recibo de verificación](../../reports/engineering/session-objectives-20261026/verification.json) registra 209 pruebas CPU correctas, 17 comprobaciones adicionales de la guarda de aprendizaje y nueve mutaciones dirigidas detectadas. En los tres módulos nuevos se recorrieron 187/188 sentencias y 67/68 ramas. Queda sin recorrer la exclusión de varios objetivos simultáneos porque todavía solo hay uno registrado. El recibo separa esa cobertura de la de los archivos de integración, que contienen otros recorridos y funciones complejas no cubiertas por esta batería. CRAP y cobertura se presentan como diagnósticos.
 
 - La comprobación en `cuda:0`, que espera a que la GPU quede libre.
 - La pérdida y normalización del objetivo IC en el lector episódico. Los rangos de entrada ya tienen ese recorrido.
