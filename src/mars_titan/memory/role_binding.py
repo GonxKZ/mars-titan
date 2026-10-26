@@ -165,6 +165,12 @@ class RoleBoundMemory:
     def read(self, keys):
         return self._backend.read(keys)
 
+    def read_diagnostic(self, keys, **options):
+        """Aplicar la lesión a las áreas, sobre las claves que ya llevan su rol."""
+        if self.correction.areas is None:
+            raise ValueError("Las lesiones de áreas necesitan el backend por áreas")
+        return self._backend.read_diagnostic(keys, **options)
+
     def decay_coefficients(self, factor):
         """Conservar el contrato de roles al decaer los coeficientes del backend."""
         updated = self._backend.decay_coefficients(factor)

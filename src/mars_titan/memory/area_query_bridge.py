@@ -38,8 +38,8 @@ def unit_rows(values):
     return scaled / torch.where(norm > 0, norm, 1.0)
 
 
-def active_areas(value, count):
-    """Máscara CPU común de áreas presentes, con al menos una disponible."""
+def active_areas(value, count, *, allow_empty=False):
+    """Máscara CPU de áreas presentes. Solo el diagnóstico permite eliminar todas."""
     if value is None:
         return None
     mask = torch.as_tensor(value)
@@ -48,9 +48,24 @@ def active_areas(value, count):
         or mask.shape != (count,)
         or mask.device.type != "cpu"
         or mask.layout != torch.strided
-        or not mask.any()
+        or (not allow_empty and not mask.any())
     ):
         raise ValueError("Las áreas activas son una máscara booleana CPU con al menos una")
+    return mask
+
+
+def active_coordinates(value, areas, width):
+    """Coordenadas presentes por área para una lesión de lectura, sin cambiar el estado."""
+    if value is None:
+        return None
+    mask = torch.as_tensor(value)
+    if (
+        mask.dtype != torch.bool
+        or mask.shape != (areas, width)
+        or mask.device.type != "cpu"
+        or mask.layout != torch.strided
+    ):
+        raise ValueError("Las coordenadas activas necesitan una máscara booleana CPU [áreas, D]")
     return mask
 
 
@@ -160,20 +175,41 @@ class AreaQueryBridgeState:
         _check_keys(values.flatten(0, 1), self.areas * values.shape[1], self.rule.key_size)
         return values.shape[1]
 
-    def apply(self, queries, *, active=None):
+    def apply(self, queries, *, active=None, coordinates=None):
         """Traducir consultas con los mapas confirmados, sin modificar ningún estado."""
         self._features(queries)
         mask = active_areas(active, self.areas)
+        coordinates = active_coordinates(coordinates, self.areas, self.rule.key_size)
         current = queries if mask is None else torch.where(mask[:, None, None], queries, 0.0)
+        if coordinates is not None:
+            current = torch.where(coordinates[:, None, :], current, 0.0)
         if self.config.gain == 0:
+            if coordinates is not None:
+                # El corte de coordenadas rompe la norma uno que permite el atajo original.
+                for _ in range(self.config.steps):
+                    current = unit_rows(current)
             return current
-        for _ in range(self.config.steps):
-            messages = [
-                item.read(current[a])
-                if mask is None or (mask[a] and mask[(a + 1) % self.areas])
-                else torch.zeros_like(current[a])
+        operators = None
+        if coordinates is not None:
+            indices = [part.nonzero().flatten() for part in coordinates]
+            operators = [
+                item.matrix.index_select(0, indices[a]).index_select(
+                    1, indices[(a + 1) % self.areas]
+                )
                 for a, item in enumerate(self._maps)
             ]
+        for _ in range(self.config.steps):
+            messages = []
+            for a, item in enumerate(self._maps):
+                if mask is not None and not (mask[a] and mask[(a + 1) % self.areas]):
+                    message = torch.zeros_like(current[a])
+                elif operators is None:
+                    message = item.read(current[a])
+                else:
+                    source, target = indices[a], indices[(a + 1) % self.areas]
+                    selected = current[a].index_select(1, source) @ operators[a]
+                    message = torch.zeros_like(current[a]).index_copy(1, target, selected)
+                messages.append(message)
             translated = torch.stack(messages).roll(shifts=1, dims=0)
             # Detectar overflow antes de mezclar o normalizar, incluso con ganancia pequeña.
             if not torch.isfinite(translated).all():

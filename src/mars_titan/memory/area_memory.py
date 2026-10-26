@@ -14,8 +14,8 @@ DPFP multiplica coordenadas vecinas, así que cada permutación elige otros pare
 dejan de ser equivalentes. La derivación y sus controles están en
 `docs/experiments/redundant-area-memory-v1.md`.
 
-Las escrituras devuelven memorias nuevas y la lectura no modifica estado. No hay parámetros
-entrenables ni gradientes: todo se calcula en FP64 y CPU, igual que B6.
+Las escrituras devuelven memorias nuevas sin grafo y la lectura no modifica estado. No hay
+parámetros entrenables. Las consultas conservan sus gradientes, en FP64 y CPU como B6.
 """
 
 import hashlib
@@ -25,7 +25,12 @@ from dataclasses import asdict, dataclass, replace
 import numpy as np
 import torch
 
-from .area_query_bridge import AreaQueryBridgeConfig, AreaQueryBridgeState, active_areas
+from .area_query_bridge import (
+    AreaQueryBridgeConfig,
+    AreaQueryBridgeState,
+    active_areas,
+    active_coordinates,
+)
 from .associative_memory import (
     MAX_COHORT,
     MAX_SIZE,
@@ -256,16 +261,19 @@ class AreaMemory:
         # Una clave sin pares vecinos del mismo signo no tiene proyección y no lee ni escribe.
         return torch.where(norms > 0, projected / torch.where(norms > 0, norms, 1.0), 0.0)
 
-    def read_areas(self, keys, *, active=None):
+    def read_areas(self, keys, *, active=None, coordinates=None):
         """Lectura de cada área, [A, filas, valor], sin efectos."""
         rows = keys.shape[0] if isinstance(keys, torch.Tensor) and keys.ndim == 2 else -1
         if not 1 <= rows <= MAX_COHORT:
             raise ValueError(f"La lectura necesita entre 1 y {MAX_COHORT} claves")
         _check_keys(keys, rows, self.config.key_size)
         mask = active_areas(active, self.layout.areas)
+        coordinates = active_coordinates(coordinates, self.layout.areas, self.area_config.key_size)
         features = self.features(keys)
+        if coordinates is not None:
+            features = torch.where(coordinates[:, None, :], features, 0.0)
         if self._bridge is not None:
-            features = self._bridge.apply(features, active=mask)
+            features = self._bridge.apply(features, active=mask, coordinates=coordinates)
         values = torch.stack(
             [area.read(part) for area, part in zip(self._areas, features, strict=True)]
         )
@@ -278,6 +286,31 @@ class AreaMemory:
         if mask is None:
             return values.mean(dim=0)
         return values[mask].mean(dim=0)
+
+    def read_diagnostic(self, keys, *, active=None, coordinates=None, reduction="active_mean"):
+        """Lesión de consulta y mensajes, con denominador activo o número original de áreas."""
+        if reduction not in ("active_mean", "fixed_mean"):
+            raise ValueError("La lectura diagnóstica declara active_mean o fixed_mean")
+        mask = active_areas(active, self.layout.areas, allow_empty=True)
+        coordinates = active_coordinates(coordinates, self.layout.areas, self.area_config.key_size)
+        if mask is not None and not mask.any():
+            rows = keys.shape[0] if isinstance(keys, torch.Tensor) and keys.ndim == 2 else -1
+            if not 1 <= rows <= MAX_COHORT:
+                raise ValueError(f"La lectura necesita entre 1 y {MAX_COHORT} claves")
+            _check_keys(keys, rows, self.config.key_size)
+            return keys[:, :1].expand(-1, self.config.value_size) * 0.0
+        if coordinates is None and (reduction == "active_mean" or mask is None or mask.all()):
+            result = self.read(keys, active=mask)
+        else:
+            values = self.read_areas(keys, active=mask, coordinates=coordinates)
+            result = (
+                values[mask].mean(dim=0)
+                if reduction == "active_mean" and mask is not None
+                else values.mean(dim=0)
+            )
+        if not torch.isfinite(result).all():
+            raise ValueError("La lectura diagnóstica produjo valores no finitos")
+        return result
 
     def _values(self, feedback, rows, order):
         """Valores que se escriben: los maduros o, en el control, barajados en la cohorte."""

@@ -241,6 +241,20 @@ class MultiscaleMemory:
     def read(self, keys, *, at):
         return self.predict(keys, at=at)[0]
 
+    def read_diagnostic(self, keys, *, at, **options):
+        """Lesionar cada experto sin publicar componentes ni cambiar los pesos de la mezcla."""
+        rows = keys.shape[0] if isinstance(keys, torch.Tensor) and keys.ndim == 2 else -1
+        if not 1 <= rows <= MAX_COHORT or self.correction.areas is None:
+            raise ValueError("El diagnóstico E1 necesita áreas y una cohorte no vacía y acotada")
+        _check_keys(keys, rows, self.config.key_size)
+        values = torch.cat(
+            [item.read_diagnostic(keys, **options) for item in self._decayed(at)], dim=1
+        )
+        result = (values * self.weights).sum(dim=1, keepdim=True)
+        if not torch.isfinite(values).all() or not torch.isfinite(result).all():
+            raise ValueError("La lectura diagnóstica de E1 produjo valores no finitos")
+        return result
+
     def write(self, feedback, *, cutoff, issued_predictions):
         rows, order = canonical_order(
             feedback,
