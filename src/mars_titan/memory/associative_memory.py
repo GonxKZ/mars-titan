@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from .area_memory import AreaLayout
     from .area_query_bridge import AreaQueryBridgeConfig
     from .kernel_memory import KernelMemoryConfig
+    from .role_binding import RoleBindingConfig
 
 RULES = ("delta", "proximal", "kalman")
 # Las claves vienen normalizadas por el codec en FP32. Este margen admite su redondeo.
@@ -568,13 +569,24 @@ class MatureCorrection:
     routing: RegimeRule | None = None
     areas: "AreaLayout | None" = None
     query_bridge: "AreaQueryBridgeConfig | None" = None
+    role_binding: "RoleBindingConfig | None" = None
 
     def __post_init__(self):
         from .area_memory import AREA_RULES, AreaLayout
         from .area_query_bridge import AreaQueryBridgeConfig
         from .kernel_memory import KernelMemoryConfig
+        from .role_binding import SOURCES, RoleBindingConfig
 
         kernel = type(self.memory) is KernelMemoryConfig
+        if self.role_binding is not None and (
+            type(self.role_binding) is not RoleBindingConfig
+            or type(self.memory) is not AssociativeMemoryConfig
+            or self.memory.rule not in AREA_RULES
+            or self.key != "codec"
+        ):
+            raise ValueError(
+                "La ligadura de roles necesita la clave codec y una regla delta o proximal"
+            )
         if self.query_bridge is not None and (
             type(self.query_bridge) is not AreaQueryBridgeConfig
             or type(self.areas) is not AreaLayout
@@ -601,7 +613,11 @@ class MatureCorrection:
             raise ValueError(
                 f"La clave {self.key} usa {KEY_SIZES[self.key]} coordenadas y la corrección valor 1"
             )
-        rule = ROUTING.get(self.key)
+        rule = (
+            ROUTING.get(self.key)
+            if self.role_binding is None
+            else SOURCES[self.role_binding.source]
+        )
         if rule is not None and self.routing is None:
             object.__setattr__(self, "routing", RegimeRule(rule))
         if (self.routing is None) != (rule is None) or (
@@ -633,10 +649,25 @@ class MatureCorrection:
             identity.update(areas=self.areas.identity())
         if self.query_bridge is not None:
             identity.update(query_bridge=self.query_bridge.identity())
+        if self.role_binding is not None:
+            identity.update(
+                role_binding=self.role_binding.identity(),
+                key_normalization="role_operator_of_l2_fp64_of_codec_key_inputs",
+            )
         return identity
+
+    def _unbound(self):
+        """Backend de la corrección ligada. Sus claves ya llegan transformadas."""
+        from dataclasses import replace
+
+        return replace(self, role_binding=None, routing=None)
 
     def empty(self):
         """Memoria vacía de la corrección: A en cero, las áreas en cero o sin episodios."""
+        if self.role_binding is not None:
+            from .role_binding import RoleBoundMemory
+
+            return RoleBoundMemory(self, self._unbound().empty())
         if self.areas is not None:
             from .area_memory import AreaMemory
 
@@ -649,6 +680,10 @@ class MatureCorrection:
 
     def restore(self, payload):
         """Recuperar la memoria exportada por `export()` de la misma corrección."""
+        if self.role_binding is not None:
+            from .role_binding import RoleBoundMemory
+
+            return RoleBoundMemory.restore(self, payload)
         if self.areas is not None:
             from .area_memory import AreaMemory
 
@@ -698,6 +733,8 @@ class MatureCorrection:
         if not torch.isfinite(values).all() or (norms == 0).any():
             raise ValueError("La clave del codec necesita valores finitos y norma positiva")
         values = values / norms
+        if self.role_binding is not None:
+            return self.role_binding.apply(values, routes)
         if routes is None:
             return values
         # Producto de Kronecker de la ruta con la clave: la fila solo ocupa su bloque.

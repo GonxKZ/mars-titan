@@ -30,8 +30,10 @@ from . import (
     financial_state_artifacts,
     kernel_memory,
     paired_proximal,
+    regimes,
     regional_session_work,
     regional_work,
+    role_binding,
     write_scores,
 )
 from .associative_memory import MatureCorrection
@@ -275,6 +277,8 @@ class FinancialSession(EpisodicSession):
             for module, enabled in (
                 (area_memory, associative.areas is not None),
                 (area_query_bridge, associative.query_bridge is not None),
+                (role_binding, associative.role_binding is not None),
+                (regimes, associative.role_binding is not None),
                 (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
                 (
                     paired_proximal,

@@ -27,7 +27,7 @@ from mars_titan.models.titans.evidence_bridge import (
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import area_memory, area_query_bridge, kernel_memory, write_scores
+from . import area_memory, area_query_bridge, kernel_memory, role_binding, write_scores
 from .area_memory import AreaLayout
 from .area_query_bridge import AreaQueryBridgeConfig
 from .associative_memory import (
@@ -39,6 +39,7 @@ from .associative_memory import (
 )
 from .financial_consumers import bank_retention
 from .kernel_memory import KERNEL_RULE, KernelMemoryConfig
+from .role_binding import RoleBindingConfig
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
 VARIANT = "mars_titan_extensions_v1"
@@ -94,6 +95,7 @@ def load_declaration(path=DECLARATION):
         associative.get("area_value") != area_memory.declaration()
         or associative.get("kernel_value") != kernel_memory.declaration()
         or associative.get("query_bridge_value") != area_query_bridge.declaration()
+        or associative.get("role_binding_value") != role_binding.declaration()
     ):
         raise ValueError("La declaración de B1 y de su control no coincide con el código")
     return document
@@ -139,7 +141,7 @@ def _associative(value, component):
         fields = {"rule", "key", "rate", "forgetting"}
         if (
             not isinstance(value, dict)
-            or set(value) - {"areas", "query_bridge"} != fields
+            or set(value) - {"areas", "query_bridge", "role_binding"} != fields
             or rule not in component["allowed"]
         ):
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
@@ -167,7 +169,16 @@ def _associative(value, component):
         }:
             raise ValueError("El puente B2 declara gain, steps, targets y seed")
         bridge = AreaQueryBridgeConfig(**bridge)
-    return MatureCorrection(memory, key=value["key"], areas=areas, query_bridge=bridge)
+    binding = value.get("role_binding")
+    if binding is not None:
+        if not isinstance(binding, dict) or set(binding) != {
+            f.name for f in fields_of(RoleBindingConfig)
+        }:
+            raise ValueError("La ligadura B3 declara source, mode y seed")
+        binding = RoleBindingConfig(**binding)
+    return MatureCorrection(
+        memory, key=value["key"], areas=areas, query_bridge=bridge, role_binding=binding
+    )
 
 
 def _normalized(correction):
@@ -185,6 +196,8 @@ def _normalized(correction):
         normalized["areas"] = asdict(correction.areas)
     if correction.query_bridge is not None:
         normalized["query_bridge"] = asdict(correction.query_bridge)
+    if correction.role_binding is not None:
+        normalized["role_binding"] = asdict(correction.role_binding)
     return normalized
 
 

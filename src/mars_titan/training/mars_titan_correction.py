@@ -160,6 +160,8 @@ _CODE = (
     "mars_titan.memory.area_memory",
     "mars_titan.memory.area_query_bridge",
     "mars_titan.memory.paired_proximal",
+    "mars_titan.memory.role_binding",
+    "mars_titan.memory.regimes",
     "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
@@ -259,7 +261,7 @@ def arm_components(components, values, noise=None):
     rule = memory.get("rule") if isinstance(memory, dict) else None
     fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
     # Solo las reglas delta y proximal admiten el reparto por áreas de B1 en el modelo.
-    optional = {"areas", "query_bridge"} if rule in ("delta", "proximal") else set()
+    optional = {"areas", "query_bridge", "role_binding"} if rule in ("delta", "proximal") else set()
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}

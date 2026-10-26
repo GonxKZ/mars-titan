@@ -1,5 +1,7 @@
 """Interoperabilidad pendiente entre padre CUDA y estado corrector CPU FP64."""
 
+from dataclasses import replace
+
 import pytest
 from test_area_correction_window import AREAS, BRIDGED, KERNEL
 from test_financial_session_associative import four_flow_source as four_flow_source
@@ -8,11 +10,16 @@ from test_mars_titan_correction_parity import RECIPE, SOURCE, core, emitted
 from test_mars_titan_session_parity import events
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
+from mars_titan.memory.role_binding import RoleBindingConfig
 from mars_titan.training.mars_titan_correction import CorrectionInference
 
 
 @pytest.mark.cuda
-@pytest.mark.parametrize("correction", [AREAS, KERNEL, BRIDGED], ids=["areas", "kernel", "bridge"])
+@pytest.mark.parametrize(
+    "correction",
+    [AREAS, KERNEL, BRIDGED, replace(BRIDGED, role_binding=RoleBindingConfig())],
+    ids=["areas", "kernel", "bridge", "role_bridge"],
+)
 def test_cuda_parent_and_cpu_memory_preserve_the_cpu_trajectory(four_flow_source, correction):
     results = {}
     with sdpa_kernel(SDPBackend.MATH):
