@@ -68,7 +68,7 @@ from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_predictor_changes, checked_search_cases
 from .selection import AWAIT, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
-from .walk_forward_phases import PREDICTED, checked_warmup, window_phases
+from .walk_forward_phases import PREDICTED, checked_fit_months, checked_warmup, window_phases
 from .window_indices import index_root, phase_sources
 
 KIND = "titans_walk_forward_window"
@@ -97,9 +97,12 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-def memory_policy(warmup_months):
-    """Declarar la política de estado de las cuatro variantes en todos los recorridos."""
-    return dict(
+def memory_policy(warmup_months, fit_months=None):
+    """Declarar la política de estado de las cuatro variantes en todos los recorridos.
+
+    Con un ajuste acotado la política lo declara. Sin él conserva su forma anterior.
+    """
+    policy = dict(
         name=MEMORY_POLICY,
         reset="initial_fast_state_and_empty_queue_at_each_pass",
         train="from_fold_train_start_without_warmup",
@@ -109,29 +112,44 @@ def memory_policy(warmup_months):
         labels="compared_with_the_issued_prediction_after_maturity_never_written",
         mature_financial_errors="not_admitted_bank_disabled",
     )
+    if fit_months is not None:
+        policy.update(
+            train="last_fit_months_of_the_fold_train_after_warmup_inputs_without_labels",
+            fit_months=checked_fit_months(fit_months),
+        )
+    return policy
 
 
-def walk_forward_options(document):
-    """Leer la sección `walk_forward`: calentamiento y casos de búsqueda opcionales.
+def walk_forward_options(document, *, bounded_fit=False):
+    """Leer la sección `walk_forward`: calentamiento, ajuste acotado y casos de búsqueda.
 
     Cada caso de `search_cases` sustituye los mismos hiperparámetros de `SEARCHED`, que
     entonces no aparecen en `recipe`. Así ningún valor base queda sin usar o sin elegir.
+    `fit_months` acota el ajuste a los meses finales del tramo de entrenamiento. Solo lo
+    aceptan los recorridos que lo aplican (`bounded_fit`), y los demás lo rechazan.
     """
     options = document.get("walk_forward")
     _require(
         isinstance(options, dict)
-        and {"warmup_months"} <= set(options) <= {"warmup_months", "search_cases"},
+        and {"warmup_months"} <= set(options) <= {"warmup_months", "search_cases", "fit_months"},
         "La receta necesita walk_forward.warmup_months entero entre 0 y 60",
     )
     checked_warmup(options["warmup_months"])
+    if "fit_months" in options:
+        _require(bounded_fit, "Este recorrido no aplica el ajuste acotado de la receta")
+        checked_fit_months(options["fit_months"])
     if "search_cases" in options:
         checked_search_cases(options["search_cases"], document["recipe"], ChronologicalRecipe)
     return options
 
 
 def case_recipe(document, search_case):
-    """Receta cronológica del caso elegido. Sin casos declarados, la de la receta."""
-    cases = walk_forward_options(document).get("search_cases")
+    """Receta cronológica del caso elegido. Sin casos declarados, la de la receta.
+
+    Solo lee los casos, así que admite una receta con ajuste acotado. Quien construya las
+    fases vuelve a leer las opciones y decide si lo aplica.
+    """
+    cases = walk_forward_options(document, bounded_fit=True).get("search_cases")
     return ChronologicalRecipe(**case_options(document["recipe"], cases, search_case))
 
 
@@ -171,7 +189,7 @@ def _recipe(path, rule, search_case=None, stopping=None):
     return (
         with_rule(recipe, campaign_rule(rule, stopping)),
         document,
-        walk_forward_options(document),
+        walk_forward_options(document, bounded_fit=True),
     )
 
 
@@ -448,7 +466,7 @@ def run_titans_window(
     _check_view(dataset, protocol_document, fold)
     for protected in (*dataset.roots.values(), view.parent):
         outside_source(protected, output)
-    phases = window_phases(fold, options["warmup_months"])
+    phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
     predictor, pairing = _predictor(
@@ -476,7 +494,7 @@ def run_titans_window(
         window=fold,
         stopping_rule=rule,
         recipe=document,
-        memory_policy=memory_policy(options["warmup_months"]),
+        memory_policy=memory_policy(options["warmup_months"], options.get("fit_months")),
         phases={name: asdict(phase) for name, phase in phases.items()},
         indices={name: source.identity for name, source in sources.items()},
         fit_run_id=trainer.run_id,

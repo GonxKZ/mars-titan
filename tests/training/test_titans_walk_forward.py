@@ -29,6 +29,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from mars_titan.training.walk_forward_phases import months_before
 from mars_titan.training.window_indices import SHARED_INDICES_ENV
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
@@ -262,6 +263,79 @@ def test_phases_cover_each_v2_fold_with_a_warmup_bounded_by_its_partition(path, 
     first = wf.window_phases(folds[0], warmup)["validation"]
     clipped = warmup == 60 and protocol["first_validation_start"] == "2004-04-01"
     assert (first.warmup_start == micros("2000-01-01")) == clipped
+
+
+@pytest.mark.parametrize("fit", [1, 6, 12])
+@pytest.mark.parametrize("warmup", [0, 12])
+def test_bounded_fit_reads_its_last_months_after_their_warmup(fit, warmup):
+    protocol = json.loads(
+        (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
+    )
+    origin = micros("2000-01-01")
+    for fold in build_folds(protocol):
+        full, bounded = wf.window_phases(fold, warmup), wf.window_phases(fold, warmup, fit)
+        assert {name: bounded[name] for name in wf.PREDICTED} == {
+            name: full[name] for name in wf.PREDICTED
+        }
+        train, first = bounded["train"], months_before(fold["train"][1], fit)
+        assert train.decision_start == max(origin, micros(first))
+        assert train.warmup_start == max(origin, micros(months_before(first, warmup)))
+        assert (train.decision_end, train.close_at) == (full["train"].decision_end,) * 2
+        assert train.decision_end - train.decision_start <= 366 * 86_400_000_000
+
+
+@pytest.mark.parametrize("value", [0, 13, True, 1.0, "12"])
+def test_bounded_fit_rejects_months_outside_one_year(value):
+    fold = build_folds(PROTOCOL)[0]
+    with pytest.raises(ValueError, match="fit_months"):
+        wf.window_phases(fold, 1, value)
+    document = dict(walk_forward=dict(warmup_months=1, fit_months=value))
+    with pytest.raises(ValueError, match="fit_months"):
+        wf.walk_forward_options(document, bounded_fit=True)
+
+
+def test_only_paths_that_apply_a_bounded_fit_accept_it():
+    document = dict(walk_forward=dict(warmup_months=12, fit_months=12))
+    with pytest.raises(ValueError, match="ajuste acotado"):
+        wf.walk_forward_options(document)
+    assert wf.walk_forward_options(document, bounded_fit=True)["fit_months"] == 12
+    assert wf.memory_policy(12, None) == wf.memory_policy(12)
+    assert "fit_months" not in wf.memory_policy(12)
+    bounded = wf.memory_policy(12, 12)
+    assert bounded["fit_months"] == 12 and bounded["train"] != wf.memory_policy(12)["train"]
+
+
+def test_bounded_fit_ignores_inputs_before_its_warmup(base, tmp_path):
+    """Con un mes de ajuste y uno de calentamiento, nada anterior a julio llega al ajuste.
+
+    Se alteran las entradas no de precio de las filas anteriores al 3 de julio, el primer día
+    hábil del calentamiento.
+    """
+    bounded = recipe(tmp_path, walk_forward=dict(warmup_months=1, fit_months=1))
+    reports, factories = {}, {}
+    with unfused_attention():
+        for name, changes in (
+            ("clean", {}),
+            ("before", dict(perturb_before=decision("2023-07-03"))),
+        ):
+            view, protocol = views(tmp_path / name, **changes)
+            reports[name], factories[name] = window(
+                view, protocol, bounded, tmp_path / name / "run"
+            )
+    train = reports["clean"]["identity"]["phases"]["train"]
+    assert (train["warmup_start"], train["decision_start"], train["decision_end"]) == (
+        micros("2023-07-01"),
+        micros("2023-08-01"),
+        micros("2023-09-01"),
+    )
+    assert reports["clean"]["identity"]["memory_policy"]["fit_months"] == 1
+    clean, before = factories["clean"].records, factories["before"].records
+    assert clean and len(clean) == len(before)
+    for one, two in zip(clean, before, strict=True):
+        for a, b in zip(one, two, strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    # El ajuste completo de la base empieza en el origen y aplica más actualizaciones.
+    assert len(base["runs"]["mac_online"][1].records) > len(clean)
 
 
 def test_controls_write_three_partitions_that_the_comparison_accepts(base, tmp_path):
