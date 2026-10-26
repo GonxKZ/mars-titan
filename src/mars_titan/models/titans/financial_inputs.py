@@ -386,6 +386,35 @@ class DecisionBatch:
             batch.input_digest,
         )
 
+    def derived(self, inputs, transform):
+        """El mismo lote con entradas derivadas por `transform`, sin cambiar fila ni instante.
+
+        Las entradas nuevas conservan nombres, formas, tipos y dispositivo. La huella une el
+        nombre de la transformación con la del lote original.
+        """
+        self.verify()
+        if not isinstance(transform, str) or set(inputs) != set(self.inputs):
+            raise ValueError("La derivación necesita un nombre y las mismas modalidades")
+        for name, value in inputs.items():
+            original = self.inputs[name]
+            if (
+                not isinstance(value, torch.Tensor)
+                or value.shape != original.shape
+                or value.dtype != original.dtype
+                or value.device != original.device
+            ):
+                raise ValueError("La derivación no conserva forma, tipo o dispositivo")
+        return DecisionBatch._create(
+            {name: inputs[name] for name in self.inputs},
+            self.presence,
+            self.flow_ids,
+            self.sample_ids,
+            self.prediction_at,
+            self.input_available_at,
+            self.input_contract_id,
+            hashlib.sha256(canonical([transform, self.input_digest]).encode()).hexdigest(),
+        )
+
     def select(self, indices):
         self.verify()
         if (
