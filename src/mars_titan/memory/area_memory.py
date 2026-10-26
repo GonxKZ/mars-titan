@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass, replace
 import numpy as np
 import torch
 
+from .area_query_bridge import AreaQueryBridgeConfig, AreaQueryBridgeState, active_areas
 from .associative_memory import (
     MAX_COHORT,
     MAX_SIZE,
@@ -164,7 +165,7 @@ class AreaMemory:
     así que comparten contador y cursor.
     """
 
-    def __init__(self, config, layout, areas=None):
+    def __init__(self, config, layout, areas=None, *, query_bridge=None, bridge_state=None):
         if (
             type(config) is not AssociativeMemoryConfig
             or config.rule not in AREA_RULES
@@ -186,6 +187,25 @@ class AreaMemory:
             raise ValueError("Las áreas no conservan el mismo contador y cursor")
         self._areas = tuple(areas)
         self._index = torch.from_numpy(layout.permutations(config.key_size))
+        if query_bridge is not None and type(query_bridge) is not AreaQueryBridgeConfig:
+            raise ValueError("El puente de consultas necesita su configuración identificada")
+        if query_bridge is None and bridge_state is not None:
+            raise ValueError("El estado del puente necesita una configuración activa")
+        self.query_bridge = query_bridge
+        self._bridge = None
+        if query_bridge is not None:
+            rule = replace(self.area_config, value_size=size)
+            if bridge_state is None:
+                bridge_state = AreaQueryBridgeState(rule, layout.areas, query_bridge)
+            if (
+                type(bridge_state) is not AreaQueryBridgeState
+                or bridge_state.rule != rule
+                or bridge_state.areas != layout.areas
+                or bridge_state.config != query_bridge
+                or (bridge_state.writes, bridge_state.cursor) != (self.writes, self.cursor)
+            ):
+                raise ValueError("Los mapas del puente no corresponden al estado de las áreas")
+            self._bridge = bridge_state
 
     @property
     def writes(self):
@@ -197,14 +217,24 @@ class AreaMemory:
 
     @property
     def matrix(self):
-        """Estados de las áreas apilados, de forma [A·2dν, valor]."""
+        """Estados apilados de B1, o columna con todos los coeficientes si hay puente B2."""
+        if self._bridge is not None:
+            return torch.cat([value.reshape(-1, 1) for value in self._matrices()])
         return torch.cat([area.matrix for area in self._areas])
+
+    def _matrices(self):
+        matrices = [area.matrix for area in self._areas]
+        if self._bridge is not None:
+            matrices.extend(self._bridge.matrices.unbind())
+        return matrices
 
     @property
     def numeric_state_bytes(self):
         """Bytes de coeficientes e índices residentes, sin objetos Python ni temporales."""
-        return self._index.nbytes + sum(
-            area.config.key_size * area.config.value_size * 8 for area in self._areas
+        return (
+            self._index.nbytes
+            + sum(area.config.key_size * area.config.value_size * 8 for area in self._areas)
+            + (0 if self._bridge is None else self._bridge.numeric_state_bytes)
         )
 
     def features(self, keys):
@@ -216,25 +246,27 @@ class AreaMemory:
         # Una clave sin pares vecinos del mismo signo no tiene proyección y no lee ni escribe.
         return torch.where(norms > 0, projected / torch.where(norms > 0, norms, 1.0), 0.0)
 
-    def read_areas(self, keys):
+    def read_areas(self, keys, *, active=None):
         """Lectura de cada área, [A, filas, valor], sin efectos."""
         rows = keys.shape[0] if isinstance(keys, torch.Tensor) and keys.ndim == 2 else -1
         if not 1 <= rows <= MAX_COHORT:
             raise ValueError(f"La lectura necesita entre 1 y {MAX_COHORT} claves")
         _check_keys(keys, rows, self.config.key_size)
+        mask = active_areas(active, self.layout.areas)
         features = self.features(keys)
-        return torch.stack(
+        if self._bridge is not None:
+            features = self._bridge.apply(features, active=mask)
+        values = torch.stack(
             [area.read(part) for area, part in zip(self._areas, features, strict=True)]
         )
+        return values if mask is None else torch.where(mask[:, None, None], values, 0.0)
 
     def read(self, keys, active=None):
         """Media de las áreas activas, de forma [filas, valor]. Sin `active` lee todas."""
-        values = self.read_areas(keys)
-        if active is None:
+        mask = active_areas(active, self.layout.areas)
+        values = self.read_areas(keys, active=mask)
+        if mask is None:
             return values.mean(dim=0)
-        mask = torch.as_tensor(active)
-        if mask.dtype != torch.bool or mask.shape != (self.layout.areas,) or not mask.any():
-            raise ValueError("Las áreas activas son una máscara booleana con al menos una")
         return values[mask].mean(dim=0)
 
     def _values(self, feedback, rows, order):
@@ -263,33 +295,49 @@ class AreaMemory:
         if rows == 0:
             return self
         values = self._values(feedback, rows, order)
+        features = self.features(feedback.keys)
         areas = tuple(
             area.write(replace(feedback, keys=part, values=values), cutoff=cutoff)
-            for area, part in zip(self._areas, self.features(feedback.keys), strict=True)
+            for area, part in zip(self._areas, features, strict=True)
         )
-        return AreaMemory(self.config, self.layout, areas)
+        bridge = (
+            None if self._bridge is None else self._bridge.write(features, feedback, cutoff=cutoff)
+        )
+        return AreaMemory(
+            self.config, self.layout, areas, query_bridge=self.query_bridge, bridge_state=bridge
+        )
 
     def export(self):
-        return dict(
+        payload = dict(
             schema_version=1,
             configuration=self.identity(),
             areas=[area.export() for area in self._areas],
-            matrix_sha256=_digest([area.matrix for area in self._areas]),
+            matrix_sha256=_digest(self._matrices()),
             writes=self.writes,
             cursor=list(self.cursor) if self.cursor is not None else None,
         )
+        if self._bridge is not None:
+            payload.update(schema_version=2, query_bridge=self._bridge.export())
+        return payload
 
     def identity(self):
-        return dict(rule=self.config.identity(), layout=self.layout.identity())
+        identity = dict(rule=self.config.identity(), layout=self.layout.identity())
+        if self.query_bridge is not None:
+            identity["query_bridge"] = self.query_bridge.identity()
+        return identity
 
     @classmethod
-    def restore(cls, config, layout, payload):
+    def restore(cls, config, layout, payload, *, query_bridge=None):
         expected = {"schema_version", "configuration", "areas", "matrix_sha256", "writes", "cursor"}
+        if query_bridge is not None:
+            expected.add("query_bridge")
         if not isinstance(payload, dict) or set(payload) != expected:
             raise ValueError("El estado exportado de las áreas no conserva todos sus campos")
-        empty = cls(config, layout)
-        if payload["schema_version"] != 1 or _canonical(payload["configuration"]) != _canonical(
-            empty.identity()
+        empty = cls(config, layout, query_bridge=query_bridge)
+        if (
+            type(payload["schema_version"]) is not int
+            or payload["schema_version"] != (1 if query_bridge is None else 2)
+            or _canonical(payload["configuration"]) != _canonical(empty.identity())
         ):
             raise ValueError("El estado pertenece a otra memoria por áreas")
         if not isinstance(payload["areas"], list):
@@ -297,7 +345,15 @@ class AreaMemory:
         areas = tuple(
             AssociativeMemory.restore(empty.area_config, area) for area in payload["areas"]
         )
-        memory = cls(config, layout, areas)
+        bridge = None
+        if query_bridge is not None:
+            bridge = AreaQueryBridgeState.restore(
+                replace(empty.area_config, value_size=empty.area_config.key_size),
+                layout.areas,
+                query_bridge,
+                payload["query_bridge"],
+            )
+        memory = cls(config, layout, areas, query_bridge=query_bridge, bridge_state=bridge)
         cursor = payload["cursor"]
         if (
             memory.writes != payload["writes"]

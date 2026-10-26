@@ -22,10 +22,13 @@ from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
 from . import (
+    area_memory,
+    area_query_bridge,
     associative_memory,
     episodic_session,
     financial_consumers,
     financial_state_artifacts,
+    kernel_memory,
     regional_session_work,
     regional_work,
     write_scores,
@@ -268,6 +271,15 @@ class FinancialSession(EpisodicSession):
             code["associative_memory"] = hashlib.sha256(
                 Path(associative_memory.__file__).read_bytes()
             ).hexdigest()
+            for module, enabled in (
+                (area_memory, associative.areas is not None),
+                (area_query_bridge, associative.query_bridge is not None),
+                (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
+            ):
+                if enabled:
+                    code[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
+                        Path(module.__file__).read_bytes()
+                    ).hexdigest()
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,

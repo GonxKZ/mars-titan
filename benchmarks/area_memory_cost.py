@@ -24,6 +24,7 @@ import torch
 from mars_titan.data.storage import atomic_json
 from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.memory.area_memory import AreaLayout
+from mars_titan.memory.area_query_bridge import AreaQueryBridgeConfig
 from mars_titan.memory.associative_memory import (
     AssociativeMemoryConfig,
     MatureCorrection,
@@ -48,6 +49,18 @@ CASES = {
         KernelMemoryConfig(bandwidth=0.1, forgetting=0.01, capacity=65536)
     ),
 }
+CASES.update(
+    {
+        name: MatureCorrection(PROXIMAL, areas=AreaLayout(), query_bridge=config)
+        for name, config in {
+            "query_bridge": AreaQueryBridgeConfig(),
+            "query_bridge_zero_gain": AreaQueryBridgeConfig(gain=0),
+            "query_bridge_shuffled": AreaQueryBridgeConfig(targets="shuffled_within_cohort"),
+            "query_bridge_two_steps": AreaQueryBridgeConfig(steps=2),
+            "query_bridge_four_steps": AreaQueryBridgeConfig(steps=4),
+        }.items()
+    }
+)
 
 
 def cohort(rows, start, at, correction, generator):
@@ -152,6 +165,7 @@ def main(argv=None):
             path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
             for path in (
                 "src/mars_titan/memory/area_memory.py",
+                "src/mars_titan/memory/area_query_bridge.py",
                 "src/mars_titan/memory/kernel_memory.py",
                 "src/mars_titan/memory/associative_memory.py",
                 "benchmarks/area_memory_cost.py",

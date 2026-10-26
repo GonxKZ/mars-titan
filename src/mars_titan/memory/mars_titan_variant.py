@@ -27,8 +27,9 @@ from mars_titan.models.titans.evidence_bridge import (
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import area_memory, kernel_memory, write_scores
+from . import area_memory, area_query_bridge, kernel_memory, write_scores
 from .area_memory import AreaLayout
+from .area_query_bridge import AreaQueryBridgeConfig
 from .associative_memory import (
     CORRECTION_KEYS,
     KEY_SIZES,
@@ -92,6 +93,7 @@ def load_declaration(path=DECLARATION):
     if (
         associative.get("area_value") != area_memory.declaration()
         or associative.get("kernel_value") != kernel_memory.declaration()
+        or associative.get("query_bridge_value") != area_query_bridge.declaration()
     ):
         raise ValueError("La declaración de B1 y de su control no coincide con el código")
     return document
@@ -137,7 +139,7 @@ def _associative(value, component):
         fields = {"rule", "key", "rate", "forgetting"}
         if (
             not isinstance(value, dict)
-            or set(value) - {"areas"} != fields
+            or set(value) - {"areas", "query_bridge"} != fields
             or rule not in component["allowed"]
         ):
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
@@ -158,7 +160,14 @@ def _associative(value, component):
         if not isinstance(areas, dict) or set(areas) != {f.name for f in fields_of(AreaLayout)}:
             raise ValueError("Las áreas de B1 declaran areas, shifts, permutation, seed y labels")
         areas = AreaLayout(**areas)
-    return MatureCorrection(memory, key=value["key"], areas=areas)
+    bridge = value.get("query_bridge")
+    if bridge is not None:
+        if not isinstance(bridge, dict) or set(bridge) != {
+            f.name for f in fields_of(AreaQueryBridgeConfig)
+        }:
+            raise ValueError("El puente B2 declara gain, steps, targets y seed")
+        bridge = AreaQueryBridgeConfig(**bridge)
+    return MatureCorrection(memory, key=value["key"], areas=areas, query_bridge=bridge)
 
 
 def _normalized(correction):
@@ -174,6 +183,8 @@ def _normalized(correction):
     )
     if correction.areas is not None:
         normalized["areas"] = asdict(correction.areas)
+    if correction.query_bridge is not None:
+        normalized["query_bridge"] = asdict(correction.query_bridge)
     return normalized
 
 

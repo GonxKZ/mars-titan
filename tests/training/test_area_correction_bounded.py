@@ -24,15 +24,22 @@ def backend():
     torch.backends.mha.set_fastpath_enabled(previous)
 
 
-@pytest.mark.parametrize("arm,case", [("area_memory", "eta25e-2"), ("nadaraya_watson", "tau1e-1")])
-def test_correction_inherits_bounded_parent_and_keeps_every_predicted_row(tmp_path, arm, case):
+@pytest.mark.parametrize(
+    "arm,case,config_name",
+    [
+        ("area_memory", "eta25e-2", "redundant-area-memory-v1"),
+        ("nadaraya_watson", "tau1e-1", "redundant-area-memory-v1"),
+        ("bridge", "eta25e-2", "area-query-bridge-v1"),
+    ],
+)
+def test_correction_inherits_bounded_parent_and_keeps_every_predicted_row(
+    tmp_path, arm, case, config_name
+):
     view, protocol = views(tmp_path / "data")
     parent = tmp_path / "parent"
     plan = recipe(tmp_path, walk_forward=dict(warmup_months=1, fit_months=1))
     expected, _ = window(view, protocol, plan, parent)
-    config = json.loads(Path("configs/experiments/redundant-area-memory-v1.json").read_text())[
-        "arms"
-    ][arm]
+    config = json.loads(Path(f"configs/experiments/{config_name}.json").read_text())["arms"][arm]
     result = run_correction_window(
         view,
         parent,

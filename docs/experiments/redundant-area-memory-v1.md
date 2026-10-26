@@ -81,6 +81,8 @@ La corrección hereda el ajuste acotado del padre cuando declara `fit_months`. L
 
 ## Coste medido
 
+Esta tabla conserva la medida anterior a la incorporación de B2. La [medida conjunta posterior](area-query-bridge-v1.md#coste-y-comprobaciones) usa otra revisión identificada en sus recibos y no sustituye estos datos.
+
 La medida técnica del 26 de octubre usa claves de 64 coordenadas, valor escalar, dos hilos, FP64 y CPU. Cada estado se carga antes del cronómetro. Se miden cohortes de 64, 256 y 1024, con tres calentamientos y veinte repeticiones. El control Nadaraya-Watson tiene su capacidad de 65.536 muestras llena. No se han medido GPU ni calidad predictiva.
 
 | Memoria | Lectura de 256 claves, p50 | Escritura de 256 resultados, p50 | Bytes numéricos residentes |
@@ -108,4 +110,5 @@ Coverage.py 7.16.1 midió 246 de 260 sentencias y 65 de 78 ramas en los dos mód
 
 - Ejecutar B1 y sus controles en la criba ([#746](https://github.com/GonxKZ/mars-titan/issues/746)) cuando se levante el bloqueo de aprendizaje. La validación elige η o τ, así que la ventana comprueba el bloqueo antes de leer ninguna fuente.
 - Comprobar la interoperabilidad del padre en `cuda:0` con el estado CPU cuando la GPU quede libre.
-- B4 (lesiones), B3 (claves ligadas a roles) y B2 (puente de consultas entre áreas) se construyen sobre esta memoria.
+- El [puente B2](area-query-bridge-v1.md) está conectado con sus controles y comprobado en CPU. Su interoperabilidad CUDA y evaluación predictiva siguen pendientes.
+- B4 (estudio de lesiones) y B3 (claves ligadas a roles) siguen pendientes. La máscara técnica de áreas no completa B4.

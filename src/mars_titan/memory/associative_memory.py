@@ -26,6 +26,7 @@ from .regimes import CALENDAR_RULE, REGIME_RULE, SLOTS, RegimeRule
 
 if TYPE_CHECKING:
     from .area_memory import AreaLayout
+    from .area_query_bridge import AreaQueryBridgeConfig
     from .kernel_memory import KernelMemoryConfig
 
 RULES = ("delta", "proximal", "kalman")
@@ -322,14 +323,14 @@ class AssociativeMemory:
         if (cursor is None) != (writes == 0):
             raise ValueError("El cursor y el contador de escrituras no son coherentes")
         self.config = config
-        self._matrix = matrix.detach().clone()
+        self._matrix = matrix.detach().clone(memory_format=torch.contiguous_format)
         self._covariance = covariance
         self.writes = writes
         self.cursor = cursor
 
     @property
     def matrix(self):
-        return self._matrix.clone()
+        return self._matrix.clone(memory_format=torch.contiguous_format)
 
     @property
     def covariance(self):
@@ -566,12 +567,20 @@ class MatureCorrection:
     key: str = "codec"
     routing: RegimeRule | None = None
     areas: "AreaLayout | None" = None
+    query_bridge: "AreaQueryBridgeConfig | None" = None
 
     def __post_init__(self):
         from .area_memory import AREA_RULES, AreaLayout
+        from .area_query_bridge import AreaQueryBridgeConfig
         from .kernel_memory import KernelMemoryConfig
 
         kernel = type(self.memory) is KernelMemoryConfig
+        if self.query_bridge is not None and (
+            type(self.query_bridge) is not AreaQueryBridgeConfig
+            or type(self.areas) is not AreaLayout
+            or self.areas.areas < 2
+        ):
+            raise ValueError("El puente de consultas necesita al menos dos áreas de B1")
         if (
             not (isinstance(self.memory, AssociativeMemoryConfig) or kernel)
             or self.key not in CORRECTION_KEYS
@@ -622,6 +631,8 @@ class MatureCorrection:
         # Igual con las áreas de B1: sin declararlas la identidad no cambia.
         if self.areas is not None:
             identity.update(areas=self.areas.identity())
+        if self.query_bridge is not None:
+            identity.update(query_bridge=self.query_bridge.identity())
         return identity
 
     def empty(self):
@@ -629,7 +640,7 @@ class MatureCorrection:
         if self.areas is not None:
             from .area_memory import AreaMemory
 
-            return AreaMemory(self.memory, self.areas)
+            return AreaMemory(self.memory, self.areas, query_bridge=self.query_bridge)
         if self.memory.rule == "nadaraya_watson":
             from .kernel_memory import KernelMemory
 
@@ -641,7 +652,9 @@ class MatureCorrection:
         if self.areas is not None:
             from .area_memory import AreaMemory
 
-            return AreaMemory.restore(self.memory, self.areas, payload)
+            return AreaMemory.restore(
+                self.memory, self.areas, payload, query_bridge=self.query_bridge
+            )
         if self.memory.rule == "nadaraya_watson":
             from .kernel_memory import KernelMemory
 

@@ -132,6 +132,7 @@
       "kalman_value": {"rule": "kalman", "key": ["codec", "constant", "regime", "calendar", "codec_by_regime", "codec_by_calendar"], "process_noise": "q", "observation_noise": "sigma2", "cohort_correlation": "rho", "prior_variance": "p0", "huber_threshold": "c_or_null"},
       "area_value": {"kind": "redundant_area_memory_v1", "rule": ["delta", "proximal"], "key": ["codec"], "rate": "eta", "forgetting": "lambda", "areas": {"areas": [1, 8], "shifts": [1, 4], "permutation": ["seeded_random", "identity"], "seed": "uint32", "labels": ["mature", "shuffled_within_cohort"]}},
       "kernel_value": {"rule": "nadaraya_watson", "key": ["codec"], "bandwidth": "tau", "forgetting": "lambda_below_one", "capacity": [1, 65536]},
+      "query_bridge_value": {"kind": "area_query_bridge_v1", "requires": "areas", "gain": [0.0, 1.0], "steps": [1, 4], "targets": ["aligned", "shuffled_within_cohort"], "seed": "uint32", "topology": "directed_ring", "write_rule": "same_as_area_memory"},
       "excludes": ["episodic_bank"],
       "phases": ["evaluation"],
       "state": "associative_matrix_or_area_matrices_or_kernel_records",

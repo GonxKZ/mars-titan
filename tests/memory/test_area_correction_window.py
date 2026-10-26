@@ -28,6 +28,7 @@ from test_mars_titan_correction_parity import (
 from test_mars_titan_session_parity import events
 
 from mars_titan.memory.area_memory import AreaLayout, AreaMemory
+from mars_titan.memory.area_query_bridge import AreaQueryBridgeConfig
 from mars_titan.memory.associative_memory import AssociativeMemoryConfig, MatureCorrection
 from mars_titan.memory.kernel_memory import KernelMemory, KernelMemoryConfig
 from mars_titan.models.titans.financial_inputs import validated_cpu_batch
@@ -41,6 +42,7 @@ SHUFFLED = MatureCorrection(
     PROXIMAL, areas=AreaLayout(areas=3, seed=5, labels="shuffled_within_cohort")
 )
 KERNEL = MatureCorrection(KernelMemoryConfig(bandwidth=0.3, forgetting=0.05, capacity=64))
+BRIDGED = MatureCorrection(PROXIMAL, areas=LAYOUT, query_bridge=AreaQueryBridgeConfig())
 
 
 def decisions(source, event):
@@ -118,8 +120,8 @@ def test_area_emissions_follow_the_independent_recurrence(four_flow_source):
     assert len(actual) == len(expected) == 20
     assert [row[:2] for row in actual] == [row[:2] for row in expected]
     torch.testing.assert_close(
-        torch.tensor([row[2] for row in actual]),
-        torch.tensor([row[2] for row in expected]),
+        torch.tensor([row[2] for row in actual], dtype=torch.float64),
+        torch.tensor([row[2] for row in expected], dtype=torch.float64),
         rtol=0,
         atol=1e-13,
     )
@@ -137,8 +139,8 @@ def test_kernel_emissions_follow_the_nadaraya_watson_recurrence(four_flow_source
     expected = kernel_reference_emissions(four_flow_source, KERNEL.memory)
     assert [row[:2] for row in actual] == [row[:2] for row in expected]
     torch.testing.assert_close(
-        torch.tensor([row[2] for row in actual]),
-        torch.tensor([row[2] for row in expected]),
+        torch.tensor([row[2] for row in actual], dtype=torch.float64),
+        torch.tensor([row[2] for row in expected], dtype=torch.float64),
         rtol=1e-13,
         atol=1e-15,
     )
@@ -169,7 +171,7 @@ def test_shuffled_labels_only_change_emissions_after_the_first_write(four_flow_s
     assert metrics["associative_writes"] == 16
 
 
-@pytest.mark.parametrize("correction", [AREAS, KERNEL], ids=["areas", "kernel"])
+@pytest.mark.parametrize("correction", [AREAS, KERNEL, BRIDGED], ids=["areas", "kernel", "bridge"])
 def test_future_labels_and_inputs_never_change_earlier_emissions(four_flow_source, correction):
     reference, _ = corrected_pass(four_flow_source, correction)
     base = by_instant(emitted(reference))
@@ -185,7 +187,7 @@ def test_future_labels_and_inputs_never_change_earlier_emissions(four_flow_sourc
     assert later[:-1] == base[:-1] and later[-1] != base[-1]
 
 
-@pytest.mark.parametrize("correction", [AREAS, KERNEL], ids=["areas", "kernel"])
+@pytest.mark.parametrize("correction", [AREAS, KERNEL, BRIDGED], ids=["areas", "kernel", "bridge"])
 def test_the_correction_never_reaches_the_parent(four_flow_source, correction):
     predictor = core(four_flow_source)
     tensors = lambda: dict((*predictor.named_parameters(), *predictor.named_buffers()))  # noqa: E731
@@ -202,3 +204,47 @@ def test_the_correction_never_reaches_the_parent(four_flow_source, correction):
     assert set(after) == set(before)
     assert all(torch.equal(before[name], after[name]) for name in before)
     assert all(not p.requires_grad and p.grad is None for p in predictor.parameters())
+
+
+def test_query_bridge_emissions_follow_independent_synchronous_maps(four_flow_source):
+    width = LAYOUT.feature_size(64)
+    values = [torch.zeros((width, 1), dtype=torch.float64) for _ in range(LAYOUT.areas)]
+    maps = [torch.zeros((width, width), dtype=torch.float64) for _ in values]
+
+    def read(keys):
+        parts = reference_features(keys, LAYOUT)
+        queries = torch.stack(parts)
+        queries = torch.stack(
+            [
+                0.75 * queries[b]
+                + 0.25 * queries[(b - 1) % len(values)] @ maps[(b - 1) % len(values)]
+                for b in range(len(values))
+            ]
+        )
+        norms = torch.linalg.vector_norm(queries, dim=-1, keepdim=True)
+        queries = queries / torch.where(norms > 0, norms, 1)
+        return torch.stack([q @ m for q, m in zip(queries, values, strict=True)]).mean(0)
+
+    def write(keys, labels):
+        parts = reference_features(keys, LAYOUT)
+        rows = keys.shape[0]
+        for a, part in enumerate(parts):
+            values[a] = proximal_step(values[a], part, labels, PROXIMAL)
+            gram = torch.eye(width, dtype=torch.float64) + PROXIMAL.rate * part.T @ part / rows
+            rhs = (
+                PROXIMAL.retention * maps[a]
+                + PROXIMAL.rate * part.T @ parts[(a + 1) % len(values)] / rows
+            )
+            maps[a] = torch.linalg.solve(gram, rhs)
+
+    expected = reference_emissions(four_flow_source, read, write)
+    inference, metrics = corrected_pass(four_flow_source, BRIDGED)
+    actual = emitted(inference)
+    assert [row[:2] for row in actual] == [row[:2] for row in expected]
+    torch.testing.assert_close(
+        torch.tensor([row[2] for row in actual], dtype=torch.float64),
+        torch.tensor([row[2] for row in expected], dtype=torch.float64),
+        rtol=0,
+        atol=1e-13,
+    )
+    assert metrics["associative_writes"] == 16

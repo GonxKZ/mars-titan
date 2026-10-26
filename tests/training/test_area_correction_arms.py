@@ -144,3 +144,38 @@ def test_declaration_drift_in_the_area_block_fails_the_load(tmp_path):
     path.write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(ValueError, match="B1"):
         load_declaration(path)
+
+
+def test_bridge_components_round_trip_through_the_same_window_declaration(declaration):
+    bridge = dict(gain=0.25, steps=1, targets="aligned", seed=0)
+    values = case_values(load_correction_recipe(B6_RECIPE), "eta5e-2")
+    arm = dict(
+        associative_memory=dict(rule="proximal", key="codec", areas=AREAS, query_bridge=bridge)
+    )
+    checked, correction = check_components(declaration, arm_components(arm, values))
+    assert checked["associative_memory"]["query_bridge"] == bridge
+    assert correction.query_bridge.identity()["kind"] == "area_query_bridge_v1"
+    assert correction.empty().export()["schema_version"] == 2
+
+
+@pytest.mark.parametrize(
+    "bridge", [dict(gain=0.25), dict(gain=0.25, steps=1, targets="future", seed=0)]
+)
+def test_bridge_components_reject_missing_or_invalid_options(declaration, bridge):
+    value = dict(
+        rule="proximal", key="codec", rate=0.05, forgetting=0.01, areas=AREAS, query_bridge=bridge
+    )
+    with pytest.raises(ValueError):
+        check_components(declaration, {"associative_memory": value})
+
+
+def test_every_bridge_control_is_a_distinct_window_model(declaration):
+    study = json.loads(Path("configs/experiments/area-query-bridge-v1.json").read_text())
+    identities = []
+    for arm in study["arms"].values():
+        document = load_correction_recipe(arm["recipe"])
+        for case in document["walk_forward"]["search_cases"]:
+            _, correction = completed(declaration, arm, case)
+            identities.append(canonical(correction.identity()))
+    assert len(set(identities)) == len(identities) == 8
+    assert study["default_enabled"] is False and study["final_test_access"] is False
