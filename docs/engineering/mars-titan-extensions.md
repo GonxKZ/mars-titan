@@ -49,6 +49,8 @@ Al resolver los resultados maduros del evento, cada etiqueta aplicada escribe A 
 
 La regla `kalman` (PT3) usa el mismo contrato con sus propias varianzas en lugar de η y λ, y se declara como ablación A12 frente a la proximal ([documento](kalman-associative-memory.md)). El recorrido por ventanas de la campaña emite la corrección con las tres reglas en [su propia ventana](#corrección-b6-en-las-ventanas-walk-forward). La regla `kalman` estima allí σ² y ϱ con los últimos meses del ajuste y la campaña A v2 la declara con dos modelos. La elección de η, y de κ con la regla kalman, sigue pendiente de la validación de la campaña.
 
+La [variante B1](../experiments/redundant-area-memory-v1.md) proyecta la clave en varias áreas y mantiene una corrección propia en cada una. Su control Nadaraya-Watson conserva asociaciones maduras con capacidad acotada. Ambos reutilizan la sesión y la ventana de B6, sin cambiar las reglas de la campaña histórica. Están comprobados en CPU con fixtures y pendientes de interoperabilidad CUDA y comparación predictiva.
+
 ## Entrenador del lector episódico
 
 `training/mars_titan_run.py` ajusta solo `EpisodicReadout` sobre el padre `mac_online` seleccionado, que llega congelado, en evaluación y sin gradientes. La memoria rápida del padre avanza con la regla asociativa de Titans en cada observación, igual que en el modelo Titans-MAC, y no recibe información de etiquetas. La receta es `configs/titans/episodic-readout-historical-masked.json`, con el mismo número de casos de búsqueda que Titans-MAC (tasas 1e-4 y 1e-3), 30 épocas, presupuesto fijo, selección por `session_mae` de validación, recorte 1,0 y `update_instants` igual al truncamiento de la receta de Titans.

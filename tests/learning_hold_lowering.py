@@ -159,12 +159,6 @@ INVENTORY = {
         "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
         "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
     ),
-    "tests/training/test_mars_titan_correction.py::"
-    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it": (
-        "ejecuta la ventana B6 con la regla kalman y su traslado sobre el padre que ajusta la "
-        "fixture del módulo con el optimizador que no modifica pesos, y los dos ejecutores se "
-        "detienen con la protección"
-    ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
         "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
@@ -360,6 +354,7 @@ _REUSES = (
 # `learning_doubles_module`, `allowed_hold`) y a la variable o la ruta de la protección. La
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
+    "tests/training/test_area_correction_bounded.py": (1, _RECORDER),
     "tests/conftest.py": (2, _DEFINES),
     "tests/training/test_window_variants.py": (
         1,

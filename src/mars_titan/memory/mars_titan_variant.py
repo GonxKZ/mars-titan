@@ -10,6 +10,7 @@ identidad es la del núcleo. Cada combinación activa tiene una identidad propia
 import hashlib
 import json
 from dataclasses import asdict, dataclass, replace
+from dataclasses import fields as fields_of
 from pathlib import Path
 
 from mars_titan.models.titans.bridge_hierarchy import hierarchy_options
@@ -26,7 +27,8 @@ from mars_titan.models.titans.evidence_bridge import (
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import write_scores
+from . import area_memory, kernel_memory, write_scores
+from .area_memory import AreaLayout
 from .associative_memory import (
     CORRECTION_KEYS,
     KEY_SIZES,
@@ -35,6 +37,7 @@ from .associative_memory import (
     MatureCorrection,
 )
 from .financial_consumers import bank_retention
+from .kernel_memory import KERNEL_RULE, KernelMemoryConfig
 
 DECLARATION = Path("configs/titans/mars-titan-extensions.json")
 VARIANT = "mars_titan_extensions_v1"
@@ -86,6 +89,11 @@ def load_declaration(path=DECLARATION):
         for field in ("value", "kalman_value")
     ):
         raise ValueError("Las claves declaradas de B6 no coinciden con las del código")
+    if (
+        associative.get("area_value") != area_memory.declaration()
+        or associative.get("kernel_value") != kernel_memory.declaration()
+    ):
+        raise ValueError("La declaración de B1 y de su control no coincide con el código")
     return document
 
 
@@ -102,6 +110,7 @@ def core_identity(predictor, recipe):
     )
 
 
+_KERNEL_FIELDS = ("bandwidth", "forgetting", "capacity")
 _KALMAN_FIELDS = (
     "process_noise",
     "observation_noise",
@@ -111,25 +120,45 @@ _KALMAN_FIELDS = (
 )
 
 
-def _associative(value, allowed):
-    kalman = isinstance(value, dict) and value.get("rule") == "kalman"
+def _associative(value, component):
+    rule = value.get("rule") if isinstance(value, dict) else None
+    kalman, kernel = rule == "kalman", rule == KERNEL_RULE
     if kalman:
         # La regla kalman (PT3) sustituye η y λ por las varianzas de su modelo dinámico.
-        if set(value) != {"rule", "key", *_KALMAN_FIELDS} or "kalman" not in allowed:
+        if set(value) != {"rule", "key", *_KALMAN_FIELDS} or "kalman" not in component["allowed"]:
             raise ValueError("associative_memory kalman declara rule, key y sus cinco varianzas")
+    elif kernel:
+        # El control de Nadaraya-Watson de B1 sustituye η por su ancho τ y su capacidad.
+        if set(value) != {"rule", "key", *_KERNEL_FIELDS} or "kernel_value" not in component:
+            raise ValueError(
+                "associative_memory nadaraya_watson declara rule, key, τ, λ y capacidad"
+            )
     else:
         fields = {"rule", "key", "rate", "forgetting"}
-        if not isinstance(value, dict) or set(value) != fields or value["rule"] not in allowed:
+        if (
+            not isinstance(value, dict)
+            or set(value) - {"areas"} != fields
+            or rule not in component["allowed"]
+        ):
             raise ValueError("associative_memory declara rule, key, rate y forgetting permitidos")
     if value["key"] not in CORRECTION_KEYS:
         raise ValueError("La clave de B6 debe ser una de " + ", ".join(CORRECTION_KEYS))
+    if kernel:
+        memory = KernelMemoryConfig(**{name: value[name] for name in _KERNEL_FIELDS})
+        return MatureCorrection(memory, key=value["key"])
     options = (
         dict(kalman=KalmanNoise(**{name: value[name] for name in _KALMAN_FIELDS}))
         if kalman
         else dict(rate=value["rate"], forgetting=value["forgetting"])
     )
     memory = AssociativeMemoryConfig(value["rule"], key_size=KEY_SIZES[value["key"]], **options)
-    return MatureCorrection(memory, key=value["key"])
+    areas = value.get("areas")
+    if areas is not None:
+        # B1 declara todos los campos de su reparto, sin valores implícitos.
+        if not isinstance(areas, dict) or set(areas) != {f.name for f in fields_of(AreaLayout)}:
+            raise ValueError("Las áreas de B1 declaran areas, shifts, permutation, seed y labels")
+        areas = AreaLayout(**areas)
+    return MatureCorrection(memory, key=value["key"], areas=areas)
 
 
 def _normalized(correction):
@@ -137,9 +166,15 @@ def _normalized(correction):
     memory = correction.memory
     if memory.rule == "kalman":
         return dict(rule=memory.rule, key=correction.key, **asdict(memory.kalman))
-    return dict(
+    if memory.rule == KERNEL_RULE:
+        values = {name: getattr(memory, name) for name in _KERNEL_FIELDS}
+        return dict(rule=memory.rule, key=correction.key, **values)
+    normalized = dict(
         rule=memory.rule, key=correction.key, rate=memory.rate, forgetting=memory.forgetting
     )
+    if correction.areas is not None:
+        normalized["areas"] = asdict(correction.areas)
+    return normalized
 
 
 def check_components(declaration, components):
@@ -195,9 +230,7 @@ def check_components(declaration, components):
         if "episodic_bank" in components:
             # El error del banco y la escritura de A mezclarían dos memorias en una emisión.
             raise ValueError("B6 se contrasta sin banco episódico")
-        correction = _associative(
-            components["associative_memory"], declared["associative_memory"]["allowed"]
-        )
+        correction = _associative(components["associative_memory"], declared["associative_memory"])
         components["associative_memory"] = _normalized(correction)
     canonical(components)
     return components, correction

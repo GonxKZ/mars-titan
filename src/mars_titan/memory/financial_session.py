@@ -30,7 +30,7 @@ from . import (
     regional_work,
     write_scores,
 )
-from .associative_memory import AssociativeMemory, MatureCorrection
+from .associative_memory import MatureCorrection
 from .episodic_session import (
     EpisodicSession,
     _canonical,
@@ -464,12 +464,12 @@ class FinancialSession(EpisodicSession):
         if reference is None:
             empty = torch.empty(0, dtype=torch.float64)
             routes = torch.empty(0, dtype=torch.int64) if routed else None
-            return AssociativeMemory(self.associative.memory), empty, routes
+            return self.associative.empty(), empty, routes
         value = self._read(reference, "associative")
         fields = {"memory", "core", "routes"} if routed else {"memory", "core"}
         if not isinstance(value, dict) or set(value) != fields:
             raise ValueError("La corrección asociativa no conserva matriz, núcleo y rutas")
-        memory = AssociativeMemory.restore(self.associative.memory, value["memory"])
+        memory = self.associative.restore(value["memory"])
         core = value["core"]
         if (
             not isinstance(core, torch.Tensor)

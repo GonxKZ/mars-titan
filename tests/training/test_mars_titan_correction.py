@@ -31,7 +31,6 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalInference
 from mars_titan.training.kernel_policy import FP32_STRICT, kernel_policy_identity
 from mars_titan.training.learning_hold import LearningHoldError
-from tests.learning_hold_lowering import lowers_learning_hold
 from tests.learning_traces.parity import same_rows, trace_rows
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
@@ -311,7 +310,11 @@ def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_
             "regla y su clave",
         ),
         (PROXIMAL | {"episodic_bank": "m1"}, "eta25e-2", "solo associative_memory"),
-        ({"associative_memory": {"rule": "lms", "key": "codec"}}, "eta25e-2", "delta y proximal"),
+        (
+            {"associative_memory": {"rule": "lms", "key": "codec"}},
+            "eta25e-2",
+            "delta, proximal, kalman o nadaraya_watson",
+        ),
         (
             {"associative_memory": {"rule": "kalman", "key": "codec"}},
             "eta25e-2",
@@ -445,10 +448,6 @@ class StopAfterEstimation:
         return self.seen > 10
 
 
-@lowers_learning_hold(
-    "tests/training/test_mars_titan_correction.py::"
-    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it"
-)
 def test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it(
     base, tmp_path, monkeypatch
 ):

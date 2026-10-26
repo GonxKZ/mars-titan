@@ -17,11 +17,16 @@ import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
 
 from .regimes import CALENDAR_RULE, REGIME_RULE, SLOTS, RegimeRule
+
+if TYPE_CHECKING:
+    from .area_memory import AreaLayout
+    from .kernel_memory import KernelMemoryConfig
 
 RULES = ("delta", "proximal", "kalman")
 # Las claves vienen normalizadas por el codec en FP32. Este margen admite su redondeo.
@@ -243,6 +248,46 @@ def _check_covariance(covariance, size):
         raise ValueError("La covarianza debe ser definida positiva en FP64")
 
 
+def canonical_order(feedback, cutoff, *, key_size, value_size, weighted, cursor):
+    """Validar los resultados maduros de una escritura y devolver su orden canónico.
+
+    El orden es disponibilidad, decisión e identificador. `weighted` exige los pesos de una
+    cohorte y `cursor` es la última clave aplicada, o None si la memoria no se ha escrito.
+    """
+    if not isinstance(feedback, MatureFeedback) or type(cutoff) is not int:
+        raise ValueError("La escritura necesita resultados maduros y un corte entero")
+    rows = feedback.ids.shape[0] if isinstance(feedback.ids, torch.Tensor) else -1
+    if not 0 <= rows <= MAX_COHORT:
+        raise ValueError(f"Una escritura admite como máximo {MAX_COHORT} resultados")
+    for name in ("ids", "decision_at", "available_at"):
+        _check_vector(getattr(feedback, name), name, rows, torch.int64)
+    _check_keys(feedback.keys, rows, key_size)
+    _check_matrix(feedback.values, "Los valores", rows, value_size)
+    if (feedback.weights is not None) != (weighted and rows > 0):
+        raise ValueError("Solo la regla proximal declara pesos y solo con resultados")
+    if rows == 0:
+        return 0, []
+    ids = feedback.ids.tolist()
+    decisions = feedback.decision_at.tolist()
+    available = feedback.available_at.tolist()
+    if min(ids) < 1 or len(set(ids)) != rows:
+        raise ValueError("Los identificadores deben ser positivos y únicos en la escritura")
+    if any(not d < a <= cutoff for d, a in zip(decisions, available, strict=True)):
+        raise ValueError("Cada etiqueta debe madurar después de su decisión y antes del corte")
+    if weighted:
+        _check_vector(feedback.weights, "Los pesos", rows, torch.float64)
+        weights = feedback.weights
+        if not torch.isfinite(weights).all() or (weights < 0).any():
+            raise ValueError("Los pesos de la cohorte deben ser finitos y no negativos")
+        if abs(float(weights.sum()) - 1.0) > WEIGHT_TOLERANCE:
+            raise ValueError("Los pesos de la cohorte deben sumar uno")
+    order = sorted(range(rows), key=lambda i: (available[i], decisions[i], ids[i]))
+    first = order[0]
+    if cursor is not None and (available[first], decisions[first], ids[first]) <= cursor:
+        raise ValueError("El resultado ya se aplicó o llega fuera del orden canónico")
+    return rows, order
+
+
 class AssociativeMemory:
     """Matriz A de clave por valor en FP64 y CPU, con escrituras que devuelven copias.
 
@@ -342,41 +387,14 @@ class AssociativeMemory:
         )
 
     def _validate(self, feedback, cutoff):
-        if not isinstance(feedback, MatureFeedback) or type(cutoff) is not int:
-            raise ValueError("La escritura necesita resultados maduros y un corte entero")
-        rows = feedback.ids.shape[0] if isinstance(feedback.ids, torch.Tensor) else -1
-        if not 0 <= rows <= MAX_COHORT:
-            raise ValueError(f"Una escritura admite como máximo {MAX_COHORT} resultados")
-        for name in ("ids", "decision_at", "available_at"):
-            _check_vector(getattr(feedback, name), name, rows, torch.int64)
-        _check_keys(feedback.keys, rows, self.config.key_size)
-        _check_matrix(feedback.values, "Los valores", rows, self.config.value_size)
-        proximal = self.config.rule == "proximal"
-        if (feedback.weights is not None) != (proximal and rows > 0):
-            raise ValueError("Solo la regla proximal declara pesos y solo con resultados")
-        if rows == 0:
-            return 0, []
-        ids = feedback.ids.tolist()
-        decisions = feedback.decision_at.tolist()
-        available = feedback.available_at.tolist()
-        if min(ids) < 1 or len(set(ids)) != rows:
-            raise ValueError("Los identificadores deben ser positivos y únicos en la escritura")
-        if any(not d < a <= cutoff for d, a in zip(decisions, available, strict=True)):
-            raise ValueError("Cada etiqueta debe madurar después de su decisión y antes del corte")
-        if proximal:
-            _check_vector(feedback.weights, "Los pesos", rows, torch.float64)
-            weights = feedback.weights
-            if not torch.isfinite(weights).all() or (weights < 0).any():
-                raise ValueError("Los pesos de la cohorte deben ser finitos y no negativos")
-            if abs(float(weights.sum()) - 1.0) > WEIGHT_TOLERANCE:
-                raise ValueError("Los pesos de la cohorte deben sumar uno")
-        order = sorted(range(rows), key=lambda i: (available[i], decisions[i], ids[i]))
-        first = order[0]
-        if self.cursor is not None and (available[first], decisions[first], ids[first]) <= (
-            self.cursor
-        ):
-            raise ValueError("El resultado ya se aplicó o llega fuera del orden canónico")
-        return rows, order
+        return canonical_order(
+            feedback,
+            cutoff,
+            key_size=self.config.key_size,
+            value_size=self.config.value_size,
+            weighted=self.config.rule == "proximal",
+            cursor=self.cursor,
+        )
 
     def _delta(self, keys, values):
         retention, rate = self.config.retention, self.config.rate
@@ -537,16 +555,38 @@ class MatureCorrection:
     variantes `calendar` usan los mismos compartimentos asignados por mes, el control que
     permite descartar el régimen. La ruta de cada predicción se guarda al emitirla y se usa
     al escribir su etiqueta, igual que la clave del codec.
+
+    `areas` reparte la misma corrección en la memoria redundante por áreas de B1
+    (`memory.area_memory`), con la regla de `memory` en cada área. Una `KernelMemoryConfig`
+    en `memory` es su control de Nadaraya-Watson (`memory.kernel_memory`). Los dos usan la
+    clave del codec y sin ellos la identidad de B6 no cambia.
     """
 
-    memory: AssociativeMemoryConfig
+    memory: "AssociativeMemoryConfig | KernelMemoryConfig"
     key: str = "codec"
     routing: RegimeRule | None = None
+    areas: "AreaLayout | None" = None
 
     def __post_init__(self):
-        if not isinstance(self.memory, AssociativeMemoryConfig) or self.key not in CORRECTION_KEYS:
+        from .area_memory import AREA_RULES, AreaLayout
+        from .kernel_memory import KernelMemoryConfig
+
+        kernel = type(self.memory) is KernelMemoryConfig
+        if (
+            not (isinstance(self.memory, AssociativeMemoryConfig) or kernel)
+            or self.key not in CORRECTION_KEYS
+        ):
             raise ValueError(
                 "La corrección necesita su memoria y una clave de " + ", ".join(CORRECTION_KEYS)
+            )
+        if (kernel or self.areas is not None) and (
+            self.key != "codec"
+            or (self.areas is not None and (kernel or type(self.areas) is not AreaLayout))
+            or (self.areas is not None and self.memory.rule not in AREA_RULES)
+        ):
+            raise ValueError(
+                "Las áreas de B1 y su control de Nadaraya-Watson leen la clave del codec, y las "
+                "áreas usan la regla delta o proximal"
             )
         if self.memory.value_size != 1 or self.memory.key_size != KEY_SIZES[self.key]:
             raise ValueError(
@@ -579,7 +619,34 @@ class MatureCorrection:
                 routing=self.routing.identity(),
                 route_time="decision_event_stored_until_the_label_matures",
             )
+        # Igual con las áreas de B1: sin declararlas la identidad no cambia.
+        if self.areas is not None:
+            identity.update(areas=self.areas.identity())
         return identity
+
+    def empty(self):
+        """Memoria vacía de la corrección: A en cero, las áreas en cero o sin episodios."""
+        if self.areas is not None:
+            from .area_memory import AreaMemory
+
+            return AreaMemory(self.memory, self.areas)
+        if self.memory.rule == "nadaraya_watson":
+            from .kernel_memory import KernelMemory
+
+            return KernelMemory(self.memory)
+        return AssociativeMemory(self.memory)
+
+    def restore(self, payload):
+        """Recuperar la memoria exportada por `export()` de la misma corrección."""
+        if self.areas is not None:
+            from .area_memory import AreaMemory
+
+            return AreaMemory.restore(self.memory, self.areas, payload)
+        if self.memory.rule == "nadaraya_watson":
+            from .kernel_memory import KernelMemory
+
+            return KernelMemory.restore(self.memory, payload)
+        return AssociativeMemory.restore(self.memory, payload)
 
     def routes(self, prices, flow_ids, at):
         """Rutas de las filas de un evento y estado de cada mercado, o None sin enrutar."""

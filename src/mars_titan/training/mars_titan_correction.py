@@ -61,11 +61,12 @@ from mars_titan.learning_traces.hooks import (
     open_recorder,
     trace_identity,
 )
-from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
+from mars_titan.memory.associative_memory import MatureCorrection
 from mars_titan.memory.cohort_noise import estimate_cohort_noise
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.financial_session import FinancialPhase
+from mars_titan.memory.kernel_memory import KERNEL_RULE
 from mars_titan.memory.mars_titan_variant import (
     check_components,
     core_identity,
@@ -118,7 +119,15 @@ SEARCHED = ("rate", "forgetting")
 # de estimación. σ² y ϱ no se declaran: se estiman en cada ventana.
 KALMAN_SEARCHED = ("process_ratio",)
 KALMAN_FIXED = ("prior_ratio", "correlation_cap", "estimation_months")
-_RECIPES = {RECIPE: (SEARCHED, ()), KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED)}
+# El control de Nadaraya-Watson de B1 busca su ancho τ y fija en la receta λ y la capacidad.
+KERNEL_RECIPE = "mars_titan_kernel_correction_v1"
+KERNEL_SEARCHED = ("bandwidth",)
+KERNEL_FIXED = ("forgetting", "capacity")
+_RECIPES = {
+    RECIPE: (SEARCHED, ()),
+    KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED),
+    KERNEL_RECIPE: (KERNEL_SEARCHED, KERNEL_FIXED),
+}
 # Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
 # campaña los busca y no forman parte de la definición del modelo. Un modelo kalman declara
 # además si usa la ϱ estimada o la anula, que es la alternativa con la que se descarta.
@@ -126,6 +135,8 @@ ARM_FIELDS = ("rule", "key")
 KALMAN_ARM_FIELDS = (*ARM_FIELDS, "cohort_correlation")
 COHORT_CORRELATIONS = ("estimated", "zero")
 RULES = ("delta", "proximal", "kalman")
+# El control nuevo es explícito y no amplía las reglas de la campaña histórica.
+CORRECTION_BACKENDS = (*RULES, KERNEL_RULE)
 # σ² y ϱ con los que se comprueba una combinación kalman antes de abrir fuentes y se mide su
 # caudal. La media de la corrección no depende de σ² y el coste no depende de ninguno.
 UNIT_NOISE = dict(observation_noise=1.0, cohort_correlation=0.0)
@@ -146,6 +157,8 @@ _CODE = (
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.memory.mars_titan_variant",
     "mars_titan.memory.associative_memory",
+    "mars_titan.memory.area_memory",
+    "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
     "mars_titan.data.batches",
@@ -236,21 +249,33 @@ def arm_components(components, values, noise=None):
 
     El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección. Las reglas
-    delta y proximal reciben η y λ. La regla kalman recibe además `noise`, con la σ² y la ϱ
-    estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
+    delta y proximal reciben η y λ, también con las áreas de B1. El control de Nadaraya-Watson
+    recibe τ, λ y la capacidad de su receta. La regla kalman recibe además `noise`, con la σ² y
+    la ϱ estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
     rule = memory.get("rule") if isinstance(memory, dict) else None
     fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
+    # Solo las reglas delta y proximal admiten el reparto por áreas de B1 en el modelo.
+    optional = {"areas"} if rule in ("delta", "proximal") else set()
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
-        and set(memory) == set(fields),
+        and set(fields) <= set(memory) <= set(fields) | optional,
         "Un modelo B6 declara solo associative_memory con su regla y su clave, y con la regla "
-        "kalman también su correlación de cohorte",
+        "kalman también su correlación de cohorte, o con delta y proximal las áreas de B1",
     )
-    _require(rule in RULES, "La ventana B6 solo admite las reglas delta y proximal, o kalman")
+    _require(
+        rule in CORRECTION_BACKENDS,
+        "La ventana B6 solo admite las reglas delta, proximal, kalman o nadaraya_watson",
+    )
+    if rule == KERNEL_RULE:
+        _require(
+            set(values) == {*KERNEL_SEARCHED, *KERNEL_FIXED} and noise is None,
+            "Nadaraya-Watson usa la receta de τ, λ y capacidad, sin varianzas estimadas",
+        )
+        return dict(associative_memory=dict(memory, **values))
     if rule != "kalman":
         _require(
             set(values) == set(SEARCHED) and noise is None,
@@ -315,7 +340,7 @@ class CorrectionInference(ChronologicalInference):
         # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
         self.trace_recorder = None
         self._trace_events, self._trace_phase = 0, "b6"
-        self.memory = AssociativeMemory(correction.memory)
+        self.memory = correction.empty()
         # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
         # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
         # emisión corregida, y en el compartimento del instante de la decisión.
@@ -333,7 +358,7 @@ class CorrectionInference(ChronologicalInference):
         final del evento actual. `extra` guarda por decisión la varianza y la predicción con
         retraso, que `KalmanPredictionRows` añade a su fila.
         """
-        self.delayed = AssociativeMemory(self.correction.memory) if self.kalman else None
+        self.delayed = self.correction.empty() if self.kalman else None
         self._incoming, self._held, self._due, self.extra = [], {}, [], {}
 
     def _observe(self, run, source, event, *, differentiable, blocks=None):
@@ -482,7 +507,7 @@ class CorrectionInference(ChronologicalInference):
         construidos a mano con el mismo contrato.
         """
         run = _Pass(rows=rows)
-        self.memory = AssociativeMemory(self.correction.memory)
+        self.memory = self.correction.empty()
         self._core, self._staged = {}, []
         self._routing = _RoutingLog()
         self._reset_delay()
@@ -592,7 +617,7 @@ class _RoutingLog:
         )
 
 
-def correction_memory_policy(warmup_months, *, kalman=False):
+def correction_memory_policy(warmup_months, *, kalman=False, kernel=False, fit_months=None):
     """Describir la política de memoria del padre ampliada con A.
 
     A también se reinicia en cada recorrido, y el informe lo deja escrito para que se vea
@@ -600,7 +625,7 @@ def correction_memory_policy(warmup_months, *, kalman=False):
     P vuelven a su previa en cada recorrido y σ² y ϱ proceden del tramo de estimación.
     """
     policy = dict(
-        memory_policy(warmup_months),
+        memory_policy(warmup_months, fit_months),
         associative="zero_at_each_pass_then_mature_labels_after_the_event_predictions",
         associative_value="mature_label_minus_core_prediction",
         quantiles="all_levels_shifted_by_the_scalar_correction",
@@ -611,6 +636,11 @@ def correction_memory_policy(warmup_months, *, kalman=False):
             associative="prior_mean_and_covariance_at_each_pass_then_mature_labels_after_the_"
             "event_predictions",
             fit="none_variances_estimated_on_the_train_tail_and_process_ratio_by_search_case",
+        )
+    if kernel:
+        policy.update(
+            associative="no_episodes_at_each_pass_then_mature_labels_after_the_event_predictions",
+            fit="none_bandwidth_by_search_case_forgetting_and_capacity_fixed_by_recipe",
         )
     return policy
 
@@ -837,8 +867,9 @@ def run_correction_window(
     for protected in (*dataset.roots.values(), view.parent, parent):
         outside_source(protected, output)
     titans, chronological = _parent_recipe(parent_report)
-    options = walk_forward_options(titans)
-    phases = window_phases(fold, options["warmup_months"])
+    # Kalman conserva su rechazo hasta acotar también su tramo de estimación de ruido.
+    options = walk_forward_options(titans, bounded_fit=not kalman)
+    phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     _require(
         {name: asdict(phase) for name, phase in phases.items()}
         == parent_report["identity"]["phases"],
@@ -877,7 +908,12 @@ def run_correction_window(
         variant_sha256=variant.fingerprint(),
         correction=variant.correction.identity(),
         codec=codec.identity(),
-        memory_policy=correction_memory_policy(options["warmup_months"], kalman=kalman),
+        memory_policy=correction_memory_policy(
+            options["warmup_months"],
+            kalman=kalman,
+            kernel=variant.correction.memory.rule == KERNEL_RULE,
+            fit_months=options.get("fit_months"),
+        ),
         phases={name: asdict(phase) for name, phase in measured.items()},
         indices={name: source.identity for name, source in sources.items()},
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
@@ -1104,7 +1140,11 @@ def carry_correction(
         fold=fold,
         months_since_anchor_information=age,
         memory_policy=dict(
-            correction_memory_policy(options["warmup_months"], kalman=noise is not None),
+            correction_memory_policy(
+                options["warmup_months"],
+                kalman=noise is not None,
+                kernel=variant.correction.memory.rule == KERNEL_RULE,
+            ),
             parameters="anchor_selected_parent_and_correction_without_further_selection",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
         ),
