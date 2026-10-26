@@ -296,13 +296,20 @@ class AreaMemory:
             return self
         values = self._values(feedback, rows, order)
         features = self.features(feedback.keys)
-        areas = tuple(
-            area.write(replace(feedback, keys=part, values=values), cutoff=cutoff)
-            for area, part in zip(self._areas, features, strict=True)
-        )
-        bridge = (
-            None if self._bridge is None else self._bridge.write(features, feedback, cutoff=cutoff)
-        )
+        if self._bridge is not None and self.config.rule == "proximal":
+            areas, bridge = self._bridge.write_corrections(
+                self._areas, features, replace(feedback, values=values), cutoff=cutoff
+            )
+        else:
+            areas = tuple(
+                area.write(replace(feedback, keys=part, values=values), cutoff=cutoff)
+                for area, part in zip(self._areas, features, strict=True)
+            )
+            bridge = (
+                None
+                if self._bridge is None
+                else self._bridge.write(features, feedback, cutoff=cutoff)
+            )
         return AreaMemory(
             self.config, self.layout, areas, query_bridge=self.query_bridge, bridge_state=bridge
         )

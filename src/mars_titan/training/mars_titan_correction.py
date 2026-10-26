@@ -159,6 +159,7 @@ _CODE = (
     "mars_titan.memory.associative_memory",
     "mars_titan.memory.area_memory",
     "mars_titan.memory.area_query_bridge",
+    "mars_titan.memory.paired_proximal",
     "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",

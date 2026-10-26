@@ -11,7 +11,7 @@ from test_financial_session_associative import options, trajectory
 from test_financial_session_associative import shared_native as shared_native
 from test_mars_titan_correction_parity import corrected_pass, emitted
 
-from mars_titan.memory import area_memory, area_query_bridge, kernel_memory
+from mars_titan.memory import area_memory, area_query_bridge, kernel_memory, paired_proximal
 from mars_titan.memory.financial_session import FinancialSession
 
 
@@ -50,8 +50,13 @@ def test_session_recovers_the_same_emissions_as_the_window(
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     "module,correction",
-    [(area_memory, AREAS), (kernel_memory, KERNEL), (area_query_bridge, BRIDGED)],
-    ids=["areas", "kernel", "bridge"],
+    [
+        (area_memory, AREAS),
+        (kernel_memory, KERNEL),
+        (area_query_bridge, BRIDGED),
+        (paired_proximal, BRIDGED),
+    ],
+    ids=["areas", "kernel", "bridge", "paired"],
 )
 def test_session_identity_pins_the_source_of_the_enabled_memory(
     shared_native, four_flow_source, frozen_consumer, tmp_path, monkeypatch, module, correction

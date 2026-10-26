@@ -20,6 +20,7 @@ from .associative_memory import (
     _finite,
     canonical_order,
 )
+from .paired_proximal import write_proximal_pair
 
 KIND = "area_query_bridge_v1"
 TARGETS = ("aligned", "shuffled_within_cohort")
@@ -173,8 +174,7 @@ class AreaQueryBridgeState:
             current = unit_rows((1 - self.config.gain) * current + self.config.gain * translated)
         return current
 
-    def write(self, features, feedback, *, cutoff):
-        """Escribir correspondencias de rasgos de la misma cohorte madura, sin sus etiquetas."""
+    def _write_inputs(self, features, feedback, cutoff):
         rows = self._features(features, allow_empty=True)
         if not isinstance(feedback, MatureFeedback):
             raise ValueError("El puente necesita la procedencia de los resultados maduros")
@@ -189,28 +189,68 @@ class AreaQueryBridgeState:
         )
         if count != rows:
             raise ValueError("Los rasgos no corresponden a la misma cohorte madura")
+        return rows, order
+
+    def _target_values(self, features, feedback, canonical, source):
+        values = features[(source + 1) % self.areas]
+        if self.config.targets == "shuffled_within_cohort":
+            generator = np.random.Generator(
+                np.random.PCG64(
+                    [SHUFFLE_DOMAIN, self.config.seed, int(feedback.ids[canonical[0]]), source]
+                )
+            )
+            permutation = torch.from_numpy(generator.permutation(features.shape[1]))
+            shuffled = torch.empty_like(values)
+            shuffled[canonical] = values[canonical[permutation]]
+            values = shuffled
+        return values
+
+    def write(self, features, feedback, *, cutoff):
+        """Escribir correspondencias de rasgos de la misma cohorte madura, sin sus etiquetas."""
+        rows, order = self._write_inputs(features, feedback, cutoff)
         if rows == 0:
             return self
         canonical = torch.tensor(order, dtype=torch.int64)
-        maps = []
-        for source, previous in enumerate(self._maps):
-            values = features[(source + 1) % self.areas]
-            if self.config.targets == "shuffled_within_cohort":
-                generator = np.random.Generator(
-                    np.random.PCG64(
-                        [SHUFFLE_DOMAIN, self.config.seed, int(feedback.ids[order[0]]), source]
-                    )
-                )
-                permutation = torch.from_numpy(generator.permutation(rows))
-                shuffled = torch.empty_like(values)
-                shuffled[canonical] = values[canonical[permutation]]
-                values = shuffled
-            maps.append(
-                previous.write(
-                    replace(feedback, keys=features[source], values=values), cutoff=cutoff
-                )
+        maps = tuple(
+            previous.write(
+                replace(
+                    feedback,
+                    keys=features[source],
+                    values=self._target_values(features, feedback, canonical, source),
+                ),
+                cutoff=cutoff,
             )
-        return AreaQueryBridgeState(self.rule, self.areas, self.config, maps=tuple(maps))
+            for source, previous in enumerate(self._maps)
+        )
+        return AreaQueryBridgeState(self.rule, self.areas, self.config, maps=maps)
+
+    def write_corrections(self, areas, features, feedback, *, cutoff):
+        """Escribir correcciones y mapas proximales con un factor por área, sin caché histórica."""
+        if (
+            self.rule.rule != "proximal"
+            or type(areas) is not tuple
+            or len(areas) != self.areas
+            or any(type(area) is not AssociativeMemory for area in areas)
+        ):
+            raise ValueError("La escritura conjunta necesita los estados proximales de cada área")
+        rows, order = self._write_inputs(features, feedback, cutoff)
+        if rows == 0:
+            return areas, self
+        canonical = torch.tensor(order, dtype=torch.int64)
+        corrections, maps = [], []
+        for source, area in enumerate(areas):
+            corrected, mapped = write_proximal_pair(
+                area,
+                self._maps[source],
+                replace(feedback, keys=features[source]),
+                self._target_values(features, feedback, canonical, source),
+                cutoff=cutoff,
+            )
+            corrections.append(corrected)
+            maps.append(mapped)
+        return tuple(corrections), AreaQueryBridgeState(
+            self.rule, self.areas, self.config, maps=tuple(maps)
+        )
 
     def identity(self):
         return dict(

@@ -1,5 +1,6 @@
 """Traducción de consultas entre áreas, frente a sus ecuaciones y controles."""
 
+import weakref
 from dataclasses import replace
 
 import numpy as np
@@ -356,3 +357,42 @@ def test_area_read_excludes_both_messages_and_outputs_of_inactive_areas():
     translated = bridge.apply(memory.features(query), active=active)
     expected = torch.stack([translated[i] @ payload["areas"][i]["matrix"] for i in (0, 2)]).mean(0)
     torch.testing.assert_close(memory.read(query, active=active), expected, rtol=0, atol=0)
+
+
+def test_area_write_shares_one_factor_between_each_correction_and_query_map(monkeypatch):
+    memory = AreaMemory(
+        AssociativeMemoryConfig("proximal"),
+        AreaLayout(areas=3),
+        query_bridge=AreaQueryBridgeConfig(),
+    )
+    calls, original = [], torch.linalg.cholesky_ex
+
+    def factor(matrix):
+        calls.append(tuple(matrix.shape))
+        return original(matrix)
+
+    monkeypatch.setattr(torch.linalg, "cholesky_ex", factor)
+    memory.write(cohort(unit_keys(5), [0.1, -0.2, 0.3, -0.1, 0.2]), cutoff=10)
+    assert calls == [(128, 128)] * 3
+
+
+def test_shuffled_maps_do_not_keep_one_destination_buffer_per_area(monkeypatch):
+    memory = AreaMemory(
+        AssociativeMemoryConfig("proximal"),
+        AreaLayout(areas=4),
+        query_bridge=AreaQueryBridgeConfig(targets="shuffled_within_cohort"),
+    )
+    references, peaks = [], []
+    original = torch.empty_like
+
+    def allocate(value, *args, **kwargs):
+        result = original(value, *args, **kwargs)
+        if result.shape == (7, 128):
+            references.append(weakref.ref(result))
+            peaks.append(sum(reference() is not None for reference in references))
+        return result
+
+    monkeypatch.setattr(torch, "empty_like", allocate)
+    memory.write(cohort(unit_keys(7), [0.1] * 7), cutoff=10)
+    assert len(peaks) == 4
+    assert max(peaks) == 1

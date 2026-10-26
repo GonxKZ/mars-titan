@@ -29,6 +29,7 @@ from . import (
     financial_consumers,
     financial_state_artifacts,
     kernel_memory,
+    paired_proximal,
     regional_session_work,
     regional_work,
     write_scores,
@@ -275,6 +276,10 @@ class FinancialSession(EpisodicSession):
                 (area_memory, associative.areas is not None),
                 (area_query_bridge, associative.query_bridge is not None),
                 (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
+                (
+                    paired_proximal,
+                    associative.query_bridge is not None and associative.memory.rule == "proximal",
+                ),
             ):
                 if enabled:
                     code[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
