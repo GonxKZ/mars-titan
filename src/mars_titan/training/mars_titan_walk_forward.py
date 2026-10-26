@@ -147,10 +147,10 @@ def _code(family=None):
     return {name: sha256(Path(importlib.import_module(name).__file__)) for name in names}
 
 
-def bank_memory_policy(warmup_months):
+def bank_memory_policy(warmup_months, fit_months=None):
     """Política del padre ampliada con el banco, que también se reinicia en cada recorrido."""
     return dict(
-        memory_policy(warmup_months),
+        memory_policy(warmup_months, fit_months),
         bank="empty_at_each_pass_then_mature_labels_after_the_event_predictions",
         readout_working_state="discarded_after_each_prediction",
     )
@@ -504,8 +504,9 @@ def run_readout_window(
         outside_source(protected, output)
     parent_identity = parent_report["identity"]
     titans = parent_identity["recipe"]
-    options = walk_forward_options(titans)
-    phases = window_phases(fold, options["warmup_months"])
+    # El lector ajusta las mismas filas que su padre, también con un ajuste acotado.
+    options = walk_forward_options(titans, bounded_fit=True)
+    phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     _require(
         {name: asdict(phase) for name, phase in phases.items()} == parent_identity["phases"],
         "Las fases de la ventana no coinciden con las del padre",
@@ -546,7 +547,7 @@ def run_readout_window(
         parent=dict(run_id=parent_report["run_id"], request=parent_report["request"]),
         variant=variant.identity(),
         variant_sha256=variant.fingerprint(),
-        memory_policy=bank_memory_policy(options["warmup_months"]),
+        memory_policy=bank_memory_policy(options["warmup_months"], options.get("fit_months")),
         phases={name: asdict(phase) for name, phase in phases.items()},
         indices={name: source.identity for name, source in sources.items()},
         fit_run_id=trainer.run_id,

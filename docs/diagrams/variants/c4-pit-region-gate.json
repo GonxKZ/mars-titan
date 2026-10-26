@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C4 · Regiones en fecha como puerta (pit_region_gate_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "residuals", "type": "database", "label": "Residuos pasados", "sublabel": "ventana hasta t − 1", "pos": [40, 40], "size": [180, 72]},
+    {"id": "clusters", "type": "backend", "label": "Clústeres de correlación", "sublabel": "o sector en fecha", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "Titans-MAC mac_online", "pos": [300, 230], "size": [180, 72]},
+    {"id": "gate", "type": "backend", "label": "Puerta por región", "sublabel": "reescalado del estado", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "por activo", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "etiquetas permutadas",
+      "tag": "GICS actual",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "residuals-clusters", "from": "residuals", "to": "clusters", "label": "correlaciones"},
+    {"id": "clusters-gate", "from": "clusters", "to": "gate", "label": "región"},
+    {"id": "inputs-base", "from": "inputs", "to": "base"},
+    {"id": "base-gate", "from": "base", "to": "gate", "label": "estado", "variant": "emphasis", "labelDx": 27, "labelDy": -37},
+    {"id": "gate-emit", "from": "gate", "to": "emit", "variant": "emphasis"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Agrupa activos con información anterior a la emisión",
+        "La región reescala el estado de B con una puerta aprendida",
+        "Fuente: MASTER (2024) y la revisión de GICS de 2023"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Etiquetas permutadas con los mismos tamaños", "GICS actual como control de fuga y modelo plano"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #751, pendiente de implementar", "Preparación de etiquetas en CPU"]
+    }
+  ]
+}

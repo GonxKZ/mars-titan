@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C3 · Operador regional compartido entre niveles (fractal_shared_operator_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {"backend": {"label": "Cálculo"}, "security": {"label": "Control o protección"}, "cloud": {"label": "Evaluación"}}
+    }
+  },
+  "components": [
+    {
+      "id": "operator",
+      "type": "backend",
+      "label": "Operador compartido",
+      "sublabel": "mismos pesos base",
+      "tag": "LoRA de rango r por nivel",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {"id": "market", "type": "backend", "label": "Nivel mercado", "sublabel": "regiones de mercado", "pos": [40, 230], "size": [180, 72]},
+    {"id": "sector", "type": "backend", "label": "Nivel sector", "sublabel": "sector en fecha", "pos": [300, 230], "size": [180, 72]},
+    {"id": "asset", "type": "backend", "label": "Nivel activo", "sublabel": "estado del flujo", "pos": [560, 230], "size": [180, 72]},
+    {"id": "modality", "type": "backend", "label": "Nivel modalidad", "sublabel": "cinco hojas", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "pesos por nivel, todo compartido",
+      "tag": "partición aleatoria",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "operator-market", "from": "operator", "to": "market", "fromSide": "left", "toSide": "top"},
+    {"id": "operator-sector", "from": "operator", "to": "sector"},
+    {"id": "operator-asset", "from": "operator", "to": "asset"},
+    {"id": "operator-modality", "from": "operator", "to": "modality"},
+    {"id": "market-sector", "from": "market", "to": "sector", "label": "contexto"},
+    {"id": "sector-asset", "from": "sector", "to": "asset", "variant": "emphasis"},
+    {"id": "asset-modality", "from": "asset", "to": "modality", "variant": "emphasis"},
+    {"id": "modality-screen", "from": "modality", "to": "screen", "label": "predicción"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "El mismo operador regional se aplica en cada nivel de la jerarquía",
+        "Cada nivel solo añade una LoRA de rango r",
+        "Fuente: ALBERT (2019), Bae et al. (2024), Saunshi et al. (2025)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Pesos propios por nivel con iguales parámetros", "Todo compartido, partición aleatoria de iguales tamaños y bloque denso"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #751, pendiente de implementar", "Parte de regional_fusion y regional_hierarchy"]
+    }
+  ]
+}

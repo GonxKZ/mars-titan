@@ -101,6 +101,39 @@ def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
 
 
+def test_bounded_reader_keeps_parent_phases_rows_and_recovery(tmp_path):
+    """El lector hereda el mes de ajuste y recupera el mismo resultado sin modificar pesos."""
+    view, protocol = views(tmp_path / "data")
+    core_recipe = recipe(tmp_path, walk_forward=dict(warmup_months=1, fit_months=1))
+    parent = tmp_path / "parent"
+    parent_report, _ = window(view, protocol, core_recipe, parent)
+    plan = readout_recipe(tmp_path)
+    reference = tmp_path / "reference"
+    expected, _ = mars(view, parent, plan, reference)
+    assert expected["identity"]["phases"] == parent_report["identity"]["phases"]
+    assert expected["identity"]["indices"] == parent_report["identity"]["indices"]
+    assert expected["identity"]["memory_policy"]["fit_months"] == 1
+
+    recorder = Factory()
+
+    class StopAfterThree:
+        @property
+        def requested(self):
+            return sum(item.calls for item in recorder.instances[-1:]) >= 3
+
+    resumed = tmp_path / "resumed"
+    paused, _ = mars(view, parent, plan, resumed, stop=StopAfterThree(), optimizer_factory=recorder)
+    assert paused["status"] == "paused"
+    restored, _ = mars(view, parent, plan, resumed, optimizer_factory=recorder)
+    assert restored["status"] == "completed"
+    assert restored["identity"]["phases"] == expected["identity"]["phases"]
+    for partition in ("validation", "calibration", "evaluation"):
+        actual, target = table(resumed, partition), table(reference, partition)
+        assert actual.equals(target)
+        for name in ("sample_id", "prediction_at", "target"):
+            assert actual[name].equals(table(parent, partition)[name])
+
+
 def test_context_parent_requires_a_consumer_with_session_lifecycle(tmp_path):
     document = json.loads(readout_recipe(tmp_path).read_text())
     document["predictor"] = dict(session_context="market_memory_v1", dtype="float32")

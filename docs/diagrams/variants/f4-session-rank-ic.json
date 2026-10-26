@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F4 · Rangos por sesión y objetivo de IC",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"}
+      }
+    }
+  },
+  "components": [
+    {"id": "rows", "type": "external", "label": "Filas de la sesión", "sublabel": "solo disponibles en t", "pos": [40, 230], "size": [180, 72]},
+    {"id": "ranks", "type": "backend", "label": "session_rank_inputs_v1", "sublabel": "rangos gaussianos", "pos": [300, 230], "size": [180, 72]},
+    {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de B", "pos": [560, 230], "size": [180, 72]},
+    {"id": "score", "type": "backend", "label": "Puntuación", "sublabel": "ordenación por sesión", "pos": [820, 40], "size": [180, 72]},
+    {"id": "ic", "type": "security", "label": "session_ic_objective_v1", "sublabel": "correlación por sesión", "pos": [1080, 40], "size": [180, 72]},
+    {"id": "scale", "type": "backend", "label": "Cabeza de escala", "sublabel": "devuelve la amplitud", "pos": [820, 420], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "escala × puntuación", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "control", "type": "security", "label": "Control", "sublabel": "objetivo MAE actual", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "rows-ranks", "from": "rows", "to": "ranks"},
+    {"id": "ranks-trunk", "from": "ranks", "to": "trunk", "label": "rangos", "variant": "emphasis"},
+    {"id": "trunk-score", "from": "trunk", "to": "score"},
+    {"id": "score-ic", "from": "score", "to": "ic", "label": "pérdida"},
+    {"id": "trunk-scale", "from": "trunk", "to": "scale"},
+    {"id": "score-emit", "from": "score", "to": "emit", "variant": "emphasis"},
+    {"id": "scale-emit", "from": "scale", "to": "emit"},
+    {"id": "control-emit", "from": "control", "to": "emit", "label": "alternativa", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Entradas y objetivo pasan a rangos gaussianos dentro de cada sesión",
+        "La pérdida premia la correlación por sesión y una cabeza aparte fija la escala",
+        "Fuente: rangos transversales habituales en Qlib y Gu, Kelly y Xiu (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["El objetivo MAE actual con las mismas filas, pasos y semillas"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Dos variantes: solo rangos de entrada, o rangos con objetivo de IC"]
+    }
+  ]
+}
