@@ -4,6 +4,8 @@
 
 El [puente episódico regional](shared-evidence-bridge-v1.md) comparte candidatos de un snapshot y comunica lecturas derivadas. B2 actúa antes de leer las matrices de corrección de B1. Se mantiene como mecanismo separado porque esos dos puntos de intervención no son intercambiables.
 
+![Una arista del puente de consultas entre áreas](../diagrams/variants/b2-area-query-bridge.png)
+
 ## Qué se escribe y cuándo
 
 Sean φₐ(k) y φᵦ(k) los rasgos DPFP normalizados de la misma clave del codec en las áreas a y b. El grafo es un anillo dirigido, b = (a + 1) mod A. Cada arista guarda Tₐᵦ ∈ ℝᴰˣᴰ, con D = 2dν. Las matrices Wₛ de B1 siguen guardando el objetivo financiero `etiqueta − núcleo`. Los mapas T no usan ese valor financiero.
