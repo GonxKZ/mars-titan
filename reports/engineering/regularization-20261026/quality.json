@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "measured_at": "2026-10-26T22:52:55.832193",
+ "measured_at": "2026-10-26T23:02:28.121370",
  "tools": {
   "coverage": "7.16.1",
   "radon": "6.0.1",
@@ -336,6 +336,6 @@
   }
  ],
  "shadowed_regions": [],
- "coverage_sha256": "5591e9efba6df653fc864eaee3aa3f696c116e6bdf3644c741ba0a872fe2b7fa",
+ "coverage_sha256": "dcdaa1a14ad789b8fe40a7f59a7bd717e798f2f0aa934bc0c25f7824273f0e69",
  "functions_measured": 22
 }

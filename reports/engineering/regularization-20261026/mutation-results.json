@@ -1,7 +1,7 @@
 {
-  "planned": 3,
-  "killed": 3,
-  "scope": "Tres fallos dirigidos en código reutilizado, sin cobertura de mutación exhaustiva.",
+  "planned": 4,
+  "killed": 4,
+  "scope": "Cuatro fallos dirigidos en código reutilizado y recetas, sin mutación exhaustiva.",
   "groups": [
     {
       "group": "regularization",
@@ -175,6 +175,71 @@
               "elapsed_s": 2.3202943860087544,
               "log_sha256": "e8c2ebdecc6c68bd31c948de0b0c1dd4c57dd47d093194a6c1d241c65727824d",
               "xml_sha256": "673f6c947b7434b8012035b0620b0b14816d1f0e908669d40f8ec3e7e13a02c9",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "readout",
+      "planned": 1,
+      "killed": 1,
+      "executed_recipes_sha256": "ef969c9611bd25bc371e33aaa016780d307920161cf59d0aa9cf6d308105a467",
+      "published_recipes_sha256": "3deb8c24ddeee26688c8f97e57878488fda2e78e3bdae8e67c6b262b3e3b673f",
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "summary_sha256": "dd1bae12197cd207f5a935bb76041354922b60fc11349d7a544889470e079032",
+      "cases": [
+        {
+          "id": "disable_readout_regularization",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/training/test_readout_regularization_profiles.py::test_readout_profile_reaches_its_optimizer_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 4.575710168108344,
+              "log_sha256": "bdc4a033a16622e249556c78c42b2f18fdbdb2bfa4c14d4977c44133effefef7",
+              "xml_sha256": "4ebc04e0c059fa80cc11b5455737659554516188b5bab431773a16b34a49e234",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/training/test_readout_regularization_profiles.py::test_readout_profile_reaches_its_optimizer_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 1,
+              "status": "finished",
+              "elapsed_s": 4.926205788971856,
+              "log_sha256": "8b6b2af6c4b4808189c2734761b8152ebdbcd394671a009c6d3bc610f717afa9",
+              "xml_sha256": "5b01a5df9b3805c4ebdf662b2c30bf2c51ed3463d82150eacdf6ad290ba2d111",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/training/test_readout_regularization_profiles.py::test_readout_profile_reaches_its_optimizer_without_updates[lr1e-4-0.001-path1]",
+              "returncode": 0,
+              "status": "finished",
+              "elapsed_s": 3.9247323779854923,
+              "log_sha256": "5059e8cab1917830313cc43d37cfdd4ecf17d2efd090c6732645c0ea98e41ff8",
+              "xml_sha256": "b0290f59b95c2c719e2b99eecd80b73f8a92c2f93639953b228179fd505335fb",
               "xml_counts": {
                 "total": 1,
                 "failure": 0,

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "verified_at": "2026-10-26T21:57:12.912900+00:00",
+  "verified_at": "2026-10-26T22:03:43.387945+00:00",
   "source_base_commit": "b94a43413e9e61c0dc958754a4a7663e14bd4b22",
   "sources_sha256": {
     "configs/titans/chronological-training-historical-masked.json": "4a56ec8d5c42c43885fbf4c4f4270750b2013bc784a4f98bb5664f9a416c76bf",
@@ -11,7 +11,12 @@
     "src/mars_titan/training/selection.py": "3d1fd15d6de2ea5e4a3a3510860cd341de9778b77f639d5b3e234475df99253a",
     "src/mars_titan/training/financial_run.py": "fb81df7d49ddc78e5638fe88e03d9153d713180ae6719a56d68145b6ec9b8d9f",
     "src/mars_titan/training/titans_walk_forward.py": "21297ba6616c78f0c5104f3bb3c8096dc6ef26658fc77f057a8aa539a20a7d51",
-    "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde"
+    "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+    "tests/training/test_readout_regularization_profiles.py": "71df70e7de9638c27b015027ac64e72c4ade92ce1ca392d34a77ba487aee0c8d",
+    "src/mars_titan/training/mars_titan_run.py": "6fab0212ad2c31c2d47aec4145478d166480a0ac967ef325a8782649bf1a508f",
+    "configs/titans/episodic-readout-historical-masked.json": "e628ac4a0b1561348cedea80e1f91f35ce6208416995d3fed2edcf468fac9acd",
+    "configs/titans/episodic-readout-weight-decay-1e-3.json": "5bfbe4afaffc0e94d063b00a2a1b1ff2fb1ce3eb8e677c7c7df28740fe14d3e1",
+    "configs/titans/episodic-readout-weight-decay-1e-2.json": "dc209e1136916d2661aa4a273b90a4005ccd3eb727d2de8a75d369f9b8d54430"
   },
   "historical_recipe_unchanged": true,
   "tests": {
@@ -37,12 +42,19 @@
       "error": 0,
       "skipped": 0,
       "xml_sha256": "7e77a3e3af99aab3f559b6faa66c2026639a4682049bd272db4410429cd59d8a"
+    },
+    "readout_profiles": {
+      "passed": 9,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "68a736bd34838b899ee916002190435d5ef37646192100a38975953eea463fb8"
     }
   },
-  "new_profile_tests": 12,
+  "new_profile_tests": 21,
   "mutations": {
-    "planned": 3,
-    "killed": 3,
+    "planned": 4,
+    "killed": 4,
     "optimizer_attempts": 0
   },
   "quality_scope": [
@@ -71,5 +83,8 @@
     "python": "3.12.14",
     "torch": "2.14.0+cu130",
     "workload": "cpu_contracts_without_optimizer_steps"
-  }
+  },
+  "readout_source_base_commit": "2335f4c421ed3c940c71bfd8dde229dcec8eb76d",
+  "historical_readout_recipe_unchanged": true,
+  "unique_passed_tests": 61
 }
