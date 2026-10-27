@@ -14,6 +14,10 @@ from mars_titan.models.titans.auxiliary_horizons import (
     auxiliary_errors,
 )
 from mars_titan.models.titans.regional_fusion import RegionalFusionConfig
+from mars_titan.models.titans.regional_variants import (
+    RegionAxisMixingConfig,
+    SharedWorkspaceConfig,
+)
 from mars_titan.training.search_cases import checked_predictor_changes
 
 CONFIG = AuxiliaryHorizons(horizons=(5, 20), weight=0.5, maturity_slack=2)
@@ -57,12 +61,26 @@ def test_declaration_travels_as_a_predictor_change_with_its_own_identity():
         replace(base.config, auxiliary_horizons=dict(horizons=[5, 20], weight=0.5))
     with pytest.raises(ValueError, match="AuxiliaryHorizons"):
         replace(base.config, auxiliary_horizons="auxiliary_horizons_v1")
+
+
+OPERATOR = RegionalFusionConfig(topology="ring")
+
+
+@pytest.mark.parametrize(
+    "regional",
+    [
+        dict(regional_fusion=OPERATOR),
+        dict(regional_variant=RegionAxisMixingConfig(OPERATOR)),
+        dict(regional_variant=SharedWorkspaceConfig(OPERATOR)),
+    ],
+)
+def test_operators_that_mix_rows_are_refused_because_tokens_are_recomputed_alone(regional):
+    base, batch = setup()
     with pytest.raises(ValueError, match="fusión regional"):
-        replace(
-            base.config,
-            auxiliary_horizons=CONFIG,
-            regional_fusion=RegionalFusionConfig(topology="ring"),
-        )
+        replace(base.config, auxiliary_horizons=CONFIG, **regional)
+    model = api().FinancialPredictor(replace(base.config, **regional), dtype=torch.float64)
+    with pytest.raises(ValueError, match="fila a fila"):
+        model.fused_tokens(batch.inputs, batch.presence)
 
 
 def test_heads_use_their_own_generator_and_leave_the_reference_untouched():
