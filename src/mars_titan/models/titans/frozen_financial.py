@@ -351,6 +351,9 @@ class FrozenFinancialConsumer:
             )
         if readout is not None and predictor.output_objective is not None:
             raise ValueError("El lector necesita una integración propia del objetivo de salida")
+        # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
+        if predictor.cross_asset_attention is not None:
+            raise ValueError("El consumidor congelado aún no registra la atención entre activos")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

@@ -40,6 +40,11 @@ from .config import (
     canonical,
     require_identity,
 )
+from .cross_asset_attention import (
+    CrossAssetAttention,
+    CrossAssetAttentionConfig,
+    parse_cross_asset_attention,
+)
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -155,6 +160,9 @@ class FinancialConfig:
     # cabeza de escala. Sin declararlas, la identidad y el cálculo no cambian.
     session_rank_inputs: str | None = None
     session_ic_objective: SessionICObjective | None = None
+    # C5 de #751: atención entre los activos de la misma sesión tras MAC. Sin declararla, la
+    # identidad y el cálculo no cambian.
+    cross_asset_attention: CrossAssetAttentionConfig | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -327,6 +335,9 @@ class FinancialConfig:
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
             )
         check_objectives(self)
+        object.__setattr__(
+            self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
+        )
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -409,6 +420,8 @@ class FinancialConfig:
         if self.session_rank_inputs is not None:
             result.update(session_rank_inputs=session_rank_identity())
         result.update(objective_identity(self))
+        if self.cross_asset_attention is not None:
+            result.update(cross_asset_attention=self.cross_asset_attention.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -623,6 +636,13 @@ class FinancialPredictor(nn.Module):
         )
         # Los objetivos de #749 se crean al final y sin el generador global.
         self.output_objective = build_objective(config, dtype=dtype)
+        self.cross_asset_attention = (
+            CrossAssetAttention(
+                config.hidden_size, config.cross_asset_attention, seed=config.seed, dtype=dtype
+            )
+            if config.cross_asset_attention is not None
+            else None
+        )
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
@@ -631,8 +651,10 @@ class FinancialPredictor(nn.Module):
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
         objective = self.output_objective
-        return self.config.session_rank_inputs is not None or (
-            objective is not None and objective.session_level
+        return (
+            self.config.session_rank_inputs is not None
+            or self.cross_asset_attention is not None
+            or (objective is not None and objective.session_level)
         )
 
     def _signature(self):
@@ -1309,6 +1331,9 @@ class FinancialPredictor(nn.Module):
                 )
             else:
                 encoded, next_mac = token, None
+            if self.cross_asset_attention is not None:
+                # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
+                encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
