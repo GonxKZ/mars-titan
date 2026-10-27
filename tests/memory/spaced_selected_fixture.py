@@ -35,6 +35,7 @@ def values(module):
 def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
     view = source["prefixes"]._manifest_paths[0]
     parent, anchor = root / "parent", root / "anchor"
+    window = source.get("window", dict(id="fixture_window"))
     core_document = dict(
         predictor=dict(hidden_size=hidden_size, dtype="float64"),
         recipe=dict(loss="pinball" if quantiles else "mae"),
@@ -48,7 +49,7 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
         view_sha256=sha256(view),
         recipe_sha256=digest(core_document),
         search_case=None,
-        window="fixture_window",
+        window=window["id"],
     )
     model = (
         FinancialPredictor(
@@ -95,9 +96,11 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
     parent_identity = dict(
         recipe=core_document,
         request=parent_request,
-        window=dict(id="fixture_window"),
+        window=window,
         indices=dict(train=source["spec"].view_sha256),
     )
+    if "phases" in source:
+        parent_identity["phases"] = source["phases"]
     parent_report = dict(
         schema_version=1,
         kind="titans_walk_forward_window",
@@ -125,7 +128,7 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
         loss="pinball" if quantiles else "mae",
         block_rows=4,
         neighbors=4,
-        bank_capacity=16,
+        bank_capacity=source.get("bank_capacity", 16),
         max_working_bytes=32 * 1024**2,
         precision=None,
     )
@@ -182,7 +185,7 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
         seed=42,
         search_case="lr1e-4",
         view_sha256=sha256(view),
-        window="fixture_window",
+        window=window["id"],
     )
     identity = dict(
         request=request,
@@ -190,8 +193,10 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
         fit_run_id=fit["run_id"],
         variant=variant.identity(),
         variant_sha256=variant.fingerprint(),
-        window=dict(id="fixture_window"),
+        window=window,
     )
+    if "phases" in source:
+        identity["phases"] = source["phases"]
     selected = dict(
         schema_version=1,
         kind="mars_titan_selected_state",

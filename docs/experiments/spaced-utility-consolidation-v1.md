@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. Quedan el controlador y la CLI del estudio, el productor regional y CUDA. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. El controlador y la CLI ejecutan un control por ventana y confirman sus fases. Quedan el productor regional, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -20,7 +20,7 @@ La calificación exige una media superior a `positive_gain_margin` y ganancias p
 
 Una nueva ganancia negativa puede retirar la calificación. La media no tiene decaimiento y puede conservar evidencia obsoleta cuando cambia el mercado. El margen cero y un día de separación son elecciones iniciales del núcleo técnico, no valores validados ni constantes de la neurociencia.
 
-La utilidad por supresión no es aditiva. Si dos episodios equivalentes permiten acertar indistintamente, quitar cualquiera de ellos puede dar ganancia cero y quitar ambos puede empeorar. Tampoco mide una contribución de Shapley ni una causa económica. La futura selección debe contrastarse con retención original, uniforme, reciente y utilidad aleatoria, a igual capacidad y calendario. No se ha implementado todavía esa comparación.
+La utilidad por supresión no es aditiva. Si dos episodios equivalentes permiten acertar indistintamente, quitar cualquiera de ellos puede dar ganancia cero y quitar ambos puede empeorar. Tampoco mide una contribución de Shapley ni una causa económica. El diagnóstico congelado permite contrastarla con retención original, uniforme, reciente y utilidad permutada, a igual capacidad y calendario. Esa comparación aún no se ha ejecutado con datos financieros.
 
 ## Orden temporal y estado
 
@@ -50,7 +50,7 @@ Antes de leer se comprueba el presupuesto conjunto mediante la cota del lector p
 
 ## Retención sobre el banco nativo
 
-`SpacedUtilityBank` utiliza `EpisodicMemory` causal v2 del enlace C++ existente. `propose` recibe registros maduros ya admitidos y un ledger publicado del mismo corte. Devuelve `SpacedRetentionProposal`, con un banco nuevo y su evidencia sincronizada. No modifica ninguno de los estados anteriores. La publicación conjunta corresponde al coordinador futuro, no a esta propuesta en memoria.
+`SpacedUtilityBank` utiliza `EpisodicMemory` causal v2 del enlace C++ existente. `propose` recibe registros maduros ya admitidos y un ledger publicado del mismo corte. Devuelve `SpacedRetentionProposal`, con un banco nuevo y su evidencia sincronizada. No modifica ninguno de los estados anteriores. La publicación conjunta corresponde a la sesión financiera descrita más abajo, no a esta propuesta en memoria.
 
 El primer encaje corresponde a M1. No sustituye los tres índices de M2/M3 ni cambia sus condiciones de admisión. Los consumidores actuales siguen rechazando configuraciones de retención que no admiten. No se presenta este backend como integración de E2 en todas las políticas.
 
@@ -162,7 +162,7 @@ PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_inference.py t
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-window-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-window-cost"
 ```
 
-El benchmark exige un destino nuevo y el mismo enlace nativo compatible. La orden mide fixtures sin aprendizaje y no sustituye la futura CLI del estudio.
+El benchmark exige un destino nuevo y el mismo enlace nativo compatible. La orden mide fixtures sin aprendizaje y solo cubre el adaptador de fases, sin el controlador completo.
 
 ## Carga de los parámetros elegidos
 
@@ -184,6 +184,48 @@ PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv r
 ```
 
 El benchmark requiere un destino nuevo. La prueba de integración con E2 necesita además el enlace nativo compatible. Estas órdenes solo comprueban artefactos técnicos y no levantan el bloqueo de aprendizaje.
+
+## Controlador del diagnóstico congelado
+
+`training.spaced_window.run_spaced_window` y `scripts/run_spaced_window.py` consumen una vista temporal, un lector seleccionado, el manifiesto original de datos y la [configuración independiente](../../configs/experiments/spaced-utility-study-v1.json). Esta declara `baseline`, `reservoir`, `utility`, `permuted_utility`, `uniform_frontier` y `recent`. Cada salida corresponde a una sola variante. Todas conservan los parámetros elegidos, las filas y las fases del padre. El diagnóstico modifica la retención sin reentrenar y no sustituye la comparación principal de aprendizaje. La memoria neuronal mantiene sus actualizaciones asociativas previstas. El término congelado se refiere a los parámetros compartidos, no a inmovilizar todos los estados.
+
+El controlador exige la misma vista e índice de entrada del modelo seleccionado. Comprueba que las fases originales coincidan y que la capacidad y semilla del banco sean las del lector. Fija hashes de configuración, fuentes, checkpoint e índices en `run.json`. La identidad indica la política realmente utilizada y si existe evidencia E2. `baseline` conserva `MarsTitanInference` y su reservorio, sin diagnósticos. El control `reservoir` añade los diagnósticos E2 con la misma retención original.
+
+Cada fase empieza con memoria rápida, banco y evidencia vacíos. Publica predicciones por muestra, un Parquet de MAE, MSE y RMSE por mercado e instante y, cuando corresponde, el ledger final de evidencia. Recalcula las métricas por sesión desde las filas y las coteja con las del consumidor. La media de activos precede a la agregación de sesiones. El ledger no es un checkpoint completo por evento y no contiene un banco desde el que continuar a mitad de fase.
+
+La confirmación de una fase es atómica mediante su registro en `run.json`. La reanudación verifica los checksums y no repite las fases confirmadas. Una fase interrumpida se vuelve a ejecutar desde el principio. Los fallos de preparación posteriores a adquirir una salida propia dejan estado, error y tiempo consumido. Las salidas ajenas y los archivos confirmados que hayan cambiado se rechazan. Los checksums no autentican la procedencia científica de esos artefactos.
+
+El presupuesto predeterminado admite 900 segundos acumulados y hasta un millón de filas por fase. Una fase demasiado grande rechaza la ventana completa, sin quitar observaciones. El tiempo incluye los intentos anteriores y la preparación del actual. La pausa es cooperativa entre bloques, no un límite duro que interrumpa cualquier operación en curso. Las tablas y sus comprobaciones permanecen en memoria dentro del límite de filas. No se declara procesamiento ilimitado del corpus.
+
+La CLI comprueba el bloqueo antes de leer fuentes o reservar recursos. Usa `cuda:0` por defecto y el controlador mantiene una reserva `GpuLease`. CPU requiere `--device cpu` explícito. El test final y la activación por defecto siguen cerrados. La ayuda y las pruebas técnicas se pueden comprobar con:
+
+```bash
+PYTHONPATH=src:. uv run --no-sync python scripts/run_spaced_window.py --help
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_study.py tests/memory/test_spaced_window.py tests/memory/test_spaced_selected.py tests/training/test_learning_hold_inventory.py tests/training/test_learning_hold_graph.py -q
+```
+
+La [verificación del controlador](../../reports/engineering/spaced-study-20261027/verification.json) registra 94 casos CPU aprobados sin omisiones, incluidos 43 de configuración, CLI y ventanas, 34 regresiones del cargador y 17 del bloqueo. Usa etiquetas manuales y checkpoints con pesos fijados, sin entrenamiento. La prueba de opciones CUDA utiliza un doble del controlador y no acredita una ejecución GPU. Las diez [mutaciones dirigidas](../../reports/engineering/spaced-study-20261027/mutations.json) se detectan con controles verdes antes y después. Comprueban activación indebida, pérdida del baseline, omisión de guardas, presupuesto, repetición de fases, checksums y esquema de recuperación.
+
+La [cobertura y el CRAP](../../reports/engineering/spaced-study-20261027/quality.json) abarcan los tres módulos nuevos, con 238/241 sentencias y 43/46 ramas recorridas. Coverage.py 7.16.1 mide los recorridos y Radon 6.0.1 la complejidad. El CRAP máximo es 27. Las cifras no cubren todos los predicados ni prueban la ausencia de errores. La ruta CUDA y la evaluación científica permanecen pendientes.
+
+La [medida del controlador completo](../../reports/engineering/spaced-study-20261027/cost.json) recorre 48 ventanas de fixtures, con seis controles, dos tamaños, un calentamiento y tres muestras medidas por control y tamaño. Usa CPU FP64 y dos hilos. Cada ventana de 64 activos emite 384 filas y la de 256 emite 1.536. Incluye carga del estado seleccionado, fuentes, las tres fases, auditorías y escrituras de predicciones, métricas y evidencia. Las exclusiones de preparación del fixture y firmas posteriores se refieren al tiempo por ventana. El tiempo total del proceso sí las incluye.
+
+| Configuración | 64 activos, mediana en segundos | 256 activos, mediana en segundos |
+| --- | ---: | ---: |
+| `baseline` | 10,810 | 43,058 |
+| `reservoir` | 10,551 | 42,755 |
+| `utility` | 11,119 | 43,108 |
+| `permuted_utility` | 11,090 | 42,917 |
+| `uniform_frontier` | 11,282 | 42,956 |
+| `recent` | 10,667 | 42,676 |
+
+Los ocho pares de referencia y reservorio E2 conservan exactamente las predicciones. Los seis controles mantienen las mismas filas en cada ronda. El recibo conserva todas las muestras, incluida una de `utility` con 256 activos de 55,313 segundos. Tres muestras no permiten caracterizar colas de latencia. Las diferencias pequeñas de mediana no acreditan una aceleración.
+
+El proceso completo tarda 24 min y 34,97 s y alcanza 1.025.028 KiB de RSS, sin atribuir un incremento a cada variante. Los precios del fixture usan grupos Parquet de tres filas, propios de las pruebas de integridad, aunque las anchuras de noticias y gráficos son 384 y 512. Esta disposición no representa la del corpus real. No se midieron energía, CUDA ni transferencias GPU. No hubo pasos de optimizador y se mantuvieron las aplicaciones ajenas y el perfil de energía. Para repetir la medida se necesita un destino nuevo y el enlace nativo compatible:
+
+```bash
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-study-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-study-cost"
+```
 
 ## Fuentes y alcance
 
@@ -234,4 +276,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, el controlador y la CLI del estudio por ventanas y la evaluación autorizada. El registro, el productor estándar, el selector nativo, el cargador y el adaptador no habilitan entrenamientos, no cambian el baseline y no abren el test final.
+Quedan pendientes el productor de supresiones regional, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.

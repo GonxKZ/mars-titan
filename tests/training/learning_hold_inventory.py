@@ -61,6 +61,18 @@ GUARDS = {
             "test_public_evaluation_checks_hold_before_reading_source",
         ),
     ),
+    "mars_titan.training.spaced_window:run_spaced_window": (
+        node(
+            "memory/test_spaced_study.py",
+            "test_window_guard_precedes_every_input_read_and_output_creation",
+        ),
+    ),
+    "scripts.run_spaced_window:main": (
+        node(
+            "memory/test_spaced_study.py",
+            "test_cli_guard_precedes_every_input_read_and_gpu_reservation",
+        ),
+    ),
     "mars_titan.evaluation.lesion_curves:analyze_lesion_run": (
         node("evaluation/test_lesion_curves.py", "test_hold_precedes_all_report_io_and_output"),
     ),
