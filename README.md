@@ -206,6 +206,8 @@ La [memoria por áreas B1](docs/experiments/redundant-area-memory-v1.md) añade 
 
 [B4](docs/experiments/lesion-protocol-v1.md) conecta las lesiones de lectura con la sesión y la ventana y guarda los pronósticos hasta que madure el resultado. Las consultas diagnósticas conservan la trayectoria original, incluidos los pesos de E1. Tiene configuración independiente y órdenes protegidas para ejecutar ventanas existentes y analizar MAE y Rank IC por sesión con bloques temporales. La recuperación, la salida por muestra y el análisis están comprobados con fixtures CPU. Hay costes del núcleo y del paso de sesión completo en CPU con fixtures compactos de 64, 256 y 1.024 activos. Faltan las comprobaciones CUDA, las medidas con formas del corpus real y las curvas científicas.
 
+El [ensayo de firmas de archivo](docs/engineering/prefix-path-checks.md) conserva la referencia: el candidato fue más rápido en el microbenchmark, pero la sesión con diagnósticos no superó el margen de coste fijado antes de medir.
+
 | Antes del lanzamiento de la campaña A v2 | Estado | Tarea |
 | --- | --- | --- |
 | Completar la codificación y verificar la edición con los 5.676 candidatos | Hecho el 9 de octubre con la v3 y repetido el 11 de octubre con la v3.1 ([recibo](reports/data/edition-v3-1-verification-20261011.json)) | [#171](https://github.com/GonxKZ/mars-titan/issues/171), [#428](https://github.com/GonxKZ/mars-titan/issues/428) |

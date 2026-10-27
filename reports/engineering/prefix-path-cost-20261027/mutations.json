@@ -1,0 +1,65 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/training/test_prefix_path_signature.py",
+      "test_sha256": "9fb48e4ef0949679a4eed1325faef9c27829a203dda6b410a4326d25e2cfdaaa"
+    }
+  },
+  "sources": {
+    "subject": {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "sha256": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_ancestor_link",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/training/test_prefix_path_signature.py::test_an_ancestor_link_to_the_same_inode_is_not_hidden_by_a_cached_signature",
+      "anchor": "if stat.S_ISLNK(info.st_mode):",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "follow_final_target_link",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/training/test_prefix_path_signature.py::test_target_link_inserted_during_ancestor_check_is_rejected",
+      "anchor": "    info = os.lstat(name)\n",
+      "replacement": "    info = os.stat(name)\n",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "omit_ctime",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/training/test_prefix_path_signature.py::test_regular_file_keeps_all_five_attributes[False]",
+      "anchor": "info.st_mtime_ns, info.st_ctime_ns",
+      "replacement": "info.st_mtime_ns, info.st_mtime_ns",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "return_initial_metadata",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/training/test_prefix_path_signature.py::test_signature_reads_target_changes_after_checking_ancestors",
+      "anchor": "def _signature(path):\n    name = os.fspath(path)\n    current = name\n    while True:\n        info = os.lstat(current)\n        if stat.S_ISLNK(info.st_mode):\n            raise ValueError(\"La fuente del prefijo incluye un enlace\")\n        parent = os.path.dirname(current) or os.curdir\n        if parent == current:\n            break\n        current = parent\n    # El objetivo se relee al final para no devolver una firma anterior a la\n    # comprobación de padres. lstat tampoco sigue un enlace insertado entre ambas.\n    info = os.lstat(name)\n    if not stat.S_ISREG(info.st_mode):\n        raise ValueError(\"La fuente del prefijo no es un archivo regular\")\n    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns\n",
+      "replacement": "def _signature(path):\n    name = os.fspath(path)\n    initial = os.lstat(name)\n    current = name\n    while True:\n        info = os.lstat(current)\n        if stat.S_ISLNK(info.st_mode):\n            raise ValueError(\"La fuente del prefijo incluye un enlace\")\n        parent = os.path.dirname(current) or os.curdir\n        if parent == current:\n            break\n        current = parent\n    # El objetivo se relee al final para no devolver una firma anterior a la\n    # comprobación de padres. lstat tampoco sigue un enlace insertado entre ambas.\n    info = initial\n    if not stat.S_ISREG(info.st_mode):\n        raise ValueError(\"La fuente del prefijo no es un archivo regular\")\n    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns\n",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ]
+}
