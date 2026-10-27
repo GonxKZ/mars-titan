@@ -4,7 +4,7 @@
 
 ## Qué audita
 
-Las etapas de salida y las calibraciones en línea leen etiquetas que maduran con el tiempo: la volatilidad pasada de A2, PT2 ([#454](https://github.com/GonxKZ/mars-titan/issues/454)) y su recalibración periódica, y las variantes A3 y G1 cuando se fusionen. Cada una tiene sus propias pruebas de causalidad en un corte. Esta auditoría aplica la misma comprobación a cualquier etapa y en todos los cortes declarados, con un recibo común.
+Las etapas de salida y las calibraciones en línea leen etiquetas que maduran con el tiempo: la volatilidad pasada de A2, PT2 ([#454](https://github.com/GonxKZ/mars-titan/issues/454)) y su recalibración periódica, y A3 cuando se fusione ([#766](https://github.com/GonxKZ/mars-titan/pull/766)). El programa de salida de G1 no lee objetivos después de G, así que no tiene etiquetas que auditar. Cada una tiene sus propias pruebas de causalidad en un corte. Esta auditoría aplica la misma comprobación a cualquier etapa y en todos los cortes declarados, con un recibo común.
 
 Un registro es una tabla de eventos con columnas alineadas. Cada evento tiene su instante de emisión (`issued_at`), su disponibilidad (`available_at`) y sus valores, como el objetivo residual. Siguiendo [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) (Fowler, 2005), lo que una etapa emite en t debe poder reconstruirse con los eventos disponibles en t. En términos de [W3C PROV-DM](https://www.w3.org/TR/prov-dm/) (Moreau y Missier, 2013), cada emisión solo puede derivarse de entidades que ya existían cuando se generó.
 
