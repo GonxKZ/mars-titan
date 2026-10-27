@@ -469,3 +469,80 @@ def test_evidence_and_recovery_do_not_consume_torch_randomness():
     run.publish()
     assert torch.equal(before, torch.get_rng_state())
     assert not torch.cuda.is_initialized()
+
+
+def test_usage_counts_pending_rows_and_references_without_resolving_them():
+    run = ledger()
+    assert run.usage() == dict(episodes=0, pending_sessions=0, pending_rows=0, references=0)
+    issue(run, 10, [row(), row("US/B", deleted=())])
+    assert run.usage() == dict(episodes=1, pending_sessions=1, pending_rows=2, references=1)
+    assert run.scores()[1]["mean_gain"] is None
+
+
+def test_published_registry_can_follow_retention_without_reissuing_predictions():
+    run = ledger()
+    issue(run, 10, [row(), row("US/B")])
+    run.begin(11)
+    run.receive([("US/A", 10, 11, 0.0)])
+    run.publish()
+    run.synchronize(snapshot(11, ids=(2,)))
+    assert set(run.scores()) == {2}
+    assert run.usage()["pending_rows"] == 2
+    run.begin(12)
+    run.receive([("US/B", 10, 12, 0.0)])
+    receipt = run.publish()[0]
+    assert receipt["gains"][1]["mean"] == 1.0
+    assert run.scores()[2]["mean_gain"] is None
+    assert set(run.scores()) == {2}
+
+
+def test_registry_synchronization_requires_a_published_matching_cut_and_codec():
+    run = ledger()
+    with pytest.raises(ValueError):
+        run.synchronize(snapshot(10))
+    issue(run, 10, [row()])
+    state = run.export()
+    for invalid in (snapshot(11), snapshot(10, codec="c" * 64)):
+        with pytest.raises(ValueError):
+            run.synchronize(invalid)
+        assert run.export() == state
+    run.begin(11)
+    with pytest.raises(ValueError):
+        run.synchronize(snapshot(11))
+
+
+def test_registry_budget_fails_before_snapshot_copy(monkeypatch):
+    run = ledger(capacity=1)
+    run.begin(10)
+    run.publish()
+    data = snapshot(10, ids=(1, 2))
+    monkeypatch.setattr(
+        EpisodeSnapshot, "export_cpu", lambda *a: pytest.fail("Copia fuera de capacidad")
+    )
+    with pytest.raises(ValueError):
+        run.synchronize(data)
+
+
+def test_synchronized_registry_recovers_without_consuming_pending_results():
+    from mars_titan.memory.spaced_utility import SpacedUtilityLedger
+
+    run = ledger()
+    issue(run, 10, [row()])
+    run.synchronize(snapshot(10, ids=(1, 2)))
+    restored = SpacedUtilityLedger.restore(CODEC, run.config, run.export())
+    assert restored.usage() == run.usage()
+    assert restored.export() == run.export()
+
+
+def test_scoped_evidence_cannot_be_restored_as_another_stream_or_as_legacy():
+    from mars_titan.memory.spaced_utility import SpacedUtilityLedger
+
+    run = SpacedUtilityLedger(CODEC, scope_id="b" * 64)
+    issue(run, 10, [row()])
+    state = run.export()
+    assert state["identity"]["scope_id"] == "b" * 64
+    restored = SpacedUtilityLedger.restore(CODEC, run.config, state, scope_id="b" * 64)
+    assert restored.export() == state
+    for scope in (None, "c" * 64):
+        with pytest.raises(ValueError):
+            SpacedUtilityLedger.restore(CODEC, run.config, state, scope_id=scope)

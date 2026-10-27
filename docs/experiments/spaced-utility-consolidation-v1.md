@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger` y el productor de supresiones del lector estándar K1 están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos y calculan evidencia por episodio cuando madura el resultado. Todavía no deciden qué episodios conserva el banco ni están conectados a la sesión financiera. E2 sigue parcialmente implementada y no cambia las predicciones de las referencias por defecto.
+El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. Todavía no están conectados a la sesión financiera y su publicación durable. E2 sigue parcialmente implementada y no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -47,6 +47,51 @@ Cada lectura suprimida pasa por el refinador completo y la misma cabeza. Si solo
 Antes de leer se comprueba el presupuesto conjunto mediante la cota del lector para `1 + min(episodios, vecinos)` refinamientos. Es conservadora porque algunas estructuras se reutilizan. El cálculo mantiene el orden de selección y acota las supresiones a los ocho vecinos admitidos por el lector. Se rechazan cabezas con otra precisión o dispositivo y autocast sin un contraste independiente. No se cambia la política numérica global para obtener cifras más rápidas.
 
 `SpacedUtilityDiagnostics` conserva flujos, corte, huella del snapshot, IDs y puntos. `ledger_rows` exige maduraciones previstas alineadas por flujo antes de transferir los tensores. Convierte IDs y puntos por bloques a CPU y comprueba finitud e identidades sin construir una segunda copia normalizada de todas las filas. El registro mantiene su validación independiente al recibirlas. No introduce resultados financieros. Su huella identifica el snapshot declarado, sin autenticar al productor. La verificación fuerte de bytes corresponde a la frontera de publicación y recuperación de la instantánea, como en el lector anterior. Las comprobaciones rápidas por consulta no prometen detectar una modificación externa mediante `.data` después de esa frontera.
+
+## Retención sobre el banco nativo
+
+`SpacedUtilityBank` utiliza `EpisodicMemory` causal v2 del enlace C++ existente. `propose` recibe registros maduros ya admitidos y un ledger publicado del mismo corte. Devuelve `SpacedRetentionProposal`, con un banco nuevo y su evidencia sincronizada. No modifica ninguno de los estados anteriores. La publicación conjunta corresponde al coordinador futuro, no a esta propuesta en memoria.
+
+El primer encaje corresponde a M1. No sustituye los tres índices de M2/M3 ni cambia sus condiciones de admisión. Los consumidores actuales siguen rechazando configuraciones de retención que no admiten. No se presenta este backend como integración de E2 en todas las políticas.
+
+Cada banco exige codec, predictor, mundo, partición y ventana. Su huella incluye configuración, fuentes, NumPy y versión y bytes del enlace nativo. El ledger asociado lleva `scope_id` igual a esa huella. Se rechazan evidencias de otro modelo, política o ventana antes de consultar sus datos. El modo sin ámbito conserva el formato anterior del ledger y no se acepta como evidencia de este banco. `usage` permite adelantar el presupuesto de copias y `synchronize` sigue los IDs retenidos sin puntuar nuevos episodios ni resolver las colas pendientes.
+
+Los modos son:
+
+- `utility`: reserva los últimos `min(frontier, nuevos)` IDs y protege el resto de plazas con episodios antiguos calificados, por ganancia media descendente y después ID. Completa por recencia de admisión.
+- `permuted_utility`: aplica la misma regla y reserva, pero permuta la asignación de las estadísticas entre los IDs antiguos con un PCG64 propio. No reescribe la evidencia real ni las etiquetas. Conserva la distribución de utilidades usada por ese control.
+- `uniform_frontier`: conserva la misma reserva y sortea sin reemplazo el resto entre los candidatos actuales. Es una selección condicional al conjunto disponible, no una muestra uniforme de todo el stream histórico.
+- `recent`: conserva los mayores IDs de admisión, con la misma reserva.
+- `reservoir`: conserva el reservorio nativo original, sin imponer la reserva. Es un control interpretativo. La comparación con las otras políticas cambia también esa condición y debe distinguirse del contraste con utilidad permutada.
+
+Los representantes son registros reales del banco previo o del lote entrante. Se preservan sus valores y etiquetas. La validación nativa normaliza las claves y la escritura recibe los originales para evitar normalizar una clave ya normalizada. No se invoca k-median ni se calcula un objetivo geométrico para atribuir utilidad predictiva.
+
+El snapshot del banco conserva identidad, archivo nativo, RNG del control, recibo y checksum. La recuperación comprueba esquema, tipos, cursores, pertenencia, reserva, ranking y presupuesto antes de aceptar el estado. Después debe conciliarse con el ledger recuperado mediante `validate_evidence`. El checksum no autentica la historia ni demuestra que las ganancias registradas sean verdaderas. La procedencia de la predicción emitida y la publicación atómica de los dos estados siguen siendo requisitos de la integración financiera.
+
+La estimación de trabajo incluye copias nativas, exportación del ledger, filas y referencias pendientes. Se contrasta con el límite configurado antes de copiar. Es conservadora y no certifica un pico exacto del asignador de Python. No se forma una matriz de distancias N por N. El coste de ordenar utilidades y convertir estados debe contarse, junto con la recuperación y la continuación.
+
+La [verificación del banco](../../reports/engineering/spaced-retention-20261027/verification.json) y su [benchmark](../../reports/engineering/spaced-retention-20261027/cost.json) utilizan el enlace nativo real, con fixtures y sin aprendizaje. El script permite repetir las quince combinaciones de capacidad 64/256/1.024 y las cinco políticas:
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_retention.py tests/memory/test_spaced_utility.py tests/memory/test_spaced_utility_readout.py tests/memory/test_retention_bank.py -m 'not cuda' -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-retention-20261027/cost_probe.py /tmp/mars-titan-e2-retention-cost.json
+```
+
+Ambas órdenes requieren `MARS_TITAN_EPISODIC_NATIVE` con la ruta del enlace compilado compatible. No compilan ni descargan un binario. El benchmark incluye propuesta, snapshot, recuperación, conciliación y dos continuaciones emparejadas. Excluye predictor, almacenamiento durable y GPU. No es una comparación de velocidad con el `RetentionBank` que además calcula una distorsión geométrica.
+
+La batería del banco aprueba 232 casos CPU, incluidos 34 de retención E2, 57 del registro, 60 del productor y 81 de retención histórica. Excluye los dos casos CUDA del productor. Las ocho mutaciones dirigidas finales se detectan con referencias verdes antes y después. La comprobación de cuatro módulos registra 566/567 sentencias y 91/92 ramas, con CRAP máximo 19. Una primera prueba de ámbitos solo comprobaba el rechazo final, que también hacía la recuperación. Se amplió para exigir el rechazo antes de consultar la evidencia ajena. La paridad del ledger sin ámbito conserva cinco payloads completos frente a `f2a6265da`, incluida una recuperación con etiquetas parciales. Ninguna cifra se suma a las baterías anteriores.
+
+La medida usa dos hilos, un calentamiento y cinco repeticiones por caso. Cada ciclo incluye una propuesta, la recuperación y dos continuaciones, comparadas entre sí. Conserva una cohorte pendiente con una referencia por episodio repartida entre filas de hasta 64 supresiones literales. Los datos son fixtures y no proceden del corpus financiero.
+
+| Política | 64 plazas, mediana en ms | 256 plazas, mediana en ms | 1.024 plazas, mediana en ms |
+| --- | --- | --- | --- |
+| Utilidad | 12,991 | 33,367 | 104,284 |
+| Utilidad permutada | 13,122 | 35,632 | 106,366 |
+| Uniforme con reserva | 12,970 | 31,086 | 89,642 |
+| Recencia | 12,026 | 31,520 | 108,293 |
+| Reservorio | 12,466 | 30,317 | 89,526 |
+
+El proceso completo tarda 13,03 segundos y su pico RSS externo absoluto es 738.416 KiB. El mayor pico Python medido en pasadas separadas es 6.953.963 bytes y excluye asignaciones nativas. El payload lógico con 1.024 plazas ronda los 779–801 kB y no incluye el framing del almacenamiento. No se midió energía. Las diferencias de tiempo entre políticas en estos fixtures no son un criterio para elegir la de menor error predictivo.
 
 ## Fuentes y alcance
 
@@ -97,4 +142,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, su persistencia en el bundle, el selector con sus controles, la conexión con sesión y ventana y su evaluación autorizada. El núcleo y el productor estándar no habilitan entrenamientos, no cambian el baseline y no abren el test final.
+Quedan pendientes el productor de supresiones regional, la persistencia conjunta en el bundle, la conexión con sesión y ventana y la evaluación autorizada. El registro, el productor estándar y el selector nativo no habilitan entrenamientos, no cambian el baseline y no abren el test final.

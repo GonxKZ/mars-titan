@@ -1,0 +1,19 @@
+{
+  "reference_commit": "f2a6265da448857df2ac45811017487877b2f91c",
+  "reference_ledger_sha256": "12666ef980f905a4bb4114de2056131f961c8f9b4f957b78a867fc83191fb527",
+  "reference_state_sha256": "eabf2f1fe959bde36442a9d142b8b873aa45cee2504a530874bcf3c76a3b27d8",
+  "default_scope": null,
+  "checkpoints_compared": 5,
+  "full_payloads_equal": true,
+  "sha256": [
+    "3a900c5b3f2b437a7516d4f7482eac934d22f4f8f7c0a0a07370049e1db084bb",
+    "ef11fadcc266a438099d05e8e6b9ec1ea64897df694b11beb4b15a4ba63ca53d",
+    "762f909e10a6f2317491357cfe7e31db06186983c558e801dd5cdad391273ca7",
+    "762f909e10a6f2317491357cfe7e31db06186983c558e801dd5cdad391273ca7",
+    "5782e21bc2269b8ad2ef4a9bcfbfaa67fc7290be8277849c7de8225e97ba70e1"
+  ],
+  "limits": [
+    "Trayectoria técnica de emisión, etiqueta parcial, recuperación y actualización siguiente. No es recuperación de campañas completas.",
+    "El helper de recuperación histórico usa primitivas cuya igualdad AST se ha comprobado."
+  ]
+}

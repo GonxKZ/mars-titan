@@ -172,6 +172,15 @@ def _stat(maturity):
     )
 
 
+def _registry(previous, eligible):
+    result = {}
+    for episode, maturity in eligible.items():
+        score = previous.get(episode, _stat(maturity))
+        _require(score["maturity_at"] == maturity, "Un episodio E2 cambió de maduración")
+        result[episode] = score
+    return result
+
+
 def _updated(previous, gain, at, margin):
     result = dict(previous)
     count = previous["sessions"] + 1
@@ -198,9 +207,12 @@ def _updated(previous, gain, at, margin):
 class SpacedUtilityLedger:
     """Proponer un evento y publicar evidencia cuando se han resuelto sus sesiones completas."""
 
-    def __init__(self, codec_id, config=None):
+    def __init__(self, codec_id, config=None, *, scope_id=None):
         _digest_id(codec_id, "El codec E2")
+        if scope_id is not None:
+            _digest_id(scope_id, "El ámbito E2")
         self.codec_id = codec_id
+        self.scope_id = scope_id
         self.config = SpacedUtilityConfig() if config is None else config
         _require(type(self.config) is SpacedUtilityConfig, "La configuración E2 no es válida")
         self.clock, self._phase, self._snapshot = None, None, None
@@ -250,11 +262,7 @@ class SpacedUtilityLedger:
             key not in self._sessions and self.clock > self._last_issued.get(market, -1),
             "La sesión E2 ya se emitió",
         )
-        current = {}
-        for episode, maturity in eligible.items():
-            previous = self._episodes.get(episode, _stat(maturity))
-            _require(previous["maturity_at"] == maturity, "Un episodio E2 cambió de maduración")
-            current[episode] = previous
+        current = _registry(self._episodes, eligible)
         used = {i for row in normalized.values() for i in row["deleted_points"]}
         self._episodes, self._snapshot = current, identifier
         self._sessions[key] = dict(
@@ -269,6 +277,30 @@ class SpacedUtilityLedger:
         return sum(
             len(r["deleted_points"]) for c in self._sessions.values() for r in c["rows"].values()
         )
+
+    def usage(self):
+        """Contar las estructuras propias sin consultar etiquetas pendientes."""
+        return dict(
+            episodes=len(self._episodes),
+            pending_sessions=len(self._sessions),
+            pending_rows=sum(len(c["rows"]) for c in self._sessions.values()),
+            references=self._references(),
+        )
+
+    def synchronize(self, snapshot):
+        """Seguir una retención publicada sin inventar evidencia ni resolver pendientes."""
+        _require(
+            self._phase is None
+            and self.clock is not None
+            and type(snapshot) is EpisodeSnapshot
+            and snapshot.codec_id == self.codec_id
+            and snapshot.cutoff == self.clock
+            and snapshot.count <= self.config.capacity,
+            "La sincronización E2 necesita una instantánea publicada del mismo corte y capacidad",
+        )
+        tensors = snapshot.export_cpu()["tensors"]
+        eligible = dict(zip(tensors["ids"].tolist(), tensors["maturity_at"].tolist(), strict=True))
+        self._episodes = _registry(self._episodes, eligible)
 
     def _pending_row(self, flow, decision):
         market = _flow(flow)
@@ -398,9 +430,12 @@ class SpacedUtilityLedger:
 
     def export(self):
         _require(self._phase is None, "E2 solo guarda estados publicados")
+        identity = dict(codec_id=self.codec_id, config=self.config.identity())
+        if self.scope_id is not None:
+            identity["scope_id"] = self.scope_id
         state = dict(
             schema_version=1,
-            identity=dict(codec_id=self.codec_id, config=self.config.identity()),
+            identity=identity,
             clock=self.clock,
             issued=self.issued,
             resolved=self.resolved,
@@ -433,7 +468,7 @@ class SpacedUtilityLedger:
         return dict(state, sha256=hashlib.sha256(_canonical(state).encode()).hexdigest())
 
     @classmethod
-    def restore(cls, codec_id, config, payload):
+    def restore(cls, codec_id, config, payload, *, scope_id=None):
         from .spaced_utility_state import restore
 
-        return restore(cls(codec_id, config), payload)
+        return restore(cls(codec_id, config, scope_id=scope_id), payload)

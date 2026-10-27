@@ -23,7 +23,10 @@ def _fields(value, expected, message):
 
 
 def _identity(value, run):
-    _fields(value, ("codec_id", "config"), "La identidad E2 no conserva sus campos")
+    fields = ("codec_id", "config") + (() if run.scope_id is None else ("scope_id",))
+    _fields(value, fields, "La identidad E2 no conserva sus campos")
+    if run.scope_id is not None:
+        _require(value["scope_id"] == run.scope_id, "La evidencia E2 pertenece a otro ámbito")
     expected = run.config.identity()
     _fields(value["config"], expected, "La configuración E2 no conserva sus campos")
     _require(
