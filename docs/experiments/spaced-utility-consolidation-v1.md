@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. El controlador y la CLI ejecutan un control por ventana y confirman sus fases. Quedan el productor regional, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta los componentes estándar con publicación durable en M1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. El controlador y la CLI ejecutan un control por ventana y confirman sus fases. Quedan la integración regional en esos consumidores, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -38,7 +38,7 @@ Las validaciones de emisión y publicación recorren las referencias pendientes 
 
 ## Productor del lector estándar K1
 
-`apply_spaced_utility_readout` consume `PreparedDecisions`, la cabeza del padre, el lector y su snapshot. Devuelve la predicción ordinaria y un diagnóstico opcional. Con `enabled=False` delega la ruta anterior, incluidas las opciones diferenciables y K = 2 o K = 4. La activación exige el lector estándar `bank`, K = 1, módulos en `eval` y ninguna diferenciación. Los lectores regionales y los refinamientos superiores necesitan productores propios y se rechazan explícitamente. No se modifica la identidad ni el checkpoint del modelo.
+`apply_spaced_utility_readout` consume `PreparedDecisions`, la cabeza del padre, el lector y su snapshot. Devuelve la predicción ordinaria y un diagnóstico opcional. Con `enabled=False` delega la ruta anterior, incluidas las opciones diferenciables y K = 2 o K = 4. La activación exige el lector estándar `bank`, K = 1, módulos en `eval` y ninguna diferenciación. Esta función rechaza lectores regionales y refinamientos superiores. El productor regional independiente se describe a continuación. No se modifica la identidad ni el checkpoint del modelo.
 
 El productor reutiliza claves, valores proyectados e IDs del soporte elegido. Hace una sola selección y una sola proyección de valores. Repite una proyección pequeña de la consulta para reconstruir los logits del soporte, evitando añadir una caché de logits a las rutas históricas. Para cada episodio enmascara su logit y calcula el softmax sobre los restantes. No utiliza la resta de contribuciones dividida por `1 - peso`, que puede fallar por cancelación o cuando el peso redondea a uno. Las pruebas incluyen ese caso saturado en FP32 y FP64.
 
@@ -47,6 +47,46 @@ Cada lectura suprimida pasa por el refinador completo y la misma cabeza. Si solo
 Antes de leer se comprueba el presupuesto conjunto mediante la cota del lector para `1 + min(episodios, vecinos)` refinamientos. Es conservadora porque algunas estructuras se reutilizan. El cálculo mantiene el orden de selección y acota las supresiones a los ocho vecinos admitidos por el lector. Se rechazan cabezas con otra precisión o dispositivo y autocast sin un contraste independiente. No se cambia la política numérica global para obtener cifras más rápidas.
 
 `SpacedUtilityDiagnostics` conserva flujos, corte, huella del snapshot, IDs y puntos. `ledger_rows` exige maduraciones previstas alineadas por flujo antes de transferir los tensores. Convierte IDs y puntos por bloques a CPU y comprueba finitud e identidades sin construir una segunda copia normalizada de todas las filas. El registro mantiene su validación independiente al recibirlas. No introduce resultados financieros. Su huella identifica el snapshot declarado, sin autenticar al productor. La verificación fuerte de bytes corresponde a la frontera de publicación y recuperación de la instantánea, como en el lector anterior. Las comprobaciones rápidas por consulta no prometen detectar una modificación externa mediante `.data` después de esa frontera.
+
+## Productor del lector regional K1
+
+`memory.spaced_regional_readout.apply_regional_spaced_utility_readout` mantiene la emisión original del lector regional y suprime cada episodio de todas sus vistas a la vez. Las regiones utilizan sus propios pesos sobre el mismo soporte de IDs. No se crean episodios adicionales ni otra historia persistente. Los tensores seleccionados y proyectados son buffers transitorios de cálculo.
+
+La predicción ordinaria utiliza `apply_episodic_readout` sin cambios. El diagnóstico reutiliza sus posiciones y grafos, sin otra búsqueda ni otra preparación MAC. Recalcula una consulta y una proyección de los valores seleccionados para compartirlas entre las supresiones. Con dos o más vecinos hay dos proyecciones del pool en total, una ordinaria y otra diagnóstica. El lector anterior no expone su pool, y esta decisión evita modificar sus fuentes e identidades canónicas. No se presenta como reutilización de una única proyección total.
+
+Para cada columna del soporte, se enmascara su logit en todas las regiones y se calcula de nuevo el softmax. No se divide por uno menos el peso original, que puede redondear a cero. Después se ejecutan la transformación regional, la comunicación y el refinador completo. Con un único episodio, su supresión genera lectura ausente y cero, conservando el sesgo y la entrada de presencia del refinador. Con banco vacío solo existe el punto original.
+
+El productor reutiliza las funciones originales de mezcla lineal, recurrencia J = 1, 2 o 4, parada adaptativa y jerarquía. Cada supresión aplica su propio criterio de parada, en vez de forzar el número de pasos de la lectura original. Suprimir evidencia no desactiva una región ni elimina una arista. Esas son otras intervenciones. La cota de trabajo y la cuota de actualizaciones se comprueban para el conjunto de `1 + vecinos` lecturas antes de empezar, sin renovar la cuota para cada diagnóstico. Todas parten del mismo estado de trabajo. No forman una cadena de refinamientos K = 9.
+
+La activación requiere `bank`, K = 1, evaluación, precisión común FP32 o FP64 y ausencia de autocast y diferenciación. La ruta apagada conserva las salidas y gradientes del lector anterior, incluidos K = 2 y K = 4. Los diagnósticos reutilizan `SpacedUtilityDiagnostics` y su contrato de emisión y maduración. Las tres fuentes canónicas del puente, recurrencia y jerarquía permanecen intactas, junto con las 34 fuentes del predictor base.
+
+La [verificación regional](../../reports/engineering/spaced-regional-20261027/verification.json) registra 365 pruebas CPU aprobadas sin omisiones, incluidas 142 del productor nuevo y 223 regresiones. La selección excluye 89 casos CUDA, tres de ellos nuevos y todavía pendientes. La referencia independiente filtra un snapshot pequeño por fila solo en pruebas y ejecuta el lector original completo. Comprueba el soporte sin relleno, todas las vistas, condiciones vacías, regiones inactivas, atención saturada, cuantiles, presupuestos, orden por activo, RNG y recuperación. Incluye pesos densos y consultas distintas para una y ocho regiones, además de los casos estructurados. Las pruebas con gradientes no ejecutan pasos de optimizador ni ajustan etiquetas.
+
+Las nueve [mutaciones dirigidas](../../reports/engineering/spaced-regional-20261027/mutations.json) se detectan con controles verdes antes y después. Incluyen suprimir solo en una región, omitir mensajes jerárquicos, forzar todos los pasos adaptativos, ignorar regiones inactivas, conservar lectura al retirar el último episodio, saltarse la cuota conjunta, repetir la búsqueda, admitir diferenciación activa y transponer los pesos receptores. El módulo nuevo cubre 79/79 sentencias y 14/14 ramas, con CRAP máximo 16 según [coverage.py 7.16.1 y Radon 6.0.1](../../reports/engineering/spaced-regional-20261027/quality.json). Los predicados compuestos no instrumentan cada condición como una rama y estas cifras no prueban calidad global.
+
+La [medida de coste](../../reports/engineering/spaced-regional-20261027/cost.json) conserva dos pasadas de ocho combinaciones de tamaño y lector, con dos calentamientos y diez muestras por modo. Cada pasada mantiene exactamente el punto original en sus 96 pares. Incluye lectura, cabeza, ocho supresiones, conversión de filas y JSON. La preparación MAC queda fuera del tiempo por llamada. Son fixtures CPU FP32 de dimensión 32, con anchuras 5/2/2/3/3 y evidencia de 64 coordenadas. No representan las formas del corpus completo.
+
+| Lector | Filas | Original, medianas de las pasadas 1 / 2 en ms | E2, medianas de las pasadas 1 / 2 en ms |
+| --- | ---: | ---: | ---: |
+| Anillo lineal | 64 | 1,157 / 3,493 | 4,330 / 14,490 |
+| Recurrencia J4 | 64 | 1,934 / 5,204 | 10,576 / 28,479 |
+| J4 con parada compacta | 64 | 2,893 / 7,020 | 18,280 / 44,175 |
+| Jerarquía de árbol | 64 | 2,661 / 7,529 | 17,018 / 46,522 |
+| Anillo lineal | 256 | 2,659 / 13,226 | 10,301 / 49,041 |
+| Recurrencia J4 | 256 | 4,400 / 11,616 | 23,530 / 62,485 |
+| J4 con parada compacta | 256 | 5,987 / 16,610 | 39,275 / 106,466 |
+| Jerarquía de árbol | 256 | 7,250 / 18,566 | 46,252 / 118,752 |
+
+Los procesos completos tardan 5,27 y 14,24 segundos y alcanzan 754.852 y 736.568 KiB de RSS absoluto. El productor conserva los mismos bytes. La segunda versión del script añade la creación de la carpeta de salida antes de escribir, fuera del tiempo por llamada. El recibo incluye un patch para reconstruir la primera versión. La variación afecta a ambos modos, no se midió una causa y no se atribuye a ese cambio ni al modelo. No se descarta ninguna pasada ni se presenta una latencia estable.
+
+El recibo conserva las muestras y las mediciones separadas de asignación Python. Excluye ledger, consolidación, persistencia durable, disco, CUDA y transferencias GPU. No mide energía ni una distribución fiable de p95/p99. El diagnóstico añade coste y no hay mejora predictiva medida.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_readout.py tests/memory/test_spaced_utility_readout.py tests/models/titans/test_evidence_bridge.py tests/models/titans/test_bridge_intervention.py tests/models/titans/test_bridge_recurrence.py tests/models/titans/test_bridge_hierarchy.py -m 'not cuda' -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-regional-cost.json"
+```
+
+La medida requiere un destino nuevo. El productor está disponible como API opcional, pero el enlace regional con `FinancialSession`, el cargador seleccionado y el estudio de ventanas sigue pendiente. Estos consumidores continúan rechazándolo. Esta comprobación técnica no levanta el bloqueo de aprendizaje ni abre el test final.
 
 ## Retención sobre el banco nativo
 
@@ -276,4 +316,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.
+Quedan pendientes la integración del productor regional en sesión y ventanas, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.

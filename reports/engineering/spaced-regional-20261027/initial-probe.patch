@@ -1,0 +1,10 @@
+--- a/reports/engineering/spaced-regional-20261027/cost_probe.py
++++ b/reports/engineering/spaced-regional-20261027/cost_probe.py
+@@ -188,7 +188,6 @@
+                 "No se miden energía, generalización financiera ni p95/p99 fiables.",
+             ],
+         )
+-        target.parent.mkdir(parents=True, exist_ok=True)
+         target.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+         print(
+             json.dumps(
