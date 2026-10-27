@@ -79,6 +79,7 @@ _CODE = (
     "mars_titan.training.search_cases",
     "mars_titan.training.titans_walk_forward",
     "mars_titan.training.financial_run",
+    "mars_titan.training.horizon_labels",
     "mars_titan.memory.financial_observations",
     "mars_titan.models.titans.financial",
     "mars_titan.models.titans.mac",
@@ -87,6 +88,8 @@ _CODE = (
     "mars_titan.models.titans.causal_convolution",
     "mars_titan.models.titans.key_competition",
     "mars_titan.models.titans.key_competition_config",
+    "mars_titan.models.titans.laplace_scale",
+    "mars_titan.models.titans.auxiliary_horizons",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
 )
@@ -551,7 +554,7 @@ def run_titans_window(
                 continue
             if stop.requested:
                 raise Paused
-            rows = PredictionRows(trainer.quantiles)
+            rows = PredictionRows(trainer.emits_levels)
             metrics = trainer.predict_partition(sources[name], rows, stop=stop)
             tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
@@ -742,7 +745,7 @@ def carry_titans(
     inference = ChronologicalInference(predictor, chronological)
     predictions = {}
     for name in partitions:
-        rows = PredictionRows(inference.quantiles)
+        rows = PredictionRows(inference.emits_levels)
         metrics = inference.predict(sources[name], rows, stop=stop)
         tables = checked_tables(rows, metrics, dataset, name)
         path = output / f"{name}-predictions.parquet"
