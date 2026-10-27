@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_at_utc": "2026-10-27T15:25:09.428296+00:00",
+  "recorded_at_utc": "2026-10-27T15:36:44.423161+00:00",
   "kind": "technical_regional_spaced_window_without_training",
   "base_commit": "8a054867fe19565bf18a7f0ca1fd75334f2a7e5f",
   "tests": {
@@ -63,7 +63,8 @@
     "tests/memory/test_spaced_regional_inference.py": "874c0fa4f36768c0326adacd66ca4c2320bcb873f8e9185ce20d44fdb73f3abc",
     "tests/memory/test_spaced_regional_selected.py": "184748d1b126ee1f79f088ce37b5b9682ef7064a292208ed214f787c79dee20f",
     "tests/memory/test_spaced_regional_study.py": "0f291f7474f1084f04a648c1780685abe2cbd5991e582628d751d8b20611e8ca",
-    "tests/memory/test_spaced_regional_window.py": "ce2f3e28e3646b2e8b86f06e3c905cbc6e8b6d066f635853ceb2f75476c3928d"
+    "tests/memory/test_spaced_regional_window.py": "ce2f3e28e3646b2e8b86f06e3c905cbc6e8b6d066f635853ceb2f75476c3928d",
+    "reports/engineering/spaced-regional-window-20261027/cost_probe.py": "9823ce0a2c1ce284c58280674daeb501d7dbf856b14d77f30d059d619d7db46c"
   },
   "preserved_canonical_sources": {
     "count": 34,
@@ -88,7 +89,7 @@
   "regional_phase_integrated": true,
   "regional_selected_loading_integrated": true,
   "regional_window_integrated": true,
-  "controller_cost_measured": false,
+  "controller_cost_measured": true,
   "limits": [
     "Contrato regional explícito. El valor por defecto sigue siendo estándar y las declaraciones tienen kind y esquema propios.",
     "Comparación de retención con parámetros seleccionados congelados. No sustituye entrenar cada variante.",
@@ -99,8 +100,15 @@
     "Las fuentes afectadas cambian el runtime. Las salidas anteriores requieren el código fijado para reanudarse.",
     "Dos casos CUDA nuevos siguen pendientes por ocupación ajena. No hay mejora predictiva medida."
   ],
+  "cost": {
+    "path": "cost.json",
+    "windows": 48,
+    "measured_windows": 36,
+    "paired_baseline_reservoir_checks": 8
+  },
   "artifacts": {
     "quality.json": "41527fed12da796ac25ac6597a6a1e370749d627edf9e665eb26d52ef311e3e4",
-    "mutations.json": "d4712ccd6ca3feffd46cb727802f96b59ab35dac01ee39c53fe5736c06e0d31e"
+    "mutations.json": "d4712ccd6ca3feffd46cb727802f96b59ab35dac01ee39c53fe5736c06e0d31e",
+    "cost.json": "d2069832d480c0261804d21edfb06774f4c0bc09db6b04dab257265a22a16748"
   }
 }

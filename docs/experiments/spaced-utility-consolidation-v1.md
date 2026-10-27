@@ -327,7 +327,24 @@ La pasada instrumentada tuvo un fallo de prueba por consultar el contador de `Pr
 PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_inference.py tests/memory/test_spaced_regional_selected.py tests/memory/test_spaced_regional_study.py tests/memory/test_spaced_regional_window.py tests/memory/test_spaced_inference.py tests/memory/test_spaced_selected.py tests/memory/test_spaced_study.py tests/memory/test_spaced_window.py tests/memory/test_spaced_regional_session.py tests/memory/test_spaced_session.py tests/training/test_learning_hold_inventory.py tests/training/test_learning_hold_graph.py -m 'not cuda' -q
 ```
 
-El coste del controlador regional aún está pendiente de ejecutar. No hay entrenamientos ni mejora predictiva medida. Los runtimes afectados tienen nuevas huellas de fuente y sus salidas previas requieren su código fijado para reanudarse.
+La [medida del controlador regional](../../reports/engineering/spaced-regional-window-20261027/cost.json) recorre 48 ventanas de fixtures de cuatro y 64 activos, con seis controles, un calentamiento y tres muestras medidas por control y tamaño. Cada ventana emite 24 o 384 filas, respectivamente. Los ocho pares de referencia y reservorio E2 conservan exactamente las predicciones. Se incluyen lectura de fuentes, carga seleccionada, tres fases, predicciones, métricas por sesión, evidencia y auditorías. Los parámetros y datos coinciden entre controles por sus identidades.
+
+| Configuración | 4 activos, mediana en segundos | 64 activos, mediana en segundos |
+| --- | ---: | ---: |
+| `baseline` | 1,156 | 11,420 |
+| `reservoir` | 1,245 | 11,935 |
+| `utility` | 1,268 | 11,713 |
+| `permuted_utility` | 1,426 | 11,896 |
+| `uniform_frontier` | 1,502 | 12,055 |
+| `recent` | 1,558 | 11,757 |
+
+El proceso completo tarda 5 min y 55,99 s y alcanza 841.520 KiB de RSS absoluto. Usa CPU FP64, dos hilos y el mismo enlace nativo. Los precios del fixture usan grupos Parquet de tres filas y las anchuras de noticias y gráficos son 384 y 512. No representa la disposición ni distribución del corpus real. El tiempo por ventana excluye preparar los fixtures y comparar sus firmas después de ejecutar, mientras que el total del proceso sí lo incluye. La conciliación posterior del informe comprueba archivos y vincula cada muestra con consumidor, vista, run_id y recibo. No se midieron energía, CUDA ni transferencias GPU.
+
+```bash
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-window-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-regional-window-cost"
+```
+
+La medida necesita un destino nuevo y limita el proceso a 600 segundos mediante comprobaciones cooperativas entre ventanas, sin truncar fases. No se descarta ninguna muestra. Tres muestras por caso no caracterizan latencias de cola y las diferencias no acreditan una aceleración. No hay entrenamientos ni mejora predictiva medida. Los runtimes afectados tienen nuevas huellas de fuente y sus salidas previas requieren su código fijado para reanudarse.
 
 ## Fuentes y alcance
 
