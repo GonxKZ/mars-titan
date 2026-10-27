@@ -53,3 +53,27 @@ Las [quince mutaciones dirigidas](../../reports/engineering/spaced-comparison-20
 La [cobertura y el CRAP](../../reports/engineering/spaced-comparison-20261027/quality.json) utilizan coverage.py 7.16.1 y Radon 6.0.1. Los cuatro módulos recorridos cubren 284/286 sentencias y 64/66 ramas, con CRAP máximo 44. La convención de CRAP usa cobertura de sentencias. Las condiciones booleanas compuestas no se instrumentan como todas sus combinaciones.
 
 Estas comprobaciones utilizan fixtures y no ejecutan entrenamientos ni evaluaciones financieras reales. La comparación científica y las comprobaciones CUDA de los modelos siguen pendientes.
+
+## Coste del recorrido completo
+
+La [medida técnica](../../reports/engineering/spaced-comparison-20261027/cost.json) ejecuta 24 análisis ordinarios, con seis calentamientos y dieciocho muestras medidas. Añade una ejecución perfilada de 256 IDs y cuantiles, fuera de las medianas. Usa informes manuales de 48 días por partición y seis controles. Replica IDs y conserva los valores originales del fixture. No representa la diversidad ni distribución de un universo bursátil real.
+
+La configuración estadística coincide con la propuesta: 2.000 réplicas, bloque de 16 días observados y sensibilidad a 8 y 32. Los Parquet usan grupos de 4.096 filas. El tamaño máximo de las sesiones US es de 64, 256 o 1.024 IDs. Las sesiones CN tienen un cuarto o tres cuartos de ese tamaño según el día del fixture. Cada análisis procesa el mismo número de filas en todos sus controles.
+
+| Máximo de IDs US por sesión | Filas procesadas entre los seis controles | Mediana escalar (s) | Mediana con cuantiles (s) |
+| --- | ---: | ---: | ---: |
+| 64 | 27.648 | 0,907 | 1,285 |
+| 256 | 110.592 | 0,997 | 1,404 |
+| 1.024 | 442.368 | 1,705 | 2,036 |
+
+El reloj por análisis incluye la comprobación de fixtures, metadatos, hashes, lectura, puntuación, remuestreo y publicación. Excluye crear los archivos de entrada y comparar las firmas después. Las repeticiones conservan exactamente los resúmenes y contrastes. El proceso completo tarda 3 min y 37,01 s y alcanza 978.228 KiB de RSS absoluto, incluida la preparación. Se ejecutó en CPU FP64 con dos hilos y una cota de memoria de 6 GiB. No se midieron GPU, transferencias ni energía. Tres muestras por caso no caracterizan p95 o p99.
+
+El perfil adicional registra 576 llamadas a `_session_scores` y 1.152 a `score_sessions`. Sus tiempos están instrumentados y quedan fuera de las medianas. Los tiempos acumulados de funciones anidadas no se suman como si fueran partes independientes. Estos contadores no demuestran por sí solos qué optimización reduciría el tiempo total.
+
+El [script](../../reports/engineering/spaced-comparison-20261027/cost_probe.py) crea sus propios informes manuales en un destino nuevo y rechaza pasos de optimizador. Mantiene la protección global de aprendizaje. No acepta fuentes financieras reales como argumento.
+
+```bash
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-comparison-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-comparison-cost"
+```
+
+La medida tiene un límite cooperativo de 600 segundos entre análisis. No hay una mejora predictiva medida ni un coste de entrenamiento que atribuir a estos resultados.

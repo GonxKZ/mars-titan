@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "kind": "technical_spaced_session_comparison_without_scientific_evaluation",
-  "recorded_at_utc": "2026-10-27T17:06:16.140302+00:00",
+  "recorded_at_utc": "2026-10-27T17:15:43.061894+00:00",
   "base_commit": "a481d0f5d9615d30942e627609cffad56444f89a",
   "tests": {
     "distinct_passed": 250,
@@ -63,7 +63,8 @@
     "tests/evaluation/spaced_run_fixture.py": "7236c40d382ddcbded8c9911e6cba0247287777fc3015a0b966a002d180a74ad",
     "tests/training/learning_hold_inventory.py": "113c132e45b522f649999f53410290e9a9a6194fafd5fe6b070d29d7ccf1006d",
     "configs/experiments/spaced-utility-comparison-v1.json": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581",
-    "configs/experiments/spaced-regional-utility-comparison-v1.json": "d2ae112089340d078c40e8689d92e6a49b626bae962e16782c9c9360812c6602"
+    "configs/experiments/spaced-regional-utility-comparison-v1.json": "d2ae112089340d078c40e8689d92e6a49b626bae962e16782c9c9360812c6602",
+    "reports/engineering/spaced-comparison-20261027/cost_probe.py": "7e70d160bca8496e2c294ed71fa1c5524324ec2a7d379e4d6ba615cbb037295c"
   },
   "preserved_sources": {
     "configs/experiments/spaced-utility-study-v1.json": "5c206b4f3c5bc87f562a2da0df927c2b21b51460ebfa67e2c4f13e826ae5a3ea",
@@ -82,7 +83,7 @@
   "final_test_access": false,
   "comparison_api_integrated": true,
   "analysis_declaration_integrated": true,
-  "cost_measured": false,
+  "cost_measured": true,
   "limits": [
     "Las pruebas manuales identifican sus datos e informes como fixtures. No son resultados de un entrenamiento.",
     "La integración ejecuta el runner real con sus seis controles y fuentes manuales, en los contratos estándar y regional.",
@@ -93,8 +94,16 @@
     "La comparación es de una ventana y semilla con parámetros ya seleccionados, no de una campaña multisemilla.",
     "El análisis científico y el test final permanecen cerrados. Las rutas CUDA de los modelos no se validan mediante estas pruebas CPU."
   ],
+  "cost": {
+    "path": "cost.json",
+    "ordinary_analyses": 24,
+    "profiled_analyses": 1,
+    "measured_samples": 18,
+    "warmups": 6
+  },
   "artifacts": {
     "quality.json": "1ff6185748382a471e916cf743afdeff9d513c5c674899c6b89fff1623e61c56",
-    "mutations.json": "8a81a7d48228d7fd65445066b799367d3347f215dd485f9ed375b65b84dc800f"
+    "mutations.json": "8a81a7d48228d7fd65445066b799367d3347f215dd485f9ed375b65b84dc800f",
+    "cost.json": "48937551919a6073b9a39ceae83d60a4b60b0b00fa0edda43ae2ae49cae56b17"
   }
 }
