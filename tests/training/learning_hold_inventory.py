@@ -37,6 +37,27 @@ _REGENERATION = node(
 )
 
 GUARDS = {
+    "scripts.run_window_variant:main": (
+        node(
+            "training/test_window_variant_cli.py",
+            "test_learning_hold_blocks_before_gpu_or_execution_and_is_not_modified",
+        ),
+    ),
+    "mars_titan.training.window_variant_run:run_window_variant": (
+        node(
+            "training/test_window_variants.py",
+            "test_learning_hold_precedes_manifest_cuda_and_output",
+        ),
+    ),
+    "scripts.run_lesion_window:main": (
+        node(
+            "memory/test_lesion_study.py",
+            "test_window_cli_checks_the_hold_before_reading_files_or_reserving_cuda",
+        ),
+    ),
+    "mars_titan.evaluation.lesion_curves:analyze_lesion_run": (
+        node("evaluation/test_lesion_curves.py", "test_hold_precedes_all_report_io_and_output"),
+    ),
     "mars_titan.training.mechanism_policy_fit:fit_policy": (
         node(
             "training/test_mechanism_policy_fit.py",

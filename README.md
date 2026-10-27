@@ -204,7 +204,7 @@ La [memoria por áreas B1](docs/experiments/redundant-area-memory-v1.md) añade 
 
 [E1](docs/experiments/multiscale-mature-mixture-v1.md) combina correctores con semividas de calendario distintas y pesos actualizados con sus errores emitidos maduros. Conserva los componentes de cada decisión hasta disponer de su etiqueta. Tiene controles uniformes y de una sola escala, recuperación y costes CPU medidos. La comparación predictiva y la interoperabilidad CUDA siguen pendientes.
 
-[B4](docs/experiments/lesion-protocol-v1.md) conecta las lesiones de lectura con la sesión y la ventana y guarda los pronósticos hasta que madure el resultado. Las consultas diagnósticas conservan la trayectoria original, incluidos los pesos de E1. La recuperación y la salida por muestra están comprobadas con fixtures CPU. Hay costes del núcleo de lectura. Faltan las comprobaciones CUDA, el coste de la integración completa, las curvas predictivas y su evaluación científica.
+[B4](docs/experiments/lesion-protocol-v1.md) conecta las lesiones de lectura con la sesión y la ventana y guarda los pronósticos hasta que madure el resultado. Las consultas diagnósticas conservan la trayectoria original, incluidos los pesos de E1. Tiene configuración independiente y órdenes protegidas para ejecutar ventanas existentes y analizar MAE y Rank IC por sesión con bloques temporales. La recuperación, la salida por muestra y el análisis están comprobados con fixtures CPU. Hay costes del núcleo de lectura. Faltan las comprobaciones CUDA, el coste de la integración completa y las curvas científicas reales.
 
 | Antes del lanzamiento de la campaña A v2 | Estado | Tarea |
 | --- | --- | --- |

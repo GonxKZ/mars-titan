@@ -2,7 +2,7 @@
 
 `lesion_protocol_v1` (B4 de [#750](https://github.com/GonxKZ/mars-titan/issues/750)) comprueba cuánto depende una predicción de las áreas y coordenadas del corrector maduro. La supresión solo afecta a lecturas diagnósticas. La trayectoria original conserva sus emisiones, sus escrituras y, cuando se usa E1, los componentes y pesos originales de la mezcla.
 
-Los helpers y el registro están conectados a la ventana y a la sesión nativa, con comprobaciones CPU sobre fixtures. Faltan la configuración y las órdenes de análisis de curvas, las comprobaciones CUDA y las ejecuciones científicas autorizadas. La integración técnica no demuestra que el predictor distribuya recuerdos útiles de forma resistente a lesiones.
+Los helpers y el registro están conectados a la ventana y a la sesión nativa, con comprobaciones CPU sobre fixtures. Hay configuración guardable y órdenes para ejecutar una ventana existente y analizar sus curvas por sesión. Faltan las comprobaciones CUDA, el coste de la integración completa y las ejecuciones científicas autorizadas. La integración técnica no demuestra que el predictor distribuya recuerdos útiles de forma resistente a lesiones.
 
 ## Intervención y controles
 
@@ -47,6 +47,32 @@ La [verificación de la integración](../../reports/engineering/lesion-integrati
 Cinco [mutaciones dirigidas](../../reports/engineering/lesion-integration-20261027/mutation-results.json) detectan omitir el núcleo en los diagnósticos, sustituir la emisión real, ignorar pendientes desalineados, aceptar otra predicción original y perder B4 al regenerar. Los controles pasan antes y después de cada mutación, sin intentos de pasos de optimizador. También se reprodujo y corrigió la apertura de entradas antes de comprobar fuentes incompatibles.
 
 La [calidad de los helpers](../../reports/engineering/lesion-integration-20261027/quality.json) cubre 322/336 sentencias y 124/138 ramas, con coverage.py 7.16.1 y Radon 6.0.1. La [cobertura de los dos módulos grandes del recorrido](../../reports/engineering/lesion-integration-20261027/quality-integration.json) se informa aparte: 938/1.260 sentencias y 285/500 ramas en la comprobación focalizada. No son una cobertura global del proyecto ni una validación CUDA. Falta medir el coste completo con la persistencia activada.
+
+## Configuración y análisis por sesión
+
+La [configuración B4](../../configs/experiments/lesion-protocol-v1.json) conserva las máscaras anteriores y sigue desactivada. Declara MAE por sesión como criterio del proyecto, Rank IC con al menos tres activos, confianza del 95 %, 2.000 réplicas y bloques temporales de 16 días observados, con sensibilidad a 8 y 32. La semilla del remuestreo es 20261027. No son valores optimizados sobre resultados de B4.
+
+La orden [run_lesion_window.py](../../scripts/run_lesion_window.py) reutiliza `run_correction_window`. Recibe `--view`, `--parent`, `--study`, `--arm`, `--lesions`, `--search-case`, `--seed` y `--output`. `--study` puede ser el [estudio B2](../../configs/experiments/area-query-bridge-v1.json), con la variante `bridge` y el caso de receta `eta5e-2`. La ruta de su receta se resuelve desde la raíz del repositorio. `--lesions` apunta a la configuración B4 y `--device` vale `cuda:0` por defecto. Conserva la reserva de GPU y la interrupción del runner existente. No hay otro entrenamiento del padre.
+
+Antes de ejecutar, guarda `lesion-study.json` con protocolo, análisis, variante, semilla, caso y huellas de las dos declaraciones y de la receta. La huella de la declaración de variantes corresponde a los bytes leídos para seleccionar sus componentes. Una reanudación debe conservarlo. No añade esa declaración retrospectivamente a una salida existente. La protección de aprendizaje se consulta antes de leer entradas, crear la salida o reservar CUDA.
+
+La orden [analyze_lesion_curves.py](../../scripts/analyze_lesion_curves.py) recibe `--report`, `--study`, `--partition` y `--output`. Admite `run.json` y `carry.json` completados, con las predicciones B4 del tramo indicado. Solo permite validación, calibración o evaluación anteriores a 2024. Verifica tamaño, huella, filas, tipos, columnas, identidad de máscaras y coincidencia de `lesion_intact` con `prediction`. Rechaza cambios de las fuentes durante el cálculo. Si existe la declaración anterior a la ventana, debe coincidir con el análisis solicitado. Si la API original no la guardó, informa su ausencia y no atribuye un preregistro a esa ejecución.
+
+El análisis ordena con DuckDB, dos hilos, 256 MiB de memoria interna y hasta 1 GiB de spill en disco junto al destino. Arrow reúne sesiones completas aunque crucen lotes o row groups. Admite hasta 8.192 filas por sesión y 50.000 sesiones. Conserva estadísticos por sesión en lugar de cargar todos los pronósticos en RAM. Estos límites no incluyen la memoria de Python, Arrow ni los estadísticos y no constituyen una medida del pico total. La huella de cohorte combina las huellas de las sesiones y sus grupos internos, con una convención distinta de la del panel completo de filas.
+
+La salida nueva contiene `curves.json` y `sessions.parquet`. Reutiliza `SessionScores` para MAE, MSE, RMSE, dirección con empates y abstenciones explícitos y Rank IC. Cada condición se compara con la intacta. Añade intacta y núcleo sin corrector frente a `residual_zero`. Las diferencias de MAE son variante menos control. La mejora relativa es positiva cuando baja el error y queda sin definir si el control tiene error cero. El remuestreo circular conserva juntas todas las sesiones y activos del mismo día. La corrección simultánea se aplica dentro de cada familia métrica, sin afirmar cobertura conjunta entre MAE y Rank IC. Un intervalo que incluye cero no demuestra equivalencia. Los cuantiles originales no se alteran ni se puntúan en este análisis.
+
+No se eligen máscaras ni arquitecturas con estas curvas. Una ventana y semilla no acreditan generalización entre semillas y el análisis no comprueba por sí solo la disponibilidad temporal de las entradas originales. El campo `seconds` mide el cálculo y la preparación de la salida después de verificar las entradas. No sustituye un benchmark completo de la canalización.
+
+Estas órdenes de ayuda y pruebas están comprobadas desde la raíz del repositorio:
+
+```bash
+PYTHONPATH=src:. uv run python scripts/run_lesion_window.py --help
+PYTHONPATH=src:. uv run python scripts/analyze_lesion_curves.py --help
+uv run pytest tests/memory/test_lesion_study.py tests/evaluation/test_lesion_curves.py
+```
+
+La [verificación de configuración y curvas](../../reports/engineering/lesion-curves-20261027/verification.json) registra 137 pruebas aprobadas sin omisiones, con fixtures y sin pasos de optimizador. Incluye una salida real de `CorrectionInference`, sesiones desordenadas y de distinto tamaño, bloques insuficientes, MAE base cero y recibos de regeneración. Detecta seis mutaciones dirigidas con referencias verdes antes y después. Los cuatro archivos nuevos cubren 253/264 sentencias y 50/62 ramas, con CRAP máximo 18 según coverage.py 7.16.1 y Radon 6.0.1. No es una mutación exhaustiva ni una cobertura global. No hay curvas científicas, mejora predictiva ni validación CUDA añadidas por estas pruebas.
 
 ## Antecedentes y alcance
 

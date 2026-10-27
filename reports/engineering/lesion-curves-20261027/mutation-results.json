@@ -1,0 +1,317 @@
+{
+  "planned": 6,
+  "killed": 6,
+  "groups": [
+    {
+      "group": "curves",
+      "killed": 4,
+      "planned": 4,
+      "cases": [
+        {
+          "id": "invert_loss_delta",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 2.320585209876299,
+              "log_sha256": "8a5d3f8c1b452931de963c4bdff9775f7404361fdf3f79b4d740fb5a4f7e6e92",
+              "xml_sha256": "53171aea7a00d66f2599ede461b30d43213a47178d6819e23949efad4dc45cb4",
+              "events_sha256": "5a760bfff9c884f756245c48335babc4215141f083783c31eb063c3ba80f3e50",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 2.670136926928535,
+              "log_sha256": "45ac3bf22be5b83a0ceb88bdb4c2c1da3c0d2ce50b737b2a3fa5f6af6f0e46c9",
+              "xml_sha256": "6d6f5666f975fe038a1acddd8ba67682c8b474b3fda1d5887267f7a889a3e3a4",
+              "events_sha256": "dc6477fc19854138823b85d63fbd1d05d061c7ef527df864d91ace401f7ca283",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 2.7215967001393437,
+              "log_sha256": "41c3b06b1f0237013bf2a2d9555cfc394501d11435eed1ea4fe0a018aef42c2e",
+              "xml_sha256": "44358469c31b6de9dba235232370e208ce91c3a5f4f77ea7d504a8632f308b3a",
+              "events_sha256": "5763ad015fb4244ab319eabc1ce002ce03846f1b16fe17aa2a76d96c97d67e11",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "ignore_intact_mismatch",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 2.5706807968672365,
+              "log_sha256": "06254aecdf245cc6f8784e134e36703bcc595ac0578b8c5f7f3591bcb399781b",
+              "xml_sha256": "7d1240f8d15357ab4c4fc3f285550041985c010e463080e0f92d51bb28cfc85b",
+              "events_sha256": "6d08d3e1592a4a7fc7d1f1a9c45d0a3a10aa35ff002b260d83e713714a71b809",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 2.3200320159085095,
+              "log_sha256": "77887809745a2bf7f30bb966868ca82028e14ba91b3c850b38e60a6be1982ad1",
+              "xml_sha256": "e55321e67233e38b50038c832d4a6fa7a1975113e0922916584580c69ad29465",
+              "events_sha256": "bbc777cb5ddbee29fc07a102eacdf0621c597a9123b6a85e552a3571d2517eab",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 2.2698243809863925,
+              "log_sha256": "866432d567eb30f716ad0380ad29e9453b6fd80645780de4fbe94565dc3eab20",
+              "xml_sha256": "5e406884602ab24d4be6d27db00bf358a7eb3e7a3b36039d939d86a521f7ac0c",
+              "events_sha256": "f59ec295538a96db0168b092b2fe3552fca0db200ff8129be8c4030e56e92a69",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "open_reserved_year",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 2.1194766389671713,
+              "log_sha256": "b4eb7be9000651a3e89c6a77e8b346d05d1d706d620aa6f8193e574a39b3ced1",
+              "xml_sha256": "f18890f083ddf6c50e6c40dcb6c8de65f4009a4a58cd3105d652030daad5194a",
+              "events_sha256": "404980b6bd6cf1298e1ea86603ace1a3dbbaaf4a66abe8f8e622064b0a2ddd74",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 2.6712057990953326,
+              "log_sha256": "0c741b5796cadc5a2af59073ca9bec7d005921c9c8b17ff2fdc6741b1095b14d",
+              "xml_sha256": "667ec63e9f1fbe7b2cfbb84217078d2515fde77232f4542770793ff20c8e3841",
+              "events_sha256": "4afb4bfbe8d3fdb1d8aace0f2f25e2843e682dd0ec153c1f64d6a279a0e9b8a2",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 2.4709038068540394,
+              "log_sha256": "71cecd4a03d26fc192e472bf26020cdc2172e564ac64a719b16960d8dffd73a1",
+              "xml_sha256": "0dc306a3221e8240fb6ea9fbb6021bdf34e6371755999961db3df58fe67d4d22",
+              "events_sha256": "77d6160f4c42f0b43a6df9e4554f88e5f217a7be273acf8cb83742462f446910",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "ignore_concurrent_source_change",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 2.6716875080019236,
+              "log_sha256": "6262dd4ae1e1610248aa7a1d90c86e6b7861110a1a434aeede186690d3652770",
+              "xml_sha256": "a7149fa99d78da30d7ed2dc199b572cff7ef59f3b670608390b702ffc32d5586",
+              "events_sha256": "bcea201aed727959bfe78621fba8c3e178a9513c6024739cb4587f54d58e0406",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 2.270420819055289,
+              "log_sha256": "8753b5b24c199f1deb9ec4ebabe4521b7af7701cf13795b201b74d9aac34d224",
+              "xml_sha256": "3f5950994d016c15cff51d297a7e12edd0b61aec0d6806a2e5e1bfaacaa91a2e",
+              "events_sha256": "c38748edb271b42039c166b3cb0430fdba4ede89662462d408147e0ce8fd46ce",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 2.220251842867583,
+              "log_sha256": "866432d567eb30f716ad0380ad29e9453b6fd80645780de4fbe94565dc3eab20",
+              "xml_sha256": "ad829d8dd7d631f080c5a7f0c6620a39f2e3b144eb402a2b29ac7b6bad828d48",
+              "events_sha256": "7db9a57ca5d935b5006df4ef16cfe2869c95eb8413f8c06604347c661f47bec9",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        }
+      ],
+      "summary_sha256": "1426a89a140d123c4dd950f58708829ce3d4b9cfdbc152950ddce892b99ee7cb",
+      "executor_sha256": "32ae0a692b4b37175f9cc94b3036d6ac5506b584dbee76ea6dd8d7523ff7cc5b",
+      "executed_recipes_sha256": "76c8593060a98466a52f3195441fdc57a4a4d900b34634346016ca6abb1169b8",
+      "published_recipes_sha256": "e02650b66ef2cd1dce2042368529672ad793506bbd367ed937df8b09c704c118"
+    },
+    {
+      "group": "declaration",
+      "killed": 2,
+      "planned": 2,
+      "cases": [
+        {
+          "id": "change_analysis_on_resume",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 3.373448650818318,
+              "log_sha256": "8707f6d4c96754710bf0a62f35c31285b102588e841b88c1f9f5d0aae715dadd",
+              "xml_sha256": "c1e93ec2acaa1abde95134779760d4445993f889942f7f7102c07fde610dba61",
+              "events_sha256": "8b7012360c881ff1047bcc092f2b743782d0e388ab2cbaa47397ca2f72f28dbc",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 3.422920446842909,
+              "log_sha256": "95782588ba6d6d8857977dde60ab5d55ecaffcdb2733f3fa291c67e946c83a3d",
+              "xml_sha256": "a400a551be49f383b0a2f1156108c1e323b2a0d8f32503259f30fc0bb2bb96d2",
+              "events_sha256": "f627262bc6331f95244e643715db8d205cd43f199ca593660323a57866872d90",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 3.172047244152054,
+              "log_sha256": "5beef0f5d302fb12666a7ce7ac1117654f854b8eed2924bb1a949e6a3bd31241",
+              "xml_sha256": "b017c1673e001ab8b998ec1eca773d8245b4661d16d3cd1791f7eeca4ddce55b",
+              "events_sha256": "9806002fd6d31411eec10b034ca0fcba5682c72f0beb532e731c55da337e19aa",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "hash_different_bytes_after_selection",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "returncode": 0,
+              "elapsed_s": 1.769623639062047,
+              "log_sha256": "3be6ffcaecf85b5bd3eef3693ab214b0e7c9eb4e36d117fcf1825652de5eb298",
+              "xml_sha256": "bd098a2ae814720c46f2aebbaf9ba5bfc5d5c6f9b0dd86354caca2f35ac90884",
+              "events_sha256": "80fa92d3d849ef990ad09e7d9e622786f9e405f1dd6d511d8bde2c9dd208cc20",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "M1",
+              "returncode": 1,
+              "elapsed_s": 1.8191176089458168,
+              "log_sha256": "3fd9dabd1a50645eec78e6a06a8b738ae36d3931f7ff71ff1759fb493566acd9",
+              "xml_sha256": "5a67321c0a9279e5413a37993a366642bd1a8f9e714cd166e6cce061edd39337",
+              "events_sha256": "5521873d3a75a609eaabea66829a1354d45a63895def09cd13209b9c28cbb570",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              }
+            },
+            {
+              "phase": "G2",
+              "returncode": 0,
+              "elapsed_s": 2.1703308229334652,
+              "log_sha256": "976ea3fe6dfa65b827ec05fc16bf49cec94d3fda3b2d6ad4719708e74a38b32d",
+              "xml_sha256": "aa3f5e1b63a5fc2bda55da205b170ee8288f903b26ad291a5543d50c69518af1",
+              "events_sha256": "d7a37d6fe63f647171f1c406bb129eb1149890be65bafc5fdc817ed98e4b3f3e",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              }
+            }
+          ]
+        }
+      ],
+      "summary_sha256": "26efeb36247bcaaf26b58be34f9bb68a24c3097c4a66080ad5a3a33fa783d412",
+      "executor_sha256": "32ae0a692b4b37175f9cc94b3036d6ac5506b584dbee76ea6dd8d7523ff7cc5b",
+      "executed_recipes_sha256": "65f7b084b8d6c74d71904a646812dbe4d15a1fda36f05dfadfb24f1fb5d8c986",
+      "published_recipes_sha256": "f7b4b5b508905d77273bab4f37e3be5d2ff6cfaeb960ca42edd940421e4faf13"
+    }
+  ],
+  "scope": "Seis mutaciones dirigidas con controles G1/M1/G2. No es mutación exhaustiva."
+}

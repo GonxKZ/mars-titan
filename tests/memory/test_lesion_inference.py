@@ -1,9 +1,12 @@
 """B4 emite diagnósticos junto al pronóstico original, sin cambiar su trayectoria."""
 
+import json
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 import torch
 from test_financial_session_associative import four_flow_source as four_flow_source
@@ -72,6 +75,58 @@ def test_later_targets_do_not_rewrite_earlier_lesion_predictions(four_flow_sourc
     for name in original.column_names:
         if name == "prediction" or name.startswith("lesion_"):
             assert original[name].to_pylist()[:12] == changed[name].to_pylist()[:12]
+
+
+def test_emitted_columns_reach_the_session_curve_analysis(four_flow_source, tmp_path, monkeypatch):
+    from mars_titan.data.storage import atomic_json, sha256
+    from mars_titan.evaluation import lesion_curves
+
+    inference = CorrectionInference(
+        core(four_flow_source), RECIPE, CASES[1], four_flow_source["codec"], lesions=PROTOCOL
+    )
+    rows = prediction_rows(inference)
+    metrics = inference._pass(SimpleNamespace(phase=PHASE), events(four_flow_source), rows=rows)
+    table = pa.concat_tables(rows.finish())
+    run = tmp_path / "fixture-run"
+    run.mkdir()
+    path = run / "evaluation-predictions.parquet"
+    pq.write_table(table, path, row_group_size=3)
+    report = run / "run.json"
+    atomic_json(
+        report,
+        dict(
+            schema_version=1,
+            kind="mars_titan_correction_window",
+            status="completed",
+            final_test_opened=False,
+            request=dict(lesions=PROTOCOL.identity(), seed=0),
+            predictions=dict(
+                evaluation=dict(
+                    path=path.name,
+                    sha256=sha256(path),
+                    rows=len(table),
+                    bytes=path.stat().st_size,
+                    metrics=metrics,
+                )
+            ),
+        ),
+    )
+    config = json.loads(
+        (
+            Path(__file__).resolve().parents[2] / "configs/experiments/lesion-protocol-v1.json"
+        ).read_text()
+    )
+    config["protocol"] = PROTOCOL.identity()
+    config["analysis"].update(replicates=10)
+    study = tmp_path / "fixture-study.json"
+    atomic_json(study, config)
+    monkeypatch.setattr(lesion_curves, "require_learning_allowed", lambda *_: None)
+    result = lesion_curves.analyze_lesion_run(
+        report, study, partition="evaluation", output=tmp_path / "curves", batch_size=3
+    )
+    assert result["rows"] == metrics["labels"] == 16
+    assert result["scores"]["intact"]["point"]["mae"] == pytest.approx(metrics["session_mae"])
+    assert result["source"]["configuration"] == inference.lesion_plan.identity()
 
 
 def test_protocol_identity_can_be_restored_without_accepting_changed_semantics():
