@@ -138,6 +138,21 @@ def test_observations_without_the_environment_layout_are_rejected(observation):
         rule.rule_policy(observation, 0)
 
 
+def test_the_rule_reads_the_observation_layout_of_the_environment():
+    # La regla repite el número de rasgos por activo sin importarlo de `environment.py`,
+    # porque ese archivo forma parte de la identidad de las ejecuciones de políticas y de las
+    # etapas de la campaña. Esta prueba falla si el entorno cambia el formato.
+    for assets in (1, 3, 8):
+        env = FinancialEnv(tape(np.zeros((3, assets))))
+        assert env.observation_space.shape == (rule.FEATURES_PER_ASSET * assets + 2,)
+    scores = np.zeros((3, 3))
+    scores[0, 1] = 0.02
+    observation, _ = FinancialEnv(tape(scores, missing=[(0, 2)])).reset(seed=42)
+    features = observation[:-2].reshape(3, rule.FEATURES_PER_ASSET)
+    assert features[1, rule.SCORE] > 0 and features[0, rule.SCORE] == 0
+    assert features[:, rule.VALID].tolist() == [1.0, 1.0, 0.0]
+
+
 def test_a_ruined_or_unvalued_book_stays_in_cash():
     # La observación de una cartera sin patrimonio es todo ceros.
     assert rule.rule_policy(np.zeros(6 * 3 + 2, dtype=np.float32), 0) == rule.CASH
