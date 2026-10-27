@@ -23,7 +23,7 @@ from mars_titan.models.titans.state import check_finite, deferred_checks
 from .spaced_utility import _flow, _integer, _require
 
 
-def _metadata(flows, moments, cutoff, size):
+def _metadata(flows, moments, cutoff, size, *, allow_mixed_markets=False):
     _require(
         isinstance(flows, tuple)
         and 1 <= len(flows) == size <= MAX_BLOCK_ROWS
@@ -35,7 +35,7 @@ def _metadata(flows, moments, cutoff, size):
     )
     markets = {_flow(flow) for flow in flows}
     _require(
-        len(markets) == 1 and len(set(flows)) == size,
+        (allow_mixed_markets or len(markets) == 1) and len(set(flows)) == size,
         "Los diagnósticos E2 necesitan un mercado sin activos repetidos",
     )
 
@@ -49,6 +49,7 @@ class SpacedUtilityDiagnostics:
     snapshot_sha256: str
     episode_ids: torch.Tensor
     points: torch.Tensor
+    allow_mixed_markets: bool = False
 
     def ledger_rows(self, label_not_before):
         """Convertir el bloque a CPU. Las fechas previstas no contienen resultados futuros."""
@@ -66,7 +67,13 @@ class SpacedUtilityDiagnostics:
             and not self.points.requires_grad,
             "El diagnóstico E2 no conserva formas, precisión o aislamiento del grafo",
         )
-        _metadata(self.flow_ids, (self.cutoff,) * len(self.flow_ids), self.cutoff, len(self.points))
+        _metadata(
+            self.flow_ids,
+            (self.cutoff,) * len(self.flow_ids),
+            self.cutoff,
+            len(self.points),
+            allow_mixed_markets=self.allow_mixed_markets,
+        )
         _require(
             type(label_not_before) is dict
             and len(label_not_before) == len(self.flow_ids)
@@ -107,7 +114,7 @@ def _validate_host_rows(points, identifiers):
     )
 
 
-def _validate(prepared, head, extension, snapshot, cutoff, differentiable):
+def _validate(prepared, head, extension, snapshot, cutoff, differentiable, allow_mixed_markets):
     _require(
         isinstance(prepared, PreparedDecisions)
         and type(extension) is EpisodicReadout
@@ -145,6 +152,7 @@ def _validate(prepared, head, extension, snapshot, cutoff, differentiable):
         prepared.next_state.last_prediction_at,
         cutoff,
         len(prepared.working_state),
+        allow_mixed_markets=allow_mixed_markets,
     )
 
 
@@ -179,6 +187,7 @@ def apply_spaced_utility_readout(
     context_id=None,
     cutoff=None,
     differentiable=False,
+    allow_mixed_markets=False,
 ):
     """Devolver el pronóstico ordinario y diagnósticos opcionales, sin actualizar al padre.
 
@@ -187,6 +196,7 @@ def apply_spaced_utility_readout(
     de publicación y recuperación, como en el lector original.
     """
     _require(type(enabled) is bool, "La activación E2 debe ser booleana")
+    _require(type(allow_mixed_markets) is bool, "La agrupación de mercados E2 debe ser booleana")
     if not enabled:
         return (
             apply_episodic_readout(
@@ -200,7 +210,7 @@ def apply_spaced_utility_readout(
             ),
             None,
         )
-    _validate(prepared, head, extension, snapshot, cutoff, differentiable)
+    _validate(prepared, head, extension, snapshot, cutoff, differentiable, allow_mixed_markets)
     count = min(snapshot.count, extension.config.neighbors)
     base = prepared.working_state.detach()
     with torch.no_grad(), deferred_checks():
@@ -237,5 +247,6 @@ def apply_spaced_utility_readout(
             snapshot._digest,
             read.ids,
             torch.stack(points, dim=-1),
+            allow_mixed_markets,
         )
     return prediction, diagnostics

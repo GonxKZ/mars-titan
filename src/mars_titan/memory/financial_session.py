@@ -36,6 +36,7 @@ from . import (
     regional_session_work,
     regional_work,
     role_binding,
+    spaced_session,
     write_scores,
 )
 from .associative_memory import MatureCorrection, _check_matrix
@@ -77,6 +78,7 @@ def _binding_signature(binding):
         financial_consumers.TitansBinding,
         financial_consumers.CandidateBinding,
         MechanismBinding,
+        spaced_session.SpacedTitansBinding,
     ) or any(name in vars(binding) for name, _ in methods):
         raise ValueError("El enlace del consumidor no admite tipos o métodos sustituidos")
     collection = getattr(binding, "collections", None)
@@ -104,6 +106,7 @@ def _binding_signature(binding):
         kind,
         tuple((name, id(function.__code__)) for name, function in methods),
         collection_signature,
+        binding.signature() if type(binding) is spaced_session.SpacedTitansBinding else None,
     )
 
 
@@ -242,6 +245,10 @@ class FinancialSession(EpisodicSession):
             )
         self.associative = associative
         self._lesion_plan = lesion_session.configure(lesions, associative)
+        if type(binding) is spaced_session.SpacedTitansBinding and (
+            associative is not None or lesions is not None or self._regional_config is not None
+        ):
+            raise ValueError("E2 no se combina implícitamente con B6, B4 o trabajo regional")
         bounded_integer(block_rows, "lote físico", 1, binding.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
@@ -353,6 +360,12 @@ class FinancialSession(EpisodicSession):
             contract["regional_work"] = self._regional_config
         if self._lesion_plan is not None:
             contract["lesions"] = self._lesion_plan.identity()
+        if spaced_session.enabled(self):
+            contract.update(
+                schema_version=3,
+                recipe="frozen_financial_spaced_session_v3",
+                spaced=binding.signature(),
+            )
         if type(binding) is MechanismBinding:
             contract["mechanisms"] = dict(
                 history=mechanism_history.identity(),
@@ -470,6 +483,8 @@ class FinancialSession(EpisodicSession):
             fields.add("associative")
         if self._lesion_plan is not None:
             fields.add("lesions")
+        if spaced_session.enabled(self):
+            fields.add("spaced")
         if type(self._binding) is MechanismBinding:
             fields.update(self._binding.bundle_fields())
         if self._regional_config is not None:
@@ -627,6 +642,12 @@ class FinancialSession(EpisodicSession):
         if self._lesion_plan is None:
             raise ValueError("La sesión no tiene diagnósticos B4")
         return lesion_session.restore(self, self._bundle(self.snapshot()["state"])).metrics()
+
+    def spaced_state(self):
+        return spaced_session.inspect_state(self)
+
+    def spaced_event(self):
+        return spaced_session.inspect_state(self, event=True)
 
     def mechanism_event(self, generation):
         _check_callbacks(self)
@@ -879,6 +900,8 @@ class FinancialSession(EpisodicSession):
             )
         )
         warmup = kind == self.native.EventKind.warmup
+        if spaced_session.enabled(self):
+            spaced_session.begin(self, bank, bundle, cutoff)
         lesion_ledger = (
             None if self._lesion_plan is None else lesion_session.begin(self, bundle, cutoff)
         )
@@ -897,6 +920,8 @@ class FinancialSession(EpisodicSession):
             **options,
         )
         self.consumer.verify()
+        if spaced_session.enabled(self):
+            spaced_session.issue(self, snapshot, values, rows, warmup=warmup)
         pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
         self._check_queue(pending)
         if self.associative is not None:
@@ -956,6 +981,8 @@ class FinancialSession(EpisodicSession):
         if not warmup:
             pending = self._append_pending(pending, rows)
         extra = {}
+        if spaced_session.enabled(self):
+            extra["spaced"] = bundle["spaced"] if bundle else None
         if lesion_ledger is not None:
             extra["lesions"] = lesion_session.stage(self, lesion_ledger)
         if type(self._binding) is MechanismBinding:
@@ -1035,6 +1062,10 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if spaced_session.enabled(self):
+            bank, _ = self._bank(bundle["bank"] if bundle else None)
+            spaced_session.begin(self, bank, bundle, self._inflight["cutoff"], feedback_only=True)
+            extra["spaced"] = bundle["spaced"] if bundle else None
         if self._lesion_plan is not None:
             extra["lesions"] = lesion_session.stage(
                 self, lesion_session.begin(self, bundle, self._inflight["cutoff"])
@@ -1124,7 +1155,12 @@ class FinancialSession(EpisodicSession):
             if key not in positions or key in removed or item.closed_at != self.phase.close_at:
                 raise ValueError("La finalización no corresponde al pendiente y cierre declarados")
             removed.add(key)
-        if admitted:
+        spaced_ref = None
+        if spaced_session.enabled(self):
+            bank, spaced_ref = spaced_session.resolve(
+                self, bank, pending, admitted, proposed, outcomes, excluded, finalized
+            )
+        if admitted and not spaced_session.enabled(self):
             extra = {}
             if self.admission == "m3":
                 extra["features"] = self._admission_features(
@@ -1192,6 +1228,8 @@ class FinancialSession(EpisodicSession):
         bundle = dict(
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
+        if spaced_session.enabled(self):
+            bundle["spaced"] = spaced_ref
         if self.associative is not None:
             bundle["associative"] = self._stage_associative(
                 memory,
@@ -1266,6 +1304,8 @@ class FinancialSession(EpisodicSession):
             raise ValueError("El estado rápido contiene flujos sin observar o información futura")
         pending = self._read(bundle["pending"], "pending")
         self._check_queue(pending)
+        if spaced_session.enabled(self):
+            spaced_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
         if self._lesion_plan is not None:
             lesion_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
@@ -1350,6 +1390,8 @@ class FinancialSession(EpisodicSession):
             return
         record = json.loads(self._executor.record_json(snapshot["cursor"]))
         self._verify_bundle(bundle, event_kind=record["event_kind"])
+        if spaced_session.enabled(self):
+            spaced_session.verify_confirmed(self, bundle, record)
         self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
@@ -1416,6 +1458,8 @@ class FinancialSession(EpisodicSession):
                 names += ("associative",)
             if self._lesion_plan is not None:
                 names += ("lesions",)
+            if spaced_session.enabled(self):
+                names += ("spaced",)
             if type(self._binding) is MechanismBinding:
                 names += ("mechanisms",)
             live = [

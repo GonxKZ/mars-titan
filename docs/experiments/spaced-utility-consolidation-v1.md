@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. Todavía no están conectados a la sesión financiera y su publicación durable. E2 sigue parcialmente implementada y no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. Siguen pendientes las ventanas, el productor regional y CUDA. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -93,6 +93,45 @@ La medida usa dos hilos, un calentamiento y cinco repeticiones por caso. Cada ci
 
 El proceso completo tarda 13,03 segundos y su pico RSS externo absoluto es 738.416 KiB. El mayor pico Python medido en pasadas separadas es 6.953.963 bytes y excluye asignaciones nativas. El payload lógico con 1.024 plazas ronda los 779–801 kB y no incluye el framing del almacenamiento. No se midió energía. Las diferencias de tiempo entre políticas en estos fixtures no son un criterio para elegir la de menor error predictivo.
 
+## Integración financiera durable
+
+`FinancialSession` reconoce `SpacedRetentionConfig` en su argumento de retención. `RetentionConfig` conserva el recorrido de referencia. El enlace E2 es un tipo cerrado, reutiliza el mismo bucle de bloques y solo admite M1, lector estándar K1 y C desactivado. No introduce callbacks predictivos arbitrarios ni combina implícitamente B6, B4 o trabajo regional.
+
+Cada bloque prepara el predictor una sola vez. El productor usa ese estado y conserva el orden físico del bloque, incluso si se solicita explícitamente el modo de varios mercados. Después se agrupan los diagnósticos por mercado para registrar las cohortes. La fecha prevista se obtiene con `PrefixTargetVerifier.expected_maturity`, que consulta el calendario sin leer precios futuros. Una fecha desconocida no se transforma en una etiqueta.
+
+El ledger abierto solo vive dentro de la transacción en curso. Tras emitir, el ejecutor entrega los resultados maduros, exclusiones y finalizaciones. Sus puntos se comparan con las predicciones originales, se cierran las cohortes completas y se propone la retención. El ledger cerrado y su último evento se guardan en el mismo bundle que banco, memoria rápida, pendientes y evidencias. La poda conserva las referencias de las dos generaciones recuperables. `spaced_state()` y `spaced_event()` permiten inspeccionar el estado y el último evento. No constituyen por sí solos un archivo científico completo de todos los eventos anteriores.
+
+La liquidación posterior a una decisión puede compartir su instante, tal como admite el ejecutor nativo. `begin(..., feedback_only=True)` permite ese feedback sin autorizar nuevas predicciones en ese corte. El formato anterior y el avance estricto permanecen como opción predeterminada del ledger.
+
+La sesión deriva los límites de los 40.960 pendientes transitorios admitidos por el ejecutor: hasta ese número de cohortes y `40.960 × vecinos` referencias. Los máximos configurables del registro pasan a 40.960 cohortes y 524.288 referencias. Sus defaults de 512 y 262.144 no cambian. Son límites de almacenamiento, no una relajación de precisión o disponibilidad del corpus. Los artefactos mantienen su límite de tamaño.
+
+Esta revisión cambia las fuentes del coordinador y su identidad de integración. E2 declara la receta `frozen_financial_spaced_session_v3`. El predictor, lector canónico, parámetros y sus 34 fuentes permanecen intactos. Los contratos de integración anteriores requieren su runtime fijado. No se eluden las comprobaciones para reanudar un checkpoint bajo otro código ni se sobrescriben resultados históricos. La comparación debe identificar tanto el consumidor como el contrato de sesión.
+
+La retención y su reserva no garantizan una mejora. Si una cohorte nueva llena toda la capacidad y el relleno por recencia expulsa episodios antes de recibir varias confirmaciones, E2 puede no llegar a protegerlos. Capacidad, rotación y horizonte de maduración condicionan esa posibilidad. No se cambia la política después de observar resultados para ocultar este caso.
+
+La verificación de la integración, sus mutaciones y costes está en [su recibo](../../reports/engineering/spaced-session-20261027/verification.json). Las pruebas usan fuentes sintéticas con etiquetas manuales, no ajustan parámetros ni ejecutan campañas científicas.
+
+
+La batería de integración y regresión pasó 222 casos CPU y dejó fuera dos casos CUDA del productor. Una ejecución posterior de mecanismos y E2 pasó 175 casos. Se solapan y no se suman. Los 19 casos GRU que inicialmente se omitieron por el enlace elegido se ejecutaron con otro binario compatible ya compilado, con 19 aprobados y ninguna omisión. Se detectaron seis mutaciones dirigidas con referencias verdes antes y después. El módulo de integración nuevo cubre 140/146 sentencias y 30/34 ramas, con CRAP máximo 23. La cobertura de los módulos compartidos es parcial en esta selección. No se ha ejecutado la suite completa.
+
+Las pruebas cubren las cinco políticas, el cierre y reapertura, la siguiente predicción y actualización, las siete fronteras de fallo expuestas por el ejecutor, el orden de activos y el cotejo de puntos pendientes con las predicciones nativas. La preparación de la salida conserva los tensores y registros del reservorio de referencia. Son comprobaciones de fixtures y no resultados de generalización.
+
+El benchmark durable alterna ocho pares de recorridos, con un calentamiento y tres muestras por modo y tamaño. Cada recorrido incluye cuatro decisiones, cierre, recuperación, liquidación y la siguiente decisión, con almacenamiento y comprobaciones. Las modalidades usan anchuras compactas 5/2/1/3/3 y presencia de precios y gráficos. Las etiquetas son manuales y la fuente es sintética.
+
+| Activos ficticios | Sin E2, mediana en segundos | E2 con reservorio, mediana en segundos |
+| --- | --- | --- |
+| 64 | 4,323 | 6,378 |
+| 256 | 15,667 | 19,842 |
+
+Los estados comunes coinciden en cada par, incluidos puntos, registros y tensores rápidos. Estas cifras incluyen el coste de gestionar diagnósticos y recuperación, no solo la consulta. No se utilizan para afirmar una mejora predictiva ni para elegir una política de utilidad. Tres muestras no permiten estimar colas de latencia con precisión. GPU y energía quedan sin medir.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_session.py -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-session-20261027/cost_probe.py /tmp/mars-titan-spaced-session-cost
+```
+
+El benchmark requiere un directorio nuevo y `MARS_TITAN_EPISODIC_NATIVE` con el enlace compatible. Escribe allí las fuentes de fixture y los recorridos. El informe ligero está en [cost.json](../../reports/engineering/spaced-session-20261027/cost.json). No ejecuta entrenamientos ni abre el test final.
+
 ## Fuentes y alcance
 
 Mattar y Daw, *Prioritized memory access explains planning and hippocampal replay*, Nature Neuroscience 21, 1609–1617 (2018), proponen ordenar el acceso a recuerdos por su utilidad para decisiones en una tarea de navegación. El resumen describe el equilibrio entre necesidad y ganancia. E2 toma la pregunta sobre utilidad, pero su diferencia de errores y su criterio temporal son una propuesta propia. No implementa el algoritmo de planificación de ese artículo. [Artículo y DOI 10.1038/s41593-018-0232-z](https://www.nature.com/articles/s41593-018-0232-z).
@@ -142,4 +181,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, la persistencia conjunta en el bundle, la conexión con sesión y ventana y la evaluación autorizada. El registro, el productor estándar y el selector nativo no habilitan entrenamientos, no cambian el baseline y no abren el test final.
+Quedan pendientes el productor de supresiones regional, la conexión con ventanas y la evaluación autorizada. El registro, el productor estándar y el selector nativo no habilitan entrenamientos, no cambian el baseline y no abren el test final.

@@ -546,3 +546,15 @@ def test_scoped_evidence_cannot_be_restored_as_another_stream_or_as_legacy():
     for scope in (None, "c" * 64):
         with pytest.raises(ValueError):
             SpacedUtilityLedger.restore(CODEC, run.config, state, scope_id=scope)
+
+
+def test_same_cut_feedback_cannot_issue_more_predictions():
+    run = ledger()
+    issue(run, 10, [row()])
+    run.begin(11)
+    run.publish()
+    run.begin(11, feedback_only=True)
+    with pytest.raises(ValueError):
+        run.issue(snapshot(11), [row("US/B", not_before=12)])
+    run.receive([("US/A", 10, 11, 0.0)])
+    assert run.publish()[0]["resolved"] == 1

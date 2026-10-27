@@ -1,0 +1,85 @@
+{
+  "sources": {
+    "session": {
+      "path": "src/mars_titan/memory/spaced_session.py",
+      "sha256": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_session.py",
+  "test_sha256": "589efda9b5fa62875d7d233d60df0f40e68877df9fdd2af6493a2a54aaf10116",
+  "recipes": [
+    {
+      "id": "ignore_native_pending_point",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[ledger]",
+      "anchor": "row[\"point\"] == prediction.value, \"El pendiente E2 cambió su predicción emitida\"",
+      "replacement": "True, \"El pendiente E2 cambió su predicción emitida\"",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "ignore_native_emission",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[event]",
+      "anchor": "actual == emitted",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "ignore_pending_queue",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_evidence_pending_keys_must_match_the_financial_queue",
+      "anchor": "unresolved == set(pending_keys)",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "drop_same_cut_feedback",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_settlement_after_decision_at_same_cut_and_phase_closure",
+      "anchor": "ledger.begin(cutoff, feedback_only=feedback_only)",
+      "replacement": "ledger.begin(cutoff)",
+      "expected_failure": {
+        "exception_type": "ValueError",
+        "longrepr_contains": "avanzar"
+      }
+    },
+    {
+      "id": "allow_implicit_stability",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_active_stability_is_not_an_implicit_extra_axis",
+      "anchor": "control is None or control.config.mode == \"disabled\"",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "drop_mature_targets",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_spaced_session.py::test_original_reservoir_with_diagnostics_keeps_emissions_records_and_fast_state",
+      "anchor": "ledger.receive(targets)",
+      "replacement": "ledger.receive([])",
+      "expected_failure": {
+        "exception_type": "ValueError",
+        "longrepr_contains": "pendientes financieros"
+      }
+    }
+  ],
+  "method": "Una prueba por receta en copia fijada, con G1/M1/G2, origen de importaciones y bloqueo comprobados."
+}

@@ -433,6 +433,17 @@ def test_malformed_head_output_cannot_be_published(quantile):
         handle.remove()
 
 
+def test_explicit_mixed_market_mode_keeps_block_order_and_separate_row_identities():
+    _, prepared, head, model = fixture()
+    prepared = replace(
+        prepared, next_state=replace(prepared.next_state, flow_ids=("US/AAA", "CN/BBB"))
+    )
+    result, trace = apply(prepared, head, model, snapshot(), allow_mixed_markets=True)
+    rows = trace.ledger_rows(dict.fromkeys(prepared.next_state.flow_ids, AT + 1))
+    assert [r["flow_id"] for r in rows] == ["US/AAA", "CN/BBB"]
+    assert [r["point"] for r in rows] == result.point_predictions.tolist()
+
+
 @pytest.mark.cuda
 @pytest.mark.parametrize("count", [0, 3])
 def test_cuda_decoder_preserves_prediction_and_emits_finite_detached_diagnostics(count):

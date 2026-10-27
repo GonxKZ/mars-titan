@@ -67,8 +67,8 @@ class SpacedUtilityConfig:
             ("min_gap_days", 1, 3650),
             ("capacity", 1, 1024),
             ("max_pending_rows", 1, 40960),
-            ("max_pending_sessions", 1, 512),
-            ("max_references", 1, 262144),
+            ("max_pending_sessions", 1, 40960),
+            ("max_references", 1, 524288),
         ):
             _require(_integer(getattr(self, name), low, high), f"El límite E2 {name} no es válido")
         margin = _number(self.positive_gain_margin)
@@ -219,14 +219,23 @@ class SpacedUtilityLedger:
         self._episodes, self._sessions, self._last_issued = {}, {}, {}
         self.issued = self.resolved = self.censored = self.completed_sessions = 0
 
-    def begin(self, cutoff):
+    def begin(self, cutoff, *, feedback_only=False):
         _require(
             self._phase is None
+            and type(feedback_only) is bool
             and _integer(cutoff)
-            and (self.clock is None or cutoff > self.clock),
+            and (
+                self.clock is None
+                or cutoff > self.clock
+                or (feedback_only and cutoff == self.clock)
+            ),
             "El evento E2 debe avanzar desde un estado publicado",
         )
-        self.clock, self._phase, self._snapshot = cutoff, "emission", None
+        self.clock, self._phase, self._snapshot = (
+            cutoff,
+            "feedback" if feedback_only else "emission",
+            None,
+        )
 
     def issue(self, snapshot, rows):
         _require(
