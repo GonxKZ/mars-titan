@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T15:25:09.428296+00:00",
+  "kind": "technical_regional_spaced_window_without_training",
+  "base_commit": "8a054867fe19565bf18a7f0ca1fd75334f2a7e5f",
+  "tests": {
+    "distinct_passed": 254,
+    "new_cases": 69,
+    "regressions": 185,
+    "skipped": 0,
+    "cuda_deselected_total": 4,
+    "new_cuda_pending": 2,
+    "full_suite_executed": false,
+    "xml_sha256": "bb7f2231ac9295406c45114159c8fcf85e3d2ab2b868d8bfe9328255113f6c08",
+    "by_module": {
+      "tests.memory.test_spaced_inference": 26,
+      "tests.memory.test_spaced_regional_inference": 37,
+      "tests.memory.test_spaced_regional_selected": 17,
+      "tests.memory.test_spaced_regional_session": 43,
+      "tests.memory.test_spaced_regional_study": 5,
+      "tests.memory.test_spaced_regional_window": 10,
+      "tests.memory.test_spaced_selected": 34,
+      "tests.memory.test_spaced_session": 22,
+      "tests.memory.test_spaced_study": 18,
+      "tests.memory.test_spaced_window": 25,
+      "tests.training.test_learning_hold_graph": 12,
+      "tests.training.test_learning_hold_inventory": 5
+    }
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 502,
+      "covered_statements": 501,
+      "branches": 80,
+      "covered_branches": 79
+    },
+    "max_crap": 35.0
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 9,
+    "killed": 9,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2"
+  },
+  "sources": {
+    "src/mars_titan/training/spaced_inference.py": "108ded493a68f0c2e2f004a5a1f26834a52ef7e7008518c100f575216b34075f",
+    "src/mars_titan/training/spaced_regional_phase.py": "7ddc5384742b91a83b930d6772f13f46a438ad5eda344966dd1abd77c00be248",
+    "src/mars_titan/training/spaced_selected.py": "4c294038d98c1e027da15d585e242519a801539efc022213f25d0144d9e62049",
+    "src/mars_titan/training/spaced_window.py": "ac0e0fa13f76660b17196ecfb23a7defe6aa90403f06f6454301a6ee9ece7bef",
+    "src/mars_titan/memory/spaced_study.py": "f7ea7c039c80cb70767ebc8cacc9c576d48818805eb87d5b6b8c8a7d59c85eb9",
+    "configs/experiments/spaced-regional-utility-study-v1.json": "a214a5ae25072f247f91b5dbcb1f361a19daad20f7fd3f91d51dc75e7aef9d2c",
+    "tests/memory/spaced_selected_fixture.py": "02ae325c4cde70a0d966277ba61c69957390ac4e1261d1cf39e52a37558cac12",
+    "tests/memory/spaced_window_fixture.py": "d96c3787561cba65dbf8491d66a8616203ea2587501e396603e2e1ad5ff2e1ed",
+    "tests/memory/test_spaced_regional_inference.py": "874c0fa4f36768c0326adacd66ca4c2320bcb873f8e9185ce20d44fdb73f3abc",
+    "tests/memory/test_spaced_regional_selected.py": "184748d1b126ee1f79f088ce37b5b9682ef7064a292208ed214f787c79dee20f",
+    "tests/memory/test_spaced_regional_study.py": "0f291f7474f1084f04a648c1780685abe2cbd5991e582628d751d8b20611e8ca",
+    "tests/memory/test_spaced_regional_window.py": "ce2f3e28e3646b2e8b86f06e3c905cbc6e8b6d066f635853ceb2f75476c3928d"
+  },
+  "preserved_canonical_sources": {
+    "count": 34,
+    "manifest_path": "reports/engineering/spaced-selected-20261027/verification.json",
+    "manifest_sha256": "c65abebf157c9734def0b96e08c9eca727f351854fbc63aa8f6aaf1872f768e5"
+  },
+  "preserved_runtime_sources": {
+    "src/mars_titan/memory/financial_session.py": "21ee7e8638fcefd5f2156c9933889ed66967c1e8ce9d74022aebc3f73e3c06b6",
+    "src/mars_titan/memory/financial_consumers.py": "be55eaaadef40a8e487f4fbd553b85ddb46d6036936ece9338894b461473663d",
+    "src/mars_titan/memory/spaced_session.py": "682dd7a69346fc60ea856e5f73114b1c393f46009671776ba0e3dab511868d8a",
+    "src/mars_titan/memory/spaced_regional_session.py": "ca5f8b22a590c7e6c7aec636f0e1eabc62e33b7698d26bc5ddbf343a2fbcfa25",
+    "src/mars_titan/memory/spaced_regional_readout.py": "e1a8a2b507724cc3014b91589cce450974187b5070cb4bdfcc88987bc2171ab2",
+    "src/mars_titan/training/mars_titan_run.py": "6fab0212ad2c31c2d47aec4145478d166480a0ac967ef325a8782649bf1a508f",
+    "scripts/run_spaced_window.py": "eae40129563db1185a3ad563deb5b6733c5590a0c82b464d606f0233ae06dea6",
+    "configs/experiments/spaced-utility-study-v1.json": "5c206b4f3c5bc87f562a2da0df927c2b21b51460ebfa67e2c4f13e826ae5a3ea"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "cuda_executed": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "regional_phase_integrated": true,
+  "regional_selected_loading_integrated": true,
+  "regional_window_integrated": true,
+  "controller_cost_measured": false,
+  "limits": [
+    "Contrato regional explícito. El valor por defecto sigue siendo estándar y las declaraciones tienen kind y esquema propios.",
+    "Comparación de retención con parámetros seleccionados congelados. No sustituye entrenar cada variante.",
+    "El presupuesto de fase cubre bloque y emisiones, sin retener las trazas completas de la sesión durable. No es RAM certificada.",
+    "El cálculo canónico conserva contenido y tipos JSON y permite listas y tuplas equivalentes del mismo documento.",
+    "Los checkpoints y etiquetas son fixtures manuales. No se ejecutan optimizadores ni cálculo residual.",
+    "El controlador conserva todas las filas y repite desde cero una fase interrumpida.",
+    "Las fuentes afectadas cambian el runtime. Las salidas anteriores requieren el código fijado para reanudarse.",
+    "Dos casos CUDA nuevos siguen pendientes por ocupación ajena. No hay mejora predictiva medida."
+  ],
+  "artifacts": {
+    "quality.json": "41527fed12da796ac25ac6597a6a1e370749d627edf9e665eb26d52ef311e3e4",
+    "mutations.json": "d4712ccd6ca3feffd46cb727802f96b59ab35dac01ee39c53fe5736c06e0d31e"
+  }
+}

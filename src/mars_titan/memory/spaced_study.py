@@ -10,6 +10,7 @@ from .spaced_retention import POLICIES, SpacedRetentionConfig
 
 ARMS = ("baseline", *POLICIES)
 KIND = "spaced_utility_frozen_study_v1"
+REGIONAL_KIND = "spaced_regional_utility_frozen_study_v1"
 
 
 @dataclass(frozen=True)
@@ -18,9 +19,10 @@ class SpacedStudy:
     arms: tuple[str, ...]
     max_seconds: float
     max_phase_rows: int
+    reader_contract: str = "standard"
 
     def identity(self):
-        return dict(
+        value = dict(
             kind=KIND,
             retention=asdict(self.retention),
             arms=list(self.arms),
@@ -29,6 +31,9 @@ class SpacedStudy:
             interrupted_phase="repeat_from_start",
             final_test_access=False,
         )
+        if self.reader_contract == "regional":
+            value.update(kind=REGIONAL_KIND, reader_contract="regional")
+        return value
 
     def retention_for(self, arm):
         if type(arm) is not str or arm not in self.arms:
@@ -38,6 +43,7 @@ class SpacedStudy:
 
 def load_study(path):
     document, digest = read_manifest(Path(path), maximum=64 * 1024)
+    regional = type(document) is dict and document.get("kind") == REGIONAL_KIND
     if (
         type(document) is not dict
         or set(document)
@@ -52,10 +58,17 @@ def load_study(path):
             "arms",
             "compute_budget",
         }
+        | ({"reader_contract"} if regional else set())
         or type(document["schema_version"]) is not int
-        or document["schema_version"] != 1
-        or document["kind"] != KIND
-        or document["variant_id"] != "spaced_utility_consolidation_v1"
+        or document["schema_version"] != (2 if regional else 1)
+        or document["kind"] != (REGIONAL_KIND if regional else KIND)
+        or document["variant_id"]
+        != (
+            "spaced_regional_utility_consolidation_v1"
+            if regional
+            else "spaced_utility_consolidation_v1"
+        )
+        or (regional and document["reader_contract"] != "regional")
         or document["status"] != "declared_not_executed"
         or document["default_enabled"] is not False
         or document["final_test_access"] is not False
@@ -85,5 +98,9 @@ def load_study(path):
     ):
         raise ValueError("El tiempo o las filas por fase exceden el presupuesto")
     return SpacedStudy(
-        SpacedRetentionConfig(**retention), tuple(arms), float(seconds), rows
+        SpacedRetentionConfig(**retention),
+        tuple(arms),
+        float(seconds),
+        rows,
+        "regional" if regional else "standard",
     ), digest

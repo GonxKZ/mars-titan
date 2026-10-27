@@ -67,8 +67,15 @@ def _digest(value):
     return hashlib.sha256(canonical(value).encode()).hexdigest()
 
 
-def _code():
-    return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
+def _code(*, regional=False):
+    names = _CODE
+    if regional:
+        names += (
+            "mars_titan.training.spaced_regional_phase",
+            "mars_titan.memory.spaced_regional_readout",
+            "mars_titan.memory.spaced_regional_session",
+        )
+    return {name: sha256(Path(importlib.import_module(name).__file__)) for name in names}
 
 
 def _spent(report):
@@ -172,6 +179,8 @@ def _session_table(tables, metrics):
 
 def _prepare(view, anchor, source_manifest, study_path, arm, output, device, indices, holder):
     study, study_sha = load_study(study_path)
+    regional = study.reader_contract == "regional"
+    kind = "spaced_regional_utility_frozen_window_v1" if regional else KIND
     retention = study.retention_for(arm)
     anchor_report, anchor_sha = read_manifest(anchor / "run.json", 16 * 1024**2)
     request = anchor_report.get("request", {})
@@ -200,7 +209,7 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
     native = _native("m1")
     proposal = dict(
         schema_version=1,
-        kind=KIND,
+        kind=kind,
         arm=arm,
         device=device,
         view_sha256=dataset.identity,
@@ -210,7 +219,7 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
         study_sha256=study_sha,
         study=study.identity(),
         protocol_sha256=protocol_sha,
-        code=_code(),
+        code=_code(regional=regional),
         native_sha256=native.binary_sha256,
     )
     safe_destination(output)
@@ -222,7 +231,7 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
             and report["schema_version"] == 1
             and report.get("status") in ("running", "paused", "completed", "failed")
             and (report.get("status") != "completed" or type(report.get("identity")) is dict)
-            and report.get("kind") == KIND
+            and report.get("kind") == kind
             and report.get("request") == proposal
             and report.get("final_test_opened") is False,
             "La petición o el estado del diagnóstico E2 ha cambiado",
@@ -238,7 +247,7 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
         output.mkdir(parents=True, exist_ok=True)
         report = dict(
             schema_version=1,
-            kind=KIND,
+            kind=kind,
             request=proposal,
             identity=None,
             run_id=None,
@@ -256,7 +265,9 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
         outside_source(path, root)
     sources = _sources(dataset, {name: phases[name] for name in PREDICTED}, root)
     specification = _parent_specification(sources["validation"], parent)
-    loaded = load_selected_reader(anchor, view, specification, device=device)
+    loaded = load_selected_reader(
+        anchor, view, specification, device=device, reader_contract=study.reader_contract
+    )
     _require(
         study.retention.capacity == loaded.recipe.bank_capacity
         and study.retention.seed == loaded.recipe.bank_seed,
@@ -264,7 +275,7 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
     )
     prefixes = PrefixTargetVerifier(dataset, source_manifest=source_manifest)
     common = dict(
-        native=native, codec=loaded.codec, world="spaced_utility_frozen_study_v1", fold=fold["id"]
+        native=native, codec=loaded.codec, world=study.identity()["kind"], fold=fold["id"]
     )
     if retention is None:
         inference = MarsTitanInference(
@@ -281,11 +292,16 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
         )
     else:
         inference = SpacedInference(
-            loaded.consumer, loaded.recipe, retention=retention, prefixes=prefixes, **common
+            loaded.consumer,
+            loaded.recipe,
+            retention=retention,
+            prefixes=prefixes,
+            reader_contract=study.reader_contract,
+            **common,
         )
     identity = dict(
         schema_version=1,
-        kind=KIND,
+        kind=kind,
         request=proposal,
         selected=loaded.identity(),
         phases={name: asdict(phases[name]) for name in PREDICTED},
@@ -297,6 +313,8 @@ def _prepare(view, anchor, source_manifest, study_path, arm, output, device, ind
         state_reset="each_phase_empty_fast_memory_bank_and_evidence",
         interrupted_phase="repeat_from_start",
     )
+    if regional:
+        identity["reader_contract"] = study.reader_contract
     _require(
         report["identity"] is None or report["identity"] == identity,
         "La identidad del diagnóstico cambió al reconstruirlo",

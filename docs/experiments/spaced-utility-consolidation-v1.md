@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta ambos productores con publicación durable en M1 y C desactivado. El adaptador `SpacedInference`, el cargador, el controlador y la CLI conservan por ahora el lector estándar. Quedan sus rutas regionales, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera, el adaptador de fases, el cargador y el controlador conectan ambos lectores en M1, K = 1 y C desactivado. El contrato regional se elige explícitamente y tiene una configuración de estudio propia. Quedan CUDA y la comparación científica. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -86,7 +86,7 @@ PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_reado
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-regional-cost.json"
 ```
 
-La medida requiere un destino nuevo. El productor está integrado también en `FinancialSession`, como se describe más abajo. El cargador seleccionado y el estudio de ventanas regionales siguen pendientes. El adaptador estándar los rechaza explícitamente antes de ejecutar. Esta comprobación técnica no levanta el bloqueo de aprendizaje ni abre el test final.
+La medida requiere un destino nuevo. El productor está integrado en la sesión y en la ventana, como se describe más abajo. El contrato estándar sigue rechazando una arquitectura regional no solicitada. Esta comprobación técnica no levanta el bloqueo de aprendizaje ni abre el test final.
 
 ## Retención sobre el banco nativo
 
@@ -135,7 +135,7 @@ El proceso completo tarda 13,03 segundos y su pico RSS externo absoluto es 738.4
 
 ## Integración financiera durable
 
-`FinancialSession` reconoce `SpacedRetentionConfig` en su argumento de retención. `RetentionConfig` conserva el recorrido de referencia. El enlace E2 es un tipo cerrado, reutiliza el mismo bucle de bloques y solo admite M1, lector estándar K1 y C desactivado. No introduce callbacks predictivos arbitrarios ni combina implícitamente B6, B4 o trabajo regional.
+`FinancialSession` reconoce `SpacedRetentionConfig` en su argumento de retención. `RetentionConfig` conserva el recorrido de referencia. El enlace E2 es un tipo cerrado, reutiliza el mismo bucle de bloques y admite M1, lector estándar o regional K1 y C desactivado. No introduce callbacks predictivos arbitrarios ni combina implícitamente B6, B4 o el programa regional previo a MAC.
 
 Cada bloque prepara el predictor una sola vez. El productor usa ese estado y conserva el orden físico del bloque, incluso si se solicita explícitamente el modo de varios mercados. Después se agrupan los diagnósticos por mercado para registrar las cohortes. La fecha prevista se obtiene con `PrefixTargetVerifier.expected_maturity`, que consulta el calendario sin leer precios futuros. Una fecha desconocida no se transforma en una etiqueta.
 
@@ -193,7 +193,7 @@ PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_sessi
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-session-20261027/compare_legacy.py "$HOME/.cache/mars-titan/spaced-session-parity"
 ```
 
-La comparación necesita un destino nuevo y el enlace nativo compatible. No hay resultados de generalización ni acceso al test final. La adaptación regional de fases, el cargador y el controlador se mantienen pendientes.
+La comparación necesita un destino nuevo y el enlace nativo compatible. No hay resultados de generalización ni acceso al test final. La ampliación regional de fases y carga se documenta a continuación.
 
 La [medida durable](../../reports/engineering/spaced-regional-session-20261027/cost.json) recorre 32 fases de fixtures de cuatro y 64 activos. Cada fase incluye cuatro cohortes, cierre y reapertura después de la segunda. Hay un calentamiento y tres muestras por modo para cada tamaño y lector. Se conservan exactamente las predicciones de los 16 pares. Los parámetros se cargan una vez por caso y la preparación del fixture queda fuera del tiempo por fase. Se incluyen el predictor, la consulta, los diagnósticos, la maduración, la retención y las escrituras y auditorías durables.
 
@@ -216,13 +216,13 @@ La medida exige un destino nuevo y el mismo enlace nativo. Tiene un presupuesto 
 
 ## Adaptador para fases de ventanas congeladas
 
-`training.spaced_inference.SpacedInference` consume el padre y el lector de un `FrozenFinancialConsumer`, la receta del lector, `PrefixTargetVerifier` y la retención E2. Reutiliza preparación, codificación, emisión, filas y métricas de `MarsTitanInference`. Su método público `evaluate` recibe `FinancialObservationSource` y comprueba el bloqueo de aprendizaje antes de acceder a la fuente. Solo admite M1, lector estándar K1 y C desactivado.
+`training.spaced_inference.SpacedInference` consume el padre y el lector de un `FrozenFinancialConsumer`, la receta del lector, `PrefixTargetVerifier` y la retención E2. Reutiliza preparación, codificación, emisión, filas y métricas de `MarsTitanInference`. Su método público `evaluate` recibe `FinancialObservationSource` y comprueba el bloqueo de aprendizaje antes de acceder a la fuente. Admite M1, K = 1 y C desactivado, con contrato estándar por defecto o regional explícito.
 
 Cada evento emite todas sus predicciones con el mismo snapshot. Después registra las supresiones por mercado, recibe los resultados maduros, publica la evidencia y propone el banco sincronizado. Las fechas previstas proceden del calendario de los prefijos, sin consultar precios futuros. El adaptador conserva temporalmente la referencia a `next_state` que la ruta común quita antes del lector. La utiliza para las identidades de los flujos durante ese bloque, sin copiar ni acumular pesos rápidos.
 
 El banco utiliza el mismo ámbito de mundo, objetivo residual y horizonte uno que la sesión financiera. La evidencia no se traslada entre fases. Cada recorrido reinicia banco, ledger y memoria rápida y exige un cierre explícito. Una interrupción descarta el estado parcial y la fase se repite desde el principio. La recuperación por evento sigue siendo responsabilidad de la sesión durable. `spaced_state` copia la evidencia final y `spaced_snapshot` permite comparar también el banco, con `resumable=False`. Ninguno es un checkpoint completo del predictor.
 
-Este recorrido compara políticas de retención sobre unos mismos pesos ya elegidos. No sustituye al contraste de entrenar cada variante bajo condiciones emparejadas. La carga del estado seleccionado se comprueba por separado. El controlador externo, la CLI y la agregación estadística del estudio siguen pendientes. Las pruebas usan etiquetas manuales y no autorizan abrir una ventana científica.
+Este recorrido compara políticas de retención sobre unos mismos pesos ya elegidos. No sustituye al contraste de entrenar cada variante bajo condiciones emparejadas. La carga del estado seleccionado se comprueba por separado. El controlador y la CLI están integrados y la comparación científica sigue pendiente. Las pruebas usan etiquetas manuales y no autorizan abrir una ventana científica.
 
 La [verificación del adaptador](../../reports/engineering/spaced-window-20261027/verification.json) registra 106 pruebas CPU distintas aprobadas, incluidas las 26 del módulo nuevo y 17 del inventario y grafo del bloqueo. La batería de regresión de 87 casos y las ejecuciones posteriores se solapan. Las cinco políticas y las capacidades de 4 y 16 plazas conservan exactamente las emisiones, la evidencia y el banco final de la sesión durable. Se comprueban también dos bloques físicos por evento, filas cuantílicas frente al reservorio original, cierre, interrupción, RNG y lectura de un índice de observaciones construido con fixtures. No hay pasos de optimizador ni ejecución de la suite completa.
 
@@ -250,7 +250,7 @@ El benchmark exige un destino nuevo y el mismo enlace nativo compatible. La orde
 
 `training.spaced_selected.load_selected_reader` recibe la carpeta del modelo seleccionado, su vista original y la especificación de entrada del padre. Reutiliza los constructores y cargadores de `mars_titan_walk_forward` y la carga restringida de checkpoints. Devuelve un `SelectedSpacedReader` con consumidor congelado, codec, receta y procedencia. No ejecuta predicciones ni restaura optimizador, RNG, memoria rápida, banco o etiquetas pendientes. El payload de recuperación se libera tras cargar y verificar los parámetros.
 
-La selección exige la variante estándar M1 K1 sin puente y el padre `mac_online` de la misma vista y semilla, sin control C. Comprueba `run.json`, `selected.json`, los informes de ajuste y sus mejores checkpoints. Los parámetros deben conservar forma, precisión y finitud. La selección usa `best` aunque exista un archivo posterior, y rechaza archivos fuera del presupuesto de 512 MiB antes de calcular su checksum. Las referencias deben conservar rutas e identificadores compatibles. Al terminar vuelve a comprobar los archivos de procedencia.
+La selección exige M1 K1 y el padre `mac_online` de la misma vista y semilla, sin control C. El contrato estándar rechaza un puente no solicitado. El contrato regional exige ese puente. Comprueba `run.json`, `selected.json`, los informes de ajuste y sus mejores checkpoints. Los parámetros deben conservar forma, precisión y finitud. La selección usa `best` aunque exista un archivo posterior, y rechaza archivos fuera del presupuesto de 512 MiB antes de calcular su checksum. Las referencias deben conservar rutas e identificadores compatibles. Al terminar vuelve a comprobar los archivos de procedencia.
 
 El índice de entrada debe ser el original del padre. El controlador puede obtener su especificación desde el informe mediante `_parent_specification`, sin abrir el índice de entrenamiento. Cargar otra vista o remapear otro índice requiere un contrato temporal separado. El cargador no activa esa transferencia. Los checksums detectan cambios, pero no autentican que se haya entrenado un modelo ni confirman el contenido científico de un informe.
 
@@ -309,6 +309,26 @@ El proceso completo tarda 24 min y 34,97 s y alcanza 1.025.028 KiB de RSS, sin a
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-study-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-study-cost"
 ```
 
+## Contrato regional del estudio por ventanas
+
+La [configuración regional](../../configs/experiments/spaced-regional-utility-study-v1.json) tiene esquema 2, `kind=spaced_regional_utility_frozen_study_v1`, `variant_id=spaced_regional_utility_consolidation_v1` y `reader_contract=regional`. Permanece desactivada y no abre el test final. El mismo controlador y la misma CLI consumen este archivo, sin otra bandera de selección. La configuración estándar conserva sus campos y su valor por defecto. La ventana regional declara otro kind y ámbito de memoria, y rechaza adoptar salidas estándar.
+
+La fase regional calcula su presupuesto antes de preparar cualquier bloque del padre. Comprueba flujos únicos, corte común, bloque mayor y todas las emisiones. No retiene las trazas tensoriales completas de `FinancialSession`, por lo que su estimación cubre lector y puntos de la cohorte. Verifica que el snapshot usado coincida con el número de episodios presupuestado. El informe agrega contadores escalares, con llamadas de proyección según el número real de bloques, incluidos los irregulares. Las actualizaciones regionales siguen siendo una cota superior.
+
+La carga usa `reader_contract=regional` explícito y devuelve la procedencia `spaced_selected_regional_reader_v1`. Se conserva la selección del mejor checkpoint y solo se transfieren parámetros compartidos. Las identidades de variante y lector se comparan en su forma canónica, admitiendo la conversión de tuplas a listas del mismo documento JSON. Esta normalización no permite cambiar el contenido, los tipos JSON ni la geometría. Se comprueba un payload incompatible antes de copiar parámetros.
+
+La [verificación de ventana regional](../../reports/engineering/spaced-regional-window-20261027/verification.json) registra 254 pruebas CPU correctas, incluidas 69 nuevas, y cuatro casos CUDA excluidos, dos de ellos nuevos de fase. Se comparan fase y sesión durable con las cinco políticas y varios lectores a capacidad reducida. Se comprueban cuantiles cargados, bloques irregulares, errores tardíos, interrupción, presupuestos y todas las variantes del controlador. Los controles de referencia y reservorio E2 conservan exactamente las filas emitidas.
+
+Las nueve [mutaciones dirigidas](../../reports/engineering/spaced-regional-window-20261027/mutations.json) se detectan con controles verdes antes y después. Cubren la comprobación temprana de fechas, el recuento de bloques, el despacho, la correspondencia de arquitectura, las identidades canónicas, la copia de pesos y los kinds de configuración y reanudación. La [cobertura y el CRAP](../../reports/engineering/spaced-regional-window-20261027/quality.json) abarcan cinco módulos, con 501/502 sentencias y 79/80 ramas, CRAP máximo 35, coverage.py 7.16.1 y Radon 6.0.1. CRAP usa sentencias y no demuestra ausencia de errores.
+
+La pasada instrumentada tuvo un fallo de prueba por consultar el contador de `PredictionRows` antes de `finish()`. Se corrigió la prueba, sin cambios de producción, y la batería final repitió los 254 casos en verde. Los recuentos se solapan con los informes anteriores y no se suman. No se ha ejecutado la suite completa. La implementación conserva las 34 fuentes canónicas y el código de la sesión durable.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_inference.py tests/memory/test_spaced_regional_selected.py tests/memory/test_spaced_regional_study.py tests/memory/test_spaced_regional_window.py tests/memory/test_spaced_inference.py tests/memory/test_spaced_selected.py tests/memory/test_spaced_study.py tests/memory/test_spaced_window.py tests/memory/test_spaced_regional_session.py tests/memory/test_spaced_session.py tests/training/test_learning_hold_inventory.py tests/training/test_learning_hold_graph.py -m 'not cuda' -q
+```
+
+El coste del controlador regional aún está pendiente de ejecutar. No hay entrenamientos ni mejora predictiva medida. Los runtimes afectados tienen nuevas huellas de fuente y sus salidas previas requieren su código fijado para reanudarse.
+
 ## Fuentes y alcance
 
 Mattar y Daw, *Prioritized memory access explains planning and hippocampal replay*, Nature Neuroscience 21, 1609–1617 (2018), proponen ordenar el acceso a recuerdos por su utilidad para decisiones en una tarea de navegación. El resumen describe el equilibrio entre necesidad y ganancia. E2 toma la pregunta sobre utilidad, pero su diferencia de errores y su criterio temporal son una propuesta propia. No implementa el algoritmo de planificación de ese artículo. [Artículo y DOI 10.1038/s41593-018-0232-z](https://www.nature.com/articles/s41593-018-0232-z).
@@ -358,4 +378,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes la adaptación regional de fases, el cargador y el controlador, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.
+Quedan pendientes CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.

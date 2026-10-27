@@ -36,7 +36,7 @@ PROTOCOL = dict(
 )
 
 
-def study_fixture(root, *, assets=2, rich=False):
+def study_fixture(root, *, assets=2, rich=False, components=None, reader_contract="standard"):
     root = Path(root)
     days = None
     if rich:
@@ -91,8 +91,15 @@ def study_fixture(root, *, assets=2, rich=False):
         phases={name: asdict(phase) for name, phase in phases.items()},
         bank_capacity=min(1024, max(16, assets * 4)),
     )
+    if components is not None:
+        source["components"] = components
     selected = selected_fixture(root / "selected", source)
-    config = json.loads(Path("configs/experiments/spaced-utility-study-v1.json").read_text())
+    path = (
+        "configs/experiments/spaced-regional-utility-study-v1.json"
+        if reader_contract == "regional"
+        else "configs/experiments/spaced-utility-study-v1.json"
+    )
+    config = json.loads(Path(path).read_text())
     config["retention"].update(capacity=source["bank_capacity"], frontier=1)
     config["compute_budget"]["max_phase_rows"] = max(100, assets * 10)
     study = root / "study.json"

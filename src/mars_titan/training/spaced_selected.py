@@ -104,7 +104,9 @@ class SelectedSpacedReader:
         return json.loads(self._identity_json)
 
 
-def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0"):
+def load_selected_reader(
+    anchor, anchor_view, specification, *, device="cuda:0", reader_contract="standard"
+):
     """Cargar el estado elegido en su vista e índice originales, sin ejecutar predicciones.
 
     El controlador puede reconstruir la especificación del índice de entrenamiento desde
@@ -112,6 +114,10 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
     independiente. Los checksums detectan cambios, pero no autentican un entrenamiento.
     """
     _require(type(specification) is FinancialInputSpec, "Falta la especificación original")
+    _require(
+        type(reader_contract) is str and reader_contract in ("standard", "regional"),
+        "La carga E2 necesita un contrato de lector explícito",
+    )
     anchor, view = Path(anchor), Path(anchor_view)
     safe_destination(anchor)
     safe_destination(view)
@@ -129,8 +135,8 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
         components.get("episodic_bank") == "m1"
         and type(components.get("refinements", 1)) is int
         and components.get("refinements", 1) == 1
-        and components.get("evidence_bridge") is None,
-        "El estado E2 necesita la variante estándar M1 K1 sin puente",
+        and (components.get("evidence_bridge") is not None) == (reader_contract == "regional"),
+        "El estado E2 necesita M1 K1 y el contrato estándar o regional correspondiente",
     )
     link = request.get("parent")
     _require(
@@ -196,7 +202,7 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
     variant = _variant(predictor, parent_report, components)
     _require(
         variant.fingerprint() == identity.get("variant_sha256")
-        and variant.identity() == identity.get("variant")
+        and canonical(variant.identity()) == canonical(identity.get("variant"))
         and predictor._parameter_id == fit["identity"].get("parent", {}).get("parameters_sha256"),
         "La variante o los parámetros del padre no corresponden al ajuste del lector",
     )
@@ -211,7 +217,8 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
     _require(
         state.get("readout_sha256") == selected["readout"].get("readout_sha256")
         and type(state.get("model")) is dict
-        and state["model"].get("_extra_state") == fit["identity"].get("readout"),
+        and type(state["model"].get("_extra_state")) is dict
+        and canonical(state["model"]["_extra_state"]) == canonical(fit["identity"]["readout"]),
         "Los pesos y el contrato del lector no corresponden al checkpoint elegido",
     )
     _carried_readout(state["model"], reader)
@@ -234,7 +241,9 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
     _require(all(sha256(path) == value for path, value in pins), "La selección cambió al cargar")
     provenance = dict(
         schema_version=1,
-        kind="spaced_selected_reader_v1",
+        kind="spaced_selected_regional_reader_v1"
+        if reader_contract == "regional"
+        else "spaced_selected_reader_v1",
         state_transfer="shared_parameters_only",
         anchor=dict(run_id=report["run_id"], run_sha256=report_sha, selected_sha256=selected_sha),
         view_sha256=view_sha,
@@ -248,4 +257,6 @@ def load_selected_reader(anchor, anchor_view, specification, *, device="cuda:0")
         readout_sha256=readout_sha,
         consumer_id=consumer.model_id,
     )
+    if reader_contract == "regional":
+        provenance["reader_contract"] = reader_contract
     return SelectedSpacedReader(consumer, codec, recipe, canonical(provenance))

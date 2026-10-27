@@ -119,7 +119,7 @@ def selected_fixture(root, source, *, hidden_size=32, quantiles=False):
         run_sha256=parent_sha,
         checkpoint_sha256=core_reference["sha256"],
     )
-    components = dict(episodic_bank="m1")
+    components = copy.deepcopy(source.get("components", dict(episodic_bank="m1")))
     variant = _variant(model, parent_report, components)
     recipe_document = json.loads(
         Path("configs/titans/episodic-readout-historical-masked.json").read_text()
