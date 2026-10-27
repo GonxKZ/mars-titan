@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .auxiliary_horizons import AuxiliaryHeads, AuxiliaryHorizons
 from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
@@ -48,6 +49,7 @@ from .financial_inputs import (
     FinancialInputSpec,
 )
 from .key_competition_config import KeyCompetition
+from .laplace_scale import LaplaceScale, LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .presence_modulation import (
@@ -155,6 +157,10 @@ class FinancialConfig:
     temporal_encoder: str | None = None
     # C1 o C6 de #751: sustituyen al operador regional y no se combinan con él.
     regional_variant: RegionAxisMixingConfig | SharedWorkspaceConfig | None = None
+    # F1 de #749: escala de Laplace junto a la cabeza escalar. Sin declararla nada cambia.
+    laplace_scale_head: LaplaceScaleHead | None = None
+    # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
+    auxiliary_horizons: AuxiliaryHorizons | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -329,6 +335,39 @@ class FinancialConfig:
                 raise ValueError("El lector necesita bancos EMA o réplicas identificados")
             if self.memory_plasticity is not None or self.memory_stability is not None:
                 raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
+        if isinstance(self.laplace_scale_head, dict):
+            if set(self.laplace_scale_head) != {f.name for f in fields(LaplaceScaleHead)}:
+                raise ValueError("laplace_scale_head debe declarar floor e initial_scale")
+            object.__setattr__(
+                self, "laplace_scale_head", LaplaceScaleHead(**self.laplace_scale_head)
+            )
+        if self.laplace_scale_head is not None and (
+            type(self.laplace_scale_head) is not LaplaceScaleHead or self.head != SCALAR_HEAD
+        ):
+            raise ValueError("laplace_scale_head necesita su configuración y la cabeza escalar")
+        if isinstance(self.auxiliary_horizons, dict):
+            if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
+                raise ValueError(
+                    "auxiliary_horizons debe declarar horizons, weight y maturity_slack"
+                )
+            object.__setattr__(
+                self, "auxiliary_horizons", AuxiliaryHorizons(**self.auxiliary_horizons)
+            )
+        if self.auxiliary_horizons is not None:
+            if type(self.auxiliary_horizons) is not AuxiliaryHorizons:
+                raise ValueError(
+                    "auxiliary_horizons necesita AuxiliaryHorizons, sus valores o None"
+                )
+            # El token se vuelve a calcular fila a fila al madurar la etiqueta. La fusión
+            # regional y sus variantes C1 y C6 mezclan las filas del bloque emitido.
+            if (
+                self.regional_fusion is not None
+                or self.regional_execution is not None
+                or self.regional_variant is not None
+            ):
+                raise ValueError(
+                    "Las cabezas auxiliares con fusión regional necesitan otro contraste"
+                )
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -410,6 +449,10 @@ class FinancialConfig:
             result.update(regional_variant=self.regional_variant.identity())
         if self.memory_bank_readout is not None:
             result.update(memory_bank_readout=self.memory_bank_readout.identity())
+        if self.laplace_scale_head is not None:
+            result.update(laplace_scale_head=self.laplace_scale_head.identity())
+        if self.auxiliary_horizons is not None:
+            result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -464,6 +507,8 @@ class PreparedDecisions:
     quantiles: torch.Tensor | None = None
     # Solo con PT4: el contexto con los tokens de este bloque pendientes de su sesión.
     next_context: object = None
+    # Solo con `laplace_scale_head_v1`: [flujos], la escala b de cada predicción.
+    scales: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -628,6 +673,20 @@ class FinancialPredictor(nn.Module):
         self.local_control = (
             MACProjectionControl(local_control, self.mac.config, dtype=dtype)
             if local_control is not None
+            else None
+        )
+        # F1 se crea al final y sin el generador global, como PT6.
+        self.scale_head = (
+            LaplaceScale(config.hidden_size, config.laplace_scale_head, dtype=dtype)
+            if config.laplace_scale_head is not None
+            else None
+        )
+        # F5 usa su propio generador derivado de la semilla, como PT6.
+        self.auxiliary_heads = (
+            AuxiliaryHeads(
+                config.hidden_size, config.auxiliary_horizons, seed=config.seed, dtype=dtype
+            )
+            if config.auxiliary_horizons is not None
             else None
         )
         self.to(device=device, dtype=dtype)
@@ -1170,6 +1229,40 @@ class FinancialPredictor(nn.Module):
             )
         return token, pending, execution.trace
 
+    def _fuse(self, price, inputs, presence):
+        return fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=self.regional_fusion
+            if self.regional_fusion is not None
+            else self.regional_variant
+            if self.regional_variant is not None
+            else self.presence_modulation,
+            branch=self.fusion_branch,
+        )
+
+    def fused_tokens(self, inputs, presence):
+        """Tokens fusionados de filas independientes, sin MAC ni estado de flujo.
+
+        F5 los vuelve a calcular al madurar una etiqueta auxiliar. Coinciden con los que
+        devuelve `prepare` para las mismas entradas y parámetros.
+        """
+        if (
+            self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+        ):
+            raise ValueError("La fusión regional no se calcula fila a fila")
+        price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
+        for value, message in checks:
+            require_finite(value, message)
+        token = self._fuse(price, inputs, presence)
+        check_finite(token, "El token fusionado")
+        return token
+
     def prepare(
         self,
         batch,
@@ -1271,19 +1364,7 @@ class FinancialPredictor(nn.Module):
                     price, batch, context, context_selection
                 )
             else:
-                token = fuse_modalities(
-                    price,
-                    batch.inputs,
-                    self.encoders,
-                    self.fusion,
-                    batch.presence if self.masked else None,
-                    modulation=self.regional_fusion
-                    if self.regional_fusion is not None
-                    else self.regional_variant
-                    if self.regional_variant is not None
-                    else self.presence_modulation,
-                    branch=self.fusion_branch,
-                )
+                token = self._fuse(price, batch.inputs, batch.presence)
                 next_context = context
             check_finite(token, "El token fusionado")
             observed = token
@@ -1334,6 +1415,10 @@ class FinancialPredictor(nn.Module):
             else:
                 point = self.head(encoded).squeeze(-1)
             check_finite(point, "La predicción")
+            scales = None
+            if self.scale_head is not None:
+                scales = self.scale_head(encoded)
+                check_finite(scales, "La escala de Laplace")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
             state,
@@ -1355,6 +1440,7 @@ class FinancialPredictor(nn.Module):
             local_result,
             quantiles,
             next_context,
+            scales,
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
