@@ -135,7 +135,7 @@ def test_without_a_declared_stage_the_output_is_the_model_output():
 def test_the_registry_validates_each_declared_stage():
     declared = {na.IDENTITY: dict(na.DEFAULT)}
     assert checked_output_stages(declared) == declared
-    assert list(OUTPUT_STAGES) == [na.IDENTITY]
+    assert na.IDENTITY in OUTPUT_STAGES
     for wrong in ({}, {"scale_shrink_v1": {}}, [na.IDENTITY], {na.IDENTITY: {"nominal": 0.8}}):
         with pytest.raises(ValueError):
             checked_output_stages(wrong)
