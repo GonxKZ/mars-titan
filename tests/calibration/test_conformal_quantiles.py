@@ -9,7 +9,9 @@ from mars_titan.calibration.conformal_quantiles import (
     apply_conformal_quantiles,
     calibrator_sha256,
     fit_conformal_quantiles,
+    interval_pairs,
     undefined_groups,
+    widen_in_order,
 )
 from mars_titan.models.quantile_head import LEVELS
 
@@ -73,6 +75,16 @@ def test_negative_corrections_shrink_but_never_cross_the_median_or_inner_interva
     assert calibrated[1].tolist() == [-5.0, -5.0, 0.0, 5.0, 5.0]
     assert adjusted == {"0.8": 1, "0.95": 1}
     assert np.all(np.diff(calibrated, axis=1) >= 0)
+
+
+def test_widening_counts_rows_whose_lower_or_upper_end_crosses_alone():
+    _, pairs, median = interval_pairs(LEVELS, NOMINALS)
+    quantiles = np.array([[-3.0, -0.5, 0.0, 2.0, 3.0], [-3.0, -2.0, 0.0, 0.5, 3.0]])
+    # Una corrección de −1 en el 80 % cruza la mediana por abajo en la primera fila
+    # (−0,5 + 1 = 0,5) y por arriba en la segunda (0,5 − 1 = −0,5). El 95 % no se mueve.
+    calibrated, adjusted = widen_in_order(quantiles, pairs, median, np.array([[-1.0, 0.0]] * 2))
+    assert calibrated.tolist() == [[-3.0, 0.0, 0.0, 1.0, 3.0], [-3.0, -1.0, 0.0, 0.0, 3.0]]
+    assert adjusted == {"0.8": 2, "0.95": 0}
 
 
 def test_each_market_receives_its_own_correction_and_minimum():
