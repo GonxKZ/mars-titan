@@ -36,12 +36,22 @@ PROTOCOL = dict(
 )
 
 
-def study_fixture(root, *, assets=2, rich=False, components=None, reader_contract="standard"):
+def study_fixture(
+    root,
+    *,
+    assets=2,
+    rich=False,
+    components=None,
+    reader_contract="standard",
+    price_row_group_size=3,
+):
     root = Path(root)
     days = None
     if rich:
         days = dict(US=sorted({*DEFAULT_DAYS, "2023-11-15", "2023-12-01", "2023-12-15"}))
-    data = historical_temporal_fixture(root / "data", assets=assets, days=days)
+    data = historical_temporal_fixture(
+        root / "data", assets=assets, days=days, price_row_group_size=price_row_group_size
+    )
     metadata = json.loads(data.parent.read_text())
     first = metadata["assets"][0]
     factor = Path(metadata["roots"]["prepared"]) / "US" / first["symbol"] / "prices.parquet"

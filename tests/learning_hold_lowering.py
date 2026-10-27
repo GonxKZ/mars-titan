@@ -354,6 +354,11 @@ _REUSES = (
 # `learning_doubles_module`, `allowed_hold`) y a la variable o la ruta de la protección. La
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
+    "tests/training/test_salience_correction_window.py": (
+        1,
+        "recorre la corrección E3 con un padre de pesos literales, sin construir entrenadores "
+        "ni ejecutar pasos de optimizador",
+    ),
     "tests/training/test_area_correction_bounded.py": (1, _RECORDER),
     "tests/conftest.py": (2, _DEFINES),
     "tests/training/test_window_variants.py": (
@@ -455,6 +460,7 @@ DOUBLES = {
     "tests/training/test_titans_walk_forward.py": (5, _RECORDER),
 }
 REDIRECTIONS = {
+    "tests/memory/test_lesion_inference.py": (1, _CLOSES),
     "tests/conftest.py": (3, _FIXTURES),
     "tests/tooling/test_cuda_test_runner.py": (
         2,

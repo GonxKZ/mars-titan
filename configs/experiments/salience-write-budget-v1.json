@@ -34,7 +34,7 @@
     }
   },
   "pending": [
-    "El núcleo no está conectado a sesiones, ventanas, retención ni campañas.",
+    "Esta declaración solo configura el núcleo. salience-correction-window-v1 conecta perfiles opcionales al recorrido de ventanas, sin una comparación científica ejecutada.",
     "El cupo actual es por cohorte de publicación y mercado. La integración debe comprobar su correspondencia con la sesión del calendario.",
     "El consumidor debe verificar maduración, procedencia del punto emitido y totalidad de la cohorte antes de invocar el selector.",
     "La combinación con B1, B2, E1 o E2 necesita identidad, publicación conjunta de estados y comparación propias.",

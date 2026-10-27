@@ -638,6 +638,16 @@ class CorrectionInference(ChronologicalInference):
         return self.evaluate(source, stop=stop, rows=rows)
 
 
+def _correction_inference(predictor, recipe, correction, codec, *, salience=None, **options):
+    if salience is None:
+        return CorrectionInference(predictor, recipe, correction, codec, **options)
+    from .salience_inference import SalienceCorrectionInference
+
+    return SalienceCorrectionInference(
+        predictor, recipe, correction, codec, salience=salience, **options
+    )
+
+
 class KalmanPredictionRows(PredictionRows):
     """Filas de B6 kalman con la varianza predictiva y la predicción con una sesión más de retraso.
 
@@ -921,6 +931,7 @@ def run_correction_window(
     stop=None,
     traces=None,
     lesions=None,
+    salience=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
@@ -944,6 +955,10 @@ def run_correction_window(
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
+    if salience is not None:
+        from .salience_inference import checked_configuration
+
+        checked_configuration(salience, correction)
     if lesions is not None:
         _require(type(lesions) is LesionProtocol, "B4 necesita su protocolo identificado")
         lesions.bind(correction)
@@ -975,6 +990,11 @@ def run_correction_window(
     if lesions is not None:
         request["lesions"] = lesions.identity()
         request["code"].update(_lesion_code())
+    if salience is not None:
+        from .salience_inference import source_hashes
+
+        request["salience"] = salience.identity()
+        request["code"].update(source_hashes())
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -1021,8 +1041,8 @@ def run_correction_window(
         combination = arm_components(components, values, noise["estimate"])
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(
-        predictor, chronological, variant.correction, codec, lesions=lesions
+    inference = _correction_inference(
+        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
     )
     identity = dict(
         schema_version=1,
@@ -1051,6 +1071,17 @@ def run_correction_window(
         # Solo kalman la lleva, así que las demás reglas conservan su identidad.
         identity["cohort_noise"] = noise
         identity["diagnostics"] = KALMAN_DIAGNOSTICS
+    if salience is not None:
+        identity["salience"] = salience.identity()
+        identity["memory_policy"]["salience"] = "reset_scale_and_write_budget_at_each_phase_start"
+        identity["variant"] = dict(
+            kind="salience_correction_variant_v1",
+            base=identity["variant"],
+            salience=salience.identity(),
+        )
+        identity["variant_sha256"] = hashlib.sha256(
+            canonical(identity["variant"]).encode()
+        ).hexdigest()
     if inference.kernel_policy is not None:
         # Como en los lectores, la política de precisión de la receta del padre, que aplica
         # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
@@ -1070,7 +1101,8 @@ def run_correction_window(
                 kind=SELECTED_KIND,
                 parent=request["parent"],
                 correction=variant.correction.identity(),
-                variant_sha256=variant.fingerprint(),
+                variant_sha256=identity["variant_sha256"],
+                **({"salience": salience.identity()} if salience is not None else {}),
             ),
         )
         report = dict(
@@ -1189,9 +1221,28 @@ def carry_correction(
     request, identity = report["request"], report["identity"]
     lesions = diagnostic_protocol(request)
     _require(
+        ("salience" in request) == ("salience" in identity),
+        "El ancla no identifica E3 de forma coherente",
+    )
+    salience = None
+    if "salience" in request:
+        from .salience_inference import restore_configuration
+
+        salience = restore_configuration(request)
+        _require(
+            canonical(identity["salience"]) == canonical(salience.identity()),
+            "La identidad E3 del ancla contradice a su petición",
+        )
+    _require(
         sha256(anchor / "selected.json") == report["checkpoint"]["sha256"],
         "El estado elegido del ancla ha cambiado",
     )
+    if salience is not None:
+        selected, _ = read_manifest(anchor / "selected.json", 64 * 1024)
+        _require(
+            canonical(selected.get("salience")) == canonical(salience.identity()),
+            "El estado seleccionado no conserva el factor E3 del ancla",
+        )
     parent = Path(request["parent"]["path"])
     parent_report, parent_sha = read_manifest(parent / "run.json", 16 * 1024**2)
     _require(
@@ -1245,8 +1296,8 @@ def carry_correction(
         "La corrección trasladada no es la elegida en el ancla",
     )
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(
-        predictor, chronological, variant.correction, codec, lesions=lesions
+    inference = _correction_inference(
+        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
     )
     predictions = {}
     for name in partitions:
@@ -1295,5 +1346,10 @@ def carry_correction(
     if lesions is not None:
         receipt["lesions"] = lesions.identity()
         receipt["code"].update(_lesion_code())
+    if salience is not None:
+        from .salience_inference import source_hashes
+
+        receipt["salience"] = salience.identity()
+        receipt["code"].update(source_hashes())
     atomic_json(output / "carry.json", receipt)
     return receipt

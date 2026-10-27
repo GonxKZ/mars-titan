@@ -1,6 +1,6 @@
 # Escrituras E3 con escala histórica por activo
 
-`salience_write_budget_v1` implementa un selector independiente de candidatos maduros y su estado recuperable. La [declaración](../../configs/experiments/salience-write-budget-v1.json) conserva tres controles opcionales. **La integración en sesiones y ventanas está pendiente.** El núcleo no modifica el predictor, las memorias rápidas de Titans, las áreas B1/B2 ni los índices M0–M3. No hay una comparación predictiva ejecutada.
+`salience_write_budget_v1` implementa un selector de candidatos maduros y su estado recuperable. La [declaración del núcleo](../../configs/experiments/salience-write-budget-v1.json) conserva tres controles opcionales. Su [integración por ventanas](../../configs/experiments/salience-correction-window-v1.json) conecta E3 con las emisiones reales del recorrido de corrección y dispone de comprobaciones CPU con fixtures. La sesión durable por evento sigue pendiente. No se modifican los parámetros compartidos del predictor ni los índices M0–M3. No hay una comparación predictiva ejecutada.
 
 El cupo del núcleo es por mercado y cohorte completa de publicación, no todavía por sesión de su calendario. Quien lo integre debe demostrar esa correspondencia o declarar un contraste distinto. Dividir un evento en varios cortes para renovar el cupo cambiaría el experimento.
 
@@ -37,7 +37,7 @@ La motivación procede de la distinción entre ruido de observación y cambios l
 
 El límite es de 8.192 registros por cohorte y 8.192 activos en el estado. Alcanzarlo no expulsa estadísticas antiguas automáticamente. La ordenación canónica cuesta \(O(N\log N)\), la selección con heap cuesta \(O(N\log q)\) y copiar y validar los agregados cuesta \(O(F)\), con \(F\) activos previos. El espacio transitorio es \(O(N+F)\). No se construyen matrices de distancias ni se conserva la historia de etiquetas.
 
-El esquema JSON 1 conserva configuración, cuenta, RMS y últimas fechas por activo, cursor, publicaciones y escrituras seleccionadas. `restore` valida esos campos y la huella antes de aceptar el estado. El consumidor aún debe publicar conjuntamente la memoria escrita y el selector. Esta API no implementa por sí sola esa transacción ni la cola de etiquetas pendientes.
+El esquema JSON 1 conserva configuración, cuenta, RMS y últimas fechas por activo, cursor, publicaciones y escrituras seleccionadas. `restore` valida esos campos y la huella antes de aceptar el estado. El consumidor durable aún debe publicar conjuntamente la memoria escrita y el selector. La API del núcleo no implementa por sí sola esa transacción ni la cola de etiquetas pendientes.
 
 `SalienceBudgetConfig(**declaracion["arms"][nombre])` carga los campos de cada control. La declaración no es una receta de `run_correction_window` y no puede ejecutarse como si ya lo fuera. El error usado para priorizar escrituras también debe permanecer separado del valor que escriba el backend. Una corrección madura puede escribir `etiqueta − núcleo` aunque la selección use `etiqueta − emisión final`.
 
@@ -62,4 +62,18 @@ Los [costes registrados](../../reports/engineering/salience-budget-20261027/cost
 
 El proceso interno dura 8,404 s y registra 53.252 KiB de RSS absoluto. El estado serializado con 8.192 activos ocupa de 362.735 a 362.746 bytes, según la longitud del identificador de regla. Las selecciones y los estados recuperados coinciden en todas las repeticiones. No se interpreta la diferencia entre reglas como una aceleración de MARS-TITAN ni se estima una latencia p95/p99 estable con siete muestras. El coste de acumular y verificar las emisiones reales permanece fuera de esta medida.
 
-La integración posterior deberá comprobar correspondencia con emisiones y sesiones reales, rechazo de etiquetas pendientes, publicación conjunta, recuperación de la siguiente transición, invariancia a bloques y paridad cuando E3 no se solicite. La comparación científica debe mantener filas, presupuesto y controles, declarar el protocolo antes de ejecutarse y contabilizar errores y coste. La implementación del selector no acredita reducir el sobreajuste o mejorar la predicción.
+La integración durable posterior deberá comprobar correspondencia con las sesiones del calendario, etiquetas parciales o tardías, publicación conjunta y recuperación de la siguiente transición. La comparación científica debe mantener filas, presupuesto y controles, declarar el protocolo antes de ejecutarse y contabilizar errores y coste. La implementación no acredita reducir el sobreajuste o mejorar la predicción.
+
+## Integración en la inferencia y las ventanas
+
+`SalienceCorrectionInference` extiende el recorrido de B6. Guarda el punto final de `run.pending` antes de que la resolución lo retire. Tras emitir todas las decisiones del evento, selecciona entre los resultados maduros. El conjunto elegido limita las filas de `_staged`, pero conserva sus valores `etiqueta − núcleo`. No sustituye ese valor por el error de la emisión final. Las escalas se actualizan con todos los candidatos, aunque no se escriban.
+
+La comprobación CPU cubre delta, proximal, B1, B2 y tres composiciones E1. La selección también limita las actualizaciones acopladas a `memory.write`, incluidos mapas de B2 y pesos de mezcla de E1. No se presenta como una intervención exclusiva sobre una sola matriz. Los controles de un mismo contraste deben compartir ese backend y cupo. Los componentes emitidos de E1 que no se eligen se retiran de su cola madura.
+
+`run_correction_window` acepta `salience=None` por defecto. Ese caso sigue construyendo `CorrectionInference`. Con un `SalienceBudgetConfig` válido utiliza la extensión y registra configuración y fuentes en la petición y la identidad. La variante completa obtiene una huella distinta del corrector base. `selected.json` conserva el factor. El traslado `carry_correction` lo restaura del ancla y rechaza contradicciones de identidad, configuración o fuentes antes de abrir los tramos.
+
+La [declaración de ventanas](../../configs/experiments/salience-correction-window-v1.json) contiene argumentos comunes y los cuatro controles. Cada valor no nulo de `arms` se convierte mediante `SalienceBudgetConfig(**valores)` y se entrega al argumento `salience` del mismo lanzador. No modifica las recetas históricas, sus casos de búsqueda ni el padre seleccionado. La preparación de ese perfil no significa que se haya ejecutado su comparación científica.
+
+Cada fase reinicia el corrector y las escalas. La recuperación comprueba las fases confirmadas y repite desde el inicio una fase interrumpida, como hace B6. No hay un checkpoint E3 por decisión en `FinancialSession`. La fuente de ventanas agrupa el índice completo por instante antes de decodificar sus bloques y comprueba la disponibilidad de cada etiqueta contra ese índice. Este contrato de publicación no acredita todavía equivalencia con una sesión del calendario para toda posible llegada parcial o tardía.
+
+Las fuentes de cada ejecución permanecen fijadas por huellas. Los recibos anteriores requieren su versión de código. No se rebajan esas comprobaciones para reanudar con otra implementación.
