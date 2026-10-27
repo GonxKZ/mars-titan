@@ -72,6 +72,8 @@ Las pruebas están en `tests/models/titans/test_regional_variants.py` y `tests/m
 
 La integración es la misma que la de [C1](region-axis-mixing-v1.md). La variante exige `summary=true` en el calendario, porque sustituye al resumen, y solo se declara sobre `mac_online`. El consumidor congelado la rechaza hasta que se registre su módulo.
 
+El entrenador fija la fuente de C6 en su identidad cuando está activo. El [contrato de fuentes](../engineering/regional-source-provenance.md) conserva el rechazo de padres congelados antes de construir el modelo y distingue esa frontera de una comprobación matemática o predictiva.
+
 Las ranuras no son memoria a largo plazo, ni pesos rápidos de Titans, ni episodios del banco. Se aprenden como parámetros compartidos del ajuste externo y su contenido de trabajo desaparece al terminar cada predicción. La variante no prueba ninguna teoría de la conciencia. Solo contrasta si un cuello de botella con competición mejora la comunicación entre fuentes.
 
 ## Coste

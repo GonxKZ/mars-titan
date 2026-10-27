@@ -9,10 +9,13 @@ otro ajuste idéntico del modelo con otra huella. La criba combina en su lugar c
 validan con `checked_output_stages`. Sin etapas, la salida es la del modelo, bit a bit.
 """
 
-from mars_titan.evaluation import neutral_abstention
+from mars_titan.evaluation import neutral_abstention, output_program
 
 # Nombre de cada etapa y la función que valida su configuración declarada.
-OUTPUT_STAGES = {neutral_abstention.IDENTITY: neutral_abstention.checked_config}
+OUTPUT_STAGES = {
+    neutral_abstention.IDENTITY: neutral_abstention.checked_config,
+    output_program.IDENTITY: output_program.checked_program,
+}
 
 
 def checked_output_stages(stages):
