@@ -2,9 +2,9 @@
 
 Los registros son sintéticos con semilla fija o escritos a mano. Las etapas auditadas son las
 que leen etiquetas maduras: la volatilidad pasada de A2, PT2 en línea, su recalibración
-periódica y los tres modos del conformal ponderado de A3. Cada auditoría se acompaña de una
-versión con una fuga deliberada que la auditoría debe detectar. No hay modelos ajustados ni
-pasos de optimizador.
+periódica, los tres modos del conformal ponderado de A3 y la puerta por regiones de C4. Cada
+auditoría se acompaña de una versión con una fuga deliberada que la auditoría debe detectar.
+No hay modelos ajustados ni pasos de optimizador.
 """
 
 from functools import partial
@@ -17,6 +17,7 @@ from mars_titan.calibration import regime_weighted_conformal as rwc
 from mars_titan.calibration.conformal_quantiles import fit_conformal_quantiles
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import neutral_abstention as na
+from mars_titan.evaluation import pit_region_gate as pit
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.integrity import asof_ledger_audit as audit
 from mars_titan.models.quantile_head import LEVELS
@@ -185,6 +186,101 @@ def test_a_stage_reading_labels_one_day_early_is_detected(name):
 @pytest.mark.parametrize("name", ["online_conformal", "periodic_refit", "regime_conformal_context"])
 def test_stages_that_receive_both_instants_reject_impossible_records(name):
     assert audit.rejection(STAGES[name], ledger()) == []
+
+
+# C4: 50 sesiones de historia, 20 de calibración (G) y 10 evaluadas. Dos grupos de tres
+# activos comparten un factor, y los grupos cambian al empezar G. Así, unas regiones que
+# leyeran etiquetas de G se notarían.
+REGION_SESSIONS = dict(history=50, calibration=20, evaluation=10)
+REGION_CONFIG = pit.DEFAULT | dict(clusters=2, window=20, min_labels=15)
+
+
+def regional_ledger(seed=6, assets=6, horizon=2):
+    rng = np.random.default_rng(seed)
+    sessions = sum(REGION_SESSIONS.values())
+    first_g, first_s = REGION_SESSIONS["history"], sessions - REGION_SESSIONS["evaluation"]
+    factors = rng.normal(0, 1, (sessions, 2))
+    before, after = np.arange(assets) * 2 // assets, np.arange(assets) % 2
+    groups = np.where(np.arange(sessions)[:, None] < first_g, before, after)
+    target = np.take_along_axis(factors, groups, axis=1) + rng.normal(0, 0.3, (sessions, assets))
+    session = np.repeat(np.arange(sessions), assets)
+    # La evaluación empieza cuando ya ha madurado la última etiqueta de G.
+    issued = START + (session + np.where(session >= first_s, horizon, 0)) * DAY
+    return dict(
+        asset_id=np.tile([f"A{i}" for i in range(assets)], sessions),
+        group=np.full(sessions * assets, "US"),
+        part=np.where(
+            session < first_g, "history", np.where(session < first_s, "calibration", "evaluation")
+        ),
+        issued_at=issued,
+        available_at=issued + horizon * DAY,
+        target=target.ravel(),
+        prediction=0.3 * target.ravel() + rng.normal(0, 0.5, sessions * assets),
+    )
+
+
+def region_part(records, selected):
+    """Panel de C4 con identidades mercado/activo/instante y la madurez en su orden."""
+    ids = [
+        f"US/{a}/{t}"
+        for a, t in zip(records["asset_id"][selected], records["issued_at"][selected], strict=True)
+    ]
+    panel = ForecastPanel.from_columns(
+        ids,
+        records["group"][selected],
+        records["issued_at"][selected],
+        records["target"][selected],
+        records["prediction"][selected],
+    )
+    position = {identity: index for index, identity in enumerate(ids)}
+    order = np.array([position[identity] for identity in panel.row_id.to_pylist()])
+    return panel, np.asarray(records["available_at"])[selected][order]
+
+
+def region_gate(records, *, shift=0):
+    """Regiones de C4 emitidas en la primera emisión de G y predicciones reescaladas.
+
+    Las regiones son estado congelado en t_G, así que se auditan como una emisión en ese
+    instante. `shift` adelanta la madurez del historial y deja leer etiquetas posteriores.
+    """
+    part = np.asarray(records["part"])
+    calibration, matures = region_part(records, part == "calibration")
+    evaluation, _ = region_part(records, part == "evaluation")
+    history = dict(
+        asset_id=records["asset_id"],
+        target=records["target"],
+        matures_at=np.asarray(records["available_at"]) - shift,
+    )
+    record = pit.fit(calibration, matures, pit.panel_assets(calibration), history, REGION_CONFIG)
+    regions = record["regions"]["US"]
+    codes = np.array([float(regions[name]) for name in sorted(regions)])
+    predictions = pit.apply(record, evaluation, pit.panel_assets(evaluation))
+    first_g = int(calibration.prediction_at.min())
+    return (
+        np.r_[codes, predictions],
+        np.r_[np.full(len(codes), first_g), evaluation.prediction_at],
+    )
+
+
+def test_the_region_gate_reconstructs_its_regions_and_predictions():
+    records = regional_ledger()
+    later = np.unique(records["issued_at"][records["part"] != "history"])
+    receipt = audit.audit(region_gate, records, columns=("target",), cutoffs=later)
+    assert receipt["passed"], receipt["failures"]
+    # Las regiones separan los dos grupos de activos, así que la prueba no es trivial.
+    regions = region_gate(records)[0][:6]
+    assert len(set(regions[:3])) == 1 and set(regions[:3]).isdisjoint(regions[3:])
+
+
+def test_regions_reading_labels_after_g_starts_are_detected_at_its_first_emission():
+    records = regional_ledger()
+    later = np.unique(records["issued_at"][records["part"] != "history"])
+    # Con la madurez adelantada 15 días, más de la mitad de la ventana son etiquetas de G.
+    leaky = lambda values: region_gate(values, shift=15 * DAY)  # noqa: E731
+    receipt = audit.audit(leaky, records, columns=("target",), cutoffs=later)
+    first_g = int(later[0])
+    assert {item["check"] for item in receipt["failures"]} == {"reconstruction"}
+    assert first_g in {item["cutoff"] for item in receipt["failures"]}
 
 
 def toy(records, *, leak=False):

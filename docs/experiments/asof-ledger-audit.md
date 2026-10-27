@@ -4,7 +4,7 @@
 
 ## Qué audita
 
-Las etapas de salida y las calibraciones en línea leen etiquetas que maduran con el tiempo: la volatilidad pasada de A2, PT2 ([#454](https://github.com/GonxKZ/mars-titan/issues/454)), su recalibración periódica y el conformal ponderado de A3 (`regime_weighted_conformal_v1`), cuyo conjunto pasado incluye las etiquetas ya maduras de la propia evaluación. El programa de salida de G1 no lee objetivos después de G, así que no tiene etiquetas que auditar. Cada una tiene sus propias pruebas de causalidad en un corte. Esta auditoría aplica la misma comprobación a cualquier etapa y en todos los cortes declarados, con un recibo común.
+Las etapas de salida y las calibraciones en línea leen etiquetas que maduran con el tiempo: la volatilidad pasada de A2, PT2 ([#454](https://github.com/GonxKZ/mars-titan/issues/454)), su recalibración periódica y el conformal ponderado de A3 (`regime_weighted_conformal_v1`), cuyo conjunto pasado incluye las etiquetas ya maduras de la propia evaluación, y la puerta por regiones de C4 (`pit_region_gate_v1`), que forma sus regiones con residuos maduros antes de la primera emisión de G. El programa de salida de G1 no lee objetivos después de G, así que no tiene etiquetas que auditar. Cada una tiene sus propias pruebas de causalidad en un corte. Esta auditoría aplica la misma comprobación a cualquier etapa y en todos los cortes declarados, con un recibo común.
 
 Un registro es una tabla de eventos con columnas alineadas. Cada evento tiene su instante de emisión (`issued_at`), su disponibilidad (`available_at`) y sus valores, como el objetivo residual. Siguiendo [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) (Fowler, 2005), lo que una etapa emite en t debe poder reconstruirse con los eventos disponibles en t. En términos de [W3C PROV-DM](https://www.w3.org/TR/prov-dm/) (Moreau y Missier, 2013), cada emisión solo puede derivarse de entidades que ya existían cuando se generó.
 
@@ -22,7 +22,7 @@ Un fallo no lanza error. Queda en el recibo con `passed=False`, el corte y la su
 
 ## Hallazgos
 
-La auditoría pasó la reconstrucción en todos los cortes en las tres primeras etapas y, después, en los tres modos de A3 (`context`, `uniform` y `shuffled`). A3 también rechaza por sí misma los registros imposibles. La comprobación de rechazo encontró dos registros imposibles que se aceptaban sin error. Ninguno cambiaba emisiones anteriores, pero ambos dejaban pasar datos que deberían invalidar la entrada:
+La auditoría pasó la reconstrucción en todos los cortes en las tres primeras etapas y, después, en los tres modos de A3 (`context`, `uniform` y `shuffled`). A3 también rechaza por sí misma los registros imposibles. En C4 las regiones son estado congelado en la primera emisión de G (t_G) y no una predicción, así que el adaptador de la prueba las emite en t_G junto a las predicciones evaluadas. La auditoría pasa en todos los cortes desde t_G. La comprobación de rechazo encontró dos registros imposibles que se aceptaban sin error. Ninguno cambiaba emisiones anteriores, pero ambos dejaban pasar datos que deberían invalidar la entrada:
 
 - **PT2 en línea.** `replay_online_conformal` solo comprobaba la madurez máxima de cada cohorte. Una fila cuya etiqueta decía estar disponible en el instante de su predicción pasaba si otra fila de la cohorte maduraba después. Ahora cada fila debe madurar después de su predicción.
 - **Recalibración periódica.** `replay_periodic_refit` aceptaba una etiqueta con madurez en 2024. Nunca llegaba a usarse, porque las emisiones son anteriores, pero PT2 ya cerraba 2024 y la alternativa trivial debe hacer lo mismo. Ahora se rechaza.
@@ -31,7 +31,7 @@ En la volatilidad pasada de A2 el historial no lleva el instante de emisión de 
 
 ## Detección comprobada
 
-Cada etapa se audita también en una versión con una fuga deliberada, que lee las etiquetas un día antes de su disponibilidad. La auditoría falla en todas, también en los tres modos de A3, y solo por reconstrucción. Las pruebas del propio auditor usan una media de etiquetas disponibles, que pasa, y la misma media sobre todas las etiquetas, que falla en todos los cortes con eventos futuros y con las dos sustituciones. Leer una etiqueta un microsegundo antes de su disponibilidad falla exactamente en el corte afectado.
+Cada etapa se audita también en una versión con una fuga deliberada, que lee las etiquetas un día antes de su disponibilidad. La auditoría falla en todas, también en los tres modos de A3, y solo por reconstrucción. En C4 la fuga es una ventana de regiones que lee etiquetas maduras hasta 15 días después de t_G, con datos sintéticos cuyos grupos de activos cambian al empezar G. La auditoría falla en t_G. Las pruebas del propio auditor usan una media de etiquetas disponibles, que pasa, y la misma media sobre todas las etiquetas, que falla en todos los cortes con eventos futuros y con las dos sustituciones. Leer una etiqueta un microsegundo antes de su disponibilidad falla exactamente en el corte afectado.
 
 ## Correspondencia con pruebas
 
@@ -40,8 +40,8 @@ Las pruebas están en `tests/integrity/test_asof_ledger_audit.py`.
 | Comprobación | Código | Prueba |
 | --- | --- | --- |
 | Registro válido | `checked_ledger` | `test_impossible_or_malformed_ledgers_are_rejected_before_auditing` |
-| Reconstrucción en etapas reales | `audit` | `test_each_stage_reconstructs_its_past_emissions_at_every_cutoff` |
-| Detección de fugas | `audit` | `test_a_stage_reading_labels_one_day_early_is_detected`, `test_reading_every_label_is_detected_at_each_cutoff_with_future_events`, `test_a_label_read_exactly_when_it_becomes_available_is_allowed` y `test_a_leak_through_a_one_sided_transform_is_still_detected` |
+| Reconstrucción en etapas reales | `audit` | `test_each_stage_reconstructs_its_past_emissions_at_every_cutoff` y, para C4, `test_the_region_gate_reconstructs_its_regions_and_predictions` |
+| Detección de fugas | `audit` | `test_a_stage_reading_labels_one_day_early_is_detected`, `test_regions_reading_labels_after_g_starts_are_detected_at_its_first_emission`, `test_reading_every_label_is_detected_at_each_cutoff_with_future_events`, `test_a_label_read_exactly_when_it_becomes_available_is_allowed` y `test_a_leak_through_a_one_sided_transform_is_still_detected` |
 | Repetición, solo lectura y emisión guardada | `audit` | `test_repetition_read_only_and_stored_emissions_are_checked` |
 | Recibo | `audit` | `test_a_correct_stage_passes_and_its_receipt_is_reproducible` |
 | Rechazo en la etapa | `rejection` | `test_stages_that_receive_both_instants_reject_impossible_records` |
@@ -49,7 +49,8 @@ Las pruebas están en `tests/integrity/test_asof_ledger_audit.py`.
 ## Límites
 
 - La auditoría comprueba la causalidad respecto a las columnas declaradas. Si una etapa leyera el futuro a través de otra columna, como los cuantiles, habría que declararla también.
-- Sustituir valores no cubre una etapa que dependa solo de la presencia de eventos futuros y no de su valor. Las etapas actuales reciben filas alineadas y no cambian de forma con la madurez.
+- Sustituir valores solo detecta una fuga que cambie la emisión. Una agrupación por correlación como la de C4 no cambia si se invierte el signo de todas las series y apenas se mueve con una etiqueta más. Por eso una fuga de un día en sus regiones no se detecta, y `test_regions_reading_labels_after_g_starts_are_detected_at_its_first_emission` usa un cambio de grupos al empezar G, el caso en que leer etiquetas de G sí cambiaría las regiones.
+- Sustituir valores tampoco cubre una etapa que dependa solo de la presencia de eventos futuros y no de su valor. Las etapas actuales reciben filas alineadas y no cambian de forma con la madurez.
 - Mide validez técnica sobre registros sintéticos. Aplicarla a los Parquet de cada trabajo de la criba queda en #746, igual que sumar sus recibos al informe de integridad.
 
 ## Coste medido
