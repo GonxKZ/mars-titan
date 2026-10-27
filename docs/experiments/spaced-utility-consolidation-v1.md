@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. Quedan el cargador de estados seleccionados, su CLI, el productor regional y CUDA. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. Quedan el controlador y la CLI del estudio, el productor regional y CUDA. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -140,7 +140,7 @@ Cada evento emite todas sus predicciones con el mismo snapshot. Después registr
 
 El banco utiliza el mismo ámbito de mundo, objetivo residual y horizonte uno que la sesión financiera. La evidencia no se traslada entre fases. Cada recorrido reinicia banco, ledger y memoria rápida y exige un cierre explícito. Una interrupción descarta el estado parcial y la fase se repite desde el principio. La recuperación por evento sigue siendo responsabilidad de la sesión durable. `spaced_state` copia la evidencia final y `spaced_snapshot` permite comparar también el banco, con `resumable=False`. Ninguno es un checkpoint completo del predictor.
 
-Este recorrido compara políticas de retención sobre unos mismos pesos ya elegidos. No sustituye al contraste de entrenar cada variante bajo condiciones emparejadas. No se ha integrado todavía el cargador del estado seleccionado, la CLI del estudio ni su agregación estadística. Las pruebas usan etiquetas manuales y no autorizan abrir una ventana científica.
+Este recorrido compara políticas de retención sobre unos mismos pesos ya elegidos. No sustituye al contraste de entrenar cada variante bajo condiciones emparejadas. La carga del estado seleccionado se comprueba por separado. El controlador externo, la CLI y la agregación estadística del estudio siguen pendientes. Las pruebas usan etiquetas manuales y no autorizan abrir una ventana científica.
 
 La [verificación del adaptador](../../reports/engineering/spaced-window-20261027/verification.json) registra 106 pruebas CPU distintas aprobadas, incluidas las 26 del módulo nuevo y 17 del inventario y grafo del bloqueo. La batería de regresión de 87 casos y las ejecuciones posteriores se solapan. Las cinco políticas y las capacidades de 4 y 16 plazas conservan exactamente las emisiones, la evidencia y el banco final de la sesión durable. Se comprueban también dos bloques físicos por evento, filas cuantílicas frente al reservorio original, cierre, interrupción, RNG y lectura de un índice de observaciones construido con fixtures. No hay pasos de optimizador ni ejecución de la suite completa.
 
@@ -163,6 +163,27 @@ PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv r
 ```
 
 El benchmark exige un destino nuevo y el mismo enlace nativo compatible. La orden mide fixtures sin aprendizaje y no sustituye la futura CLI del estudio.
+
+## Carga de los parámetros elegidos
+
+`training.spaced_selected.load_selected_reader` recibe la carpeta del modelo seleccionado, su vista original y la especificación de entrada del padre. Reutiliza los constructores y cargadores de `mars_titan_walk_forward` y la carga restringida de checkpoints. Devuelve un `SelectedSpacedReader` con consumidor congelado, codec, receta y procedencia. No ejecuta predicciones ni restaura optimizador, RNG, memoria rápida, banco o etiquetas pendientes. El payload de recuperación se libera tras cargar y verificar los parámetros.
+
+La selección exige la variante estándar M1 K1 sin puente y el padre `mac_online` de la misma vista y semilla, sin control C. Comprueba `run.json`, `selected.json`, los informes de ajuste y sus mejores checkpoints. Los parámetros deben conservar forma, precisión y finitud. La selección usa `best` aunque exista un archivo posterior, y rechaza archivos fuera del presupuesto de 512 MiB antes de calcular su checksum. Las referencias deben conservar rutas e identificadores compatibles. Al terminar vuelve a comprobar los archivos de procedencia.
+
+El índice de entrada debe ser el original del padre. El controlador puede obtener su especificación desde el informe mediante `_parent_specification`, sin abrir el índice de entrenamiento. Cargar otra vista o remapear otro índice requiere un contrato temporal separado. El cargador no activa esa transferencia. Los checksums detectan cambios, pero no autentican que se haya entrenado un modelo ni confirman el contenido científico de un informe.
+
+La [verificación de carga](../../reports/engineering/spaced-selected-20261027/verification.json) recoge 34 pruebas nuevas correctas y cinco [mutaciones dirigidas](../../reports/engineering/spaced-selected-20261027/mutations.json), con controles verdes antes y después y cero intentos de optimizador. Las pruebas usan checkpoints reales con pesos fijados a mano e identificados como fixtures sin entrenamiento. Cubren cabezas escalar y cuantílica, RNG, selección del mejor estado, metadatos con checksums recalculados, pesos no finitos, forma y precisión incorrectas, enlaces simbólicos, límites de lectura y cambios durante la carga. Una fase E2 completa ejecuta el consumidor cargado y reproduce su estado al repetirla desde cero.
+
+La batería del cargador y las regresiones de checkpoints reúnen 47 pruebas distintas correctas. Un caso antiguo que necesita un paso de AdamW queda omitido por el bloqueo y un caso CUDA se excluye de la selección CPU. Los recuentos se solapan con las pruebas nuevas y no se suman. La [cobertura](../../reports/engineering/spaced-selected-20261027/quality.json) es de 97/97 sentencias, con CRAP máximo 30. Coverage.py 7.16.1 no instrumenta ramas en estos predicados booleanos encadenados, y el informe registra cero ramas. No equivale a comprobar cada condición. La complejidad se calcula con Radon 6.0.1. Las 34 fuentes canónicas permanecen intactas.
+
+La [medida de carga](../../reports/engineering/spaced-selected-20261027/cost.json) registra medianas CPU de 21,502, 24,414 y 45,744 ms para estados de 32, 64 y 128 unidades, respectivamente. Usa FP64, dos hilos, dos calentamientos y diez muestras por tamaño. Comprueba metadatos y checkpoints, construye los módulos, congela y revalida. Los fixtures no contienen archivos de predicciones que auditar. No estima la carga de una campaña completa, inferencia, CUDA ni energía. El proceso completo tarda 4,36 s y su pico RSS externo absoluto es 763.128 KiB, sin atribuir un incremento por tamaño.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_selected.py -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-selected-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-selected-cost"
+```
+
+El benchmark requiere un destino nuevo. La prueba de integración con E2 necesita además el enlace nativo compatible. Estas órdenes solo comprueban artefactos técnicos y no levantan el bloqueo de aprendizaje.
 
 ## Fuentes y alcance
 
@@ -213,4 +234,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, el cargador y la CLI del estudio por ventanas y la evaluación autorizada. El registro, el productor estándar, el selector nativo y el adaptador no habilitan entrenamientos, no cambian el baseline y no abren el test final.
+Quedan pendientes el productor de supresiones regional, el controlador y la CLI del estudio por ventanas y la evaluación autorizada. El registro, el productor estándar, el selector nativo, el cargador y el adaptador no habilitan entrenamientos, no cambian el baseline y no abren el test final.
