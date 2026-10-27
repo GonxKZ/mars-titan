@@ -10,6 +10,7 @@ import pytest
 
 from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.calibration.periodic_conformal import DAY_MICROSECONDS, replay_periodic_refit
+from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.models.quantile_head import LEVELS
 
 NOMINALS = (0.8, 0.95)
@@ -163,6 +164,7 @@ def test_markets_follow_their_own_sessions_and_never_share_rows():
         (dict(lookback_days=0), "número entero positivo de días"),
         (dict(overlap=True), "debe preceder"),
         (dict(early=True), "madurez posterior"),
+        (dict(sealed=True), "2024"),
         (dict(market="JP"), "no define una corrección inicial"),
     ],
 )
@@ -174,6 +176,11 @@ def test_declarations_and_rows_that_break_the_contract_are_rejected(change, mess
         calibration = part(("US",), 7, seed=1, first=3)
     elif "early" in change:
         evaluation = dict(evaluation, matures_at=evaluation["prediction_at"])
+    elif "sealed" in change:
+        # Una sola etiqueta en el test reservado basta para rechazar el tramo (#748).
+        matures = evaluation["matures_at"].copy()
+        matures[-1] = FINAL_TEST_START_US
+        evaluation = dict(evaluation, matures_at=matures)
     elif "market" in change:
         evaluation = dict(evaluation, groups=np.full(len(evaluation["groups"]), "JP"))
     else:
