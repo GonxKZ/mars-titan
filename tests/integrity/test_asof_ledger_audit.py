@@ -1,18 +1,23 @@
 """Auditoría as-of del registro de etiquetas G3 (#748, #442).
 
 Los registros son sintéticos con semilla fija o escritos a mano. Las etapas auditadas son las
-que ya existen en `develop` y leen etiquetas maduras: la volatilidad pasada de A2, PT2 en
-línea y su recalibración periódica. Cada auditoría se acompaña de una versión con una fuga
-deliberada que la auditoría debe detectar. No hay modelos ajustados ni pasos de optimizador.
+que leen etiquetas maduras: la volatilidad pasada de A2, PT2 en línea, su recalibración
+periódica y los tres modos del conformal ponderado de A3. Cada auditoría se acompaña de una
+versión con una fuga deliberada que la auditoría debe detectar. No hay modelos ajustados ni
+pasos de optimizador.
 """
+
+from functools import partial
 
 import numpy as np
 import pytest
 
 from mars_titan.calibration import online_conformal, periodic_conformal
+from mars_titan.calibration import regime_weighted_conformal as rwc
 from mars_titan.calibration.conformal_quantiles import fit_conformal_quantiles
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import neutral_abstention as na
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.integrity import asof_ledger_audit as audit
 from mars_titan.models.quantile_head import LEVELS
 
@@ -108,7 +113,55 @@ def periodic(records, *, shift=0):
     return emitted, records["issued_at"]
 
 
-STAGES = {"past_volatility": volatility, "online_conformal": online, "periodic_refit": periodic}
+# A3 con una ventana de régimen que ya cubre etiquetas de la calibración en la primera sesión.
+REGIME_CONFIG = rwc.DEFAULT | dict(min_rows=30, lookback_days=40, regime_days=15)
+
+
+def regime_part(records, shift):
+    """Panel de A3 y madurez en su orden canónico. Las anchuras varían por fila."""
+    rows = len(records["target"])
+    quantiles = np.asarray(records["quantiles"]) * (1 + 0.1 * (np.arange(rows) % 7))[:, None]
+    ids = [f"{a}/{t}" for a, t in zip(records["asset_id"], records["issued_at"], strict=True)]
+    panel = ForecastPanel.from_columns(
+        ids,
+        records["group"],
+        records["issued_at"],
+        records["target"],
+        quantiles[:, 2],
+        quantiles=quantiles,
+        levels=LEVELS,
+    )
+    position = {identity: index for index, identity in enumerate(ids)}
+    order = np.array([position[identity] for identity in panel.row_id.to_pylist()])
+    return panel, (np.asarray(records["available_at"]) - shift)[order]
+
+
+def regime_conformal(records, *, shift=0, weighting="context"):
+    """Conformal ponderado de A3, cuyo conjunto pasado incluye etiquetas maduras evaluadas."""
+    earlier = ledger(sessions=12, seed=9)
+    for key in ("issued_at", "available_at"):
+        earlier[key] = earlier[key] - 20 * DAY
+    calibration = regime_part(earlier, 0)
+    evaluation = regime_part(records, shift)
+    history = dict(
+        market=np.r_[earlier["group"], records["group"]],
+        target=np.r_[earlier["target"], records["target"]],
+        matures_at=np.r_[earlier["available_at"], np.asarray(records["available_at"]) - shift],
+    )
+    record = rwc.fit(*calibration, history, REGIME_CONFIG)
+    emitted, _ = rwc.replay(record, calibration, evaluation, history, weighting=weighting)
+    return emitted, evaluation[0].prediction_at
+
+
+STAGES = {
+    "past_volatility": volatility,
+    "online_conformal": online,
+    "periodic_refit": periodic,
+    **{
+        f"regime_conformal_{weighting}": partial(regime_conformal, weighting=weighting)
+        for weighting in rwc.WEIGHTINGS
+    },
+}
 
 
 @pytest.mark.parametrize("name", STAGES)
@@ -129,7 +182,7 @@ def test_a_stage_reading_labels_one_day_early_is_detected(name):
     assert {failure["check"] for failure in receipt["failures"]} == {"reconstruction"}
 
 
-@pytest.mark.parametrize("name", ["online_conformal", "periodic_refit"])
+@pytest.mark.parametrize("name", ["online_conformal", "periodic_refit", "regime_conformal_context"])
 def test_stages_that_receive_both_instants_reject_impossible_records(name):
     assert audit.rejection(STAGES[name], ledger()) == []
 
