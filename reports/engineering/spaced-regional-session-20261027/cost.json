@@ -1,0 +1,1626 @@
+{
+  "kind": "technical_durable_regional_spaced_session_cost",
+  "status": "completed",
+  "runtime": {
+    "torch": "2.14.0+cu130",
+    "python": "3.12.14",
+    "device": "cpu",
+    "dtype": "torch.float64",
+    "cpu_threads": 2,
+    "attention_fastpath": false,
+    "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "protocol": {
+    "assets": [
+      4,
+      64
+    ],
+    "readers": [
+      "ring",
+      "tree"
+    ],
+    "warmup": 1,
+    "repetitions": 3,
+    "cohort_decisions": [
+      125,
+      126,
+      127,
+      128
+    ],
+    "reopen_after": 126,
+    "close_at": 201,
+    "total_budget_seconds": 600,
+    "memory_capacity": "twice_assets"
+  },
+  "samples": [
+    {
+      "seconds": 1.4382526599802077,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 217591,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "bf010cbd02c90173df86480d96cc7d21d631a90854738fa5459733bc98c264c0",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "33cb714b31689fccfa392da25c528dfb76998f5699f587cb059644e8d22347a0",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "3e82b58b60065525d32d6bf713d8cf988d3e0d6d33376e0fcd12c9b218a8339f",
+        "identity_file_sha256": "8dca39e845477ba97f438d30f7efa9f766d8da584fe886b0bed7ee0edda33f12",
+        "native_record_sha256": [
+          "c12e05b50c3862291e627f1d51f0f43c89db2d5c15bcfde2f8e19bbbfe717c8c",
+          "71fd8f6a2e5e7a45bd9fc537d9940b01b8fe349793f8540767c8315b9a9949a7",
+          "e3221e178e13b83ff12794921f8ada6a2ddfd0cb603e4e038d710d12cbd42fbb",
+          "8c39623a07f983b164b681e8ccdc02a1417e847d650f782ee68aec05c761b81f",
+          "4394b085c33005c04fb44cdb1930e9ff27353ca659b3c104fd734e69018c875d"
+        ]
+      }
+    },
+    {
+      "seconds": 1.4376163459382951,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 227089,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1335972,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1339044,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "9fc453d190d6bae6f5a33d6a245f68bb60ca5fc2585df3d2c05823070dc514fd",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "a2959f530d41f071bc2a3a93c6659096518d30b8130936c3376bacb3824e6f9e",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "7d4c20f71c9d0839c0ceb5fecfff8090f87d18c51893f3c0fac5fb9b7d21e220",
+        "identity_file_sha256": "4666abce13c1b4ce9069faf2f12a84b8f39425c32cc248777688d29b1b9aef33",
+        "native_record_sha256": [
+          "f2b27b36cf482b0914aa0849d07022b84f2338b12ef7695941080a3139d50fb6",
+          "d532a4d31cccfd2bfe993f256a5986fa35ecf74b5c859d1e02a42f9209190fc0",
+          "f2a771d1c4b5baf9f92983976a8db6dcec95d6d98467f67f85ac6d0d4bf88a1d",
+          "879807b0cb5fd650893d67f342fb84a1f5d89003cc97865b333a0a5a0f38afe4",
+          "713bc0f17c85fca24268b3116bb20cac34e03f905bc0a5e4793e52d93ba22a44"
+        ]
+      }
+    },
+    {
+      "seconds": 1.447260833811015,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 227089,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1335972,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1339044,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "9fc453d190d6bae6f5a33d6a245f68bb60ca5fc2585df3d2c05823070dc514fd",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "a2959f530d41f071bc2a3a93c6659096518d30b8130936c3376bacb3824e6f9e",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "7d4c20f71c9d0839c0ceb5fecfff8090f87d18c51893f3c0fac5fb9b7d21e220",
+        "identity_file_sha256": "4666abce13c1b4ce9069faf2f12a84b8f39425c32cc248777688d29b1b9aef33",
+        "native_record_sha256": [
+          "f2b27b36cf482b0914aa0849d07022b84f2338b12ef7695941080a3139d50fb6",
+          "d532a4d31cccfd2bfe993f256a5986fa35ecf74b5c859d1e02a42f9209190fc0",
+          "f2a771d1c4b5baf9f92983976a8db6dcec95d6d98467f67f85ac6d0d4bf88a1d",
+          "879807b0cb5fd650893d67f342fb84a1f5d89003cc97865b333a0a5a0f38afe4",
+          "713bc0f17c85fca24268b3116bb20cac34e03f905bc0a5e4793e52d93ba22a44"
+        ]
+      }
+    },
+    {
+      "seconds": 1.014598245965317,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 217591,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "bf010cbd02c90173df86480d96cc7d21d631a90854738fa5459733bc98c264c0",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "33cb714b31689fccfa392da25c528dfb76998f5699f587cb059644e8d22347a0",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "3e82b58b60065525d32d6bf713d8cf988d3e0d6d33376e0fcd12c9b218a8339f",
+        "identity_file_sha256": "8dca39e845477ba97f438d30f7efa9f766d8da584fe886b0bed7ee0edda33f12",
+        "native_record_sha256": [
+          "c12e05b50c3862291e627f1d51f0f43c89db2d5c15bcfde2f8e19bbbfe717c8c",
+          "71fd8f6a2e5e7a45bd9fc537d9940b01b8fe349793f8540767c8315b9a9949a7",
+          "e3221e178e13b83ff12794921f8ada6a2ddfd0cb603e4e038d710d12cbd42fbb",
+          "8c39623a07f983b164b681e8ccdc02a1417e847d650f782ee68aec05c761b81f",
+          "4394b085c33005c04fb44cdb1930e9ff27353ca659b3c104fd734e69018c875d"
+        ]
+      }
+    },
+    {
+      "seconds": 1.1513855177909136,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 217591,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "bf010cbd02c90173df86480d96cc7d21d631a90854738fa5459733bc98c264c0",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "33cb714b31689fccfa392da25c528dfb76998f5699f587cb059644e8d22347a0",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "3e82b58b60065525d32d6bf713d8cf988d3e0d6d33376e0fcd12c9b218a8339f",
+        "identity_file_sha256": "8dca39e845477ba97f438d30f7efa9f766d8da584fe886b0bed7ee0edda33f12",
+        "native_record_sha256": [
+          "c12e05b50c3862291e627f1d51f0f43c89db2d5c15bcfde2f8e19bbbfe717c8c",
+          "71fd8f6a2e5e7a45bd9fc537d9940b01b8fe349793f8540767c8315b9a9949a7",
+          "e3221e178e13b83ff12794921f8ada6a2ddfd0cb603e4e038d710d12cbd42fbb",
+          "8c39623a07f983b164b681e8ccdc02a1417e847d650f782ee68aec05c761b81f",
+          "4394b085c33005c04fb44cdb1930e9ff27353ca659b3c104fd734e69018c875d"
+        ]
+      }
+    },
+    {
+      "seconds": 1.5277735830750316,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 227089,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1335972,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1339044,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "9fc453d190d6bae6f5a33d6a245f68bb60ca5fc2585df3d2c05823070dc514fd",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "a2959f530d41f071bc2a3a93c6659096518d30b8130936c3376bacb3824e6f9e",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "7d4c20f71c9d0839c0ceb5fecfff8090f87d18c51893f3c0fac5fb9b7d21e220",
+        "identity_file_sha256": "4666abce13c1b4ce9069faf2f12a84b8f39425c32cc248777688d29b1b9aef33",
+        "native_record_sha256": [
+          "f2b27b36cf482b0914aa0849d07022b84f2338b12ef7695941080a3139d50fb6",
+          "d532a4d31cccfd2bfe993f256a5986fa35ecf74b5c859d1e02a42f9209190fc0",
+          "f2a771d1c4b5baf9f92983976a8db6dcec95d6d98467f67f85ac6d0d4bf88a1d",
+          "879807b0cb5fd650893d67f342fb84a1f5d89003cc97865b333a0a5a0f38afe4",
+          "713bc0f17c85fca24268b3116bb20cac34e03f905bc0a5e4793e52d93ba22a44"
+        ]
+      }
+    },
+    {
+      "seconds": 1.692183692008257,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 227089,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1335972,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 48,
+          "diagnostic_message_updates_upper_bound": 96,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 1339044,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "9fc453d190d6bae6f5a33d6a245f68bb60ca5fc2585df3d2c05823070dc514fd",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "a2959f530d41f071bc2a3a93c6659096518d30b8130936c3376bacb3824e6f9e",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "7d4c20f71c9d0839c0ceb5fecfff8090f87d18c51893f3c0fac5fb9b7d21e220",
+        "identity_file_sha256": "4666abce13c1b4ce9069faf2f12a84b8f39425c32cc248777688d29b1b9aef33",
+        "native_record_sha256": [
+          "f2b27b36cf482b0914aa0849d07022b84f2338b12ef7695941080a3139d50fb6",
+          "d532a4d31cccfd2bfe993f256a5986fa35ecf74b5c859d1e02a42f9209190fc0",
+          "f2a771d1c4b5baf9f92983976a8db6dcec95d6d98467f67f85ac6d0d4bf88a1d",
+          "879807b0cb5fd650893d67f342fb84a1f5d89003cc97865b333a0a5a0f38afe4",
+          "713bc0f17c85fca24268b3116bb20cac34e03f905bc0a5e4793e52d93ba22a44"
+        ]
+      }
+    },
+    {
+      "seconds": 1.3923875119071454,
+      "emitted_rows": 16,
+      "emitted_sha256": "9cd5af01b5ccd9bfdaa0e37815b67da8ddb480dafa44724e13e0ea22a2020b6f",
+      "persistent_bytes": 217591,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "bf010cbd02c90173df86480d96cc7d21d631a90854738fa5459733bc98c264c0",
+        "consumer_model_id": "385befb5dd8f3f51e23abb96cb3c88d8085815164ab173d13943d720564f3791",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "33cb714b31689fccfa392da25c528dfb76998f5699f587cb059644e8d22347a0",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "3e82b58b60065525d32d6bf713d8cf988d3e0d6d33376e0fcd12c9b218a8339f",
+        "identity_file_sha256": "8dca39e845477ba97f438d30f7efa9f766d8da584fe886b0bed7ee0edda33f12",
+        "native_record_sha256": [
+          "c12e05b50c3862291e627f1d51f0f43c89db2d5c15bcfde2f8e19bbbfe717c8c",
+          "71fd8f6a2e5e7a45bd9fc537d9940b01b8fe349793f8540767c8315b9a9949a7",
+          "e3221e178e13b83ff12794921f8ada6a2ddfd0cb603e4e038d710d12cbd42fbb",
+          "8c39623a07f983b164b681e8ccdc02a1417e847d650f782ee68aec05c761b81f",
+          "4394b085c33005c04fb44cdb1930e9ff27353ca659b3c104fd734e69018c875d"
+        ]
+      }
+    },
+    {
+      "seconds": 1.2859883380588144,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 223028,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "5a63a2e042a66c0b68611b38e76fd97377d67f133880b8980d98a899c09addba",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "89e8778ec16f7e7ed1341faf86fe338bce16be40fbdf0ebf5ab0fa8deb52935b",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "07f7a775dc63e845d8848e5d0a4f8a5bc5b5b3cf1028bcf1556c23ee5a71fe89",
+        "identity_file_sha256": "b4eab9935ba39bb893c5a04a37336c5791a97bd7782925f075e0836958b8ce7d",
+        "native_record_sha256": [
+          "9c46e8502b1a28ff01f64b70ff7b786d0920466e5a71c2fe26d510c12ef83b3e",
+          "15264c15581ecf33a5de4034070baf94c8e45f26eff546c4bd0458218c9384b2",
+          "95cdcac41c0f0dd64298833d303fb4bf13ff76ff722ebe6e6b4b64e6fb03b230",
+          "f43a674f73358411200dfc30ae9934034035fe863fff8a91edc6c5558b202897",
+          "ed1a56d2e54f871ee12ca8e916566796a44344941b722adf5ac9cbea44706b07"
+        ]
+      }
+    },
+    {
+      "seconds": 1.4533218229189515,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 232526,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2595628,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2598700,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "1b7819408f7418f67ba7eb337ca503623814e0c87fdce5683407c61637094427",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "88b2c2d4f7b2b72c9950171a5955c588f96428e93644544fe87eeb278be5b6e7",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "19a8f903b4d928b505f468b635d19ba5b6135d04ead991e85f9faa9e2684922f",
+        "identity_file_sha256": "474f8505018db9602d6e2f0d439c7416cb99ef891b63d5f48487772b30e7d3f7",
+        "native_record_sha256": [
+          "1d90c9731bb85a686600c77d22558fbf513b5824b77cd63f029197da7f9c8d8b",
+          "7efd4db30d5be6eb92eaae35313446cd88fe5d90a7598bd79b3c9b5d485be414",
+          "f11f569d2dcfc6e0ba4164aa16a3badcff6d7a9c9bb04cde89cd0a591dbd743d",
+          "cad36d22fe625b1b0a535ebb99526841404acb6d141f58e1cab4b7df383a79b5",
+          "e139efcc1d85600c26182a6dddfa20ea86faa579c5f6b961cda91004ff193bfb"
+        ]
+      }
+    },
+    {
+      "seconds": 1.5119975691195577,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 232526,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2595628,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2598700,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "1b7819408f7418f67ba7eb337ca503623814e0c87fdce5683407c61637094427",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "88b2c2d4f7b2b72c9950171a5955c588f96428e93644544fe87eeb278be5b6e7",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "19a8f903b4d928b505f468b635d19ba5b6135d04ead991e85f9faa9e2684922f",
+        "identity_file_sha256": "474f8505018db9602d6e2f0d439c7416cb99ef891b63d5f48487772b30e7d3f7",
+        "native_record_sha256": [
+          "1d90c9731bb85a686600c77d22558fbf513b5824b77cd63f029197da7f9c8d8b",
+          "7efd4db30d5be6eb92eaae35313446cd88fe5d90a7598bd79b3c9b5d485be414",
+          "f11f569d2dcfc6e0ba4164aa16a3badcff6d7a9c9bb04cde89cd0a591dbd743d",
+          "cad36d22fe625b1b0a535ebb99526841404acb6d141f58e1cab4b7df383a79b5",
+          "e139efcc1d85600c26182a6dddfa20ea86faa579c5f6b961cda91004ff193bfb"
+        ]
+      }
+    },
+    {
+      "seconds": 1.2294360981322825,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 223028,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "5a63a2e042a66c0b68611b38e76fd97377d67f133880b8980d98a899c09addba",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "89e8778ec16f7e7ed1341faf86fe338bce16be40fbdf0ebf5ab0fa8deb52935b",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "07f7a775dc63e845d8848e5d0a4f8a5bc5b5b3cf1028bcf1556c23ee5a71fe89",
+        "identity_file_sha256": "b4eab9935ba39bb893c5a04a37336c5791a97bd7782925f075e0836958b8ce7d",
+        "native_record_sha256": [
+          "9c46e8502b1a28ff01f64b70ff7b786d0920466e5a71c2fe26d510c12ef83b3e",
+          "15264c15581ecf33a5de4034070baf94c8e45f26eff546c4bd0458218c9384b2",
+          "95cdcac41c0f0dd64298833d303fb4bf13ff76ff722ebe6e6b4b64e6fb03b230",
+          "f43a674f73358411200dfc30ae9934034035fe863fff8a91edc6c5558b202897",
+          "ed1a56d2e54f871ee12ca8e916566796a44344941b722adf5ac9cbea44706b07"
+        ]
+      }
+    },
+    {
+      "seconds": 1.262178909033537,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 223028,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "5a63a2e042a66c0b68611b38e76fd97377d67f133880b8980d98a899c09addba",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "89e8778ec16f7e7ed1341faf86fe338bce16be40fbdf0ebf5ab0fa8deb52935b",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "07f7a775dc63e845d8848e5d0a4f8a5bc5b5b3cf1028bcf1556c23ee5a71fe89",
+        "identity_file_sha256": "b4eab9935ba39bb893c5a04a37336c5791a97bd7782925f075e0836958b8ce7d",
+        "native_record_sha256": [
+          "9c46e8502b1a28ff01f64b70ff7b786d0920466e5a71c2fe26d510c12ef83b3e",
+          "15264c15581ecf33a5de4034070baf94c8e45f26eff546c4bd0458218c9384b2",
+          "95cdcac41c0f0dd64298833d303fb4bf13ff76ff722ebe6e6b4b64e6fb03b230",
+          "f43a674f73358411200dfc30ae9934034035fe863fff8a91edc6c5558b202897",
+          "ed1a56d2e54f871ee12ca8e916566796a44344941b722adf5ac9cbea44706b07"
+        ]
+      }
+    },
+    {
+      "seconds": 1.4868820540141314,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 232526,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2595628,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2598700,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "1b7819408f7418f67ba7eb337ca503623814e0c87fdce5683407c61637094427",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "88b2c2d4f7b2b72c9950171a5955c588f96428e93644544fe87eeb278be5b6e7",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "19a8f903b4d928b505f468b635d19ba5b6135d04ead991e85f9faa9e2684922f",
+        "identity_file_sha256": "474f8505018db9602d6e2f0d439c7416cb99ef891b63d5f48487772b30e7d3f7",
+        "native_record_sha256": [
+          "1d90c9731bb85a686600c77d22558fbf513b5824b77cd63f029197da7f9c8d8b",
+          "7efd4db30d5be6eb92eaae35313446cd88fe5d90a7598bd79b3c9b5d485be414",
+          "f11f569d2dcfc6e0ba4164aa16a3badcff6d7a9c9bb04cde89cd0a591dbd743d",
+          "cad36d22fe625b1b0a535ebb99526841404acb6d141f58e1cab4b7df383a79b5",
+          "e139efcc1d85600c26182a6dddfa20ea86faa579c5f6b961cda91004ff193bfb"
+        ]
+      }
+    },
+    {
+      "seconds": 1.321702083107084,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 232526,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2595628,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 64,
+          "diagnostic_message_updates_upper_bound": 416,
+          "diagnostic_refinements": 16,
+          "extra_pool_projection_calls": 1,
+          "extra_pool_projection_rows": 4,
+          "extra_projected_episode_rows": 16,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 2598700,
+          "rows": 4,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "1b7819408f7418f67ba7eb337ca503623814e0c87fdce5683407c61637094427",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "88b2c2d4f7b2b72c9950171a5955c588f96428e93644544fe87eeb278be5b6e7",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "19a8f903b4d928b505f468b635d19ba5b6135d04ead991e85f9faa9e2684922f",
+        "identity_file_sha256": "474f8505018db9602d6e2f0d439c7416cb99ef891b63d5f48487772b30e7d3f7",
+        "native_record_sha256": [
+          "1d90c9731bb85a686600c77d22558fbf513b5824b77cd63f029197da7f9c8d8b",
+          "7efd4db30d5be6eb92eaae35313446cd88fe5d90a7598bd79b3c9b5d485be414",
+          "f11f569d2dcfc6e0ba4164aa16a3badcff6d7a9c9bb04cde89cd0a591dbd743d",
+          "cad36d22fe625b1b0a535ebb99526841404acb6d141f58e1cab4b7df383a79b5",
+          "e139efcc1d85600c26182a6dddfa20ea86faa579c5f6b961cda91004ff193bfb"
+        ]
+      }
+    },
+    {
+      "seconds": 1.3403379549272358,
+      "emitted_rows": 16,
+      "emitted_sha256": "d877328c01c822d0b59f4f8173d19832e710b2494a37c1075fe4f604708c9406",
+      "persistent_bytes": 223028,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 4,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "5a63a2e042a66c0b68611b38e76fd97377d67f133880b8980d98a899c09addba",
+        "consumer_model_id": "ef5be03aa90e8dd77864ece8f4fd923e8aa2cba505cbc2abdf7747e3f3173c0f",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "89e8778ec16f7e7ed1341faf86fe338bce16be40fbdf0ebf5ab0fa8deb52935b",
+        "source_sha256": "f0113fcc5d7959591e425102d900943f77e43d02aea9d805d7c3233d8a8e8f04",
+        "initial_state_sha256": "07f7a775dc63e845d8848e5d0a4f8a5bc5b5b3cf1028bcf1556c23ee5a71fe89",
+        "identity_file_sha256": "b4eab9935ba39bb893c5a04a37336c5791a97bd7782925f075e0836958b8ce7d",
+        "native_record_sha256": [
+          "9c46e8502b1a28ff01f64b70ff7b786d0920466e5a71c2fe26d510c12ef83b3e",
+          "15264c15581ecf33a5de4034070baf94c8e45f26eff546c4bd0458218c9384b2",
+          "95cdcac41c0f0dd64298833d303fb4bf13ff76ff722ebe6e6b4b64e6fb03b230",
+          "f43a674f73358411200dfc30ae9934034035fe863fff8a91edc6c5558b202897",
+          "ed1a56d2e54f871ee12ca8e916566796a44344941b722adf5ac9cbea44706b07"
+        ]
+      }
+    },
+    {
+      "seconds": 5.002863705856726,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2709136,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "b04625737800e3bbcea56fc0d88fcaa5aef63ea378e53a56ca5df32893503266",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "1257d4348a7cd36e9426bdaf242dd1d491dba457389881d309c881f5aecb174f",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "f038309b957388fa8c6ba7f0d0cabca53d5275a9e509a83ced1f74a496c1777f",
+        "identity_file_sha256": "81ed607c84d46de13f63bf5f37e2fe32030d534fbee9dd6dd944d886b92f1c09",
+        "native_record_sha256": [
+          "fde7cb13961d8d30eaa516c38b6f73fd4c35c90d5dc77edb1aab19359bd1810e",
+          "623338e015216aa249f495470f8c223c450f9bfab559cec0f7f8bcd09c0b905d",
+          "d3472b2de3a1e6986cb0a96ba9d794596b3b0d37d263fc7b47112fad020f320b",
+          "843ae93ef17028b41709caab8d3e1c5067ef32cb424e0d1a5daa242257c37af1",
+          "3b15b2115339929840e43fc7f67dd13374dec166600baefd2ff17569f5e96b4e"
+        ]
+      }
+    },
+    {
+      "seconds": 5.762794747017324,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2750058,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3322944,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3519552,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "8be9c0942e5e2f9247344e428e7e90fe59cca64c961692c42ad54a9265f9eafb",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "6eb240c68f6713ffa9bb92636bf4d2ad25787c65855f1a6a3868774a50eabdf4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "4dafc707aaab8acfefb13b1add0b2213c298cb9b5ff0df49670dd76e5b2bc0b3",
+        "identity_file_sha256": "297c7ab76ff79dbff10afd2e961b765867d8191c04e78f1b1128494fc83f4877",
+        "native_record_sha256": [
+          "0fc6f57a0f172380ede9be57e506796b1acccaf16ae4a19dfb698cd185dad1e6",
+          "5f2caefd41cabba3e1f3636802ddb2671b2eb0437541dc1aacb243b17bc2fc84",
+          "7fc5c3a3eb810b478cb57a4853342f2fd049dad0bc001b11119070541eb260dc",
+          "a87d3e489d776464edb6229486936bb9ab9ab993222c67f2783efffd854b6af1",
+          "76cc518ab2b2d5e79e3dea880324f5c089e2c70067be1739c710f503bac7babe"
+        ]
+      }
+    },
+    {
+      "seconds": 4.927599414950237,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2750058,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3322944,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3519552,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8be9c0942e5e2f9247344e428e7e90fe59cca64c961692c42ad54a9265f9eafb",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "6eb240c68f6713ffa9bb92636bf4d2ad25787c65855f1a6a3868774a50eabdf4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "4dafc707aaab8acfefb13b1add0b2213c298cb9b5ff0df49670dd76e5b2bc0b3",
+        "identity_file_sha256": "297c7ab76ff79dbff10afd2e961b765867d8191c04e78f1b1128494fc83f4877",
+        "native_record_sha256": [
+          "0fc6f57a0f172380ede9be57e506796b1acccaf16ae4a19dfb698cd185dad1e6",
+          "5f2caefd41cabba3e1f3636802ddb2671b2eb0437541dc1aacb243b17bc2fc84",
+          "7fc5c3a3eb810b478cb57a4853342f2fd049dad0bc001b11119070541eb260dc",
+          "a87d3e489d776464edb6229486936bb9ab9ab993222c67f2783efffd854b6af1",
+          "76cc518ab2b2d5e79e3dea880324f5c089e2c70067be1739c710f503bac7babe"
+        ]
+      }
+    },
+    {
+      "seconds": 4.4937894970644265,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2709136,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "b04625737800e3bbcea56fc0d88fcaa5aef63ea378e53a56ca5df32893503266",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "1257d4348a7cd36e9426bdaf242dd1d491dba457389881d309c881f5aecb174f",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "f038309b957388fa8c6ba7f0d0cabca53d5275a9e509a83ced1f74a496c1777f",
+        "identity_file_sha256": "81ed607c84d46de13f63bf5f37e2fe32030d534fbee9dd6dd944d886b92f1c09",
+        "native_record_sha256": [
+          "fde7cb13961d8d30eaa516c38b6f73fd4c35c90d5dc77edb1aab19359bd1810e",
+          "623338e015216aa249f495470f8c223c450f9bfab559cec0f7f8bcd09c0b905d",
+          "d3472b2de3a1e6986cb0a96ba9d794596b3b0d37d263fc7b47112fad020f320b",
+          "843ae93ef17028b41709caab8d3e1c5067ef32cb424e0d1a5daa242257c37af1",
+          "3b15b2115339929840e43fc7f67dd13374dec166600baefd2ff17569f5e96b4e"
+        ]
+      }
+    },
+    {
+      "seconds": 4.881652852054685,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2709136,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "b04625737800e3bbcea56fc0d88fcaa5aef63ea378e53a56ca5df32893503266",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "1257d4348a7cd36e9426bdaf242dd1d491dba457389881d309c881f5aecb174f",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "f038309b957388fa8c6ba7f0d0cabca53d5275a9e509a83ced1f74a496c1777f",
+        "identity_file_sha256": "81ed607c84d46de13f63bf5f37e2fe32030d534fbee9dd6dd944d886b92f1c09",
+        "native_record_sha256": [
+          "fde7cb13961d8d30eaa516c38b6f73fd4c35c90d5dc77edb1aab19359bd1810e",
+          "623338e015216aa249f495470f8c223c450f9bfab559cec0f7f8bcd09c0b905d",
+          "d3472b2de3a1e6986cb0a96ba9d794596b3b0d37d263fc7b47112fad020f320b",
+          "843ae93ef17028b41709caab8d3e1c5067ef32cb424e0d1a5daa242257c37af1",
+          "3b15b2115339929840e43fc7f67dd13374dec166600baefd2ff17569f5e96b4e"
+        ]
+      }
+    },
+    {
+      "seconds": 5.001440309919417,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2750058,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3322944,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3519552,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8be9c0942e5e2f9247344e428e7e90fe59cca64c961692c42ad54a9265f9eafb",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "6eb240c68f6713ffa9bb92636bf4d2ad25787c65855f1a6a3868774a50eabdf4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "4dafc707aaab8acfefb13b1add0b2213c298cb9b5ff0df49670dd76e5b2bc0b3",
+        "identity_file_sha256": "297c7ab76ff79dbff10afd2e961b765867d8191c04e78f1b1128494fc83f4877",
+        "native_record_sha256": [
+          "0fc6f57a0f172380ede9be57e506796b1acccaf16ae4a19dfb698cd185dad1e6",
+          "5f2caefd41cabba3e1f3636802ddb2671b2eb0437541dc1aacb243b17bc2fc84",
+          "7fc5c3a3eb810b478cb57a4853342f2fd049dad0bc001b11119070541eb260dc",
+          "a87d3e489d776464edb6229486936bb9ab9ab993222c67f2783efffd854b6af1",
+          "76cc518ab2b2d5e79e3dea880324f5c089e2c70067be1739c710f503bac7babe"
+        ]
+      }
+    },
+    {
+      "seconds": 4.990424443036318,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2750058,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3322944,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 768,
+          "diagnostic_message_updates_upper_bound": 1536,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 3519552,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": true,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8be9c0942e5e2f9247344e428e7e90fe59cca64c961692c42ad54a9265f9eafb",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "6eb240c68f6713ffa9bb92636bf4d2ad25787c65855f1a6a3868774a50eabdf4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "4dafc707aaab8acfefb13b1add0b2213c298cb9b5ff0df49670dd76e5b2bc0b3",
+        "identity_file_sha256": "297c7ab76ff79dbff10afd2e961b765867d8191c04e78f1b1128494fc83f4877",
+        "native_record_sha256": [
+          "0fc6f57a0f172380ede9be57e506796b1acccaf16ae4a19dfb698cd185dad1e6",
+          "5f2caefd41cabba3e1f3636802ddb2671b2eb0437541dc1aacb243b17bc2fc84",
+          "7fc5c3a3eb810b478cb57a4853342f2fd049dad0bc001b11119070541eb260dc",
+          "a87d3e489d776464edb6229486936bb9ab9ab993222c67f2783efffd854b6af1",
+          "76cc518ab2b2d5e79e3dea880324f5c089e2c70067be1739c710f503bac7babe"
+        ]
+      }
+    },
+    {
+      "seconds": 5.027136204997078,
+      "emitted_rows": 256,
+      "emitted_sha256": "90707a94c58986072a88e4970e706b123d0cb0d48b6faf5c5bd7c6dbaee6840c",
+      "persistent_bytes": 2709136,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "ring",
+      "enabled": false,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "b04625737800e3bbcea56fc0d88fcaa5aef63ea378e53a56ca5df32893503266",
+        "consumer_model_id": "bb2089e7ab96ce00ed6cff39fee52006eb6ce604b0c162603bcd53303bf22a7b",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "1257d4348a7cd36e9426bdaf242dd1d491dba457389881d309c881f5aecb174f",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "f038309b957388fa8c6ba7f0d0cabca53d5275a9e509a83ced1f74a496c1777f",
+        "identity_file_sha256": "81ed607c84d46de13f63bf5f37e2fe32030d534fbee9dd6dd944d886b92f1c09",
+        "native_record_sha256": [
+          "fde7cb13961d8d30eaa516c38b6f73fd4c35c90d5dc77edb1aab19359bd1810e",
+          "623338e015216aa249f495470f8c223c450f9bfab559cec0f7f8bcd09c0b905d",
+          "d3472b2de3a1e6986cb0a96ba9d794596b3b0d37d263fc7b47112fad020f320b",
+          "843ae93ef17028b41709caab8d3e1c5067ef32cb424e0d1a5daa242257c37af1",
+          "3b15b2115339929840e43fc7f67dd13374dec166600baefd2ff17569f5e96b4e"
+        ]
+      }
+    },
+    {
+      "seconds": 4.350822961190715,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2779946,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "8b720980f613870c5cde2b49261f58bbf4494e5a0040c5f1228252fccc1f9d59",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "f1c1cf450a9d6ce2eb35925ff4aff71d1ad93012b9b0df7ddd69f764b9bdf5c1",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "6d1e5f89b559ceddd47e6758c694e84e78eab6722f54d879e3cebbac226ef6e6",
+        "identity_file_sha256": "a383c8f098a09ccb31be729ae4c29290851dbe17dcfdd11a105b73b8a9e93d17",
+        "native_record_sha256": [
+          "6b15422103b16e2ec2197750d54285b7cee4c7d056e94ca852083f66c9e3071b",
+          "d7777074e410d817f7adaa32b897057c98cf7cfc6cf520a43bf8c4a059698176",
+          "9f0f69b4b6cb9ac4ccc3c3a0c0d9989d4bf5ccaa579bfddba2dc97f83cf58983",
+          "421d2dec49931ac0066e4a27e19ffa4a86ea42bab083480139882f57909d785e",
+          "cb2c8eccd7d2572142770c68170ebcb1153760bf0b63105163f995faf4bea503"
+        ]
+      }
+    },
+    {
+      "seconds": 5.117441643960774,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2820868,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8409544,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8606152,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 0,
+      "warmup": true,
+      "execution_identity": {
+        "integrated_model_id": "eab0a67f98b14437de2b9f955fb5dc7b598fb7b6b3fcd2b04cc3be59e100bda1",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "d1ab8d24ed91d61db61004248a9afa1e8a70cfa730237177451fa826199b53e4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "963ec0b93c3706804e89aadc7d1fba858467e2b534187a33fd788a5f53ffb083",
+        "identity_file_sha256": "485956b9786368180a5785a6fad6d4ca6b657872b8d45fc1da0fc0e7dd25f9e3",
+        "native_record_sha256": [
+          "9006da3501e201459efe3bc2f4c0d5d0674c59a701af610876a0b33ab02a410f",
+          "9dc8a467cbfb2a456043ef40ace662dfe0253f1a1ef9886b7e61557bd78eb991",
+          "a4ba11b733ed5b9a7b3f8ea530f1ec7b19fa379a06b8a1976f65ad99532a27ed",
+          "3d1cfeaf07fa32e09402864caff81afbede03a94faafdbddc4ee142c90ab83f5",
+          "9943b474b2c10701453d53497ebcc46d8c1277869b3dd9627c109574bede776a"
+        ]
+      }
+    },
+    {
+      "seconds": 5.7238791489508,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2820868,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8409544,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8606152,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "eab0a67f98b14437de2b9f955fb5dc7b598fb7b6b3fcd2b04cc3be59e100bda1",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "d1ab8d24ed91d61db61004248a9afa1e8a70cfa730237177451fa826199b53e4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "963ec0b93c3706804e89aadc7d1fba858467e2b534187a33fd788a5f53ffb083",
+        "identity_file_sha256": "485956b9786368180a5785a6fad6d4ca6b657872b8d45fc1da0fc0e7dd25f9e3",
+        "native_record_sha256": [
+          "9006da3501e201459efe3bc2f4c0d5d0674c59a701af610876a0b33ab02a410f",
+          "9dc8a467cbfb2a456043ef40ace662dfe0253f1a1ef9886b7e61557bd78eb991",
+          "a4ba11b733ed5b9a7b3f8ea530f1ec7b19fa379a06b8a1976f65ad99532a27ed",
+          "3d1cfeaf07fa32e09402864caff81afbede03a94faafdbddc4ee142c90ab83f5",
+          "9943b474b2c10701453d53497ebcc46d8c1277869b3dd9627c109574bede776a"
+        ]
+      }
+    },
+    {
+      "seconds": 4.385833194013685,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2779946,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 1,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8b720980f613870c5cde2b49261f58bbf4494e5a0040c5f1228252fccc1f9d59",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "f1c1cf450a9d6ce2eb35925ff4aff71d1ad93012b9b0df7ddd69f764b9bdf5c1",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "6d1e5f89b559ceddd47e6758c694e84e78eab6722f54d879e3cebbac226ef6e6",
+        "identity_file_sha256": "a383c8f098a09ccb31be729ae4c29290851dbe17dcfdd11a105b73b8a9e93d17",
+        "native_record_sha256": [
+          "6b15422103b16e2ec2197750d54285b7cee4c7d056e94ca852083f66c9e3071b",
+          "d7777074e410d817f7adaa32b897057c98cf7cfc6cf520a43bf8c4a059698176",
+          "9f0f69b4b6cb9ac4ccc3c3a0c0d9989d4bf5ccaa579bfddba2dc97f83cf58983",
+          "421d2dec49931ac0066e4a27e19ffa4a86ea42bab083480139882f57909d785e",
+          "cb2c8eccd7d2572142770c68170ebcb1153760bf0b63105163f995faf4bea503"
+        ]
+      }
+    },
+    {
+      "seconds": 4.1392720739822835,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2779946,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8b720980f613870c5cde2b49261f58bbf4494e5a0040c5f1228252fccc1f9d59",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "f1c1cf450a9d6ce2eb35925ff4aff71d1ad93012b9b0df7ddd69f764b9bdf5c1",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "6d1e5f89b559ceddd47e6758c694e84e78eab6722f54d879e3cebbac226ef6e6",
+        "identity_file_sha256": "a383c8f098a09ccb31be729ae4c29290851dbe17dcfdd11a105b73b8a9e93d17",
+        "native_record_sha256": [
+          "6b15422103b16e2ec2197750d54285b7cee4c7d056e94ca852083f66c9e3071b",
+          "d7777074e410d817f7adaa32b897057c98cf7cfc6cf520a43bf8c4a059698176",
+          "9f0f69b4b6cb9ac4ccc3c3a0c0d9989d4bf5ccaa579bfddba2dc97f83cf58983",
+          "421d2dec49931ac0066e4a27e19ffa4a86ea42bab083480139882f57909d785e",
+          "cb2c8eccd7d2572142770c68170ebcb1153760bf0b63105163f995faf4bea503"
+        ]
+      }
+    },
+    {
+      "seconds": 5.888477760832757,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2820868,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8409544,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8606152,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 2,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "eab0a67f98b14437de2b9f955fb5dc7b598fb7b6b3fcd2b04cc3be59e100bda1",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "d1ab8d24ed91d61db61004248a9afa1e8a70cfa730237177451fa826199b53e4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "963ec0b93c3706804e89aadc7d1fba858467e2b534187a33fd788a5f53ffb083",
+        "identity_file_sha256": "485956b9786368180a5785a6fad6d4ca6b657872b8d45fc1da0fc0e7dd25f9e3",
+        "native_record_sha256": [
+          "9006da3501e201459efe3bc2f4c0d5d0674c59a701af610876a0b33ab02a410f",
+          "9dc8a467cbfb2a456043ef40ace662dfe0253f1a1ef9886b7e61557bd78eb991",
+          "a4ba11b733ed5b9a7b3f8ea530f1ec7b19fa379a06b8a1976f65ad99532a27ed",
+          "3d1cfeaf07fa32e09402864caff81afbede03a94faafdbddc4ee142c90ab83f5",
+          "9943b474b2c10701453d53497ebcc46d8c1277869b3dd9627c109574bede776a"
+        ]
+      }
+    },
+    {
+      "seconds": 5.184659128077328,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2820868,
+      "diagnostic_work": [
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8409544,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        },
+        {
+          "diagnostic_initial_region_views": 1024,
+          "diagnostic_message_updates_upper_bound": 6656,
+          "diagnostic_refinements": 256,
+          "extra_pool_projection_calls": 4,
+          "extra_pool_projection_rows": 64,
+          "extra_projected_episode_rows": 256,
+          "kind": "regional_spaced_session_v1",
+          "reader_and_trace_bytes_estimate": 8606152,
+          "rows": 64,
+          "schema_version": 1,
+          "support": 4,
+          "update_count_scope": "upper_bound_not_observed_adaptive_depth"
+        }
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": true,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "eab0a67f98b14437de2b9f955fb5dc7b598fb7b6b3fcd2b04cc3be59e100bda1",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "d1ab8d24ed91d61db61004248a9afa1e8a70cfa730237177451fa826199b53e4",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "963ec0b93c3706804e89aadc7d1fba858467e2b534187a33fd788a5f53ffb083",
+        "identity_file_sha256": "485956b9786368180a5785a6fad6d4ca6b657872b8d45fc1da0fc0e7dd25f9e3",
+        "native_record_sha256": [
+          "9006da3501e201459efe3bc2f4c0d5d0674c59a701af610876a0b33ab02a410f",
+          "9dc8a467cbfb2a456043ef40ace662dfe0253f1a1ef9886b7e61557bd78eb991",
+          "a4ba11b733ed5b9a7b3f8ea530f1ec7b19fa379a06b8a1976f65ad99532a27ed",
+          "3d1cfeaf07fa32e09402864caff81afbede03a94faafdbddc4ee142c90ab83f5",
+          "9943b474b2c10701453d53497ebcc46d8c1277869b3dd9627c109574bede776a"
+        ]
+      }
+    },
+    {
+      "seconds": 4.259559185011312,
+      "emitted_rows": 256,
+      "emitted_sha256": "1d5a0960a3464921187d79dc28f3ec2ed799237e45055cb3671de32edc641807",
+      "persistent_bytes": 2779946,
+      "diagnostic_work": [
+        null,
+        null
+      ],
+      "assets": 64,
+      "reader": "tree",
+      "enabled": false,
+      "repetition": 3,
+      "warmup": false,
+      "execution_identity": {
+        "integrated_model_id": "8b720980f613870c5cde2b49261f58bbf4494e5a0040c5f1228252fccc1f9d59",
+        "consumer_model_id": "bda04e2d27e63c9675b2353aae5cb910312dbc3ee0b0c3c8a2c17c7bcf0cb384",
+        "fast_parameter_ids": [
+          "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d"
+        ],
+        "contract_id": "f1c1cf450a9d6ce2eb35925ff4aff71d1ad93012b9b0df7ddd69f764b9bdf5c1",
+        "source_sha256": "2be518e60cc620a42a2e114bc39a061908a18f81276e8157748d8e49df7cde62",
+        "initial_state_sha256": "6d1e5f89b559ceddd47e6758c694e84e78eab6722f54d879e3cebbac226ef6e6",
+        "identity_file_sha256": "a383c8f098a09ccb31be729ae4c29290851dbe17dcfdd11a105b73b8a9e93d17",
+        "native_record_sha256": [
+          "6b15422103b16e2ec2197750d54285b7cee4c7d056e94ca852083f66c9e3071b",
+          "d7777074e410d817f7adaa32b897057c98cf7cfc6cf520a43bf8c4a059698176",
+          "9f0f69b4b6cb9ac4ccc3c3a0c0d9989d4bf5ccaa579bfddba2dc97f83cf58983",
+          "421d2dec49931ac0066e4a27e19ffa4a86ea42bab083480139882f57909d785e",
+          "cb2c8eccd7d2572142770c68170ebcb1153760bf0b63105163f995faf4bea503"
+        ]
+      }
+    }
+  ],
+  "probe_sha256": "b9ee5ce95ac6dd4e62084557ec4d9b6cf29b2f531412540645e8933e2a83e27e",
+  "fixture_sha256": "56427e6e75d205a4f352ea990446544a7335a08e1ebcf6a48da7d64a8883285c",
+  "limits": [
+    "Fixtures con etiquetas manuales y dimensiones 5/2/1/3/3. No corpus real.",
+    "Incluye creación de sesión, cuatro cohortes, cierre, reapertura y auditorías durables.",
+    "Incluye codificación del predictor y consulta. La creación del fixture queda fuera.",
+    "Los parámetros compartidos se cargan una vez por caso, fuera del cronómetro.",
+    "El inventario de bytes persistentes se calcula después del tiempo por fase.",
+    "No incluye codificadores externos de noticias o imágenes, GPU ni transferencias.",
+    "Tres muestras por modo no permiten caracterizar p95/p99. No se mide energía."
+  ],
+  "summaries": [
+    {
+      "assets": 4,
+      "reader": "ring",
+      "enabled": false,
+      "median_seconds": 1.1513855177909136,
+      "min_seconds": 1.014598245965317,
+      "max_seconds": 1.3923875119071454,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 16,
+      "rows_per_second_at_median": 13.896301241219474
+    },
+    {
+      "assets": 4,
+      "reader": "ring",
+      "enabled": true,
+      "median_seconds": 1.5277735830750316,
+      "min_seconds": 1.447260833811015,
+      "max_seconds": 1.692183692008257,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 16,
+      "rows_per_second_at_median": 10.472756026973542
+    },
+    {
+      "assets": 4,
+      "reader": "tree",
+      "enabled": false,
+      "median_seconds": 1.262178909033537,
+      "min_seconds": 1.2294360981322825,
+      "max_seconds": 1.3403379549272358,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 16,
+      "rows_per_second_at_median": 12.676491332160953
+    },
+    {
+      "assets": 4,
+      "reader": "tree",
+      "enabled": true,
+      "median_seconds": 1.4868820540141314,
+      "min_seconds": 1.321702083107084,
+      "max_seconds": 1.5119975691195577,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 16,
+      "rows_per_second_at_median": 10.760772824451571
+    },
+    {
+      "assets": 64,
+      "reader": "ring",
+      "enabled": false,
+      "median_seconds": 4.881652852054685,
+      "min_seconds": 4.4937894970644265,
+      "max_seconds": 5.027136204997078,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 256,
+      "rows_per_second_at_median": 52.441254582912364
+    },
+    {
+      "assets": 64,
+      "reader": "ring",
+      "enabled": true,
+      "median_seconds": 4.990424443036318,
+      "min_seconds": 4.927599414950237,
+      "max_seconds": 5.001440309919417,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 256,
+      "rows_per_second_at_median": 51.298241847389285
+    },
+    {
+      "assets": 64,
+      "reader": "tree",
+      "enabled": false,
+      "median_seconds": 4.259559185011312,
+      "min_seconds": 4.1392720739822835,
+      "max_seconds": 4.385833194013685,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 256,
+      "rows_per_second_at_median": 60.10011573517322
+    },
+    {
+      "assets": 64,
+      "reader": "tree",
+      "enabled": true,
+      "median_seconds": 5.7238791489508,
+      "min_seconds": 5.184659128077328,
+      "max_seconds": 5.888477760832757,
+      "repetitions": 3,
+      "emitted_rows_per_phase": 256,
+      "rows_per_second_at_median": 44.724913531223905
+    }
+  ],
+  "seconds_without_imports": 102.42851101187989,
+  "process_peak_rss_kib": 657572,
+  "optimizer_attempts": 0,
+  "cuda_initialized": false,
+  "external_process": {
+    "user_seconds": 98.63,
+    "system_seconds": 6.51,
+    "wall_clock_hms": "1:44.94",
+    "max_rss_kib": 777196.0,
+    "exit_status": 0.0
+  },
+  "record_audit_scope": "El resumen se concilia con los recibos e identidades nativos después de medir. Esa lectura de informe no entra en los tiempos por fase."
+}

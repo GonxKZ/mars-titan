@@ -193,7 +193,26 @@ PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_sessi
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-session-20261027/compare_legacy.py "$HOME/.cache/mars-titan/spaced-session-parity"
 ```
 
-La comparación necesita un destino nuevo y el enlace nativo compatible. El coste durable de este enlace aún está pendiente de medida. Los costes del productor aislado no lo sustituyen. No hay resultados de generalización ni acceso al test final. La adaptación regional de fases, el cargador y el controlador se mantienen pendientes.
+La comparación necesita un destino nuevo y el enlace nativo compatible. No hay resultados de generalización ni acceso al test final. La adaptación regional de fases, el cargador y el controlador se mantienen pendientes.
+
+La [medida durable](../../reports/engineering/spaced-regional-session-20261027/cost.json) recorre 32 fases de fixtures de cuatro y 64 activos. Cada fase incluye cuatro cohortes, cierre y reapertura después de la segunda. Hay un calentamiento y tres muestras por modo para cada tamaño y lector. Se conservan exactamente las predicciones de los 16 pares. Los parámetros se cargan una vez por caso y la preparación del fixture queda fuera del tiempo por fase. Se incluyen el predictor, la consulta, los diagnósticos, la maduración, la retención y las escrituras y auditorías durables.
+
+| Activos por cohorte | Lector | Sin E2, mediana de fase en segundos | Con E2 y reservorio, mediana de fase en segundos |
+| ---: | --- | ---: | ---: |
+| 4 | Anillo | 1,151 | 1,528 |
+| 4 | Árbol | 1,262 | 1,487 |
+| 64 | Anillo | 4,882 | 4,990 |
+| 64 | Árbol | 4,260 | 5,724 |
+
+El proceso completo tarda 1 min y 44,94 s y alcanza 777.196 KiB de RSS absoluto. Usa CPU FP64 y dos hilos, con dimensión 32, cuatro vecinos y modalidades compactas de anchuras 5/2/1/3/3. No incluye codificadores externos de noticias o imágenes, GPU ni transferencias. El inventario de bytes persistentes y la conciliación posterior del informe se calculan fuera del tiempo por fase. Tres muestras no caracterizan las colas de latencia ni acreditan una aceleración. El recibo conserva todas las muestras, caudal por fase y espacio persistente.
+
+La conciliación del informe comprueba los puntos frente a los recibos nativos, el número de observaciones y resoluciones y el cierre de cada fase. Registra por ejecución el consumidor, los parámetros rápidos de origen, el modelo de integración, el contrato, los datos y las huellas de identidad y de los recibos. El consumidor y sus parámetros coinciden entre controles. El ID del modelo integrado incorpora el código del enlace y cambia al activar E2, aunque los pesos del consumidor coincidan.
+
+```bash
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-session-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-regional-session-cost"
+```
+
+La medida exige un destino nuevo y el mismo enlace nativo. Tiene un presupuesto declarado de 600 segundos para el proceso de medición y rechaza sobrepasarlo entre fases. Es un límite cooperativo, sin truncar cohortes. El benchmark no ejecuta pasos de optimizador y no sustituye una comparación predictiva.
 
 ## Adaptador para fases de ventanas congeladas
 

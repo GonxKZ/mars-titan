@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_at_utc": "2026-10-27T13:50:53.978672+00:00",
+  "recorded_at_utc": "2026-10-27T14:11:16.910928+00:00",
   "kind": "technical_durable_regional_spaced_session_without_training",
   "base_commit": "babe9f780fcf73ed4e54ba92bddb0d2194fefff0",
   "tests": {
@@ -61,7 +61,8 @@
     "tests/memory/test_spaced_regional_session.py": "56427e6e75d205a4f352ea990446544a7335a08e1ebcf6a48da7d64a8883285c",
     "tests/memory/test_spaced_session.py": "589efda9b5fa62875d7d233d60df0f40e68877df9fdd2af6493a2a54aaf10116",
     "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
-    "reports/engineering/spaced-regional-session-20261027/compare_legacy.py": "3b8de64a430a24edd5138a63567016abbfc822278030b628ee49d57bbb49fb5a"
+    "reports/engineering/spaced-regional-session-20261027/compare_legacy.py": "3b8de64a430a24edd5138a63567016abbfc822278030b628ee49d57bbb49fb5a",
+    "reports/engineering/spaced-regional-session-20261027/cost_probe.py": "b9ee5ce95ac6dd4e62084557ec4d9b6cf29b2f531412540645e8933e2a83e27e"
   },
   "preserved_canonical_sources": {
     "count": 34,
@@ -83,7 +84,7 @@
   "final_test_access": false,
   "regional_session_integrated": true,
   "regional_window_integrated": false,
-  "durable_cost_measured": false,
+  "durable_cost_measured": true,
   "limits": [
     "Solo M1 K1 con C desactivado. El programa regional previo a MAC, B6/B4 y otras composiciones siguen separados.",
     "El helper verifica trazas, contadores y el tipo nativo del evento. Los checksums no autentican una historia frente a quien pueda reescribir todo el proceso.",
@@ -92,11 +93,20 @@
     "El código E2 ha cambiado. Sus contratos anteriores necesitan el runtime fijado. La ruta no E2 conserva el contrato comprobado.",
     "Ventanas y cargador regionales siguen pendientes. El adaptador estándar mantiene rechazo explícito antes de ejecutar.",
     "Dos pruebas CUDA nuevas siguen pendientes porque la GPU no tiene reserva exclusiva.",
-    "Los costes durables del nuevo enlace todavía no se han medido. Los del productor aislado no los sustituyen."
+    "Los costes usan fixtures compactos CPU. No acreditan rendimiento con todas las formas del corpus ni generalización."
   ],
+  "durable_cost": {
+    "path": "cost.json",
+    "cases": 4,
+    "sessions": 32,
+    "measured_sessions": 24,
+    "paired_runs": 16,
+    "measured_paired_runs": 12
+  },
   "artifacts": {
     "quality.json": "ed339be2045cccbc1eff73e7793ea80594d039209a703f5061f9eb7830659a03",
     "mutations.json": "870e3e47f9bfa3342780210fc241208ab4f704f1656250b65fa3f3e6b4ebcaad",
-    "legacy-parity.json": "5af95c19812f5c79b55a43753abed31c42ae04931d7ae5a792fdb8a999634ca7"
+    "legacy-parity.json": "5af95c19812f5c79b55a43753abed31c42ae04931d7ae5a792fdb8a999634ca7",
+    "cost.json": "1629c58c5ee4597e7f3956ec0b9eae7993c40fdcd090d8be675eff5c20c44836"
   }
 }
