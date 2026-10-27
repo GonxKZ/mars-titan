@@ -195,9 +195,9 @@
       "dot": "amber",
       "title": "Estado real",
       "items": [
-        "Helpers y registro recuperable con pruebas CPU",
-        "Integración con sesión y ventana todavía pendiente",
-        "Sin curvas predictivas reales ni garantía biológica"
+        "Ventana y sesión conectadas en pruebas CPU",
+        "Recuperación por generación y columnas por muestra",
+        "Curvas, coste integral y CUDA aún pendientes"
       ]
     }
   ]

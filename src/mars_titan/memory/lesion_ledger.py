@@ -87,8 +87,8 @@ class LesionLedger:
         self.clock = at
         self._event_issued, self._event_resolved, self._event_censored = {}, {}, {}
 
-    def _keys(self, rows):
-        if self.clock is None or not isinstance(rows, (list, tuple)) or len(rows) > MAX_COHORT:
+    def _keys(self, rows, *, maximum=MAX_COHORT):
+        if self.clock is None or not isinstance(rows, (list, tuple)) or len(rows) > maximum:
             raise ValueError("B4 necesita un corte y una cohorte acotada de decisiones")
         keys = [_key(row) for row in rows]
         if len(set(keys)) != len(keys) or any(key[1] > self.clock for key in keys):
@@ -156,11 +156,11 @@ class LesionLedger:
         return resolved
 
     def discard(self, rows, *, reason):
-        keys = self._keys(rows)
+        keys = self._keys(rows, maximum=self.max_pending)
         if (
             reason not in REASONS
             or any(key not in self.pending for key in keys)
-            or len(self._event_censored) + len(keys) > MAX_COHORT
+            or len(self._event_censored) + len(keys) > self.max_pending
         ):
             raise ValueError("La censura B4 necesita pendientes y una causa declarada")
         for key in keys:
@@ -290,7 +290,7 @@ class LesionLedger:
             raise ValueError("Los contadores B4 no concilian con sus resultados y pendientes")
 
     def _restore_censored(self, censored, resolved):
-        if not isinstance(censored, list) or len(censored) > MAX_COHORT:
+        if not isinstance(censored, list) or len(censored) > self.max_pending:
             raise ValueError("Las censuras B4 exceden el evento")
         for row in censored:
             if not isinstance(row, (list, tuple)) or len(row) != 3:

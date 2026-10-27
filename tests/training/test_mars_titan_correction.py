@@ -116,6 +116,41 @@ def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
 
 
+def test_lesion_window_regenerates_the_same_auxiliary_predictions(base, tmp_path, monkeypatch):
+    from mars_titan.memory.area_memory import AreaLayout
+    from mars_titan.memory.lesion_protocol import LesionProtocol
+
+    components = {
+        "associative_memory": dict(
+            PROXIMAL["associative_memory"], areas=asdict(AreaLayout(areas=3))
+        )
+    }
+    protocol = LesionProtocol(seeds=(0,), fractions=((1, 2),))
+    output = tmp_path / "diagnostics"
+    report = correct(base["view"], base["parent"], DECLARED, output, components, lesions=protocol)
+    assert report["request"]["lesions"] == protocol.identity()
+    assert report["predictions"]["evaluation"]["metrics"]["lesions"]["resolved"] > 0
+    carried = mc.carry_correction(
+        output, base["view"], base["view"], tmp_path / "regenerated", device="cpu", regenerate=True
+    )
+    assert carried["lesions"] == protocol.identity()
+    for partition in PARTITIONS:
+        assert table(output, partition).equals(table(tmp_path / "regenerated", partition))
+    path = output / "run.json"
+    record = json.loads(path.read_text())
+    record["request"]["code"]["mars_titan.memory.lesion_ledger"] = "0" * 64
+    path.write_text(json.dumps(record))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Se abrieron entradas con fuentes B4 incompatibles")
+
+    monkeypatch.setattr(mc, "_sources", forbidden)
+    with pytest.raises(ValueError, match="fuentes"):
+        mc.carry_correction(
+            output, base["view"], base["view"], tmp_path / "stale", device="cpu", regenerate=True
+        )
+
+
 def test_the_parent_precision_enters_the_identity_and_the_carry_requires_it(
     base, tmp_path, learning_doubles
 ):

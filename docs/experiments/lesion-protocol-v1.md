@@ -2,7 +2,7 @@
 
 `lesion_protocol_v1` (B4 de [#750](https://github.com/GonxKZ/mars-titan/issues/750)) comprueba cuánto depende una predicción de las áreas y coordenadas del corrector maduro. La supresión solo afecta a lecturas diagnósticas. La trayectoria original conserva sus emisiones, sus escrituras y, cuando se usa E1, los componentes y pesos originales de la mezcla.
 
-Están implementados los helpers de lectura y el registro causal recuperable. La integración del diagnóstico en la ventana y en la sesión nativa sigue pendiente. Tampoco hay una orden de evaluación científica de B4 ni curvas sobre datos reales. Estos módulos no completan todavía el protocolo ni permiten afirmar que el predictor distribuye recuerdos útiles de forma resistente a lesiones.
+Los helpers y el registro están conectados a la ventana y a la sesión nativa, con comprobaciones CPU sobre fixtures. Faltan la configuración y las órdenes de análisis de curvas, las comprobaciones CUDA y las ejecuciones científicas autorizadas. La integración técnica no demuestra que el predictor distribuya recuerdos útiles de forma resistente a lesiones.
 
 ## Intervención y controles
 
@@ -30,7 +30,23 @@ Cada condición reutiliza `SessionErrors`: primero promedia los activos del mism
 
 El estado versionado contiene reloj, contadores, predicciones pendientes, sumas por sesión y el último evento. Sus límites máximos son 40.960 pendientes y 50.000 sesiones. La recuperación valida identidades, dimensiones, tipos, finitud, orden, maduración, censuras y conciliación de contadores, además de la huella. Las pruebas incluyen estados con una huella recalculada que conservan errores semánticos. Una huella coherente no sustituye esas comprobaciones.
 
-La salida por condición contiene pronósticos puntuales. No se crean cuantiles ni intervalos a partir de esas columnas. Los contrastes predictivos y su incertidumbre temporal requieren completar la integración, fijar el protocolo y ejecutar únicamente los tramos autorizados. El test final y el bloqueo de aprendizaje permanecen cerrados.
+La salida por condición contiene pronósticos puntuales. No se crean cuantiles ni intervalos a partir de esas columnas. Los contrastes predictivos y su incertidumbre temporal requieren completar la validación de la integración, fijar el protocolo y ejecutar únicamente los tramos autorizados. El test final y el bloqueo de aprendizaje permanecen cerrados.
+
+## Conexión con la ventana y la sesión
+
+`CorrectionInference` y `run_correction_window` aceptan el argumento opcional `lesions`, de tipo `LesionProtocol`. Sin él conservan las salidas y campos anteriores. Con B4, `prediction_rows` añade una columna `lesion_<condición>` por pronóstico diagnóstico, junto a la predicción y los cuantiles originales. Las métricas de cada condición quedan bajo `lesions`. El recorrido de la ventana y su regeneración mantienen el mismo padre y la misma corrección, y la petición registra la identidad del protocolo y las huellas de sus fuentes. Un traslado con fuentes incompatibles se rechaza antes de preparar entradas.
+
+`FinancialSession` admite el mismo argumento. El [adaptador](../../src/mars_titan/memory/lesion_session.py) guarda el registro en un artefacto de la misma generación nativa. La confirmación comprueba que sus pendientes coinciden con los originales y que la condición intacta conserva el valor realmente emitido. La poda mantiene las referencias de las dos generaciones recuperables. Un corte antes de publicar conserva la generación anterior y permite repetir sin duplicar resultados.
+
+`lesion_event()` devuelve copias del último evento confirmado y `lesion_metrics()` sus errores acumulados por sesión. Estas consultas se utilizan entre pasos de la misma sesión. No exponen una instancia mutable del registro ni autorizan ejecutar dos pasos concurrentes sobre la misma sesión. La identidad y las fuentes del diagnóstico forman parte del contrato y no pueden cambiar al reanudar.
+
+Los cierres de fase pueden retirar hasta el límite completo de pendientes, aunque supere el tamaño de un lote de observaciones. Las finalizaciones no crean etiquetas ni errores. El pronóstico original, los pesos y el reloj de E1 y los cuantiles del núcleo se comprueban frente al recorrido sin B4.
+
+La [verificación de la integración](../../reports/engineering/lesion-integration-20261027/verification.json) registra 405 pruebas aprobadas y seis comprobaciones CUDA pendientes. Tras adelantar el control de fuentes se repitieron 66 casos focalizados, incluidos en los anteriores. Las sesiones directa y recuperada reproducen las emisiones y los diagnósticos de la ventana. La regeneración por la API completa conserva los Parquet, con un padre preparado mediante un registrador de gradientes que no cambia pesos. Son fixtures técnicos, no entrenamientos ni resultados financieros reales.
+
+Cinco [mutaciones dirigidas](../../reports/engineering/lesion-integration-20261027/mutation-results.json) detectan omitir el núcleo en los diagnósticos, sustituir la emisión real, ignorar pendientes desalineados, aceptar otra predicción original y perder B4 al regenerar. Los controles pasan antes y después de cada mutación, sin intentos de pasos de optimizador. También se reprodujo y corrigió la apertura de entradas antes de comprobar fuentes incompatibles.
+
+La [calidad de los helpers](../../reports/engineering/lesion-integration-20261027/quality.json) cubre 322/336 sentencias y 124/138 ramas, con coverage.py 7.16.1 y Radon 6.0.1. La [cobertura de los dos módulos grandes del recorrido](../../reports/engineering/lesion-integration-20261027/quality-integration.json) se informa aparte: 938/1.260 sentencias y 285/500 ramas en la comprobación focalizada. No son una cobertura global del proyecto ni una validación CUDA. Falta medir el coste completo con la persistencia activada.
 
 ## Antecedentes y alcance
 
@@ -59,4 +75,4 @@ El [benchmark](../../benchmarks/lesion_read_cost.py) usa estados escritos con 64
 
 Hay variación apreciable entre pasadas. Estos valores no permiten ordenar perfiles por pequeñas diferencias. El diagnóstico añade trabajo y no es una mejora de velocidad de la predicción ordinaria. Los procesos completos tardaron 211,95 y 187,10 segundos, con picos RSS de 651.200 y 652.096 KiB. Los bytes de la tabla incluyen coeficientes e índices del estado original. No incluyen máscaras, objetos Python, temporales ni el registro. No se mide energía ni VRAM. Quince muestras no permiten establecer un objetivo fiable de latencia de cola.
 
-El [esquema](../diagrams/variants/b4-lesion-protocol.png) muestra la separación entre lectura diagnóstica y maduración. Tiene nueve comprobaciones de composición correctas y evidencia de navegador. La integración con los consumidores sigue pendiente. No hay una diferencia de MAE ni una mejora de generalización medida de B4.
+El [esquema](../diagrams/variants/b4-lesion-protocol.png) muestra la separación entre lectura diagnóstica y maduración. Tiene nueve comprobaciones de composición correctas y evidencia de navegador. Las medidas anteriores corresponden al núcleo de lectura. Todavía no incluyen el coste de la integración completa ni sus artefactos. No hay una diferencia de MAE ni una mejora de generalización medida de B4.

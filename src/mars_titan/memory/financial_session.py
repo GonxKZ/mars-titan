@@ -29,6 +29,7 @@ from . import (
     financial_consumers,
     financial_state_artifacts,
     kernel_memory,
+    lesion_session,
     multiscale_mixture,
     paired_proximal,
     regimes,
@@ -130,6 +131,8 @@ def _check_callbacks(instance):
         asdict(instance._collection_config) if instance._collection_config is not None else None,
         _canonical(instance._regional_config),
     )
+    if instance._lesion_plan is not None:
+        current += (lesion_session.signature(instance._lesion_plan),)
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
 
@@ -201,6 +204,7 @@ class FinancialSession(EpisodicSession):
         mechanism_collection=None,
         regional_work_limits=None,
         regional_max_attempts=2,
+        lesions=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -237,6 +241,7 @@ class FinancialSession(EpisodicSession):
                 "La corrección asociativa B6 solo se declara sobre Titans-MAC sin banco"
             )
         self.associative = associative
+        self._lesion_plan = lesion_session.configure(lesions, associative)
         bounded_integer(block_rows, "lote físico", 1, binding.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
@@ -291,6 +296,8 @@ class FinancialSession(EpisodicSession):
                     code[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
                         Path(module.__file__).read_bytes()
                     ).hexdigest()
+        if self._lesion_plan is not None:
+            code.update(lesion_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -344,6 +351,8 @@ class FinancialSession(EpisodicSession):
                     )
         if self._regional_config is not None:
             contract["regional_work"] = self._regional_config
+        if self._lesion_plan is not None:
+            contract["lesions"] = self._lesion_plan.identity()
         if type(binding) is MechanismBinding:
             contract["mechanisms"] = dict(
                 history=mechanism_history.identity(),
@@ -368,6 +377,8 @@ class FinancialSession(EpisodicSession):
             asdict(mechanism_collection) if mechanism_collection is not None else None,
             _canonical(self._regional_config),
         )
+        if self._lesion_plan is not None:
+            self._runtime_contract += (lesion_session.signature(self._lesion_plan),)
         self._prototype = binding.bank(
             native,
             retention,
@@ -457,6 +468,8 @@ class FinancialSession(EpisodicSession):
         }
         if self.associative is not None:
             fields.add("associative")
+        if self._lesion_plan is not None:
+            fields.add("lesions")
         if type(self._binding) is MechanismBinding:
             fields.update(self._binding.bundle_fields())
         if self._regional_config is not None:
@@ -600,6 +613,20 @@ class FinancialSession(EpisodicSession):
             raise ValueError("Esta sesión no tiene un consumidor de mecanismos")
         bundle = self._bundle(self.snapshot()["state"])
         return self.consumer.export_state(self._binding.restore(self, bundle))
+
+    def lesion_event(self):
+        """Copias del último evento diagnóstico confirmado, con resultados solo maduros."""
+        _check_callbacks(self)
+        if self._lesion_plan is None:
+            raise ValueError("La sesión no tiene diagnósticos B4")
+        return lesion_session.restore(self, self._bundle(self.snapshot()["state"])).event()
+
+    def lesion_metrics(self):
+        """Errores diagnósticos por sesión, independientes de la predicción original."""
+        _check_callbacks(self)
+        if self._lesion_plan is None:
+            raise ValueError("La sesión no tiene diagnósticos B4")
+        return lesion_session.restore(self, self._bundle(self.snapshot()["state"])).metrics()
 
     def mechanism_event(self, generation):
         _check_callbacks(self)
@@ -852,6 +879,9 @@ class FinancialSession(EpisodicSession):
             )
         )
         warmup = kind == self.native.EventKind.warmup
+        lesion_ledger = (
+            None if self._lesion_plan is None else lesion_session.begin(self, bundle, cutoff)
+        )
         snapshot = None if warmup else self._binding.snapshot(bank, context_id, cutoff)
         options = {}
         if type(self._binding) is MechanismBinding:
@@ -906,6 +936,17 @@ class FinancialSession(EpisodicSession):
                 known.update(
                     (_row_key(r.metadata()), value) for r, value in zip(rows, values, strict=True)
                 )
+                if lesion_ledger is not None:
+                    diagnostics = self._lesion_plan.read(
+                        memory,
+                        keys,
+                        at=cutoff,
+                        baseline=torch.tensor(corrections, dtype=torch.float64)[:, None],
+                    )
+                    lesion_ledger.issue(
+                        [(r.flow_id, r.prediction_at) for r in rows],
+                        diagnostics + torch.tensor(values, dtype=torch.float64)[:, None],
+                    )
                 if known_routes is not None:
                     known_routes.update(
                         (_row_key(r.metadata()), route)
@@ -915,6 +956,8 @@ class FinancialSession(EpisodicSession):
         if not warmup:
             pending = self._append_pending(pending, rows)
         extra = {}
+        if lesion_ledger is not None:
+            extra["lesions"] = lesion_session.stage(self, lesion_ledger)
         if type(self._binding) is MechanismBinding:
             extra = dict(
                 mechanisms=self._stage(control.pop("auxiliary"), "mechanisms"),
@@ -992,6 +1035,10 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if self._lesion_plan is not None:
+            extra["lesions"] = lesion_session.stage(
+                self, lesion_session.begin(self, bundle, self._inflight["cutoff"])
+            )
         if type(self._binding) is MechanismBinding:
             extra.update(self._binding.previous(self, bundle))
         if self.associative is not None:
@@ -1156,6 +1203,10 @@ class FinancialSession(EpisodicSession):
             bundle = self._binding.resolve(
                 self, bundle, mechanism_rows, outcomes, excluded, finalized
             )
+        if self._lesion_plan is not None:
+            bundle["lesions"] = lesion_session.resolve(
+                self, proposed, outcomes, excluded, finalized
+            )
         self._verify_bundle(bundle, event_kind=self._inflight["kind"])
         self.consumer.verify()
         self._proposal = bundle
@@ -1215,6 +1266,8 @@ class FinancialSession(EpisodicSession):
             raise ValueError("El estado rápido contiene flujos sin observar o información futura")
         pending = self._read(bundle["pending"], "pending")
         self._check_queue(pending)
+        if self._lesion_plan is not None:
+            lesion_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if self.associative is not None:
@@ -1361,6 +1414,8 @@ class FinancialSession(EpisodicSession):
             names = ("bank", "pending", "fast", "prefix", "control")
             if self.associative is not None:
                 names += ("associative",)
+            if self._lesion_plan is not None:
+                names += ("lesions",)
             if type(self._binding) is MechanismBinding:
                 names += ("mechanisms",)
             live = [

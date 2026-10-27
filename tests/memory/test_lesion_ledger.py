@@ -259,3 +259,15 @@ def test_empty_ledger_restores_and_backward_time_is_rejected_atomically():
     with pytest.raises(ValueError):
         value.begin(19)
     assert value.export()["state_sha256"] == before
+
+
+def test_finalization_can_discard_more_than_one_observation_batch():
+    value = ledger(max_pending=8193)
+    value.begin(10)
+    first = [(f"US/A{i}", 10) for i in range(8192)]
+    value.issue(first, torch.zeros(8192, 5, dtype=torch.float64))
+    value.begin(11)
+    value.issue([("US/B", 11)], torch.zeros(1, 5, dtype=torch.float64))
+    value.begin(20)
+    value.discard(first + [("US/B", 11)], reason="finalized")
+    assert value.metrics()["pending"] == 0 and value.censored == 8193

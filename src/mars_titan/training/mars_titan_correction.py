@@ -67,6 +67,8 @@ from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.memory.kernel_memory import KERNEL_RULE
+from mars_titan.memory.lesion_ledger import LesionLedger
+from mars_titan.memory.lesion_protocol import LesionProtocol
 from mars_titan.memory.mars_titan_variant import (
     check_components,
     core_identity,
@@ -172,6 +174,26 @@ _CODE = (
 
 def _code():
     return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
+
+
+def _lesion_code():
+    return {
+        kind.__module__: sha256(Path(importlib.import_module(kind.__module__).__file__))
+        for kind in (LesionProtocol, LesionLedger)
+    }
+
+
+def diagnostic_protocol(request):
+    """Restaurar B4 únicamente con la política y fuentes que registró el ancla."""
+    if "lesions" not in request:
+        return None
+    protocol = LesionProtocol.from_identity(request["lesions"])
+    _require(
+        isinstance(request.get("code"), dict)
+        and all(request["code"].get(name) == digest for name, digest in _lesion_code().items()),
+        "Las fuentes del diagnóstico B4 han cambiado",
+    )
+    return protocol
 
 
 def load_correction_recipe(path):
@@ -330,7 +352,7 @@ class CorrectionInference(ChronologicalInference):
     maduro son señales distintas.
     """
 
-    def __init__(self, predictor, recipe, correction, codec, *, audit=False):
+    def __init__(self, predictor, recipe, correction, codec, *, audit=False, lesions=None):
         if type(predictor) is not FinancialPredictor or type(recipe) is not ChronologicalRecipe:
             raise ValueError("La corrección necesita el padre Titans-MAC y su receta cronológica")
         if predictor.config.variant != "mac_online" or predictor.local_control is not None:
@@ -346,6 +368,11 @@ class CorrectionInference(ChronologicalInference):
             raise ValueError("El codec no comparte la entrada del padre")
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
+        if lesions is not None and type(lesions) is not LesionProtocol:
+            raise ValueError("B4 necesita su protocolo de diagnósticos")
+        self.lesion_plan = None if lesions is None else lesions.bind(correction)
+        self.lesion_ledger = None if self.lesion_plan is None else LesionLedger(self.lesion_plan)
+        self._lesion_resolved = {}
         # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
         self.trace_recorder = None
         self._trace_events, self._trace_phase = 0, "b6"
@@ -401,6 +428,17 @@ class CorrectionInference(ChronologicalInference):
             corrections = corrections[:, 0].tolist()
         else:
             corrections = self.memory.read(keys)[:, 0].tolist()
+        if self.lesion_plan is not None:
+            diagnostics = self.lesion_plan.read(
+                self.memory,
+                keys,
+                at=event.at,
+                baseline=torch.tensor(corrections, dtype=torch.float64)[:, None],
+            )
+            core_values = torch.tensor(
+                [run.pending[key] for key in decisions], dtype=torch.float64
+            )[:, None]
+            self.lesion_ledger.issue(decisions, diagnostics + core_values)
         if self.delayed is not None:
             extra = zip(
                 self.memory.variance(keys).tolist(),
@@ -436,6 +474,10 @@ class CorrectionInference(ChronologicalInference):
 
     def _labels(self, run, event, *, train):
         _require(not train, "B6 no tiene parámetros que ajustar")
+        if self.lesion_ledger is not None:
+            self._lesion_resolved = self.lesion_ledger.receive(
+                [(flow, decision, event.at, value) for flow, decision, value in event.labels]
+            )
         super()._labels(run, event, train=False)
         for flow, decision_at, value in event.labels:
             core, key, route = self._core.pop((flow, decision_at))
@@ -508,6 +550,9 @@ class CorrectionInference(ChronologicalInference):
         return memory.write(feedback, cutoff=at), feedback
 
     def _close(self, run):
+        if self.lesion_ledger is not None:
+            self.lesion_ledger.discard(list(self.lesion_ledger.pending), reason="finalized")
+            self._lesion_resolved.clear()
         super()._close(run)
         self._core.clear()
         self._issued_experts.clear()
@@ -537,6 +582,13 @@ class CorrectionInference(ChronologicalInference):
         construidos a mano con el mismo contrato.
         """
         run = _Pass(rows=rows)
+        if self.lesion_plan is not None:
+            if rows is not None and (
+                type(rows) is not LesionPredictionRows or rows.inference is not self
+            ):
+                raise ValueError("Las filas B4 deben conservar los pronósticos de este diagnóstico")
+            self.lesion_ledger = LesionLedger(self.lesion_plan)
+            self._lesion_resolved = {}
         self.memory = self.correction.empty()
         self._core, self._staged = {}, []
         self._issued_experts, self._mature_experts = {}, {}
@@ -548,6 +600,8 @@ class CorrectionInference(ChronologicalInference):
             for event in events:
                 if stop is not None and stop.requested:
                     raise Paused
+                if self.lesion_ledger is not None:
+                    self.lesion_ledger.begin(event.at)
                 self._labels(run, event, train=False)
                 if event.inputs:
                     self._observe(run, source, event, differentiable=False)
@@ -574,6 +628,8 @@ class CorrectionInference(ChronologicalInference):
                 clock=self.memory.clock,
                 cohorts=self.memory.cohorts,
             )
+        if self.lesion_ledger is not None:
+            metrics["lesions"] = self.lesion_ledger.metrics()
         return metrics
 
     def predict(self, source, rows, *, stop=None):
@@ -608,8 +664,34 @@ class KalmanPredictionRows(PredictionRows):
             )
 
 
+class LesionPredictionRows(PredictionRows):
+    """Columnas de diagnósticos calculados al emitir, emparejadas con la fila original."""
+
+    def __init__(self, inference):
+        super().__init__(inference.quantiles)
+        self.inference, self.extra = inference, []
+
+    def append(self, record):
+        self.extra.append(self.inference._lesion_resolved.pop(tuple(record[:2])).tolist())
+        super().append(record)
+
+    def _flush(self):
+        if not self.buffer:
+            return
+        extra, self.extra = self.extra, []
+        super()._flush()
+        for name, values in zip(
+            self.inference.lesion_plan.names, zip(*extra, strict=True), strict=True
+        ):
+            self.tables[-1] = self.tables[-1].append_column(
+                "lesion_" + name, pa.array(values, type=pa.float64())
+            )
+
+
 def prediction_rows(inference):
     """Destino de las filas de un tramo, con las columnas de D3 y PT3 si la regla es kalman."""
+    if inference.lesion_plan is not None:
+        return LesionPredictionRows(inference)
     if inference.kalman:
         return KalmanPredictionRows(inference)
     return PredictionRows(inference.quantiles)
@@ -838,6 +920,7 @@ def run_correction_window(
     indices=None,
     stop=None,
     traces=None,
+    lesions=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
@@ -861,6 +944,9 @@ def run_correction_window(
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
+    if lesions is not None:
+        _require(type(lesions) is LesionProtocol, "B4 necesita su protocolo identificado")
+        lesions.bind(correction)
     _require(
         correction is not None and set(checked) == {"associative_memory"},
         "La ventana B6 solo admite la corrección asociativa, sin banco episódico",
@@ -886,6 +972,9 @@ def run_correction_window(
         device=device,
         code=_code(),
     )
+    if lesions is not None:
+        request["lesions"] = lesions.identity()
+        request["code"].update(_lesion_code())
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -932,7 +1021,9 @@ def run_correction_window(
         combination = arm_components(components, values, noise["estimate"])
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(predictor, chronological, variant.correction, codec)
+    inference = CorrectionInference(
+        predictor, chronological, variant.correction, codec, lesions=lesions
+    )
     identity = dict(
         schema_version=1,
         kind=KIND,
@@ -1096,6 +1187,7 @@ def carry_correction(
     )
     _verify(anchor, report)
     request, identity = report["request"], report["identity"]
+    lesions = diagnostic_protocol(request)
     _require(
         sha256(anchor / "selected.json") == report["checkpoint"]["sha256"],
         "El estado elegido del ancla ha cambiado",
@@ -1153,7 +1245,9 @@ def carry_correction(
         "La corrección trasladada no es la elegida en el ancla",
     )
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(predictor, chronological, variant.correction, codec)
+    inference = CorrectionInference(
+        predictor, chronological, variant.correction, codec, lesions=lesions
+    )
     predictions = {}
     for name in partitions:
         rows = prediction_rows(inference)
@@ -1198,5 +1292,8 @@ def carry_correction(
         **regeneration_record(regenerate),
         **frozen_parent_record(frozen_parent),
     )
+    if lesions is not None:
+        receipt["lesions"] = lesions.identity()
+        receipt["code"].update(_lesion_code())
     atomic_json(output / "carry.json", receipt)
     return receipt

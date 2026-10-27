@@ -64,6 +64,23 @@ class LesionProtocol:
     def bind(self, correction):
         return LesionReadout(self, correction)
 
+    @classmethod
+    def from_identity(cls, identity):
+        """Reconstruir una declaración sin aceptar otra selección o política de lectura."""
+        if not isinstance(identity, dict) or set(identity) != {
+            "kind",
+            "seeds",
+            "fractions",
+            "generator",
+            "selection",
+            "scope",
+        }:
+            raise ValueError("La identidad B4 no conserva todos sus campos")
+        protocol = cls(seeds=identity["seeds"], fractions=identity["fractions"])
+        if protocol.identity() != identity:
+            raise ValueError("La identidad B4 declara otra política")
+        return protocol
+
 
 class LesionReadout:
     """Máscaras inmutables por configuración. Los tensores devueltos son copias."""
