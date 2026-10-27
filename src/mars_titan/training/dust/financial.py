@@ -89,6 +89,8 @@ class FinancialDustAdapter:
             "regional_execution",
             "memory_bank_readout",
             "regional_variant",
+            "laplace_scale_head",
+            "auxiliary_horizons",
         )
         if (
             config.variant != "transformer_direct"
@@ -109,6 +111,8 @@ class FinancialDustAdapter:
                     "regional_variant",
                     "presence_modulation",
                     "fusion_branch",
+                    "scale_head",
+                    "auxiliary_heads",
                 )
             )
             or type(predictor.price_encoder) is not CompactPriceTransformer
