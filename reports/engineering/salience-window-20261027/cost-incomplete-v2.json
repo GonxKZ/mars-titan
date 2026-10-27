@@ -1,0 +1,211 @@
+{
+  "status": "incomplete",
+  "attempt": "v2_small_price_row_groups",
+  "command_exit_status": 124,
+  "configured_timeout_seconds": 660,
+  "completed_windows": 16,
+  "assets_completed": 64,
+  "assets_not_completed": 256,
+  "price_row_group_size": 3,
+  "exact_forecasts_equal_with_quota_64": true,
+  "rows": [
+    {
+      "repetition": 0,
+      "arm": "baseline",
+      "status": "completed",
+      "run_sha256": "00983664a9057f08fddfb90fa4f067a058d753f87c08e517b859f75c63bcf3eb",
+      "phase_loop_seconds": 3.567410130985081,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 0,
+      "arm": "standardized_error",
+      "status": "completed",
+      "run_sha256": "262bde986c7883a456392c498ee942e88d72b4436494b579c8582cdd3f967ce7",
+      "phase_loop_seconds": 3.7288602869957685,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 0,
+      "arm": "absolute_error",
+      "status": "completed",
+      "run_sha256": "c7ed02fc90f2760b1dd30783543115bacca66c49b4107107c0ff594f4786f7dd",
+      "phase_loop_seconds": 3.4850334809161723,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 0,
+      "arm": "uniform",
+      "status": "completed",
+      "run_sha256": "cfb54f9b25a74374f0544399b400fe7f54c67f7ad02808737e78385f113e592e",
+      "phase_loop_seconds": 2.7568892801646143,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 1,
+      "arm": "baseline",
+      "status": "completed",
+      "run_sha256": "b455897c5f5ec535e59d50be1eb527bee82d71a590c3e5b59128be30a98e3c99",
+      "phase_loop_seconds": 2.3204829660244286,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 1,
+      "arm": "standardized_error",
+      "status": "completed",
+      "run_sha256": "66b3d5d8871578466efdb5072c17c6017d7a53a7c3a901345c50dc5ec6a2e04f",
+      "phase_loop_seconds": 2.3045739789959043,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 1,
+      "arm": "absolute_error",
+      "status": "completed",
+      "run_sha256": "18a7996cb1b14a4f77194b69f623eda2bac16a06eed751805d2dd39081c8de9b",
+      "phase_loop_seconds": 1.8893247419036925,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 1,
+      "arm": "uniform",
+      "status": "completed",
+      "run_sha256": "4b81dd177a4f32f5d59e98756102fc119bd1db8b2246525cdc9122ff0a87b8a9",
+      "phase_loop_seconds": 3.1546162818558514,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 2,
+      "arm": "baseline",
+      "status": "completed",
+      "run_sha256": "ac7543ac8286ebab76d891d77a30374c6c77fbbe5d2d710eb03a38e722930b51",
+      "phase_loop_seconds": 1.8275690290611237,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 2,
+      "arm": "standardized_error",
+      "status": "completed",
+      "run_sha256": "45cddf092dca0716c3fc0716da6ac141088b43ff808e787d8e33b5a936fe08fc",
+      "phase_loop_seconds": 1.654476820025593,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 2,
+      "arm": "absolute_error",
+      "status": "completed",
+      "run_sha256": "d0be80030cf859d6777ed53a68909558ef7e838b1159f217cf4acc719c4bf1d1",
+      "phase_loop_seconds": 1.7253208809997886,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 2,
+      "arm": "uniform",
+      "status": "completed",
+      "run_sha256": "84e6b0a1fc3c5d703b86820986efbcd42d76d71cdb9c217b26f4930a541fa7b9",
+      "phase_loop_seconds": 1.733639454934746,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 3,
+      "arm": "baseline",
+      "status": "completed",
+      "run_sha256": "74291816b950576e05bd8803e74f96041608e574c44d7c8a7b0fb78b055cf11c",
+      "phase_loop_seconds": 3.0564683980774134,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 3,
+      "arm": "standardized_error",
+      "status": "completed",
+      "run_sha256": "84a219af9d96ad531b2205aab3a0e27b4ceefe5ad4748893dcc61c6fc145281c",
+      "phase_loop_seconds": 3.6761413239873946,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 3,
+      "arm": "absolute_error",
+      "status": "completed",
+      "run_sha256": "7d74630ca085844f876317ccf279bef0b7ff48042df374328920e3c95a5dc4d4",
+      "phase_loop_seconds": 2.901606044964865,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    },
+    {
+      "repetition": 3,
+      "arm": "uniform",
+      "status": "completed",
+      "run_sha256": "18fa187aa159de45f79b2634adc120458e699b8e83d4faa7541ac576a9ed3755",
+      "phase_loop_seconds": 2.262376034865156,
+      "phase_rows": {
+        "validation": 64,
+        "calibration": 64,
+        "evaluation": 256
+      }
+    }
+  ],
+  "limits": [
+    "Se perdieron las muestras de tiempo total que aún estaban en memoria al interrumpirse.",
+    "phase_loop_seconds procede de run.json y excluye preparación del modelo y las fuentes. No sustituye la latencia completa.",
+    "No se creó el padre de 256 activos antes del corte. Los índices ya existían.",
+    "La disposición física de los precios de v2 es distinta de la usada en la medida compacta v3. No mezclar sus tiempos ni atribuir la diferencia al factor E3."
+  ]
+}
