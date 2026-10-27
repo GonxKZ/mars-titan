@@ -1,0 +1,46 @@
+         2201992 function calls (2065419 primitive calls) in 0.986 seconds
+
+   Ordered by: cumulative time
+   List reduced from 981 to 40 due to restriction <40>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      448    0.008    0.000    0.250    0.001 prefix_eligibility.py:258(evidence)
+      384    0.001    0.000    0.217    0.001 prefix_eligibility.py:277(verify)
+     1792    0.002    0.000    0.216    0.000 prefix_eligibility.py:183(_confirm)
+     1792    0.002    0.000    0.213    0.000 prefix_eligibility.py:36(_signature)
+     1792    0.005    0.000    0.198    0.000 cohort_files.py:26(safe_destination)
+ 59587/92    0.068    0.000    0.123    0.001 session_artifacts.py:21(_payload)
+    11653    0.011    0.000    0.116    0.000 {built-in method builtins.any}
+      896    0.001    0.000    0.113    0.000 prefix_eligibility.py:194(_returns)
+       17    0.003    0.000    0.109    0.006 frozen_financial.py:394(verify)
+      448    0.001    0.000    0.105    0.000 prefix_eligibility.py:229(_position)
+    19712    0.006    0.000    0.101    0.000 <frozen _collections_abc>:1022(__iter__)
+    19712    0.014    0.000    0.095    0.000 pathlib.py:277(__getitem__)
+       17    0.013    0.001    0.093    0.005 frozen_financial.py:222(_execution_signature)
+       12    0.001    0.000    0.092    0.008 financial_state_artifacts.py:44(_header)
+    21504    0.007    0.000    0.086    0.000 cohort_files.py:27(<genexpr>)
+    24338    0.006    0.000    0.080    0.000 pathlib.py:835(stat)
+    19712    0.010    0.000    0.079    0.000 pathlib.py:909(is_symlink)
+    24338    0.064    0.000    0.074    0.000 {built-in method posix.stat}
+    19712    0.005    0.000    0.067    0.000 pathlib.py:842(lstat)
+        2    0.001    0.000    0.064    0.032 episodic_session.py:742(snapshot)
+    17920    0.009    0.000    0.062    0.000 pathlib.py:420(_from_parsed_parts)
+    18374    0.010    0.000    0.047    0.000 pathlib.py:380(with_segments)
+      261    0.000    0.000    0.046    0.000 inspect.py:611(getmembers)
+      261    0.018    0.000    0.045    0.000 inspect.py:569(_getmembers)
+       14    0.006    0.000    0.043    0.003 episodic_session.py:357(_rows)
+       13    0.038    0.003    0.038    0.003 {built-in method _episodic_native.seal_blob}
+       98    0.001    0.000    0.037    0.000 session_artifacts.py:157(_bytes)
+   405510    0.037    0.000    0.037    0.000 {built-in method builtins.isinstance}
+       65    0.000    0.000    0.035    0.001 financial_session.py:750(<genexpr>)
+        7    0.000    0.000    0.034    0.005 lesion_ledger.py:349(restore)
+        8    0.000    0.000    0.030    0.004 associative_memory.py:716(restore)
+        8    0.000    0.000    0.030    0.004 area_memory.py:379(restore)
+       19    0.000    0.000    0.030    0.002 area_memory.py:264(read_areas)
+    18512    0.009    0.000    0.030    0.000 pathlib.py:1157(__init__)
+        1    0.000    0.000    0.029    0.029 lesion_protocol.py:182(read)
+       18    0.000    0.000    0.029    0.002 area_memory.py:290(read_diagnostic)
+       77    0.006    0.000    0.028    0.000 episodic_codec.py:316(encode)
+       16    0.004    0.000    0.027    0.002 financial_blocks.py:234(_validate_references)
+     2878    0.004    0.000    0.025    0.000 __init__.py:183(dumps)
+     2966    0.024    0.000    0.024    0.000 {built-in method _hashlib.openssl_sha256}

@@ -2,7 +2,7 @@
 
 `lesion_protocol_v1` (B4 de [#750](https://github.com/GonxKZ/mars-titan/issues/750)) comprueba cuánto depende una predicción de las áreas y coordenadas del corrector maduro. La supresión solo afecta a lecturas diagnósticas. La trayectoria original conserva sus emisiones, sus escrituras y, cuando se usa E1, los componentes y pesos originales de la mezcla.
 
-Los helpers y el registro están conectados a la ventana y a la sesión nativa, con comprobaciones CPU sobre fixtures. Hay configuración guardable y órdenes para ejecutar una ventana existente y analizar sus curvas por sesión. Faltan las comprobaciones CUDA, el coste de la integración completa y las ejecuciones científicas autorizadas. La integración técnica no demuestra que el predictor distribuya recuerdos útiles de forma resistente a lesiones.
+Los helpers y el registro están conectados a la ventana y a la sesión nativa, con comprobaciones CPU sobre fixtures. Hay configuración guardable y órdenes para ejecutar una ventana existente y analizar sus curvas por sesión. El paso durable tiene medidas CPU con fixtures compactos. Faltan las comprobaciones CUDA, las medidas con formas del corpus real y las ejecuciones científicas autorizadas. La integración técnica no demuestra que el predictor distribuya recuerdos útiles de forma resistente a lesiones.
 
 ## Intervención y controles
 
@@ -46,7 +46,7 @@ La [verificación de la integración](../../reports/engineering/lesion-integrati
 
 Cinco [mutaciones dirigidas](../../reports/engineering/lesion-integration-20261027/mutation-results.json) detectan omitir el núcleo en los diagnósticos, sustituir la emisión real, ignorar pendientes desalineados, aceptar otra predicción original y perder B4 al regenerar. Los controles pasan antes y después de cada mutación, sin intentos de pasos de optimizador. También se reprodujo y corrigió la apertura de entradas antes de comprobar fuentes incompatibles.
 
-La [calidad de los helpers](../../reports/engineering/lesion-integration-20261027/quality.json) cubre 322/336 sentencias y 124/138 ramas, con coverage.py 7.16.1 y Radon 6.0.1. La [cobertura de los dos módulos grandes del recorrido](../../reports/engineering/lesion-integration-20261027/quality-integration.json) se informa aparte: 938/1.260 sentencias y 285/500 ramas en la comprobación focalizada. No son una cobertura global del proyecto ni una validación CUDA. Falta medir el coste completo con la persistencia activada.
+La [calidad de los helpers](../../reports/engineering/lesion-integration-20261027/quality.json) cubre 322/336 sentencias y 124/138 ramas, con coverage.py 7.16.1 y Radon 6.0.1. La [cobertura de los dos módulos grandes del recorrido](../../reports/engineering/lesion-integration-20261027/quality-integration.json) se informa aparte: 938/1.260 sentencias y 285/500 ramas en la comprobación focalizada. No son una cobertura global del proyecto ni una validación CUDA. La medida posterior del paso durable con persistencia se informa más adelante.
 
 ## Configuración y análisis por sesión
 
@@ -73,6 +73,47 @@ uv run pytest tests/memory/test_lesion_study.py tests/evaluation/test_lesion_cur
 ```
 
 La [verificación de configuración y curvas](../../reports/engineering/lesion-curves-20261027/verification.json) registra 137 pruebas aprobadas sin omisiones, con fixtures y sin pasos de optimizador. Incluye una salida real de `CorrectionInference`, sesiones desordenadas y de distinto tamaño, bloques insuficientes, MAE base cero y recibos de regeneración. Detecta seis mutaciones dirigidas con referencias verdes antes y después. Los cuatro archivos nuevos cubren 253/264 sentencias y 50/62 ramas, con CRAP máximo 18 según coverage.py 7.16.1 y Radon 6.0.1. No es una mutación exhaustiva ni una cobertura global. No hay curvas científicas, mejora predictiva ni validación CUDA añadidas por estas pruebas.
+
+## Medición de la sesión durable
+
+El [benchmark de sesión](../../benchmarks/lesion_session_cost.py) utiliza `FinancialSession.step` completo con parámetros compartidos congelados de Titans-MAC, memoria por áreas y B4 desactivado o con veinte condiciones. Compara B1, B2 y E1 sobre B2. Cada configuración parte de una sesión nueva, procesa tres eventos de prefijo, cierra y recupera ese estado y mide el cuarto evento con memoria ya escrita. La siguiente transición se contrasta entre repeticiones directas y recuperadas.
+
+Son fixtures manuales de 64, 256 y 1.024 activos. Sus anchuras de precios, noticias, gráficos, fundamentales y macro son 5, 2, 1, 3 y 3, con presencia de precios y gráficos. El padre tiene dimensión oculta 32 y bloques físicos de 64 filas. No son las formas del corpus completo ni una medida de un predictor entrenado. No se estiman etiquetas residuales y un gancho rechaza cualquier intento de paso de optimizador.
+
+El intervalo principal incluye los controles de entrada y prefijo, codec, predictor, corrector, consultas diagnósticas, registro, publicación nativa, comprobación del estado confirmado y poda de artefactos. La preparación del fixture, creación del modelo y sesión, prefijo, reapertura, comprobaciones externas y cierre se registran aparte. Los perfiles instrumentados con cProfile quedan fuera de las muestras de latencia.
+
+Los identificadores nativos y las referencias de artefactos incorporan el contrato de cada configuración. La paridad entre configuraciones se comprueba por activo y fecha, valores emitidos, contenido de los pesos rápidos, memoria correctora y contadores. Dentro de cada configuración se exige además reproducir las huellas completas de snapshots y la siguiente transición. No se ignoran diferencias numéricas para acomodar identidades distintas.
+
+Se registran las muestras sin filtrar, su calentamiento, mediana, mínimo, máximo, caudal y bytes de archivos persistidos. El tiempo corresponde a la cohorte completa. Dividir filas entre tiempo da caudal amortizado y no la latencia individual de cada activo. Los contadores de `/proc/self/io` se conservan con su alcance de proceso y no se presentan como una medida directa del dispositivo. El pico RSS corresponde al proceso completo, incluida la preparación. No permite atribuir un pico transitorio separado a B4. La medida CPU no acredita latencia, consumo o rendimiento GPU. Tres repeticiones no permiten estimar de forma fiable p95 o p99 ni ordenar diferencias pequeñas.
+
+La orden necesita un enlace nativo existente y una carpeta de salida nueva fuera del repositorio. No compila ni descarga dependencias. Su interfaz y sus pruebas técnicas se consultan así:
+
+```bash
+PYTHONPATH=src:. uv run python benchmarks/lesion_session_cost.py --help
+uv run pytest tests/tooling/test_lesion_session_cost.py
+```
+
+Las [dos fases ejecutadas](../../reports/engineering/lesion-durable-cost-20261027/verification.json) terminaron con 72 recorridos, 18 de calentamiento y 54 medidos. Hay tres repeticiones por combinación de tamaño, perfil y diagnóstico. Las medianas del paso completo fueron las siguientes:
+
+| Activos | Perfil | Sin B4 (ms) | Con B4 (ms) | Diferencia (ms) | Bytes retenidos adicionales |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 64 | B1 | 463,7 | 643,7 | 180,0 | 92154 |
+| 64 | B2 | 604,2 | 610,2 | 6,0 | 93178 |
+| 64 | E1 sobre B2 | 722,5 | 1002,3 | 279,9 | 94522 |
+| 256 | B1 | 1625,1 | 1832,5 | 207,4 | 318714 |
+| 256 | B2 | 1478,0 | 1688,7 | 210,7 | 319738 |
+| 256 | E1 sobre B2 | 1724,5 | 2025,9 | 301,4 | 321082 |
+| 1024 | B1 | 7080,4 | 7643,5 | 563,1 | 1224954 |
+| 1024 | B2 | 7419,1 | 8655,7 | 1236,6 | 1225978 |
+| 1024 | E1 sobre B2 | 8106,9 | 10191,5 | 2084,5 | 1227386 |
+
+La primera fase tardó 482,66 segundos de proceso y la segunda 1.661,00. Sus picos RSS fueron 838.644 y 921.416 KiB. Estos picos incluyen preparación y pruebas de integridad, con ambas configuraciones en el mismo proceso. No son una diferencia de memoria entre activar y desactivar B4. Los archivos de sesión y los fixtures pesados permanecen fuera del repositorio. El [resumen legible por máquina](../../reports/engineering/lesion-durable-cost-20261027/summary.json) conserva las estadísticas. Los recibos de [64 y 256 activos](../../reports/engineering/lesion-durable-cost-20261027/matrix-small.json) y de [1.024](../../reports/engineering/lesion-durable-cost-20261027/matrix-large.json) contienen las muestras y su procedencia.
+
+En B2 con 256 activos, el incremento de la mediana es de 210,7 ms y se retienen 319.738 bytes adicionales. Hay variación de carga y caché entre repeticiones. La diferencia pequeña de B2 con 64 activos no demuestra que su coste sea despreciable. Estas medidas cuantifican trabajo diagnóstico adicional, sin demostrar un beneficio predictivo.
+
+Un [perfil instrumentado separado](../../reports/engineering/lesion-durable-cost-20261027/profile-64-bridge.txt), con el mismo guion, localiza trabajo repetido en la comprobación de fuentes y la validación de artefactos. En el caso B2 de 64 activos aparecen 1.792 comprobaciones de firma y 19.712 llamadas `lstat`. Sus tiempos acumulados se solapan y la instrumentación añade coste. No se usan como una descomposición aditiva de la latencia sin instrumentar. La optimización de ese trabajo queda por contrastar.
+
+El benchmark y sus comprobaciones acumulan 39 pruebas aprobadas sin omisiones y cuatro mutaciones dirigidas detectadas con referencias verdes antes y después. La cobertura del guion es de 256/268 sentencias y 51/58 ramas. Su CRAP máximo es 31,12, con coverage.py 7.16.1 y Radon 6.0.1. Es evidencia focalizada de la herramienta y su recuperación, sin cobertura global ni validación CUDA. No se cambió código productivo para obtener estos resultados.
 
 ## Antecedentes y alcance
 
@@ -101,4 +142,4 @@ El [benchmark](../../benchmarks/lesion_read_cost.py) usa estados escritos con 64
 
 Hay variación apreciable entre pasadas. Estos valores no permiten ordenar perfiles por pequeñas diferencias. El diagnóstico añade trabajo y no es una mejora de velocidad de la predicción ordinaria. Los procesos completos tardaron 211,95 y 187,10 segundos, con picos RSS de 651.200 y 652.096 KiB. Los bytes de la tabla incluyen coeficientes e índices del estado original. No incluyen máscaras, objetos Python, temporales ni el registro. No se mide energía ni VRAM. Quince muestras no permiten establecer un objetivo fiable de latencia de cola.
 
-El [esquema](../diagrams/variants/b4-lesion-protocol.png) muestra la separación entre lectura diagnóstica y maduración. Tiene nueve comprobaciones de composición correctas y evidencia de navegador. Las medidas anteriores corresponden al núcleo de lectura. Todavía no incluyen el coste de la integración completa ni sus artefactos. No hay una diferencia de MAE ni una mejora de generalización medida de B4.
+El [esquema](../diagrams/variants/b4-lesion-protocol.png) muestra la separación entre lectura diagnóstica y maduración. Tiene nueve comprobaciones de composición correctas y evidencia de navegador. Las medidas anteriores corresponden al núcleo de lectura. El apartado de sesión durable recoge la medida posterior con persistencia. No hay una diferencia de MAE ni una mejora de generalización medida de B4.
