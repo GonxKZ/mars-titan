@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta los componentes estándar con publicación durable en M1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. El cargador reconstruye el padre y lector elegidos en su vista e índice originales. El controlador y la CLI ejecutan un control por ventana y confirman sus fases. Quedan la integración regional en esos consumidores, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta ambos productores con publicación durable en M1 y C desactivado. El adaptador `SpacedInference`, el cargador, el controlador y la CLI conservan por ahora el lector estándar. Quedan sus rutas regionales, CUDA y la comparación científica. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -86,7 +86,7 @@ PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_reado
 PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-regional-cost.json"
 ```
 
-La medida requiere un destino nuevo. El productor está disponible como API opcional, pero el enlace regional con `FinancialSession`, el cargador seleccionado y el estudio de ventanas sigue pendiente. Estos consumidores continúan rechazándolo. Esta comprobación técnica no levanta el bloqueo de aprendizaje ni abre el test final.
+La medida requiere un destino nuevo. El productor está integrado también en `FinancialSession`, como se describe más abajo. El cargador seleccionado y el estudio de ventanas regionales siguen pendientes. El adaptador estándar los rechaza explícitamente antes de ejecutar. Esta comprobación técnica no levanta el bloqueo de aprendizaje ni abre el test final.
 
 ## Retención sobre el banco nativo
 
@@ -171,6 +171,29 @@ PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv r
 ```
 
 El benchmark requiere un directorio nuevo y `MARS_TITAN_EPISODIC_NATIVE` con el enlace compatible. Escribe allí las fuentes de fixture y los recorridos. El informe ligero está en [cost.json](../../reports/engineering/spaced-session-20261027/cost.json). No ejecuta entrenamientos ni abre el test final.
+
+## Sesión durable con lector regional
+
+`SpacedTitansBinding` elige el productor regional cuando el consumidor declara un puente de evidencia. `SpacedRetentionConfig` activa E2 y `RetentionConfig` conserva la ruta anterior. La combinación admite M1, K = 1 y C desactivado. No activa el programa regional anterior a MAC ni lo mezcla implícitamente con B6 o B4. El coordinador `FinancialSession`, su consumidor de referencia y las 34 fuentes canónicas permanecen intactos.
+
+Antes de MAC, el enlace comprueba la cuota conjunta de la lectura original y las supresiones. Suma la estimación de la traza ordinaria retenida de toda la cohorte, los puntos y filas diagnósticas y el trabajo del bloque. No basta con que cada parte quepa por separado. La estimación es conservadora y no certifica el pico de RAM. El control guarda refinamientos diagnósticos, proyecciones adicionales y una cota superior de actualizaciones regionales. Esta última no se presenta como profundidad adaptativa observada. La traza ordinaria mantiene sus propios contadores y profundidades reales.
+
+Banco, pesos rápidos, pendientes y evidencia se publican juntos mediante el bucle transaccional existente. Las comprobaciones de artefactos concilian la traza ordinaria, las emisiones, el soporte, los bloques y los contadores. La confirmación comprueba también el tipo de evento del recibo nativo. Un valor nulo, falso o vacío no se sustituye por una inferencia del tipo. Si se rechaza un evento, el ejecutor se cierra y la recuperación vuelve a la generación confirmada, sin publicar estados parciales.
+
+La firma regional añade el descriptor `regional_spaced_session_v1` a los campos existentes. Se fijan las fuentes del enlace, el productor y el helper regional. La edición del código E2 cambia sus contratos de ejecución, incluso para su lector estándar. Los contratos anteriores necesitan el runtime fijado en su manifiesto. No se omite esa comprobación para recuperar ni se sobrescriben sus artefactos. Los pesos y fuentes del predictor conservan su identidad.
+
+La [verificación durable regional](../../reports/engineering/spaced-regional-session-20261027/verification.json) registra 426 pruebas CPU correctas sin omisiones, incluidas 43 nuevas y 383 regresiones. La selección excluye siete casos CUDA, dos de ellos nuevos y aún pendientes. Comprueba las cinco políticas sobre lectores J4, adaptativo, jerárquico y con regiones desactivadas, además de la paridad con reservorio, cuantiles, calentamiento, cierre, orden temporal, recuperación y siete fronteras de fallo nativas. La batería no ajusta parámetros ni calcula etiquetas residuales.
+
+Se detectan nueve [mutaciones dirigidas](../../reports/engineering/spaced-regional-session-20261027/mutations.json) con controles verdes antes y después. Cubren el despacho, las cuotas antes de MAC, los controles durables, los tipos de contadores y de eventos nativos, la traza ordinaria y el rechazo del adaptador estándar. La [cobertura y el CRAP](../../reports/engineering/spaced-regional-session-20261027/quality.json) recogen 345/347 sentencias y 73/74 ramas de los tres módulos afectados, con CRAP máximo 23. El helper nuevo cubre 61/61 sentencias y 8/8 ramas. Se usan coverage.py 7.16.1 y Radon 6.0.1, con sentencias para CRAP. No se declara cobertura de cada condición ni de la suite completa.
+
+La [comparación con el enlace anterior](../../reports/engineering/spaced-regional-session-20261027/legacy-parity.json) ejecuta la ruta sin E2 con el código de `babe9f780` y el actual sobre las mismas fuentes y parámetros de fixture. Conserva exactamente 16 predicciones, episodios retenidos, snapshot completo e identidad del contrato. Esta comparación no acredita recuperar una sesión E2 antigua bajo el código nuevo.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_regional_session.py tests/memory/test_spaced_session.py tests/memory/test_spaced_inference.py tests/memory/test_spaced_utility_readout.py tests/memory/test_spaced_regional_readout.py tests/memory/test_spaced_retention.py tests/memory/test_retention_bank.py tests/training/test_learning_hold_inventory.py tests/training/test_learning_hold_graph.py -m 'not cuda' -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-regional-session-20261027/compare_legacy.py "$HOME/.cache/mars-titan/spaced-session-parity"
+```
+
+La comparación necesita un destino nuevo y el enlace nativo compatible. El coste durable de este enlace aún está pendiente de medida. Los costes del productor aislado no lo sustituyen. No hay resultados de generalización ni acceso al test final. La adaptación regional de fases, el cargador y el controlador se mantienen pendientes.
 
 ## Adaptador para fases de ventanas congeladas
 
@@ -316,4 +339,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes la integración del productor regional en sesión y ventanas, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.
+Quedan pendientes la adaptación regional de fases, el cargador y el controlador, CUDA y la evaluación autorizada. El diagnóstico congelado no habilita entrenamientos, no cambia el baseline y no abre el test final.

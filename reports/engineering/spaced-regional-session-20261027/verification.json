@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T13:50:53.978672+00:00",
+  "kind": "technical_durable_regional_spaced_session_without_training",
+  "base_commit": "babe9f780fcf73ed4e54ba92bddb0d2194fefff0",
+  "tests": {
+    "distinct_passed": 426,
+    "new_session": 43,
+    "regressions": 383,
+    "skipped": 0,
+    "cuda_deselected_total": 7,
+    "new_cuda_pending": 2,
+    "full_suite_executed": false,
+    "xml_sha256": "3cd47676b2f46876a408ec95404f9794d76a10369c28ad1bc5248ff5fa9f5baf",
+    "by_module": {
+      "tests.memory.test_retention_bank": 81,
+      "tests.memory.test_spaced_inference": 26,
+      "tests.memory.test_spaced_regional_readout": 142,
+      "tests.memory.test_spaced_regional_session": 43,
+      "tests.memory.test_spaced_retention": 34,
+      "tests.memory.test_spaced_session": 22,
+      "tests.memory.test_spaced_utility_readout": 61,
+      "tests.training.test_learning_hold_graph": 12,
+      "tests.training.test_learning_hold_inventory": 5
+    }
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 347,
+      "covered_statements": 345,
+      "branches": 74,
+      "covered_branches": 73
+    },
+    "max_crap": 23.0
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 9,
+    "killed": 9,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2"
+  },
+  "legacy_parity": {
+    "path": "legacy-parity.json",
+    "emitted_points": 16,
+    "contract_id_equal": true,
+    "complete_snapshot_equal": true
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_session.py": "682dd7a69346fc60ea856e5f73114b1c393f46009671776ba0e3dab511868d8a",
+    "src/mars_titan/memory/spaced_regional_session.py": "ca5f8b22a590c7e6c7aec636f0e1eabc62e33b7698d26bc5ddbf343a2fbcfa25",
+    "src/mars_titan/training/spaced_inference.py": "927fa2d0b88f21fb49788ac316eb10a2f947168d67a9bebe181f2e27e5a039af",
+    "tests/memory/test_spaced_regional_session.py": "56427e6e75d205a4f352ea990446544a7335a08e1ebcf6a48da7d64a8883285c",
+    "tests/memory/test_spaced_session.py": "589efda9b5fa62875d7d233d60df0f40e68877df9fdd2af6493a2a54aaf10116",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "reports/engineering/spaced-regional-session-20261027/compare_legacy.py": "3b8de64a430a24edd5138a63567016abbfc822278030b628ee49d57bbb49fb5a"
+  },
+  "preserved_canonical_sources": {
+    "count": 34,
+    "manifest_path": "reports/engineering/spaced-selected-20261027/verification.json",
+    "manifest_sha256": "c65abebf157c9734def0b96e08c9eca727f351854fbc63aa8f6aaf1872f768e5"
+  },
+  "preserved_runtime_sources": {
+    "src/mars_titan/memory/financial_session.py": "21ee7e8638fcefd5f2156c9933889ed66967c1e8ce9d74022aebc3f73e3c06b6",
+    "src/mars_titan/memory/financial_consumers.py": "be55eaaadef40a8e487f4fbd553b85ddb46d6036936ece9338894b461473663d",
+    "src/mars_titan/memory/spaced_regional_readout.py": "e1a8a2b507724cc3014b91589cce450974187b5070cb4bdfcc88987bc2171ab2",
+    "src/mars_titan/memory/spaced_retention.py": "70d65da29702db566915978298ce77aac5e5bb47d6b7155561c70f9722220795",
+    "src/mars_titan/training/spaced_selected.py": "0f81b24e1642a57ecb9ff166618c2416fc81f80306b182e0bb2e133bfd03cc1d",
+    "src/mars_titan/training/spaced_window.py": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "cuda_executed": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "regional_session_integrated": true,
+  "regional_window_integrated": false,
+  "durable_cost_measured": false,
+  "limits": [
+    "Solo M1 K1 con C desactivado. El programa regional previo a MAC, B6/B4 y otras composiciones siguen separados.",
+    "El helper verifica trazas, contadores y el tipo nativo del evento. Los checksums no autentican una historia frente a quien pueda reescribir todo el proceso.",
+    "Las actualizaciones diagnósticas se registran como cota superior, no profundidad adaptativa observada.",
+    "El presupuesto de lector, traza y emisiones es una estimación conservadora, no RAM certificada.",
+    "El código E2 ha cambiado. Sus contratos anteriores necesitan el runtime fijado. La ruta no E2 conserva el contrato comprobado.",
+    "Ventanas y cargador regionales siguen pendientes. El adaptador estándar mantiene rechazo explícito antes de ejecutar.",
+    "Dos pruebas CUDA nuevas siguen pendientes porque la GPU no tiene reserva exclusiva.",
+    "Los costes durables del nuevo enlace todavía no se han medido. Los del productor aislado no los sustituyen."
+  ],
+  "artifacts": {
+    "quality.json": "ed339be2045cccbc1eff73e7793ea80594d039209a703f5061f9eb7830659a03",
+    "mutations.json": "870e3e47f9bfa3342780210fc241208ab4f704f1656250b65fa3f3e6b4ebcaad",
+    "legacy-parity.json": "5af95c19812f5c79b55a43753abed31c42ae04931d7ae5a792fdb8a999634ca7"
+  }
+}

@@ -38,6 +38,10 @@ class SpacedInference(MarsTitanInference):
             "La ventana E2 necesita consumidor congelado, retención y prefijos identificados",
         )
         consumer.verify()
+        _require(
+            consumer.readout is not None and consumer.readout.config.evidence_bridge is None,
+            "Esta ventana E2 sigue limitada al lector estándar",
+        )
         binding = SpacedTitansBinding(consumer, codec, retention, "m1")
         _require(
             prefixes.source_id == consumer.predictor.config.inputs.source_sha256,

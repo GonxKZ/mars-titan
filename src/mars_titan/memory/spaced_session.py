@@ -8,6 +8,8 @@ from pathlib import Path
 from mars_titan.models.titans.frozen_financial import FrozenPreparation
 
 from . import (
+    spaced_regional_readout,
+    spaced_regional_session,
     spaced_retention,
     spaced_retention_state,
     spaced_utility,
@@ -53,9 +55,8 @@ class SpacedTitansBinding(TitansBinding):
         _require(
             readout is not None
             and readout.config.mode == "bank"
-            and readout.config.refinements == 1
-            and readout.config.evidence_bridge is None,
-            "La sesión E2 necesita el lector estándar bank K1",
+            and readout.config.refinements == 1,
+            "La sesión E2 necesita un lector bank K1",
         )
         self.spaced_config = retention
         self.evidence_config = SpacedUtilityConfig(
@@ -65,20 +66,50 @@ class SpacedTitansBinding(TitansBinding):
         )
 
     def signature(self):
-        return asdict(self.spaced_config), self.evidence_config.identity()
+        base = asdict(self.spaced_config), self.evidence_config.identity()
+        return (
+            base + (spaced_regional_session.signature(self.consumer.readout),)
+            if self.regional()
+            else base
+        )
+
+    def regional(self):
+        return self.consumer.readout.config.evidence_bridge is not None
 
     def code(self):
+        modules = (
+            inspect.getmodule(begin),
+            spaced_retention,
+            spaced_retention_state,
+            spaced_utility,
+            spaced_utility_state,
+            spaced_utility_readout,
+        )
+        if self.regional():
+            modules += (spaced_regional_session, spaced_regional_readout)
         return {
             m.__name__.rsplit(".", 1)[-1]: hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest()
-            for m in (
-                inspect.getmodule(begin),
-                spaced_retention,
-                spaced_retention_state,
-                spaced_utility,
-                spaced_utility_state,
-                spaced_utility_readout,
-            )
+            for m in modules
         }
+
+    def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
+        work = None
+        if self.regional():
+            work = spaced_regional_session.preflight(
+                self, rows, snapshot, context_id=context_id, warmup=warmup, block_rows=batch_rows
+            )
+        values, updated, control = super().prepare_event(
+            session,
+            rows,
+            fast,
+            snapshot,
+            context_id=context_id,
+            warmup=warmup,
+            batch_rows=batch_rows,
+        )
+        if work is not None:
+            control["spaced_regional"] = work
+        return values, updated, control
 
     def bank(self, native, retention, **scope):
         return SpacedUtilityBank(
@@ -108,7 +139,12 @@ class SpacedTitansBinding(TitansBinding):
             else dict(control_selection=selection, control_context_id=context_id)
         )
         prepared = model.prepare(batch, previous, differentiable=False, **options)
-        prediction, trace = apply_spaced_utility_readout(
+        producer = (
+            spaced_regional_readout.apply_regional_spaced_utility_readout
+            if self.regional()
+            else apply_spaced_utility_readout
+        )
+        prediction, trace = producer(
             prepared,
             model.head,
             self.consumer.readout,
@@ -315,11 +351,16 @@ def verify(session, bundle, pending_keys):
         "El ledger E2 no concilia con el corte y pendientes financieros",
     )
     _event(event, bundle["cutoff"], ledger.config)
+    if session._binding.regional():
+        spaced_regional_session.verify(session, bundle, event)
 
 
 def verify_confirmed(session, bundle, record):
     bank, _ = session._bank(bundle["bank"])
     ledger, event = _restore(session, bank, bundle)
+    if session._binding.regional():
+        _require(type(record.get("event_kind")) is str, "El tipo nativo regional no es válido")
+        spaced_regional_session.verify(session, bundle, event, event_kind=record["event_kind"])
     actual = sorted((p["asset"], p["value"]) for p in record["predictions"])
     emitted = sorted((r["flow_id"], r["point"]) for r in event["emissions"])
     _require(actual == emitted, "El evento E2 no coincide con las predicciones nativas")
