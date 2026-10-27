@@ -77,6 +77,12 @@ from .regional_hierarchy import (
     RegionalHierarchyConfig,
     validate_hierarchy_operator_config,
 )
+from .regional_variants import (
+    RegionAxisMixingConfig,
+    SharedWorkspaceConfig,
+    build_regional_variant,
+    parse_regional_variant,
+)
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .state import (
     MACState,
@@ -147,6 +153,8 @@ class FinancialConfig:
     regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
     memory_bank_readout: BankReadoutConfig | None = None
     temporal_encoder: str | None = None
+    # C1 o C6 de #751: sustituyen al operador regional y no se combinan con él.
+    regional_variant: RegionAxisMixingConfig | SharedWorkspaceConfig | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -294,6 +302,17 @@ class FinancialConfig:
                 and self.session_context is None
             ):
                 raise ValueError("La selección contextual necesita un padre PT4 explícito")
+        object.__setattr__(self, "regional_variant", parse_regional_variant(self.regional_variant))
+        if self.regional_variant is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.presence_modulation is not None
+        ):
+            raise ValueError(
+                "La variante regional se declara sobre mac_online, sustituye al operador "
+                "regional y no se combina con PT6"
+            )
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
             if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
@@ -387,6 +406,8 @@ class FinancialConfig:
             result.update(regional_fusion=self.regional_fusion.identity())
         if self.regional_execution is not None:
             result.update(regional_execution=self.regional_execution.identity())
+        if self.regional_variant is not None:
+            result.update(regional_variant=self.regional_variant.identity())
         if self.memory_bank_readout is not None:
             result.update(memory_bank_readout=self.memory_bank_readout.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -545,6 +566,16 @@ class FinancialPredictor(nn.Module):
             if config.regional_execution is not None
             else None
         )
+        self.regional_variant = (
+            build_regional_variant(
+                config.hidden_size,
+                config.regional_variant,
+                seed=config.seed,
+                max_batch=config.max_batch,
+            )
+            if config.regional_variant is not None
+            else None
+        )
         # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
         self.session_context = (
             SessionContext(
@@ -650,6 +681,7 @@ class FinancialPredictor(nn.Module):
         regional = self._regional_component()
         if regional is not None:
             regional.validate_geometry()
+        self._regional_variant_component()
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(execution.state_dict(), "")
@@ -659,6 +691,22 @@ class FinancialPredictor(nn.Module):
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
         self._regional_program_signature = self._program_signature()
+
+    def _regional_variant_component(self):
+        declared, module = self.config.regional_variant, self.regional_variant
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or module is None
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+            or module.readout.weight.device != self.head.weight.device
+            or module.readout.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La variante regional no corresponde a la configuración declarada")
+        return module
 
     def _parameter_digest(self):
         fingerprints = {
@@ -831,6 +879,8 @@ class FinancialPredictor(nn.Module):
         result = (
             self.regional_fusion.operation_counts(rows)
             if self.regional_fusion is not None and self.regional_execution is None
+            else self.regional_variant.operation_counts(rows)
+            if self.regional_variant is not None
             else {}
         )
         if self.mac is not None and self.mac.memory.bank_readout is not None:
@@ -1229,6 +1279,8 @@ class FinancialPredictor(nn.Module):
                     batch.presence if self.masked else None,
                     modulation=self.regional_fusion
                     if self.regional_fusion is not None
+                    else self.regional_variant
+                    if self.regional_variant is not None
                     else self.presence_modulation,
                     branch=self.fusion_branch,
                 )

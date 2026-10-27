@@ -88,6 +88,7 @@ class FinancialDustAdapter:
             "regional_fusion",
             "regional_execution",
             "memory_bank_readout",
+            "regional_variant",
         )
         if (
             config.variant != "transformer_direct"
@@ -105,6 +106,7 @@ class FinancialDustAdapter:
                     "session_context",
                     "regional_fusion",
                     "regional_execution",
+                    "regional_variant",
                     "presence_modulation",
                     "fusion_branch",
                 )
