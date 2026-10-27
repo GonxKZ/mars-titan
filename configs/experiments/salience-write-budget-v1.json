@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "mature_write_budget_variants",
+  "variant_id": "salience_write_budget_v1",
+  "issue": 750,
+  "status": "technical_core_only",
+  "default_enabled": false,
+  "final_test_access": false,
+  "cohort": "complete_mature_publication_by_market",
+  "arms": {
+    "prior_asset_scale": {
+      "rule": "standardized_error",
+      "writes_per_market": 64,
+      "min_history": 4,
+      "initial_scale": 0.01,
+      "scale_floor": 1e-8,
+      "seed": 0
+    },
+    "absolute_error": {
+      "rule": "absolute_error",
+      "writes_per_market": 64,
+      "min_history": 4,
+      "initial_scale": 0.01,
+      "scale_floor": 1e-8,
+      "seed": 0
+    },
+    "uniform": {
+      "rule": "uniform",
+      "writes_per_market": 64,
+      "min_history": 4,
+      "initial_scale": 0.01,
+      "scale_floor": 1e-8,
+      "seed": 0
+    }
+  },
+  "pending": [
+    "El núcleo no está conectado a sesiones, ventanas, retención ni campañas.",
+    "El cupo actual es por cohorte de publicación y mercado. La integración debe comprobar su correspondencia con la sesión del calendario.",
+    "El consumidor debe verificar maduración, procedencia del punto emitido y totalidad de la cohorte antes de invocar el selector.",
+    "La combinación con B1, B2, E1 o E2 necesita identidad, publicación conjunta de estados y comparación propias.",
+    "No hay comparación predictiva ni intensidad óptima medida. La escala no identifica fuentes latentes de ruido."
+  ]
+}
