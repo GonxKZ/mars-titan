@@ -72,6 +72,8 @@ Las pruebas están en `tests/models/titans/test_regional_variants.py` y `tests/m
 
 El consumidor congelado rechaza la variante, porque su módulo no está entre los componentes que conoce. Registrarla allí exige ampliar su huella de código y se hará cuando la criba la necesite. `regional_fusion.py` no se modifica, porque su fuente forma parte de la identidad de los consumidores congelados y de los estudios ya preparados.
 
+El entrenador registra la fuente del operador cuando está activo. Los cargadores de padres mantienen el mismo límite de registro congelado antes de construir el modelo. El [contrato de fuentes](../engineering/regional-source-provenance.md) detalla esa separación.
+
 ## Coste
 
 La medida de [`benchmarks/regional_variants_cost.py`](../../benchmarks/regional_variants_cost.py) llama solo al operador regional con bloques aleatorios [B,5,64] en FP32 y las cinco fuentes presentes, con el anillo, dos ciclos, dos pasos locales y resumen. `forward` es la inferencia sin gradiente. `backward` añade la propagación hasta los parámetros del operador, sin optimizador, y un gancho de `torch.optim` rechaza cualquier paso. Hubo tres calentamientos y veinte repeticiones por condición en dos pasadas de orden inverso. Se ejecutó en CPU con 8 hilos, PyTorch 2.14.0 y Python 3.12.14, con otras cargas del equipo activas y una media de carga en torno a 11. Las cifras son medianas en milisegundos por llamada. El [JSON](../../reports/engineering/regional-variants-20261027/cpu-cost.json) conserva el p95 y las muestras.
