@@ -186,6 +186,21 @@ def test_export_and_restore_continue_with_the_same_windows():
         ledger.export()
 
 
+def test_a_ledger_without_stored_inputs_exports_and_restores_its_labels():
+    ledger = HorizonLabels(CONFIG)
+    for at in range(3):
+        emit(ledger, ["US/A"], at)
+        ledger.mature("US/A", at, 1.0)
+    # La ventana de tres entrega la decisión 0 y el cierre del tramo entrega las demás.
+    ledger.flush()
+    assert len(ledger.take()) == 2
+    payload = ledger.export()
+    assert "inputs" not in payload and not payload["stored"].any()
+    restored = HorizonLabels.restore(CONFIG, payload)
+    assert restored.flows == ledger.flows and restored.markets == ledger.markets
+    assert restored.keys == ledger.keys == {}
+
+
 def test_restore_refuses_a_pending_decision_without_its_ordinal():
     ledger = HorizonLabels(CONFIG)
     emit(ledger, ["US/A"], 0)
