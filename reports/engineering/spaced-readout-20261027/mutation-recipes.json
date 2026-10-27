@@ -1,0 +1,109 @@
+{
+  "sources": {
+    "new": {
+      "path": "src/mars_titan/memory/spaced_utility_readout.py",
+      "sha256": "353d5ddd12d8f8d0487f811386587f1ebc8737c31045f302e0f4a121e0eec848"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_utility_readout.py",
+  "test_sha256": "0fc098d80cdc936587240352df22e7460e6ce17d06265842f97b0ecc02d18b19",
+  "recipes": [
+    {
+      "id": "exclude_wrong_neighbor",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_two_neighbor_deletions_match_the_complete_refinement_equation",
+      "anchor": "masked[:, column] = -torch.inf",
+      "replacement": "masked[:, (column + 1) % count] = -torch.inf",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "keep_presence_after_single_deletion",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_empty_support_and_single_deletion_keep_the_absent_read_refinement[1]",
+      "anchor": "presence = torch.full_like(read.presence, count > 1)",
+      "replacement": "presence = torch.full_like(read.presence, count >= 1)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "repeat_selection",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_deleting_selected_support_does_not_refill_or_repeat_mac_and_selection",
+      "anchor": "        check_finite(extension.step_logit, \"La puerta de refinamiento\")",
+      "replacement": "        extension._read_parts(base, snapshot, context_id, cutoff, repeated=True)\n        check_finite(extension.step_logit, \"La puerta de refinamiento\")",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "underestimate_combined_budget",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_combined_budget_fails_before_projection",
+      "anchor": "refinements=count + 1",
+      "replacement": "refinements=1",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "Proyección antes del presupuesto"
+      }
+    },
+    {
+      "id": "skip_row_temporal_validation",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_ledger_rows_reject_missing_and_invalid_maturities[early]",
+      "anchor": "at is None or (_integer(at) and at > self.cutoff)",
+      "replacement": "at is None or _integer(at)",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "replace_median_with_mean",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_existing_quantile_head_preserves_its_median_and_order",
+      "anchor": "quantiles, predictions = output, median(output)",
+      "replacement": "quantiles, predictions = output, output.mean(-1)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "allow_mixed_market",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_unaligned_identity_is_rejected_before_a_read[market]",
+      "anchor": "len(markets) == 1 and len(set(flows)) == size",
+      "replacement": "len(markets) >= 1 and len(set(flows)) == size",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "Lectura desalineada"
+      }
+    },
+    {
+      "id": "allow_autocast",
+      "family": "Objective",
+      "source_key": "new",
+      "nodeid": "tests/memory/test_spaced_utility_readout.py::test_autocast_is_rejected_before_reading",
+      "anchor": "not torch.is_autocast_enabled(base.device.type)",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "Autocast sin declarar"
+      }
+    }
+  ],
+  "method": "Una prueba por receta en copia fijada. G1 verde, M1 con el fallo esperado y G2 restaurada verde, con guardas de origen y de aprendizaje."
+}
