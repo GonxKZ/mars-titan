@@ -15,17 +15,31 @@
     }
   },
   "components": [
-    {"id": "regions", "type": "backend", "label": "Regiones", "sublabel": "modalidad y mercado", "pos": [40, 40], "size": [180, 72]},
-    {"id": "compete", "type": "backend", "label": "Escritura por competición", "sublabel": "top-k de regiones", "pos": [300, 40], "size": [180, 72]},
-    {"id": "slots", "type": "database", "label": "Ranuras compartidas", "sublabel": "pocas por decisión", "pos": [560, 40], "size": [180, 72]},
-    {"id": "broadcast", "type": "backend", "label": "Difusión", "sublabel": "a todas las regiones", "pos": [820, 40], "size": [180, 72]},
+    {"id": "regions", "type": "backend", "label": "Regiones", "sublabel": "cinco fuentes de la fila", "pos": [40, 40], "size": [180, 72]},
+    {"id": "compete", "type": "backend", "label": "Escritura por competición", "sublabel": "top-k por ranura", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "slots",
+      "type": "database",
+      "label": "Ranuras compartidas",
+      "sublabel": "dos, reiniciadas por predicción",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "broadcast",
+      "type": "backend",
+      "label": "Lectura por región",
+      "sublabel": "contexto propio de cada nodo",
+      "pos": [820, 40],
+      "size": [180, 72]
+    },
     {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]},
     {
       "id": "controls",
       "type": "security",
       "label": "Controles",
-      "sublabel": "atención cruzada y memoria P",
-      "tag": "iguales parámetros",
+      "sublabel": "escritura densa y fusión regional",
+      "tag": "densa con iguales pesos",
       "pos": [560, 230],
       "size": [180, 72]
     }
@@ -43,19 +57,19 @@
       "title": "Mecanismo",
       "items": [
         "Las regiones compiten por escribir en pocas ranuras comunes",
-        "Lo escrito se difunde a todas las regiones de la decisión",
-        "Fuente: Goyal et al. (2021), Shared Global Workspace"
+        "Cada región lee las ranuras y recibe su propio contexto",
+        "Fuente: Goyal et al. (2022), Shared Global Workspace"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Atención cruzada con los mismos parámetros", "La memoria persistente de MAC, con la que puede ser redundante"]
+      "items": ["Escritura densa con los mismos parámetros", "Fusión regional y memoria persistente de MAC"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751, pendiente de implementar", "Probabilidad previa baja de aportar sobre P"]
+      "items": ["Implementada en #751 con pruebas técnicas", "Sin entrenar ni evaluar, se espera redundancia"]
     }
   ]
 }
