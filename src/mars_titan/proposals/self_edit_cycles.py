@@ -279,9 +279,14 @@ class SelfEditLedger:
 
         `comparison` es el resultado de `compare_series` con el único contraste
         `generated_minus_placebo`, o None si las dos listas eligieron la misma configuración.
+        El bloque empieza después de que maduren el de selección y el contraste del ciclo
+        anterior, así que cada veredicto usa filas que ningún veredicto previo vio.
         """
         cycle = self._cycle(index, "selected")
-        partition = self._partition(partition, cycle["partitions"]["select"]["matured_until"])
+        after = cycle["partitions"]["select"]["matured_until"]
+        if index > 1:
+            after = max(after, self._cycles[index - 2]["partitions"]["assess"]["matured_until"])
+        partition = self._partition(partition, after)
         generated, rival = self.selected(index)
         loss = cycle["selection"]["loss"]
         if _canonical(generated) == _canonical(rival):

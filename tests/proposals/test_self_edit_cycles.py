@@ -320,3 +320,25 @@ def test_a_tie_with_the_current_configuration_is_not_adopted():
     )
     assert selection["generated"] == 1 and selection["adopted"] is None
     assert selection["rejected"][1] == dict(ordinal=1, reason="no_mejora_la_vigente")
+
+
+def test_each_verdict_uses_a_block_no_previous_verdict_saw():
+    book = ledger()
+    run_cycle(book, comparison([-0.3, -0.1]))
+    # El segundo ciclo puede seleccionar en el bloque contrastado por el primero, pero su
+    # contraste necesita un bloque posterior a ese.
+    index = declare(book, current=book.current("toy", dict(value=0)), generated=(4, 5, 6))
+    scores = dict(current=1.0, generated=[0.9, 0.8, 0.95], placebo=[0.99, 0.97, 1.2])
+    book.select(index, partition=block(START + DAY, START + 30 * DAY), scores=scores, loss=True)
+    with pytest.raises(ValueError, match="antes de que maduren"):
+        book.assess(
+            index,
+            partition=block(START + 31 * DAY, START + 59 * DAY),
+            comparison=comparison([-0.3, -0.1]),
+        )
+    book.assess(
+        index,
+        partition=block(START + 60 * DAY, START + 90 * DAY),
+        comparison=comparison([-0.3, -0.1]),
+    )
+    assert book.cycle(index)["status"] == "assessed"
