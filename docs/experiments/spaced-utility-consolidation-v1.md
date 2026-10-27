@@ -4,6 +4,8 @@ El registro `SpacedUtilityLedger`, los productores estándar y regional K1 y la 
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
+El [comparador por sesiones](spaced-utility-comparison-v1.md) conecta los seis controles de cada lector con una declaración estadística previa, fuentes emparejadas y remuestreo por bloques. La comprobación con fixtures no sustituye una evaluación científica ni levanta su bloqueo.
+
 ## Contraste y agregación
 
 Para una predicción original emitida \(p_i\), una predicción diagnóstica \(p_{i,-e}\) emitida sin el episodio \(e\) y su resultado maduro \(y_i\), se define:

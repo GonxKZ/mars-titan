@@ -210,6 +210,8 @@ El núcleo de [E2](docs/experiments/spaced-utility-consolidation-v1.md) registra
 
 La sesión financiera publica y recupera esos estados en M1, K = 1 y C desactivado, con ambos lectores y comprobaciones CPU de presupuestos, trazas y fallos. La ruta sin E2 conserva el contrato y las salidas comprobadas frente al enlace anterior. El adaptador, el cargador, el controlador y la CLI admiten un contrato regional explícito con configuración independiente. El estándar sigue siendo el valor por defecto. Quedan CUDA y la comparación científica. No hay mejora predictiva medida.
 
+El [comparador E2 por sesiones](docs/experiments/spaced-utility-comparison-v1.md) exige declarar el análisis antes de la ventana y conserva los controles, las filas y los parámetros seleccionados. Recalcula y coteja las métricas, incorpora el predictor residual cero y estima intervalos por bloques temporales. La API y la CLI mantienen la protección de aprendizaje y no promocionan variantes.
+
 El [ensayo de firmas de archivo](docs/engineering/prefix-path-checks.md) conserva la referencia: el candidato fue más rápido en el microbenchmark, pero la sesión con diagnósticos no superó el margen de coste fijado antes de medir.
 
 | Antes del lanzamiento de la campaña A v2 | Estado | Tarea |

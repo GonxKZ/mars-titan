@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "technical_spaced_session_comparison_without_scientific_evaluation",
+  "recorded_at_utc": "2026-10-27T17:06:16.140302+00:00",
+  "base_commit": "a481d0f5d9615d30942e627609cffad56444f89a",
+  "tests": {
+    "distinct_passed": 250,
+    "new_cases": 95,
+    "regressions": 155,
+    "skipped": 0,
+    "runs": [
+      {
+        "xml_sha256": "b39c9673cf1cf956245498b1a8928e9f6f2952c36141ceb5b3adef10a600269e",
+        "passed": 248,
+        "new_distinct_cases": 248
+      },
+      {
+        "xml_sha256": "9c94a0ee0135a42e1325efffd5b271e698db4889748ceb38023e7329bf1c7991",
+        "passed": 2,
+        "new_distinct_cases": 2
+      },
+      {
+        "xml_sha256": "cb91ed98616681b60c58ea6e394e57949084a51351170a62526f554955fc270f",
+        "passed": 3,
+        "new_distinct_cases": 0
+      }
+    ],
+    "full_suite_executed": false,
+    "counts_note": "248 casos y dos adversariales adicionales, con producto idéntico. Los tres casos de la frontera CLI se repitieron tras reforzar su prueba y no se suman."
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 286,
+      "covered_statements": 284,
+      "branches": 66,
+      "covered_branches": 64
+    },
+    "max_crap": 44.0
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 15,
+    "killed": 15,
+    "optimizer_attempts": 0
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_study.py": "286241ec1c98dbe9ebb1cff4a0cdc3c82b5ab5bc77ca7ab0b1c1eb6922cc3ac7",
+    "src/mars_titan/evaluation/spaced_sources.py": "b10711a540787a8a460d10711dcf80831cb7326ffcbca7e3ad6411c5cb6759fb",
+    "src/mars_titan/evaluation/spaced_comparison.py": "67e74b932ce8b782d31ee5df235b07edd8cf07f56b43cc63d343bc7565c14d72",
+    "scripts/analyze_spaced_windows.py": "3d0a00caddd0840cb3bccfdad212eb4eef6066d96b3b491d7b7f096109320110",
+    "tests/memory/test_spaced_analysis_study.py": "f735dc56e87f79b72f40b6f7b3470b6e925a2c7340288f5058e23f3ec116d6a5",
+    "tests/evaluation/test_spaced_comparison.py": "4888891bd2e982b0e9f63cdd4e0cc2635c016984fd7fb5cc904009b9b78ffe1c",
+    "tests/memory/test_spaced_analysis_window.py": "9fc78217b5d91724f71020dcb9fb968cfb6c9b057a9173605da2efb3b2479d81",
+    "tests/memory/spaced_analysis_fixture.py": "26aa44493ff74a8f371f4205e46a11c3c6bc3d151c6ceae67c3e4a0ec638a7ca",
+    "tests/evaluation/spaced_run_fixture.py": "7236c40d382ddcbded8c9911e6cba0247287777fc3015a0b966a002d180a74ad",
+    "tests/training/learning_hold_inventory.py": "113c132e45b522f649999f53410290e9a9a6194fafd5fe6b070d29d7ccf1006d",
+    "configs/experiments/spaced-utility-comparison-v1.json": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581",
+    "configs/experiments/spaced-regional-utility-comparison-v1.json": "d2ae112089340d078c40e8689d92e6a49b626bae962e16782c9c9360812c6602"
+  },
+  "preserved_sources": {
+    "configs/experiments/spaced-utility-study-v1.json": "5c206b4f3c5bc87f562a2da0df927c2b21b51460ebfa67e2c4f13e826ae5a3ea",
+    "configs/experiments/spaced-regional-utility-study-v1.json": "a214a5ae25072f247f91b5dbcb1f361a19daad20f7fd3f91d51dc75e7aef9d2c",
+    "src/mars_titan/training/spaced_window.py": "ac0e0fa13f76660b17196ecfb23a7defe6aa90403f06f6454301a6ee9ece7bef",
+    "src/mars_titan/training/spaced_selected.py": "4c294038d98c1e027da15d585e242519a801539efc022213f25d0144d9e62049",
+    "src/mars_titan/training/spaced_inference.py": "108ded493a68f0c2e2f004a5a1f26834a52ef7e7008518c100f575216b34075f",
+    "src/mars_titan/evaluation/forecast_files.py": "0e5e79cd1b1f4bf17d6d1a0ad45f8db4be55dda199d82e18551d23186fd39f1f",
+    "src/mars_titan/evaluation/forecast_panel.py": "b60b81ee9737219a23b2cc1a2a99c9bbf199d6027b2027edf541746b36207258",
+    "src/mars_titan/evaluation/forecast_scores.py": "29aa1eb125e94ba17eacd17890a71bbce31d3222cd9c91c3bbefd6cf87ff29e2",
+    "src/mars_titan/evaluation/paired_comparisons.py": "c6604b201275a0cd2ab2330143414efc270009bb3a18b7ea13000e86f83bd11e"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "comparison_api_integrated": true,
+  "analysis_declaration_integrated": true,
+  "cost_measured": false,
+  "limits": [
+    "Las pruebas manuales identifican sus datos e informes como fixtures. No son resultados de un entrenamiento.",
+    "La integración ejecuta el runner real con sus seis controles y fuentes manuales, en los contratos estándar y regional.",
+    "La configuración previa y sus emisiones permanecen iguales al desactivar la declaración de análisis. La huella de código cambia al ampliar spaced_study.py.",
+    "El lector, predictor, fases, controlador y perfiles anteriores conservan sus bytes. No se cambiaron los módulos de modelos.",
+    "Los hashes no autentican la fecha ni la procedencia de un entrenamiento y la disponibilidad histórica original necesita su auditoría.",
+    "La cobertura de sentencias y ramas no representa todas las condiciones booleanas ni garantiza ausencia de errores.",
+    "La comparación es de una ventana y semilla con parámetros ya seleccionados, no de una campaña multisemilla.",
+    "El análisis científico y el test final permanecen cerrados. Las rutas CUDA de los modelos no se validan mediante estas pruebas CPU."
+  ],
+  "artifacts": {
+    "quality.json": "1ff6185748382a471e916cf743afdeff9d513c5c674899c6b89fff1623e61c56",
+    "mutations.json": "8a81a7d48228d7fd65445066b799367d3347f215dd485f9ed375b65b84dc800f"
+  }
+}

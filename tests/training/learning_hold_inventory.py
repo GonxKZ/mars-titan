@@ -76,6 +76,12 @@ GUARDS = {
     "mars_titan.evaluation.lesion_curves:analyze_lesion_run": (
         node("evaluation/test_lesion_curves.py", "test_hold_precedes_all_report_io_and_output"),
     ),
+    "mars_titan.evaluation.spaced_comparison:analyze_spaced_runs": (
+        node(
+            "evaluation/test_spaced_comparison.py",
+            "test_hold_precedes_every_report_and_output_access",
+        ),
+    ),
     "mars_titan.training.mechanism_policy_fit:fit_policy": (
         node(
             "training/test_mechanism_policy_fit.py",

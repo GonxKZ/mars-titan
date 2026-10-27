@@ -10,7 +10,7 @@ DuckDB usa dos hilos, 256 MiB de memoria y hasta 1 GiB de archivos temporales en
 
 La huella de población incluye identificadores, mercados, instantes y objetivos, sin las predicciones. Se conserva al cambiar el tamaño del lote. Dos archivos con igual número de filas y distintos objetivos producen huellas diferentes. Comprobar esta igualdad no demuestra la disponibilidad histórica de las entradas con las que se generaron los pronósticos.
 
-El [análisis B4](../experiments/lesion-protocol-v1.md) reutiliza el lector y conserva su guarda de aprendizaje antes de leer fuentes o crear salidas. La API pura de puntuación no concede permiso para ejecutar una evaluación científica. La declaración previa y el comparador de los controles E2 siguen pendientes de conectar a este lector.
+El [análisis B4](../experiments/lesion-protocol-v1.md) y el [comparador E2](../experiments/spaced-utility-comparison-v1.md) reutilizan el lector y conservan su guarda de aprendizaje antes de leer fuentes o crear salidas. La API pura de puntuación no concede permiso para ejecutar una evaluación científica.
 
 ## Evidencia técnica del 27 de octubre de 2026
 
