@@ -39,7 +39,9 @@ Las pruebas están en `tests/simulation/test_calibrated_quantile_rule.py`.
 | Reparto en afirmaciones alcistas | entorno | `test_the_exposure_goes_only_to_assets_with_an_upward_claim` |
 | $s_i$ desde A2 | `neutral_abstention.apply` | `test_the_rule_reads_the_a2_claims_of_the_calibrated_intervals` |
 | No operar y reproducibilidad | `compare` | `test_no_trade_keeps_the_capital_in_cash` |
-| Formato de la observación | `rule_policy` | `test_observations_without_the_environment_layout_are_rejected` y `test_a_ruined_or_unvalued_book_stays_in_cash` |
+| Formato de la observación | `rule_policy` | `test_observations_without_the_environment_layout_are_rejected`, `test_a_ruined_or_unvalued_book_stays_in_cash` y `test_the_rule_reads_the_observation_layout_of_the_environment` |
+
+La regla repite el número de rasgos por activo (seis) en lugar de importarlo del entorno. `environment.py` forma parte de la identidad de las ejecuciones de políticas (`simulation/training.py`) y de las etapas de la campaña (`campaign_stage`), así que tocarlo solo para exponer la constante cambiaría esas identidades. `test_the_rule_reads_the_observation_layout_of_the_environment` comprueba que la forma del espacio de observación y las posiciones de la puntuación y la validez coinciden.
 
 ## Límites
 
