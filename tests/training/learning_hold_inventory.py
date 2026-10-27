@@ -55,6 +55,12 @@ GUARDS = {
             "test_window_cli_checks_the_hold_before_reading_files_or_reserving_cuda",
         ),
     ),
+    "mars_titan.training.spaced_inference:SpacedInference.evaluate": (
+        node(
+            "memory/test_spaced_inference.py",
+            "test_public_evaluation_checks_hold_before_reading_source",
+        ),
+    ),
     "mars_titan.evaluation.lesion_curves:analyze_lesion_run": (
         node("evaluation/test_lesion_curves.py", "test_hold_precedes_all_report_io_and_output"),
     ),

@@ -1,6 +1,6 @@
 # Evidencia de utilidad espaciada para la consolidación E2
 
-El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. Siguen pendientes las ventanas, el productor regional y CUDA. E2 no cambia las referencias por defecto.
+El registro `SpacedUtilityLedger`, el productor estándar K1 y la retención sobre el banco nativo están implementados y comprobados con fixtures CPU. Conservan pronósticos emitidos, calculan evidencia al madurar y proponen qué episodios mantener. La sesión financiera conecta estos componentes con publicación durable en M1, lector estándar K1 y C desactivado. El adaptador `SpacedInference` los reutiliza en fases de ventanas con parámetros congelados. Quedan el cargador de estados seleccionados, su CLI, el productor regional y CUDA. E2 no cambia las referencias por defecto.
 
 E2 estudia si conviene conservar episodios que han ayudado en decisiones separadas. No es una técnica de regularización de los parámetros del predictor y no demuestra una reducción del sobreajuste. La comparación predictiva permanece sin ejecutar.
 
@@ -12,7 +12,7 @@ Para una predicción original emitida \(p_i\), una predicción diagnóstica \(p_
 g_{i,e}=|y_i-p_{i,-e}|-|y_i-p_i|.
 \]
 
-Un valor positivo indica que el pronóstico original tuvo menor error. El contraste para K = 1 elimina el episodio del soporte ya seleccionado, renormaliza sus pesos y no introduce otro vecino. No equivale a quitarlo de todo el banco y repetir la búsqueda. El productor utiliza una sola preparación del padre y una sola selección de vecinos. El registro recibe sus números, sin repetir la inferencia cuando llega la etiqueta. La conexión futura a la sesión debe conciliar esos números con su emisión efectiva, porque el registro por sí solo no acredita esa procedencia.
+Un valor positivo indica que el pronóstico original tuvo menor error. El contraste para K = 1 elimina el episodio del soporte ya seleccionado, renormaliza sus pesos y no introduce otro vecino. No equivale a quitarlo de todo el banco y repetir la búsqueda. El productor utiliza una sola preparación del padre y una sola selección de vecinos. El registro recibe sus números, sin repetir la inferencia cuando llega la etiqueta. La sesión y el adaptador de ventanas cotejan esos números con los puntos emitidos. El registro aislado no acredita esa procedencia.
 
 Dentro de cada mercado e instante se promedian las filas que utilizaron ese episodio. Después se actualiza la media de sus sesiones con evidencia. Varias acciones de una sesión no crean varias confirmaciones. Esta media condicional al soporte utilizado no es el MAE global del proyecto. Los episodios no utilizados carecen de evidencia y no reciben un cero inventado.
 
@@ -32,7 +32,7 @@ Cada fila contiene flujo, pronóstico original, pares de episodio y pronóstico 
 
 `scores()` devuelve copias de las estadísticas. `export()` solo guarda eventos publicados. `restore()` comprueba versión, identidad, límites, maduraciones, contadores y huella. Rechaza estructuras profundas en campos escalares antes de serializarlas. La huella detecta modificaciones del contenido, pero no autentica a su productor ni demuestra que los pronósticos sean reales.
 
-Los límites configurables son 1.024 episodios, 40.960 filas pendientes, 512 cohortes y 262.144 referencias como máximos. Una cohorte admite hasta 8.192 filas y cada fila hasta 64 supresiones. La capacidad pendiente se comprueba antes de copiar otro snapshot. No se guarda el grafo de autograd ni se consume RNG. El registro usa escalares CPU y no necesita un backend CUDA.
+Los límites predeterminados son 1.024 episodios, 40.960 filas pendientes, 512 cohortes y 262.144 referencias. Los máximos configurables son 40.960 cohortes y 524.288 referencias. Una cohorte admite hasta 8.192 filas y cada fila hasta 64 supresiones. La capacidad pendiente se comprueba antes de copiar otro snapshot. No se guarda el grafo de autograd ni se consume RNG. El registro usa escalares CPU y no necesita un backend CUDA.
 
 Las validaciones de emisión y publicación recorren las referencias pendientes y las referencias de las cohortes que cierran, respectivamente. Su coste está acotado por los límites declarados, aunque no es constante. La verificación del snapshot incluye sus tensores y la serialización ocupa espacio transitorio adicional. No se mide solo el tamaño de las estadísticas finales.
 
@@ -132,6 +132,38 @@ PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv r
 
 El benchmark requiere un directorio nuevo y `MARS_TITAN_EPISODIC_NATIVE` con el enlace compatible. Escribe allí las fuentes de fixture y los recorridos. El informe ligero está en [cost.json](../../reports/engineering/spaced-session-20261027/cost.json). No ejecuta entrenamientos ni abre el test final.
 
+## Adaptador para fases de ventanas congeladas
+
+`training.spaced_inference.SpacedInference` consume el padre y el lector de un `FrozenFinancialConsumer`, la receta del lector, `PrefixTargetVerifier` y la retención E2. Reutiliza preparación, codificación, emisión, filas y métricas de `MarsTitanInference`. Su método público `evaluate` recibe `FinancialObservationSource` y comprueba el bloqueo de aprendizaje antes de acceder a la fuente. Solo admite M1, lector estándar K1 y C desactivado.
+
+Cada evento emite todas sus predicciones con el mismo snapshot. Después registra las supresiones por mercado, recibe los resultados maduros, publica la evidencia y propone el banco sincronizado. Las fechas previstas proceden del calendario de los prefijos, sin consultar precios futuros. El adaptador conserva temporalmente la referencia a `next_state` que la ruta común quita antes del lector. La utiliza para las identidades de los flujos durante ese bloque, sin copiar ni acumular pesos rápidos.
+
+El banco utiliza el mismo ámbito de mundo, objetivo residual y horizonte uno que la sesión financiera. La evidencia no se traslada entre fases. Cada recorrido reinicia banco, ledger y memoria rápida y exige un cierre explícito. Una interrupción descarta el estado parcial y la fase se repite desde el principio. La recuperación por evento sigue siendo responsabilidad de la sesión durable. `spaced_state` copia la evidencia final y `spaced_snapshot` permite comparar también el banco, con `resumable=False`. Ninguno es un checkpoint completo del predictor.
+
+Este recorrido compara políticas de retención sobre unos mismos pesos ya elegidos. No sustituye al contraste de entrenar cada variante bajo condiciones emparejadas. No se ha integrado todavía el cargador del estado seleccionado, la CLI del estudio ni su agregación estadística. Las pruebas usan etiquetas manuales y no autorizan abrir una ventana científica.
+
+La [verificación del adaptador](../../reports/engineering/spaced-window-20261027/verification.json) registra 106 pruebas CPU distintas aprobadas, incluidas las 26 del módulo nuevo y 17 del inventario y grafo del bloqueo. La batería de regresión de 87 casos y las ejecuciones posteriores se solapan. Las cinco políticas y las capacidades de 4 y 16 plazas conservan exactamente las emisiones, la evidencia y el banco final de la sesión durable. Se comprueban también dos bloques físicos por evento, filas cuantílicas frente al reservorio original, cierre, interrupción, RNG y lectura de un índice de observaciones construido con fixtures. No hay pasos de optimizador ni ejecución de la suite completa.
+
+Las [cuatro mutaciones dirigidas](../../reports/engineering/spaced-window-20261027/mutations.json) detectan descartar resultados maduros, omitir censuras al cerrar, aceptar un punto diagnóstico distinto del emitido y saltar el bloqueo científico. Cada una tiene controles verdes antes y después y cero omisiones. La [cobertura](../../reports/engineering/spaced-window-20261027/quality.json) del módulo nuevo es 119/119 sentencias y 22/22 ramas, con CRAP máximo 6. Se ha usado coverage.py 7.16.1 y Radon 6.0.1, con cobertura de sentencias para CRAP. Las 34 fuentes canónicas y el recorrido histórico permanecen intactos. Estos resultados no prueban ausencia de errores ni generalización.
+
+La [medida de coste](../../reports/engineering/spaced-window-20261027/cost.json) alterna doce pares, con un calentamiento y cinco muestras medidas por modo y tamaño. Cada fase incluye cinco decisiones, etiquetas maduras, una liquidación intermedia y cierre. Ambos modos usan el reservorio original para aislar el coste de añadir diagnósticos y evidencia. Conservan exactamente los puntos y las métricas comunes en cada par.
+
+| Activos ficticios | Fase original, mediana en segundos | Fase E2, mediana en segundos |
+| --- | --- | --- |
+| 64 | 0,077 | 0,142 |
+| 256 | 0,230 | 0,444 |
+
+Se usan dos hilos CPU, FP64, estado de 32 unidades, cuatro vecinos y capacidades de 256 y 1.024 episodios. Los fixtures tienen anchuras 5/2/1/3/3 y solo precios y gráficos presentes. La medida incluye las comprobaciones de integridad y excluye construcción, lectura del dataset y persistencia durable. El proceso externo completo tarda 17,66 s y su pico RSS absoluto es 797.400 KiB. No se ha medido el incremento RAM por modo, CUDA ni energía. Cinco muestras no permiten caracterizar colas de latencia con precisión.
+
+El recibo conserva también las dos pasadas anteriores. La primera tenía una etiqueta de exclusión de disco demasiado amplia y la siguiente precisó esa descripción. La última registra las huellas de las fuentes ejecutadas. Las tres conservan los mismos puntos y métricas, con medianas de E2 entre 0,142 y 0,160 s para 64 activos y entre 0,444 y 0,528 s para 256. No hubo una optimización del cálculo entre pasadas y no se atribuye esa variación a una aceleración del modelo.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync pytest tests/memory/test_spaced_inference.py tests/memory/test_spaced_session.py tests/memory/test_mars_titan_session_parity.py tests/memory/test_spaced_retention.py -q
+PYTHONPATH=src:. OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 uv run --no-sync python reports/engineering/spaced-window-20261027/cost_probe.py "$HOME/.cache/mars-titan/spaced-window-cost"
+```
+
+El benchmark exige un destino nuevo y el mismo enlace nativo compatible. La orden mide fixtures sin aprendizaje y no sustituye la futura CLI del estudio.
+
 ## Fuentes y alcance
 
 Mattar y Daw, *Prioritized memory access explains planning and hippocampal replay*, Nature Neuroscience 21, 1609–1617 (2018), proponen ordenar el acceso a recuerdos por su utilidad para decisiones en una tarea de navegación. El resumen describe el equilibrio entre necesidad y ganancia. E2 toma la pregunta sobre utilidad, pero su diferencia de errores y su criterio temporal son una propuesta propia. No implementa el algoritmo de planificación de ese artículo. [Artículo y DOI 10.1038/s41593-018-0232-z](https://www.nature.com/articles/s41593-018-0232-z).
@@ -181,4 +213,4 @@ La batería del registro y las regresiones seleccionadas aprobaron 102 casos sin
 
 La confirmación de coste usa un Ryzen 9 8945HS, dos hilos de cómputo y diez muestras tras dos calentamientos. Para dos sesiones de 64, 256 y 1.024 filas, las medianas son 8,043, 29,923 y 122,094 ms. Los JSON pendientes máximos ocupan 20.211, 79.923 y 320.584 bytes. El mayor pico de asignación Python observado con tracemalloc es 4.964.924 bytes en una pasada separada. Excluye las asignaciones nativas. El tiempo total externo es 5,81 segundos y su pico RSS absoluto, 715.296 KiB, incluye el proceso completo. No se midieron energía ni incremento RAM atribuible al módulo. La primera medida solapó mutaciones y se conserva aparte. La confirmación no solapó otras pruebas propias, pero mantuvo activas las aplicaciones ajenas y el perfil de energía existente.
 
-Quedan pendientes el productor de supresiones regional, la conexión con ventanas y la evaluación autorizada. El registro, el productor estándar y el selector nativo no habilitan entrenamientos, no cambian el baseline y no abren el test final.
+Quedan pendientes el productor de supresiones regional, el cargador y la CLI del estudio por ventanas y la evaluación autorizada. El registro, el productor estándar, el selector nativo y el adaptador no habilitan entrenamientos, no cambian el baseline y no abren el test final.

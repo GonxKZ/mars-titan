@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T09:35:30.340293+00:00",
+  "kind": "technical_frozen_window_integration_without_parameter_updates",
+  "base_commit": "bc4ba3bb2017ca1076bbaec7681bda3830c9398c",
+  "tests": {
+    "distinct_passed": 106,
+    "new_adapter_passed": 26,
+    "suites": [
+      {
+        "receipt": "coverage-final-tests.xml",
+        "passed": 87,
+        "skipped": 0,
+        "failures": 0,
+        "xml_sha256": "c9992bc39a79e041dd1291cdeb98afc491efd9dada3d00794d0f69086dcec508"
+      },
+      {
+        "receipt": "release-tests.xml",
+        "passed": 26,
+        "skipped": 0,
+        "failures": 0,
+        "xml_sha256": "d1b7c57eb0fe5328a1a9fcc1188198d62447b7073f730c7da8802619bb018b68"
+      },
+      {
+        "receipt": "release-coverage-tests.xml",
+        "passed": 26,
+        "skipped": 0,
+        "failures": 0,
+        "xml_sha256": "39b13e01f1d79d7f1321ca730e6cb7b15d31667b631a7dcb159d5386bd59b07e"
+      },
+      {
+        "receipt": "hold-inventory-green.xml",
+        "passed": 17,
+        "skipped": 0,
+        "failures": 0,
+        "xml_sha256": "89c1065dbde10049433d70fa6fb1de8f29600e94380d670f31ab9305e76ec5ba"
+      }
+    ],
+    "counts_overlap": true,
+    "full_suite_executed": false,
+    "scope": "Cinco políticas y dos capacidades contra sesión durable, dos bloques por evento, cuantiles y reservorio original, causalidad, cierre, RNG e interrupción. La entrada pública usa un índice real de fixtures, con su guarda sustituida solo en esa prueba sin optimizadores.",
+    "hold_graph_and_inventory_passed": 17
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 119,
+      "covered_statements": 119,
+      "branches": 22,
+      "covered_branches": 22
+    },
+    "max_crap": 6.0,
+    "convention": "C² × (1 − cobertura de sentencias)³ + C."
+  },
+  "mutations": {
+    "planned": 4,
+    "killed": 4,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2 con pins, orígenes y cero omisiones"
+  },
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "cuda_available": true,
+  "cuda_executed": false,
+  "gpu_free_mib_before": 724,
+  "sources": {
+    "src/mars_titan/training/spaced_inference.py": "8f89bbbc1506461b8c7dcf6f087ff7682102b4a24508871ae6c4866580c7fe41",
+    "src/mars_titan/training/mars_titan_run.py": "6fab0212ad2c31c2d47aec4145478d166480a0ac967ef325a8782649bf1a508f",
+    "src/mars_titan/memory/spaced_session.py": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0",
+    "src/mars_titan/memory/spaced_retention.py": "70d65da29702db566915978298ce77aac5e5bb47d6b7155561c70f9722220795",
+    "src/mars_titan/memory/spaced_utility.py": "ab0b07357352e274f9ab0fda76c7a52fac119964e43c124af0c095cf3fcc2255",
+    "tests/memory/test_spaced_inference.py": "a856cc29c4130cd1f6626d6b0291c0b0c9bcb2248e9cc1a5fe256e181a7c8d18",
+    "reports/engineering/spaced-window-20261027/cost_probe.py": "e5867ca9794c9f289b7b0caf9aaddf096daa31ec66d59143ff3f15721d5f39af",
+    "tests/training/learning_hold_inventory.py": "ccf910a664e3dfe885a9f5bfee22aaa1d9860de9afa67829aef314412c6f07d4"
+  },
+  "preserved_canonical_sources": {
+    "src/mars_titan/models/titans/config.py": "119f71fd5dfb4a8e81633bbd1c6ba1e06e04ecdfcbd2c8edd94871bdbd390780",
+    "src/mars_titan/models/titans/state.py": "c0b40f3240be3177e9e636e82c4b988ccb4703fcfe5c5a1c3b71e070be68b0b1",
+    "src/mars_titan/models/titans/causal_convolution.py": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+    "src/mars_titan/models/titans/neural_memory.py": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+    "src/mars_titan/models/titans/mac.py": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+    "src/mars_titan/models/titans/financial.py": "bd7ac0284ddb9283512d83d42e7d59ee8b4db8500232996678a1713d574c2c4a",
+    "src/mars_titan/models/titans/financial_inputs.py": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+    "src/mars_titan/models/titans/financial_blocks.py": "20debec174fe1196f18bb66566153a3fd780ca189fcbb316d58d5c7665753a15",
+    "src/mars_titan/models/titans/presence_modulation.py": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+    "src/mars_titan/models/titans/regional_fusion.py": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+    "src/mars_titan/models/titans/regional_execution.py": "132c217bb143b7f23e35c14bb523daa861635e8753151bae98beb35377463687",
+    "src/mars_titan/models/titans/bank_readout.py": "eb8853e99e7de816197d19dc3a957db8d7ed00d69d638ab29e7aca3bda17e8a3",
+    "src/mars_titan/models/titans/session_context.py": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+    "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+    "src/mars_titan/models/titans/episodic_readout.py": "440b74e9939dba5bf47db1127b2620815074f9575e72b27fe3f619b863a8351e",
+    "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "src/mars_titan/models/titans/evidence_bridge.py": "36e81235b1c2f88000606b4df975698d820ad06497f4ff63e459d482eff471cf",
+    "src/mars_titan/models/titans/bridge_intervention.py": "aacce65d22466366a5a8e56ffae88cd39c3ea4dc79351401094357a200b67e8e",
+    "src/mars_titan/models/titans/bridge_hierarchy.py": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+    "src/mars_titan/models/titans/bridge_recurrence.py": "eff1e08489860b6b380503602be375b21d948af3b41a802025d2d9942b7d95ab",
+    "src/mars_titan/models/titans/bridge_stopping_record.py": "91d2bfa04832915ed7ef9572415ade86029a888aee0a4303f5f76a5222c3bc3c",
+    "src/mars_titan/models/titans/regional_mechanism_trace.py": "608dd0e1b4a7f49b890d65b934c342d3e799f3ad36b0bf28f00181df24dd6639",
+    "src/mars_titan/models/titans/regional_episode_readout.py": "15bcce538b607f65f281df94cadfd64db87d3d55b9f7d5df67542b2e89f60c36",
+    "src/mars_titan/models/titans/frozen_financial.py": "e9c87101a2a15b18dcfe572515939a58e34ca24d7ad31026f8de2212d7f5a29a",
+    "src/mars_titan/models/baselines/transformer.py": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+    "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+    "src/mars_titan/models/quantile_head.py": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+    "src/mars_titan/models/quantile_routing.py": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+    "src/mars_titan/cm/numerical_radius.py": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+    "src/mars_titan/data/input_policy.py": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+    "src/mars_titan/training/cohort_contract.py": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+    "src/mars_titan/training/corpus_inputs.py": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af",
+    "src/mars_titan/data/audited_prices.py": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+    "src/mars_titan/data/temporal.py": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70"
+  },
+  "artifacts": {
+    "quality.json": "c0a4ea8a9584ce30f452a9f1ef906570a51e44efc627138994ce484913d96833",
+    "mutations.json": "2c13c8a42022f680f80d206549325c665bd273383c58292167a795f169126f73",
+    "cost.json": "a4b21202c1b718903318ada4e79f427f10e02c72d74b106054cb5a52be5fee23"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "selected_checkpoint_loader_integrated": false,
+  "window_cli_integrated": false,
+  "limits": [
+    "El recorrido congela padre y lector y cambia retención. No sustituye al entrenamiento emparejado de cada variante.",
+    "Una fase interrumpida se repite desde el principio. La recuperación por evento sigue en FinancialSession.",
+    "Los fixtures compactos solo tienen precios y gráficos presentes. No corresponden a formas ni distribuciones del corpus real.",
+    "La medida incluye comprobaciones de integridad. Excluye persistencia durable y lectura del dataset durante la fase.",
+    "No se han medido CUDA, energía, latencia de cola ni generalización. No hay optimización nativa nueva."
+  ]
+}
