@@ -65,7 +65,9 @@ def test_trainers_inherit_the_real_precomputed_source_without_initializing_train
     expected = hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
     for trainer_type in (ChronologicalTrainer, ReadoutTrainer, ReadoutAdapterTrainer):
         trainer = object.__new__(trainer_type)
-        trainer.predictor = SimpleNamespace(config=SimpleNamespace(temporal_encoder=kind))
+        # `_code` lee estos campos de la configuración real del predictor.
+        config = SimpleNamespace(temporal_encoder=kind, cross_asset_attention=None)
+        trainer.predictor = SimpleNamespace(config=config)
         assert trainer._code()[module.__name__] == expected
 
 
