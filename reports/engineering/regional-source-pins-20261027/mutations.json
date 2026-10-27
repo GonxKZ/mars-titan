@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "planned": 5,
+  "killed": 5,
+  "cases": [
+    {
+      "id": "omit_active_operator_source",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_active_regional_operator_source_is_included_in_the_training_identity[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "M1",
+          "exit_code": 1,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_active_regional_operator_source_is_included_in_the_training_identity[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "G2",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_active_regional_operator_source_is_included_in_the_training_identity[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        }
+      ]
+    },
+    {
+      "id": "add_operator_source_when_disabled",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_disabled_operator_does_not_add_a_regional_source",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "M1",
+          "exit_code": 1,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_disabled_operator_does_not_add_a_regional_source",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "G2",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_disabled_operator_does_not_add_a_regional_source",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_changes_in_active_operator_source",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_runtime_rejects_a_changed_active_operator_file_without_executing_it",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "M1",
+          "exit_code": 1,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_runtime_rejects_a_changed_active_operator_file_without_executing_it",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "G2",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_runtime_rejects_a_changed_active_operator_file_without_executing_it",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        }
+      ]
+    },
+    {
+      "id": "accept_unregistered_frozen_operator",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_frozen_loader_refuses_unregistered_regional_variants_before_build_or_read[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "M1",
+          "exit_code": 1,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_frozen_loader_refuses_unregistered_regional_variants_before_build_or_read[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "G2",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_frozen_loader_refuses_unregistered_regional_variants_before_build_or_read[variant0]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_operator_declared_in_recipe",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_parent_declaration_is_refused_before_checkpoint_verification[True]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "M1",
+          "exit_code": 1,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_parent_declaration_is_refused_before_checkpoint_verification[True]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        },
+        {
+          "phase": "G2",
+          "exit_code": 0,
+          "nodeid": "tests/training/test_regional_source_pins.py::test_parent_declaration_is_refused_before_checkpoint_verification[True]",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true
+        }
+      ]
+    }
+  ],
+  "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+  "recipes_sha256": "1c562d6c005a6b8f9eaaad5ba578df4ac97df58fcdfdfce885c2720d1ef94031",
+  "source_manifest_sha256": "da6fa453c1f9b2051cb51107ccdf6ac4844962f71b5ac772e4a66dae218642e5",
+  "limits": [
+    "Cinco mutaciones dirigidas con referencias verdes, sin pretensión de exhaustividad universal."
+  ]
+}

@@ -189,7 +189,13 @@ def _parent(folder, view, seed, control=None):
         request.get("local_control") == control,
         "El control C del padre no es el que declara la familia del lector",
     )
-    checked_predictor_changes(request.get("predictor_changes"))
+    changes = checked_predictor_changes(request.get("predictor_changes")) or {}
+    recipe = (report.get("identity") or {}).get("recipe") or {}
+    predictor = recipe.get("predictor") or {}
+    _require(
+        changes.get("regional_variant", predictor.get("regional_variant")) is None,
+        "El consumidor congelado aún no registra las variantes regionales C1/C6",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -203,6 +209,10 @@ def _frozen_parent(
     misma base. C no interviene al predecir con el núcleo congelado y su emisión no cambia.
     """
     options = predictor_options(document, report["request"])
+    _require(
+        options.get("regional_variant") is None,
+        "El consumidor congelado aún no registra las variantes regionales C1/C6",
+    )
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",
