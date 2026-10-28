@@ -21,7 +21,7 @@ Cada origen tiene su propia cohorte de 256 activos, elegida con la regla de [`sc
 | 2021 | `fold-016` | abr. 2019 a mar. 2020 | abr. a sep. 2020 | oct. a dic. 2020 | 2021 |
 | 2022 | `fold-017` | abr. 2020 a mar. 2021 | abr. a sep. 2021 | oct. a dic. 2021 | 2022 |
 
-El ajuste usa los doce meses finales del tramo de entrenamiento de cada vista (`fit_months = 12`), que nunca superan 366 días. Antes del ajuste el modelo observa sin etiquetas sus meses de calentamiento, como en el resto del walk-forward. La validación elige el estado dentro del presupuesto y la calibración fija λ, las correcciones conformales, los umbrales y las etapas de salida. Juntas forman G. La evaluación de cada origen es su bloque de S, y los cuatro años de 2019 a 2022 forman una única serie de unas 1.000 sesiones. Los trimestres de cada año son los bloques de meses que usarán más adelante los ciclos de autoedición.
+El ajuste usa los doce meses finales del tramo de entrenamiento de cada vista (`fit_months = 12`), que nunca superan 366 días. Antes del ajuste el modelo observa sin etiquetas sus meses de calentamiento, como en el resto del walk-forward. La validación elige la época común de cada grupo de semillas y la calibración fija λ, las correcciones conformales, los umbrales y las etapas de salida. Juntas forman G. La evaluación de cada origen es su bloque de S, y los cuatro años de 2019 a 2022 forman una única serie de unas 1.000 sesiones. Los trimestres de cada año son los bloques de meses que usarán más adelante los ciclos de autoedición.
 
 E es 2023 (`fold-018`). La criba no lo abre. Es un año de desarrollo reutilizado, porque los pilotos de octubre y la fase 0 ya lo evaluaron con otros predictores, y así se indicará en cualquier confirmación.
 
@@ -31,12 +31,32 @@ Las sesiones de 2019 son S del origen 2019 y, a la vez, ajuste, validación y ca
 
 Todos los ajustes parten de su receta declarada con estos cambios comunes:
 
-- 12 épocas con presupuesto fijo y el estado elegido por el MAE por sesión de la validación. Con 256 activos, unas 250 sesiones de ajuste y bloques de 1.024 filas, son unas 740 actualizaciones, del orden de las 685 de los pilotos de octubre. La receta histórica declara 30 épocas sobre todo el tramo desde 2000, y aquí el tramo es de un año.
+- 12 épocas que cada ajuste recorre enteras. Todas las semillas emiten el estado de la época común del grupo, elegida con el IC por sesión de la validación como describe la sección siguiente. Con 256 activos, unas 250 sesiones de ajuste y bloques de 1.024 filas, son unas 740 actualizaciones, del orden de las 685 de los pilotos de octubre. La receta histórica declara 30 épocas sobre todo el tramo desde 2000, y aquí el tramo es de un año.
 - Un caso de búsqueda, `lr1e-3`, el de los pilotos. Las correcciones B6 recorren todos los casos de su receta y eligen el suyo con la validación en el análisis.
 - Cinco semillas, de 42 a 46.
 - FP32 estricto, sin TF32 ni BF16, y SDPA con el backend matemático.
 
 Los controles emparejados conservan el mismo número de actualizaciones. La única excepción declarada es el control de la media de semillas de F2, una sola semilla con tres veces las actualizaciones, que se traduce en 36 épocas con su propia vista.
+
+## Selección del estado
+
+La regla se enmendó el 28 de octubre, antes de abrir S, y la declaración guarda la fecha, el motivo y la regla anterior. Hasta entonces cada semilla emitía la época de menor MAE por sesión de su validación. El contraste principal se juzga con el IC por sesión, y la fase 0 mostró que la amplitud de las predicciones explicaba la pérdida frente a cero, así que el MAE de un residuo diario puede preferir épocas con predicciones pequeñas que apenas ordenan los activos. Además, quedarse con el mínimo de doce valores ruidosos en cada semilla sobreajusta la propia selección, porque la varianza del criterio importa tanto como su sesgo ([Cawley y Talbot, 2010](https://www.jmlr.org/papers/v11/cawley10a.html)). La regla de selección forma parte de lo que se compara ([Gulrajani y Lopez-Paz, 2021](https://arxiv.org/abs/2007.01434)), así que todos los modelos usan la misma y queda fijada antes de mirar S.
+
+La regla `common_epoch_session_ic_v1` se aplica a los ajustes y a los lectores:
+
+- Cada trabajo recorre su presupuesto completo y puntúa cada época con el IC por sesión de su validación, calculado con la misma función que el análisis sobre las filas que ya emite la validación. El estado de cada época queda fijado con su huella.
+- Cuando las cinco semillas de un grupo han recorrido su presupuesto, el motor promedia sus IC en cada sesión que definen todas, toma la media de cada época y la suaviza con la anterior y la siguiente (radio 1, truncado en los extremos). La época común es el máximo suavizado y, si hay empate, la primera.
+- Todas las semillas emiten el estado de esa época. El modelo y su control conservan las mismas actualizaciones y la elección no depende de una semilla concreta.
+- Una salida que combina semillas elige su propia época con el IC de la combinación, porque una transformación posterior puede invertir el orden de los estados ([Ranjan et al., 2024](https://proceedings.neurips.cc/paper_files/paper/2024/hash/a6805b5564bd8d813a81c4b5a97e5ca6-Abstract.html)).
+- El MAE por sesión de cada época y la época de menor MAE de cada semilla se publican como sensibilidad y nunca se emiten.
+
+Cada grupo escribe su decisión en `groups/<grupo>.json` antes de reanudar ninguna semilla, con las huellas de los informes que ha leído, y no la reescribe. Los estados fijados ocupan disco hasta que la ventana confirma todas sus predicciones. Después se liberan y solo queda el punto de control de recuperación.
+
+**Versiones.** La referencia B, F1, F4, F5 y C6 emiten también la calibración y la evaluación de las épocas 3, 6, 9 y 12, que usará el árbitro de versiones de #789. Son la referencia y cuatro variantes que cambian la pérdida, el objetivo, la supervisión auxiliar y la memoria. F2 y F3 ya promedian pesos en el tiempo, así que el árbitro se comparará con ellas sobre la referencia en lugar de aplicarse encima. Las versiones no intervienen en la criba.
+
+**Comprobación de la regla.** `rule-check` repite la elección dentro de la validación sin abrir S y solo en CPU. Elige con los cuatro primeros meses, mide el IC en los dos últimos y compara la época común con la de menor MAE de cada semilla y con la última. La mejor época de los meses medidos se publica como cota que usa información futura. El resultado describe la regla y no interviene en la decisión de la criba.
+
+**Casos de las correcciones.** Una corrección recorre sus casos y emite en todas las semillas el de mayor IC medio de validación. El MAE de cada caso queda como sensibilidad.
 
 ## Modelos y ejecutores
 
@@ -122,12 +142,14 @@ Con las entradas ejecutables hoy, el motor enumera 1.740 trabajos. La estimació
 
 | Ejecutor | Trabajos | Horas estimadas |
 | --- | ---: | ---: |
-| `fit` | 260 | 56,6 |
+| `fit` | 260 | 59,4 |
 | `correction` | 1.040 | 10,3 |
 | `correction_profile` | 200 | 2,0 |
 | `reader` | 120 | 12,7 |
 | `spaced` | 120 | 12,7 |
-| Total | 1.740 | 94,3 |
+| Total | 1.740 | 97,2 |
+
+Las versiones de la época común añaden 2,8 horas a los ajustes. Cada versión vuelve a predecir la calibración y la evaluación de su trabajo, y los 100 ajustes de los cinco modelos con versiones predicen cuatro. Antes de la enmienda la estimación era de 94,3 horas.
 
 Las cuatro entradas pendientes de integrar (A4, C5, F2 y F3 sin la contracción) añaden unos doce ajustes por origen y semilla, contando el triple del control de F2, unas 52 horas más con la misma medida. El total quedaría cerca del límite aprobado de 150 horas. Si al integrarlas la estimación lo supera, el motor lo indicará en `plan` y la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
 
@@ -142,11 +164,13 @@ uv run python -m benchmarks.variant_screening_study queue --work "${MARS_SCREENI
 uv run python -m benchmarks.variant_screening_study status --work "${MARS_SCREENING_WORK:?}"
 uv run python -m benchmarks.variant_screening_study analyze --work "${MARS_SCREENING_WORK:?}" \
   --output "${MARS_SCREENING_ANALYSIS:?}" --descriptions dataset
+uv run python -m benchmarks.variant_screening_study rule-check --work "${MARS_SCREENING_WORK:?}" \
+  --output "${MARS_SCREENING_RULE_CHECK:?}"
 ```
 
-`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Se detiene en su límite opcional o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo.
+`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Las cinco semillas de cada definición van seguidas en ese orden. Un ajuste o un lector que ha recorrido su presupuesto espera a su grupo sin detener la cola. Cuando esperan las cinco semillas, la cola fija la época común y las reanuda en los pasos siguientes para emitir sus predicciones y sus versiones, antes de que empiece otro grupo. Un trabajo que espera sin la decisión de su grupo no se ejecuta ni se cobra, y si volviera a esperar después de recibirla la cola se detiene con un error. La cola se detiene en su límite opcional, que cuenta ejecuciones y no trabajos terminados, o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo. `status` añade los trabajos que esperan y los grupos decididos.
 
-`analyze` comprueba la protección antes de leer nada, exige que todos los trabajos hayan terminado y verifica la huella de cada Parquet frente a su `run.json`. Lee la madurez de las etiquetas de los tres tramos de cada vista y el sector de las fichas actuales, que solo usa el control sectorial de C4. Escribe `analysis.json`, con decisiones, familias, casos elegidos y las huellas de lo leído, del código y del entorno, y `series.parquet`, con la serie por sesión de cada modelo y métrica.
+`analyze` comprueba la protección antes de leer nada, exige que todos los trabajos hayan terminado, que cada ajuste y cada lector hayan emitido la época común y las versiones de su grupo, y verifica la huella de cada Parquet frente a su `run.json`. Lee la madurez de las etiquetas de los tres tramos de cada vista y el sector de las fichas actuales, que solo usa el control sectorial de C4. Escribe `analysis.json`, con decisiones, familias, casos elegidos y las huellas de lo leído, del código y del entorno, y `series.parquet`, con la serie por sesión de cada modelo y métrica.
 
 ## Análisis
 
@@ -155,7 +179,7 @@ uv run python -m benchmarks.variant_screening_study analyze --work "${MARS_SCREE
 `mars_titan.evaluation.variant_screening_analysis` recibe del motor los paneles verificados de cada trabajo y la madurez de sus etiquetas. No lee archivos de predicciones ni importa PyTorch. Para cada origen y semilla obtiene la predicción de S de cada modelo que interviene en un contraste:
 
 - Un ajuste, un lector o una ventana E2 emiten la de su trabajo.
-- Una corrección recorre sus casos y se queda con el de menor MAE medio por sesión en su validación. El caso se elige por origen y semilla, sin leer S, y queda registrado con las puntuaciones de todos.
+- Una corrección recorre sus casos y se queda con el de mayor IC medio por sesión en su validación, común a las semillas de cada origen. El caso se elige sin leer S y queda registrado con el IC de cada caso y el MAE de cada trabajo.
 - La referencia textual de una corrección emite las predicciones de su padre.
 - A1, A2, A3 y C4 se ajustan con la calibración de la referencia B del mismo origen y semilla y se aplican sin cambios a S. A2 calcula una vez por semilla la abstención y sus cuatro controles con la misma cobertura, y A3 pasa sus cuantiles recalibrados a esa misma abstención.
 - El control cero predice un residuo nulo.
@@ -172,7 +196,9 @@ Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, co
 - Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
 - El coste es una estimación con medidas de otros estudios.
 - C2, C3, D2, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
-- La elección del caso de cada corrección por origen y semilla, la medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
+- La medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
+- La selección del estado y del caso de las correcciones cambió el 28 de octubre, antes de abrir S. La regla anterior, la de menor MAE de validación en cada semilla, se conserva como sensibilidad y en la comprobación de la regla.
+- La época común conserva un estado por época hasta que el grupo emite sus predicciones. En pilotos anteriores, el estado de un ajuste de Titans-MAC ocupaba entre 2,3 y 3,1 MB y el de un lector unos 0,5 MB, así que un grupo de ajustes fija unos 190 MB. Como solo hay un grupo abierto a la vez, el pico es ese, pero no se ha medido con los modelos de la criba.
 - La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula. La media de semillas de F2 espera a que se integre su declaración.
 - El análisis se ha comprobado con paneles sintéticos de respuesta conocida. No se ha ejecutado con predicciones reales.
 
