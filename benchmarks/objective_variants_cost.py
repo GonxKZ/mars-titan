@@ -1,4 +1,4 @@
-"""Medir en CPU el coste de las variantes de objetivo y cabezas de #749, sin optimizador.
+"""Medir en CPU el coste de las variantes de objetivo y cabezas de #749 (F4 y A4), sin optimizador.
 
 Las entradas son sintéticas con las formas reales de la edición v3.1: ventana de 64 sesiones
 con cinco canales y presencia, 384 de noticias, 512 de gráficos, 78 de fundamentales y 420 de
@@ -33,6 +33,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.financial_inputs import DecisionBatch, FinancialInputSpec
+from mars_titan.models.titans.opponent_heads import OpponentHeads
 from mars_titan.models.titans.session_ic_objective import SessionICObjective
 from mars_titan.models.titans.session_ranks import SESSION_RANK_INPUTS
 from mars_titan.training.kernel_policy import FP32_STRICT, apply_kernel_policy
@@ -59,6 +60,13 @@ MODELS = {
     "session_rank_inputs_and_ic_objective": dict(
         session_rank_inputs=SESSION_RANK_INPUTS,
         session_ic_objective=asdict(SessionICObjective()),
+    ),
+    # A4: cabezas oponentes y su control simétrico, en las dos familias.
+    "opponent_heads_expectile": dict(opponent_heads=asdict(OpponentHeads())),
+    "opponent_heads_expectile_control": dict(opponent_heads=asdict(OpponentHeads(level=0.5))),
+    "opponent_heads_quantile": dict(opponent_heads=asdict(OpponentHeads(family="quantile"))),
+    "opponent_heads_quantile_control": dict(
+        opponent_heads=asdict(OpponentHeads(family="quantile", level=0.5))
     ),
 }
 
@@ -328,6 +336,8 @@ def _measure(
                 Path(__file__).relative_to(Path.cwd()),
                 Path("src/mars_titan/models/titans/session_ranks.py"),
                 Path("src/mars_titan/models/titans/session_ic_objective.py"),
+                Path("src/mars_titan/models/titans/opponent_heads.py"),
+                Path("src/mars_titan/models/titans/output_objectives.py"),
                 Path("src/mars_titan/models/titans/financial.py"),
             )
         },

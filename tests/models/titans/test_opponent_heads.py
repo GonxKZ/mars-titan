@@ -180,6 +180,15 @@ def test_malformed_predictions_are_rejected(prediction, target):
         opponent_loss(torch.zeros(3, 2), torch.zeros(3), {"family": "expectile"})
 
 
+def test_the_spread_and_the_pair_reject_what_they_cannot_interpret():
+    with pytest.raises(ValueError, match="configuración de las cabezas"):
+        OpponentSpread(4, {"family": "expectile", "level": 0.25})
+    with pytest.raises(ValueError, match="una semiamplitud por fila"):
+        opponent_heads(torch.zeros(3), torch.zeros(2))
+    with pytest.raises(ValueError, match="una semiamplitud por fila"):
+        opponent_heads(torch.zeros(3, 1), torch.zeros(3, 1))
+
+
 def test_declaration_travels_as_an_exclusive_output_objective():
     from dataclasses import asdict, replace
 
@@ -203,6 +212,8 @@ def test_declaration_travels_as_an_exclusive_output_objective():
         replace(base.config, opponent_heads=OpponentHeads(), laplace_scale_head=LaplaceScaleHead())
     with pytest.raises(ValueError, match="toda su configuración"):
         replace(base.config, opponent_heads=dict(level=0.25))
+    with pytest.raises(ValueError, match="sus valores o None"):
+        replace(base.config, opponent_heads="expectile")
 
 
 @pytest.mark.parametrize("variant", ["transformer_direct", "mac_online"])
