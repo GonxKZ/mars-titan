@@ -1010,6 +1010,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.predictor.config.regional_variant is not None:
             name = "mars_titan.models.titans.regional_variants"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # C5 solo entra en la identidad cuando está activa, igual que las variantes regionales.
+        if self.predictor.config.cross_asset_attention is not None:
+            name = "mars_titan.models.titans.cross_asset_attention"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         for option, name in _WEIGHT_MODULES.items():
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:

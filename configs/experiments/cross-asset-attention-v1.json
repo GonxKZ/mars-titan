@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "cross_asset_attention_variants",
+  "issue": 751,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "block_rows": "at_least_the_rows_of_every_decision_instant",
+    "accumulation_rows": "none_or_at_least_all_flows_of_the_segment"
+  },
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "self_only_control": {
+      "role": "control",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "self_only"
+        }
+      }
+    },
+    "cross_asset_attention": {
+      "role": "variant",
+      "control": "self_only_control",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "information_of_other_assets",
+      "variant": "cross_asset_attention",
+      "control": "self_only_control"
+    },
+    {
+      "name": "added_residual_layer",
+      "variant": "self_only_control",
+      "control": "reference"
+    }
+  ]
+}

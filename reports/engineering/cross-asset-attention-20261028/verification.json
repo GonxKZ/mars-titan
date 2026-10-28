@@ -1,0 +1,137 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 751,
+ "scope": "cross_asset_attention_v1",
+ "implementation_commit": "0120e895b24c1c606d8b6b9e24ec636d8a82db5f",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas de ejecución usan RecordingOptimizer, que registra gradientes sin modificar pesos, y las del módulo solo calculan gradientes con autograd. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 58,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7d9fd04ca29934dcb5775e035aba4a1b76fd5be09d6cb01b6f209fb8164d389e",
+   "note": "Pruebas de C5, de su ejecución y de las cabezas de horizontes auxiliares con medida de cobertura sobre el árbol final. La prueba CUDA queda deseleccionada porque la GPU estaba ocupada por otros procesos."
+  },
+  {
+   "name": "targeted_on_the_final_tree",
+   "tests": 201,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f7bd77735fbbace637368ba8a08aa64497696eb922d8db1004bbc294b41707d9",
+   "note": "C5, las cabezas de horizontes auxiliares y de escala, el padre congelado, Dust, las etiquetas de horizonte y la paridad de precisión sobre el árbol final."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 4267,
+   "failures": 65,
+   "errors": 22,
+   "skipped": 19,
+   "xml_sha256": "2d4873fee47f38f02161f8eddde6207b73c6427b06c909d927f05d9feb0a43d7",
+   "note": "202 módulos tras integrar F2 y F3. De los 87 nodos fallidos, 77 son el enlace episódico antiguo sin la versión tensorial del candidato, 6 el doble de la fuente regional sin el campo de C5 (corregido en 0f4140ff0), 3 los extras arch y statsmodels que faltaban al empezar y 1 la prueba de precisión que confundía la escala del Hedge de E1 (corregida en #795)."
+  },
+  {
+   "name": "develop_on_the_failing_nodes",
+   "tests": 111,
+   "failures": 57,
+   "errors": 21,
+   "skipped": 0,
+   "xml_sha256": "9d097003a1b2a144a57598efbe3e88c3dfb1811c5d9c85873819db850a14bbd8",
+   "note": "Los mismos 87 nodos, 111 casos, sobre develop 2773249cf con el enlace antiguo. Fallan los mismos 78 casos que en C5."
+  },
+  {
+   "name": "c5_on_the_failing_nodes_after_the_fix",
+   "tests": 111,
+   "failures": 57,
+   "errors": 21,
+   "skipped": 0,
+   "xml_sha256": "8a9fcb52177e79b63012489d04d9921178c6e3f9a588bbac2c33a62f13e32421",
+   "note": "Los 87 nodos en C5 tras corregir el doble y sincronizar los extras. El resultado coincide caso a caso con develop."
+  },
+  {
+   "name": "failing_nodes_with_the_rebuilt_link",
+   "tests": 111,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "5e8debb55d78e9510a1e471065d2267e2cc1389eb746bd381db40082ee5741c7",
+   "note": "Los 87 nodos en el árbol final con el enlace episódico recompilado desde develop 39abf2c99. Pasan los 111 casos."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 83,
+   "covered_statements": 83,
+   "branches": 24,
+   "covered_branches": 24
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/cross_asset_attention.py",
+    "source_sha256": "b613040c0339f2d16a253ca1055a40ca0053feb3c494f5ff63d2f9699ec29f22",
+    "statements": 83,
+    "covered_statements": 83,
+    "branches": 24,
+    "covered_branches": 24
+   }
+  ],
+  "max_crap": 13.0,
+  "quality_sha256": "eb94ac525b5cb4ed4bd54d97c7a3610ae1381e3b23773cc03313d6f80802e52c",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "mutations": {
+  "planned": 11,
+  "killed": 11,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "e5bab615105ddd50afac9adea834aa37c3032f9f0ca776f0730dcb689edfc4cb",
+  "executor_sha256": "7c161280fd19b22978e9a8e1a1c29b945ca63a753499ed1a2de16542362aa9fb",
+  "source_sha256": {
+   "src/mars_titan/training/mars_titan_walk_forward.py": "c69b81e4ed72d7f233b07e815a2ac63df983f016c52d60b705a2f69f00e0c7ec",
+   "src/mars_titan/models/titans/financial.py": "5b949e254da5cd7ad886bc8116760bebc9b8899e8e2cf6174b35da0573c6aa7f",
+   "src/mars_titan/models/titans/frozen_financial.py": "17ca4a189c98d3df2aee8925bb024f83dcb7e64946b53086a5da13f54422dbc4",
+   "src/mars_titan/models/titans/cross_asset_attention.py": "b613040c0339f2d16a253ca1055a40ca0053feb3c494f5ff63d2f9699ec29f22",
+   "src/mars_titan/training/financial_run.py": "1e018a407677a75dc3ab354e0045c3d84cabdf4ac33af7b7eb8b5cc2e6836318"
+  },
+  "cases": [
+   "group_by_instant_only",
+   "control_attends_the_whole_session",
+   "keep_the_random_output_projection",
+   "drop_the_residual_path",
+   "omit_the_attention_scale",
+   "allow_c5_in_partial_sessions",
+   "never_pin_the_c5_source",
+   "allow_f5_with_c5",
+   "frozen_consumer_accepts_c5",
+   "frozen_loader_accepts_c5",
+   "c5_parent_reaches_checkpoint_verification"
+  ],
+  "summary_sha256": "9ce9d84c2ffee6b11c6f322e997f9c8e74c2b29b9b59b182d2ba70db34255ab5",
+  "scope": "Once defectos dirigidos de C5 sobre el árbol final, cada uno con una fase en verde antes, la mutación y otra fase en verde después. No es una puntuación global."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046",
+  "used_by": "failing_nodes_with_the_rebuilt_link"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "6c9c7f463f387566c77fc9807a243cd1c380442589c7de8610ff6de879700a31"
+ }
+}
