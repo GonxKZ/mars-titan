@@ -2,7 +2,7 @@
 
 Este documento registra el protocolo de la criba del estudio de variantes de [#742](https://github.com/GonxKZ/mars-titan/issues/742), que se implementa en [#746](https://github.com/GonxKZ/mars-titan/issues/746). Se fija antes de abrir ningún dato de S. La [declaración](../../configs/experiments/variant-screening-v1.json) contiene todos los valores y el [motor](../../benchmarks/variant_screening_study.py) la lee sin admitir cambios a mitad de la criba.
 
-Nada de lo descrito se ha ejecutado. La protección del aprendizaje sigue activa, el test de 2024 sigue cerrado y la GPU solo se usará cuando quede libre. Las cifras de coste son estimaciones a partir de pilotos anteriores.
+Nada de lo descrito se ha ejecutado. La protección del aprendizaje sigue activa, el test de 2024 sigue cerrado y la GPU solo se usará cuando quede libre. Las cifras de coste son estimaciones a partir de pilotos anteriores y de cotas declaradas.
 
 ## Pregunta
 
@@ -134,13 +134,35 @@ Los contrastes que solo se publican están en la declaración de cada entrada. E
 
 ## Controles comunes
 
-Cero, la referencia de su cabeza y la mediana pasada del residuo de la fase 0 están disponibles. La regla de momentum y reversión y LightGBM con las mismas características figuran en #742 y todavía no están implementados. Nadaraya-Watson es un control de B1 dentro de su declaración.
+El control de cada variante es la referencia de su cabeza, y Nadaraya-Watson es un control de B1 dentro de su declaración. Además, cuatro controles comunes sitúan las dos referencias frente a modelos sencillos y frente a un modelo tabular con las mismas entradas. Se registraron el 28 de octubre, antes de abrir S.
+
+| Control | Ejecutor | Predicción |
+| --- | --- | --- |
+| Cero | Análisis | Un residuo nulo |
+| Mediana pasada (`past_median_v1`) | Análisis | La mediana de las 60 últimas etiquetas del activo con dos sesiones de retraso, con al menos 20, como en la fase 0 |
+| Momentum y reversión (`momentum_reversal_v1`) | `rule` | La media de los rangos centrados por sesión de la reversión de cinco sesiones (Lehmann, 1990) y del momentum del resto de la ventana (Jegadeesh y Titman, 1993) |
+| LightGBM (`same_inputs_lightgbm_v1`) | `tabular` | LightGBM (Ke et al., 2017) con los parámetros de Qlib sobre Alpha158 (Yang et al., 2020) y las entradas de la criba |
+
+La mediana pasada la calcula el análisis con las etiquetas de validación, calibración y evaluación de la referencia de cuantiles de cada origen. Numera las sesiones de cada mercado sobre los tres tramos y exige que cada etiqueta haya madurado antes de la primera decisión que la usa. Si no, se detiene. Como no lee el tramo de ajuste, las primeras 21 sesiones de los seis meses de validación no tienen etiquetas suficientes y predicen cero. La calibración y la evaluación ya tienen la ventana completa.
+
+La regla lee la misma ventana de precios de 64 sesiones que los modelos y no ajusta ningún parámetro. Su escala para el MAE calibrado la fija el λ de cada mercado, como en el resto de modelos. La ventana solo cubre unos tres meses, así que su momentum no es el de doce meses de Jegadeesh y Titman.
+
+LightGBM conserva los parámetros de `LGBModel` y del flujo Alpha158 en el commit fijado de Qlib, cuyas huellas guarda la declaración. Como Alpha158, entrena con el residuo normalizado en cada sesión, con la media y la desviación con ddof = 1, y no normaliza las características. Sin esa normalización, las penalizaciones L1 y L2 de Qlib, elegidas para etiquetas de varianza unidad, anularían las hojas con residuos del orden de 0,02. El protocolo declara cuatro cambios:
+
+- Las características son la ventana de precios aplanada, las cuatro modalidades y su presencia en cada fila, no las 158 de Alpha158.
+- Usa 8 hilos, los núcleos físicos del equipo, con `deterministic` y `force_col_wise` para que un ajuste se repita con su semilla.
+- La semilla de LightGBM es cada una de las cinco de la criba.
+- Las rondas no salen de la parada temprana de Qlib, sino de la regla de la época común. Cada diez rondas, hasta 1.000, se puntúa la validación con el IC por sesión, y la época común de las cinco semillas fija las rondas de todas.
+
+Ajusta con las filas de los meses de ajuste de su origen, las mismas decisiones que la fase de ajuste de Titans-MAC, y descarta las sesiones sin al menos dos filas o sin desviación. La ventana comprueba que la predicción emitida en validación reproduce la puntuada en las rondas elegidas.
+
+Cada origen tiene un trabajo de la regla y otro de LightGBM, que ajusta sus cinco semillas seguidas y guarda cada una en su carpeta. Al terminar el ajuste de una semilla guarda su booster y su serie de validación, así que un intento interrumpido solo ajusta las que faltan, y esos ajustes se borran cuando la ventana confirma sus predicciones. El texto de un booster de 1.000 rondas con 210 hojas se estima en unos 25 MB, de modo que el trabajo retiene como mucho unos 125 MB, una cifra sin medir. Los dos corren en CPU, sin tomar la GPU, y se cobran del mismo presupuesto. La familia común tiene seis contrastes del IC por sesión, la referencia de cuantiles y la escalar frente a la mediana pasada, a la regla y a LightGBM. Se publica con su propio paso descendente y no cambia ninguna decisión del catálogo.
 
 ## Presupuesto y coste estimado
 
 La criba ejecuta una sola carga GPU a la vez, con la GPU en exclusiva y sin parar otros procesos. Cada intento se cobra y nunca se devuelve. Un trabajo tiene como máximo 5.400 segundos y 20.000 actualizaciones.
 
-Con las entradas ejecutables hoy, el motor enumera 1.980 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
+Con las entradas ejecutables hoy, el motor enumera 1.988 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. La regla y LightGBM no tienen piloto, y su coste es una cota declarada por origen, 600 segundos para la regla y 5.400, el límite de un trabajo, para LightGBM, porque su ajuste no puede medirse mientras rige el bloqueo. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
 
 | Ejecutor | Trabajos | Horas estimadas |
 | --- | ---: | ---: |
@@ -149,11 +171,13 @@ Con las entradas ejecutables hoy, el motor enumera 1.980 trabajos. La estimació
 | `correction_profile` | 200 | 2,0 |
 | `reader` | 160 | 17,0 |
 | `spaced` | 120 | 12,7 |
-| Total | 1.980 | 153,5 |
+| `rule` | 4 | 0,7 |
+| `tabular` | 4 | 6,0 |
+| Total | 1.988 | 160,2 |
 
 Las versiones de la época común añaden 2,8 horas a los ajustes. Cada versión vuelve a predecir la calibración y la evaluación de su trabajo, y los 100 ajustes de los cinco modelos con versiones predicen cuatro. Antes de la enmienda la estimación era de 94,3 horas.
 
-Antes de integrar A4, C5, F2, F3 y D2 el motor enumeraba 1.740 trabajos y unas 97,2 horas. Las cinco entradas añaden 240 trabajos: A4 unas 17,4 horas, F2 21,5 (el control de tres veces las actualizaciones cuesta como tres ajustes), C5 8,7, F3 4,4 y D2 4,2. Las referencias de A4, C5, F2 y F3 son los mismos trabajos que las del protocolo y no se repiten. La estimación de 153,5 horas supera el límite aprobado de 150, y `plan` lo indica con `within_budget` en falso. Como prevé el protocolo, la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
+Antes de integrar A4, C5, F2, F3 y D2 el motor enumeraba 1.740 trabajos y unas 97,2 horas. Las cinco entradas añaden 240 trabajos: A4 unas 17,4 horas, F2 21,5 (el control de tres veces las actualizaciones cuesta como tres ajustes), C5 8,7, F3 4,4 y D2 4,2. Las referencias de A4, C5, F2 y F3 son los mismos trabajos que las del protocolo y no se repiten. Los controles comunes añadieron después 8 trabajos y 6,7 horas. La estimación de 160,2 horas supera el límite aprobado de 150, y `plan` lo indica con `within_budget` en falso. Como prevé el protocolo, la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
 
 ## Motor
 
@@ -170,7 +194,7 @@ uv run python -m benchmarks.variant_screening_study rule-check --work "${MARS_SC
   --output "${MARS_SCREENING_RULE_CHECK:?}"
 ```
 
-`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Las cinco semillas de cada definición van seguidas en ese orden. Un ajuste o un lector que ha recorrido su presupuesto espera a su grupo sin detener la cola. Cuando esperan las cinco semillas, la cola fija la época común y las reanuda en los pasos siguientes para emitir sus predicciones y sus versiones, antes de que empiece otro grupo. Un trabajo que espera sin la decisión de su grupo no se ejecuta ni se cobra, y si volviera a esperar después de recibirla la cola se detiene con un error. La cola se detiene en su límite opcional, que cuenta ejecuciones y no trabajos terminados, o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo. `status` añade los trabajos que esperan y los grupos decididos.
+`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva, salvo la regla y LightGBM, que corren en CPU. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Las cinco semillas de cada definición van seguidas en ese orden. Un ajuste o un lector que ha recorrido su presupuesto espera a su grupo sin detener la cola. Cuando esperan las cinco semillas, la cola fija la época común y las reanuda en los pasos siguientes para emitir sus predicciones y sus versiones, antes de que empiece otro grupo. Un trabajo que espera sin la decisión de su grupo no se ejecuta ni se cobra, y si volviera a esperar después de recibirla la cola se detiene con un error. La cola se detiene en su límite opcional, que cuenta ejecuciones y no trabajos terminados, o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo. `status` añade los trabajos que esperan y los grupos decididos.
 
 `analyze` comprueba la protección antes de leer nada, exige que todos los trabajos hayan terminado, que cada ajuste y cada lector hayan emitido la época común y las versiones de su grupo, y verifica la huella de cada Parquet frente a su `run.json`. Lee la madurez de las etiquetas de los tres tramos de cada vista y el sector de las fichas actuales, que solo usa el control sectorial de C4. Escribe `analysis.json`, con decisiones, familias, casos elegidos y las huellas de lo leído, del código y del entorno, y `series.parquet`, con la serie por sesión de cada modelo y métrica.
 
@@ -185,6 +209,8 @@ uv run python -m benchmarks.variant_screening_study rule-check --work "${MARS_SC
 - La referencia textual de una corrección emite las predicciones de su padre.
 - A1, A2, A3 y C4 se ajustan con la calibración de la referencia B del mismo origen y semilla y se aplican sin cambios a S. A2 calcula una vez por semilla la abstención y sus cuatro controles con la misma cobertura, y A3 pasa sus cuantiles recalibrados a esa misma abstención.
 - El control cero predice un residuo nulo.
+- La mediana pasada sale de las etiquetas maduras de la referencia de cuantiles del origen.
+- La regla emite en todas las semillas la predicción de su trabajo de origen, y LightGBM la de su semilla, que el motor lee de su carpeta con la huella de su `run.json`.
 
 Cada trabajo tiene que reproducir las filas y los objetivos de su vista en los tres tramos, y ninguna emisión puede pertenecer al test final. El MAE calibrado multiplica la predicción de un modelo por el λ de cada mercado elegido en su calibración. Una etapa de salida ya emite su predicción final y se mide sin otro λ, así que A1 compara λ·mediana con cero y A2 compara salidas sin reescalar. Las semillas se promedian en cada sesión, que solo cuenta si todas la definen, y los cuatro orígenes se concatenan en una serie de 2019 a 2022. Cada modelo publica la media de la métrica principal y de las secundarias.
 
@@ -196,12 +222,13 @@ Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, co
 - Doce épocas sobre un año sustituyen a las 30 épocas de la receta histórica sobre todo el tramo. El número de actualizaciones es del orden del de los pilotos, pero el modelo repite cada sesión de ajuste doce veces.
 - Un único caso de tasa para ajustes y lectores. La receta histórica explora dos.
 - Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
-- El coste es una estimación con medidas de otros estudios.
-- C2, C3, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- El coste es una estimación con medidas de otros estudios. El de la regla y LightGBM son cotas declaradas.
+- C2, C3 y la contracción de F3 siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- LightGBM no se ha ajustado nunca con estas entradas. Las pruebas usan un LightGBM doble que recorre las rondas sin ajustar, así que su comportamiento con los parámetros de Qlib sobre residuos normalizados solo se observará en la criba.
+- La mediana pasada no lee el tramo de ajuste, a diferencia de la fase 0, que usaba toda la historia anterior.
 - La medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
 - La selección del estado y del caso de las correcciones cambió el 28 de octubre, antes de abrir S. La regla anterior, la de menor MAE de validación en cada semilla, se conserva como sensibilidad y en la comprobación de la regla.
 - La época común conserva un estado por época hasta que el grupo emite sus predicciones. En pilotos anteriores, el estado de un ajuste de Titans-MAC ocupaba entre 2,3 y 3,1 MB y el de un lector unos 0,5 MB, así que un grupo de ajustes fija unos 190 MB. Como solo hay un grupo abierto a la vez, el pico es ese, pero no se ha medido con los modelos de la criba.
-- La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula.
 - El análisis se ha comprobado con paneles sintéticos de respuesta conocida. No se ha ejecutado con predicciones reales.
 
 ## Comprobaciones

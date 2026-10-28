@@ -158,6 +158,35 @@
         180,
         72
       ]
+    },
+    {
+      "id": "common",
+      "type": "cloud",
+      "label": "Familia común",
+      "sublabel": "referencias frente a controles",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "tag": "seis contrastes de IC"
+    },
+    {
+      "id": "report",
+      "type": "frontend",
+      "label": "Informe común",
+      "sublabel": "fuera de las decisiones",
+      "pos": [
+        1080,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
     }
   ],
   "connections": [
@@ -234,6 +263,21 @@
         1222,
         171
       ]
+    },
+    {
+      "id": "series-common",
+      "from": "series",
+      "to": "common",
+      "label": "controles comunes",
+      "labelDy": 10
+    },
+    {
+      "id": "common-report",
+      "from": "common",
+      "to": "report",
+      "label": "se publica",
+      "variant": "dashed",
+      "labelDy": -14
     }
   ],
   "cards": [
@@ -243,7 +287,7 @@
       "items": [
         "IC con al menos tres activos y MAE con el λ de G",
         "Semillas promediadas y orígenes en una sola serie",
-        "Valores p con (1 + n)/(1 + R) y 2.000 réplicas"
+        "Mediana pasada, regla y LightGBM como controles comunes"
       ]
     },
     {
@@ -260,8 +304,8 @@
       "title": "Estado",
       "items": [
         "Probado con paneles sintéticos de respuesta conocida",
-        "Sin ejecutar con predicciones reales",
-        "La media de semillas de F2 sigue pendiente"
+        "LightGBM probado con un doble que no ajusta",
+        "Sin ejecutar con predicciones reales"
       ]
     }
   ]
