@@ -6,7 +6,11 @@
 - `run` ejecuta un trabajo sellado. Comprueba la protección del aprendizaje antes de leer
   nada, exige que sus requisitos hayan terminado, cobra el intento contra el presupuesto y
   usa una GPU exclusiva. Un trabajo interrumpido se reanuda desde su carpeta.
+- `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Se detiene al
+  llegar a su límite o ante el primer trabajo que no termina.
 - `status` resume los trabajos terminados, los pendientes y el tiempo cobrado.
+- `analyze` comprueba la protección, exige todos los trabajos terminados, verifica la huella
+  de cada archivo de predicciones y escribe los contrastes, las familias y la decisión.
 
 Las etapas de salida (A1, A2, A3, C4 y la media de semillas) no son trabajos. Se calculan
 en el análisis sobre las predicciones guardadas de su fuente.
@@ -15,6 +19,7 @@ en el análisis sobre las predicciones guardadas de su fuente.
 import argparse
 import copy
 import fcntl
+import functools
 import json
 import math
 import resource
@@ -23,11 +28,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import numpy as np
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
+
 from benchmarks.memory_microstudy import Budget
 from benchmarks.refinement_study import environment_identity
 from benchmarks.refinement_study_traces import attempt_cost, settle_attempt
+from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import variant_screening_analysis
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.training import screening_cohorts, variant_screening
 from mars_titan.training.learning_hold import require_learning_allowed
 
@@ -36,6 +49,10 @@ KIND = "variant_screening_work_v1"
 # Filas aproximadas de un origen sin cohortes: 256 activos y las sesiones de cada tramo.
 DEFAULT_ROWS = dict(fit=256 * 252, validation=256 * 126, calibration=256 * 63, evaluation=256 * 252)
 GIB = 1024**3
+QUANTILE_PREFIX = "quantile_"
+# Trabajos con sus tres tramos en memoria a la vez, entre todos los orígenes. Las cinco
+# semillas de la referencia de A2 caben con margen, unos 12 MB por trabajo con 256 activos.
+CACHED_RUNS = 32
 
 
 def _require(condition, message):
@@ -462,6 +479,30 @@ def _run(work, receipt, job):
                 lease.__exit__()
 
 
+def run_queue(work, limit=None):
+    """Ejecutar los trabajos pendientes en el orden sellado, que pone cada padre antes.
+
+    Un trabajo que falla detiene la cola con su error y queda cobrado. Uno pausado, por
+    ejemplo por el límite de tiempo de su intento, la detiene sin error.
+    """
+    require_learning_allowed("la cola de la criba de variantes")
+    _require(
+        limit is None or (type(limit) is int and limit >= 1), "El límite es un entero positivo"
+    )
+    work = Path(work).resolve()
+    completed = []
+    for job in verify_prepared(work)["jobs"]:
+        if limit is not None and len(completed) == limit:
+            break
+        if _completed(work, job["id"]) is not None:
+            continue
+        result = run_job(work, job["id"])
+        if result.get("status") != "completed":
+            return dict(completed=completed, stopped_at=job["id"], status=result.get("status"))
+        completed.append(job["id"])
+    return dict(completed=completed, stopped_at=None, status="queued_jobs_completed")
+
+
 def status(work):
     work = Path(work).resolve()
     jobs = read_manifest(work / "prepared.json", 64 * 1024**2)[0]["jobs"]
@@ -481,6 +522,132 @@ def status(work):
     )
 
 
+def run_panels(folder, reads):
+    """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo.
+
+    Los niveles de cuantiles salen del nombre de sus columnas, `quantile_0025` es 0,025.
+    """
+    report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
+    _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
+    panels = {}
+    for name in variant_screening_analysis.PARTITIONS:
+        record = report["predictions"][name]
+        path = folder / record["path"]
+        digest = sha256(path)
+        _require(digest == record["sha256"], f"Ha cambiado {folder.name}/{path.name}")
+        table = pq.read_table(path)
+        columns = sorted(c for c in table.column_names if c.startswith(QUANTILE_PREFIX))
+        panels[name] = ForecastPanel.from_arrow(
+            table,
+            quantile_columns=columns or None,
+            levels=tuple(int(c.removeprefix(QUANTILE_PREFIX)) / 1000 for c in columns) or None,
+        )
+        reads[f"{folder.name}/{path.name}"] = digest
+    return panels
+
+
+def current_sectors(descriptions, assets):
+    """Sector de las fichas actuales de cada activo, o None si la ficha no lo tiene."""
+    from mars_titan.data.sector_map import UNKNOWN, SectorMap
+
+    sectors = SectorMap.from_finmultitime(descriptions)
+    result = {}
+    for flow in assets:
+        group = sectors.groups[sectors.group(flow)]
+        result[flow] = None if group.endswith(f"/{UNKNOWN}") else group
+    return result
+
+
+def origin_maturity(view, input_policy):
+    """Huella de las filas de cada tramo de la vista y madurez en el orden canónico del panel."""
+    from mars_titan.evaluation.online_calibration import view_maturity
+
+    tables = view_maturity(view, input_policy, sha256(view), variant_screening_analysis.PARTITIONS)
+    cohorts, maturity = {}, {}
+    for name, table in tables.items():
+        times = table["prediction_at"].cast(pa.int64())
+        ids = pc.binary_join_element_wise(table["asset_id"], times.cast(pa.string()), "/")
+        panel = ForecastPanel.from_columns(
+            ids,
+            table["market"].to_numpy(zero_copy_only=False),
+            times.to_numpy(),
+            table["target"].to_numpy(),
+            np.zeros(table.num_rows),
+        )
+        order = pc.index_in(panel.row_id, value_set=ids.cast(pa.large_string())).to_numpy()
+        cohorts[name] = panel.cohort_sha256
+        maturity[name] = table["matures_at"].to_numpy()[order]
+    return cohorts, maturity
+
+
+def _series_table(arrays):
+    times = pa.array(arrays["session_time"], type=pa.timestamp("us", tz="UTC"))
+    tables = []
+    for (label, metric), (values, defined) in sorted(arrays["merged"].items()):
+        tables.append(
+            pa.table(
+                dict(
+                    model=pa.array(["/".join(label)] * len(values)),
+                    metric=pa.array([metric] * len(values)),
+                    session_time=times,
+                    value=pa.array(values, type=pa.float64()),
+                    defined=pa.array(defined),
+                )
+            )
+        )
+    return tables
+
+
+def analyze(work, output, descriptions):
+    """Analizar una criba terminada y escribir el informe y las series por sesión."""
+    require_learning_allowed("el análisis de la criba de variantes")
+    work, output = Path(work).resolve(), Path(output).resolve()
+    receipt = verify_prepared(work)
+    _require(not output.exists(), "El análisis necesita un directorio nuevo")
+    missing = [job["id"] for job in receipt["jobs"] if _completed(work, job["id"]) is None]
+    _require(not missing, f"Faltan {len(missing)} trabajos por terminar, como {missing[:1]}")
+    protocol, reads, origins = receipt["protocol"], {}, {}
+    # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
+    load = functools.lru_cache(maxsize=CACHED_RUNS)(
+        lambda job_id: run_panels(work / "runs" / job_id, reads)
+    )
+    for year in screening_cohorts.ORIGIN_FOLDS:
+        view = work / "origins" / str(year) / "view-x1.json"
+        assets = [
+            f"{a['market']}/{a['symbol']}" for a in read_manifest(view, 8 * 1024**2)[0]["assets"]
+        ]
+        cohorts, maturity = origin_maturity(view, protocol["population"]["input_policy"])
+        origins[year] = variant_screening_analysis.Origin(
+            year=year,
+            load=load,
+            cohorts=cohorts,
+            maturity=maturity,
+            sectors=current_sectors(descriptions, assets),
+        )
+    report, arrays = variant_screening_analysis.analyze(protocol, receipt["jobs"], origins, ROOT)
+    report.update(
+        prepared_sha256=sha256(work / "prepared.json"),
+        protocol_sha256=receipt["protocol_sha256"],
+        code=code_identity(),
+        environment=environment_identity(),
+        descriptions_sha256={
+            name: sha256(Path(descriptions) / name)
+            for name in ("sp500stock_data_description.csv", "hs300stock_data_description.csv")
+        },
+        predictions_sha256=dict(sorted(reads.items())),
+        final_test_access=False,
+        optimizer_steps=0,
+    )
+    output.mkdir(parents=True)
+    atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
+    atomic_json(output / "analysis.json", report)
+    return dict(
+        decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
+        sessions=report["sessions"],
+        analysis_sha256=sha256(output / "analysis.json"),
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -492,8 +659,15 @@ def main():
     run_parser = commands.add_parser("run", help="Ejecutar un trabajo sellado")
     run_parser.add_argument("--work", type=Path, required=True)
     run_parser.add_argument("--job", required=True)
+    queue_parser = commands.add_parser("queue", help="Ejecutar en orden los trabajos pendientes")
+    queue_parser.add_argument("--work", type=Path, required=True)
+    queue_parser.add_argument("--limit", type=int)
     status_parser = commands.add_parser("status", help="Resumir el avance")
     status_parser.add_argument("--work", type=Path, required=True)
+    analyze_parser = commands.add_parser("analyze", help="Contrastes y decisión de la criba")
+    analyze_parser.add_argument("--work", type=Path, required=True)
+    analyze_parser.add_argument("--output", type=Path, required=True)
+    analyze_parser.add_argument("--descriptions", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "plan":
         result = plan(args.cohorts)
@@ -502,6 +676,10 @@ def main():
         result = dict(jobs=len(receipt["jobs"]), protocol_sha256=receipt["protocol_sha256"])
     elif args.command == "run":
         result = run_job(args.work, args.job)
+    elif args.command == "queue":
+        result = run_queue(args.work, args.limit)
+    elif args.command == "analyze":
+        result = analyze(args.work, args.output, args.descriptions)
     else:
         result = status(args.work)
     print(json.dumps(result, ensure_ascii=False, indent=1))
