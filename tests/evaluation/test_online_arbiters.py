@@ -447,6 +447,20 @@ def test_the_arbiter_moves_to_the_version_that_ranks_the_assets():
     assert np.corrcoef(result["prediction"][rows], tipified[rows])[0, 1] > 0.99
 
 
+def test_the_reliability_is_the_mean_ic_of_the_last_mature_sessions():
+    panel, predictions, matures = version_inputs(version_table(sessions=40, thin=20))
+    result = arbiter(panel, predictions, matures, window=5)
+    ic = np.column_stack(
+        [sd.session_correlations(panel, c, min_assets=3)[0] for c in predictions.T]
+    )
+    session_matures = np.maximum.reduceat(matures, panel.session_starts)
+    for session in (3, 22, 23, 39):
+        known = np.flatnonzero(session_matures <= panel.session_time[session])
+        # La sesión 20 tiene dos activos y no puntúa.
+        known = known[known != 20][-5:]
+        np.testing.assert_allclose(result["reliability"][session], ic[known].mean(axis=0))
+
+
 def test_the_arbiter_abstains_when_no_version_is_reliable_enough():
     panel, predictions, matures = version_inputs(version_table(), signs=(-1.0, -1.0))
     result = arbiter(panel, predictions, matures)
