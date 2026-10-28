@@ -22,7 +22,7 @@
   ],
   "partitions": {
     "fit": "last_12_months_of_the_fold_train",
-    "validation": "epoch_selection_with_session_mae",
+    "validation": "common_epoch_selection_with_session_ic",
     "calibration": "market_lambda_conformal_corrections_thresholds_and_output_stages",
     "screening": "evaluation_year_of_each_origin",
     "screening_blocks": "calendar_quarters_of_each_evaluation_year",
@@ -38,12 +38,49 @@
   "fit": {
     "fit_months": 12,
     "epochs": 12,
-    "stopping": "fixed_budget",
-    "selection": "best_validation_session_mae_within_the_fixed_budget",
+    "stopping": "common_epoch",
+    "selection": "common_epoch_session_ic_v1",
     "search_case": "lr1e-3",
     "precision": "fp32_strict",
     "sdpa_backend": "MATH",
     "updates_note": "Con 256 activos, unas 250 sesiones de ajuste y bloques de 1.024 filas, cada época hace unas 62 actualizaciones y el presupuesto unas 740, del orden de las 685 de los pilotos de octubre"
+  },
+  "selection": {
+    "rule": "common_epoch_session_ic_v1",
+    "applies_to": ["fit", "reader"],
+    "metric": "session_ic",
+    "partition": "validation",
+    "eligible_epochs": "every_trained_epoch_from_1_to_the_budget",
+    "seed_aggregation": "mean_of_the_seeds_in_each_session_defined_by_all_of_them",
+    "smoothing_radius": 1,
+    "ties": "earliest_epoch",
+    "combined_outputs": "epoch_chosen_with_the_session_ic_of_the_combination",
+    "correction_cases": "case_with_the_highest_mean_validation_session_ic_common_to_the_seeds",
+    "sensitivity": "the_session_mae_best_epoch_of_each_seed_is_reported_and_never_emitted",
+    "retention": "every_epoch_state_is_pinned_until_its_window_confirms_its_predictions_and_then_released",
+    "versions": {
+      "epochs": [3, 6, 9, 12],
+      "models": ["references/quantile_reference", "F1/laplace_scale_head", "F4/session_ic_objective", "F5/auxiliary_horizons", "C6/competition"],
+      "partitions": ["calibration", "evaluation"],
+      "consumer": "version_arbiter_v1 de #789",
+      "reason": "La referencia B y cuatro variantes que cambian la pérdida, el objetivo, la supervisión auxiliar y la memoria. F2 y F3 ya promedian en el tiempo los pesos, así que el árbitro se compara con ellas sobre la referencia en lugar de aplicarse encima"
+    },
+    "rule_check": {
+      "partition": "validation",
+      "choose_months": 4,
+      "measure_months": 2,
+      "compared": ["common_epoch_session_ic_v1", "session_mae_best_epoch_of_each_seed", "last_epoch"],
+      "bound": "best_epoch_of_the_measured_months_reported_as_a_bound_with_future_information",
+      "device": "cpu_only"
+    },
+    "amendment": {
+      "date": "2026-10-28",
+      "issue": 746,
+      "registered_before_opening_s": true,
+      "previous_rule": "best_validation_session_mae_within_the_fixed_budget",
+      "reason": "El contraste principal se juzga con el IC por sesión y el MAE de un residuo diario premia las predicciones pequeñas, así que podía quedarse con épocas que apenas ordenan los activos. Elegir el máximo de doce valores ruidosos por semilla añade sesgo de selección. Una época común para las semillas, suavizada con sus vecinas, reduce la varianza del criterio y mantiene iguales las actualizaciones",
+      "sources": ["Cawley y Talbot (2010), JMLR 11", "Ranjan y otros (2024), NeurIPS", "Gulrajani y Lopez-Paz (2021), ICLR"]
+    }
   },
   "references": {
     "quantile_reference": {
