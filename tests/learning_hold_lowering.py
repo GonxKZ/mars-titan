@@ -354,6 +354,11 @@ _REUSES = (
 # `learning_doubles_module`, `allowed_hold`) y a la variable o la ruta de la protección. La
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
+    "tests/tooling/test_variant_screening_study.py": (
+        1,
+        "el motor de la criba llama a ejecutores dobles que solo escriben su run.json, sin "
+        "construir modelos ni ejecutar pasos de optimizador",
+    ),
     "tests/training/test_salience_correction_window.py": (
         1,
         "recorre la corrección E3 con un padre de pesos literales, sin construir entrenadores "
