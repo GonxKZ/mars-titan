@@ -1026,6 +1026,11 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.predictor.config.cross_asset_attention is not None:
             name = "mars_titan.models.titans.cross_asset_attention"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H1 de #783 también, con el catálogo macro del que salen sus familias.
+        if self.predictor.config.holographic_network is not None:
+            module = importlib.import_module("mars_titan.models.titans.holographic_network")
+            own[module.__name__] = sha256(Path(module.__file__))
+            own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
         # C2 también, con el historial de regiones que guarda en el estado de cada flujo.
         if self.predictor.config.axial_time_region is not None:
             name = "mars_titan.models.titans.axial_time_region"

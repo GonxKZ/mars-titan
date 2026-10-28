@@ -61,6 +61,12 @@ from .financial_inputs import (
     DecisionBatch,
     FinancialInputSpec,
 )
+from .holographic_network import (
+    HolographicNetwork,
+    HolographicNetworkConfig,
+    area_layout,
+    parse_holographic_network,
+)
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
@@ -175,6 +181,9 @@ class FinancialConfig:
     temporal_encoder: str | None = None
     # C1 o C6 de #751: sustituyen al operador regional y no se combinan con él.
     regional_variant: RegionAxisMixingConfig | SharedWorkspaceConfig | None = None
+    # H1, H2 o H3 de #783: red de redes holográfica en la modulación de la fusión. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    holographic_network: HolographicNetworkConfig | None = None
     # C2 de #751: atención axial en el tiempo de cada flujo y entre sus regiones, con un
     # historial de bloques en el estado. Sin declararla, la identidad y el cálculo no cambian.
     axial_time_region: AxialTimeRegionConfig | None = None
@@ -350,6 +359,27 @@ class FinancialConfig:
                 "regional y no se combina con PT6"
             )
         object.__setattr__(
+            self, "holographic_network", parse_holographic_network(self.holographic_network)
+        )
+        if self.holographic_network is not None:
+            if (
+                self.variant != "mac_online"
+                or self.regional_fusion is not None
+                or self.regional_execution is not None
+                or self.regional_variant is not None
+                or self.presence_modulation is not None
+            ):
+                raise ValueError(
+                    "La red holográfica se declara sobre mac_online, ocupa la modulación de "
+                    "la fusión y no se combina con el operador regional, C1, C6 ni PT6"
+                )
+            # Falla al declarar si la edición no tiene las familias de las áreas.
+            area_layout(
+                self.holographic_network.areas,
+                self.inputs.representation,
+                masked=masked_inputs(self.inputs.input_policy),
+            )
+        object.__setattr__(
             self, "axial_time_region", parse_axial_time_region(self.axial_time_region)
         )
         if self.axial_time_region is not None and (
@@ -505,6 +535,8 @@ class FinancialConfig:
             result.update(regional_execution=self.regional_execution.identity())
         if self.regional_variant is not None:
             result.update(regional_variant=self.regional_variant.identity())
+        if self.holographic_network is not None:
+            result.update(holographic_network=self.holographic_network.identity())
         if self.axial_time_region is not None:
             result.update(axial_time_region=self.axial_time_region.identity())
         if self.memory_bank_readout is not None:
@@ -686,6 +718,19 @@ class FinancialPredictor(nn.Module):
             if config.regional_variant is not None
             else None
         )
+        # H1 deriva su semilla de la del predictor y no consume el generador global.
+        self.holographic_network = (
+            HolographicNetwork(
+                config.hidden_size,
+                config.holographic_network,
+                config.inputs.representation,
+                seed=config.seed,
+                max_batch=config.max_batch,
+                masked=self.masked,
+            )
+            if config.holographic_network is not None
+            else None
+        )
         # C2 deriva su semilla de la del predictor y no consume el generador global.
         self.axial_time_region = (
             AxialTimeRegion(
@@ -827,6 +872,7 @@ class FinancialPredictor(nn.Module):
         if regional is not None:
             regional.validate_geometry()
         self._regional_variant_component()
+        self._holographic_component()
         self._axial_component()
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
@@ -852,6 +898,22 @@ class FinancialPredictor(nn.Module):
             or module.readout.weight.dtype != self.head.weight.dtype
         ):
             raise ValueError("La variante regional no corresponde a la configuración declarada")
+        return module
+
+    def _holographic_component(self):
+        declared, module = self.config.holographic_network, self.holographic_network
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not HolographicNetwork
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+            or module.readout.weight.device != self.head.weight.device
+            or module.readout.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La red holográfica no corresponde a la configuración declarada")
         return module
 
     def _axial_component(self):
@@ -1042,6 +1104,8 @@ class FinancialPredictor(nn.Module):
             if self.regional_fusion is not None and self.regional_execution is None
             else self.regional_variant.operation_counts(rows)
             if self.regional_variant is not None
+            else self.holographic_network.operation_counts(rows)
+            if self.holographic_network is not None
             else self.axial_time_region.operation_counts(rows)
             if self.axial_time_region is not None
             else {}
@@ -1350,17 +1414,25 @@ class FinancialPredictor(nn.Module):
         return token, pending, execution.trace
 
     def _fuse(self, price, inputs, presence):
+        modulation = (
+            self.regional_fusion
+            if self.regional_fusion is not None
+            else self.regional_variant
+            if self.regional_variant is not None
+            else self.presence_modulation
+        )
+        if self.holographic_network is not None:
+            # Los bloques por familia leen las entradas y los codificadores de la referencia.
+            def modulation(blocks, presence):
+                return self.holographic_network(blocks, presence, inputs, self.encoders)
+
         return fuse_modalities(
             price,
             inputs,
             self.encoders,
             self.fusion,
             presence if self.masked else None,
-            modulation=self.regional_fusion
-            if self.regional_fusion is not None
-            else self.regional_variant
-            if self.regional_variant is not None
-            else self.presence_modulation,
+            modulation=modulation,
             branch=self.fusion_branch,
         )
 
