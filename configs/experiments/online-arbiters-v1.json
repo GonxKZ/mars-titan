@@ -17,11 +17,14 @@
     "state": "one_per_market",
     "mixture_of": "session_standardized_predictions",
     "precision": "float64_on_cpu",
+    "pass": "calibration_then_evaluation_in_time_order_with_one_state",
+    "amplitude": "market_lambda_chosen_on_the_calibration_output_and_applied_unchanged_in_evaluation",
     "guarantee": "linear_loss_of_the_mixture_on_the_mature_rounds"
   },
   "stages": {
     "version_arbiter_v1": {
       "options": "common_epoch_and_versions_of_the_same_fit",
+      "repeated_epoch": "an_epoch_that_is_both_common_and_version_is_one_option",
       "versions_source": "configs/experiments/variant-screening-v1.json#selection.versions",
       "partitions": ["calibration", "evaluation"],
       "measured_on": "evaluation",
@@ -55,7 +58,9 @@
     "window": "Veintiuna sesiones son un mes de mercado, la velocidad más lenta de la señal de fiabilidad de #791",
     "margin": "La issue pide abstenerse si ninguna versión tiene fiabilidad madura positiva. El margen cero se fija aquí antes de abrir datos y no se ajusta",
     "per_market": "Las sesiones de dos mercados pueden decidirse en el mismo instante. Un estado por mercado mantiene instantes de decisión únicos y no mezcla calendarios",
-    "abstention_scoring": "Contar una sesión abstenida como IC cero evita medir el árbitro solo en las sesiones que elige"
+    "abstention_scoring": "Contar una sesión abstenida como IC cero evita medir el árbitro solo en las sesiones que elige",
+    "repeated_epoch": "Si la época común coincide con una versión, contarla dos veces le daría el doble de prior sin aportar otra predicción",
+    "amplitude": "La mezcla de predicciones tipificadas no tiene escala propia. El λ de cada mercado se elige con la salida del árbitro en calibración y se aplica sin cambios en S, como en el resto de la criba"
   },
   "pending": [
     "La etapa del análisis que lee las versiones de la criba y su entrada en el protocolo de la segunda ola",
