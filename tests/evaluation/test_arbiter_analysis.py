@@ -44,9 +44,9 @@ STRONG = 12
 class VersionedOrigin(SyntheticOrigin):
     """Origen sintético que también emite las versiones de sus ajustes."""
 
-    def __init__(self, year, jobs, epochs, *, shift=0.0, drop=None):
+    def __init__(self, year, jobs, epochs, *, shift=0.0, drop=None, extra=None):
         super().__init__(year, jobs)
-        self.epochs, self.shift, self.drop = epochs, shift, drop
+        self.epochs, self.shift, self.drop, self.extra = epochs, shift, drop, extra
         self.version_calls = []
 
     def version(self, job, epoch, name):
@@ -60,7 +60,7 @@ class VersionedOrigin(SyntheticOrigin):
     def versions(self, job_id):
         self.version_calls.append(job_id)
         job, result = self.jobs[job_id], {}
-        for epoch in self.epochs:
+        for epoch in (*self.epochs, *([self.extra] if self.extra else [])):
             if epoch in (COMMON, self.drop):
                 continue
             result[epoch] = {
@@ -97,8 +97,11 @@ def analyzed():
     return protocol, jobs, sources, report, arrays
 
 
-def two_markets(start, sessions, *, seed):
-    """Panel con dos mercados de cinco activos y `sessions` días desde `start`."""
+def two_markets(start, sessions, *, seed, declared=("US", "CN")):
+    """Panel con dos mercados de cinco activos y `sessions` días desde `start`.
+
+    `declared` son los mercados que declara el panel, que pueden ser más que los que tienen filas.
+    """
     rng = np.random.default_rng(seed)
     days = start + DAY_MICROSECONDS * np.arange(sessions)
     times = np.repeat(days, 10)
@@ -116,6 +119,7 @@ def two_markets(start, sessions, *, seed):
         times[order],
         target[order],
         rng.standard_normal(len(times))[order],
+        markets=declared,
     )
 
 
@@ -136,6 +140,72 @@ def test_the_joint_panel_keeps_every_row_and_says_where_it_comes_from():
         assert np.all(np.diff(panel.session_time[panel.session_market == code]) > 0)
     with pytest.raises(ValueError, match="anterior"):
         stage.joined(evaluation, calibration)
+    start = 1_600_000_000_000_000 + 6 * DAY_MICROSECONDS
+    other = two_markets(start, 4, seed=2, declared=("US", "CN", "HK"))
+    with pytest.raises(ValueError, match="mismos mercados"):
+        stage.joined(calibration, other)
+
+
+def market_options(count, *, seed):
+    """Opciones de dos mercados con las mismas filas. Solo la primera sigue al objetivo."""
+    start = 1_600_000_000_000_000
+    calibration = two_markets(start, 30, seed=seed)
+    evaluation = two_markets(start + 30 * DAY_MICROSECONDS, 20, seed=seed + 1)
+    rng = np.random.default_rng(seed + 2)
+    options = []
+    for k in range(count):
+        weight = 1.0 if k == 0 else 0.0
+        own = [
+            replace(part, prediction=weight * part.target + rng.standard_normal(part.rows))
+            for part in (calibration, evaluation)
+        ]
+        options.append(analysis.Emission(own[1], own[1].prediction, own[0]))
+    maturity = {
+        name: part.prediction_at + 3 * DAY_MICROSECONDS
+        for name, part in (("calibration", calibration), ("evaluation", evaluation))
+    }
+    return options, maturity
+
+
+def test_each_market_crosses_from_its_calibration_into_its_s():
+    options, maturity = market_options(3, seed=11)
+    options_of = arbiters.stage_options(DECLARATION, arbiters.VERSION_ARBITER)
+    calibration, evaluation = options[0].calibration, options[0].panel
+    panel, positions = stage.joined(calibration, evaluation)
+    # Con dos mercados el panel conjunto no sigue el orden de la calibración seguida de S.
+    assert not np.array_equal(positions, np.arange(panel.rows))
+    columns = np.column_stack(
+        [np.concatenate([o.calibration.prediction, o.prediction])[positions] for o in options]
+    )
+    matures = np.concatenate([maturity["calibration"], maturity["evaluation"]])[positions]
+    joint = zip(panel.session_market.tolist(), panel.session_time.tolist(), strict=True)
+    joint = {key: position for position, key in enumerate(joint)}
+    own = zip(evaluation.session_market.tolist(), evaluation.session_time.tolist(), strict=True)
+    sessions_of_s = [joint[key] for key in own]
+    outputs = {}
+    for mode, seed in (("online", None), ("shuffled", options_of["seed"])):
+        direct = arbiters.online_mixture(
+            panel, columns, matures, window=21, min_assets=3, margin=0.0, seed=seed
+        )
+        source = np.empty(panel.rows)
+        source[positions] = direct["prediction"]
+        output, abstained = stage.mixed(options, maturity, options_of, mode)
+        np.testing.assert_array_equal(output.prediction, source[calibration.rows :])
+        np.testing.assert_array_equal(output.calibration.prediction, source[: calibration.rows])
+        assert np.array_equal(abstained, direct["abstained"][sessions_of_s])
+        # Las primeras sesiones de cada mercado se abstienen y las de S ya no.
+        assert direct["abstained"].any() and not abstained.any()
+        outputs[mode] = output.prediction
+    assert not np.array_equal(outputs["online"], outputs["shuffled"])
+    uniform, abstained = stage.mixed(options, maturity, options_of, "uniform")
+    expected = arbiters.uniform_mixture(
+        evaluation, np.column_stack([o.prediction for o in options])
+    )
+    np.testing.assert_array_equal(uniform.prediction, expected)
+    assert not abstained.any()
+    foreign, _ = market_options(2, seed=12)
+    with pytest.raises(ValueError, match="mismas filas"):
+        stage.mixed([options[0], foreign[1]], maturity, options_of, "online")
 
 
 def emissions(source, job):
@@ -273,6 +343,12 @@ def test_the_analysis_recovers_the_version_with_signal(analyzed):
     primary = contrasts[f"version_arbiter/{REFERENCE}/arbiter-common_epoch"]
     assert primary["role"] == "primary" and primary["metric"] == "session_ic"
     members = {m["name"]: m for m in report["declared_family"]["16"]["members"]}
+    # La familia propia solo reúne el contraste principal de cada modelo con versiones.
+    assert list(members) == [
+        f"version_arbiter/{model}/arbiter-common_epoch"
+        for model in protocol["selection"]["versions"]["models"]
+    ]
+    assert all(row["contrast"] in members for row in decisions.values())
     assert members[primary["name"]]["estimate"] > 0.1
     assert decisions[REFERENCE]["primary_passes"]
     # La media uniforme diluye la versión con señal y el árbitro la supera.
@@ -291,6 +367,51 @@ def test_the_analysis_recovers_the_version_with_signal(analyzed):
     # Cada origen y semilla pidió las versiones de sus ajustes versionados.
     assert all(source.version_calls for source in sources.values())
     assert report["sessions"] == 4 * 40 and report["stages"]["version_arbiter"]["seed"] == 20261028
+
+
+def test_a_model_passes_only_with_its_primary_and_every_required_contrast():
+    protocol = protocol_of(ENTRIES)
+    rng = np.random.default_rng(5)
+    sessions = 400
+
+    def row(name, role, model, mean):
+        return dict(
+            name=name,
+            role=role,
+            model=model,
+            metric="session_ic",
+            direction="greater",
+            values=mean + 0.01 * rng.standard_normal(sessions),
+            defined=np.ones(sessions, dtype=bool),
+            variant=("version_arbiter", model, "arbiter"),
+            control=("version_arbiter", model, name),
+        )
+
+    rows = [
+        row("a-common", "primary", "a", 0.05),
+        row("a-uniform", "required", "a", 0.05),
+        row("a-shuffled", "required", "a", -0.05),
+        row("b-common", "primary", "b", 0.05),
+        row("b-uniform", "required", "b", 0.05),
+        row("b-shuffled", "required", "b", 0.05),
+    ]
+    averaging = [row("a-ema", "reported", "a", 0.0)]
+    combination = row("combination", "reported", "all", 0.0)
+    report = stage.families(protocol, rows, averaging, combination, np.arange(sessions))
+    assert [m["name"] for m in report["declared_family"]["16"]["members"]] == [
+        "a-common",
+        "b-common",
+    ]
+    assert sorted(report["declared_family"]) == ["16", "32", "8"]
+    first, second = report["decisions"]["a"], report["decisions"]["b"]
+    # Un contraste exigido desfavorable impide pasar aunque pase el principal.
+    assert first["primary_passes"] and not first["passes"]
+    assert first["required"] == {"a-uniform": True, "a-shuffled": False}
+    assert second["passes"] and second["required"] == {"b-uniform": True, "b-shuffled": True}
+    assert set(first["robustness"]) == {"blocks_16", "blocks_8", "blocks_32", "holm"}
+    assert [m["name"] for m in report["time_averaging"]["members"]] == ["a-ema"]
+    assert report["model_combination"]["name"] == "combination"
+    assert [row["name"] for row in report["contrasts"]][-2:] == ["a-ema", "combination"]
 
 
 def test_each_series_is_the_seed_mean_of_the_stage_outputs(analyzed):
@@ -371,10 +492,11 @@ def test_shared_jobs_are_one_option_of_the_combination(analyzed):
 
 
 def test_missing_or_foreign_versions_are_refused():
-    protocol, jobs, sources = screening(drop=3)
-    origins = {year: source.origin() for year, source in sources.items()}
-    with pytest.raises(ValueError, match="no emite las versiones declaradas"):
-        stage.analyze(protocol, DECLARATION, jobs, origins)
+    for options in (dict(drop=3), dict(extra=5)):
+        protocol, jobs, sources = screening(**options)
+        origins = {year: source.origin() for year, source in sources.items()}
+        with pytest.raises(ValueError, match="no emite las versiones declaradas"):
+            stage.analyze(protocol, DECLARATION, jobs, origins)
     protocol, jobs, sources = screening(shift=1.0)
     origins = {year: source.origin() for year, source in sources.items()}
     with pytest.raises(ValueError, match="no predice las filas de calibration"):
@@ -401,6 +523,10 @@ def test_the_stages_must_score_like_the_screening():
     )
     with pytest.raises(ValueError, match="medias de pesos"):
         stage.analyze(protocol, changed, jobs, origins)
+    other = copy.deepcopy(protocol)
+    other["contrast"]["primary"]["metric"] = "session_rank_ic"
+    with pytest.raises(ValueError, match="métrica principal"):
+        stage.analyze(other, DECLARATION, jobs, origins)
     with pytest.raises(ValueError, match="cuatro orígenes"):
         stage.analyze(protocol, DECLARATION, jobs, {2019: origins[2019]})
     with pytest.raises(ValueError, match="Modo de mezcla"):
