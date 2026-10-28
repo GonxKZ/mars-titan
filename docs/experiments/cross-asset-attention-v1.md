@@ -50,7 +50,20 @@ El consumidor congelado todavía no registra C5 y la rechaza al construirse. Dus
 
 ## Coste
 
-{{COSTE}}
+La medida CPU del 28 de octubre llama solo al módulo `CrossAssetAttention` con representaciones aleatorias en FP32, H = 64 y cuatro cabezas. Las filas se reparten en sesiones de igual tamaño con dos mercados y un instante. Se usaron los ocho hilos por defecto de PyTorch, tres calentamientos y veinte repeticiones en cada uno de los dos órdenes de los modos. El equipo tenía otras cargas, con una media de carga de un minuto de 7,5 al empezar y 7,0 al terminar, así que los percentiles son descriptivos. `forward` es la inferencia sin gradiente y `backward` añade la propagación de una suma de cuadrados hasta los parámetros de C5, sin optimizador. El [recibo](../../reports/engineering/cross-asset-attention-20261028/cost-cpu.json) conserva todas las muestras.
+
+| Filas | Sesiones | Forward C5 | Forward control | Backward C5 | Backward control |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 64 | 1 | 0,30 ms (0,35) | 0,33 ms (0,43) | 0,98 ms (1,36) | 0,74 ms (1,23) |
+| 256 | 1 | 0,93 ms (1,00) | 1,01 ms (1,77) | 2,24 ms (2,87) | 1,90 ms (3,50) |
+| 1.024 | 4 | 5,67 ms (10,29) | 5,74 ms (9,54) | 10,19 ms (15,19) | 9,84 ms (17,16) |
+
+Cada celda da la mediana y, entre paréntesis, el percentil 95. Los dos modos tienen 16.512 parámetros. El control calcula la misma matriz de puntuaciones y solo cambia la máscara, por eso cuesta casi lo mismo. Con 256 activos, el milisegundo del forward es pequeño frente a los 0,57 s del forward del predictor completo medido el mismo día para [A4](opponent-heads-v1.md) con cuatro hilos, aunque esa relación no se ha medido en un mismo proceso. No se han medido la memoria, la VRAM ni la energía.
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 uv run python -m benchmarks.cross_asset_attention_cost --run \
+  --output "${MARS_CROSS_ASSET_COST:?}"
+```
 
 ## Pendiente
 
