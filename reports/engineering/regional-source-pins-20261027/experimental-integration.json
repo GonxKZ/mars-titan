@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T22:37:49.617600+00:00",
+  "experimental_parent": "52989fff85e359df6862695b0da04295618b7005",
+  "upstream_parent": "c6b1e01f2cb26695b0cf458ad9c83be1885fcd86",
+  "tests": {
+    "cpu_passed": 126,
+    "skipped": 0,
+    "failed": 0,
+    "seconds": 97.24,
+    "full_suite_executed": false,
+    "cuda_executed": false,
+    "xml_sha256": "1d302ef75fbff297803edffcbe38b6cca0edf4e46b76b0e7c7ebdad50435ce69",
+    "paths": [
+      "tests/training/test_regional_source_pins.py",
+      "tests/memory/test_salience_correction.py",
+      "tests/training/test_salience_correction_window.py",
+      "tests/training/test_salience_window_profile.py",
+      "tests/evaluation/test_output_program.py",
+      "tests/proposals/test_output_self_edit.py",
+      "tests/proposals/test_self_edit_cycles.py",
+      "tests/evaluation/test_neutral_abstention.py"
+    ],
+    "marker_selection": "not cuda",
+    "counting": "Repetición de integración. No se suma a las baterías de E3, de autoedición o de fuentes regionales."
+  },
+  "quality": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "totals": {
+      "statements": 1415,
+      "covered_statements": 740,
+      "branches": 388,
+      "covered_branches": 115
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/evaluation/output_program.py",
+        "source_sha256": "74ecc9a7d6f8b7feee5d5f42d1be5c4a5d2ae76e7efb2786ff2af9e0c2b23a43",
+        "statements": 93,
+        "covered_statements": 93,
+        "branches": 20,
+        "covered_branches": 20,
+        "max_crap": 11.0,
+        "functions": 11
+      },
+      {
+        "path": "src/mars_titan/proposals/output_self_edit.py",
+        "source_sha256": "54c3972b705ede1862de9c0bb5eaa1ece567307e7230866d4a97b5bb31623a68",
+        "statements": 43,
+        "covered_statements": 43,
+        "branches": 4,
+        "covered_branches": 3,
+        "max_crap": 4.0,
+        "functions": 8
+      },
+      {
+        "path": "src/mars_titan/proposals/self_edit_cycles.py",
+        "source_sha256": "1a0a4ab195d0c7432efdd5c88ee04b6db8b22a006d1d90c133b1c2cceb4d4639",
+        "statements": 158,
+        "covered_statements": 158,
+        "branches": 16,
+        "covered_branches": 15,
+        "max_crap": 11.0,
+        "functions": 22
+      },
+      {
+        "path": "src/mars_titan/training/financial_run.py",
+        "source_sha256": "3ae67146c8a76f06d3bf3e2e16ec03fa65fa303f3e45800edfc28464cc071980",
+        "statements": 712,
+        "covered_statements": 270,
+        "branches": 280,
+        "covered_branches": 54,
+        "max_crap": 2862.0,
+        "functions": 51
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "source_sha256": "54b218c02e827c2e569354bc6b49d20c0e345ab46b253fe47fd3fab53a8f5e99",
+        "statements": 344,
+        "covered_statements": 114,
+        "branches": 46,
+        "covered_branches": 4,
+        "max_crap": 702.0,
+        "functions": 26
+      },
+      {
+        "path": "src/mars_titan/training/salience_inference.py",
+        "source_sha256": "878ea152ebd00c445ca9cd1d63d79fb67413bc6c082c55e93f81b1a1c4c79bd3",
+        "statements": 65,
+        "covered_statements": 62,
+        "branches": 22,
+        "covered_branches": 19,
+        "max_crap": 9.0,
+        "functions": 8
+      }
+    ],
+    "coverage_sha256": "e02c7b532ec58cbd317f3c39198a2326d0aaf1207c11d8eb1714e3ac62c4c534",
+    "full_quality_sha256": "7e0c616044e5bad9f712fe4c5dc6fefcfe220872a988d83504c5881c455ebab1",
+    "limits": "La batería no recorre el entrenador completo. Se informa el máximo CRAP de todas las funciones del módulo, incluidas las no ejecutadas."
+  },
+  "mutations": {
+    "new_mutants_executed_in_this_integration": 0,
+    "regional_fix_evidence": "verification.json",
+    "regional_directed_mutants_killed": 5,
+    "scope": "Las dos fuentes de producción arregladas coinciden byte a byte con las que se comprobaron mediante cinco mutaciones dirigidas. La fusión no introduce otra implementación."
+  },
+  "static_checks": {
+    "ruff_check": "passed",
+    "ruff_format_check": {
+      "passed": true,
+      "files": 2131
+    },
+    "repository_check": {
+      "passed": true,
+      "files": 4270,
+      "references": 361,
+      "tasks": 64,
+      "macro_entries": 140
+    },
+    "git_diff_check": "passed"
+  },
+  "scientific_learning_executed": false,
+  "final_test_access": false,
+  "limits": [
+    "Pruebas de mecanismos con fixtures. No se mide generalización, mejora predictiva ni coste de entrenamiento.",
+    "No se acredita validación CUDA de los modelos, E3 o C1/C6. Sus comprobaciones requieren admisión de recursos.",
+    "E3 sigue pendiente de integración con la publicación durable por evento y las etiquetas parciales o tardías."
+  ]
+}

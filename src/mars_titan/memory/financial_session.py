@@ -22,15 +22,25 @@ from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
 from . import (
+    area_memory,
+    area_query_bridge,
     associative_memory,
     episodic_session,
     financial_consumers,
     financial_state_artifacts,
+    kernel_memory,
+    lesion_session,
+    multiscale_mixture,
+    paired_proximal,
+    regimes,
     regional_session_work,
     regional_work,
+    role_binding,
+    salience_session,
+    spaced_session,
     write_scores,
 )
-from .associative_memory import AssociativeMemory, MatureCorrection
+from .associative_memory import MatureCorrection, _check_matrix
 from .episodic_session import (
     EpisodicSession,
     _canonical,
@@ -69,6 +79,7 @@ def _binding_signature(binding):
         financial_consumers.TitansBinding,
         financial_consumers.CandidateBinding,
         MechanismBinding,
+        spaced_session.SpacedTitansBinding,
     ) or any(name in vars(binding) for name, _ in methods):
         raise ValueError("El enlace del consumidor no admite tipos o métodos sustituidos")
     collection = getattr(binding, "collections", None)
@@ -96,6 +107,7 @@ def _binding_signature(binding):
         kind,
         tuple((name, id(function.__code__)) for name, function in methods),
         collection_signature,
+        binding.signature() if type(binding) is spaced_session.SpacedTitansBinding else None,
     )
 
 
@@ -123,6 +135,10 @@ def _check_callbacks(instance):
         asdict(instance._collection_config) if instance._collection_config is not None else None,
         _canonical(instance._regional_config),
     )
+    if instance._lesion_plan is not None:
+        current += (lesion_session.signature(instance._lesion_plan),)
+    if instance._salience_config is not None:
+        current += (_canonical(salience_session.contract(instance._salience_config)),)
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
 
@@ -194,6 +210,8 @@ class FinancialSession(EpisodicSession):
         mechanism_collection=None,
         regional_work_limits=None,
         regional_max_attempts=2,
+        lesions=None,
+        salience=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -230,6 +248,12 @@ class FinancialSession(EpisodicSession):
                 "La corrección asociativa B6 solo se declara sobre Titans-MAC sin banco"
             )
         self.associative = associative
+        self._salience_config = salience_session.configure(salience, associative)
+        self._lesion_plan = lesion_session.configure(lesions, associative)
+        if type(binding) is spaced_session.SpacedTitansBinding and (
+            associative is not None or lesions is not None or self._regional_config is not None
+        ):
+            raise ValueError("E2 no se combina implícitamente con B6, B4 o trabajo regional")
         bounded_integer(block_rows, "lote físico", 1, binding.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
@@ -268,6 +292,26 @@ class FinancialSession(EpisodicSession):
             code["associative_memory"] = hashlib.sha256(
                 Path(associative_memory.__file__).read_bytes()
             ).hexdigest()
+            for module, enabled in (
+                (area_memory, associative.areas is not None),
+                (area_query_bridge, associative.query_bridge is not None),
+                (role_binding, associative.role_binding is not None),
+                (multiscale_mixture, associative.multiscale is not None),
+                (regimes, associative.role_binding is not None),
+                (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
+                (
+                    paired_proximal,
+                    associative.query_bridge is not None and associative.memory.rule == "proximal",
+                ),
+            ):
+                if enabled:
+                    code[module.__name__.rsplit(".", 1)[-1]] = hashlib.sha256(
+                        Path(module.__file__).read_bytes()
+                    ).hexdigest()
+        if self._lesion_plan is not None:
+            code.update(lesion_session.code())
+        if self._salience_config is not None:
+            code.update(salience_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -303,8 +347,34 @@ class FinancialSession(EpisodicSession):
         # Sin B6 el contrato no cambia. Con B6 la generación guarda A y el núcleo pendiente.
         if associative is not None:
             contract["associative"] = associative.identity()
+            if associative.multiscale is not None:
+                experts = len(associative.multiscale.half_lives_days)
+                ledger = (
+                    contract["max_transient_pending"]
+                    * (1 + experts + int(associative.routing is not None))
+                    * 8
+                )
+                required = (
+                    multiscale_mixture.state_tensor_bytes(associative, associative.multiscale)
+                    + ledger
+                )
+                # ArtifactStore reserva 64 KiB para metadatos dentro de su blob de 64 MiB.
+                if required > 64 * 1024**2 - 65536:
+                    raise ValueError(
+                        "E1 y su cola pendiente exceden el presupuesto de un artefacto"
+                    )
         if self._regional_config is not None:
             contract["regional_work"] = self._regional_config
+        if self._lesion_plan is not None:
+            contract["lesions"] = self._lesion_plan.identity()
+        if self._salience_config is not None:
+            contract["salience"] = salience_session.contract(self._salience_config)
+        if spaced_session.enabled(self):
+            contract.update(
+                schema_version=3,
+                recipe="frozen_financial_spaced_session_v3",
+                spaced=binding.signature(),
+            )
         if type(binding) is MechanismBinding:
             contract["mechanisms"] = dict(
                 history=mechanism_history.identity(),
@@ -329,6 +399,12 @@ class FinancialSession(EpisodicSession):
             asdict(mechanism_collection) if mechanism_collection is not None else None,
             _canonical(self._regional_config),
         )
+        if self._lesion_plan is not None:
+            self._runtime_contract += (lesion_session.signature(self._lesion_plan),)
+        if self._salience_config is not None:
+            self._runtime_contract += (
+                _canonical(salience_session.contract(self._salience_config)),
+            )
         self._prototype = binding.bank(
             native,
             retention,
@@ -418,6 +494,12 @@ class FinancialSession(EpisodicSession):
         }
         if self.associative is not None:
             fields.add("associative")
+        if self._lesion_plan is not None:
+            fields.add("lesions")
+        if self._salience_config is not None:
+            fields.add("salience")
+        if spaced_session.enabled(self):
+            fields.add("spaced")
         if type(self._binding) is MechanismBinding:
             fields.update(self._binding.bundle_fields())
         if self._regional_config is not None:
@@ -454,22 +536,32 @@ class FinancialSession(EpisodicSession):
         self._binding.check_bank(bank, episodes)
         return bank, episodes
 
-    def _associative_state(self, reference):
-        """Matriz A confirmada, predicción del núcleo y ruta de cada pendiente, en su orden.
+    def _associative_state(self, reference, *, with_parts=False):
+        """Memoria confirmada, núcleo y rutas pendientes. E1 añade sus componentes emitidos.
 
         La ruta solo existe con una clave enrutada por régimen. Sin ella el artefacto conserva
-        su forma anterior y la ruta es None.
+        su forma anterior y la ruta es None. Los componentes se validan siempre que E1 está
+        activo, y `with_parts` los incluye en la tupla devuelta para conservar las otras llamadas.
         """
         routed = self.associative.routing is not None
+        mixture = self.associative.multiscale
         if reference is None:
             empty = torch.empty(0, dtype=torch.float64)
             routes = torch.empty(0, dtype=torch.int64) if routed else None
-            return AssociativeMemory(self.associative.memory), empty, routes
+            parts = (
+                torch.empty((0, len(mixture.half_lives_days)), dtype=torch.float64)
+                if mixture
+                else None
+            )
+            result = self.associative.empty(), empty, routes
+            return (*result, parts) if with_parts else result
         value = self._read(reference, "associative")
         fields = {"memory", "core", "routes"} if routed else {"memory", "core"}
+        if mixture is not None:
+            fields.add("issued_experts")
         if not isinstance(value, dict) or set(value) != fields:
             raise ValueError("La corrección asociativa no conserva matriz, núcleo y rutas")
-        memory = AssociativeMemory.restore(self.associative.memory, value["memory"])
+        memory = self.associative.restore(value["memory"])
         core = value["core"]
         if (
             not isinstance(core, torch.Tensor)
@@ -487,12 +579,25 @@ class FinancialSession(EpisodicSession):
             or (routes >= SLOTS).any()
         ):
             raise ValueError("Las rutas pendientes no son enteros válidos alineados con el núcleo")
-        return memory, core, routes
+        parts = value.get("issued_experts")
+        if mixture is not None:
+            _check_matrix(
+                parts, "Los expertos emitidos pendientes", len(core), len(mixture.half_lives_days)
+            )
+        return (memory, core, routes, parts) if with_parts else (memory, core, routes)
 
-    def _stage_associative(self, memory, core, routes):
+    def _stage_associative(self, memory, core, routes, parts=None):
         value = dict(memory=memory.export(), core=core)
         if routes is not None:
             value["routes"] = routes
+        if self.associative.multiscale is not None:
+            _check_matrix(
+                parts,
+                "Los expertos emitidos pendientes",
+                len(core),
+                len(self.associative.multiscale.half_lives_days),
+            )
+            value["issued_experts"] = parts
         return self._stage(value, "associative")
 
     def diagnostics(self):
@@ -538,6 +643,33 @@ class FinancialSession(EpisodicSession):
             raise ValueError("Esta sesión no tiene un consumidor de mecanismos")
         bundle = self._bundle(self.snapshot()["state"])
         return self.consumer.export_state(self._binding.restore(self, bundle))
+
+    def lesion_event(self):
+        """Copias del último evento diagnóstico confirmado, con resultados solo maduros."""
+        _check_callbacks(self)
+        if self._lesion_plan is None:
+            raise ValueError("La sesión no tiene diagnósticos B4")
+        return lesion_session.restore(self, self._bundle(self.snapshot()["state"])).event()
+
+    def lesion_metrics(self):
+        """Errores diagnósticos por sesión, independientes de la predicción original."""
+        _check_callbacks(self)
+        if self._lesion_plan is None:
+            raise ValueError("La sesión no tiene diagnósticos B4")
+        return lesion_session.restore(self, self._bundle(self.snapshot()["state"])).metrics()
+
+    def spaced_state(self):
+        return spaced_session.inspect_state(self)
+
+    def salience_state(self):
+        """Copia de escalas y selección confirmadas. Sin E3 no existe ese estado."""
+        _check_callbacks(self)
+        if self._salience_config is None:
+            return None
+        return salience_session.restore(self, self._bundle(self.snapshot()["state"])).export()
+
+    def spaced_event(self):
+        return spaced_session.inspect_state(self, event=True)
 
     def mechanism_event(self, generation):
         _check_callbacks(self)
@@ -790,6 +922,11 @@ class FinancialSession(EpisodicSession):
             )
         )
         warmup = kind == self.native.EventKind.warmup
+        if spaced_session.enabled(self):
+            spaced_session.begin(self, bank, bundle, cutoff)
+        lesion_ledger = (
+            None if self._lesion_plan is None else lesion_session.begin(self, bundle, cutoff)
+        )
         snapshot = None if warmup else self._binding.snapshot(bank, context_id, cutoff)
         options = {}
         if type(self._binding) is MechanismBinding:
@@ -805,14 +942,19 @@ class FinancialSession(EpisodicSession):
             **options,
         )
         self.consumer.verify()
+        if spaced_session.enabled(self):
+            spaced_session.issue(self, snapshot, values, rows, warmup=warmup)
         pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
         self._check_queue(pending)
         if self.associative is not None:
-            memory, core, routes = self._associative_state(
-                bundle["associative"] if bundle else None
+            memory, core, routes, parts = self._associative_state(
+                bundle["associative"] if bundle else None, with_parts=True
             )
             pending_keys = list(map(_row_key, pending["rows"]))
             known = dict(zip(pending_keys, core.tolist(), strict=True))
+            known_parts = (
+                dict(zip(pending_keys, parts.tolist(), strict=True)) if parts is not None else None
+            )
             known_routes = (
                 dict(zip(pending_keys, routes.tolist(), strict=True))
                 if routes is not None
@@ -829,10 +971,29 @@ class FinancialSession(EpisodicSession):
                     cutoff,
                 )
                 keys = self.associative.keys(np.stack([r.key_inputs for r in rows]), event_routes)
-                corrections = memory.read(keys)[:, 0].tolist()
+                if self.associative.multiscale is not None:
+                    corrections, event_parts = memory.predict(keys, at=cutoff)
+                    corrections = corrections[:, 0].tolist()
+                    known_parts.update(
+                        (_row_key(r.metadata()), part)
+                        for r, part in zip(rows, event_parts.tolist(), strict=True)
+                    )
+                else:
+                    corrections = memory.read(keys)[:, 0].tolist()
                 known.update(
                     (_row_key(r.metadata()), value) for r, value in zip(rows, values, strict=True)
                 )
+                if lesion_ledger is not None:
+                    diagnostics = self._lesion_plan.read(
+                        memory,
+                        keys,
+                        at=cutoff,
+                        baseline=torch.tensor(corrections, dtype=torch.float64)[:, None],
+                    )
+                    lesion_ledger.issue(
+                        [(r.flow_id, r.prediction_at) for r in rows],
+                        diagnostics + torch.tensor(values, dtype=torch.float64)[:, None],
+                    )
                 if known_routes is not None:
                     known_routes.update(
                         (_row_key(r.metadata()), route)
@@ -842,6 +1003,12 @@ class FinancialSession(EpisodicSession):
         if not warmup:
             pending = self._append_pending(pending, rows)
         extra = {}
+        if self._salience_config is not None:
+            extra["salience"] = bundle["salience"] if bundle else None
+        if spaced_session.enabled(self):
+            extra["spaced"] = bundle["spaced"] if bundle else None
+        if lesion_ledger is not None:
+            extra["lesions"] = lesion_session.stage(self, lesion_ledger)
         if type(self._binding) is MechanismBinding:
             extra = dict(
                 mechanisms=self._stage(control.pop("auxiliary"), "mechanisms"),
@@ -878,7 +1045,14 @@ class FinancialSession(EpisodicSession):
                 else None
             )
             proposal["associative"] = self._stage_associative(
-                memory, torch.tensor(aligned, dtype=torch.float64), aligned_routes
+                memory,
+                torch.tensor(aligned, dtype=torch.float64),
+                aligned_routes,
+                torch.tensor(
+                    [known_parts[_row_key(row)] for row in pending["rows"]], dtype=torch.float64
+                ).reshape(len(aligned), -1)
+                if known_parts is not None and aligned
+                else (parts[:0] if parts is not None else None),
             )
         self._proposal = proposal
         return values, _canonical(proposal)
@@ -912,11 +1086,21 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if self._salience_config is not None:
+            extra["salience"] = bundle["salience"] if bundle else None
+        if spaced_session.enabled(self):
+            bank, _ = self._bank(bundle["bank"] if bundle else None)
+            spaced_session.begin(self, bank, bundle, self._inflight["cutoff"], feedback_only=True)
+            extra["spaced"] = bundle["spaced"] if bundle else None
+        if self._lesion_plan is not None:
+            extra["lesions"] = lesion_session.stage(
+                self, lesion_session.begin(self, bundle, self._inflight["cutoff"])
+            )
         if type(self._binding) is MechanismBinding:
             extra.update(self._binding.previous(self, bundle))
         if self.associative is not None:
             extra["associative"] = (
-                self._stage_associative(*self._associative_state(None))
+                self._stage_associative(*self._associative_state(None, with_parts=True))
                 if bundle is None
                 else bundle["associative"]
             )
@@ -997,7 +1181,12 @@ class FinancialSession(EpisodicSession):
             if key not in positions or key in removed or item.closed_at != self.phase.close_at:
                 raise ValueError("La finalización no corresponde al pendiente y cierre declarados")
             removed.add(key)
-        if admitted:
+        spaced_ref = None
+        if spaced_session.enabled(self):
+            bank, spaced_ref = spaced_session.resolve(
+                self, bank, pending, admitted, proposed, outcomes, excluded, finalized
+            )
+        if admitted and not spaced_session.enabled(self):
             extra = {}
             if self.admission == "m3":
                 extra["features"] = self._admission_features(
@@ -1012,30 +1201,47 @@ class FinancialSession(EpisodicSession):
                 confirmed_at=proposed["cutoff"],
                 **extra,
             )
+        salience_ref = None
+        chosen_outcomes = outcomes
+        if self._salience_config is not None:
+            salience_ref, chosen_indices = salience_session.resolve(self, proposed, outcomes)
+            chosen_outcomes = [outcomes[index] for index in chosen_indices]
         if self.associative is not None:
-            memory, core, routes = self._associative_state(proposed["associative"])
-            # Todas las etiquetas aplicadas escriben A, con independencia de la admisión.
+            memory, core, routes, parts = self._associative_state(
+                proposed["associative"], with_parts=True
+            )
+            # Sin E3 escriben todas las etiquetas. El factor solo cambia qué se escribe,
+            # conserva etiqueta menos núcleo y retira todos los resultados ya resueltos.
             indices = [
-                positions[item.prediction.asset, item.prediction.decision_at] for item in outcomes
+                positions[item.prediction.asset, item.prediction.decision_at]
+                for item in chosen_outcomes
             ]
             if indices:
                 selected = torch.tensor(indices, dtype=torch.int64, device="cpu")
                 feedback = self.associative.feedback(
                     # El ejecutor entrega los resultados en orden canónico y el contador de A
                     # los numera de forma estable, igual que el banco con sus episodios.
-                    ids=[memory.writes + offset for offset in range(1, len(outcomes) + 1)],
-                    decision_at=[item.prediction.decision_at for item in outcomes],
-                    available_at=[item.label.available_at for item in outcomes],
+                    ids=[memory.writes + offset for offset in range(1, len(chosen_outcomes) + 1)],
+                    decision_at=[item.prediction.decision_at for item in chosen_outcomes],
+                    available_at=[item.label.available_at for item in chosen_outcomes],
                     keys=self.associative.keys(
                         pending["key_inputs"].index_select(0, selected),
                         routes.index_select(0, selected) if routes is not None else None,
                     ),
                     values=[
                         item.label.value - core[index].item()
-                        for item, index in zip(outcomes, indices, strict=True)
+                        for item, index in zip(chosen_outcomes, indices, strict=True)
                     ],
                 )
-                memory = memory.write(feedback, cutoff=proposed["cutoff"])
+                memory = memory.write(
+                    feedback,
+                    cutoff=proposed["cutoff"],
+                    **(
+                        dict(issued_predictions=parts.index_select(0, selected))
+                        if parts is not None
+                        else {}
+                    ),
+                )
         selected = {r.id for r in bank.records()}
         bank_ref = self._stage(
             dict(snapshot=bank.snapshot(), episodes={i: episodes[i] for i in sorted(selected)}),
@@ -1055,15 +1261,24 @@ class FinancialSession(EpisodicSession):
         bundle = dict(
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
+        if self._salience_config is not None:
+            bundle["salience"] = salience_ref
+        if spaced_session.enabled(self):
+            bundle["spaced"] = spaced_ref
         if self.associative is not None:
             bundle["associative"] = self._stage_associative(
                 memory,
                 core.index_select(0, indexes),
                 routes.index_select(0, indexes) if routes is not None else None,
+                parts.index_select(0, indexes) if parts is not None else None,
             )
         if type(self._binding) is MechanismBinding:
             bundle = self._binding.resolve(
                 self, bundle, mechanism_rows, outcomes, excluded, finalized
+            )
+        if self._lesion_plan is not None:
+            bundle["lesions"] = lesion_session.resolve(
+                self, proposed, outcomes, excluded, finalized
             )
         self._verify_bundle(bundle, event_kind=self._inflight["kind"])
         self.consumer.verify()
@@ -1124,12 +1339,18 @@ class FinancialSession(EpisodicSession):
             raise ValueError("El estado rápido contiene flujos sin observar o información futura")
         pending = self._read(bundle["pending"], "pending")
         self._check_queue(pending)
+        if spaced_session.enabled(self):
+            spaced_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
+        if self._lesion_plan is not None:
+            lesion_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if self.associative is not None:
-            _, core, _ = self._associative_state(bundle["associative"])
+            memory, core, _ = self._associative_state(bundle["associative"])
             if len(core) != len(pending["rows"]):
                 raise ValueError("El núcleo pendiente no corresponde a la cola confirmada")
+            if self._salience_config is not None:
+                salience_session.verify(self, bundle, memory)
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
@@ -1206,6 +1427,10 @@ class FinancialSession(EpisodicSession):
             return
         record = json.loads(self._executor.record_json(snapshot["cursor"]))
         self._verify_bundle(bundle, event_kind=record["event_kind"])
+        if spaced_session.enabled(self):
+            spaced_session.verify_confirmed(self, bundle, record)
+        if self._salience_config is not None:
+            salience_session.verify_confirmed(self, bundle, snapshot, record)
         self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
@@ -1235,7 +1460,12 @@ class FinancialSession(EpisodicSession):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
         if self.associative is not None:
             memory, _, _ = self._associative_state(bundle["associative"])
-            if memory.writes != snapshot["applied"]:
+            expected_writes = (
+                salience_session.restore(self, bundle).statistics.selected
+                if self._salience_config is not None
+                else snapshot["applied"]
+            )
+            if memory.writes != expected_writes:
                 raise ValueError("La matriz A no concilia con los labels maduros aplicados")
         pending = self._read(bundle["pending"], "pending")
         expected = {(p.asset, p.decision_at) for p in self._executor.pending()}
@@ -1270,6 +1500,12 @@ class FinancialSession(EpisodicSession):
             names = ("bank", "pending", "fast", "prefix", "control")
             if self.associative is not None:
                 names += ("associative",)
+            if self._lesion_plan is not None:
+                names += ("lesions",)
+            if self._salience_config is not None:
+                names += ("salience",)
+            if spaced_session.enabled(self):
+                names += ("spaced",)
             if type(self._binding) is MechanismBinding:
                 names += ("mechanisms",)
             live = [

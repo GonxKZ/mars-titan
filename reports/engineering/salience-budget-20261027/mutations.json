@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "scope": "five_directed_mutations_of_salience_selection",
+  "planned": 5,
+  "killed": 5,
+  "cases": [
+    {
+      "id": "ignore_prior_scale",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_prior_asset_scale_changes_the_ranking_while_a_common_scale_does_not"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_prior_asset_scale_changes_the_ranking_while_a_common_scale_does_not"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_prior_asset_scale_changes_the_ranking_while_a_common_scale_does_not"
+        }
+      ]
+    },
+    {
+      "id": "ignore_write_cap",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_every_rule_keeps_the_same_fixed_count_per_market_and_canonical_order[standardized_error]"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_every_rule_keeps_the_same_fixed_count_per_market_and_canonical_order[standardized_error]"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_every_rule_keeps_the_same_fixed_count_per_market_and_canonical_order[standardized_error]"
+        }
+      ]
+    },
+    {
+      "id": "read_values_before_maturity_check",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_all_temporal_metadata_is_checked_before_accessing_any_outcome"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_all_temporal_metadata_is_checked_before_accessing_any_outcome"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_all_temporal_metadata_is_checked_before_accessing_any_outcome"
+        }
+      ]
+    },
+    {
+      "id": "ignore_seed",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_uniform_selection_is_independent_of_errors_and_has_a_separate_seed"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_uniform_selection_is_independent_of_errors_and_has_a_separate_seed"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_uniform_selection_is_independent_of_errors_and_has_a_separate_seed"
+        }
+      ]
+    },
+    {
+      "id": "ignore_state_integrity",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_restore_rejects_changed_or_incompatible_metadata[sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_restore_rejects_changed_or_incompatible_metadata[sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_checked": true,
+          "nodeid": "tests/memory/test_salience_budget.py::test_restore_rejects_changed_or_incompatible_metadata[sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]"
+        }
+      ]
+    }
+  ],
+  "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+  "recipes_sha256": "b2066089d7c5e9935b0d2ce18a14decd0a9a8954f298e1819798627d7652e6f1",
+  "source_manifest_sha256": "a4d5b34fe18212d0717ba1e1104cddb55ff412b33223fb16296700f34df5949b",
+  "limits": [
+    "Las cinco mutaciones no son una búsqueda exhaustiva de todos los cambios posibles.",
+    "Las referencias y las mutaciones ejecutan fixtures CPU sin pasos de optimizador."
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "source_revision": "4d4dd7b116bc8246c761d4512136a0986cc86a42",
+  "specification": {
+    "path": "docs/diagrams/variants/b2-area-query-bridge.json",
+    "sha256": "2c08055e75b91f924050c591ae3e649f47235d7cb5ee7250453b439d5fb80745",
+    "bytes": 4584
+  },
+  "image": {
+    "path": "docs/diagrams/variants/b2-area-query-bridge.png",
+    "sha256": "54ca6ca7216e0ec84b9f8dcf36e4d40d39e30e275780bf18d5c51fd9f9db7d37",
+    "bytes": 207230,
+    "width": 3200,
+    "height": 1936
+  },
+  "interactive_html": {
+    "path": "build/diagrams/b2-area-query-bridge.html",
+    "sha256": "8750a859bb3f640ab95d621746978f9ab6a39e86117f21dcdf84b37b253dc7f8",
+    "bytes": 808310,
+    "distributed": false,
+    "viewer_locale": "en_fallback"
+  },
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "browser_evidence": {
+    "status": "passed",
+    "artifact_sha256": "8750a859bb3f640ab95d621746978f9ab6a39e86117f21dcdf84b37b253dc7f8",
+    "receipt_sha256": "832355ee429f1642a0b30ad72845e9c015f6125e0a8c6b87fd4d8ec6b8d6b0ac",
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "ok": true,
+        "readability_ok": true
+      },
+      {
+        "width": 1600,
+        "height": 1000,
+        "scrollWidth": 1600,
+        "scrollHeight": 1000,
+        "ok": true,
+        "readability_ok": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "scrollWidth": 1920,
+        "scrollHeight": 1080,
+        "ok": true,
+        "readability_ok": true
+      },
+      {
+        "width": 2048,
+        "height": 1320,
+        "scrollWidth": 2048,
+        "scrollHeight": 1320,
+        "ok": true,
+        "readability_ok": true
+      }
+    ]
+  },
+  "visual_review": {
+    "status": "passed",
+    "scope": [
+      "PNG claro 3200×1936 revisado con lector de imágenes",
+      "Captura HTML oscura 2048×1320 revisada con lector de imágenes"
+    ],
+    "observations": "Etiquetas, rutas, leyenda y tarjetas legibles, sin solapamientos ni recortes visibles. El PNG conserva los textos en español. El visor HTML local mantiene sus controles en inglés."
+  },
+  "correction_rounds": 1,
+  "script_checks": {
+    "shell_syntax_returncode": 0,
+    "shellcheck_returncode": 0,
+    "source_sha256": "885ca6fe74a465a769c49d9e2b9257fa7bf87cd3d6394a811859c11d08e02f1b",
+    "architecture_export": "passed",
+    "existing_workflow_export": "passed",
+    "workflow_image_preserved": true,
+    "mutations": [
+      {
+        "id": "missing_repository_root",
+        "status": "killed_with_green_controls",
+        "anchor": " --repo-root .",
+        "replacement": "",
+        "expected_message": "Pass --repo-root",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "elapsed_s": 1.843137279851362,
+            "log_sha256": "309b2fbd5e5b9506f1b3b2179699e1caf09bdfb68b000169a054af3a9fb52d34",
+            "previous_png_preserved": true
+          },
+          {
+            "phase": "M1",
+            "returncode": 1,
+            "elapsed_s": 0.35766612994484603,
+            "log_sha256": "c051d3cd908d3ad5252fc3032104a7a2044619ce0bee2e19a00623c7cecff64e",
+            "previous_png_preserved": true
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "elapsed_s": 1.8675348048564047,
+            "log_sha256": "309b2fbd5e5b9506f1b3b2179699e1caf09bdfb68b000169a054af3a9fb52d34",
+            "previous_png_preserved": true
+          }
+        ]
+      },
+      {
+        "id": "repository_root_on_workflow",
+        "status": "killed_with_green_controls",
+        "anchor": "if [ \"$diagram_kind\" = architecture ]; then",
+        "replacement": "if true; then",
+        "expected_message": "supported for architecture diagrams only",
+        "phases": [
+          {
+            "phase": "G1",
+            "returncode": 0,
+            "elapsed_s": 1.9972090849187225,
+            "log_sha256": "8c7066673f53b9ffaa51b8b3876454cde0d4cf180a63a3f3f2892a884e05d83c",
+            "previous_png_preserved": true
+          },
+          {
+            "phase": "M1",
+            "returncode": 2,
+            "elapsed_s": 0.13985905516892672,
+            "log_sha256": "09d6b1adf9447459774f88df8b4683799323a97ba7abc5c5bf1941469f60ffca",
+            "previous_png_preserved": true
+          },
+          {
+            "phase": "G2",
+            "returncode": 0,
+            "elapsed_s": 1.9773852380458266,
+            "log_sha256": "8c7066673f53b9ffaa51b8b3876454cde0d4cf180a63a3f3f2892a884e05d83c",
+            "previous_png_preserved": true
+          }
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Se muestra una arista del anillo, no todas las áreas.",
+    "El esquema describe el recorrido implementado y no una mejora predictiva."
+  ]
+}

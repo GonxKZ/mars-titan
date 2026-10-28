@@ -1,0 +1,487 @@
+{
+  "kind": "directed_mutation_evidence",
+  "planned": 8,
+  "killed": 8,
+  "groups": [
+    {
+      "status": "passed",
+      "recipes_sha256": "83cfcf2fa05e65f4e889f4c9f3afb477d6c357982717c7caa635ca4c1de6eabc",
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "elapsed_s": 35.50328230089508,
+      "killed": 4
+    },
+    {
+      "status": "passed",
+      "recipes_sha256": "5b671dc862f68ef559f8d2dce3afce892cd6cdc5c148caac6f42b9a0413138e1",
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "elapsed_s": 62.69793274300173,
+      "killed": 4
+    }
+  ],
+  "cases": [
+    {
+      "id": "remove_new_frontier",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 0,
+          "elapsed_s": 2.8220680030062795,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "c25624d467f242ce189811dcd81369f1120581bf8352e9dfb532a14c5fdf925d",
+          "events_sha256": "e34580721a47a48ca8950a1847615d9e81e0e5dddff4f22b1b9d7b247d8da4de",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 1,
+          "elapsed_s": 2.77170433010906,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "7d2ba582d6533349631d5d62540b66e1939da3e1e83f2e0ba3483a1b100ec828",
+          "events_sha256": "f10145837bb1a9636243bb0ab03e4f030df7da7a01a226e3652c53e9672a899c",
+          "optimizer_attempts": 0,
+          "exception_type": "AssertionError",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 0,
+          "elapsed_s": 2.922114185988903,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "885ecaac9d758c57369077760ac9b0536a79622391520f6d80d4150c207759c5",
+          "events_sha256": "932bda387c33bb2ab34dc8a28c73279cad7ed6c043c07d17e43eac8138995c71",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "reverse_utility_ranking",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_ranking_changes_selection_when_qualified_episodes_exceed_slots",
+          "returncode": 0,
+          "elapsed_s": 3.1720846560783684,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "242934d689c43f246e2ab6b33d19300be98908911d6139a86ffa9ef77d199b9e",
+          "events_sha256": "5260654321702a071005b81bc1f3723342be5d810cfeb1fe6a704a00fef3af35",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_ranking_changes_selection_when_qualified_episodes_exceed_slots",
+          "returncode": 1,
+          "elapsed_s": 2.4213345900643617,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "5be84e5b6c9633e948a9833e4465379dac02d594cc9f9ec1d342d678d8a2a1f6",
+          "events_sha256": "e895284a803154ba29d54f998abf878c42bdaa78228a0cd1b8d7b9075f06ef33",
+          "optimizer_attempts": 0,
+          "exception_type": "AssertionError",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_ranking_changes_selection_when_qualified_episodes_exceed_slots",
+          "returncode": 0,
+          "elapsed_s": 2.4195012191776186,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "0b9295f0636688c611b3f727056f2fdddb6c6d6033b831be70ee4d772aa08e62",
+          "events_sha256": "07b6d1d6a58feab1c014d36bdd789987e7a89f4a4c36c9e1023a2dd8dabfbebd",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "do_not_permute_control",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_permuted_utility_moves_the_control_ranking_but_not_the_real_statistics",
+          "returncode": 0,
+          "elapsed_s": 2.8199509831611067,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "741706c3a74871b405389d03cc10466d9d5133b83d6479ddad8cc1a4cf1314f1",
+          "events_sha256": "62bcf90a9539b514ce1f7492a34cdce3e5f9896adac1eca2cb7b186ae923a9c7",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_permuted_utility_moves_the_control_ranking_but_not_the_real_statistics",
+          "returncode": 1,
+          "elapsed_s": 2.9698452139273286,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "d8c47d39f0973a2d1ddbd7cd7bc610e98892baff91ffbc3037b55c54010c31e4",
+          "events_sha256": "8b0ed33a41b174b8fc9c547d0f4c9b92334faefe4f06cc83848c37a479246515",
+          "optimizer_attempts": 0,
+          "exception_type": "AssertionError",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_permuted_utility_moves_the_control_ranking_but_not_the_real_statistics",
+          "returncode": 0,
+          "elapsed_s": 2.870751184877008,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "79b6f2db4990ff5629a56470e7838aa095fd4e28bbb4b28173861cd24f484c39",
+          "events_sha256": "b442698b308ebe2049fdf99eb11cc154f330603e1baf6b797ef5cb5e79c68b1e",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "omit_registry_sync",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 0,
+          "elapsed_s": 2.620683440938592,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "084f5d300874ebc4b97cca110f0d81c595fcd94129faccad166ae7eff02c969d",
+          "events_sha256": "a445f5d1f0ff280be0bbccda3e349015898f0b6b01f05646562cecb75381405b",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 1,
+          "elapsed_s": 2.4204224271234125,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "f7c2cee4c02bc4ab1285a589c3ffcafab80aa39486dcf08f2164b5c61fc0fdab",
+          "events_sha256": "99b3d59878c55bb9dd09510be0e607a795f60d26aaa2fb75fcd1dc517f90706e",
+          "optimizer_attempts": 0,
+          "exception_type": "AssertionError",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+          "returncode": 0,
+          "elapsed_s": 2.470848930068314,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "284b791c684eb0312556e1fdad2e676b375445c9ed9db5c3f344a94910146bd4",
+          "events_sha256": "541769fc1fa4c877bf561a395b47db0ae86b568a75a80dd59b9ad37ae5662d65",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "allow_future_evidence",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_future_evidence_is_rejected_before_inspecting_its_usage",
+          "returncode": 0,
+          "elapsed_s": 2.6204821430146694,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "24034632860fa6f9b056c549f557127d5c026a96595c261df9897b3d42f569ce",
+          "events_sha256": "b90458f65c42c507c5c6277af4c701f9c7674008ffb73cba4cf239ef1572d577",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_future_evidence_is_rejected_before_inspecting_its_usage",
+          "returncode": 1,
+          "elapsed_s": 6.380714772967622,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "9992eaf08cd3fc2d7d74636e1f1e04f66f277d4261dd9a6fa6e76eb70b0830fc",
+          "events_sha256": "e427bf48dbe84d25573efe9d8d1c10cfac5c66a7e49e80ecd1db4eef1ca7d543",
+          "optimizer_attempts": 0,
+          "exception_type": "Failed",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_future_evidence_is_rejected_before_inspecting_its_usage",
+          "returncode": 0,
+          "elapsed_s": 7.387729457113892,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "acca893c739857f0ae1e8ee00d65ca63a41bd46b3f5051d7e3065afceae91381",
+          "events_sha256": "3cd3fcff3e449701e38b62ee53b0a0940148be96dd7f1745f6158040698d7b92",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "allow_foreign_scope",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_evidence_from_another_predictor_is_rejected_even_with_identical_episode_ids",
+          "returncode": 0,
+          "elapsed_s": 4.926670165034011,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "89177470067b35151b471eab83c9fd842eb906038fd470340ce70862f288ffc6",
+          "events_sha256": "d0beb128349a737a2f64c396716ad30bf6228144915c693430e92d95ffd437ef",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_evidence_from_another_predictor_is_rejected_even_with_identical_episode_ids",
+          "returncode": 1,
+          "elapsed_s": 4.578117107972503,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "7d39a665aec6dd4eda8237e1d3cc5c72b09f6196e6b71ee4db366821c73db7d4",
+          "events_sha256": "0ecbbb358b31836aed778963b7c481b9e2b540560374dd31352ccdc2dcf508b7",
+          "optimizer_attempts": 0,
+          "exception_type": "Failed",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_evidence_from_another_predictor_is_rejected_even_with_identical_episode_ids",
+          "returncode": 0,
+          "elapsed_s": 5.778506837086752,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "070b9b713cc289ddd0c5938837de1edac879a34b4c00e388af3d3e87866a2112",
+          "events_sha256": "c4a65c618a33b677ad751f2dc4e2ea8be6414aca0b8b67d1c2c59b4830f4e21e",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "skip_frontier_recovery_check",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_invalid_native_receipt_cannot_be_reinterpreted_with_a_new_checksum[<lambda>1]",
+          "returncode": 0,
+          "elapsed_s": 4.174114018911496,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "b2fc9669f4964943b0e391290123f000dc51135155e03c5e6d2c9ee022a0d21f",
+          "events_sha256": "0a5b589028473d0ea72cde25bf52195db9db55eba8459eebbe39b60e6510c8b7",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_invalid_native_receipt_cannot_be_reinterpreted_with_a_new_checksum[<lambda>1]",
+          "returncode": 1,
+          "elapsed_s": 4.073005490005016,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "3482314477f6c4de65f792d166fcb4fce947b200097a6d0e38c68fcdea0c14c6",
+          "events_sha256": "6ce084433049a7fe837225f41fe7d92ddf26f6a511ebfd1ed449befd8265fd49",
+          "optimizer_attempts": 0,
+          "exception_type": "Failed",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_invalid_native_receipt_cannot_be_reinterpreted_with_a_new_checksum[<lambda>1]",
+          "returncode": 0,
+          "elapsed_s": 5.226661822060123,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "2b749de0de44f0b74ab1c8b9b63139971a7a325c5dbec3b39e968334ec3ec54c",
+          "events_sha256": "fac391e77f35e6014394526959191e15666720ebc9be0249e50d27f5ae9c784f",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    },
+    {
+      "id": "skip_state_checksum",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_empty_snapshot_and_checksum_are_checked_separately",
+          "returncode": 0,
+          "elapsed_s": 3.4728108651470393,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "99e2a955b0f370245fc2a82f608bfec5bc0b5c8b1c6c2c4c3c032516369e0124",
+          "events_sha256": "ec32d84a785fe55c2dfafc998865d5823b7e617ed0ebc4183e0cbb80c78495ad",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_empty_snapshot_and_checksum_are_checked_separately",
+          "returncode": 1,
+          "elapsed_s": 4.376957583008334,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "5986bba0ba0acd1c4f8c54ce809db3933824011858e9233ef62e073ca97098a0",
+          "events_sha256": "3f340288e2adeefb3d156bbdceee6a60e79f667dc80ead08c29db53f1e488078",
+          "optimizer_attempts": 0,
+          "exception_type": "Failed",
+          "outcome": "failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_retention.py::test_empty_snapshot_and_checksum_are_checked_separately",
+          "returncode": 0,
+          "elapsed_s": 4.426360811805353,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "5b6e8b3910fce98517a0c95ffdddebd2147b999a3211aa04c2ae8216777b8fd4",
+          "events_sha256": "a66bbfa34eff15024d3e3a5711f0de5894486e47a256bc88a1ccbdf603505545",
+          "optimizer_attempts": 0,
+          "exception_type": null,
+          "outcome": "passed"
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Ocho defectos concretos, no todos los mutantes posibles.",
+    "Una tanda previa dejó sobrevivir la eliminación del filtro inicial de ámbito porque la recuperación también rechazaba la mezcla. La prueba final exige rechazo antes de consultar el uso de evidencia ajena."
+  ]
+}

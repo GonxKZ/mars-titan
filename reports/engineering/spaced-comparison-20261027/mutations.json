@@ -1,0 +1,807 @@
+{
+  "kind": "directed_mutations_with_green_controls",
+  "planned": 15,
+  "killed": 15,
+  "optimizer_attempts": 0,
+  "recipes_sha256": "6e6a4ba5164480cbd03d72f2db97057cac474e67f1530e8a51ef05f2661b85dc",
+  "executor_sha256": "ccf567c5ddc39e589a58f50957248d20cf803a2828aa45e63a5b8f071a208083",
+  "groups": [
+    {
+      "scope": "spaced_comparison_safety",
+      "receipt_sha256": "4be03bf4d40ff5129ddf08a7130c26170f659c9d05972e95ea3eec076bf34052",
+      "killed": 2,
+      "seconds": 21.4078290250618
+    },
+    {
+      "scope": "spaced_analysis_study",
+      "receipt_sha256": "2decc09c72b1a2cad2a989e834c67044a35325fa0d53ce1312d52f914b09e99f",
+      "killed": 4,
+      "seconds": 35.644757989095524
+    },
+    {
+      "scope": "spaced_analysis_sources",
+      "receipt_sha256": "fd2e59af73bef0c387c5e224beeb69e7b490711bc6f3e469d15e7bc8965cc59c",
+      "killed": 4,
+      "seconds": 47.277378843165934
+    },
+    {
+      "scope": "spaced_comparison",
+      "receipt_sha256": "08d9035f5194eb46c6c64ac6280f67c4f01e18c344d03acbcaa8867868027e6f",
+      "killed": 5,
+      "seconds": 61.81572325411253
+    }
+  ],
+  "cases": [
+    {
+      "id": "remove_scientific_hold",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_hold_precedes_every_report_and_output_access",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "18af0ace91de0eb8d3681a4884de2b5d89e9db4312623a95109e8f38fd334d13"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "ValueError",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "723130de3c9c2d1296ded322ee0a21d22105cba289ebf5e7edc90652737dc1a1"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "bb86aa10af25e728a3b3c7d9bb2aa1304a45ec13f315bfe96cf233f4d35281c6"
+        }
+      ]
+    },
+    {
+      "id": "silently_override_duplicate_cli_control",
+      "source": "scripts/analyze_spaced_windows.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_cli_rejects_duplicate_or_unknown_controls_before_analysis[entries0]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "0a2d528873311385b1078bdcd1f78af86b86a9acab84776cf43e30de1698f1ec"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "595a3ef6b8697e69dd15ea0e2bfe0008874648deabb2000a7854d7868aecdc50"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "a4fc4b399146667cf0a06b9bb035831ba584802ae292a27d9f20f1dde90ca2f6"
+        }
+      ]
+    },
+    {
+      "id": "omit_declared_analysis",
+      "source": "src/mars_titan/memory/spaced_study.py",
+      "nodeid": "tests/memory/test_spaced_analysis_study.py::test_analysis_is_part_of_the_study_identity_before_execution[standard]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "74489ff6c552825964cc9ec45458ac2c151f0ed63c8a082c15517c3f3f1dc4ff"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "KeyError",
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "c52fb8a4a2996fafff3f4c9ff731fc9633d019b2539fc734c21d15acc4180186"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "0b28855e7d16997a8aedd0d459556bbb01df3d2cd1bda846c9b805d1eb072c49"
+        }
+      ]
+    },
+    {
+      "id": "collapse_margin_identity",
+      "source": "src/mars_titan/memory/spaced_study.py",
+      "nodeid": "tests/memory/test_spaced_analysis_study.py::test_changing_only_the_margin_changes_the_identity",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "d1235d773ade9d9ee6ee2da76fe7975a3f0e24f2ebd591ec2a9bb399bed3df62"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "AssertionError",
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "82f08840c251ef73459685e81949bf947ff7b4132d1f59f537afc10e3aa2bec4"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "d167165a482d58ef56f77c9eccbf006a59912f836f3959f97c930811e7e3e227"
+        }
+      ]
+    },
+    {
+      "id": "allow_missing_controls",
+      "source": "src/mars_titan/memory/spaced_study.py",
+      "nodeid": "tests/memory/test_spaced_analysis_study.py::test_comparison_cannot_impersonate_a_legacy_or_incomplete_study[controls]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "fb65ea4d31909653a4e0950ad01a51954221c40a91ff911de2e1a43220ef485c"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "d0dcc8eaeaaa05253bed5fbc5664f815d79db68e7fc6dc782d36da141914098a"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "75e5a726f33e21bd08b1944e8b6bbc692dcc94ae08892d512addc1b37b6bc99b"
+        }
+      ]
+    },
+    {
+      "id": "ignore_analysis_reader_contract",
+      "source": "src/mars_titan/memory/spaced_study.py",
+      "nodeid": "tests/memory/test_spaced_analysis_study.py::test_comparison_cannot_impersonate_a_legacy_or_incomplete_study[contract]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "f0c7616f62077c600ea28dc1ccbcd945c00e9a6ae08c6335da7b9c821b4ba8b2"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "09315a6a9fff778c546a1c24af0d2cf02a76ab3532eb62172b887c227550c18c"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 86,
+          "events_sha256": "70da3b0b15b622634aedf13992d797cf7abd5261c6b9c4af6d6f9d5f139ba020"
+        }
+      ]
+    },
+    {
+      "id": "allow_different_selected_readers",
+      "source": "src/mars_titan/evaluation/spaced_sources.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_incompatible_run_headers_are_rejected[reader]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "3ea4a95eb36c89479384c67726ad116b99b53fbf542bed581331bc9571377e96"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "cca1b76d7ed48e3457c96be6c3ffcf07a5ac1f8c61e4ad17118297354f4553c7"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "d27010cde8ea0b696e28bfab35e03a5b2480dfa818f673c747cc6bee31118073"
+        }
+      ]
+    },
+    {
+      "id": "accept_boolean_selected_version",
+      "source": "src/mars_titan/evaluation/spaced_sources.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_selected_descriptor_does_not_accept_a_boolean_version",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "3e8805916d52c5af0e533c3d109cf93e9e53e58724c91ac5fd8e088377510e82"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "21e1e3fbffe297a63c5bac69d48516664ea1978a049a9e3f31a6b74d9029fc8f"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "fa81855c3eea389f61cf16f93ef993c6db5d3e4300e0e7e7d411f670808206b9"
+        }
+      ]
+    },
+    {
+      "id": "ignore_index_identities",
+      "source": "src/mars_titan/evaluation/spaced_sources.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_index_identities_cannot_be_missing_in_all_controls",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "8f388aaac6a5f2354b365acdf942249d0be80f9445c551bceea9a3b5f93c8dcb"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "73a113ae13a54af40fb80ce4084cd4f0eb21909818709e01dc9ef60c8477b270"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "7940e82ef1c095882fb2fe40b86680c4e3031834451141e09c163dc0634b5490"
+        }
+      ]
+    },
+    {
+      "id": "skip_report_recheck",
+      "source": "src/mars_titan/evaluation/spaced_sources.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_source_change_during_scoring_prevents_publication",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "2658a1b30a59dffcf4ed7abd936fcc1b3e5a26dd7e99607f63a4cc8a1a29cb43"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "1104f7920fdfacf518f486b8858f49fa1b661333ae6454f3fd8374c035862812"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "39eb91057a02f55c742bd48303d3f4c21b5c790a32e906a1a19475f6555e2f4f"
+        }
+      ]
+    },
+    {
+      "id": "reverse_primary_difference",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_primary_difference_uses_sessions_and_keeps_its_relative_sign",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "31ead6de4075db6293f6c14a61d3c8eed3aca045b4275a050ca0b1d5e556ee52"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "AssertionError",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "9796ebddf921686ce46599b0bf6f5b42e4df43290a8ddb7b31af22cac33532af"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "2a6e9efe5c2e14474d8fadcb5ffb34199b307f554ace4604d59a9aeb41092a1c"
+        }
+      ]
+    },
+    {
+      "id": "trust_summary_instead_of_recomputing",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_artifact_or_control_mismatch_never_publishes_a_comparison[session_metric]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "30c05eac47b16c73dfa6cedea26f08d8b2168b8a43cae1586433d51e7f51566f"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "01f1b46d0a1f8a1c47869e45e83d7a518e31de93ab8110a569f8d50decc15ff7"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "9f279586919c2a9e3247812eec322740f72f00b0c931c024f9bb2dae3fca1ef3"
+        }
+      ]
+    },
+    {
+      "id": "ignore_stored_session_errors",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_artifact_or_control_mismatch_never_publishes_a_comparison[stored_session]",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "ea5f52a30fdf12bc462ed81e6c604d7470247ff79892d391a4875a6671566f87"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "de5181370fd7d5b46a75ff8d2b6fda831c4125a359b62c2c817bba5e1b91ead1"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "b99c9e20a58346ae22d17894d3c80b4abdeb63edbadcefc36c489fcd406fc5f3"
+        }
+      ]
+    },
+    {
+      "id": "ignore_declared_phase_bounds",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_all_controls_outside_the_phase_are_rejected_even_with_a_shared_population",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "fbf2bd136a0986f92751579089ba037a1f96015f19c64cdfd5c10b75b6a1292f"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "Failed",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "e843095e2276a5e9dfd7d76054ecd5829e0d1591f2cf08ae03dbeec46ee5bcfe"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "715ed2b01a9002cc5e65ad063c61568de719d95fbfdcff6f66c04653985fb298"
+        }
+      ]
+    },
+    {
+      "id": "ignore_relevant_error_margin",
+      "source": "src/mars_titan/evaluation/spaced_comparison.py",
+      "nodeid": "tests/evaluation/test_spaced_comparison.py::test_a_smaller_error_within_the_margin_is_not_called_a_relevant_improvement",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "2d93bc0c78de69b185f11e2ddfb1e4f0d6e27df63192994ab6640372b11a979b"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": "AssertionError",
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "10a8b4cc7fed337c97159dcf031eb3c1caaebe4c96f328d69d732b51de32d3c0"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "call_exception": null,
+          "optimizer_attempts": 0,
+          "origin_modules": 193,
+          "events_sha256": "b9a0a01d4c2033d21f2732bea27336dd4a8d68ad790a48ab5fb49be54145d9f6"
+        }
+      ]
+    }
+  ],
+  "previous_attempts": [
+    {
+      "receipt_sha256": "84a251dd8d10fc03711838f051c5f8c74a7bfceaaebc931618d88b51944d4839",
+      "status": "failed",
+      "killed": 0,
+      "planned": 2,
+      "counted_in_final_total": false
+    },
+    {
+      "receipt_sha256": "e82bab6d68ed4b15c7b06ea0249ff3598c87824f17dae9cd5bb22a698cc410f1",
+      "status": "failed",
+      "killed": 1,
+      "planned": 2,
+      "counted_in_final_total": false
+    }
+  ],
+  "notes": [
+    "El primer intento esperaba FileNotFoundError, pero read_manifest emite ValueError. Se corrigió la expectativa sin cambiar producción.",
+    "En el segundo intento la prueba de CLI propagó LearningHoldError y el control global lo convirtió en omisión. Se reforzó la frontera de argumentos y se repitieron las cuatro familias con pins finales.",
+    "Los quince mutantes finales tienen G1 y G2 verdes, M1 fallido y cero omisiones. No se suman intentos repetidos ni se afirma cobertura universal de mutaciones."
+  ]
+}

@@ -4,61 +4,201 @@
   "meta": {
     "title": "B4 · Protocolo de lesiones (lesion_protocol_v1)",
     "quality_profile": "showcase",
-    "viewBox": [1300, 592],
+    "viewBox": [
+      1300,
+      592
+    ],
     "legend": {
       "entries": {
-        "external": {"label": "Entradas"},
-        "backend": {"label": "Cálculo"},
-        "database": {"label": "Memoria y estado"},
-        "frontend": {"label": "Salida"},
-        "security": {"label": "Control o protección"},
-        "cloud": {"label": "Evaluación"}
+        "external": {
+          "label": "Entradas"
+        },
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "frontend": {
+          "label": "Salida"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        }
       }
     }
   },
   "components": [
-    {"id": "model", "type": "database", "label": "Modelo congelado", "sublabel": "B1 o banco ajustado", "pos": [40, 230], "size": [180, 72]},
-    {"id": "mask", "type": "security", "label": "Máscara de lesión", "sublabel": "k de A áreas o dimensiones", "pos": [300, 40], "size": [180, 72]},
-    {"id": "infer", "type": "backend", "label": "Inferencia", "sublabel": "sin optimizador", "pos": [560, 230], "size": [180, 72]},
-    {"id": "zero", "type": "external", "label": "Memoria a cero", "sublabel": "dependencia de la memoria", "pos": [300, 420], "size": [180, 72]},
-    {"id": "curve", "type": "cloud", "label": "Curva de MAE e IC", "sublabel": "por fracción lesionada", "pos": [820, 230], "size": [180, 72]},
+    {
+      "id": "model",
+      "type": "database",
+      "label": "Estado original",
+      "sublabel": "B1, B2, B3 o E1",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "mask",
+      "type": "security",
+      "label": "Lesiones de lectura",
+      "sublabel": "áreas y coordenadas DPFP",
+      "pos": [
+        300,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "infer",
+      "type": "backend",
+      "label": "Lecturas diagnósticas",
+      "sublabel": "misma trayectoria original",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "zero",
+      "type": "external",
+      "label": "Corrección cero",
+      "sublabel": "padre sin intervenir",
+      "pos": [
+        300,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "curve",
+      "type": "database",
+      "label": "Registro pendiente",
+      "sublabel": "componentes emitidos",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
     {
       "id": "monolith",
       "type": "security",
-      "label": "Control monolítico",
-      "sublabel": "misma fracción eliminada",
-      "pos": [820, 420],
-      "size": [180, 72]
+      "label": "Área única",
+      "sublabel": "iguales coeficientes W",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
     },
-    {"id": "report", "type": "frontend", "label": "Informe", "sublabel": "degradación gradual o brusca", "pos": [1080, 230], "size": [180, 72]}
+    {
+      "id": "report",
+      "type": "frontend",
+      "label": "Error por sesión",
+      "sublabel": "solo al madurar",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    }
   ],
   "connections": [
-    {"id": "model-infer", "from": "model", "to": "infer"},
-    {"id": "mask-infer", "from": "mask", "to": "infer", "label": "lesión", "variant": "emphasis"},
-    {"id": "zero-infer", "from": "zero", "to": "infer", "label": "referencia", "variant": "dashed"},
-    {"id": "infer-curve", "from": "infer", "to": "curve", "variant": "emphasis"},
-    {"id": "monolith-curve", "from": "monolith", "to": "curve", "label": "control", "variant": "dashed"},
-    {"id": "curve-report", "from": "curve", "to": "report"}
+    {
+      "id": "model-infer",
+      "from": "model",
+      "to": "infer"
+    },
+    {
+      "id": "mask-infer",
+      "from": "mask",
+      "to": "infer",
+      "label": "lesión",
+      "variant": "emphasis"
+    },
+    {
+      "id": "zero-infer",
+      "from": "zero",
+      "to": "infer",
+      "label": "referencia",
+      "variant": "dashed"
+    },
+    {
+      "id": "infer-curve",
+      "from": "infer",
+      "to": "curve",
+      "variant": "emphasis"
+    },
+    {
+      "id": "monolith-curve",
+      "from": "monolith",
+      "to": "curve",
+      "label": "control",
+      "variant": "dashed"
+    },
+    {
+      "id": "curve-report",
+      "from": "curve",
+      "to": "report",
+      "label": "resultado maduro",
+      "labelDy": -40
+    }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Mecanismo",
+      "title": "Mecanismo comprobado",
       "items": [
-        "Anula k de A áreas o una fracción de dimensiones y mide el error",
-        "Distingue un recuerdo repartido de uno concentrado",
-        "Fuente: Michel et al. (2019), Ma et al. (2022), Danihelka et al. (2016)"
+        "Máscaras anidadas con semillas fijadas antes del tramo",
+        "Corte de las consultas y de los extremos del puente",
+        "Los diagnósticos no actualizan W, T ni los pesos de E1"
       ]
     },
     {
       "dot": "rose",
-      "title": "Control que la descarta",
-      "items": ["Control monolítico con la misma fracción eliminada", "Memoria a cero para medir cuánto depende el modelo de ella"]
+      "title": "Controles",
+      "items": [
+        "Lectura intacta y corrección cero sobre el mismo estado",
+        "Denominador activo y original para separar el cambio de ganancia",
+        "Área única y misma fracción realizada de coordenadas"
+      ]
     },
     {
       "dot": "amber",
-      "title": "Estado",
-      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Solo inferencia, de 0,1 a 0,2 ajustes por curva"]
+      "title": "Estado real",
+      "items": [
+        "Ventana y sesión conectadas en pruebas CPU",
+        "Recuperación por generación y columnas por muestra",
+        "Curvas, coste integral y CUDA aún pendientes"
+      ]
     }
   ]
 }

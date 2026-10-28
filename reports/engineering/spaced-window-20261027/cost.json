@@ -1,0 +1,976 @@
+{
+  "kind": "technical_frozen_spaced_window_cost",
+  "status": "completed",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "device": "cpu",
+    "cpu_threads": 2,
+    "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+  },
+  "probe_sha256": "e5867ca9794c9f289b7b0caf9aaddf096daa31ec66d59143ff3f15721d5f39af",
+  "implementation": {
+    "mars_titan.training.spaced_inference": "8f89bbbc1506461b8c7dcf6f087ff7682102b4a24508871ae6c4866580c7fe41",
+    "mars_titan.training.mars_titan_run": "6fab0212ad2c31c2d47aec4145478d166480a0ac967ef325a8782649bf1a508f",
+    "mars_titan.memory.spaced_session": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0",
+    "mars_titan.memory.spaced_utility": "ab0b07357352e274f9ab0fda76c7a52fac119964e43c124af0c095cf3fcc2255",
+    "mars_titan.memory.spaced_retention": "70d65da29702db566915978298ce77aac5e5bb47d6b7155561c70f9722220795"
+  },
+  "shapes": {
+    "hidden": 32,
+    "neighbors": 4,
+    "dtype": "float64",
+    "dimensions": [
+      5,
+      2,
+      1,
+      3,
+      3
+    ]
+  },
+  "measured_scope": "frozen_phase_including_MAC_readout_ledger_admission_and_closure",
+  "excluded": [
+    "imports",
+    "fixture_preparation",
+    "construction",
+    "durable_storage",
+    "dataset_reads",
+    "GPU",
+    "energy"
+  ],
+  "includes_integrity_checks": true,
+  "warmup": 1,
+  "measured_repetitions": 5,
+  "samples": [
+    {
+      "seconds": 0.09938152390532196,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 0.12430902197957039,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 0.12475802400149405,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 0.0712080008815974,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 0.07978391810320318,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 0.14614170789718628,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 0.13817956298589706,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 0.07438239292241633,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 0.07772073103114963,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 4,
+      "warmup": false
+    },
+    {
+      "seconds": 0.15482191019691527,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 4,
+      "warmup": false
+    },
+    {
+      "seconds": 0.14157835417427123,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": true,
+      "repetition": 5,
+      "warmup": false
+    },
+    {
+      "seconds": 0.07691898802295327,
+      "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+      "predictions": 320,
+      "assets": 64,
+      "capacity": 256,
+      "active": false,
+      "repetition": 5,
+      "warmup": false
+    },
+    {
+      "seconds": 0.2310874608810991,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 0.43802483286708593,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 0.44726393301971257,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 0.23599531315267086,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 0.22979405894875526,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 0.44442381989210844,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 0.4342207747977227,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 0.2257069991901517,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 0.224220602074638,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 4,
+      "warmup": false
+    },
+    {
+      "seconds": 0.43755314289592206,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 4,
+      "warmup": false
+    },
+    {
+      "seconds": 0.5386644070968032,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": true,
+      "repetition": 5,
+      "warmup": false
+    },
+    {
+      "seconds": 0.3475486219394952,
+      "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+      "predictions": 1280,
+      "assets": 256,
+      "capacity": 1024,
+      "active": false,
+      "repetition": 5,
+      "warmup": false
+    }
+  ],
+  "summaries": [
+    {
+      "assets": 64,
+      "active": false,
+      "median_seconds": 0.07691898802295327,
+      "minimum_seconds": 0.0712080008815974,
+      "maximum_seconds": 0.07978391810320318,
+      "samples": 5
+    },
+    {
+      "assets": 64,
+      "active": true,
+      "median_seconds": 0.14157835417427123,
+      "minimum_seconds": 0.12475802400149405,
+      "maximum_seconds": 0.15482191019691527,
+      "samples": 5
+    },
+    {
+      "assets": 256,
+      "active": false,
+      "median_seconds": 0.22979405894875526,
+      "minimum_seconds": 0.224220602074638,
+      "maximum_seconds": 0.3475486219394952,
+      "samples": 5
+    },
+    {
+      "assets": 256,
+      "active": true,
+      "median_seconds": 0.44442381989210844,
+      "minimum_seconds": 0.4342207747977227,
+      "maximum_seconds": 0.5386644070968032,
+      "samples": 5
+    }
+  ],
+  "process_seconds_without_imports": 15.163449128856882,
+  "peak_rss_kib": 751944,
+  "cuda_initialized": false,
+  "earlier_measurements": [
+    {
+      "kind": "technical_frozen_spaced_window_cost",
+      "status": "completed",
+      "hardware": {
+        "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+      },
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "device": "cpu",
+        "cpu_threads": 2,
+        "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+      },
+      "probe_sha256": "f53da92d6bd2b4ce326bd6ba52b008b4acf6735c9ee12e15b375d6a6c31476fb",
+      "shapes": {
+        "hidden": 32,
+        "neighbors": 4,
+        "dtype": "float64",
+        "dimensions": [
+          5,
+          2,
+          1,
+          3,
+          3
+        ]
+      },
+      "measured_scope": "frozen_phase_including_MAC_readout_ledger_admission_and_closure",
+      "excluded": [
+        "imports",
+        "fixture_preparation",
+        "construction",
+        "disk",
+        "GPU",
+        "energy"
+      ],
+      "warmup": 1,
+      "measured_repetitions": 5,
+      "samples": [
+        {
+          "seconds": 0.11432009912095964,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.16064850706607103,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.16166756814345717,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08167053409852087,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.07460773107595742,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.1468757491093129,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.1591433808207512,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.0852622848469764,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08223539008758962,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.15700785000808537,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.15970777603797615,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08176676603034139,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.281358557054773,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.4396739739459008,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.5364503101445735,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.23712942097336054,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.23894008295610547,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.5287753350567073,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.5148939271457493,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.2595300681423396,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.25501104816794395,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.51365937711671,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.518313875189051,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.3587518942076713,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 5,
+          "warmup": false
+        }
+      ],
+      "summaries": [
+        {
+          "assets": 64,
+          "active": false,
+          "median_seconds": 0.08176676603034139,
+          "minimum_seconds": 0.07460773107595742,
+          "maximum_seconds": 0.0852622848469764,
+          "samples": 5
+        },
+        {
+          "assets": 64,
+          "active": true,
+          "median_seconds": 0.1591433808207512,
+          "minimum_seconds": 0.1468757491093129,
+          "maximum_seconds": 0.16166756814345717,
+          "samples": 5
+        },
+        {
+          "assets": 256,
+          "active": false,
+          "median_seconds": 0.25501104816794395,
+          "minimum_seconds": 0.23712942097336054,
+          "maximum_seconds": 0.3587518942076713,
+          "samples": 5
+        },
+        {
+          "assets": 256,
+          "active": true,
+          "median_seconds": 0.518313875189051,
+          "minimum_seconds": 0.51365937711671,
+          "maximum_seconds": 0.5364503101445735,
+          "samples": 5
+        }
+      ],
+      "process_seconds_without_imports": 15.217681132955477,
+      "peak_rss_kib": 753760,
+      "cuda_initialized": false,
+      "interpretation": "Primera pasada con etiqueta de exclusión de disco imprecisa."
+    },
+    {
+      "kind": "technical_frozen_spaced_window_cost",
+      "status": "completed",
+      "hardware": {
+        "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+      },
+      "runtime": {
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130",
+        "device": "cpu",
+        "cpu_threads": 2,
+        "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+      },
+      "probe_sha256": "1ed3937757929cc0af01fe6a2c81e6ab9f1b317f949d0221b5c3928466a98618",
+      "shapes": {
+        "hidden": 32,
+        "neighbors": 4,
+        "dtype": "float64",
+        "dimensions": [
+          5,
+          2,
+          1,
+          3,
+          3
+        ]
+      },
+      "measured_scope": "frozen_phase_including_MAC_readout_ledger_admission_and_closure",
+      "excluded": [
+        "imports",
+        "fixture_preparation",
+        "construction",
+        "durable_storage",
+        "dataset_reads",
+        "GPU",
+        "energy"
+      ],
+      "includes_integrity_checks": true,
+      "warmup": 1,
+      "measured_repetitions": 5,
+      "samples": [
+        {
+          "seconds": 0.11926072300411761,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.1683506870176643,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.1616166541352868,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08810805017128587,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08667135890573263,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.16090701916255057,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.15791843901388347,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08505764603614807,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.08522550109773874,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.1603255569934845,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.15588430385105312,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": true,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.07633488206192851,
+          "common_sha256": "9de3b8102f74e105f32abb76abe79dfad17d901b6042ccabfc2579cf57b32004",
+          "predictions": 320,
+          "assets": 64,
+          "capacity": 256,
+          "active": false,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.23792138299904764,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.5340874828398228,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 0,
+          "warmup": true
+        },
+        {
+          "seconds": 0.5478533559944481,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.28115371288731694,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 1,
+          "warmup": false
+        },
+        {
+          "seconds": 0.27355622011236846,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.528397087007761,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 2,
+          "warmup": false
+        },
+        {
+          "seconds": 0.5989841448608786,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.2634588221553713,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 3,
+          "warmup": false
+        },
+        {
+          "seconds": 0.26624379213899374,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.5075862950179726,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 4,
+          "warmup": false
+        },
+        {
+          "seconds": 0.4988655741326511,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": true,
+          "repetition": 5,
+          "warmup": false
+        },
+        {
+          "seconds": 0.3479708880186081,
+          "common_sha256": "516a2df6254f2388a31fcbbe289406e64a07ceff5e13d7206b5521ec711c0bef",
+          "predictions": 1280,
+          "assets": 256,
+          "capacity": 1024,
+          "active": false,
+          "repetition": 5,
+          "warmup": false
+        }
+      ],
+      "summaries": [
+        {
+          "assets": 64,
+          "active": false,
+          "median_seconds": 0.08522550109773874,
+          "minimum_seconds": 0.07633488206192851,
+          "maximum_seconds": 0.08810805017128587,
+          "samples": 5
+        },
+        {
+          "assets": 64,
+          "active": true,
+          "median_seconds": 0.1603255569934845,
+          "minimum_seconds": 0.15588430385105312,
+          "maximum_seconds": 0.1616166541352868,
+          "samples": 5
+        },
+        {
+          "assets": 256,
+          "active": false,
+          "median_seconds": 0.27355622011236846,
+          "minimum_seconds": 0.2634588221553713,
+          "maximum_seconds": 0.3479708880186081,
+          "samples": 5
+        },
+        {
+          "assets": 256,
+          "active": true,
+          "median_seconds": 0.528397087007761,
+          "minimum_seconds": 0.4988655741326511,
+          "maximum_seconds": 0.5989841448608786,
+          "samples": 5
+        }
+      ],
+      "process_seconds_without_imports": 15.49591301009059,
+      "peak_rss_kib": 757068,
+      "cuda_initialized": false,
+      "interpretation": "Pasada con exclusiones precisadas, anterior a registrar todas las fuentes en el probe."
+    }
+  ],
+  "interpretation": "Las tres pasadas conservan los mismos puntos y métricas comunes. No hubo optimización del cálculo entre ellas y no se atribuye su variación a una aceleración del modelo.",
+  "external_process": {
+    "elapsed_seconds": 17.66,
+    "peak_rss_kib": 797400,
+    "exit_code": 0,
+    "receipt_sha256": "7386a5232068dba229b1362fd430ca849535af02cac64b7ac6de10e84f46da4c"
+  }
+}

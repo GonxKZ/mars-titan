@@ -1,0 +1,45 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_lesion_session.py",
+      "test_sha256": "9965bc8604c77c296b7ed4742a434e391cb91267552505108f8fa81060f65d40"
+    }
+  },
+  "sources": {
+    "window": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "3efc11e98dce247ec9ab1186c0815d223ce9666ddabedcd07887ca0b738eb7b4"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/lesion_session.py",
+      "sha256": "ac5d2579a6639f8f2874541b4fcc08e33c25f45b166c9a3ea89f52655e390a46"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_pending_alignment",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+      "anchor": "if ledger.clock != bundle[\"cutoff\"] or set(ledger.pending) != set(pending_keys):",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "invert_original_forecast_check",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+      "anchor": "float(ledger.pending[key][0]) != item.prediction.value",
+      "replacement": "float(ledger.pending[key][0]) == item.prediction.value",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

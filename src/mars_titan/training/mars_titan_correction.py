@@ -61,11 +61,14 @@ from mars_titan.learning_traces.hooks import (
     open_recorder,
     trace_identity,
 )
-from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
+from mars_titan.memory.associative_memory import MatureCorrection
 from mars_titan.memory.cohort_noise import estimate_cohort_noise
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.financial_session import FinancialPhase
+from mars_titan.memory.kernel_memory import KERNEL_RULE
+from mars_titan.memory.lesion_ledger import LesionLedger
+from mars_titan.memory.lesion_protocol import LesionProtocol
 from mars_titan.memory.mars_titan_variant import (
     check_components,
     core_identity,
@@ -118,7 +121,15 @@ SEARCHED = ("rate", "forgetting")
 # de estimación. σ² y ϱ no se declaran: se estiman en cada ventana.
 KALMAN_SEARCHED = ("process_ratio",)
 KALMAN_FIXED = ("prior_ratio", "correlation_cap", "estimation_months")
-_RECIPES = {RECIPE: (SEARCHED, ()), KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED)}
+# El control de Nadaraya-Watson de B1 busca su ancho τ y fija en la receta λ y la capacidad.
+KERNEL_RECIPE = "mars_titan_kernel_correction_v1"
+KERNEL_SEARCHED = ("bandwidth",)
+KERNEL_FIXED = ("forgetting", "capacity")
+_RECIPES = {
+    RECIPE: (SEARCHED, ()),
+    KALMAN_RECIPE: (KALMAN_SEARCHED, KALMAN_FIXED),
+    KERNEL_RECIPE: (KERNEL_SEARCHED, KERNEL_FIXED),
+}
 # Un modelo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
 # campaña los busca y no forman parte de la definición del modelo. Un modelo kalman declara
 # además si usa la ϱ estimada o la anula, que es la alternativa con la que se descarta.
@@ -126,6 +137,8 @@ ARM_FIELDS = ("rule", "key")
 KALMAN_ARM_FIELDS = (*ARM_FIELDS, "cohort_correlation")
 COHORT_CORRELATIONS = ("estimated", "zero")
 RULES = ("delta", "proximal", "kalman")
+# El control nuevo es explícito y no amplía las reglas de la campaña histórica.
+CORRECTION_BACKENDS = (*RULES, KERNEL_RULE)
 # σ² y ϱ con los que se comprueba una combinación kalman antes de abrir fuentes y se mide su
 # caudal. La media de la corrección no depende de σ² y el coste no depende de ninguno.
 UNIT_NOISE = dict(observation_noise=1.0, cohort_correlation=0.0)
@@ -146,6 +159,13 @@ _CODE = (
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.memory.mars_titan_variant",
     "mars_titan.memory.associative_memory",
+    "mars_titan.memory.area_memory",
+    "mars_titan.memory.area_query_bridge",
+    "mars_titan.memory.paired_proximal",
+    "mars_titan.memory.role_binding",
+    "mars_titan.memory.multiscale_mixture",
+    "mars_titan.memory.regimes",
+    "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
     "mars_titan.data.batches",
@@ -154,6 +174,26 @@ _CODE = (
 
 def _code():
     return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
+
+
+def _lesion_code():
+    return {
+        kind.__module__: sha256(Path(importlib.import_module(kind.__module__).__file__))
+        for kind in (LesionProtocol, LesionLedger)
+    }
+
+
+def diagnostic_protocol(request):
+    """Restaurar B4 únicamente con la política y fuentes que registró el ancla."""
+    if "lesions" not in request:
+        return None
+    protocol = LesionProtocol.from_identity(request["lesions"])
+    _require(
+        isinstance(request.get("code"), dict)
+        and all(request["code"].get(name) == digest for name, digest in _lesion_code().items()),
+        "Las fuentes del diagnóstico B4 han cambiado",
+    )
+    return protocol
 
 
 def load_correction_recipe(path):
@@ -236,21 +276,37 @@ def arm_components(components, values, noise=None):
 
     El modelo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
     mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección. Las reglas
-    delta y proximal reciben η y λ. La regla kalman recibe además `noise`, con la σ² y la ϱ
-    estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
+    delta y proximal reciben η y λ, también con las áreas de B1. El control de Nadaraya-Watson
+    recibe τ, λ y la capacidad de su receta. La regla kalman recibe además `noise`, con la σ² y
+    la ϱ estimadas en la ventana: q = κσ², p0 = (p0/σ²)σ² y ϱ estimada o nula según el modelo.
     """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
     rule = memory.get("rule") if isinstance(memory, dict) else None
     fields = KALMAN_ARM_FIELDS if rule == "kalman" else ARM_FIELDS
+    # Solo las reglas delta y proximal admiten el reparto por áreas de B1 en el modelo.
+    optional = (
+        {"areas", "query_bridge", "role_binding", "multiscale"}
+        if rule in ("delta", "proximal")
+        else set()
+    )
     _require(
         isinstance(components, dict)
         and set(components) == {"associative_memory"}
         and isinstance(memory, dict)
-        and set(memory) == set(fields),
+        and set(fields) <= set(memory) <= set(fields) | optional,
         "Un modelo B6 declara solo associative_memory con su regla y su clave, y con la regla "
-        "kalman también su correlación de cohorte",
+        "kalman también su correlación de cohorte, o con delta y proximal las áreas de B1",
     )
-    _require(rule in RULES, "La ventana B6 solo admite las reglas delta y proximal, o kalman")
+    _require(
+        rule in CORRECTION_BACKENDS,
+        "La ventana B6 solo admite las reglas delta, proximal, kalman o nadaraya_watson",
+    )
+    if rule == KERNEL_RULE:
+        _require(
+            set(values) == {*KERNEL_SEARCHED, *KERNEL_FIXED} and noise is None,
+            "Nadaraya-Watson usa la receta de τ, λ y capacidad, sin varianzas estimadas",
+        )
+        return dict(associative_memory=dict(memory, **values))
     if rule != "kalman":
         _require(
             set(values) == set(SEARCHED) and noise is None,
@@ -296,7 +352,7 @@ class CorrectionInference(ChronologicalInference):
     maduro son señales distintas.
     """
 
-    def __init__(self, predictor, recipe, correction, codec, *, audit=False):
+    def __init__(self, predictor, recipe, correction, codec, *, audit=False, lesions=None):
         if type(predictor) is not FinancialPredictor or type(recipe) is not ChronologicalRecipe:
             raise ValueError("La corrección necesita el padre Titans-MAC y su receta cronológica")
         if predictor.config.variant != "mac_online" or predictor.local_control is not None:
@@ -312,15 +368,21 @@ class CorrectionInference(ChronologicalInference):
             raise ValueError("El codec no comparte la entrada del padre")
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
+        if lesions is not None and type(lesions) is not LesionProtocol:
+            raise ValueError("B4 necesita su protocolo de diagnósticos")
+        self.lesion_plan = None if lesions is None else lesions.bind(correction)
+        self.lesion_ledger = None if self.lesion_plan is None else LesionLedger(self.lesion_plan)
+        self._lesion_resolved = {}
         # Registrador de las trazas de #448, o None. Solo lee A y el error escrito.
         self.trace_recorder = None
         self._trace_events, self._trace_phase = 0, "b6"
-        self.memory = AssociativeMemory(correction.memory)
+        self.memory = correction.empty()
         # Para cada decisión pendiente se guardan la predicción del núcleo, la clave del codec y
         # la ruta del régimen. Así A se escribe con el error del núcleo y no con el de la
         # emisión corregida, y en el compartimento del instante de la decisión.
         self._core = {}
         self._staged = []
+        self._issued_experts, self._mature_experts = {}, {}
         self._routing = _RoutingLog()
         self.kalman = correction.memory.rule == "kalman"
         self._reset_delay()
@@ -333,7 +395,7 @@ class CorrectionInference(ChronologicalInference):
         final del evento actual. `extra` guarda por decisión la varianza y la predicción con
         retraso, que `KalmanPredictionRows` añade a su fila.
         """
-        self.delayed = AssociativeMemory(self.correction.memory) if self.kalman else None
+        self.delayed = self.correction.empty() if self.kalman else None
         self._incoming, self._held, self._due, self.extra = [], {}, [], {}
 
     def _observe(self, run, source, event, *, differentiable, blocks=None):
@@ -360,7 +422,23 @@ class CorrectionInference(ChronologicalInference):
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
         keys = self.correction.keys(inputs, routes)
-        corrections = self.memory.read(keys)[:, 0].tolist()
+        parts = None
+        if self.correction.multiscale is not None:
+            corrections, parts = self.memory.predict(keys, at=event.at)
+            corrections = corrections[:, 0].tolist()
+        else:
+            corrections = self.memory.read(keys)[:, 0].tolist()
+        if self.lesion_plan is not None:
+            diagnostics = self.lesion_plan.read(
+                self.memory,
+                keys,
+                at=event.at,
+                baseline=torch.tensor(corrections, dtype=torch.float64)[:, None],
+            )
+            core_values = torch.tensor(
+                [run.pending[key] for key in decisions], dtype=torch.float64
+            )[:, None]
+            self.lesion_ledger.issue(decisions, diagnostics + core_values)
         if self.delayed is not None:
             extra = zip(
                 self.memory.variance(keys).tolist(),
@@ -374,8 +452,8 @@ class CorrectionInference(ChronologicalInference):
         else:
             extra = [None] * len(decisions)
         rows = routes.tolist() if routes is not None else [None] * len(decisions)
-        for decision, key, route, correction, more in zip(
-            decisions, inputs, rows, corrections, extra, strict=True
+        for index, (decision, key, route, correction, more) in enumerate(
+            zip(decisions, inputs, rows, corrections, extra, strict=True)
         ):
             if decision in self._core:
                 raise ValueError("La decisión ya tiene una predicción pendiente")
@@ -384,6 +462,8 @@ class CorrectionInference(ChronologicalInference):
                 variance, delayed = more
                 self.extra[decision] = (variance, core + delayed)
             self._core[decision] = (core, key, route)
+            if parts is not None:
+                self._issued_experts[decision] = parts[index].detach().clone()
             run.pending[decision] = core + correction
             if decision in run.levels:
                 run.levels[decision] = [level + correction for level in run.levels[decision]]
@@ -394,10 +474,18 @@ class CorrectionInference(ChronologicalInference):
 
     def _labels(self, run, event, *, train):
         _require(not train, "B6 no tiene parámetros que ajustar")
+        if self.lesion_ledger is not None:
+            self._lesion_resolved = self.lesion_ledger.receive(
+                [(flow, decision, event.at, value) for flow, decision, value in event.labels]
+            )
         super()._labels(run, event, train=False)
         for flow, decision_at, value in event.labels:
             core, key, route = self._core.pop((flow, decision_at))
             self._staged.append((decision_at, flow, value - core, key, route))
+            if self.correction.multiscale is not None:
+                self._mature_experts[flow, decision_at] = self._issued_experts.pop(
+                    (flow, decision_at)
+                )
             if self.delayed is not None:
                 self._incoming.append(self._staged[-1])
 
@@ -452,11 +540,23 @@ class CorrectionInference(ChronologicalInference):
             keys=self.correction.keys(np.stack([key for _, _, _, key, _ in staged]), routes),
             values=[value for _, _, value, _, _ in staged],
         )
+        if self.correction.multiscale is not None:
+            decisions = [(flow, decision_at) for decision_at, flow, *_ in staged]
+            issued = torch.stack([self._mature_experts[key] for key in decisions])
+            updated = memory.write(feedback, cutoff=at, issued_predictions=issued)
+            for key in decisions:
+                del self._mature_experts[key]
+            return updated, feedback
         return memory.write(feedback, cutoff=at), feedback
 
     def _close(self, run):
+        if self.lesion_ledger is not None:
+            self.lesion_ledger.discard(list(self.lesion_ledger.pending), reason="finalized")
+            self._lesion_resolved.clear()
         super()._close(run)
         self._core.clear()
+        self._issued_experts.clear()
+        self._mature_experts.clear()
         # Las decisiones cuya etiqueta no madura en el tramo no llegan a ser filas.
         self.extra.clear()
 
@@ -482,8 +582,16 @@ class CorrectionInference(ChronologicalInference):
         construidos a mano con el mismo contrato.
         """
         run = _Pass(rows=rows)
-        self.memory = AssociativeMemory(self.correction.memory)
+        if self.lesion_plan is not None:
+            if rows is not None and (
+                type(rows) is not LesionPredictionRows or rows.inference is not self
+            ):
+                raise ValueError("Las filas B4 deben conservar los pronósticos de este diagnóstico")
+            self.lesion_ledger = LesionLedger(self.lesion_plan)
+            self._lesion_resolved = {}
+        self.memory = self.correction.empty()
         self._core, self._staged = {}, []
+        self._issued_experts, self._mature_experts = {}, {}
         self._routing = _RoutingLog()
         self._reset_delay()
         self._trace_events, self._trace_phase = 0, f"b6_{source.phase.partition}"
@@ -492,6 +600,8 @@ class CorrectionInference(ChronologicalInference):
             for event in events:
                 if stop is not None and stop.requested:
                     raise Paused
+                if self.lesion_ledger is not None:
+                    self.lesion_ledger.begin(event.at)
                 self._labels(run, event, train=False)
                 if event.inputs:
                     self._observe(run, source, event, differentiable=False)
@@ -512,12 +622,30 @@ class CorrectionInference(ChronologicalInference):
         if self.delayed is not None:
             # Las etiquetas que siguen retenidas al cerrar el tramo no llegan a escribirse.
             metrics["label_delay_writes"] = self.delayed.writes
+        if self.correction.multiscale is not None:
+            metrics["multiscale"] = dict(
+                weights=self.memory.weights.tolist(),
+                clock=self.memory.clock,
+                cohorts=self.memory.cohorts,
+            )
+        if self.lesion_ledger is not None:
+            metrics["lesions"] = self.lesion_ledger.metrics()
         return metrics
 
     def predict(self, source, rows, *, stop=None):
         if not hasattr(rows, "append"):
             raise ValueError("La inferencia necesita un destino de filas")
         return self.evaluate(source, stop=stop, rows=rows)
+
+
+def _correction_inference(predictor, recipe, correction, codec, *, salience=None, **options):
+    if salience is None:
+        return CorrectionInference(predictor, recipe, correction, codec, **options)
+    from .salience_inference import SalienceCorrectionInference
+
+    return SalienceCorrectionInference(
+        predictor, recipe, correction, codec, salience=salience, **options
+    )
 
 
 class KalmanPredictionRows(PredictionRows):
@@ -546,8 +674,34 @@ class KalmanPredictionRows(PredictionRows):
             )
 
 
+class LesionPredictionRows(PredictionRows):
+    """Columnas de diagnósticos calculados al emitir, emparejadas con la fila original."""
+
+    def __init__(self, inference):
+        super().__init__(inference.quantiles)
+        self.inference, self.extra = inference, []
+
+    def append(self, record):
+        self.extra.append(self.inference._lesion_resolved.pop(tuple(record[:2])).tolist())
+        super().append(record)
+
+    def _flush(self):
+        if not self.buffer:
+            return
+        extra, self.extra = self.extra, []
+        super()._flush()
+        for name, values in zip(
+            self.inference.lesion_plan.names, zip(*extra, strict=True), strict=True
+        ):
+            self.tables[-1] = self.tables[-1].append_column(
+                "lesion_" + name, pa.array(values, type=pa.float64())
+            )
+
+
 def prediction_rows(inference):
     """Destino de las filas de un tramo, con las columnas de D3 y PT3 si la regla es kalman."""
+    if inference.lesion_plan is not None:
+        return LesionPredictionRows(inference)
     if inference.kalman:
         return KalmanPredictionRows(inference)
     return PredictionRows(inference.quantiles)
@@ -592,7 +746,7 @@ class _RoutingLog:
         )
 
 
-def correction_memory_policy(warmup_months, *, kalman=False):
+def correction_memory_policy(warmup_months, *, kalman=False, kernel=False, fit_months=None):
     """Describir la política de memoria del padre ampliada con A.
 
     A también se reinicia en cada recorrido, y el informe lo deja escrito para que se vea
@@ -600,7 +754,7 @@ def correction_memory_policy(warmup_months, *, kalman=False):
     P vuelven a su previa en cada recorrido y σ² y ϱ proceden del tramo de estimación.
     """
     policy = dict(
-        memory_policy(warmup_months),
+        memory_policy(warmup_months, fit_months),
         associative="zero_at_each_pass_then_mature_labels_after_the_event_predictions",
         associative_value="mature_label_minus_core_prediction",
         quantiles="all_levels_shifted_by_the_scalar_correction",
@@ -611,6 +765,11 @@ def correction_memory_policy(warmup_months, *, kalman=False):
             associative="prior_mean_and_covariance_at_each_pass_then_mature_labels_after_the_"
             "event_predictions",
             fit="none_variances_estimated_on_the_train_tail_and_process_ratio_by_search_case",
+        )
+    if kernel:
+        policy.update(
+            associative="no_episodes_at_each_pass_then_mature_labels_after_the_event_predictions",
+            fit="none_bandwidth_by_search_case_forgetting_and_capacity_fixed_by_recipe",
         )
     return policy
 
@@ -771,6 +930,8 @@ def run_correction_window(
     indices=None,
     stop=None,
     traces=None,
+    lesions=None,
+    salience=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
@@ -794,6 +955,13 @@ def run_correction_window(
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
+    if salience is not None:
+        from .salience_inference import checked_configuration
+
+        checked_configuration(salience, correction)
+    if lesions is not None:
+        _require(type(lesions) is LesionProtocol, "B4 necesita su protocolo identificado")
+        lesions.bind(correction)
     _require(
         correction is not None and set(checked) == {"associative_memory"},
         "La ventana B6 solo admite la corrección asociativa, sin banco episódico",
@@ -819,6 +987,14 @@ def run_correction_window(
         device=device,
         code=_code(),
     )
+    if lesions is not None:
+        request["lesions"] = lesions.identity()
+        request["code"].update(_lesion_code())
+    if salience is not None:
+        from .salience_inference import source_hashes
+
+        request["salience"] = salience.identity()
+        request["code"].update(source_hashes())
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -837,8 +1013,9 @@ def run_correction_window(
     for protected in (*dataset.roots.values(), view.parent, parent):
         outside_source(protected, output)
     titans, chronological = _parent_recipe(parent_report)
-    options = walk_forward_options(titans)
-    phases = window_phases(fold, options["warmup_months"])
+    # Kalman conserva su rechazo hasta acotar también su tramo de estimación de ruido.
+    options = walk_forward_options(titans, bounded_fit=not kalman)
+    phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     _require(
         {name: asdict(phase) for name, phase in phases.items()}
         == parent_report["identity"]["phases"],
@@ -864,7 +1041,9 @@ def run_correction_window(
         combination = arm_components(components, values, noise["estimate"])
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(predictor, chronological, variant.correction, codec)
+    inference = _correction_inference(
+        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
+    )
     identity = dict(
         schema_version=1,
         kind=KIND,
@@ -877,7 +1056,12 @@ def run_correction_window(
         variant_sha256=variant.fingerprint(),
         correction=variant.correction.identity(),
         codec=codec.identity(),
-        memory_policy=correction_memory_policy(options["warmup_months"], kalman=kalman),
+        memory_policy=correction_memory_policy(
+            options["warmup_months"],
+            kalman=kalman,
+            kernel=variant.correction.memory.rule == KERNEL_RULE,
+            fit_months=options.get("fit_months"),
+        ),
         phases={name: asdict(phase) for name, phase in measured.items()},
         indices={name: source.identity for name, source in sources.items()},
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
@@ -887,6 +1071,17 @@ def run_correction_window(
         # Solo kalman la lleva, así que las demás reglas conservan su identidad.
         identity["cohort_noise"] = noise
         identity["diagnostics"] = KALMAN_DIAGNOSTICS
+    if salience is not None:
+        identity["salience"] = salience.identity()
+        identity["memory_policy"]["salience"] = "reset_scale_and_write_budget_at_each_phase_start"
+        identity["variant"] = dict(
+            kind="salience_correction_variant_v1",
+            base=identity["variant"],
+            salience=salience.identity(),
+        )
+        identity["variant_sha256"] = hashlib.sha256(
+            canonical(identity["variant"]).encode()
+        ).hexdigest()
     if inference.kernel_policy is not None:
         # Como en los lectores, la política de precisión de la receta del padre, que aplica
         # la inferencia al construirse, entra en la identidad. Sin precisión declarada la
@@ -906,7 +1101,8 @@ def run_correction_window(
                 kind=SELECTED_KIND,
                 parent=request["parent"],
                 correction=variant.correction.identity(),
-                variant_sha256=variant.fingerprint(),
+                variant_sha256=identity["variant_sha256"],
+                **({"salience": salience.identity()} if salience is not None else {}),
             ),
         )
         report = dict(
@@ -1023,10 +1219,30 @@ def carry_correction(
     )
     _verify(anchor, report)
     request, identity = report["request"], report["identity"]
+    lesions = diagnostic_protocol(request)
+    _require(
+        ("salience" in request) == ("salience" in identity),
+        "El ancla no identifica E3 de forma coherente",
+    )
+    salience = None
+    if "salience" in request:
+        from .salience_inference import restore_configuration
+
+        salience = restore_configuration(request)
+        _require(
+            canonical(identity["salience"]) == canonical(salience.identity()),
+            "La identidad E3 del ancla contradice a su petición",
+        )
     _require(
         sha256(anchor / "selected.json") == report["checkpoint"]["sha256"],
         "El estado elegido del ancla ha cambiado",
     )
+    if salience is not None:
+        selected, _ = read_manifest(anchor / "selected.json", 64 * 1024)
+        _require(
+            canonical(selected.get("salience")) == canonical(salience.identity()),
+            "El estado seleccionado no conserva el factor E3 del ancla",
+        )
     parent = Path(request["parent"]["path"])
     parent_report, parent_sha = read_manifest(parent / "run.json", 16 * 1024**2)
     _require(
@@ -1080,7 +1296,9 @@ def carry_correction(
         "La corrección trasladada no es la elegida en el ancla",
     )
     codec = FrozenEpisodeCodec(specification)
-    inference = CorrectionInference(predictor, chronological, variant.correction, codec)
+    inference = _correction_inference(
+        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
+    )
     predictions = {}
     for name in partitions:
         rows = prediction_rows(inference)
@@ -1104,7 +1322,11 @@ def carry_correction(
         fold=fold,
         months_since_anchor_information=age,
         memory_policy=dict(
-            correction_memory_policy(options["warmup_months"], kalman=noise is not None),
+            correction_memory_policy(
+                options["warmup_months"],
+                kalman=noise is not None,
+                kernel=variant.correction.memory.rule == KERNEL_RULE,
+            ),
             parameters="anchor_selected_parent_and_correction_without_further_selection",
             fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
         ),
@@ -1121,5 +1343,13 @@ def carry_correction(
         **regeneration_record(regenerate),
         **frozen_parent_record(frozen_parent),
     )
+    if lesions is not None:
+        receipt["lesions"] = lesions.identity()
+        receipt["code"].update(_lesion_code())
+    if salience is not None:
+        from .salience_inference import source_hashes
+
+        receipt["salience"] = salience.identity()
+        receipt["code"].update(source_hashes())
     atomic_json(output / "carry.json", receipt)
     return receipt

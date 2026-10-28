@@ -1,0 +1,41 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_lesion_protocol.py",
+      "test_sha256": "73485aeff86132380013b832bbe571c1ae0887091adc68a11bef737edb73bdb6"
+    }
+  },
+  "sources": {
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "4a2013705a289a32d4c290b48897cca67af3e04c0c8a12b7e56a155444ee19d5"
+    },
+    "bridge": {
+      "path": "src/mars_titan/memory/area_query_bridge.py",
+      "sha256": "d29e43eb6aec0f067a3560893cb16ba1447b87a4dc35bf922b3a5e741bc6fb2a"
+    },
+    "ledger": {
+      "path": "src/mars_titan/memory/lesion_ledger.py",
+      "sha256": "a71d726af049dec81fee3def79a60be0ba9ebd3ce45aa05733852b4d6a9b5578"
+    },
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "fb06a9607f44513c5c2961cffd9d9af0f6d12df1d58ad9e7fb258503389a3df2"
+    }
+  },
+  "recipes": [
+    {
+      "id": "rebase_e1_clock_on_lesion_read",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_lesion_protocol.py::test_readings_are_finite_and_leave_the_original_memory_unchanged[options3]",
+      "anchor": "        return result\n\n    def write",
+      "replacement": "        self.clock = at\n        return result\n\n    def write",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ]
+}

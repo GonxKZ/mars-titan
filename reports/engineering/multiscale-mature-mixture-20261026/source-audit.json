@@ -1,0 +1,15 @@
+{
+  "url": "https://www.schapire.net/papers/FreundSc95.pdf",
+  "title": "A Decision-Theoretic Generalization of On-Line Learning and an Application to Boosting",
+  "authors": [
+    "Yoav Freund",
+    "Robert E. Schapire"
+  ],
+  "author_manuscript_date": "1996-12-19",
+  "publication_year": 1997,
+  "doi": "10.1006/jcss.1997.1504",
+  "pdf_sha256": "6bcbba23d15a3f082e6b701bc23d14807af788edeb96dbd5a11c6caa8c125c84",
+  "inspected": "Figura 1 y comienzo de la sección 2, no una auditoría de las 35 páginas.",
+  "lean_executed": false,
+  "financial_guarantee_claimed": false
+}
