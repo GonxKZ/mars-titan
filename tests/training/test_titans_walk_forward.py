@@ -1080,3 +1080,168 @@ def test_common_epoch_window_waits_then_emits_its_epoch_and_versions(base, tmp_p
             versions=[2],
             **options,
         )
+
+
+# Dos ventanas mensuales seguidas. La validación de la primera acaba cuando empieza la de la
+# segunda, así que la segunda puede continuar desde el estado elegido de la primera (F3).
+TWO_WINDOWS = dict(
+    PROTOCOL, validation_months=1, calibration_months=1, evaluation_months=1, step_months=1
+)
+SHRINK = dict(shrink=0.6, noise=0.01, seed=1)
+
+
+def two_windows(root):
+    """Vistas de las dos ventanas del protocolo técnico de continuación."""
+    corpus = chronological_corpus(root / "corpus", assets=3, first="2023-06-01", last="2023-12-29")
+    protocol = root / "protocol.json"
+    protocol.write_text(json.dumps(TWO_WINDOWS))
+    prepare_temporal_corpus(
+        corpus,
+        protocol,
+        None,
+        None,
+        root / "views",
+        input_policy=HISTORICAL_MASKED,
+        recover_annual_boundaries=True,
+    )
+    return root / "views", protocol
+
+
+def stage(views, protocol, fold, recipe_path, output, *, variant="mac_online", **options):
+    return wf.run_titans_window(
+        views / fold / "manifest.json",
+        protocol,
+        fold,
+        recipe_path,
+        variant=variant,
+        seed=42,
+        output=output,
+        device="cpu",
+        indices=output.with_name(f"{output.name}-indices"),
+        optimizer_factory=Factory(),
+        **options,
+    )
+
+
+def shrink_recipe(root):
+    document = json.loads(recipe(root).read_text())
+    document["recipe"]["shrink_perturb"] = SHRINK
+    path = root / "shrink.json"
+    path.write_text(json.dumps(document))
+    return path
+
+
+def edited_parent(source, destination, change):
+    """Copia del padre con su informe cambiado, sin tocar sus estados ni sus predicciones."""
+    import shutil
+
+    shutil.copytree(source, destination)
+    report = json.loads((destination / "run.json").read_text())
+    change(report)
+    (destination / "run.json").write_text(json.dumps(report))
+    return destination
+
+
+def test_a_continuation_starts_from_the_chosen_state_of_its_parent(tmp_path, monkeypatch):
+    from mars_titan.training.shrink_perturb import ShrinkPerturb
+
+    views, protocol = two_windows(tmp_path)
+    quantile, shrink = recipe(tmp_path), shrink_recipe(tmp_path)
+    build, fresh = wf._predictor, []
+
+    def scaled(*args, **kwargs):
+        # El doble del optimizador no mueve pesos, así que el padre parte de unos fijados a
+        # mano. Su estado elegido es entonces distinto de una inicialización nueva.
+        predictor, pairing = build(*args, **kwargs)
+        fresh.append(predictor._parameter_id)
+        with torch.no_grad():
+            for value in predictor.parameters():
+                value.mul_(0.875)
+        predictor._seal_parameters()
+        return predictor, pairing
+
+    with monkeypatch.context() as patch, unfused_attention():
+        patch.setattr(wf, "_predictor", scaled)
+        parent = stage(views, protocol, "fold-000", quantile, tmp_path / "parent")
+    assert parent["status"] == "completed"
+    with unfused_attention():
+        child = stage(
+            views, protocol, "fold-001", shrink, tmp_path / "child", initial=tmp_path / "parent"
+        )
+    assert child["status"] == "completed"
+    assert child["request"]["initial"] == dict(
+        run_id=parent["run_id"], checkpoint_sha256=parent["checkpoint"]["sha256"]
+    )
+    assert "initial" not in parent["request"]
+    parent_fit = json.loads((tmp_path / "parent" / "fit" / "run.json").read_text())
+    child_fit = json.loads((tmp_path / "child" / "fit" / "run.json").read_text())
+    start = parent_fit["identity"]["initial_parameters_sha256"]
+    # Una inicialización nueva de la misma semilla no tiene los pesos fijados del padre.
+    assert fresh and start not in fresh
+    assert child_fit["identity"]["initial_parameters_sha256"] == start
+    record = child_fit["shrink_perturb"]
+    assert record["parameters_before_sha256"] == start
+    assert record["fresh_seed"] == ShrinkPerturb(**SHRINK).fresh_seed(42)
+    assert record["parameters_after_sha256"] not in (start, record["fresh_parameters_sha256"])
+    with unfused_attention():
+        again = stage(
+            views, protocol, "fold-001", shrink, tmp_path / "child", initial=tmp_path / "parent"
+        )
+    assert again == child
+    # Otro padre cambia la petición de la ventana ya completada.
+    other = edited_parent(
+        tmp_path / "parent", tmp_path / "other", lambda report: report.update(run_id="0" * 64)
+    )
+    with pytest.raises(ValueError, match="petición de la ventana ha cambiado"):
+        stage(views, protocol, "fold-001", shrink, tmp_path / "child", initial=other)
+    # Un padre de la misma ventana vio la validación de la continuación.
+    with pytest.raises(ValueError, match="no acaba antes de la validación"):
+        stage(views, protocol, "fold-000", quantile, tmp_path / "same", initial=tmp_path / "parent")
+    # Un padre de otra semilla, sin terminar o con otro estado elegido no se acepta.
+    seeded = edited_parent(
+        tmp_path / "parent", tmp_path / "seeded", lambda report: report["request"].update(seed=43)
+    )
+    with pytest.raises(ValueError, match="padre de su semilla"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "seed", initial=seeded)
+    paused = edited_parent(
+        tmp_path / "parent", tmp_path / "paused", lambda report: report.update(status="paused")
+    )
+    with pytest.raises(ValueError, match="no es una ventana de Titans-MAC completada"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "pause", initial=paused)
+    changed = edited_parent(
+        tmp_path / "parent",
+        tmp_path / "changed",
+        lambda report: report["checkpoint"].update(sha256="f" * 64),
+    )
+    with pytest.raises(ValueError):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "state", initial=changed)
+    # Unas predicciones confirmadas del padre que han cambiado también lo invalidan.
+    broken = edited_parent(tmp_path / "parent", tmp_path / "broken", lambda report: None)
+    (broken / "evaluation-predictions.parquet").write_bytes(b"PAR1 x PAR1")
+    with pytest.raises(ValueError, match="predicciones confirmadas"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "rows", initial=broken)
+    # Con otra cabeza, el estado del padre no corresponde a la arquitectura del predictor.
+    scalar = recipe(tmp_path, SCALAR_RECIPE)
+    with pytest.raises(ValueError, match="arquitectura del predictor"):
+        stage(views, protocol, "fold-001", scalar, tmp_path / "scalar", initial=tmp_path / "parent")
+    assert not any((tmp_path / name / "fit").exists() for name in ("same", "seed", "pause"))
+    assert not (tmp_path / "rows" / "fit").exists()
+
+
+def test_the_shrink_of_f3_only_runs_as_a_continuation_of_mac_online(tmp_path):
+    views, protocol = two_windows(tmp_path)
+    shrink = shrink_recipe(tmp_path)
+    with pytest.raises(ValueError, match="solo se aplica a una continuación"):
+        stage(views, protocol, "fold-001", shrink, tmp_path / "alone")
+    # La comprobación llega antes de leer el padre, que aquí no existe.
+    with pytest.raises(ValueError, match="sin control local ni emparejamiento"):
+        stage(
+            views,
+            protocol,
+            "fold-001",
+            shrink,
+            tmp_path / "frozen",
+            variant="mac_frozen",
+            initial=tmp_path / "absent",
+        )
+    assert not (tmp_path / "alone").exists() and not (tmp_path / "frozen").exists()
