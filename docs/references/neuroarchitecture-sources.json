@@ -1012,5 +1012,43 @@
       6
     ],
     "verification_date": "2026-10-04"
+  },
+  {
+    "id": "ho2019axial",
+    "title": "Axial Attention in Multidimensional Transformers",
+    "authors": [
+      "Jonathan Ho",
+      "Nal Kalchbrenner",
+      "Dirk Weissenborn",
+      "Tim Salimans"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1912.12180v1",
+    "doi": "10.48550/arXiv.1912.12180",
+    "pdf_url": "https://arxiv.org/pdf/1912.12180v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 20 de diciembre de 2019. Ficha y PDF abiertos. Leída la sección 3.1 de la página 4, que define la atención axial, su versión enmascarada y el campo receptivo de dos capas sobre ejes distintos. La ficha no indica una publicación revisada y el DOI identifica el preprint.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2019-12-20",
+      "url": "https://arxiv.org/pdf/1912.12180v1",
+      "passages": [
+        "Sección 3.1, página 4: atención axial y atención axial enmascarada"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/1912.12180v1"
+    ],
+    "relevance": "Fuente de la atención axial de C2, que atiende primero al tiempo de cada fuente y después entre fuentes. Sus resultados son de modelado generativo de imágenes y vídeo y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
   }
 ]
