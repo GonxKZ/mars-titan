@@ -244,16 +244,16 @@ def test_the_configuration_records_its_role_and_normalizes_its_lists():
     assert identity["name"] == MATURE_RELIABILITY
     assert identity["role"] == "shared_signal_variant"
     assert identity["time_constants"] == [1, 5] and identity["consumers"] == ["write", "forget"]
+    # Cada control conserva su propio papel, no solo el conjunto de papeles.
     roles = {
-        MatureReliability(source="shuffled_in_time").identity()["role"],
-        MatureReliability(source="titans_surprise").identity()["role"],
-        MatureReliability(independent=True).identity()["role"],
+        source: MatureReliability(source=source).identity()["role"]
+        for source in ("shuffled_in_time", "titans_surprise")
     }
-    assert roles == {
-        "shuffled_in_time_control",
-        "titans_surprise_control",
-        "independent_signals_per_consumer_control",
-    }
+    assert roles == dict(
+        shuffled_in_time="shuffled_in_time_control", titans_surprise="titans_surprise_control"
+    )
+    independent = MatureReliability(independent=True).identity()["role"]
+    assert independent == "independent_signals_per_consumer_control"
     assert MatureReliability(independent=True).channels == 2
     scores = {MatureReliability(source=s).identity()["score"] for s in ("shuffled_in_time",)}
     assert scores == {"score_of_a_uniformly_drawn_earlier_or_current_maturity_event"}
