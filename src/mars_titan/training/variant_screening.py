@@ -60,10 +60,6 @@ class Arm:
     def runner(self):
         return self.definition["runner"]
 
-    @property
-    def label(self):
-        return f"{self.entry}/{self.name}"
-
 
 def checked_protocol(document):
     """Validar la forma del protocolo y sus restricciones antes de enumerar nada."""
