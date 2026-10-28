@@ -96,6 +96,10 @@ def test_the_fit_rows_are_the_train_decisions_of_the_fit_months(view, tmp_path):
     )
     every = windows.partition_rows(data, "train", with_features=False)
     assert every.panel.rows == data.manifest["counts"]["train"] > rows.panel.rows
+    # Las filas decididas justo en el instante inicial también entran.
+    earliest = int(every.panel.prediction_at.min())
+    since_earliest = windows.partition_rows(data, "train", with_features=False, since=earliest)
+    assert since_earliest.panel.rows == every.panel.rows
     with pytest.raises(ValueError, match="no tiene filas"):
         windows.partition_rows(data, "train", with_features=False, since=2**62)
 
