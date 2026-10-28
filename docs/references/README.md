@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **365 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **369 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -51,6 +51,13 @@ sobre el cambio de orden de los estados al combinar modelos.
 El mismo día se añadió Ho et al. (2019), la fuente de la atención axial de la
 [variante C2](../experiments/axial-time-region-v1.md), que atiende al tiempo de
 cada fuente y después entre fuentes.
+
+También se añadieron cuatro fuentes del
+[operador fractal C3](../experiments/fractal-shared-operator-v1.md): Lan et al.
+(2020) sobre el reparto de parámetros entre capas de ALBERT, Bae et al. (2025) sobre
+la LoRA por profundidad que relaja ese reparto, Saunshi et al. (2025) sobre los
+modelos que repiten un mismo bloque y Kakushadze y Yu (2016), cuyo resumen desaconseja
+agrupar directamente correlaciones o rendimientos.
 
 ## Contenido
 
