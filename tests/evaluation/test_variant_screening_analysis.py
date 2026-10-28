@@ -405,7 +405,7 @@ def test_the_seed_mean_takes_the_place_of_the_seeds_with_its_replicates():
             items.append(
                 sd.session_correlations(evaluation, evaluation.prediction, min_assets=min_assets)
             )
-        parts.append(analysis._average(items))
+        parts.append(analysis.seed_average(items))
     values, defined = arrays["merged"][(label, "session_ic")]
     assert np.array_equal(defined, np.concatenate([mask for _, mask in parts]))
     assert np.array_equal(values, np.concatenate([value for value, _ in parts]))
