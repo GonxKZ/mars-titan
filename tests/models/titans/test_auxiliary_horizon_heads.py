@@ -84,11 +84,19 @@ def test_operators_that_mix_rows_are_refused_because_tokens_are_recomputed_alone
 
 
 def test_session_level_operations_are_refused_because_tokens_are_recomputed_alone():
+    from mars_titan.models.titans.cross_asset_attention import CrossAssetAttentionConfig
     from mars_titan.models.titans.session_ic_objective import SessionICObjective
 
     base, _ = setup()
     with pytest.raises(ValueError, match="operaciones por sesión"):
         replace(base.config, auxiliary_horizons=CONFIG, session_ic_objective=SessionICObjective())
+    # C5 mezcla las filas de la sesión, así que F5 tampoco puede recalcular su token solo.
+    with pytest.raises(ValueError, match="operaciones por sesión"):
+        replace(
+            base.config,
+            auxiliary_horizons=CONFIG,
+            cross_asset_attention=CrossAssetAttentionConfig(),
+        )
 
 
 def test_heads_use_their_own_generator_and_leave_the_reference_untouched():
