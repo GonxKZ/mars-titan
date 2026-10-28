@@ -5,9 +5,9 @@ import math
 import pytest
 import torch
 
+from mars_titan.models.titans import laplace_scale
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.laplace_scale import LaplaceScaleHead
-from mars_titan.training import financial_run
 from mars_titan.training.financial_run import (
     ChronologicalInference,
     ChronologicalRecipe,
@@ -84,13 +84,14 @@ def trainer(streams, output, *, model=None, **options):
 def test_every_update_uses_the_beta_nll_and_matches_the_l1_control_at_zero_scale_weight(
     shared, tmp_path, monkeypatch
 ):
-    calls, original = [], financial_run.laplace_beta_nll
+    calls, original = [], laplace_scale.laplace_beta_nll
 
     def spy(prediction, target):
         calls.append(prediction.shape)
         return original(prediction, target)
 
-    monkeypatch.setattr(financial_run, "laplace_beta_nll", spy)
+    # El objetivo de salida de F1 calcula su pérdida con la función de su módulo.
+    monkeypatch.setattr(laplace_scale, "laplace_beta_nll", spy)
     engine = trainer(shared, tmp_path / "laplace")
     before = engine.predictor._parameter_id
     assert engine.run()["status"] == "completed"
