@@ -285,6 +285,35 @@ def test_the_control_of_a_seed_mean_multiplies_its_updates_by_the_size(protocol,
         screening.entry_arms(protocol, "F2")
 
 
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        # El tamaño y el control coinciden, pero la media declara dos semillas.
+        (lambda arms: arms["seed_mean"].update(seeds=[42, 43]), "multiplica"),
+        # Una segunda media que promediaría las réplicas de la primera.
+        (lambda arms: arms.update(seed_mean_of_means=copy.deepcopy(arms["seed_mean"])), "modelo"),
+    ],
+    ids=["seeds", "source"],
+)
+def test_a_seed_mean_averages_the_seeds_it_declares_from_a_fitted_model(
+    protocol, monkeypatch, change, message
+):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            change(document["arms"])
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    document = copy.deepcopy(protocol)
+    combinations = document["catalog"]["F2"]["combinations"]
+    combinations["seed_mean_of_means"] = dict(combinations["seed_mean"], source="seed_mean")
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(document, "F2")
+
+
 def test_the_adaptive_reader_reserves_the_depth_of_its_control(jobs):
     """D2 solo cambia la parada: la lectura adaptativa calcula J4 como su control."""
     definitions = {}
