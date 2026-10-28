@@ -1,7 +1,7 @@
 """Coste de la atención axial C2 y de su control de solo tiempo (#751).
 
 Sin --run imprime el protocolo y no importa Torch. Con --run mide en el dispositivo declarado
-la llamada a `AxialTimeRegion` de cada brazo de la declaración, en FP32 y con H = 64. Las
+la llamada a `AxialTimeRegion` de cada modelo de la declaración, en FP32 y con H = 64. Las
 entradas son sintéticas con las formas de la emisión: cinco bloques [R,5,H] con noticias,
 fundamentales y macro ausentes en parte de las filas y un historial lleno de W − 1 = 7
 emisiones con las mismas fracciones de presencia.
@@ -9,8 +9,8 @@ emisiones con las mismas fracciones de presencia.
 `forward` es la inferencia sin gradiente, incluido el desplazamiento del historial.
 `backward` añade la propagación de una suma de cuadrados hasta los parámetros del módulo, sin
 optimizador. Un gancho de `torch.optim` rechaza cualquier paso. Las dos proyecciones de
-salida se fijan iguales y distintas de cero en los dos brazos. Las dos pasadas invierten el
-orden de los brazos y comparten proceso con las aplicaciones que ya existan, así que los
+salida se fijan iguales y distintas de cero en los dos modelos. Las dos pasadas invierten el
+orden de los modelos y comparten proceso con las aplicaciones que ya existan, así que los
 percentiles son descriptivos. La salida debe ser nueva.
 """
 
@@ -33,7 +33,7 @@ OBSERVED = dict(news=0.4, fundamentals=0.7, macro=0.9)
 
 
 def arms():
-    """Brazos de la declaración que añaden C2, en su orden."""
+    """Modelos de la declaración que añaden C2, en su orden."""
     declaration = json.loads(DECLARATION.read_text(encoding="utf-8"))
     return {
         name: arm["predictor_changes"]["axial_time_region"]
@@ -146,7 +146,7 @@ def run(device):
             module.second_out.weight.copy_(projections[1].to(device))
     windows = {module.config.window for module in modules.values()}
     if len(windows) != 1:
-        raise RuntimeError("Los brazos de C2 deben compartir la ventana")
+        raise RuntimeError("Los modelos de C2 deben compartir la ventana")
     window = windows.pop()
     batches = {rows: inputs(rows, window, device) for rows in ROWS}
     records, peaks = [], {}
