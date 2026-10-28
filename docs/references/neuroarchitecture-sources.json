@@ -1012,5 +1012,103 @@
       6
     ],
     "verification_date": "2026-10-04"
+  },
+  {
+    "id": "puigcerver2024soft",
+    "title": "From Sparse to Soft Mixtures of Experts",
+    "authors": [
+      "Joan Puigcerver",
+      "Carlos Riquelme",
+      "Basil Mustafa",
+      "Neil Houlsby"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2308.00951v2",
+    "doi": "10.48550/arXiv.2308.00951",
+    "pdf_url": "https://arxiv.org/pdf/2308.00951v2",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v2 del 27 de mayo de 2024, con la nota de publicación en ICLR 2024. Ficha y PDF abiertos. Leídas la sección 2.1 de la página 2, que define los pesos de despacho como un softmax por columnas y los de combinación como un softmax por filas de los mismos logits, y el apéndice E de la página 18, sobre la normalización de las entradas del softmax según la dimensión.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2024-05-27",
+      "url": "https://arxiv.org/pdf/2308.00951v2",
+      "passages": [
+        "Sección 2.1, página 2: pesos de despacho y de combinación, ecuaciones (1) y (2)",
+        "Apéndice E, página 18: normalización de las entradas del softmax"
+      ]
+    },
+    "latest_publication": {
+      "title": "From Sparse to Soft Mixtures of Experts",
+      "authors": [
+        "Joan Puigcerver",
+        "Carlos Riquelme",
+        "Basil Mustafa",
+        "Neil Houlsby"
+      ],
+      "year": 2024,
+      "venue": "International Conference on Learning Representations (ICLR 2024)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=jxpsAj7ltE",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, con la presentación destacada de ICLR 2024.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=jxpsAj7ltE"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2308.00951v2",
+      "https://openreview.net/forum?id=jxpsAj7ltE"
+    ],
+    "relevance": "Fuente del despacho y la combinación de las ranuras ocultas de H1. Sus resultados son de reconocimiento visual y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "tan2025magnet",
+    "title": "MaGNet: A Mamba Dual-Hypergraph Network for Stock Prediction via Temporal-Causal and Global Relational Learning",
+    "authors": [
+      "Peilin Tan",
+      "Chuanqi Shi",
+      "Dian Tu",
+      "Liang Xie"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.00085v1",
+    "doi": "10.48550/arXiv.2511.00085",
+    "pdf_url": "https://arxiv.org/pdf/2511.00085v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 29 de octubre de 2025. Ficha y PDF abiertos. Leídos el resumen y la sección 3.5.2 de la página 5, que construye el hipergrafo probabilístico global con asignaciones blandas a hiperaristas y pondera cada hiperarista por su divergencia de Jensen-Shannon media. La ficha no indica una publicación revisada y el DOI identifica el preprint. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2025-10-29",
+      "url": "https://arxiv.org/pdf/2511.00085v1",
+      "passages": [
+        "Resumen, página 1",
+        "Sección 3.5.2, página 5: hipergrafo probabilístico global y ponderación por divergencia de Jensen-Shannon"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/2511.00085v1"
+    ],
+    "relevance": "Antecedente financiero de la pertenencia blanda de H1 a grupos de activos. H1 parte en cambio de las familias del catálogo, fijadas antes de ver datos, y su ablación H2 mide la corrección aprendida.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
   }
 ]
