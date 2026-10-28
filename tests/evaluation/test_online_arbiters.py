@@ -404,7 +404,7 @@ def with_targets(table, change):
 def arbiter(panel, predictions, matures, **options):
     settings = dict(margin=0.0, window=10, min_assets=3)
     settings.update(options)
-    return arbiters.version_arbiter(panel, predictions, matures, **settings)
+    return arbiters.online_mixture(panel, predictions, matures, **settings)
 
 
 def test_each_session_is_standardized_and_a_constant_one_is_zero():
@@ -452,6 +452,15 @@ def test_the_arbiter_abstains_when_no_version_is_reliable_enough():
     # El margen se fija antes: con −1 solo se abstiene mientras no hay resultados maduros.
     lenient = arbiter(panel, predictions, matures, margin=-1.0)
     assert lenient["abstained"].sum() == 2
+
+
+def test_without_a_margin_the_mixture_never_abstains():
+    panel, predictions, matures = version_inputs(version_table(), signs=(-1.0, -1.0))
+    result = arbiter(panel, predictions, matures, margin=None)
+    assert not result["abstained"].any() and result["coverage"] == 1.0
+    # Antes de la primera sesión madura la mezcla es la del prior, uniforme.
+    np.testing.assert_allclose(result["mixtures"][0], [0.5, 0.5])
+    assert result["prediction"].any()
 
 
 @pytest.mark.parametrize("seed", [None, 7])
@@ -528,10 +537,10 @@ def test_each_market_has_its_own_state():
     assert not np.array_equal(altered["mixtures"][~us], result["mixtures"][~us])
 
 
-def test_the_uniform_control_is_the_mean_of_the_standardized_versions():
+def test_the_uniform_control_is_the_mean_of_the_standardized_options():
     panel, predictions, _ = version_inputs(version_table())
     expected = np.mean([arbiters.standardized(panel, c) for c in predictions.T], axis=0)
-    np.testing.assert_allclose(arbiters.uniform_versions(panel, predictions), expected)
+    np.testing.assert_allclose(arbiters.uniform_mixture(panel, predictions), expected)
 
 
 @pytest.mark.parametrize(

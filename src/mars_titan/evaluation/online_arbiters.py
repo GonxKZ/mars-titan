@@ -30,13 +30,15 @@ cuando madura, en orden de madurez, con la mezcla vigente en ese momento, que es
 conserva la igualdad anterior. Las cotas valen así para la secuencia de sesiones maduras y no
 exactamente para las mezclas emitidas antes de conocer sus pérdidas.
 
-`version_arbiter` (`version_arbiter_v1`) es la primera aplicación: reparte la confianza
-entre versiones de un mismo ajuste con la pérdida (1 − IC)/2 de cada sesión madura y se
-abstiene si ninguna tiene fiabilidad madura por encima de un margen fijado antes. Sus
-controles son la media uniforme de las versiones (`uniform_versions`) y el mismo árbitro con
-los resultados desordenados en el tiempo. La época fija elegida en validación es la emisión
-ya existente del ajuste. La garantía es sobre la pérdida lineal de la mezcla, no sobre el IC
-medio de la predicción mezclada.
+`online_mixture` reparte la confianza entre las opciones de cada sesión con la pérdida
+(1 − IC)/2 de las sesiones maduras y mezcla sus predicciones tipificadas. Dos identidades la
+usan. `version_arbiter_v1` mezcla versiones de un mismo ajuste y se abstiene si ninguna
+tiene fiabilidad madura por encima de un margen fijado antes. Sus controles son la media
+uniforme (`uniform_mixture`), el mismo árbitro con los resultados desordenados en el tiempo
+y la época fija elegida en validación, que es la emisión ya existente del ajuste.
+`model_combination_v1` mezcla todos los modelos comparados, sin abstención y con la media
+simple como control obligatorio por el enigma de la combinación de previsiones. La garantía
+es sobre la pérdida lineal de la mezcla, no sobre el IC medio de la predicción mezclada.
 """
 
 import math
@@ -48,6 +50,7 @@ from . import scale_diagnostics as sd
 
 ADANORMALHEDGE = "adanormalhedge_v1"
 VERSION_ARBITER = "version_arbiter_v1"
+MODEL_COMBINATION = "model_combination_v1"
 MAX_OPTIONS = 64
 
 
@@ -380,17 +383,18 @@ def _shuffled(losses, scored, ic, decided_at, matures_at, window, keys):
     return mixtures, reliability
 
 
-def version_arbiter(panel, predictions, matures_at, *, margin, window, min_assets, seed=None):
-    """Mezcla en línea de las versiones de un mismo ajuste (`version_arbiter_v1`).
+def online_mixture(panel, predictions, matures_at, *, window, min_assets, margin=None, seed=None):
+    """Mezcla en línea de varias opciones con sus resultados maduros.
 
     `predictions[:, i]` es la predicción de la opción i en las filas del panel, que reúne la
     calibración y S en orden canónico, y `matures_at` la madurez de la etiqueta de cada fila.
     Cada mercado tiene su propio estado de AdaNormalHedge.TV con prior uniforme. La pérdida de
     una opción en una sesión es (1 − IC)/2 y su fiabilidad, el IC medio de sus últimas
-    `window` sesiones maduras. La sesión se abstiene, con predicción cero, si ninguna opción
-    supera `margin`, y también mientras no haya ninguna sesión madura. Si no, emite la mezcla
-    de las predicciones tipificadas por sesión. Con `seed` se calcula el control con los
-    resultados desordenados en el tiempo (`_shuffled`), que solo usa resultados maduros.
+    `window` sesiones maduras. Con `margin`, la sesión se abstiene, con predicción cero, si
+    ninguna opción supera ese margen, y también mientras no haya ninguna sesión madura. Sin
+    `margin` no hay abstención. Las sesiones que no se abstienen emiten la mezcla de las
+    predicciones tipificadas por sesión. Con `seed` se calcula el control con los resultados
+    desordenados en el tiempo (`_shuffled`), que solo usa resultados maduros.
     """
     predictions = np.asarray(predictions, dtype=np.float64)
     matures_at = np.asarray(matures_at)
@@ -408,7 +412,10 @@ def version_arbiter(panel, predictions, matures_at, *, margin, window, min_asset
         "Cada etiqueta madura después de su decisión",
     )
     _require(
-        type(window) is int and window >= 1 and math.isfinite(margin) and type(min_assets) is int,
+        type(window) is int
+        and window >= 1
+        and (margin is None or math.isfinite(margin))
+        and type(min_assets) is int,
         "La fiabilidad necesita una ventana entera positiva y un margen finito",
     )
     options = predictions.shape[1]
@@ -433,7 +440,10 @@ def version_arbiter(panel, predictions, matures_at, *, margin, window, min_asset
             mixtures[sessions], reliability[sessions] = _ordered(*market_args)
         else:
             mixtures[sessions], reliability[sessions] = _shuffled(*market_args, keys[sessions])
-    abstained = ~np.any(reliability > margin, axis=1)
+    if margin is None:
+        abstained = np.zeros(panel.sessions, dtype=bool)
+    else:
+        abstained = ~np.any(reliability > margin, axis=1)
     prediction = np.zeros(panel.rows)
     for session in np.flatnonzero(~abstained):
         start, count = panel.session_starts[session], panel.session_samples[session]
@@ -447,8 +457,8 @@ def version_arbiter(panel, predictions, matures_at, *, margin, window, min_asset
     )
 
 
-def uniform_versions(panel, predictions):
-    """Control de media uniforme de las versiones tipificadas, sin abstención."""
+def uniform_mixture(panel, predictions):
+    """Control de media uniforme de las opciones tipificadas, sin abstención."""
     predictions = np.asarray(predictions, dtype=np.float64)
     columns = [standardized(panel, predictions[:, i]) for i in range(predictions.shape[1])]
     return np.mean(columns, axis=0)
