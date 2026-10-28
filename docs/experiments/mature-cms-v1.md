@@ -58,9 +58,17 @@ Sin `write_periods`, la identidad de E1, su identidad normalizada, los campos de
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/multiscale_mixture_cost.py --declaration configs/experiments/mature-cms-v1.json`, sin pasos de optimizador. En cada ciclo medido el experto semanal cierra un periodo.
+Medido en CPU con `benchmarks/multiscale_mixture_cost.py --declaration configs/experiments/mature-cms-v1.json` sobre el commit a60780a8b, sin pasos de optimizador. Las dos pasadas usan 64, 256 y 1.024 filas, cinco ciclos de calentamiento y cuarenta medidas por caso, con dos hilos y FP64 en el corrector, en un AMD Ryzen 9 8945HS. El estado medido parte de una cohorte que la sesión ya aplicó y que los dos expertos lentos esperan. Cada ciclo incluye el codec, la lectura y la escritura madura del día 14, en la que el experto semanal cierra ese periodo con su paso proximal y el mensual lo amplía. La [primera pasada](../../reports/engineering/mature-cms-20261028/benchmark-1.json) y la [segunda](../../reports/engineering/mature-cms-20261028/benchmark-2.json) conservan todas las muestras, percentiles y huellas.
 
-Cada periodo abierto guarda como mucho 8.192 resultados de 552 bytes, con tres enteros, la clave de 64 coordenadas, el valor y el peso. La cota para los dos expertos lentos es de unos 9 MB dentro del artefacto de 64 MiB de la sesión.
+| Filas | Mediana de R2, pasada 1 (ms) | Mediana del control, pasada 1 (ms) | Cociente, pasada 1 | Cociente, pasada 2 |
+| --- | --- | --- | --- | --- |
+| 64 | 6,95 | 7,12 | 0,98 | 1,04 |
+| 256 | 11,42 | 10,55 | 1,08 | 1,05 |
+| 1.024 | 28,66 | 26,13 | 1,10 | 1,33 |
+
+La CPU estaba compartida con otras baterías, con una carga media de 12 a 17, y la segunda pasada tardó casi el doble en los dos modelos. En la primera, R2 cuesta entre lo mismo que el control y un 10 % más. R2 escribe dos veces por ciclo, la sesión y el periodo cerrado, y el control escribe tres, pero R2 además copia y concatena las filas de sus periodos abiertos. Con esta dispersión no se puede atribuir una diferencia menor que la propia variación entre pasadas. La medida con la máquina libre queda pendiente.
+
+El estado numérico pasa de 1.560 bytes en el control a 72.216, 284.184 y 1.132.056 bytes con R2, porque los expertos lentos guardan las filas de su periodo abierto a 552 bytes por fila, con tres enteros, la clave de 64 coordenadas, el valor y el peso. La recuperación desde el estado exportado fue idéntica bit a bit en todos los casos. Cada periodo abierto guarda como mucho 8.192 resultados, así que la cota para los dos expertos lentos es de unos 9 MB dentro del artefacto de 64 MiB de la sesión.
 
 ## Desviaciones y límites
 
