@@ -207,6 +207,10 @@ def _parent(folder, view, seed, control=None):
         changes.get("axial_time_region", predictor.get("axial_time_region")) is None,
         "El consumidor congelado aún no registra el historial de regiones de C2",
     )
+    _require(
+        changes.get("fractal_shared_operator", predictor.get("fractal_shared_operator")) is None,
+        "El consumidor congelado aún no registra el operador fractal de C3",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -231,6 +235,10 @@ def _frozen_parent(
     _require(
         options.get("axial_time_region") is None,
         "El consumidor congelado aún no registra el historial de regiones de C2",
+    )
+    _require(
+        options.get("fractal_shared_operator") is None,
+        "El consumidor congelado aún no registra el operador fractal de C3",
     )
     _require(
         allow_context or options.get("session_context") is None,

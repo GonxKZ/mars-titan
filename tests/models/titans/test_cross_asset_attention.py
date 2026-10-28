@@ -292,6 +292,7 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
                 regional_variant=None,
                 cross_asset_attention=config,
                 axial_time_region=None,
+                fractal_shared_operator=None,
             )
         )
         assert (name in trainer._code()) is present

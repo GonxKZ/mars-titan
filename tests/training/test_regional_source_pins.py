@@ -36,6 +36,7 @@ def source_reader(variant):
             regional_variant=variant,
             cross_asset_attention=None,
             axial_time_region=None,
+            fractal_shared_operator=None,
         )
     )
     # La receta decide si F2 y F3 añaden su código.
