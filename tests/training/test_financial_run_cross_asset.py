@@ -4,12 +4,17 @@ Reutiliza el corpus y el entrenador de las pruebas por sesión de #749. El optim
 registrador guarda los gradientes y no cambia pesos.
 """
 
+import hashlib
+import json
 from collections import Counter
+from dataclasses import asdict
 
 import pytest
 import torch
 
 from mars_titan.models.titans.cross_asset_attention import CrossAssetAttentionConfig
+from mars_titan.training import mars_titan_walk_forward
+from tests.models.titans.test_financial_adapter import specification
 from tests.training.test_financial_run import entries
 from tests.training.test_financial_run_session_objective import (
     ASSETS,
@@ -73,3 +78,50 @@ def test_replay_by_flow_blocks_reproduces_the_direct_gradients(shared, tmp_path)
     split = trainer(shared, tmp_path / "rows", model=c5(shared), accumulation_rows=2)
     with pytest.raises(ValueError, match="repetir todos los flujos"):
         split.run()
+
+
+def test_the_frozen_loader_refuses_c5_before_build_or_read(tmp_path, monkeypatch):
+    document = dict(predictor=dict(hidden_size=32, dtype="float64"))
+    changes = dict(cross_asset_attention=asdict(CrossAssetAttentionConfig()))
+    report = dict(request=dict(predictor_changes=changes))
+
+    def forbidden(*_args, **_options):
+        pytest.fail("Se construyó o leyó un padre con C5 sin registro congelado")
+
+    monkeypatch.setattr(mars_titan_walk_forward, "FinancialPredictor", forbidden)
+    monkeypatch.setattr(mars_titan_walk_forward, "read_manifest", forbidden)
+    with pytest.raises(ValueError, match="atención entre activos"):
+        mars_titan_walk_forward._frozen_parent(
+            document, specification(), 42, "cpu", tmp_path, report
+        )
+
+
+@pytest.mark.parametrize("in_recipe", (False, True))
+def test_a_c5_parent_is_refused_before_checkpoint_verification(tmp_path, monkeypatch, in_recipe):
+    view = tmp_path / "view.json"
+    view.write_text("{}\n")
+    declared = asdict(CrossAssetAttentionConfig())
+    predictor = dict(hidden_size=32, dtype="float64")
+    request = dict(
+        variant="mac_online", seed=42, view_sha256=hashlib.sha256(view.read_bytes()).hexdigest()
+    )
+    if in_recipe:
+        predictor["cross_asset_attention"] = declared
+    else:
+        request["predictor_changes"] = dict(cross_asset_attention=declared)
+    report = dict(
+        kind=mars_titan_walk_forward.TITANS_KIND,
+        status="completed",
+        final_test_opened=False,
+        checkpoint={},
+        request=request,
+        identity=dict(recipe=dict(predictor=predictor)),
+    )
+    (tmp_path / "run.json").write_text(json.dumps(report))
+    monkeypatch.setattr(
+        mars_titan_walk_forward,
+        "_verify",
+        lambda *_a: pytest.fail("Se verificó el checkpoint de un padre con C5 sin registrar"),
+    )
+    with pytest.raises(ValueError, match="atención entre activos"):
+        mars_titan_walk_forward._parent(tmp_path, view, 42)
