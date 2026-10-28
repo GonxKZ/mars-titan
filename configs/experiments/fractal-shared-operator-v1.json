@@ -107,7 +107,7 @@
     "rank": "Rango 4 con H = 64: cada nivel añade 2.048 parámetros, un 12 % del operador compartido. Fijado al declarar la variante, antes de abrir datos y sin ajustar",
     "heads": "Las cuatro cabezas de C2, C5 y de la atención de MAC",
     "sectors": "Ocho sectores, el mismo número de regiones que C4",
-    "min_returns": "La mitad de los 63 rendimientos de la ventana de 64 sesiones, la misma proporción que las 60 etiquetas de 126 que exige C4",
+    "min_returns": "La mitad de los 63 rendimientos de la ventana de 64 sesiones, una proporción parecida a la de las 60 etiquetas de 126 que exige C4",
     "per_level": "R = 15 con H = 64 y r = 4, el menor rango con el que el control no tiene menos parámetros que la variante (23.424 frente a 22.656)"
   }
 }
