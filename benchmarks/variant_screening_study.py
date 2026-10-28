@@ -50,8 +50,8 @@ KIND = "variant_screening_work_v1"
 DEFAULT_ROWS = dict(fit=256 * 252, validation=256 * 126, calibration=256 * 63, evaluation=256 * 252)
 GIB = 1024**3
 QUANTILE_PREFIX = "quantile_"
-# Trabajos con sus tres tramos en memoria a la vez. Las cinco semillas de la referencia de A2
-# caben con margen, unos 12 MB por trabajo con 256 activos.
+# Trabajos con sus tres tramos en memoria a la vez, entre todos los orígenes. Las cinco
+# semillas de la referencia de A2 caben con margen, unos 12 MB por trabajo con 256 activos.
 CACHED_RUNS = 32
 
 
@@ -607,6 +607,10 @@ def analyze(work, output, descriptions):
     missing = [job["id"] for job in receipt["jobs"] if _completed(work, job["id"]) is None]
     _require(not missing, f"Faltan {len(missing)} trabajos por terminar, como {missing[:1]}")
     protocol, reads, origins = receipt["protocol"], {}, {}
+    # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
+    load = functools.lru_cache(maxsize=CACHED_RUNS)(
+        lambda job_id: run_panels(work / "runs" / job_id, reads)
+    )
     for year in screening_cohorts.ORIGIN_FOLDS:
         view = work / "origins" / str(year) / "view-x1.json"
         assets = [
@@ -615,9 +619,7 @@ def analyze(work, output, descriptions):
         cohorts, maturity = origin_maturity(view, protocol["population"]["input_policy"])
         origins[year] = variant_screening_analysis.Origin(
             year=year,
-            load=functools.lru_cache(maxsize=CACHED_RUNS)(
-                lambda job_id: run_panels(work / "runs" / job_id, reads)
-            ),
+            load=load,
             cohorts=cohorts,
             maturity=maturity,
             sectors=current_sectors(descriptions, assets),

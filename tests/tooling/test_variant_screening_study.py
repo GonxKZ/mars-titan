@@ -480,7 +480,7 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     def analyze(protocol, jobs, origins, root):
         seen.update(protocol=protocol, jobs=jobs, origins=origins)
         origins[2020].load("job-a")
-        origins[2020].load("job-a")
+        origins[2021].load("job-a")
         values, defined = np.array([0.1, 0.2, 0.3]), np.array([True, True, False])
         report = dict(decisions=dict(B1=dict(passes=False)), sessions=3)
         merged = {(("B1", "area_memory"), "session_ic"): (values, defined)}
