@@ -656,6 +656,16 @@ def test_it_is_exclusive_with_other_modulations_session_mixing_and_row_wise_toke
         replace(base.config, fractal_shared_operator=VARIANT, **changes)
 
 
+def test_it_does_not_combine_with_the_holographic_network():
+    # H1 necesita la edición con el catálogo de sus familias, que su prueba ya construye.
+    from test_holographic_network import H1, api, specification
+
+    options = dict(variant="mac_online", hidden_size=32, holographic_network=H1)
+    api().FinancialConfig(specification(), **options)
+    with pytest.raises(ValueError, match="C3 se declara .* ni la red holográfica"):
+        api().FinancialConfig(specification(), fractal_shared_operator=VARIANT, **options)
+
+
 def test_the_source_and_its_regions_enter_the_trainer_identity_only_when_active():
     from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
 

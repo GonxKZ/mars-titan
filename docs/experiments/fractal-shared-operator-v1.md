@@ -66,7 +66,7 @@ Una fuente ausente conserva su bloque y no entra como clave. Su consulta siempre
 
 ## Requisitos de ejecución
 
-C3 ocupa la modulación de la fusión y solo se declara sobre `mac_online`. No se combina con el operador regional, C1, C2, C6 ni PT6, ni con la atención entre activos C5, que también mezcla los activos de la sesión. Los tokens fila a fila de `fused_tokens` la rechazan, y por eso tampoco se combina con las cabezas auxiliares de F5. El consumidor congelado, sus cargadores del recorrido y Dust la rechazan hasta que registren su fuente y su reparto. La fuente del módulo y la del agrupamiento común entran en la identidad del entrenador solo cuando C3 está activa.
+C3 ocupa la modulación de la fusión y solo se declara sobre `mac_online`. No se combina con el operador regional, C1, C2, C6, PT6 ni la red holográfica H1, que también ocupa esa modulación, ni con la atención entre activos C5, que también mezcla los activos de la sesión. Los tokens fila a fila de `fused_tokens` la rechazan, y por eso tampoco se combina con las cabezas auxiliares de F5. El consumidor congelado, sus cargadores del recorrido y Dust la rechazan hasta que registren su fuente y su reparto. La fuente del módulo y la del agrupamiento común entran en la identidad del entrenador solo cuando C3 está activa.
 
 ## Correspondencia con el código y las pruebas
 
@@ -88,6 +88,7 @@ Las pruebas están en `tests/models/titans/test_fractal_shared_operator.py` y la
 | Rango R del control | `control_rank` | `test_the_control_rank_is_the_smallest_that_keeps_the_parameters` |
 | Gradientes hasta todos los parámetros | autograd | `test_gradients_reach_every_parameter_and_the_present_blocks` |
 | Sectores con la ventana anterior a F4 | `FinancialPredictor._fractal_fuse` | `test_the_sectors_use_the_received_window_before_the_session_ranks` |
+| Exclusiones de la configuración | `FinancialConfig._check_fractal_shared_operator` | `test_it_is_exclusive_with_other_modulations_session_mixing_and_row_wise_tokens`, `test_it_does_not_combine_with_the_holographic_network` |
 
 ## Desviaciones respecto a las fuentes
 
