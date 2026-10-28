@@ -562,9 +562,9 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     monkeypatch.setattr(study, "current_sectors", lambda path, assets: dict.fromkeys(assets))
     read = []
 
-    def panels(folder, reads):
-        read.append(folder)
-        reads[f"{folder.name}/evaluation-predictions.parquet"] = "f" * 64
+    def panels(folder, reads, label=None):
+        read.append((folder, label))
+        reads[f"{label or folder.name}/evaluation-predictions.parquet"] = "f" * 64
         return {}
 
     monkeypatch.setattr(study, "run_panels", panels)
@@ -585,7 +585,8 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     assert seen["protocol"] == receipt["protocol"] and seen["jobs"] == receipt["jobs"]
     assert sorted(seen["origins"]) == sorted(screening_cohorts.ORIGIN_FOLDS)
     assert all(len(origin.sectors) == 256 for origin in seen["origins"].values())
-    assert read == [work / "runs" / "job-a"]
+    # Las lecturas de un trabajo se nombran con su identificador.
+    assert read == [(work / "runs" / "job-a", "job-a")]
     report = json.loads((tmp_path / "analysis" / "analysis.json").read_text())
     assert report["final_test_access"] is False and report["optimizer_steps"] == 0
     assert report["prepared_sha256"] == sha256(work / "prepared.json")
