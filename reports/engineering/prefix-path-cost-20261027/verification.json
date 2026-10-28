@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "rejected_path_signature_optimization",
+  "verified_at_utc": "2026-10-27T03:45:11.049989+00:00",
+  "adopted": false,
+  "decision": "El candidato no supera el margen prefijado en ambos modos y no mejora su referencia vecina en el modo diagnóstico.",
+  "base_commit": "093bb69431077a9d6963ab053eed714110196f3c",
+  "production_source_unchanged": true,
+  "before_source_sha256": "dea9d0a47aa5164152f6f6cc6147dd6ae3e01ef9c52f83a766d88dcc8ef41863",
+  "candidate_source_sha256": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c",
+  "candidate_patch_sha256": "114906c88992f2094a1c29a374e6a0170c66fec84865f7e067055d96708429cf",
+  "candidate_tests": {
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 67.229,
+    "junit_sha256": "efe4b96a0b7f28ba6bb21f3b3eae412103876ef5e581f556b81884797273a6b3"
+  },
+  "candidate_quality": {
+    "scope": "Candidato archivado. No es el archivo de producción actual.",
+    "statements": 184,
+    "covered_statements": 162,
+    "branches": 64,
+    "covered_branches": 46,
+    "signature_function": {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "_signature",
+      "start_line": 38,
+      "end_line": 54,
+      "cyclomatic_complexity": 6,
+      "statements": 14,
+      "covered_statements": 14,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 6.0
+    },
+    "maximum_function_crap": 38.5
+  },
+  "candidate_mutations": {
+    "planned": 4,
+    "killed": 4,
+    "scope": "Candidato y pruebas conservados en candidate.patch"
+  },
+  "experiments": {
+    "raw_trajectories": 80,
+    "measured_trajectories": 64,
+    "warmup_trajectories": 16,
+    "rows": 256,
+    "profile": "bridge",
+    "diagnostic_conditions": 20,
+    "initial": {
+      "numeric_criterion_met": true,
+      "adopted": false,
+      "interpretation": "inconclusive_reference_drift"
+    },
+    "confirmation": {
+      "accepted": false,
+      "reference_stable": true,
+      "reference_drift_percent": {
+        "False": 9.577382598425178,
+        "True": 4.401620055662859
+      }
+    },
+    "compared_checkpoints": 160,
+    "compared_prediction_values": 40960,
+    "independent_financial_observations": false
+  },
+  "artifacts_sha256": {
+    "affinity-a1.json": "7025eae7021e29b2d3ed828445f16d505d8842f05e1723913c0dc48e0c2bf38c",
+    "versions.json": "71381434699c9a150198d273b8626fb9b2eba7a1313e33170fe7edbabd883089",
+    "mutations.json": "48a2d3af776e3dfa8276870c8dd2d4b2f3383db149fd9f4a97421e1593f13c57",
+    "micro.json": "9c0e75ab32ff38da28e6b4141c5386aa919ccc84b76abd648a2814fcca1a76a5",
+    "affinity-a2.json": "bc10b510a5f9e77c12ba6ea163457e1bc2dfa79487c6f9f1d236cce49f52ee85",
+    "unrestricted-a2.json": "8ce57891c8520c7f3abd2ea2b944c52538f669ac05a47a909f5ef48dcb36cf91",
+    "unrestricted-a1.json": "8c85599cfadf9c108c006995afb4e1ea61387cd4eba6d27dc02b8db061244471",
+    "quality.json": "ebf0229c3f121fe828b781a5bc5af3419e31e0dc943afeb32de1005e64c528d8",
+    "affinity-b1.json": "6aa191430c66422277c85a7623a41958dd09d5786f03df08d570c9454a8a7fe0",
+    "unrestricted-b2.json": "c60beb168b377cb7d7bfad7053aa61eda12ba31361f5f4a1a4e207a4b4f6d99d",
+    "mutation-results.json": "cc3a94b8a469e0ea867eb762b8bf87f6ab04328de1e541a03781f3903ead2774",
+    "affinity-b2.json": "c7c582fb4f7b128c0afa706996d692e54afe9ede56f67746cd5da46e9aa1746d",
+    "unrestricted-comparison.json": "702320fed7a57ae85d15f0faf92a3fb06f3d00dc58ff12d4875ca6e92ee9f7cc",
+    "candidate.patch": "114906c88992f2094a1c29a374e6a0170c66fec84865f7e067055d96708429cf",
+    "affinity-comparison.json": "6bb46ffc6d64e38d244ec697aca21f5bcbdaed2e2121fcabf35abd0bfcfa1bd8",
+    "affinity-protocol.json": "5c0ba5cce85355675f9bee603d344f3588edb27f908d4517d77ac401edd59bd9",
+    "unrestricted-b1.json": "067974fd1790d1638d18a5a89e27a14ac8d89c7f5b04c55412b5541f9947f4ee"
+  },
+  "limitations": [
+    "Solo fixtures compactos CPU, sin corpus real ni optimizador.",
+    "Las predicciones y contadores se comparan por activo/fecha. Las identidades propias de cada origen no son iguales entre versiones.",
+    "La memoria y la recuperación completas se verifican dentro de cada ejecución. No se afirma igualdad byte a byte de metadatos entre orígenes.",
+    "La primera comparación presenta deriva de referencia superior al doble. No se atribuye su diferencia agrupada al código.",
+    "La reducción sin diagnósticos no basta para adoptar un cambio que falla el contraste con diagnósticos.",
+    "La lectura de rutas no es atómica y el candidato no acredita ausencia completa de carreras TOCTOU.",
+    "El patch contiene implementación y pruebas para reproducir el candidato sobre el commit base. No se añade una opción de producción."
+  ],
+  "real_corpus": false,
+  "scientific_evaluation": false,
+  "optimizer_steps": 0,
+  "final_test_opened": false,
+  "archived_candidate_sources_sha256": {
+    "src/mars_titan/training/prefix_eligibility.py": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c",
+    "tests/training/test_prefix_path_signature.py": "9fb48e4ef0949679a4eed1325faef9c27829a203dda6b410a4326d25e2cfdaaa",
+    "tests/memory/test_prefix_path_parity.py": "22c8968b6d948fe43e1d5ff6812518c23df0e5e8c926ab8abccc641e7623ef81"
+  },
+  "documentation_sha256": {
+    "docs/engineering/prefix-path-checks.md": "47556753471a04026b56a61af89955638a0b207ef2d4798e90d6b5db05c78fb3",
+    "docs/experiments/lesion-protocol-v1.md": "a222b89e09afb16efa654a559a3500afd00b9182359790f0730e95cdb9d8354d",
+    "README.md": "fcab59ca67e1ba400067d368921fe6a9f0fefdc21319f6e0b37299680f107242"
+  },
+  "candidate_patch_original_sha256": "7af25c9984e1b145d066f61caad96fea316ef48deaf124887cec52f7255dc31c",
+  "candidate_patch_normalization": "empty_context_lines_without_space_prefix"
+}

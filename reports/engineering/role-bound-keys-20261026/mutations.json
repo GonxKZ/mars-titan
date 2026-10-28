@@ -1,0 +1,452 @@
+{
+  "planned": 7,
+  "killed": 7,
+  "cases": [
+    {
+      "id": "ignore_roles",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "ignore_roles",
+        "family": "Objective",
+        "source_key": "role",
+        "nodeid": "tests/memory/test_role_binding.py::test_roles_vary_for_the_same_content_and_constant_control_ignores_them",
+        "anchor": "return values * codes",
+        "replacement": "return values * self._codes[torch.zeros_like(roles)]",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "len"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding.py::test_roles_vary_for_the_same_content_and_constant_control_ignores_them",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "cd1cfce03adced4cc2428a86068aff09a7aaece0cebf1bc868b674ef21fbbe01",
+          "events_sha256": "2c6a2322dac3458b789d52f822adad8018f2e0a0f94f52f26095908e18e56b8b",
+          "elapsed_s": 2.3195592800620943
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding.py::test_roles_vary_for_the_same_content_and_constant_control_ignores_them",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "35dcde4fd12eb298bf606266057c5be3a67fbaddeba32bcae91bbac617e7d614",
+          "events_sha256": "c3961f9c258c9b0e03c182aebf06ca0e2f79b73eb668395b7f1b17bff6be262b",
+          "elapsed_s": 3.271538886008784
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding.py::test_roles_vary_for_the_same_content_and_constant_control_ignores_them",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "4e7de77bf3e78fbac43792ca12cc564892ddd98be4b1af14f51bdb38242332e2",
+          "events_sha256": "a069019811508ad56f4b2dc1c15094f8a61f653cb8449e8c97137edd092e583e",
+          "elapsed_s": 2.619252322940156
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "drop_inverse",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "drop_inverse",
+        "family": "Objective",
+        "source_key": "role",
+        "nodeid": "tests/memory/test_role_binding.py::test_inverse_restores_extreme_values_and_signed_zero_bit_patterns",
+        "anchor": "return self.apply(values, roles)",
+        "replacement": "return values",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "torch.equal"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding.py::test_inverse_restores_extreme_values_and_signed_zero_bit_patterns",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "99c717929db0974268875943b36148b441f8238bcf7ead1b837e987060bcc08a",
+          "events_sha256": "6a8f3429a689ba273f3d489f841d72c42ba5cc57dc4cd961a0b1cd0fe8050ab7",
+          "elapsed_s": 2.4693884840235114
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding.py::test_inverse_restores_extreme_values_and_signed_zero_bit_patterns",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "88954b5591a80aa795bae55f55c6715ebeba4657374ca2fef662384132b6c951",
+          "events_sha256": "2380074b24670549ac056ba458058de3f953fb3e517c24f09dc1be83e35fc89c",
+          "elapsed_s": 2.3697155909612775
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding.py::test_inverse_restores_extreme_values_and_signed_zero_bit_patterns",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "c0017d73ba7c747e4a2aba3a0cec729bc9c21fe3118c5fb4a6afd741391624d6",
+          "events_sha256": "dc58ae1d814fcc3d0fd22e587277d324ffc05d6961cd9ca9616c015a59f255fd",
+          "elapsed_s": 2.369217094965279
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "drop_concat_role",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "drop_concat_role",
+        "family": "Objective",
+        "source_key": "role",
+        "nodeid": "tests/memory/test_role_binding.py::test_projected_concat_matches_independent_projection_and_has_no_inverse",
+        "anchor": "codes / WIDTH**0.5",
+        "replacement": "torch.zeros_like(codes)",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "not close"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding.py::test_projected_concat_matches_independent_projection_and_has_no_inverse",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "092cacd3c77c9098d48147893caf3f76eacd0216bb87111ca7add6bea2497cec",
+          "events_sha256": "7d98920dab686706076b3156fb273f817df0c78d594ba8d0013c116e7aa7d525",
+          "elapsed_s": 2.8212277069687843
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding.py::test_projected_concat_matches_independent_projection_and_has_no_inverse",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "26109c0ce90970e24116e390c53495e06443c6d2064cec4bc3f6c5673646d652",
+          "events_sha256": "e081f7815f989a44955cb111c47a8441fb1e882e2afbc50ebe431433e3e2defb",
+          "elapsed_s": 2.870623349910602
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding.py::test_projected_concat_matches_independent_projection_and_has_no_inverse",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "0178d2f1723495d9d6c6ff5206ea0e4f0e97af12b39f0d550eaf127875874492",
+          "events_sha256": "9ccaf5f248dce1a25ead76de699f9b1d5edc63a16bf74a83a66b7a460f881862",
+          "elapsed_s": 4.625893897842616
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "reuse_cross_seed_stream",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "reuse_cross_seed_stream",
+        "family": "Objective",
+        "source_key": "role",
+        "nodeid": "tests/memory/test_role_binding.py::test_projection_and_role_streams_do_not_alias_across_seeds",
+        "anchor": "np.random.PCG64([0xB3, 0, self.seed])",
+        "replacement": "np.random.PCG64([0xB3, self.seed])",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert not True"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding.py::test_projection_and_role_streams_do_not_alias_across_seeds",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "bb5f1a0fbc089dd3465e5a501b62b55ae755f98f03dfea14ac0245644632bdbb",
+          "events_sha256": "7f3647ea1092a0189ef16acb1f1146210045083a1526231fae510704caaa922f",
+          "elapsed_s": 5.082217823015526
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding.py::test_projection_and_role_streams_do_not_alias_across_seeds",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "d25fad6202a1b046885ccd6116f75f255c1691ca2e6b43e22b4673644f197706",
+          "events_sha256": "ce98eab6b9011cb621ef89ab020fae37d5112948aa4e0d646899c442c3a77ae7",
+          "elapsed_s": 5.58712385292165
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding.py::test_projection_and_role_streams_do_not_alias_across_seeds",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "3b77606f4bd40c3ee6063e77d0409c6cefab002dcaced6612cc0abe4c278122d",
+          "events_sha256": "710113d9190630f403a459049b5deb208055eba6a2e2021abff849da9716e53b",
+          "elapsed_s": 4.427761286031455
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "ignore_role_identity_on_restore",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "ignore_role_identity_on_restore",
+        "family": "Objective",
+        "source_key": "role",
+        "nodeid": "tests/memory/test_role_binding.py::test_bound_correction_roundtrip_keeps_its_role_identity[None-None-regime]",
+        "anchor": "or canonical(payload[\"configuration\"]) != canonical(correction.identity())",
+        "replacement": "or False",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding.py::test_bound_correction_roundtrip_keeps_its_role_identity[None-None-regime]",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "3e86ac0df6516d09c8f470219cbefd351d5b66884ff65fbf117c2c4411dfe175",
+          "events_sha256": "e9a5bd7c85867b8cecc5298b18041537554873359fe3e509f3f20650a6d2edf2",
+          "elapsed_s": 3.673736779950559
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding.py::test_bound_correction_roundtrip_keeps_its_role_identity[None-None-regime]",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "0c799fad84e913b59fd5c34426204f37814a83a465d6561c0d9a384cd8c20669",
+          "events_sha256": "4080c0e42c071f24991fa574c7a0b14de45a378b9abf62b37a6b4a1214096358",
+          "elapsed_s": 4.025093954987824
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding.py::test_bound_correction_roundtrip_keeps_its_role_identity[None-None-regime]",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "a8cca44ed181b9991434f4701558bf4c98356c7acfa94a25cd709837dc265c65",
+          "events_sha256": "0d16ee8d6ae628dc48631c9be4785bad5e6ec413266622bb03bc2230c18823d7",
+          "elapsed_s": 4.0747851331252605
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "write_without_decision_role",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "write_without_decision_role",
+        "family": "Objective",
+        "source_key": "inference",
+        "nodeid": "tests/memory/test_role_binding_session.py::test_changing_regimes_write_with_the_decision_role_against_independent_recurrence",
+        "anchor": "self._staged.append((decision_at, flow, value - core, key, route))",
+        "replacement": "self._staged.append((decision_at, flow, value - core, key, 0))",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_changing_regimes_write_with_the_decision_role_against_independent_recurrence",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "40d41bd14d98be0019a3cefc9198c63d3e968a4f7b914c68dbc5a9fc105dcb4c",
+          "events_sha256": "fcd0887b365619f458741cb76b211630aeedf79eb8c432ea1335acbd745243e4",
+          "elapsed_s": 9.887520644115284
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_changing_regimes_write_with_the_decision_role_against_independent_recurrence",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "51aa60ec571ab6eb86734151ebfd1d7bb85f23a3baa6a38e7f5bf5553ca5ca48",
+          "events_sha256": "ba8074494a1251bca7bd692cc2b920dcb8f323eea66f77908edca20d8876e298",
+          "elapsed_s": 8.18316437699832
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_changing_regimes_write_with_the_decision_role_against_independent_recurrence",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "d102e092b6966e4c998bdf1911cf6204965d6198e365988bbe5a4675e3c0bfb9",
+          "events_sha256": "cb857960a6a24d3675faeebb62f2d8bf6ea7ec3df6be17c0e6e561530ee3afb3",
+          "elapsed_s": 5.0742631200701
+        }
+      ],
+      "optimizer_attempts": 0
+    },
+    {
+      "id": "omit_binding_source_pin",
+      "status": "killed_with_green_controls",
+      "recipe": {
+        "id": "omit_binding_source_pin",
+        "family": "Objective",
+        "source_key": "session",
+        "nodeid": "tests/memory/test_role_binding_session.py::test_session_pins_enabled_binding_source[binding]",
+        "anchor": "(role_binding, associative.role_binding is not None)",
+        "replacement": "(role_binding, False)",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "model_id"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_session_pins_enabled_binding_source[binding]",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "e628662b1676e101bdf5445ac291826e85ccc94f9e03d2b3fe3180c5a08e5806",
+          "events_sha256": "a08d75a71b09ce03fe304abf6ff077b8a74d67c5109cb0093951c368dd50d10e",
+          "elapsed_s": 5.825927607016638
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_session_pins_enabled_binding_source[binding]",
+          "returncode": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "54ef08385aada437b90a6b8a7168a15f7251806507459123db87712d90bacec9",
+          "events_sha256": "5bdbc422498a16b4cd0c74c827f1a89c15d9b25de75f8b64820954cfc1cb4bbf",
+          "elapsed_s": 5.225509996060282
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_role_binding_session.py::test_session_pins_enabled_binding_source[binding]",
+          "returncode": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "b3a0cfd8de2413e0e0c417e2e947e6c5789c69833bc4668ae7ed79d96fc1fafe",
+          "events_sha256": "5cce42e825bde23102ba81b87facc329798952c101e21a4c16c864979c65cc74",
+          "elapsed_s": 5.42554648197256
+        }
+      ],
+      "optimizer_attempts": 0
+    }
+  ],
+  "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+  "sources": {
+    "role": {
+      "path": "src/mars_titan/memory/role_binding.py",
+      "sha256": "44cdde79ff1b1af6bc0f24570828dd3e0c342ca97b1d4eefd968e00859a97a3e"
+    },
+    "assoc": {
+      "path": "src/mars_titan/memory/associative_memory.py",
+      "sha256": "e05d67605a5035ce02c7f0cbcb51667276e3c8821bc1d0145123784e37384056"
+    },
+    "inference": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "400f69cbf59877566feb7fcb3ed4232f37620c4e92324620c8af0bdb88925fd5"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "sha256": "fd33cde99726c94f2d18078002130c7b204adb5a377c59818fdce4fae64af41b"
+    }
+  }
+}

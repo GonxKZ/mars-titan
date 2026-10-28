@@ -16,56 +16,65 @@
     }
   },
   "components": [
-    {"id": "candidates", "type": "database", "label": "Episodios candidatos", "sublabel": "ya maduros", "pos": [40, 230], "size": [180, 72]},
     {
-      "id": "salience",
-      "type": "backend",
-      "label": "Saliencia causal",
-      "sublabel": "error, volatilidad, volumen",
-      "pos": [300, 40],
+      "id": "candidates",
+      "type": "database",
+      "label": "Resultados maduros",
+      "sublabel": "de predicciones emitidas",
+      "pos": [40, 230],
       "size": [180, 72]
     },
-    {"id": "rank", "type": "backend", "label": "Admisión por rango", "sublabel": "presupuesto por sesión", "pos": [300, 230], "size": [180, 72]},
-    {"id": "bank", "type": "database", "label": "Banco episódico", "sublabel": "mismas plazas", "pos": [560, 230], "size": [180, 72]},
-    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "lectura del banco", "pos": [820, 230], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "scale", "type": "backend", "label": "Escala previa", "sublabel": "RMS del error por activo", "pos": [300, 40], "size": [180, 72]},
+    {"id": "rank", "type": "backend", "label": "Selección por mercado", "sublabel": "cupo por publicación", "pos": [300, 230], "size": [180, 72]},
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "Memoria de corrección",
+      "sublabel": "escribe etiqueta − núcleo",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "núcleo + corrección", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "MAE por sesión frente a controles", "pos": [1080, 230], "size": [180, 72]},
     {
       "id": "controls",
       "type": "security",
       "label": "Controles",
-      "sublabel": "constante, permutada, invertida",
-      "tag": "misma media",
+      "sublabel": "error absoluto y uniforme",
+      "tag": "mismo cupo",
       "pos": [300, 420],
       "size": [180, 72]
-    }
+    },
+    {"id": "state", "type": "database", "label": "Estado E3", "sublabel": "generación confirmada", "pos": [560, 40], "size": [180, 72]}
   ],
   "connections": [
     {"id": "candidates-rank", "from": "candidates", "to": "rank"},
-    {"id": "salience-rank", "from": "salience", "to": "rank", "label": "prioridad", "labelDy": 24},
-    {"id": "rank-bank", "from": "rank", "to": "bank", "label": "escritura", "variant": "emphasis"},
-    {"id": "bank-emit", "from": "bank", "to": "emit"},
+    {"id": "scale-rank", "from": "scale", "to": "rank", "label": "prioridad", "labelDy": 24},
+    {"id": "rank-memory", "from": "rank", "to": "memory", "label": "escritura", "variant": "emphasis"},
+    {"id": "memory-emit", "from": "memory", "to": "emit"},
     {"id": "emit-screen", "from": "emit", "to": "screen"},
-    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"},
+    {"id": "memory-state", "from": "memory", "to": "state", "label": "recuperable", "variant": "dashed"}
   ],
   "cards": [
     {
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "La admisión ordena por error maduro estandarizado, choque de volatilidad y volumen anormal",
-        "El número de escrituras por sesión es fijo",
-        "Fuente: McGaugh (2004) como motivación, Cosemans y Frehen (2021)"
+        "Prioriza el error de la emisión final dividido por la escala previa de su activo",
+        "Todas las etiquetas actualizan las escalas, solo las elegidas escriben la memoria",
+        "Motivación: Piray y Daw (2024), ruido frente a cambio latente"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Saliencia constante con la misma media, permutada por bloques, desplazada o invertida", "La saliencia como variable de entrada"]
+      "items": ["Error absoluto y selección uniforme con el mismo cupo y calendario", "Cupo completo como paridad con la corrección sin E3"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Probabilidad previa baja y coste despreciable"]
+      "items": ["Integrada en ventanas y en la sesión durable, con pruebas CPU sobre fixtures", "Sin entrenar ni evaluar, CUDA pendiente"]
     }
   ]
 }

@@ -1,0 +1,352 @@
+{
+  "kind": "technical_selected_reader_load_cost",
+  "status": "completed",
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "device": "cpu",
+    "dtype": "float64",
+    "cpu_threads": 2
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "probe_sha256": "1c85c38a9794746483a47c0bcf05330bc5fe7f1943e531aa7b91e43e4128835e",
+  "implementation_sha256": "0f81b24e1642a57ecb9ff166618c2416fc81f80306b182e0bb2e133bfd03cc1d",
+  "fixture_sha256": "1b5404a7bf031dd2b36c8e2d1507724c3760f5b609b501b020150fdaeb6cc5f3",
+  "measured_scope": "metadata_checkpoints_model_construction_freezing_and_revalidation",
+  "excludes": [
+    "imports",
+    "fixture_preparation",
+    "forecasting",
+    "dataset_auditing",
+    "GPU",
+    "energy"
+  ],
+  "fixture_prediction_artifacts": 0,
+  "quantile_head": true,
+  "warmup": 2,
+  "measured_repetitions": 10,
+  "samples": [
+    {
+      "hidden_size": 32,
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.0225464990362525,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 1,
+      "warmup": true,
+      "seconds": 0.022066029952839017,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.02288362104445696,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.02214445685967803,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 4,
+      "warmup": false,
+      "seconds": 0.01983677502721548,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 5,
+      "warmup": false,
+      "seconds": 0.019469739170745015,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 6,
+      "warmup": false,
+      "seconds": 0.024878355907276273,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 7,
+      "warmup": false,
+      "seconds": 0.021908625029027462,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 8,
+      "warmup": false,
+      "seconds": 0.021677050972357392,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 9,
+      "warmup": false,
+      "seconds": 0.01983941113576293,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 10,
+      "warmup": false,
+      "seconds": 0.020498384023085237,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 32,
+      "repetition": 11,
+      "warmup": false,
+      "seconds": 0.02132700616493821,
+      "selected_checkpoint_bytes": 291839,
+      "consumer_id": "2d7ce3f56cda2a087a1f61203e2cdbb43a502b4600724156e56779a8bbddf0c1"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.026814633049070835,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 1,
+      "warmup": true,
+      "seconds": 0.026554525131359696,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.028764373157173395,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.025650092167779803,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 4,
+      "warmup": false,
+      "seconds": 0.02435360406525433,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 5,
+      "warmup": false,
+      "seconds": 0.025173909030854702,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 6,
+      "warmup": false,
+      "seconds": 0.024289113003760576,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 7,
+      "warmup": false,
+      "seconds": 0.023406460182741284,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 8,
+      "warmup": false,
+      "seconds": 0.024246403016149998,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 9,
+      "warmup": false,
+      "seconds": 0.025404521031305194,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 10,
+      "warmup": false,
+      "seconds": 0.024474860867485404,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 64,
+      "repetition": 11,
+      "warmup": false,
+      "seconds": 0.02243780600838363,
+      "selected_checkpoint_bytes": 977151,
+      "consumer_id": "b675bdab88a296fde61d617193fed1a2c5bc0018fef3ea3b8552ff82fac6a497"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.04198623192496598,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 1,
+      "warmup": true,
+      "seconds": 0.04327866202220321,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.043555510928854346,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.04177784104831517,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 4,
+      "warmup": false,
+      "seconds": 0.04247264191508293,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 5,
+      "warmup": false,
+      "seconds": 0.04218917200341821,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 6,
+      "warmup": false,
+      "seconds": 0.0440824069082737,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 7,
+      "warmup": false,
+      "seconds": 0.04740555980242789,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 8,
+      "warmup": false,
+      "seconds": 0.05223634606227279,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 9,
+      "warmup": false,
+      "seconds": 0.04987994395196438,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 10,
+      "warmup": false,
+      "seconds": 0.051476994063705206,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    },
+    {
+      "hidden_size": 128,
+      "repetition": 11,
+      "warmup": false,
+      "seconds": 0.05174724990502,
+      "selected_checkpoint_bytes": 3625727,
+      "consumer_id": "6d7342558b3420d4d12335fa2b41121bb08e820aaea09f67827d4e2b02d6ecbe"
+    }
+  ],
+  "summaries": [
+    {
+      "hidden_size": 32,
+      "median_seconds": 0.021502028568647802,
+      "min_seconds": 0.019469739170745015,
+      "max_seconds": 0.024878355907276273,
+      "samples": 10
+    },
+    {
+      "hidden_size": 64,
+      "median_seconds": 0.024414232466369867,
+      "min_seconds": 0.02243780600838363,
+      "max_seconds": 0.028764373157173395,
+      "samples": 10
+    },
+    {
+      "hidden_size": 128,
+      "median_seconds": 0.04574398335535079,
+      "min_seconds": 0.04177784104831517,
+      "max_seconds": 0.05223634606227279,
+      "samples": 10
+    }
+  ],
+  "seconds_without_imports": 1.7239557430148125,
+  "peak_rss_kib": 668084,
+  "cuda_initialized": false,
+  "external_process": {
+    "elapsed_seconds": 4.36,
+    "peak_rss_kib": 763128,
+    "receipt_sha256": "3e51774053e7c2160b4d5c2fcc13933820e5c1548fbd04861a2a36328cd9e592"
+  }
+}

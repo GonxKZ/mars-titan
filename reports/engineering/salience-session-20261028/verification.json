@@ -1,0 +1,73 @@
+{
+ "schema_version": 1,
+ "kind": "salience_durable_session_fixture_checks",
+ "implementation_commit": "7bf61d617",
+ "benchmark_commit": "48093c522",
+ "tests": {
+  "passed": 114,
+  "new": 34,
+  "regressions": 80,
+  "skipped": 0,
+  "failures": 0,
+  "full_suite_executed": false,
+  "by_module": {
+   "tests.memory.test_salience_session": 17,
+   "tests.memory.test_committed_salience_budget": 17,
+   "tests.memory.test_salience_budget": 57,
+   "tests.memory.test_salience_budget_catalog": 1,
+   "tests.memory.test_financial_session_associative": 11,
+   "tests.memory.test_multiscale_session": 11
+  },
+  "recorded_at": "2026-10-28T00:01:39+01:00",
+  "xml_sha256": "7d0dde8496e76021a4776598bd230343c0e221a6f3580654115a12acce46e7af"
+ },
+ "integration": {
+  "window_api": true,
+  "financial_session": true,
+  "publication": "one_confirmed_native_generation",
+  "calendar_session_budget": false,
+  "cuda_verified": false
+ },
+ "cuda": {
+  "executed": 0,
+  "reason": "La admisión GPU exige que no haya otros procesos de cálculo y la GPU mantiene dos cargas ajenas con unos 1,1 GiB libres. No se intentó carga ni paso silencioso a CPU."
+ },
+ "compute": {
+  "device": "cpu",
+  "dtype": "float64",
+  "scientific_data": false,
+  "shared_parameter_updates": false,
+  "final_test_access": false
+ },
+ "quality": {
+  "primary": "quality.json",
+  "support": "quality-support.json",
+  "new_modules": {
+   "statements": 250,
+   "covered_statements": 239,
+   "branches": 86,
+   "covered_branches": 75
+  },
+  "convention": "CRAP por cobertura de sentencias. Ramas informadas por separado."
+ },
+ "mutations": {
+  "file": "mutations.json",
+  "planned": 8,
+  "killed": 8
+ },
+ "cost": {
+  "file": "cost.json",
+  "sizes": [
+   64,
+   256
+  ],
+  "controls": 5,
+  "warmup": 1,
+  "repeats": 3,
+  "full_quota_matches_reference": true
+ },
+ "notes": [
+  "La batería final se ejecutó el 28 de octubre a las 00:01 sobre las mismas fuentes que después se registraron en el commit de implementación. Cobertura y mutaciones usan esas mismas fuentes.",
+  "El cupo es por generación nativa confirmada. No se ha demostrado su correspondencia con una sesión del calendario."
+ ]
+}

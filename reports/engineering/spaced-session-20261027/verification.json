@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "technical_verification",
+  "verified_at_utc": "2026-10-27T08:17:11.882719+00:00",
+  "issue": 750,
+  "base_commit": "4c901f01c12a632537267019b882ea2db13884dd",
+  "implementation_status": "financial_session_m1_standard_k1_cpu",
+  "tests": {
+    "final": {
+      "tests": 175,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "classes": {
+        "tests.memory.test_spaced_session": 22,
+        "tests.memory.test_spaced_utility": 58,
+        "tests.memory.test_spaced_utility_readout": 61,
+        "tests.memory.test_spaced_retention": 34
+      },
+      "pytest_seconds": 26.82,
+      "junit_sha256": "7739f3a1dbc8e6464bc69c3e44b85d8226873439aa8dc3ec58229df62853db67"
+    },
+    "wide_regression": {
+      "tests": 222,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "classes": {
+        "tests.memory.test_spaced_session": 20,
+        "tests.memory.test_spaced_utility": 58,
+        "tests.memory.test_spaced_utility_readout": 61,
+        "tests.memory.test_spaced_retention": 34,
+        "tests.memory.test_financial_session": 21,
+        "tests.memory.test_financial_session_controls": 3,
+        "tests.memory.test_financial_session_m2": 10,
+        "tests.memory.test_financial_session_m3": 4,
+        "tests.memory.test_financial_session_associative": 11
+      },
+      "pytest_seconds": 214.512,
+      "junit_sha256": "e372818f044fae8c3455c847a5d2bf00ff17c83cc9b4c9caeb2dbafae28402da"
+    },
+    "gru": {
+      "tests": 19,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "classes": {
+        "tests.memory.test_financial_session_gru": 19
+      },
+      "pytest_seconds": 16.341,
+      "junit_sha256": "9612dcc1501ba2168edd094c9864d17a35593af7160c1c450e73cc6f073712b9"
+    },
+    "deselected_cuda": 2,
+    "overlap": "Las ejecuciones se solapan y no se suman. La primera tanda de 68 casos tuvo 19 omisiones GRU por el enlace elegido, resueltas con un binario compatible ya compilado."
+  },
+  "quality": {
+    "path": "quality.json",
+    "sha256": "7ffdc3222f081687f2b6f8aacb7d5c656432d2d63a3802fa96dda6fd6964a3e0",
+    "new_module": {
+      "path": "src/mars_titan/memory/spaced_session.py",
+      "source_sha256": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0",
+      "statements": 146,
+      "covered_statements": 140,
+      "branches": 34,
+      "covered_branches": 30
+    },
+    "max_new_module_crap": 23.0,
+    "related_modules_scope": "Cobertura parcial del coordinador y sus otras políticas en esta selección, no calidad global del proyecto."
+  },
+  "mutations": {
+    "path": "mutation-results.json",
+    "sha256": "b69124831321e445bc3a8a76a229628fd3ffaa83c060de7bc88431d083305661",
+    "planned": 6,
+    "killed": 6,
+    "optimizer_attempts": 0
+  },
+  "native": {
+    "episodic": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+    "candidate": "3fdbb5a305f46b3beece8a67f6012db71b00c21fcad13e4dbb937d8d8311b1ac"
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_session.py": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0",
+    "src/mars_titan/memory/financial_session.py": "21ee7e8638fcefd5f2156c9933889ed66967c1e8ce9d74022aebc3f73e3c06b6",
+    "src/mars_titan/memory/financial_consumers.py": "be55eaaadef40a8e487f4fbd553b85ddb46d6036936ece9338894b461473663d",
+    "src/mars_titan/memory/spaced_utility.py": "ab0b07357352e274f9ab0fda76c7a52fac119964e43c124af0c095cf3fcc2255",
+    "src/mars_titan/memory/spaced_utility_readout.py": "ad507d327322b5cbb4499e32be197bdde480a4da5c28f1b1f42a5688ab49ae3b",
+    "tests/memory/test_spaced_session.py": "589efda9b5fa62875d7d233d60df0f40e68877df9fdd2af6493a2a54aaf10116",
+    "tests/memory/test_spaced_utility.py": "5bf6c44f7fe860495b6289fa89a6b98c6606f2b19d08f6bbca5b337e28bdbd16",
+    "tests/memory/test_spaced_utility_readout.py": "3a80c981180e9616cf37b86b33edf69e5f014a050247dc6aec225064eee490de",
+    "reports/engineering/spaced-session-20261027/cost_probe.py": "3969bebd88cbe19248356921239deebed04ceabfcc4a7eafab7ed625ccefe667",
+    "docs/experiments/spaced-utility-consolidation-v1.md": "6b06ff670e71bdb4162c17220cd3ce3a2fea65a68487372e2a480b90122e2951",
+    "README.md": "0593a64e61973233dc789cbd06a4680a042011b7a323b739d2279f46c8329fbe"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "Conexión a ventanas y productor regional aún pendientes.",
+    "Los contratos del coordinador cambian por su revisión de código. Mantener runtimes históricos, sin eludir sus hashes.",
+    "No se ejecutó la suite completa ni CUDA.",
+    "Las seis mutaciones dirigidas y la cobertura no prueban ausencia de otros fallos.",
+    "Sin entrenamientos científicos, optimizadores ni acceso al test final. No hay mejora predictiva medida."
+  ],
+  "cost": {
+    "path": "cost.json",
+    "sha256": "5c650dafc33750196b27621198f9013fc6d6b41e682c36d1c5741395783974cf",
+    "measured_pairs": 8
+  },
+  "preserved_canonical_sources": {
+    "modules": 34,
+    "all_equal": true
+  },
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  }
+}
