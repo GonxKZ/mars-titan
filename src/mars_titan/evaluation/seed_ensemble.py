@@ -25,6 +25,18 @@ MAX_SEEDS = 16
 KEYS = ("sample_id", "asset_id", "market", "prediction_at", "target", "zero")
 
 
+def ordered_mean(values):
+    """Media por fila de vectores FP64 en el orden recibido: suma secuencial y división.
+
+    Es la aritmética de `seed_mean`. La criba la usa también sobre las predicciones de
+    validación de cada época, con las semillas ya en orden ascendente.
+    """
+    total = np.array(values[0], dtype=np.float64, copy=True)
+    for value in values[1:]:
+        total += value
+    return total / len(values)
+
+
 def seed_mean(tables):
     """Tabla con la media por fila de {semilla: tabla} y su descripción reproducible."""
     if (
@@ -57,10 +69,7 @@ def seed_mean(tables):
         stacked = np.stack([tables[seed][name].to_numpy() for seed in seeds])
         if stacked.dtype != np.float64 or not np.isfinite(stacked).all():
             raise ValueError(f"La columna {name} debe ser FP64 finita en todas las semillas")
-        total = stacked[0].copy()
-        for row in stacked[1:]:
-            total += row
-        columns[name] = pa.array(total / len(seeds), type=pa.float64())
+        columns[name] = pa.array(ordered_mean(stacked), type=pa.float64())
     combined = pa.table(columns, schema=first.schema)
     description = dict(
         schema_version=1,
