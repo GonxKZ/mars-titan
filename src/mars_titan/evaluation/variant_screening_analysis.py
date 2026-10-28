@@ -9,13 +9,16 @@ origen, que es su bloque de S:
 - la referencia textual de una corrección emite las predicciones de su padre;
 - una etapa de salida (A1, A2, A3 y C4) se ajusta con la calibración de su fuente y se aplica
   sin cambios a S;
+- la media de semillas de F2 promedia por fila, en la época elegida con el IC de validación de
+  la combinación, las predicciones de cada réplica de semillas de su fuente, y cada réplica
+  ocupa el lugar de una semilla;
 - el control cero predice un residuo nulo.
 
 El IC por sesión es la correlación de Pearson entre predicción y residuo con al menos tres
 activos. El MAE calibrado multiplica la predicción de un modelo por el λ de cada mercado
 elegido en su calibración. Una etapa de salida ya emite su predicción final y se mide sin
-otro λ. Las semillas se promedian sesión a sesión y los cuatro orígenes forman una única
-serie de 2019 a 2022.
+otro λ. Las semillas, o las réplicas de una media de semillas, se promedian sesión a sesión
+y los cuatro orígenes forman una única serie de 2019 a 2022.
 
 Un contraste resta a la serie del modelo la de su control. Cada familia se remuestrea con
 bloques circulares de días UTC, con los mismos índices para todos sus miembros. Recibe el paso
@@ -63,7 +66,8 @@ class Origin:
     terminado. `cohorts` da la huella de las filas y objetivos de cada tramo en la vista, que
     todos los trabajos deben reproducir, y `maturity` la madurez de cada etiqueta en el orden
     canónico de esos paneles. `sectors` asigna a cada activo el sector de las fichas actuales,
-    o None si no lo tiene, y solo lo lee el control sectorial de C4.
+    o None si no lo tiene, y solo lo lee el control sectorial de C4. `combine(modelo,
+    réplica)` devuelve la calibración y la evaluación de una réplica de una media de semillas.
     """
 
     year: int
@@ -71,20 +75,29 @@ class Origin:
     cohorts: dict
     maturity: dict
     sectors: dict | None = None
+    combine: Callable | None = None
     stages: dict = field(default_factory=dict)
 
-    def panels(self, job_id):
-        panels = self.load(job_id)
-        for name in PARTITIONS:
+    def _checked(self, panels, names, owner):
+        for name in names:
             _require(
                 panels[name].cohort_sha256 == self.cohorts[name],
-                f"El trabajo {job_id} no predice las filas de {name} de su vista",
+                f"{owner} no predice las filas de {name} de su vista",
             )
         _require(
             int(panels["evaluation"].prediction_at.max()) < FINAL_TEST_START_US,
             "La criba no puede leer el test final",
         )
         return panels
+
+    def panels(self, job_id):
+        return self._checked(self.load(job_id), PARTITIONS, f"El trabajo {job_id}")
+
+    def combined(self, label, replicate):
+        """Calibración y evaluación de una réplica de una media de semillas."""
+        _require(self.combine is not None, "El origen no recibe las medias de semillas")
+        owner = f"La réplica {list(replicate)} de {'/'.join(label)}"
+        return self._checked(self.combine(label, replicate), PARTITIONS[1:], owner)
 
     def history(self, panels):
         """Etiquetas de los tres tramos con su activo, mercado y madurez."""
@@ -260,16 +273,27 @@ def _stage(protocol, origin, index, seed, entry, value, cases):
     return pit_region_gate.apply(record, evaluation, pit_region_gate.panel_assets(evaluation))
 
 
+def replicates(protocol, arms, label):
+    """Semillas de un modelo, o las réplicas de semillas de una media de semillas."""
+    arm = arms.get(label)
+    if arm is not None and "combine" in arm.definition:
+        return [tuple(replicate) for replicate in arm.definition["replicates"]]
+    return protocol["seeds"]
+
+
 def emission(protocol, arms, index, origin, label, seed, cases):
-    """Predicción de S de un modelo en un origen y una semilla."""
+    """Predicción de S de un modelo en un origen y una semilla, o una réplica si combina."""
     if label == ZERO:
         evaluation = _model(protocol, origin, index, SOURCE, seed, cases)["evaluation"]
         return Emission(evaluation, np.zeros(evaluation.rows), None)
     _require(label[0] != "common", f"El control común {label[1]} no está implementado")
     arm = arms[label]
     runner = arm.runner
+    if runner == "output" and "combine" in arm.definition:
+        panels = origin.combined(label, seed)
+        evaluation = panels["evaluation"]
+        return Emission(evaluation, evaluation.prediction, panels["calibration"])
     if runner == "output":
-        _require("combine" not in arm.definition, "La media de semillas de F2 está pendiente")
         _require(arm.definition["source"] == SOURCE[1], "Las etapas parten de la referencia B")
         prediction = _stage(protocol, origin, index, seed, label[0], arm.definition, cases)
         evaluation = _model(protocol, origin, index, SOURCE, seed, cases)["evaluation"]
@@ -430,7 +454,7 @@ def analyze(protocol, jobs, origins, root=variant_screening.ROOT):
         origin = origins[year]
         per_origin = {}
         for label, metrics in needed.items():
-            for seed in protocol["seeds"]:
+            for seed in replicates(protocol, arms, label):
                 output = emission(protocol, arms, index, origin, label, seed, cases)
                 for metric in metrics:
                     per_origin.setdefault((label, metric), []).append(

@@ -197,9 +197,82 @@ def test_output_stages_and_pending_entries_have_no_jobs(protocol, jobs):
     statuses = {row["entry"]: row["status"] for row in screening.pending(protocol)}
     assert statuses["C2"] == statuses["C3"] == "pending_implementation"
     assert statuses["G1"] == "after_the_screening_needs_its_own_approval"
+    # A4, C5 y F2 ya están integradas y de F3 solo quedan pendientes los modelos de contracción.
+    assert not statuses.keys() & {"A4", "C5", "F2"} and statuses["F3"] == "pending_arm"
     arms = screening.entry_arms(protocol, "A2")
     assert all(arm.runner == "output" for arm in arms.values())
     assert arms["abstention"].definition["source"] == "quantile_reference"
+
+
+def test_the_integrated_entries_reuse_the_references_of_the_protocol(jobs):
+    uses = by_use(jobs)
+    for label in ("A4/quantile_opponents", "C5/cross_asset_attention", "F2/weight_ema_fast"):
+        assert len(uses[label]) == 1
+    assert uses["F3/schedule_free"]
+    # Las referencias de cada declaración son los mismos trabajos que las del protocolo.
+    quantile, scalar = uses["references/quantile_reference"], uses["references/scalar_reference"]
+    assert uses["F2/single_seed_reference"] == uses["F3/adamw_reference"] == quantile
+    assert uses["C5/reference"] == uses["A4/absolute_error_reference"] == scalar
+    pending = {"continuation_control", "shrink_perturb", "shrink_only", "perturb_only"}
+    assert not uses.keys() & ({f"F3/{arm}" for arm in pending} | {"F2/seed_mean"})
+
+
+def test_the_seed_mean_averages_every_triple_of_the_screening_seeds(protocol, jobs):
+    arms = screening.entry_arms(protocol, "F2")
+    mean = arms["seed_mean"]
+    assert mean.runner == "output" and mean.definition["source"] == "single_seed_reference"
+    replicates = mean.definition["replicates"]
+    assert len(replicates) == 10 and all(len(item) == 3 for item in replicates)
+    assert replicates == sorted(replicates) and all(item == sorted(item) for item in replicates)
+    # Cada semilla aparece en seis ternas, así que ninguna pesa más que otra.
+    assert Counter(seed for item in replicates for seed in item) == dict.fromkeys(
+        protocol["seeds"], 6
+    )
+    assert arms["single_seed_matched_updates"].definition["updates_multiplier"] == 3
+    # Solo los trabajos de la fuente guardan la predicción de validación de cada época.
+    stored = {label for job in jobs if job.get("epoch_predictions") for label in job["used_by"]}
+    assert stored == {
+        "references/quantile_reference",
+        "F2/single_seed_reference",
+        "F3/adamw_reference",
+    }
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda entry: entry.pop("combinations"), "su fuente, su tamaño"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(extra=1), "su fuente, su tamaño"),
+        (
+            lambda entry: entry["combinations"]["seed_mean"].update(replicates="rolling"),
+            "su fuente, su tamaño",
+        ),
+        (lambda entry: entry["combinations"]["seed_mean"].update(source="seed_mean"), "modelo"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(source="unknown"), "modelo"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=2), "multiplica"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=3.0), "multiplica"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=6), "multiplica"),
+    ],
+)
+def test_a_seed_mean_declares_its_source_its_size_and_its_replicates(protocol, change, message):
+    document = copy.deepcopy(protocol)
+    change(document["catalog"]["F2"])
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(document, "F2")
+
+
+def test_the_control_of_a_seed_mean_multiplies_its_updates_by_the_size(protocol, monkeypatch):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            document["arms"]["single_seed_matched_updates"]["updates_multiplier"] = 2
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    with pytest.raises(ValueError, match="multiplica"):
+        screening.entry_arms(protocol, "F2")
 
 
 def test_the_adaptive_reader_reserves_the_depth_of_its_control(jobs):

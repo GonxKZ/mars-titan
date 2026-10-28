@@ -8,6 +8,7 @@ y semilla aunque varias entradas la usen como control. No importa PyTorch ni lee
 """
 
 import hashlib
+import itertools
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,8 @@ REQUIRES = ("parent", "after")
 # lectores emiten la época común de sus semillas, elegida con el IC medio de validación.
 SELECTION_RULE = "common_epoch_session_ic_v1"
 EPOCH_RUNNERS = ("fit", "reader")
+# Réplicas de una media de semillas: todos los subconjuntos del tamaño declarado.
+EVERY_SUBSET = "every_subset_of_the_screening_seeds"
 
 
 def _require(condition, message):
@@ -241,10 +244,41 @@ def _fit(entry, document, name, value):
         and 1 <= definition["updates_multiplier"] <= 4,
         f"{name} multiplica las actualizaciones por un entero entre 1 y 4",
     )
-    if "combine" in value:
-        # La media de semillas no se ajusta: combina las emisiones de su fuente en el análisis.
-        return dict(runner="output", source=value["control"], combine=value["combine"])
     return definition
+
+
+def _combination(entry, declared, name, value, seeds):
+    """Media de semillas de una entrada, con su fuente y sus réplicas sobre las semillas.
+
+    La media no se ajusta: el análisis combina las emisiones de su fuente. Cada réplica
+    promedia `size` semillas de la criba y se toman todos los subconjuntos, así que cada
+    semilla aparece el mismo número de veces y el resultado no depende de su orden. La media
+    de las réplicas estima el IC esperado de un conjunto de `size` semillas. Su control
+    multiplica las actualizaciones por `size`, como declara F2.
+    """
+    combination = entry.get("combinations", {}).get(name)
+    _require(
+        isinstance(combination, dict)
+        and set(combination) == {"source", "size", "replicates"}
+        and combination["replicates"] == EVERY_SUBSET,
+        f"{name} combina semillas y declara su fuente, su tamaño y sus réplicas",
+    )
+    source, size = combination["source"], combination["size"]
+    _require(
+        source in declared and source != name and "combine" not in declared[source],
+        f"La fuente de {name} es otro modelo ajustado de su entrada",
+    )
+    control = declared.get(value.get("control"), {})
+    _require(
+        type(size) is int
+        and 2 <= size <= len(seeds)
+        and size == len(value.get("seeds", ()))
+        and control.get("updates_multiplier") == size,
+        f"{name} promedia las semillas que declara y su control multiplica por ellas las "
+        "actualizaciones",
+    )
+    replicates = [list(group) for group in itertools.combinations(sorted(seeds), size)]
+    return dict(runner="output", source=source, combine=value["combine"], replicates=replicates)
 
 
 def _parented(entry, references, runner):
@@ -269,8 +303,13 @@ def entry_arms(protocol, name, root=ROOT):
         declared = entry.get("arms") or document.get("arms")
         excluded = set(entry.get("pending_arms", ()))
         for arm, value in declared.items():
-            if arm not in excluded:
-                arms[arm] = _fit(entry, document, arm, value)
+            if arm in excluded:
+                continue
+            arms[arm] = (
+                _combination(entry, declared, arm, value, protocol["seeds"])
+                if "combine" in value
+                else _fit(entry, document, arm, value)
+            )
     elif runner == "correction":
         parent = _parented(entry, references, runner)
         sources = dict(document["arms"])
@@ -435,7 +474,7 @@ def _definitions(protocol, arms, arm, root):
 
 
 def combination_sources(arms):
-    """Modelos cuyas semillas combina una etapa de salida, con las semillas que combina.
+    """Modelos cuyas semillas combina una etapa de salida, con las etapas que los combinan.
 
     La época de una combinación se elige con el IC de la propia combinación en validación,
     así que los trabajos de su fuente guardan la predicción puntual de cada época.

@@ -8,11 +8,14 @@ modelos solo ruido. No se construye ningún modelo ni se ejecutan pasos de optim
 import copy
 import hashlib
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import numpy as np
 import pytest
 
+from mars_titan.evaluation import scale_diagnostics as sd
+from mars_titan.evaluation import seed_ensemble
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.forecast_panel import DAY_MICROSECONDS, ForecastPanel
 from mars_titan.training import variant_screening
@@ -350,6 +353,71 @@ def test_every_model_reports_the_secondary_metrics_of_the_protocol(screened):
     # La referencia emite tres veces la amplitud que le corresponde y λ la reduce.
     parent = report["models"]["B1/zero_memory"]
     assert parent["session_mae_calibrated"]["mean"] < parent["session_mae_raw"]["mean"]
+
+
+def replicate_panels(source, index, replicate, *, shift=0.0):
+    """Media de semillas de la fuente de F2 en un origen sintético, tramo a tramo."""
+    result = {}
+    for name in ("calibration", "evaluation"):
+        outputs = [
+            source.prediction(index[(("F2", "single_seed_reference"), source.year, seed)][0], name)
+            for seed in replicate
+        ]
+        point = seed_ensemble.ordered_mean([value for value, _ in outputs])
+        quantiles = seed_ensemble.ordered_mean([value for _, value in outputs])
+        target = source.target[name] + shift
+        result[name] = make_panel(source.times[name], target, point, quantiles)
+    return result
+
+
+def test_the_seed_mean_takes_the_place_of_the_seeds_with_its_replicates():
+    protocol = protocol_of(("A1", "F2"))
+    jobs = variant_screening.screening_jobs(protocol)
+    arms = variant_screening.all_arms(protocol)
+    index = analysis.job_index(jobs)
+    label = ("F2", "seed_mean")
+    replicates = analysis.replicates(protocol, arms, label)
+    assert len(replicates) == 10 and replicates[0] == (42, 43, 44)
+    assert analysis.replicates(protocol, arms, ("F2", "weight_ema_fast")) == protocol["seeds"]
+    sources = {o["year"]: SyntheticOrigin(o["year"], jobs) for o in protocol["origins"]}
+    calls = []
+
+    def origins(**options):
+        result = {}
+        for year, source in sources.items():
+
+            def combine(model, replicate, source=source):
+                calls.append((source.year, model, replicate))
+                return replicate_panels(source, index, replicate, **options)
+
+            result[year] = replace(source.origin(), combine=combine)
+        return result
+
+    report, arrays = analysis.analyze(protocol, jobs, origins())
+    # Cada réplica se pide una vez por origen y ocupa en la serie el lugar de una semilla.
+    assert sorted(calls) == sorted((year, label, item) for year in sources for item in replicates)
+    min_assets = protocol["contrast"]["primary"]["minimum_assets"]
+    parts = []
+    for year in sorted(sources):
+        items = []
+        for replicate in replicates:
+            evaluation = replicate_panels(sources[year], index, replicate)["evaluation"]
+            items.append(
+                sd.session_correlations(evaluation, evaluation.prediction, min_assets=min_assets)
+            )
+        parts.append(analysis._average(items))
+    values, defined = arrays["merged"][(label, "session_ic")]
+    assert np.array_equal(defined, np.concatenate([mask for _, mask in parts]))
+    assert np.array_equal(values, np.concatenate([value for value, _ in parts]))
+    # La media de la referencia con señal supera al control con ruido y el triple de pasos.
+    contrasts = {row["name"]: row for row in report["contrasts"]}
+    assert contrasts["F2/reported/F2.seed_mean-F2.single_seed_matched_updates"]["estimate"] > 0
+    calls.clear()
+    with pytest.raises(ValueError, match="no predice las filas de calibration"):
+        analysis.analyze(protocol, jobs, origins(shift=1.0))
+    without = {year: replace(origin, combine=None) for year, origin in origins().items()}
+    with pytest.raises(ValueError, match="no recibe las medias de semillas"):
+        analysis.analyze(protocol, jobs, without)
 
 
 def test_a_variant_fails_when_a_required_contrast_does_not_favour_it():

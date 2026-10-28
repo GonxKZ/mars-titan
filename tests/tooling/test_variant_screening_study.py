@@ -4,6 +4,7 @@ Los ejecutores dobles escriben un `run.json` completado sin construir modelos. N
 prueba crea un entrenador ni ejecuta pasos de optimizador.
 """
 
+import itertools
 import json
 from contextlib import nullcontext
 from pathlib import Path
@@ -19,6 +20,7 @@ from benchmarks import variant_screening_study as study
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import ForecastPanel
+from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import (
     experiment_resources,
     mars_titan_correction,
@@ -761,10 +763,10 @@ def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
     assets = 24
     target = rng.standard_normal(len(times) * assets)
     common = rng.standard_normal(len(target))
-    seeds = (42, 43, 44)
+    seeds = (42, 43, 44, 45)
     own = {seed: rng.standard_normal(len(target)) for seed in seeds}
     # En la época 2 el ruido es común a las semillas y en la 4 es independiente: cada semilla
-    # sola ordena mejor en la 2, pero su media ordena mejor en la 4.
+    # sola ordena mejor en la 2, pero la media de cada terna ordena mejor en la 4.
     shape = {1: (1.5, 1.0), 2: (0.8, 1.0), 3: (1.5, 0.0), 4: (1.0, 0.0)}
     jobs = []
     for seed in seeds:
@@ -781,13 +783,30 @@ def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
         contrast=dict(primary=dict(minimum_assets=3)),
         selection=dict(smoothing_radius=0),
     )
-    arm = dict(label="F2/seed_mean", definition=dict(runner="output", source="reference"))
+    replicates = [list(item) for item in itertools.combinations(seeds, 3)]
+    arm = dict(
+        label="F2/seed_mean",
+        definition=dict(runner="output", source="reference", replicates=replicates),
+    )
     result = study.combination_epoch(tmp_path, jobs, arm, protocol)
-    assert result["epoch"] == 4 and result["seeds"] == list(seeds)
+    assert result["epoch"] == 4 and result["replicates"] == replicates
     assert result["model"] == "F2/seed_mean"
     assert max(range(4), key=lambda i: result["scores"][i]) == 3
+    # La puntuación de cada época es la media de las ternas en las sesiones que todas definen.
+    panels = {job["seed"]: study._epoch_panels(tmp_path, job, 4) for job in jobs}
+    for epoch in range(4):
+        items = []
+        for replicate in replicates:
+            total = panels[replicate[0]][epoch].prediction.copy()
+            for seed in replicate[1:]:
+                total += panels[seed][epoch].prediction
+            panel = panels[replicate[0]][epoch]
+            items.append(sd.session_correlations(panel, total / 3, min_assets=3))
+        defined = np.logical_and.reduce([mask for _, mask in items])
+        expected = np.mean([values for values, _ in items], axis=0)[defined].mean()
+        assert result["scores"][epoch] == expected
     with pytest.raises(ValueError, match="todas sus semillas"):
-        study.combination_epoch(tmp_path, jobs[:2], arm, protocol)
+        study.combination_epoch(tmp_path, jobs[:3], arm, protocol)
     with pytest.raises(ValueError, match="todas sus épocas"):
         study.combination_epoch(tmp_path, jobs, arm, dict(protocol, fit=dict(epochs=5)))
     (tmp_path / "runs" / jobs[0]["id"] / "epochs" / "validation-epoch-0002.parquet").write_bytes(
@@ -855,7 +874,7 @@ def test_a_group_adds_the_epoch_of_its_seed_combination_to_the_versions(tmp_path
                 runner="output",
                 source="single_seed_reference",
                 combine="seed_mean_v1",
-                seeds=[42, 43, 44],
+                replicates=[list(item) for item in itertools.combinations(seeds, 3)],
             ),
         ),
     }
@@ -870,12 +889,130 @@ def test_a_group_adds_the_epoch_of_its_seed_combination_to_the_versions(tmp_path
     assert decision["epoch"] == 2
     [combination] = decision["combinations"]
     assert (combination["model"], combination["epoch"]) == ("F2/seed_mean", 4)
-    assert combination["seeds"] == [42, 43, 44]
+    assert len(combination["replicates"]) == 10
     # La época de la combinación se emite como una versión más del grupo.
     assert decision["versions"] == [3, 4]
     del arms[("F2", "single_seed_reference")]
     with pytest.raises(ValueError, match="no tiene fuente"):
         variant_screening.combination_sources(arms)
+
+
+def window_table(times, assets, target, prediction, spread):
+    """Tabla con el esquema de las predicciones de la ventana, con los cinco cuantiles."""
+    rows = len(target)
+    columns = dict(
+        sample_id=[f"{a}/{at}" for at in times for a in assets],
+        asset_id=[a for _ in times for a in assets],
+        market=["US"] * rows,
+        prediction_at=pa.array(
+            [at for at in times for _ in assets], type=pa.timestamp("us", tz="UTC")
+        ),
+        target=pa.array(target, type=pa.float64()),
+        prediction=pa.array(prediction, type=pa.float64()),
+        zero=pa.array(np.zeros(rows), type=pa.float64()),
+    )
+    for offset, name in zip((-2, -1, 0, 1, 2), QUANTILE_COLUMNS, strict=True):
+        columns[name] = pa.array(prediction + offset * spread, type=pa.float64())
+    return pa.table(columns)
+
+
+def test_each_replicate_of_the_seed_mean_reads_the_epoch_of_its_combination(tmp_path, monkeypatch):
+    rng = np.random.default_rng(13)
+    seeds = [42, 43, 44, 45, 46]
+    assets = [f"US/A{i:02d}" for i in range(6)]
+    times = {
+        "calibration": [1_546_380_000_000_000 + day * 86_400_000_000 for day in range(5)],
+        "evaluation": [1_547_380_000_000_000 + day * 86_400_000_000 for day in range(7)],
+    }
+    target = {name: rng.standard_normal(len(at) * len(assets)) for name, at in times.items()}
+    emitted, jobs = {}, []
+    for seed in seeds:
+        job_id = f"2019-{seed}-reference"
+        folder = tmp_path / "runs" / job_id
+        records = {}
+        for epoch, path in ((2, "predictions/{}.parquet"), (4, "versions/epoch-0004-{}.parquet")):
+            records[epoch] = {}
+            for name, at in times.items():
+                point = rng.standard_normal(len(target[name]))
+                emitted[seed, epoch, name] = point
+                destination = folder / path.format(name)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                spread = rng.random(len(point)) + 0.1
+                pq.write_table(window_table(at, assets, target[name], point, spread), destination)
+                records[epoch][name] = dict(path=path.format(name), sha256=sha256(destination))
+        atomic_json(
+            folder / "run.json",
+            dict(
+                status="completed",
+                fit=dict(joint_stop_epoch=2),
+                predictions=records[2],
+                versions=dict(epochs=[4], predictions={"4": records[4]}),
+            ),
+        )
+        jobs.append(
+            dict(
+                id=job_id,
+                origin=2019,
+                seed=seed,
+                definition=dict(runner="fit"),
+                used_by=["F2/single_seed_reference"],
+                common_group="2019-reference",
+            )
+        )
+    replicates = [list(item) for item in itertools.combinations(seeds, 3)]
+    arms = {
+        ("F2", "seed_mean"): variant_screening.Arm(
+            "F2",
+            "seed_mean",
+            dict(
+                runner="output",
+                source="single_seed_reference",
+                combine="seed_mean_v1",
+                replicates=replicates,
+            ),
+        )
+    }
+    monkeypatch.setattr(variant_screening, "all_arms", lambda *_: arms)
+    receipt = dict(protocol=dict(seeds=seeds), jobs=jobs)
+    label = ("F2", "seed_mean")
+    combine = study.combination_panels(tmp_path, receipt, 2019, {})
+    with pytest.raises(ValueError, match="no ha decidido"):
+        combine(label, (42, 43, 44))
+
+    def decide(epoch, chosen=replicates):
+        combination = dict(model="F2/seed_mean", epoch=epoch, replicates=chosen)
+        atomic_json(
+            tmp_path / "groups" / "2019-reference.json",
+            dict(epoch=2, versions=[4], combinations=[combination]),
+        )
+
+    for epoch in (4, 2):
+        decide(epoch)
+        reads = {}
+        panels = study.combination_panels(tmp_path, receipt, 2019, reads)(label, (43, 45, 46))
+        for name in ("calibration", "evaluation"):
+            # La media sigue el orden ascendente de semillas con la misma suma que seed_mean.
+            total = emitted[43, epoch, name] + emitted[45, epoch, name] + emitted[46, epoch, name]
+            assert np.array_equal(panels[name].prediction, total / 3)
+            assert panels[name].levels == (0.025, 0.1, 0.5, 0.9, 0.975)
+            assert np.all(np.diff(panels[name].quantiles, axis=1) >= 0)
+        stem = "epoch-0004-{}" if epoch == 4 else "{}"
+        assert set(reads) == {
+            f"2019-{seed}-reference/{stem.format(name)}.parquet"
+            for seed in (43, 45, 46)
+            for name in times
+        }
+    decide(4, replicates[:5])
+    with pytest.raises(ValueError, match="réplicas declaradas"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
+    decide(3)
+    with pytest.raises(ValueError, match="no emite la época 3"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
+    decide(4)
+    version = tmp_path / "runs" / "2019-44-reference" / "versions" / "epoch-0004-evaluation.parquet"
+    version.write_bytes(b"PAR1 x PAR1")
+    with pytest.raises(ValueError, match="Ha cambiado"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
 
 
 def test_the_rule_check_reads_every_group_and_writes_its_report(
