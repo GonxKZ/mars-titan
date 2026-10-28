@@ -1,4 +1,4 @@
-"""La medida de coste de H1 recorre cada brazo declarado con bloques pequeños y no ajusta nada."""
+"""La medida de coste de H1 recorre cada modelo declarado con bloques pequeños y no ajusta nada."""
 
 import json
 
@@ -35,7 +35,7 @@ def test_a_small_run_covers_every_arm_and_keeps_the_optimizer_closed(monkeypatch
     expected = {(mode, 8, kind) for mode in modes for kind in cost.PASSES}
     assert {(r["mode"], r["rows"], r["pass_"]) for r in result["summary"]} == expected
     assert all(r["p95_ms"] >= r["p50_ms"] > 0 for r in result["summary"])
-    # Cada brazo se mide en los dos órdenes.
+    # Cada modelo se mide en los dos órdenes.
     assert len(result["records"]) == 2 * len(expected)
     assert set(result["parameters"]) == set(modes) and result["memory"] == "not_measured_on_cpu"
     assert result["parameters"]["h1_19_areas"] > result["parameters"]["h2_19_areas"]

@@ -1,7 +1,7 @@
 """Coste de la red holográfica H1 y de sus ablaciones H2 y H3 (#783).
 
 Sin --run imprime el protocolo y no importa Torch. Con --run mide en el dispositivo declarado
-la llamada a `HolographicNetwork` de cada brazo de la declaración, en FP32 y con H = 64. Las
+la llamada a `HolographicNetwork` de cada modelo de la declaración, en FP32 y con H = 64. Las
 entradas son sintéticas con las formas de la edición v3.1: 26 conceptos contables y 140
 indicadores macro con valor, máscara y edad, y cinco bloques [R,5,H] con noticias,
 fundamentales y macro ausentes en parte de las filas. Los codificadores de fundamentales y
@@ -10,8 +10,8 @@ macro son Linear + SiLU, como en la referencia.
 `forward` es la inferencia sin gradiente. `backward` añade la propagación de una suma de
 cuadrados hasta los parámetros de la red y de los codificadores, sin optimizador. Un gancho
 de `torch.optim` rechaza cualquier paso. La lectura W_o y los ajustes U se fijan iguales y
-distintos de cero en todos los brazos, para que el gradiente recorra el puente. Las dos
-pasadas invierten el orden de los brazos y comparten proceso con las aplicaciones que ya
+distintos de cero en todos los modelos, para que el gradiente recorra el puente. Las dos
+pasadas invierten el orden de los modelos y comparten proceso con las aplicaciones que ya
 existan, así que los percentiles son descriptivos. La salida debe ser nueva.
 """
 
@@ -35,7 +35,7 @@ OBSERVED = dict(news=0.4, fundamentals=0.7, macro=0.9)
 
 
 def arms():
-    """Brazos de la declaración que añaden la red, en su orden."""
+    """Modelos de la declaración que añaden la red, en su orden."""
     declaration = json.loads(DECLARATION.read_text(encoding="utf-8"))
     return {
         name: arm["predictor_changes"]["holographic_network"]
