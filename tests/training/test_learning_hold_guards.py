@@ -254,6 +254,11 @@ ENTRY_POINTS = {
         "CorpusDataset",
         lambda m, out: m.run_tabular_reference(out.with_name("m.json"), out, kind="boosting"),
     ),
+    "same_inputs_lightgbm": _simple(
+        "mars_titan.models.baselines.same_inputs_lightgbm",
+        "checked_config",
+        lambda m, out: m.fit(None, None, {}, 42, min_assets=3),
+    ),
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",
