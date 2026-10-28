@@ -119,7 +119,7 @@ GUARDS = {
     ),
     "mars_titan.models.baselines.ridge:fit_ridge_blocks": ("fit_ridge_blocks",),
     "mars_titan.models.baselines.ridge:solve_ridge": ("solve_ridge",),
-    "mars_titan.models.baselines.same_inputs_lightgbm:fit": ("same_inputs_lightgbm",),
+    "mars_titan.models.baselines.qlib_lightgbm:fit": ("qlib_lightgbm",),
     # Corpus, búsquedas y campañas de referencia.
     "mars_titan.training.reference_run:run_reference_case": ("reference_run",),
     "mars_titan.training.reference_search:run_search": ("reference_search",),

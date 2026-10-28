@@ -286,9 +286,9 @@ ENTRY_POINTS = {
             min_assets=3,
         ),
     ),
-    "same_inputs_lightgbm": _simple(
-        "mars_titan.models.baselines.same_inputs_lightgbm",
-        "checked_config",
+    "qlib_lightgbm": _simple(
+        "mars_titan.models.baselines.qlib_lightgbm",
+        "_checked_training",
         lambda m, out: m.fit(None, None, {}, 42, min_assets=3),
     ),
     "external_corpus": _simple(

@@ -360,7 +360,7 @@ DOUBLES = {
         "el ajuste que espera la época común, sin construir modelos ni ejecutar pasos de "
         "optimizador",
     ),
-    "tests/models/test_same_inputs_lightgbm.py": (
+    "tests/models/test_qlib_lightgbm.py": (
         1,
         "sustituye el módulo lightgbm por un doble que recorre las rondas y devuelve un booster "
         "de predicción fija, así que no estima ningún parámetro",
