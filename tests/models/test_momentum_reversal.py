@@ -106,18 +106,22 @@ def test_each_session_is_ranked_alone_and_the_order_of_its_rows_does_not_matter(
 
 
 def test_the_prediction_is_the_mean_of_the_defined_components():
-    prices = windows([(0.1, 0.2), (0.3, 0.1), (-0.2, -0.1), (0.0, 0.5)])
+    prices = windows([(0.1, 0.2), (0.3, 0.1), (-0.2, -0.1), (0.0, 0.5), (0.25, 0.3)])
     prices[3, LAG, :] = 0.0
-    sessions = np.zeros(4, dtype=np.int64)
+    prices[4, LAST, :] = 0.0
+    sessions = np.zeros(5, dtype=np.int64)
     prediction = rule.predict(prices, sessions, CONFIG)
     parts = rule.components(prices, 5)
-    expected = np.zeros(4)
+    expected = np.zeros(5)
     for values, defined in parts.values():
         expected += rule.centered_ranks(values, defined, sessions)
     expected[:3] /= 2
     np.testing.assert_allclose(prediction, expected, rtol=0, atol=1e-15)
     # La fila 3 no tiene ningún componente definido y vale cero.
     assert prediction[3] == 0.0
+    # Sin la sesión de la decisión, la fila 4 solo tiene momentum, el tercero de cuatro, y la
+    # media no lo divide entre los dos componentes.
+    np.testing.assert_allclose(prediction[4], 1 / 6, rtol=0, atol=1e-15)
     # La fila 1 cae en la última semana y llega más alta a t − 5, así que encabeza los dos
     # componentes.
     assert prediction.dtype == np.float64 and np.argmax(prediction[:3]) == 1
