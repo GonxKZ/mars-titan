@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "C1 · Mezcla de logits entre regiones (region_axis_mixing_v1)",
+    "title": "C1 · Mezcla entre cabezas del operador regional (region_axis_mixing_v1)",
     "quality_profile": "showcase",
     "viewBox": [1300, 402],
     "legend": {
@@ -15,25 +15,32 @@
     }
   },
   "components": [
-    {"id": "tokens", "type": "external", "label": "Tokens por región", "sublabel": "modalidad y mercado", "pos": [40, 40], "size": [180, 72]},
-    {"id": "logits", "type": "backend", "label": "Logits por región", "sublabel": "R cabezas regionales", "pos": [300, 40], "size": [180, 72]},
+    {"id": "tokens", "type": "external", "label": "Bloques de fuente", "sublabel": "cinco nodos por fila", "pos": [40, 40], "size": [180, 72]},
+    {"id": "logits", "type": "backend", "label": "Logits de cinco cabezas", "sublabel": "sobre los cinco nodos", "pos": [300, 40], "size": [180, 72]},
     {
       "id": "mix",
       "type": "backend",
-      "label": "Mezcla R × R",
+      "label": "Mezcla 5 × 5",
       "sublabel": "antes y después del softmax",
-      "tag": "SDPA MATH",
+      "tag": "identidad al inicio",
       "pos": [560, 40],
       "size": [180, 72]
     },
-    {"id": "attention", "type": "backend", "label": "Salida de atención", "sublabel": "por región", "pos": [820, 40], "size": [180, 72]},
+    {
+      "id": "attention",
+      "type": "backend",
+      "label": "Mensajes locales",
+      "sublabel": "anillo y resumen como antes",
+      "pos": [820, 40],
+      "size": [180, 72]
+    },
     {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]},
     {
       "id": "controls",
       "type": "security",
       "label": "Controles",
-      "sublabel": "sin mezcla y bloque denso",
-      "tag": "iguales parámetros",
+      "sublabel": "sin mezcla y fusión regional",
+      "tag": "mismos pesos comunes",
       "pos": [560, 230],
       "size": [180, 72]
     }
@@ -50,20 +57,20 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Las regiones intercambian sus logits con matrices R × R aprendidas",
-        "La mezcla actúa antes y después del softmax, como talking-heads",
-        "Fuente: Shazeer et al. (2020), con formalización propia"
+        "Cinco cabezas atienden sobre los cinco nodos de cada fila",
+        "Logits y pesos se mezclan entre cabezas, como talking-heads",
+        "Fuente: Shazeer et al. (2020), con desviaciones documentadas"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Atención por región sin mezcla con los mismos parámetros", "Bloque denso con los mismos FLOPs"]
+      "items": ["Cinco cabezas sin mezcla con los mismos pesos comunes", "regional_fusion_v1 con el mismo calendario"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751, pendiente de implementar", "Sin entrenar ni evaluar"]
+      "items": ["Implementada en #751 con pruebas técnicas", "Sin entrenar ni evaluar"]
     }
   ]
 }

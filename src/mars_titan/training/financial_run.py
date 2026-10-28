@@ -879,6 +879,9 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        if self.predictor.config.regional_variant is not None:
+            name = "mars_titan.models.titans.regional_variants"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,

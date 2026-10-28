@@ -1,0 +1,90 @@
+{
+ "schema_version": 1,
+ "kind": "output_self_edit_cost",
+ "issue": 748,
+ "measured_at": "2026-10-27T20:08:30+00:00",
+ "commit": "dbd554a2b49b0b7dfe56eff1ad90d2638540857f",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/output_program.py": "74ecc9a7d6f8b7feee5d5f42d1be5c4a5d2ae76e7efb2786ff2af9e0c2b23a43",
+  "src/mars_titan/proposals/self_edit_cycles.py": "1a0a4ab195d0c7432efdd5c88ee04b6db8b22a006d1d90c133b1c2cceb4d4639",
+  "src/mars_titan/proposals/output_self_edit.py": "54c3972b705ede1862de9c0bb5eaa1ece567307e7230866d4a97b5bb31623a68",
+  "benchmarks/output_self_edit_cost.py": "40147485db34ab7370792aff92c58e295ef9c03e9809f11dc167eb99e1b0f480"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "plan": {
+  "candidates": 8,
+  "placebo_seed": 20261027,
+  "decision": {
+   "block_length": 16,
+   "replicates": 2000,
+   "seed": 20261023,
+   "confidence": 0.95
+  }
+ },
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": "2",
+   "openblas": "2"
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   2.60986328125,
+   2.14697265625,
+   2.05615234375
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver load_average_at_start"
+ },
+ "not_measured": [
+  "forward y backward, porque el ciclo no tiene tensores ni parámetros entrenables",
+  "GPU, por el mismo motivo",
+  "lectura de Parquet y alineación con la vista, que hará la criba",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "quarter_blocks_256": {
+   "assets": 256,
+   "seeds": 5,
+   "sessions_per_partition": 63,
+   "rows_per_partition": 16128,
+   "programs_in_grammar": 300,
+   "programs_scored_by_generator": 299,
+   "programs_scored_in_selection": 17,
+   "generate": {
+    "median_s": 1.52984451293014,
+    "min_s": 1.3731029380578548,
+    "repeats": 3
+   },
+   "full_cycle": {
+    "median_s": 1.7312293329741806,
+    "min_s": 1.6759270559996367,
+    "repeats": 3
+   },
+   "full_cycle_numpy_peak_bytes": 3946787,
+   "exported_state_bytes": 3606
+  },
+  "half_year_blocks_256": {
+   "assets": 256,
+   "seeds": 5,
+   "sessions_per_partition": 126,
+   "rows_per_partition": 32256,
+   "programs_in_grammar": 300,
+   "programs_scored_by_generator": 299,
+   "programs_scored_in_selection": 17,
+   "generate": {
+    "median_s": 3.487750835949555,
+    "min_s": 3.312749080825597,
+    "repeats": 3
+   },
+   "full_cycle": {
+    "median_s": 3.224981395062059,
+    "min_s": 3.0661137790884823,
+    "repeats": 3
+   },
+   "full_cycle_numpy_peak_bytes": 7816671,
+   "exported_state_bytes": 3606
+  }
+ }
+}

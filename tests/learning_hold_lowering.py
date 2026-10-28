@@ -441,7 +441,7 @@ DOUBLES = {
     "tests/training/test_external_shared_cuda.py": (1, _ESTIMATOR),
     "tests/training/test_joint_stop_trainers.py": (4, _COUNTED),
     "tests/training/test_mars_titan_correction.py": (4, _RECORDER),
-    "tests/training/test_mars_titan_run.py": (9, _RECORDER),
+    "tests/training/test_mars_titan_run.py": (10, _RECORDER),
     "tests/training/test_mars_session_inputs.py": (1, _RECORDER),
     "tests/training/test_mars_titan_walk_forward.py": (3, _RECORDER),
     "tests/training/test_masked_campaign.py": (1, _CAMPAIGN),

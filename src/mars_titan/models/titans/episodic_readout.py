@@ -142,6 +142,8 @@ class _SelectedEpisodes:
 class ReadoutResult:
     state: torch.Tensor
     reads: tuple[EpisodeRead, ...]
+    # El estado tras cada refinamiento, en orden. El último es `state`.
+    states: tuple[torch.Tensor, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -516,7 +518,7 @@ class EpisodicReadout(nn.Module):
         fixed = self.config.episode_selection == "first_read"
         with torch.set_grad_enabled(differentiable):
             base = z_base if differentiable else z_base.detach()
-            state, reads, positions = base, [], None
+            state, reads, states, positions = base, [], [], None
             for step in range(self.config.refinements):
                 read, chosen = self._read(
                     state, snapshot, context_id, cutoff, positions, repeated=step > 0
@@ -532,11 +534,12 @@ class EpisodicReadout(nn.Module):
                 # que el refinamiento no vuelve a validarla.
                 state = self._step(state, base, read)
                 reads.append(read)
+                states.append(state)
         if self.evidence_bridge is not None:
             from .regional_episode_readout import BridgedReadoutResult
 
-            return BridgedReadoutResult(state, tuple(reads))
-        return ReadoutResult(state, tuple(reads))
+            return BridgedReadoutResult(state, tuple(reads), tuple(states))
+        return ReadoutResult(state, tuple(reads), tuple(states))
 
 
 def apply_episodic_readout(
@@ -582,20 +585,26 @@ def _apply_episodic_readout(
         cutoff=cutoff,
         differentiable=differentiable,
     )
-    quantiles = None
     with torch.set_grad_enabled(differentiable):
-        output = head(result.state)
-        if isinstance(head, QuantileHead):
-            if output.shape != (len(result.state), len(LEVELS)):
-                raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por flujo")
-            check_finite(output, "Los cuantiles refinados")
-            quantiles, predictions = output, median(output)
-        else:
-            predictions = output.squeeze(-1)
-    if predictions.shape != (len(result.state),):
+        predictions, quantiles = head_predictions(head, result.state)
+    return EpisodicPrediction(predictions, result, quantiles)
+
+
+def head_predictions(head, state):
+    """Predicción puntual y, con `QuantileHead`, cuantiles de un estado de trabajo."""
+    quantiles = None
+    output = head(state)
+    if isinstance(head, QuantileHead):
+        if output.shape != (len(state), len(LEVELS)):
+            raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por flujo")
+        check_finite(output, "Los cuantiles refinados")
+        quantiles, predictions = output, median(output)
+    else:
+        predictions = output.squeeze(-1)
+    if predictions.shape != (len(state),):
         raise ValueError("La cabeza debe devolver una salida escalar por flujo")
     check_finite(predictions, "La predicción refinada")
-    return EpisodicPrediction(predictions, result, quantiles)
+    return predictions, quantiles
 
 
 def copy_readout_parameters(source, target):

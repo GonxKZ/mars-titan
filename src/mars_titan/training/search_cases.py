@@ -57,6 +57,7 @@ PREDICTOR_CHANGES = (
     "regional_execution",
     "memory_bank_readout",
     "temporal_encoder",
+    "regional_variant",
     "session_rank_inputs",
     "session_ic_objective",
 )
@@ -86,8 +87,8 @@ def checked_predictor_changes(changes):
     ):
         raise ValueError(
             "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
-            "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion "
-            "regional_execution, memory_bank_readout y session_ic_objective "
+            "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion, "
+            "regional_execution, memory_bank_readout, regional_variant y session_ic_objective "
             "como objetos no vacíos, "
             "y presence_modulation, attention_layout, temporal_encoder y session_rank_inputs "
             "como nombres no vacíos"
