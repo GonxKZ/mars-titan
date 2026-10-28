@@ -138,12 +138,31 @@ uv run python -m benchmarks.variant_screening_study plan --cohorts "${MARS_SCREE
 uv run python -m benchmarks.variant_screening_study prepare \
   --cohorts "${MARS_SCREENING_COHORTS:?}" --work "${MARS_SCREENING_WORK:?}"
 uv run python -m benchmarks.variant_screening_study run --work "${MARS_SCREENING_WORK:?}" --job <id>
+uv run python -m benchmarks.variant_screening_study queue --work "${MARS_SCREENING_WORK:?}"
 uv run python -m benchmarks.variant_screening_study status --work "${MARS_SCREENING_WORK:?}"
+uv run python -m benchmarks.variant_screening_study analyze --work "${MARS_SCREENING_WORK:?}" \
+  --output "${MARS_SCREENING_ANALYSIS:?}" --descriptions dataset
 ```
 
-`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite.
+`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Se detiene en su límite opcional o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo.
 
-El análisis de la criba, que leerá las predicciones de cada trabajo y aplicará las etapas de salida, los contrastes y las familias con `scale_diagnostics` y `paired_comparisons`, es la siguiente parte de #746.
+`analyze` comprueba la protección antes de leer nada, exige que todos los trabajos hayan terminado y verifica la huella de cada Parquet frente a su `run.json`. Lee la madurez de las etiquetas de los tres tramos de cada vista y el sector de las fichas actuales, que solo usa el control sectorial de C4. Escribe `analysis.json`, con decisiones, familias, casos elegidos y las huellas de lo leído, del código y del entorno, y `series.parquet`, con la serie por sesión de cada modelo y métrica.
+
+## Análisis
+
+![Recorrido del análisis de la criba](../diagrams/variants/screening-analysis.png)
+
+`mars_titan.evaluation.variant_screening_analysis` recibe del motor los paneles verificados de cada trabajo y la madurez de sus etiquetas. No lee archivos de predicciones ni importa PyTorch. Para cada origen y semilla obtiene la predicción de S de cada modelo que interviene en un contraste:
+
+- Un ajuste, un lector o una ventana E2 emiten la de su trabajo.
+- Una corrección recorre sus casos y se queda con el de menor MAE medio por sesión en su validación. El caso se elige por origen y semilla, sin leer S, y queda registrado con las puntuaciones de todos.
+- La referencia textual de una corrección emite las predicciones de su padre.
+- A1, A2, A3 y C4 se ajustan con la calibración de la referencia B del mismo origen y semilla y se aplican sin cambios a S. A2 calcula una vez por semilla la abstención y sus cuatro controles con la misma cobertura, y A3 pasa sus cuantiles recalibrados a esa misma abstención.
+- El control cero predice un residuo nulo.
+
+Cada trabajo tiene que reproducir las filas y los objetivos de su vista en los tres tramos, y ninguna emisión puede pertenecer al test final. El MAE calibrado multiplica la predicción de un modelo por el λ de cada mercado elegido en su calibración. Una etapa de salida ya emite su predicción final y se mide sin otro λ, así que A1 compara λ·mediana con cero y A2 compara salidas sin reescalar. Las semillas se promedian en cada sesión, que solo cuenta si todas la definen, y los cuatro orígenes se concatenan en una serie de 2019 a 2022. Cada modelo publica la media de la métrica principal y de las secundarias.
+
+Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, con los mismos bloques de días para todos. El paso descendente de Romano y Wolf usa el estadístico bilateral |θ̂|/σ y el máximo de las réplicas centradas sobre las hipótesis que siguen sin rechazar, con los valores ajustados monótonos. Rechaza al menos lo mismo que los intervalos simultáneos de un paso, que también se publican. Los valores p se cuentan como (1 + n)/(1 + R), de modo que con 2.000 réplicas el menor posible es 0,0005. Una variante pasa si el paso descendente rechaza su contraste principal al 5 % en la dirección favorable, con bloques de 16 días, y cada contraste exigido la favorece con su valor p marginal por debajo del 5 %. Holm, los bloques de 8 y 32 días, la familia de su grupo y la de todos los contrastes se publican como robustez.
 
 ## Desviaciones y límites
 
@@ -153,7 +172,9 @@ El análisis de la criba, que leerá las predicciones de cada trabajo y aplicar�
 - Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
 - El coste es una estimación con medidas de otros estudios.
 - C2, C3, D2, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
-- El análisis de la criba aún no está implementado.
+- La elección del caso de cada corrección por origen y semilla, la medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
+- La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula. La media de semillas de F2 espera a que se integre su declaración.
+- El análisis se ha comprobado con paneles sintéticos de respuesta conocida. No se ha ejecutado con predicciones reales.
 
 ## Comprobaciones
 
