@@ -1,0 +1,161 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 746,
+ "scope": "variant_screening_analysis_and_queue",
+ "implementation_commit": "64ffc31f4c4e6e32b3700155eeffd9cc7cecce73",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_access": false,
+ "test_data": "Paneles sintéticos generados en la prueba, con señal conocida en la referencia B y en la memoria por áreas de B1. Los ejecutores del motor son dobles que solo escriben su run.json.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 98,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "d48f2d98229f170a0574083886eddeb527964a7108b6754fa8dfab69822bded3",
+   "modules": [
+    "tests/evaluation/test_variant_screening_analysis.py",
+    "tests/tooling/test_variant_screening_study.py",
+    "tests/training/test_variant_screening.py",
+    "tests/evaluation/test_online_calibration.py"
+   ]
+  },
+  {
+   "name": "learning_hold_guard",
+   "tests": 17,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "ca515a2727c3db326601cd016c1a41576ad042417605c66390f5e6cafb535955"
+  }
+ ],
+ "coverage": {
+  "tool": "coverage 7.16.1 con ramas",
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "cbe2f0e119d39e156ba0c779889226a0f0b5320a0e0163bf5251e03f09feeb9f",
+    "statements": 350,
+    "covered_statements": 342,
+    "branches": 82,
+    "covered_branches": 75
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "c56e20457d93ca267a57cd05624d0dd54c59fd13bdc5165369e5843d138c8204",
+    "statements": 249,
+    "covered_statements": 249,
+    "branches": 62,
+    "covered_branches": 62
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "e3ca5576ed557ea4faca659be0eac6883c2fd9a33026084aa3ef615a0d9cd084",
+    "statements": 234,
+    "covered_statements": 233,
+    "branches": 104,
+    "covered_branches": 102
+   }
+  ],
+  "max_crap": 45.0,
+  "uncovered": "Memoria CUDA del intento, las ramas prepare, run, queue y analyze de la línea de órdenes y la combinación de semillas de F2, que espera a su declaración."
+ },
+ "mutations": {
+  "scope": "Quince defectos dirigidos del análisis y de la orden analyze. No es una puntuación global.",
+  "planned": 15,
+  "killed": 14,
+  "survived": [
+   "maturity_in_file_order"
+  ],
+  "rerun": {
+   "planned": 1,
+   "killed": 1,
+   "cases": [
+    {
+     "id": "maturity_in_file_order",
+     "status": "killed_with_green_controls"
+    }
+   ],
+   "note": "maturity_in_file_order sobrevivió porque la prueba daba la misma madurez a todas las filas de una sesión. Tras dar a cada fila su propia madurez, la mutación se detecta."
+  },
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "977656136d1c4470996523a4919dda7f63fe6a84e3258287b2c6f93bf29e48d2",
+  "source_sha256": {
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "c56e20457d93ca267a57cd05624d0dd54c59fd13bdc5165369e5843d138c8204",
+   "benchmarks/variant_screening_study.py": "72ebbacb3bb65b839c97bd7c41d82b0c9b1739bbb7dd7bcb09a459bbb4d3a4ce"
+  },
+  "cases": [
+   {
+    "id": "single_step_instead_of_stepdown",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "stepdown_without_monotonicity",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "case_with_the_highest_validation_error",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "case_chosen_with_s",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "direction_ignored",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "cohort_not_checked",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "final_test_readable",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "required_contrasts_ignored",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "one_block_length_for_every_sensitivity",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "calibrated_mae_without_lambda",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "zero_control_emits_the_reference",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "analysis_without_hold",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "analysis_with_missing_jobs",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "prediction_hash_not_checked",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "maturity_in_file_order",
+    "status": "survived"
+   }
+  ],
+  "note": "Se ejecutaron antes de añadir la orden queue y la prueba del informe de analyze. Esos cambios no tocan los fragmentos mutados."
+ },
+ "limits": [
+  "El análisis no se ha ejecutado con predicciones reales ni se ha medido su coste con las formas de la criba.",
+  "La mediana pasada no se calcula porque ningún contraste declarado la usa.",
+  "La media de semillas de F2 espera a su declaración."
+ ]
+}
