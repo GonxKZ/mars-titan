@@ -12,16 +12,21 @@ El módulo de cada objetivo declara:
   [filas, k] y la predicción puntual;
 - `loss(salidas, objetivos, sesiones)`, la pérdida media del tramo;
 - `session_level`, si necesita la sesión completa en un bloque;
-- `row_decomposable`, si la pérdida es una media de términos por fila.
+- `row_decomposable`, si la pérdida es una media de términos por fila;
+- `scalar_point`, si el punto emitido es la salida de la cabeza escalar sin transformar,
+  que es lo que leen el lector episódico y sus consumidores;
+- `levels(salidas)`, opcional, los cinco cuantiles que acompañan a la fila emitida.
 """
 
 from dataclasses import fields
 
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 
+from .laplace_scale import LaplaceScaleHead
 from .session_ic_objective import SessionICObjective
 
-OBJECTIVES = {"session_ic_objective": SessionICObjective}
+# F4 y F1 de #749. Ambos sustituyen la pérdida MAE de la cabeza escalar.
+OBJECTIVES = {"session_ic_objective": SessionICObjective, "laplace_scale_head": LaplaceScaleHead}
 
 
 def check_objectives(config):
@@ -63,3 +68,8 @@ def build_objective(config, *, dtype):
     if objective is None:
         return None
     return objective.build(config.hidden_size, seed=config.seed, dtype=dtype)
+
+
+def reads_scalar_point(objective):
+    """Si el lector puede leer el punto emitido como lo haría con la cabeza escalar."""
+    return objective is None or objective.scalar_point

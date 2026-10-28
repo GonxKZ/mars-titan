@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "auxiliary_horizon_variants",
+  "issue": 749,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "regional_fusion": "none",
+    "posttraining": "not_declared"
+  },
+  "arms": {
+    "weight_zero_control": {
+      "role": "control",
+      "predictor_changes": {
+        "auxiliary_horizons": {
+          "horizons": [5, 20],
+          "weight": 0.0,
+          "maturity_slack": 2
+        }
+      }
+    },
+    "auxiliary_horizons": {
+      "role": "variant",
+      "control": "weight_zero_control",
+      "predictor_changes": {
+        "auxiliary_horizons": {
+          "horizons": [5, 20],
+          "weight": 0.5,
+          "maturity_slack": 2
+        }
+      }
+    }
+  }
+}
