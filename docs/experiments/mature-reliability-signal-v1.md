@@ -92,7 +92,21 @@ El componente solo existe con `mac_online`. Se rechaza con el control local C de
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/mature_reliability_cost.py`, sin pasos de optimizador. La medida CUDA queda para cuando la GPU esté libre.
+El componente añade seis parámetros, las mezclas de dos puertas por tres velocidades. Por fila y bloque suma un tensor [filas, 2, 3], dos productos escalares de tres términos y dos `tanh`. El acumulador de la señal trabaja en Python fuera del grafo.
+
+La medida en CPU de `benchmarks/mature_reliability_cost.py` ([recibo](../../reports/engineering/mature-reliability-20261028/cost-cpu.json), commit `90e26af37`) recorre 8 instantes de 256 filas con `hidden_size` 64, dos hilos, FP32 estricto, 2 calentamientos y 10 repeticiones con orden rotatorio, sin optimizador y con los parámetros intactos al final. La máquina tenía otras pruebas en marcha y una carga media de 28 a 31 con 16 hilos, así que la dispersión es grande:
+
+| Modelo | Forward con grafo (s) | Backward (s) | Inferencia (s) | Relación de medianas |
+| --- | --- | --- | --- | --- |
+| `reference` | 2,52 (1,63 a 3,05) | 1,13 (0,89 a 1,41) | 2,41 (1,53 a 2,91) | 1 |
+| `shared_signal` | 2,52 (1,55 a 3,70) | 1,10 (0,73 a 1,66) | 2,26 (1,50 a 2,88) | 1,00 / 0,98 / 0,93 |
+| `shuffled_in_time` | 2,72 (1,83 a 3,65) | 1,22 (1,00 a 1,43) | 2,47 (1,87 a 2,99) | 1,08 / 1,08 / 1,02 |
+| `titans_surprise` | 2,36 (1,76 a 3,00) | 1,20 (0,78 a 1,52) | 2,43 (1,80 a 3,47) | 0,94 / 1,06 / 1,01 |
+| `independent_signals` | 2,40 (1,97 a 2,99) | 1,13 (0,90 a 1,38) | 2,33 (2,03 a 2,66) | 0,95 / 1,00 / 0,97 |
+
+Cada celda da la mediana con el mínimo y el máximo. Las medianas quedan entre 0,93 y 1,08 de la referencia y los intervalos se solapan por completo, de modo que esta medida no distingue diferencias de ese tamaño. No permite afirmar que el componente sea gratuito, solo que su coste queda por debajo de la resolución de la medida con esta carga.
+
+El acumulador, medido aparte con el mismo recibo, tarda por evento unos 0,35 ms en actualizar y 0,21 ms en leer con 64 etiquetas, 1,3 y 0,9 ms con 256, y 5,7 y 3,9 ms con 1.024 en la señal compartida. El control independiente tarda más en actualizar, 9,5 ms con 1.024, porque reparte cada etiqueta en dos canales. Con 256 filas, el acumulador supone menos del 1 % de los 0,31 s por instante del forward con grafo, así que no compensa vectorizarlo. La medida CUDA queda pendiente hasta que la GPU esté libre.
 
 ## Comprobación
 
