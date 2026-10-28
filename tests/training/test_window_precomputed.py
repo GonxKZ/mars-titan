@@ -58,7 +58,7 @@ def test_frozen_and_window_source_manifests_identify_the_optional_scan(kind):
 @pytest.mark.parametrize("kind", KINDS)
 def test_trainers_inherit_the_real_precomputed_source_without_initializing_training(kind):
     from mars_titan.posttraining.readout_adapters import ReadoutAdapterTrainer
-    from mars_titan.training.financial_run import ChronologicalTrainer
+    from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
     from mars_titan.training.mars_titan_run import ReadoutTrainer
 
     module = importlib.import_module("mars_titan.models.kronlstm.precomputed")
@@ -70,6 +70,8 @@ def test_trainers_inherit_the_real_precomputed_source_without_initializing_train
             temporal_encoder=kind, regional_variant=None, cross_asset_attention=None
         )
         trainer.predictor = SimpleNamespace(config=config)
+        # La receta decide si F2 y F3 añaden su código.
+        trainer.recipe = ChronologicalRecipe()
         assert trainer._code()[module.__name__] == expected
 
 

@@ -1195,6 +1195,9 @@ notebooks = [
     { name = "ipykernel" },
     { name = "jupyterlab" },
 ]
+optimizers = [
+    { name = "schedulefree" },
+]
 reinforcement = [
     { name = "gymnasium" },
     { name = "hmmlearn" },
@@ -1252,6 +1255,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=18,<30" },
     { name = "pyarrow", marker = "extra == 'data'", specifier = ">=18,<30" },
     { name = "safetensors", marker = "extra == 'encoders'", specifier = ">=0.5,<1" },
+    { name = "schedulefree", marker = "extra == 'optimizers'", specifier = "==1.4.1" },
     { name = "scikit-learn", marker = "extra == 'research'", specifier = ">=1.6,<2" },
     { name = "scipy", marker = "extra == 'research'", specifier = ">=1.14,<2" },
     { name = "statsmodels", marker = "extra == 'research'", specifier = "==0.15.0" },
@@ -1261,7 +1265,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'encoders'", specifier = ">=4.57,<6" },
     { name = "xgboost", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'boosting'", specifier = "==3.3.0" },
 ]
-provides-extras = ["data", "research", "cuda", "encoders", "notebooks", "boosting", "reinforcement"]
+provides-extras = ["data", "research", "cuda", "encoders", "notebooks", "boosting", "reinforcement", "optimizers"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2135,6 +2139,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8f/8e/476222d88ba09dce0feebf6fb30b55e4dd0c80be5b19dc7b40d12d70752a/sb3_contrib-2.9.0.tar.gz", hash = "sha256:6e839c669552ecb3deb616a42ea98ed5e6c599eb5ac5f86232415b87a3873699", size = 90312, upload-time = "2026-06-15T17:06:08.8Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c3/06/add3f1d6250f58ca493830ddb2118975aa3c4433bc07662d5ac5089eb691/sb3_contrib-2.9.0-py3-none-any.whl", hash = "sha256:b492b2be792f8f8214ff6b984e94812dc877f809ae82302cbe00626442ae316a", size = 93042, upload-time = "2026-06-15T17:06:07.452Z" },
+]
+
+[[package]]
+name = "schedulefree"
+version = "1.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/51/d78369c32b0f3818ee7f5a04e77ed02a6bd0ba8642462f780623af0010f5/schedulefree-1.4.1.tar.gz", hash = "sha256:69ef25601d1fc0d8dd00cb36f9af78833f88b7846f1bb6ddecc9f144f3e9f7cb", size = 29281, upload-time = "2025-03-24T17:32:37.996Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/93/ef/aac74263f0252806b46f0fd5a52566ee06129744572d0958cd0a77d22b0a/schedulefree-1.4.1-py3-none-any.whl", hash = "sha256:21602d3a0d35ee190152e3d56f547ea725d316310bd198fa6108f8039386b242", size = 55068, upload-time = "2025-03-24T20:32:10.525Z" },
 ]
 
 [[package]]
