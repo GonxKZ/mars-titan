@@ -279,10 +279,12 @@ def test_autocast_is_refused():
 
 
 def test_the_source_enters_the_trainer_identity_only_when_active():
-    from mars_titan.training.financial_run import ChronologicalTrainer
+    from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
 
     name = "mars_titan.models.titans.cross_asset_attention"
     trainer = object.__new__(ChronologicalTrainer)
+    # La receta decide si F2 y F3 añaden su código a la identidad.
+    trainer.recipe = ChronologicalRecipe()
     for config, present in ((None, False), (VARIANT, True)):
         trainer.predictor = SimpleNamespace(
             config=SimpleNamespace(
