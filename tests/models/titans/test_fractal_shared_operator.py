@@ -31,6 +31,7 @@ from mars_titan.models.titans.fractal_shared_operator import (
     control_rank,
     parse_fractal_shared_operator,
 )
+from mars_titan.models.titans.regional_fusion import RegionalFusionConfig
 from mars_titan.models.titans.session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from mars_titan.training.search_cases import checked_predictor_changes
 
@@ -646,9 +647,10 @@ def test_the_predictor_change_registry_admits_it():
                 mixing="none",
             )
         ),
+        dict(regional_fusion=RegionalFusionConfig(topology="ring")),
         dict(auxiliary_horizons=dict(horizons=[5], weight=0.5, maturity_slack=0)),
     ],
-    ids=["mac_frozen", "pt6", "c2", "c5", "c1", "f5"],
+    ids=["mac_frozen", "pt6", "c2", "c5", "c1", "regional_fusion", "f5"],
 )
 def test_it_is_exclusive_with_other_modulations_session_mixing_and_row_wise_tokens(changes):
     base, _ = setup()
