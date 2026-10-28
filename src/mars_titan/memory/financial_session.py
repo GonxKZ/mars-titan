@@ -36,6 +36,7 @@ from . import (
     regional_session_work,
     regional_work,
     role_binding,
+    salience_session,
     spaced_session,
     write_scores,
 )
@@ -136,6 +137,8 @@ def _check_callbacks(instance):
     )
     if instance._lesion_plan is not None:
         current += (lesion_session.signature(instance._lesion_plan),)
+    if instance._salience_config is not None:
+        current += (_canonical(salience_session.contract(instance._salience_config)),)
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
 
@@ -208,6 +211,7 @@ class FinancialSession(EpisodicSession):
         regional_work_limits=None,
         regional_max_attempts=2,
         lesions=None,
+        salience=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -244,6 +248,7 @@ class FinancialSession(EpisodicSession):
                 "La corrección asociativa B6 solo se declara sobre Titans-MAC sin banco"
             )
         self.associative = associative
+        self._salience_config = salience_session.configure(salience, associative)
         self._lesion_plan = lesion_session.configure(lesions, associative)
         if type(binding) is spaced_session.SpacedTitansBinding and (
             associative is not None or lesions is not None or self._regional_config is not None
@@ -305,6 +310,8 @@ class FinancialSession(EpisodicSession):
                     ).hexdigest()
         if self._lesion_plan is not None:
             code.update(lesion_session.code())
+        if self._salience_config is not None:
+            code.update(salience_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -360,6 +367,8 @@ class FinancialSession(EpisodicSession):
             contract["regional_work"] = self._regional_config
         if self._lesion_plan is not None:
             contract["lesions"] = self._lesion_plan.identity()
+        if self._salience_config is not None:
+            contract["salience"] = salience_session.contract(self._salience_config)
         if spaced_session.enabled(self):
             contract.update(
                 schema_version=3,
@@ -392,6 +401,10 @@ class FinancialSession(EpisodicSession):
         )
         if self._lesion_plan is not None:
             self._runtime_contract += (lesion_session.signature(self._lesion_plan),)
+        if self._salience_config is not None:
+            self._runtime_contract += (
+                _canonical(salience_session.contract(self._salience_config)),
+            )
         self._prototype = binding.bank(
             native,
             retention,
@@ -483,6 +496,8 @@ class FinancialSession(EpisodicSession):
             fields.add("associative")
         if self._lesion_plan is not None:
             fields.add("lesions")
+        if self._salience_config is not None:
+            fields.add("salience")
         if spaced_session.enabled(self):
             fields.add("spaced")
         if type(self._binding) is MechanismBinding:
@@ -645,6 +660,13 @@ class FinancialSession(EpisodicSession):
 
     def spaced_state(self):
         return spaced_session.inspect_state(self)
+
+    def salience_state(self):
+        """Copia de escalas y selección confirmadas. Sin E3 no existe ese estado."""
+        _check_callbacks(self)
+        if self._salience_config is None:
+            return None
+        return salience_session.restore(self, self._bundle(self.snapshot()["state"])).export()
 
     def spaced_event(self):
         return spaced_session.inspect_state(self, event=True)
@@ -981,6 +1003,8 @@ class FinancialSession(EpisodicSession):
         if not warmup:
             pending = self._append_pending(pending, rows)
         extra = {}
+        if self._salience_config is not None:
+            extra["salience"] = bundle["salience"] if bundle else None
         if spaced_session.enabled(self):
             extra["spaced"] = bundle["spaced"] if bundle else None
         if lesion_ledger is not None:
@@ -1062,6 +1086,8 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if self._salience_config is not None:
+            extra["salience"] = bundle["salience"] if bundle else None
         if spaced_session.enabled(self):
             bank, _ = self._bank(bundle["bank"] if bundle else None)
             spaced_session.begin(self, bank, bundle, self._inflight["cutoff"], feedback_only=True)
@@ -1175,29 +1201,36 @@ class FinancialSession(EpisodicSession):
                 confirmed_at=proposed["cutoff"],
                 **extra,
             )
+        salience_ref = None
+        chosen_outcomes = outcomes
+        if self._salience_config is not None:
+            salience_ref, chosen_indices = salience_session.resolve(self, proposed, outcomes)
+            chosen_outcomes = [outcomes[index] for index in chosen_indices]
         if self.associative is not None:
             memory, core, routes, parts = self._associative_state(
                 proposed["associative"], with_parts=True
             )
-            # Todas las etiquetas aplicadas escriben A, con independencia de la admisión.
+            # Sin E3 escriben todas las etiquetas. El factor solo cambia qué se escribe,
+            # conserva etiqueta menos núcleo y retira todos los resultados ya resueltos.
             indices = [
-                positions[item.prediction.asset, item.prediction.decision_at] for item in outcomes
+                positions[item.prediction.asset, item.prediction.decision_at]
+                for item in chosen_outcomes
             ]
             if indices:
                 selected = torch.tensor(indices, dtype=torch.int64, device="cpu")
                 feedback = self.associative.feedback(
                     # El ejecutor entrega los resultados en orden canónico y el contador de A
                     # los numera de forma estable, igual que el banco con sus episodios.
-                    ids=[memory.writes + offset for offset in range(1, len(outcomes) + 1)],
-                    decision_at=[item.prediction.decision_at for item in outcomes],
-                    available_at=[item.label.available_at for item in outcomes],
+                    ids=[memory.writes + offset for offset in range(1, len(chosen_outcomes) + 1)],
+                    decision_at=[item.prediction.decision_at for item in chosen_outcomes],
+                    available_at=[item.label.available_at for item in chosen_outcomes],
                     keys=self.associative.keys(
                         pending["key_inputs"].index_select(0, selected),
                         routes.index_select(0, selected) if routes is not None else None,
                     ),
                     values=[
                         item.label.value - core[index].item()
-                        for item, index in zip(outcomes, indices, strict=True)
+                        for item, index in zip(chosen_outcomes, indices, strict=True)
                     ],
                 )
                 memory = memory.write(
@@ -1228,6 +1261,8 @@ class FinancialSession(EpisodicSession):
         bundle = dict(
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
+        if self._salience_config is not None:
+            bundle["salience"] = salience_ref
         if spaced_session.enabled(self):
             bundle["spaced"] = spaced_ref
         if self.associative is not None:
@@ -1311,9 +1346,11 @@ class FinancialSession(EpisodicSession):
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if self.associative is not None:
-            _, core, _ = self._associative_state(bundle["associative"])
+            memory, core, _ = self._associative_state(bundle["associative"])
             if len(core) != len(pending["rows"]):
                 raise ValueError("El núcleo pendiente no corresponde a la cola confirmada")
+            if self._salience_config is not None:
+                salience_session.verify(self, bundle, memory)
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
@@ -1392,6 +1429,8 @@ class FinancialSession(EpisodicSession):
         self._verify_bundle(bundle, event_kind=record["event_kind"])
         if spaced_session.enabled(self):
             spaced_session.verify_confirmed(self, bundle, record)
+        if self._salience_config is not None:
+            salience_session.verify_confirmed(self, bundle, snapshot, record)
         self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
@@ -1421,7 +1460,12 @@ class FinancialSession(EpisodicSession):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
         if self.associative is not None:
             memory, _, _ = self._associative_state(bundle["associative"])
-            if memory.writes != snapshot["applied"]:
+            expected_writes = (
+                salience_session.restore(self, bundle).statistics.selected
+                if self._salience_config is not None
+                else snapshot["applied"]
+            )
+            if memory.writes != expected_writes:
                 raise ValueError("La matriz A no concilia con los labels maduros aplicados")
         pending = self._read(bundle["pending"], "pending")
         expected = {(p.asset, p.decision_at) for p in self._executor.pending()}
@@ -1458,6 +1502,8 @@ class FinancialSession(EpisodicSession):
                 names += ("associative",)
             if self._lesion_plan is not None:
                 names += ("lesions",)
+            if self._salience_config is not None:
+                names += ("salience",)
             if spaced_session.enabled(self):
                 names += ("spaced",)
             if type(self._binding) is MechanismBinding:

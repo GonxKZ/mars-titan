@@ -153,12 +153,16 @@ class MatureWriteBudget:
             observed,
         )
 
-    def _cohort(self, cohort, cutoff):
+    def _cohort(self, cohort, cutoff, *, ordered=True):
         """Validar toda la disponibilidad antes de acceder al primer valor financiero."""
         _integer(cutoff, 0, MAX_TIME, "El corte de publicación")
         if not isinstance(cohort, (list, tuple)) or len(cohort) > MAX_ROWS:
             raise ValueError("E3 necesita una secuencia de hasta 8.192 candidatos")
-        if self.cursor is not None and (cutoff < self.cursor or (cohort and cutoff == self.cursor)):
+        if (
+            ordered
+            and self.cursor is not None
+            and (cutoff < self.cursor or (cohort and cutoff == self.cursor))
+        ):
             raise ValueError("Una publicación E3 no puede repetirse ni retroceder")
         seen = set()
         for item in cohort:
@@ -169,7 +173,9 @@ class MatureWriteBudget:
             _integer(item.prediction_at, 0, MAX_TIME, "La decisión")
             _integer(item.available_at, item.prediction_at + 1, cutoff, "La disponibilidad madura")
             previous = self._records.get(item.flow_id)
-            if item.key in seen or (previous is not None and item.prediction_at <= previous[2]):
+            if item.key in seen or (
+                ordered and previous is not None and item.prediction_at <= previous[2]
+            ):
                 raise ValueError("E3 repite o retrocede una decisión ya procesada")
             seen.add(item.key)
         if len(set(self._records) | {item.flow_id for item in cohort}) > MAX_FLOWS:
@@ -201,7 +207,10 @@ class MatureWriteBudget:
         prefijo anterior. Después, todos sus errores avanzan sus escalas, incluidos los que
         no se escriben. Dos llamadas con el mismo corte no pueden repartir otro cupo.
         """
-        cohort = self._cohort(cohort, cutoff)
+        return self._select(self._cohort(cohort, cutoff), cutoff)
+
+    def _select(self, cohort, cutoff):
+        """Puntuación común tras validar el consumidor su orden y sus candidatos."""
         if not cohort:
             return WriteSelection((), (), ()), self
         grouped, scores, scales = {}, [], []
@@ -283,3 +292,132 @@ class MatureWriteBudget:
         if _canonical(restored.export()) != _canonical(payload):
             raise ValueError("Las huellas o los valores exportados E3 han cambiado")
         return restored
+
+
+class CommittedWriteBudget:
+    """Cupos por generación nativa, con estadísticas compartidas con el selector E3.
+
+    El ejecutor debe acreditar que cada resultado pertenece a una predicción pendiente
+    emitida y se aplica una sola vez. Esta estadística no conserva todos sus IDs ni puede
+    sustituir ese registro. Admite etiquetas tardías y dos publicaciones con el mismo
+    corte. El cupo es por publicación, no por sesión del calendario.
+    """
+
+    KIND = "salience_committed_publication_v1"
+
+    def __init__(
+        self,
+        config,
+        *,
+        statistics=None,
+        generation=0,
+        cutoff=None,
+        last_observed=0,
+        last_selected=(),
+    ):
+        if type(config) is not SalienceBudgetConfig:
+            raise ValueError("La publicación E3 necesita una configuración identificada")
+        statistics = MatureWriteBudget(config) if statistics is None else statistics
+        if type(statistics) is not MatureWriteBudget or statistics.config != config:
+            raise ValueError("Las estadísticas E3 pertenecen a otra configuración")
+        _integer(generation, 0, MAX_COUNT, "La generación E3")
+        _integer(last_observed, 0, MAX_ROWS, "Los candidatos de la publicación")
+        if cutoff is not None:
+            _integer(cutoff, 0, MAX_TIME, "El corte E3")
+        if (
+            (generation == 0) != (cutoff is None)
+            or statistics.cohorts > generation
+            or last_observed > statistics.observed
+            or (statistics.cursor is not None and statistics.cursor > cutoff)
+            or not isinstance(last_selected, (list, tuple))
+            or len(last_selected) > min(last_observed, statistics.selected)
+        ):
+            raise ValueError("La publicación y sus cuentas E3 no concilian")
+        keys, counts = [], {}
+        for key in last_selected:
+            if not isinstance(key, (list, tuple)) or len(key) != 2:
+                raise ValueError("La selección E3 necesita identidades reales")
+            flow, decision = key
+            if not isinstance(flow, str) or _FLOW.fullmatch(flow) is None:
+                raise ValueError("La selección E3 no identifica un activo válido")
+            _integer(decision, 0, cutoff - 1, "La decisión elegida")
+            keys.append((flow, decision))
+            market = flow.split("/", 1)[0]
+            counts[market] = counts.get(market, 0) + 1
+        if keys != sorted(set(keys)) or any(
+            count > config.writes_per_market for count in counts.values()
+        ):
+            raise ValueError("La selección E3 repite identidades o supera el cupo")
+        self.config, self.statistics = config, statistics
+        self.generation, self.cutoff = generation, cutoff
+        self.last_observed, self.last_selected = last_observed, tuple(keys)
+
+    def select(self, cohort, *, cutoff, generation):
+        """Proponer una publicación siguiente sin modificar el estado confirmado.
+
+        Los candidatos son exactamente los resultados únicos admitidos por el ejecutor.
+        Todos avanzan el RMS. Solo los elegidos escriben la corrección. La generación
+        avanza también sin resultados y evita que un reintento renueve el cupo.
+        """
+        _integer(generation, 1, MAX_COUNT, "La generación E3")
+        _integer(cutoff, 0, MAX_TIME, "El corte E3")
+        if generation != self.generation + 1 or (self.cutoff is not None and cutoff < self.cutoff):
+            raise ValueError("La publicación E3 repite, salta o retrocede una generación")
+        rows = self.statistics._cohort(cohort, cutoff, ordered=False)
+        selection, statistics = self.statistics._select(rows, cutoff)
+        return selection, CommittedWriteBudget(
+            self.config,
+            statistics=statistics,
+            generation=generation,
+            cutoff=cutoff,
+            last_observed=len(rows),
+            last_selected=selection.selected,
+        )
+
+    def export(self):
+        payload = dict(
+            schema_version=1,
+            kind=self.KIND,
+            configuration=self.config.identity(),
+            generation=self.generation,
+            cutoff=self.cutoff,
+            statistics=self.statistics.export(),
+            last=dict(
+                observed=self.last_observed, selected=[list(key) for key in self.last_selected]
+            ),
+        )
+        return dict(payload, sha256=_digest(payload))
+
+    @classmethod
+    def restore(cls, config, payload):
+        fields = {
+            "schema_version",
+            "kind",
+            "configuration",
+            "generation",
+            "cutoff",
+            "statistics",
+            "last",
+            "sha256",
+        }
+        if (
+            type(config) is not SalienceBudgetConfig
+            or type(payload) is not dict
+            or set(payload) != fields
+            or type(payload["schema_version"]) is not int
+            or payload["schema_version"] != 1
+            or payload["kind"] != cls.KIND
+            or payload["configuration"] != config.identity()
+            or type(payload["last"]) is not dict
+            or set(payload["last"]) != {"observed", "selected"}
+            or payload["sha256"] != _digest({k: v for k, v in payload.items() if k != "sha256"})
+        ):
+            raise ValueError("El estado de la publicación E3 no conserva su contrato o huella")
+        return cls(
+            config,
+            statistics=MatureWriteBudget.restore(config, payload["statistics"]),
+            generation=payload["generation"],
+            cutoff=payload["cutoff"],
+            last_observed=payload["last"]["observed"],
+            last_selected=payload["last"]["selected"],
+        )
