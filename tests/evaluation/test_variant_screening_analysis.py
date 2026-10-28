@@ -29,6 +29,11 @@ def protocol_of(entries=ENTRIES):
     protocol = variant_screening.load_protocol()
     reduced = copy.deepcopy(protocol)
     reduced["catalog"] = {name: protocol["catalog"][name] for name in entries}
+    # Las versiones solo pueden nombrar modelos que sigan en el catálogo reducido.
+    versions = reduced["selection"]["versions"]
+    versions["models"] = [
+        model for model in versions["models"] if model.split("/")[0] in ("references", *entries)
+    ]
     return reduced
 
 
@@ -187,12 +192,15 @@ def test_the_case_is_chosen_with_the_validation_and_never_with_s():
     times = partition_times(year)
     rng = np.random.default_rng(0)
     target = {name: rng.standard_normal(len(t)) for name, t in times.items()}
+    noise = {name: rng.standard_normal(len(t)) for name, t in times.items()}
 
     def panels(validation_noise, evaluation_sign):
         result = {}
         for name, t in times.items():
             y = target[name]
-            point = y + validation_noise if name == "validation" else evaluation_sign * y
+            point = (
+                y + validation_noise * noise[name] if name == "validation" else evaluation_sign * y
+            )
             result[name] = make_panel(t, y, point)
         return result
 
@@ -206,12 +214,57 @@ def test_the_case_is_chosen_with_the_validation_and_never_with_s():
         maturity={n: t + DAY_MICROSECONDS for n, t in times.items()},
     )
     candidates = [
-        dict(id="good-s", definition=dict(search_case="eta25e-2")),
-        dict(id="good-validation", definition=dict(search_case="eta5e-2")),
+        dict(id="good-s", seed=42, definition=dict(search_case="eta25e-2")),
+        dict(id="good-validation", seed=42, definition=dict(search_case="eta5e-2")),
     ]
-    chosen, scores = analysis.choose_case(origin, candidates)
-    assert chosen["id"] == "good-validation"
-    assert scores["good-validation"] < scores["good-s"]
+    position, scores, mae = analysis.choose_case(origin, [candidates], min_assets=3)
+    assert candidates[position]["id"] == "good-validation"
+    assert scores["eta5e-2"] > scores["eta25e-2"]
+    # El MAE de la regla anterior queda registrado y elegiría lo mismo en este caso.
+    assert mae["good-validation"] < mae["good-s"]
+
+
+def test_the_case_is_common_to_the_seeds_and_follows_their_mean_ic():
+    year = 2019
+    times = partition_times(year)
+    rng = np.random.default_rng(1)
+    target = {name: rng.standard_normal(len(t)) for name, t in times.items()}
+    noise = {name: rng.standard_normal(len(t)) for name, t in times.items()}
+
+    def panels(spread):
+        return {
+            name: make_panel(t, target[name], target[name] + spread * noise[name])
+            for name, t in times.items()
+        }
+
+    # La semilla 42 prefiere por poco el caso b y la 43 prefiere mucho el a.
+    loaded = {
+        "a42": panels(1.05),
+        "b42": panels(1.0),
+        "a43": panels(0.3),
+        "b43": panels(2.0),
+    }
+    origin = analysis.Origin(
+        year=year,
+        load=loaded.__getitem__,
+        cohorts={
+            n: make_panel(t, target[n], np.zeros(len(t))).cohort_sha256 for n, t in times.items()
+        },
+        maturity={n: t + DAY_MICROSECONDS for n, t in times.items()},
+    )
+    candidates = [
+        [
+            dict(id=f"{case}{seed}", seed=seed, definition=dict(search_case=case))
+            for case in ("a", "b")
+        ]
+        for seed in (42, 43)
+    ]
+    position, scores, mae = analysis.choose_case(origin, candidates, min_assets=3)
+    assert position == 0 and scores["a"] > scores["b"]
+    assert mae["b42"] < mae["a42"]
+    other = [list(reversed(jobs)) for jobs in candidates]
+    with pytest.raises(ValueError, match="no comparten los casos"):
+        analysis.choose_case(origin, [candidates[0], other[1]], min_assets=3)
 
 
 def test_a_job_with_other_rows_or_in_the_final_test_is_rejected():
@@ -268,15 +321,16 @@ def test_the_analysis_recovers_the_known_answer(screened):
     assert json.loads(json.dumps(report, allow_nan=False)) == report
 
 
-def test_each_correction_keeps_the_case_with_the_lower_validation_error(screened):
+def test_each_correction_keeps_the_case_with_the_higher_common_validation_ic(screened):
     protocol, _, report, _ = screened
     area = [row for row in report["cases"] if row["model"] == "B1/area_memory"]
-    assert len(area) == len(protocol["origins"]) * len(protocol["seeds"])
+    assert len(area) == len(protocol["origins"])
     assert {row["case"] for row in area} == {"eta5e-2"}
     for row in report["cases"]:
-        assert row["job"] == min(
-            row["validation_session_mae"], key=row["validation_session_mae"].get
-        )
+        scores = row["validation_session_ic"]
+        assert row["case"] == max(scores, key=scores.get)
+        assert sorted(row["jobs"]) == [str(seed) for seed in protocol["seeds"]]
+        assert set(row["jobs"].values()) <= set(row["validation_session_mae"])
 
 
 def test_every_model_reports_the_secondary_metrics_of_the_protocol(screened):
@@ -319,3 +373,65 @@ def test_a_variant_fails_when_a_required_contrast_does_not_favour_it():
     decision = analysis.families(protocol, contrasts, day)["decisions"]["B1"]
     assert decision["primary_passes"] and not decision["passes"]
     assert sorted(decision["required"].values()) == [False, True]
+
+
+# Tres sesiones al mes durante seis meses: la comprobación de la regla elige con los cuatro
+# primeros y mide con los dos últimos.
+MONTHLY = [
+    int(np.datetime64(f"2019-{month:02d}-{day:02d}T21:00", "us").astype(np.int64))
+    for month in range(1, 7)
+    for day in (3, 10, 17)
+]
+
+
+def histories(seed_offsets, peak_choose, peak_measure):
+    """Registros de validación con los meses 0 a 3 para elegir y 4 a 5 para medir."""
+    months = np.asarray(MONTHLY, dtype="datetime64[us]").astype("datetime64[M]")
+    measure = (months - months[0]).astype(int) >= 4
+    members = []
+    for offset in seed_offsets:
+        member = []
+        for epoch in range(1, 7):
+            values = (
+                np.where(
+                    measure,
+                    0.05 - 0.01 * abs(epoch - peak_measure),
+                    0.05 - 0.01 * abs(epoch - peak_choose),
+                )
+                + offset
+            )
+            member.append(
+                dict(
+                    session_ic_values=values.tolist(),
+                    session_ic_defined=[True] * len(MONTHLY),
+                    # El MAE mejora en cada época, así que la regla anterior elige la última.
+                    session_mae_values=[0.5 - 0.01 * epoch] * len(MONTHLY),
+                    session_time=MONTHLY,
+                )
+            )
+        members.append(member)
+    return members
+
+
+def test_the_rule_check_compares_the_common_epoch_with_the_mae_rule_and_the_last_epoch():
+    check = dict(choose_months=4, measure_months=2)
+    row = analysis.group_rule_check(
+        histories((0.0, 0.001, 0.002), peak_choose=3, peak_measure=3), check, radius=1
+    )
+    assert row["common_epoch"] == 3 and row["session_mae_best_epochs"] == [6, 6, 6]
+    assert row["choose_sessions"] == 12 and row["measure_sessions"] == 6
+    measured = row["measured"]
+    assert measured["common_epoch"] == pytest.approx(0.05 + 0.001)
+    assert measured["session_mae_best_epoch"] == pytest.approx(0.02 + 0.001)
+    assert measured["last_epoch"] == measured["session_mae_best_epoch"]
+    assert row["bound_with_future_information"] == pytest.approx(measured["common_epoch"])
+    groups = [
+        ("a", histories((0.0,), peak_choose=3, peak_measure=3)),
+        ("b", histories((0.0,), peak_choose=3, peak_measure=6)),
+    ]
+    result = analysis.rule_check(groups, check, radius=1, replicates=200, seed=1, confidence=0.9)
+    summary = result["summary"]["session_mae_best_epoch"]
+    assert summary["groups"] == 2 and summary["groups_where_the_common_epoch_is_not_worse"] == 1
+    assert summary["interval"][0] <= summary["mean_difference"] <= summary["interval"][1]
+    with pytest.raises(ValueError, match="necesita grupos"):
+        analysis.rule_check([], check, radius=1, replicates=10, seed=1, confidence=0.9)

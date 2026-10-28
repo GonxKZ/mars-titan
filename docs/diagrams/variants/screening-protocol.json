@@ -79,7 +79,7 @@
       "id": "seeds",
       "type": "external",
       "label": "5 semillas",
-      "sublabel": "presupuesto fijo",
+      "sublabel": "época común con el IC",
       "pos": [
         300,
         420
@@ -248,7 +248,7 @@
       "title": "Estado",
       "items": [
         "Protocolo y motor registrados en #746, sin ejecutar",
-        "1.740 trabajos ejecutables, unas 95 h estimadas",
+        "1.740 trabajos ejecutables, unas 97 h estimadas",
         "A4, C5, F2 y F3 por integrar. C2, C3 y D2 pendientes"
       ]
     }

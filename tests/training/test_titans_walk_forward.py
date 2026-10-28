@@ -18,7 +18,9 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
+from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
@@ -978,3 +980,103 @@ def test_titans_posttraining_traces_the_adapter_and_keeps_its_rows(base, tmp_pat
     # Solo la corrección del prefijo persistente recibe gradiente.
     assert groups == {"predictor.mac"}
     assert "memory.alpha.mean" in metrics(rows, "train")
+
+
+COMMON = dict(RULE, stopping="common_epoch", max_epochs=2)
+SCORING = dict(min_assets=3, predictions=True)
+
+
+def test_common_epoch_window_waits_then_emits_its_epoch_and_versions(base, tmp_path, monkeypatch):
+    output = tmp_path / "common"
+    options = dict(stopping=COMMON, epoch_scoring=SCORING)
+    with pytest.raises(ValueError, match="junto con la época común"):
+        window(base["view"], base["protocol"], base["recipe"], output, versions=[2], **options)
+    with pytest.raises(ValueError, match="cómo se puntúa"):
+        window(base["view"], base["protocol"], base["recipe"], output, stopping=COMMON)
+    with pytest.raises(ValueError, match="solo existe con la época común"):
+        window(base["view"], base["protocol"], base["recipe"], output, epoch_scoring=SCORING)
+    assert not output.exists()
+    with unfused_attention():
+        report, _ = window(base["view"], base["protocol"], base["recipe"], output, **options)
+    assert report["status"] == "awaiting_joint_stop" and report["individual_stop_epoch"] == 2
+    assert report["predictions"] == {} and report["request"]["epoch_scoring"] == SCORING
+    fit = json.loads((output / "fit" / "run.json").read_text())
+    assert sorted(fit["epoch_states"]) == ["1", "2"]
+    for entry in fit["history"][1:]:
+        scored = entry["validation"]
+        # El IC del ajuste es el del análisis sobre la predicción guardada de esa época.
+        panel = ForecastPanel.from_arrow(
+            pq.read_table(output / scored["epoch_predictions"]["path"])
+        )
+        values, defined = sd.session_correlations(panel, panel.prediction, min_assets=3)
+        assert scored["session_ic_values"] == values.tolist() and defined.any()
+        assert scored["session_ic_defined"] == defined.tolist()
+        assert scored["session_mae_values"] == sd.session_mae(panel, panel.prediction).tolist()
+        assert scored["cohort_sha256"] == panel.cohort_sha256
+        assert scored["session_time"] == panel.session_time.tolist()
+        assert np.mean(scored["session_mae_values"]) == pytest.approx(scored["session_mae"])
+        assert scored["session_ic"] == pytest.approx(values[defined].mean())
+    loaded = []
+    original = ChronologicalTrainer.load_epoch
+
+    def recorded(self, report, epoch):
+        loaded.append(epoch)
+        return original(self, report, epoch)
+
+    monkeypatch.setattr(ChronologicalTrainer, "load_epoch", recorded)
+    with unfused_attention():
+        for broken in ([1], [2, 2], [3]):
+            with pytest.raises(ValueError, match="versiones"):
+                window(
+                    base["view"],
+                    base["protocol"],
+                    base["recipe"],
+                    output,
+                    joint_epoch=1,
+                    versions=broken,
+                    **options,
+                )
+        final, _ = window(
+            base["view"],
+            base["protocol"],
+            base["recipe"],
+            output,
+            joint_epoch=1,
+            versions=[2],
+            **options,
+        )
+    assert final["status"] == "completed" and final["fit"]["best_epoch"] == 1
+    assert loaded == [2] and final["released_state_bytes"] > 0
+    versions = final["versions"]
+    assert versions["epochs"] == [2] and sorted(versions["predictions"]["2"]) == [
+        "calibration",
+        "evaluation",
+    ]
+    for name, record in versions["predictions"]["2"].items():
+        # Con el optimizador doble los pesos no cambian, así que cada versión repite las filas.
+        version = pq.read_table(output / record["path"]).sort_by("sample_id")
+        main = pq.read_table(output / f"{name}-predictions.parquet").sort_by("sample_id")
+        assert version.equals(main) and record["rows"] == final["predictions"][name]["rows"]
+    # Solo queda el estado elegido de la época común.
+    assert len(list((output / "fit" / "checkpoints").glob("state-*.pt"))) == 1
+    again, _ = window(
+        base["view"],
+        base["protocol"],
+        base["recipe"],
+        output,
+        joint_epoch=1,
+        versions=[2],
+        **options,
+    )
+    assert again == final
+    (output / versions["predictions"]["2"]["evaluation"]["path"]).write_bytes(b"PAR1 x PAR1")
+    with pytest.raises(ValueError, match="predicciones confirmadas"):
+        window(
+            base["view"],
+            base["protocol"],
+            base["recipe"],
+            output,
+            joint_epoch=1,
+            versions=[2],
+            **options,
+        )

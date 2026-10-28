@@ -37,7 +37,11 @@ def test_the_registered_protocol_keeps_the_test_and_the_confirmation_closed(prot
     assert protocol["partitions"]["confirmation"]["opened_by_the_screening"] is False
     assert protocol["partitions"]["final_test"]["opened"] is False
     assert tuple(protocol["catalog"]) == screening.CATALOG
-    assert protocol["fit"]["fit_months"] == 12 and protocol["fit"]["stopping"] == "fixed_budget"
+    assert protocol["fit"]["fit_months"] == 12 and protocol["fit"]["stopping"] == "common_epoch"
+    assert protocol["fit"]["selection"] == protocol["selection"]["rule"] == screening.SELECTION_RULE
+    amendment = protocol["selection"]["amendment"]
+    assert amendment["registered_before_opening_s"] is True
+    assert amendment["previous_rule"] == "best_validation_session_mae_within_the_fixed_budget"
 
 
 def _changed(protocol, path, value):
@@ -60,6 +64,22 @@ def _changed(protocol, path, value):
         (("fit", "fit_months"), 13),
         (("fit", "epochs"), 0),
         (("fit", "stopping"), "patience"),
+        (("fit", "stopping"), "fixed_budget"),
+        (("fit", "selection"), "best_validation_session_mae_within_the_fixed_budget"),
+        (("selection", "metric"), "session_mae"),
+        (("selection", "partition"), "evaluation"),
+        (("selection", "applies_to"), ["fit"]),
+        (("selection", "smoothing_radius"), 12),
+        (("selection", "smoothing_radius"), 1.0),
+        (("selection", "versions", "epochs"), [3, 6, 9, 13]),
+        (("selection", "versions", "epochs"), [6, 3]),
+        (("selection", "versions", "models"), ["F1/laplace_scale_head"] * 2),
+        (("selection", "versions", "partitions"), ["validation", "evaluation"]),
+        (("selection", "rule_check", "device"), "cuda"),
+        (("selection", "rule_check", "measure_months"), 0),
+        (("selection", "rule_check", "partition"), "evaluation"),
+        (("selection", "amendment", "registered_before_opening_s"), False),
+        (("selection", "amendment", "reason"), " "),
         (("partitions", "confirmation", "opened_by_the_screening"), True),
         (("partitions", "final_test", "opened"), True),
         (("budget", "concurrent_gpu_jobs"), 2),
@@ -110,6 +130,18 @@ def test_every_job_runs_after_its_parent_and_its_matched_variant(jobs):
                 required = jobs[position[job[field]]]
                 assert position[job[field]] < position[job["id"]]
                 assert (required["origin"], required["seed"]) == (job["origin"], job["seed"])
+
+
+def test_the_seeds_of_each_common_group_run_one_after_another(protocol, jobs):
+    groups = defaultdict(list)
+    for position, job in enumerate(jobs):
+        if "common_group" in job:
+            groups[job["common_group"]].append((position, job["seed"]))
+    assert groups
+    for members in groups.values():
+        positions = [position for position, _ in members]
+        assert positions == list(range(positions[0], positions[0] + len(protocol["seeds"])))
+        assert [seed for _, seed in members] == protocol["seeds"]
 
 
 def test_corrections_run_every_case_of_their_recipe_and_fits_the_declared_case(protocol, jobs):
@@ -194,15 +226,22 @@ def test_an_unknown_endpoint_is_rejected(protocol):
 
 def test_the_cost_estimate_follows_its_formula(protocol):
     rows = {2019: dict(fit=1000, validation=500, calibration=200, evaluation=800)}
+    # Dos versiones y la predicción de cada época repiten tres veces la calibración y la
+    # evaluación del ajuste. El lector solo predice una versión más.
     fit = dict(
         id="a",
         origin=2019,
         definition=dict(runner="fit", updates_multiplier=3),
+        versions=[3, 6],
+        epoch_predictions=True,
     )
     correction = dict(id="b", origin=2019, definition=dict(runner="correction"))
-    reader = dict(id="c", origin=2019, definition=dict(runner="reader"))
+    reader = dict(
+        id="c", origin=2019, definition=dict(runner="reader"), versions=[9], epoch_predictions=False
+    )
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
+    inference = 1000 / reference["inference_rows_per_second"]
     expected_fit = (
         3
         * epochs
@@ -210,13 +249,16 @@ def test_the_cost_estimate_follows_its_formula(protocol):
             1000 * reference["fit_seconds_per_fit_row_epoch"]
             + 500 / reference["validation_rows_per_second"]
         )
-        + 1000 / reference["inference_rows_per_second"]
+        + inference
+        + 3 * inference
     )
     expected_correction = 1500 / reference["inference_rows_per_second"]
+    expected_reader = reference["reader_window_seconds"] + inference
     result = screening.cost_estimate(protocol, [fit, correction, reader], rows)
-    total = expected_fit + expected_correction + reference["reader_window_seconds"]
+    total = expected_fit + expected_correction + expected_reader
     assert result["hours"] == pytest.approx(total / 3600)
     assert result["hours_by_runner"]["fit"] == pytest.approx(expected_fit / 3600)
+    assert result["hours_by_runner"]["reader"] == pytest.approx(expected_reader / 3600)
     assert result["within_budget"] is (result["hours"] <= protocol["budget"]["max_total_gpu_hours"])
 
 
