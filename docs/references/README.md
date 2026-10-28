@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **368 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **376 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -53,6 +53,15 @@ El mismo día se añadieron cuatro referencias para los
 la reversión semanal de Lehmann (1990) y el momentum de Jegadeesh y Titman (1993)
 de la regla sin aprendizaje, y LightGBM (Ke et al., 2017) con los parámetros de
 Qlib sobre Alpha158 (Yang et al., 2020).
+
+También el 28 de octubre se añadieron ocho referencias para el
+[techo de señal con anomalías conocidas](../experiments/signal-ceiling-v1.md):
+la reversión de corto plazo de Jegadeesh (1990), la volatilidad idiosincrática
+de Ang et al. (2006), la prima del volumen excepcional de Gervais et al. (2001),
+la rotación de Datar et al. (1998), el máximo de 52 semanas de George y Hwang
+(2004), la deriva posterior a los resultados de Bernard y Thomas (1989), la
+regresión ridge de Hoerl y Kennard (1970) y la importancia por permutación de
+Breiman (2001).
 
 ## Contenido
 

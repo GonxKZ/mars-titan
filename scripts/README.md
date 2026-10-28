@@ -25,6 +25,7 @@ Los guiones son puntos de entrada de línea de comandos y la lógica reutilizabl
 | [`explain_rl_decisions.py`](explain_rl_decisions.py) | Describe decisiones confirmadas a partir de sus trazas | [Adaptación en escenarios sintéticos](../docs/engineering/adaptive-rl.md) |
 | **Evaluación** | | |
 | [`export_campaign_comparison.py`](export_campaign_comparison.py) | Tablas agregadas y figuras de las campañas comparadas | [Análisis de campañas congeladas](../docs/engineering/campaign-comparison.md) |
+| [`run_signal_ceiling.py`](run_signal_ceiling.py) | Techo de señal de Ridge y LightGBM con anomalías conocidas en los orígenes de la criba, en CPU | [Techo de señal](../docs/experiments/signal-ceiling-v1.md) |
 | **Observatorio** | | |
 | [`collect_observatory.py`](collect_observatory.py) | Recoge informes pequeños y publica los cambios | [Observatorio](../docs/engineering/observatory.md) |
 | [`export_observatory.py`](export_observatory.py) | Instantánea pública del observatorio desde estados locales | [Observatorio](../docs/engineering/observatory.md) |
