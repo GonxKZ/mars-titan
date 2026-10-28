@@ -52,7 +52,8 @@ ADANORMALHEDGE = "adanormalhedge_v1"
 VERSION_ARBITER = "version_arbiter_v1"
 MODEL_COMBINATION = "model_combination_v1"
 DECLARATION_KIND = "online_arbiter_variants"
-MAX_OPTIONS = 64
+# La combinación de modelos mezcla unos ochenta modelos de la criba.
+MAX_OPTIONS = 128
 MAX_WINDOW = 252
 
 
@@ -470,8 +471,10 @@ def stage_options(document, identity):
     """Parámetros declarados de una etapa, comprobados antes de abrir ningún dato.
 
     Devuelve la ventana de fiabilidad, el margen de abstención, los activos mínimos por
-    sesión y la semilla del control desordenado. `version_arbiter_v1` necesita un margen
-    finito y ese control. `model_combination_v1` no se abstiene y solo tiene la media simple.
+    sesión, la semilla del control desordenado, la métrica de su análisis y la comparación
+    con las medias de pesos en el tiempo. `version_arbiter_v1` necesita un margen finito, ese
+    control y esa comparación. `model_combination_v1` no se abstiene y solo tiene la media
+    simple.
     """
     core = document.get("core", {}) if isinstance(document, dict) else {}
     _require(
@@ -492,6 +495,12 @@ def stage_options(document, identity):
     window, margin = stage.get("reliability_window_sessions"), stage.get("abstention_margin")
     min_assets, controls = stage.get("min_assets"), stage.get("controls")
     _require(isinstance(controls, dict), f"{identity} declara sus controles")
+    analysis = stage.get("analysis")
+    # La pérdida de los árbitros es (1 − IC)/2, así que su análisis se mide con el IC.
+    _require(
+        isinstance(analysis, dict) and analysis.get("metric") == "session_ic",
+        f"{identity} se analiza con el IC por sesión",
+    )
     _require(
         type(window) is int
         and 1 <= window <= MAX_WINDOW
@@ -499,7 +508,7 @@ def stage_options(document, identity):
         and min_assets >= 3,
         f"{identity} necesita una ventana de 1 a {MAX_WINDOW} sesiones y al menos tres activos",
     )
-    seed = None
+    seed = averaging = None
     if identity == VERSION_ARBITER:
         shuffled = controls.get("shuffled_outcomes", {})
         seed = shuffled.get("seed") if isinstance(shuffled, dict) else None
@@ -511,9 +520,34 @@ def stage_options(document, identity):
             and seed >= 0,
             "El árbitro de versiones declara un margen finito y sus tres controles",
         )
+        _require(
+            analysis.get("required") == ["uniform_mixture", "shuffled_outcomes"],
+            "El árbitro de versiones exige superar la media uniforme y el control desordenado",
+        )
+        averaging = analysis.get("time_averaging")
+        averaging = averaging if isinstance(averaging, dict) else {}
+        compared = averaging.get("compared_with")
+        _require(
+            isinstance(averaging.get("arbiter_of"), str)
+            and isinstance(compared, list)
+            and compared
+            and all(isinstance(name, str) and "/" in name for name in compared)
+            and len(set(compared)) == len(compared)
+            and averaging.get("family") == "reported_together_outside_every_decision",
+            "El árbitro de versiones declara su comparación con las medias de pesos, fuera de "
+            "toda decisión",
+        )
+        averaging = dict(arbiter_of=averaging["arbiter_of"], compared_with=compared)
     else:
         _require(
             margin is None and set(controls) == {"simple_mean"},
             "La combinación de modelos no se abstiene y su control es la media simple",
         )
-    return dict(window=window, margin=margin, min_assets=min_assets, seed=seed)
+    return dict(
+        window=window,
+        margin=margin,
+        min_assets=min_assets,
+        seed=seed,
+        metric=analysis["metric"],
+        time_averaging=averaging,
+    )

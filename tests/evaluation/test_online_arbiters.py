@@ -583,9 +583,22 @@ DECLARATION = json.loads(Path("configs/experiments/online-arbiters-v1.json").rea
 
 def test_the_declared_stages_fix_their_options_before_any_data():
     version = arbiters.stage_options(DECLARATION, arbiters.VERSION_ARBITER)
-    assert version == dict(window=21, margin=0.0, min_assets=3, seed=20261028)
+    averaging = dict(
+        arbiter_of="references/quantile_reference",
+        compared_with=["F2/weight_ema_fast", "F2/weight_ema_slow", "F3/schedule_free"],
+    )
+    assert version == dict(
+        window=21,
+        margin=0.0,
+        min_assets=3,
+        seed=20261028,
+        metric="session_ic",
+        time_averaging=averaging,
+    )
     combination = arbiters.stage_options(DECLARATION, arbiters.MODEL_COMBINATION)
-    assert combination == dict(window=21, margin=None, min_assets=3, seed=None)
+    assert combination == dict(
+        window=21, margin=None, min_assets=3, seed=None, metric="session_ic", time_averaging=None
+    )
 
 
 def changed(path, value):
@@ -618,6 +631,42 @@ def changed(path, value):
             "ventana",
         ),
         (arbiters.VERSION_ARBITER, ("stages", "version_arbiter_v1", "min_assets"), 2, "tres"),
+        (
+            arbiters.MODEL_COMBINATION,
+            ("stages", "model_combination_v1", "analysis", "metric"),
+            "session_mae_calibrated",
+            "IC por sesión",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "required"),
+            ["uniform_mixture"],
+            "control desordenado",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging"),
+            "F2",
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "compared_with"),
+            ["F2/weight_ema_fast", "F2/weight_ema_fast"],
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "compared_with"),
+            [],
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "family"),
+            "declared_family",
+            "fuera de toda decisión",
+        ),
         (
             arbiters.VERSION_ARBITER,
             ("stages", "version_arbiter_v1", "abstention_margin"),
