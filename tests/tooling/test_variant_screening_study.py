@@ -7,11 +7,15 @@ prueba crea un entrenador ni ejecuta pasos de optimizador.
 import json
 from contextlib import nullcontext
 
+import numpy as np
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
 import pytest
 import torch
 
 from benchmarks import variant_screening_study as study
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training import (
     experiment_resources,
     mars_titan_correction,
@@ -334,3 +338,112 @@ def test_the_command_line_prints_the_plan_and_the_status(prepared, monkeypatch, 
     monkeypatch.setattr("sys.argv", ["variant_screening_study", "plan"])
     study.main()
     assert json.loads(capsys.readouterr().out)["jobs"] == len(receipt["jobs"])
+
+
+def test_the_analysis_checks_the_hold_before_reading_the_preparation(
+    prepared, learning_hold, monkeypatch, tmp_path
+):
+    work, _ = prepared
+    learning_hold(False)
+    monkeypatch.setattr(
+        study, "verify_prepared", lambda *_: pytest.fail("Se leyó la criba bajo la protección")
+    )
+    with pytest.raises(LearningHoldError):
+        study.analyze(work, tmp_path / "analysis", tmp_path)
+    assert not (tmp_path / "analysis").exists()
+
+
+def test_the_analysis_needs_every_job_completed(prepared, runners, tmp_path):
+    work, _ = prepared
+    with pytest.raises(ValueError, match="Faltan .* trabajos por terminar"):
+        study.analyze(work, tmp_path / "analysis", tmp_path)
+    assert not (tmp_path / "analysis").exists()
+
+
+DAY = 86_400_000_000
+QUANTILES = ("quantile_0025", "quantile_0100", "quantile_0500", "quantile_0900", "quantile_0975")
+
+
+def prediction_table(start, assets=("US/AAA", "US/BBB", "US/CCC")):
+    rows = [(asset, start + day * DAY) for day in range(3) for asset in reversed(assets)]
+    base = pa.array([float(i) for i in range(len(rows))])
+    columns = dict(
+        sample_id=[f"{asset}/{at}" for asset, at in rows],
+        asset_id=[asset for asset, _ in rows],
+        market=["US"] * len(rows),
+        prediction_at=pa.array([at for _, at in rows], type=pa.timestamp("us", tz="UTC")),
+        target=base,
+        prediction=base,
+    )
+    columns.update({name: pa.array(base.to_numpy() + k) for k, name in enumerate(QUANTILES)})
+    return pa.table(columns)
+
+
+def test_run_panels_read_the_quantile_levels_and_check_every_file(tmp_path):
+    folder = tmp_path / "2019-42-abc"
+    folder.mkdir()
+    predictions = {}
+    for k, name in enumerate(("validation", "calibration", "evaluation")):
+        path = folder / f"{name}-predictions.parquet"
+        pq.write_table(prediction_table(1_546_000_000_000_000 + 10 * k * DAY), path)
+        predictions[name] = dict(path=path.name, sha256=sha256(path))
+    atomic_json(folder / "run.json", dict(status="completed", predictions=predictions))
+    reads = {}
+    panels = study.run_panels(folder, reads)
+    assert panels["evaluation"].levels == (0.025, 0.1, 0.5, 0.9, 0.975)
+    assert panels["evaluation"].quantiles.shape == (9, 5) and panels["validation"].rows == 9
+    assert set(reads) == {f"2019-42-abc/{name}-predictions.parquet" for name in predictions}
+    pq.write_table(
+        prediction_table(1_546_000_000_000_000 + DAY), folder / "evaluation-predictions.parquet"
+    )
+    with pytest.raises(ValueError, match="Ha cambiado"):
+        study.run_panels(folder, {})
+    atomic_json(folder / "run.json", dict(status="failed", predictions=predictions))
+    with pytest.raises(ValueError, match="no ha terminado"):
+        study.run_panels(folder, {})
+
+
+def test_the_maturity_of_the_view_follows_the_canonical_order_of_the_panels(monkeypatch, tmp_path):
+    from mars_titan.evaluation import online_calibration
+    from mars_titan.evaluation.forecast_panel import ForecastPanel
+
+    view = tmp_path / "view.json"
+    view.write_text("{}")
+    tables = {}
+    for k, name in enumerate(("validation", "calibration", "evaluation")):
+        table = prediction_table(1_546_000_000_000_000 + 10 * k * DAY)
+        matures = pc.add(table["prediction_at"].cast(pa.int64()), pa.scalar(DAY + k))
+        tables[name] = table.select(
+            ["asset_id", "market", "prediction_at", "target"]
+        ).append_column("matures_at", matures)
+    calls = []
+
+    def maturity(path, policy, expected, partitions):
+        calls.append((path, policy, expected, partitions))
+        return tables
+
+    monkeypatch.setattr(online_calibration, "view_maturity", maturity)
+    cohorts, aligned = study.origin_maturity(view, "historical_masked_2000_v1")
+    assert calls == [
+        (
+            view,
+            "historical_masked_2000_v1",
+            sha256(view),
+            study.variant_screening_analysis.PARTITIONS,
+        )
+    ]
+    for k, name in enumerate(("validation", "calibration", "evaluation")):
+        panel = ForecastPanel.from_arrow(prediction_table(1_546_000_000_000_000 + 10 * k * DAY))
+        assert cohorts[name] == panel.cohort_sha256
+        assert np.array_equal(aligned[name], panel.prediction_at + DAY + k)
+
+
+def test_current_sectors_leave_missing_or_unknown_sectors_empty(tmp_path):
+    (tmp_path / "sp500stock_data_description.csv").write_text(
+        "stock_name,Sector\nAAA,Technology\nBBB,N/A\n", encoding="utf-8"
+    )
+    (tmp_path / "hs300stock_data_description.csv").write_bytes(
+        "证券代码,申万一级行业\n600000.SH,银行\n".encode("gb18030")
+    )
+    sectors = study.current_sectors(tmp_path, ["US/AAA", "US/BBB", "US/ZZZ"])
+    assert sectors == {"US/AAA": "US/Technology", "US/BBB": None, "US/ZZZ": None}
