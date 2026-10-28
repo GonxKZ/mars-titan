@@ -263,6 +263,7 @@ GUARDS = {
     "scripts.benchmark_adaptive_rl:main": ("benchmark_adaptive_rl",),
     "scripts.run_financial_comparators:main": ("run_financial_comparators",),
     "scripts.run_titans_walk_forward:main": ("run_titans_walk_forward",),
+    "scripts.run_signal_ceiling:main": ("run_signal_ceiling",),
 }
 
 # Funciones que registran un gancho de PyTorch que rechaza cualquier paso mientras miden. Solo

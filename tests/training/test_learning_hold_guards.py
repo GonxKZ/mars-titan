@@ -235,6 +235,13 @@ def _titans_window_script(tmp_path, monkeypatch):
     return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
 
 
+def _signal_ceiling_script(tmp_path, monkeypatch):
+    # Tras la guarda, el script lee primero su declaración.
+    main, double = _script("run_signal_ceiling.py", "read_declaration", monkeypatch)
+    arguments = ["--run", "--cohorts", str(tmp_path / "cohorts")]
+    return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
+
+
 ENTRY_POINTS = {
     "reference_run": _simple(
         "mars_titan.training.reference_run",
@@ -304,6 +311,7 @@ ENTRY_POINTS = {
             out.with_name("v.json"), {"year": 2019, "fold": "fold-014"}, {}, out
         ),
     ),
+    "run_signal_ceiling": _signal_ceiling_script,
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",

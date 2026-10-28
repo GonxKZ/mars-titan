@@ -375,6 +375,11 @@ DOUBLES = {
         "Ridge y LightGBM son dobles de predicción fija sobre la vista corta del fixture, así "
         "que el origen se recorre entero sin ajustar ningún modelo",
     ),
+    "tests/training/test_signal_ceiling_cli.py": (
+        1,
+        "la verificación de las cohortes y cada origen son dobles que devuelven informes "
+        "sintéticos, así que el script solo une sus series",
+    ),
     "tests/training/test_common_control_windows.py": (
         4,
         "la regla no ajusta nada y el ajuste de LightGBM es un doble de predicción fija sobre la "
