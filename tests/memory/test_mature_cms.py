@@ -37,6 +37,10 @@ CORRECTION = MatureCorrection(PROXIMAL, multiscale=CMS)
 E1_IDENTITY = "3940db5547c6ecb80c4f45db06d3c045a7de5262714ef8921ea15005c832e1b3"
 E1_CORRECTION = "1eab85c72ec50b055e5ae7b6b26a1877f4b2d5ebfd3bcd770cef180edd6b7272"
 E1_STATE = "1b0bf809da5cc8a567ea7e9b668e0801748d0beb63f24f8186066479bbd1d29c"
+# Huellas de R2 calculadas al introducirlo (a60780a8b): la identidad y el estado tras la primera
+# semana abierta de `history`.
+R2_IDENTITY = "8926e348bdc3f7101ccedf0aa7c6128ee7332add35b319951101bce9a1bb12d1"
+R2_STATE = "8993014ad37005c034bae126b607543092961535600d5b994416ad5eeb61a8af"
 E1_FIELDS = {
     "schema_version",
     "configuration",
@@ -121,6 +125,12 @@ def test_periods_follow_iso_weeks_from_monday_and_utc_months():
         period_index("session", 0)
     with pytest.raises(ValueError, match="microsegundos"):
         period_index("week", 1.5)
+    with pytest.raises(ValueError, match="fuera del calendario"):
+        period_index("month", 2**62)
+
+
+class Name(str):
+    """Un texto que solo se parece al nombre de un periodo."""
 
 
 @pytest.mark.parametrize(
@@ -128,11 +138,26 @@ def test_periods_follow_iso_weeks_from_monday_and_utc_months():
     [
         ("session", "session", "session"),
         ("week", "session", "month"),
+        ("week", "month", "month"),
         ("session", "month", "week"),
         ("session", "week"),
         ("session", "day", "month"),
         "session",
+        {"session", "week", "month"},
         ("session", 7, "month"),
+        ("session", Name("week"), "month"),
+    ],
+    ids=[
+        "all_session",
+        "slow_first",
+        "without_session",
+        "unordered",
+        "length",
+        "unknown",
+        "text",
+        "set",
+        "integer",
+        "subclass",
     ],
 )
 def test_periods_must_be_one_per_expert_ordered_and_with_a_slow_one(periods):
@@ -147,9 +172,14 @@ def test_r2_needs_the_proximal_rule_without_areas_or_roles():
         MatureCorrection(PROXIMAL, areas=AreaLayout(), multiscale=CMS)
     with pytest.raises(ValueError, match="regla proximal"):
         MatureCorrection(PROXIMAL, role_binding=RoleBindingConfig(), multiscale=CMS)
-    delta = MatureCorrection(AssociativeMemoryConfig("delta", rate=0.5))
-    with pytest.raises(ValueError, match="regla proximal"):
-        multiscale_mixture.MultiscaleMemory(delta, CMS)
+    # La memoria también lo comprueba, porque recibe el corrector sin la mezcla.
+    for unmixed in (
+        MatureCorrection(AssociativeMemoryConfig("delta", rate=0.5)),
+        MatureCorrection(PROXIMAL, areas=AreaLayout()),
+        MatureCorrection(PROXIMAL, role_binding=RoleBindingConfig()),
+    ):
+        with pytest.raises(ValueError, match="regla proximal"):
+            multiscale_mixture.MultiscaleMemory(unmixed, CMS)
 
 
 def test_without_periods_the_identity_and_state_of_e1_do_not_change():
@@ -174,6 +204,7 @@ def test_without_periods_the_identity_and_state_of_e1_do_not_change():
 
 def test_the_identity_names_the_periods_only_when_declared():
     identity = CMS.identity()
+    assert hashlib.sha256(_canonical(identity).encode()).hexdigest() == R2_IDENTITY
     assert identity["write_periods"] == ["session", "week", "month"]
     assert identity["continuum"] == "mature_cms_v1"
     assert "write_periods" not in replace(CMS, write_periods=None).identity()
@@ -259,8 +290,16 @@ def test_restore_keeps_the_open_periods_and_the_next_write():
     payload = middle.export()
     assert set(payload) == E1_FIELDS | {"pending", "pending_sha256"}
     assert payload["pending"][0] is None and payload["pending"][2]["events"] == 3
+    assert payload["state_sha256"] == R2_STATE
+    # La huella del estado cubre la de sus periodos abiertos.
+    assert middle._state_digest(dict(payload, pending_sha256="0" * 64)) != R2_STATE
     restored = CORRECTION.restore(payload)
     assert restored.export()["state_sha256"] == payload["state_sha256"]
+    # Ni la memoria ni la restaurada comparten tensores con el estado exportado.
+    digest = payload["pending_sha256"]
+    for item in payload["pending"][1:]:
+        item["values"].add_(1.0)
+    assert middle.export()["pending_sha256"] == digest == restored.export()["pending_sha256"]
     generator = torch.Generator().manual_seed(11)
     feedback = cohort(middle, MOMENTS[3], generator)
     left, right = write(middle, feedback, MOMENTS[3]), write(restored, feedback, MOMENTS[3])
@@ -268,41 +307,93 @@ def test_restore_keeps_the_open_periods_and_the_next_write():
     assert left.export()["pending_sha256"] == right.export()["pending_sha256"]
 
 
-def swap_rows(item):
+def keep_rows(item, rows, events=None):
     for name in ("ids", "decision_at", "available_at", "keys", "values", "weights"):
-        item[name] = item[name][[1, 0, 2, 3, 4, 5]]
+        item[name] = item[name][rows]
+    if events is not None:
+        item["events"] = events
 
 
-@pytest.mark.parametrize(
-    "corrupt",
-    [
-        lambda p: p["pending"][1].update(events=p["pending"][1]["events"] + 1),
-        lambda p: p["pending"][1]["values"].add_(1.0),
-        lambda p: p["pending"].__setitem__(1, None),
-        lambda p: p["pending"].__setitem__(0, p["pending"][1]),
-        lambda p: p["pending"][2].update(period=p["pending"][2]["period"] + 1),
-        lambda p: swap_rows(p["pending"][1]),
-        lambda p: p.pop("pending_sha256"),
-        lambda p: p["pending"].pop(),
-        lambda p: p["pending"][1].pop("weights"),
-    ],
-    ids=["events", "value", "missing", "session", "period", "order", "digest", "length", "field"],
-)
-def test_restore_rejects_a_corrupted_open_period(corrupt):
+def double_events(item):
+    item.update(events=2 * item["events"], weights=2 * item["weights"])
+
+
+# Tras la tercera escritura cada experto lento espera los seis resultados de tres eventos.
+CORRUPTIONS = {
+    "events": (lambda p: p["pending"][1].update(events=4), "sumar uno"),
+    "events_and_weights": (lambda p: double_events(p["pending"][1]), "no es coherente"),
+    "value": (lambda p: p["pending"][1]["values"].add_(1.0), "huellas"),
+    "missing": (lambda p: p["pending"].__setitem__(1, None), "guarda su periodo abierto"),
+    "session": (lambda p: p["pending"].__setitem__(0, p["pending"][1]), "no esperan"),
+    "period": (lambda p: p["pending"][2].update(period=p["pending"][2]["period"] + 1), "coherente"),
+    "float_period": (
+        lambda p: p["pending"][2].update(period=float(p["pending"][2]["period"])),
+        "enteros",
+    ),
+    "order": (lambda p: keep_rows(p["pending"][1], [1, 0, 2, 3, 4, 5]), "no es coherente"),
+    "dropped_event": (lambda p: keep_rows(p["pending"][1], [2, 3, 4, 5], 2), "no es coherente"),
+    "empty": (lambda p: keep_rows(p["pending"][1], []), "entre 1 y"),
+    "last_id": (lambda p: p["pending"][1]["ids"][-1:].add_(100), "no es coherente"),
+    "digest": (lambda p: p.pop("pending_sha256"), "configuración multiescala"),
+    "digest_value": (lambda p: p.update(pending_sha256="0" * 64), "huellas"),
+    "length": (lambda p: p["pending"].pop(), "un periodo abierto por experto"),
+    "not_a_list": (lambda p: p.update(pending=None), "un periodo abierto por experto"),
+    "field": (lambda p: p["pending"][1].pop("weights"), "todos sus campos"),
+}
+
+
+@pytest.mark.parametrize("name", CORRUPTIONS)
+def test_restore_rejects_a_corrupted_open_period_for_its_reason(name):
+    corrupt, reason = CORRUPTIONS[name]
     states, _ = history()
     payload = states[2].export()
     corrupt(payload)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=reason):
         CORRECTION.restore(payload)
 
 
+def test_a_memory_without_writes_has_neither_open_periods_nor_written_experts():
+    states, _ = history()
+    for corrupt in (
+        lambda p: p["pending"].__setitem__(1, states[2].export()["pending"][1]),
+        # El experto semanal de la quinta escritura ya cerró dos semanas.
+        lambda p: p["experts"].__setitem__(1, states[4].export()["experts"][1]),
+    ):
+        payload = CORRECTION.empty().export()
+        corrupt(payload)
+        with pytest.raises(ValueError, match="no esperan"):
+            CORRECTION.restore(payload)
+
+
 def test_an_open_period_holds_at_most_the_cohort_limit(monkeypatch):
-    monkeypatch.setattr(multiscale_mixture, "MAX_COHORT", 3)
+    monkeypatch.setattr(multiscale_mixture, "MAX_COHORT", 4)
     generator = torch.Generator().manual_seed(2)
-    empty = CORRECTION.empty()
-    memory = write(empty, cohort(empty, MOMENTS[0], generator), MOMENTS[0])
-    with pytest.raises(ValueError, match="como máximo 3"):
-        write(memory, cohort(memory, MOMENTS[1], generator), MOMENTS[1])
+    memory = CORRECTION.empty()
+    for at in MOMENTS[:2]:
+        memory = write(memory, cohort(memory, at, generator), at)
+    # Dos eventos de dos filas llenan justo el límite de la semana y del mes.
+    assert memory.pending_rows == [0, 4, 4]
+    with pytest.raises(ValueError, match="como máximo 4"):
+        write(memory, cohort(memory, MOMENTS[2], generator, rows=1), MOMENTS[2])
+
+
+def test_the_open_period_keeps_each_event_in_canonical_order():
+    generator = torch.Generator().manual_seed(4)
+    memory = CORRECTION.empty()
+    feedback = cohort(memory, MOMENTS[0], generator, rows=3)
+    # Los mismos resultados llegan con los identificadores en orden inverso.
+    reverse = [2, 1, 0]
+    shuffled = PLAIN.feedback(
+        ids=feedback.ids[reverse].tolist(),
+        decision_at=feedback.decision_at[reverse].tolist(),
+        available_at=feedback.available_at[reverse].tolist(),
+        keys=feedback.keys[reverse],
+        values=feedback.values[reverse].flatten().tolist(),
+    )
+    ordered, arrived = write(memory, feedback, MOMENTS[0]), write(memory, shuffled, MOMENTS[0])
+    for waiting in arrived.export()["pending"][1:]:
+        assert waiting["ids"].tolist() == [1, 2, 3]
+    assert ordered.export()["state_sha256"] == arrived.export()["state_sha256"]
 
 
 def test_state_bytes_count_the_open_periods_and_their_bound():

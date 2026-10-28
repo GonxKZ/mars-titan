@@ -618,9 +618,8 @@ class MultiscaleMemory:
             raise ValueError("El estado no conserva la configuración multiescala")
         pending = None
         if mixture.write_periods is not None:
-            if not isinstance(payload["pending"], list) or len(payload["pending"]) != len(
-                mixture.write_periods
-            ):
+            # El constructor comprueba que haya uno por experto.
+            if not isinstance(payload["pending"], list):
                 raise ValueError("R2 necesita un periodo abierto por experto")
             pending = [
                 None if item is None else PendingPeriod.restore(item, correction.memory.key_size)

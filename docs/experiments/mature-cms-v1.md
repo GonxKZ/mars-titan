@@ -44,7 +44,8 @@ La lectura del primer evento de un periodo nuevo todavía no incluye el periodo 
 | Semana ISO desde el lunes y mes UTC | `period_index` | `test_periods_follow_iso_weeks_from_monday_and_utc_months` |
 | Paso proximal del periodo cerrado | `MultiscaleMemory._continuum_write`, `PendingPeriod.closed` | `test_a_slow_expert_closes_its_period_with_one_mean_proximal_step`, `test_each_event_of_a_closed_period_weighs_the_same_whatever_its_rows` |
 | Ninguna velocidad lee errores sin madurar | lectura de los estados aplicados | `test_no_speed_reads_a_result_before_the_write_that_closes_its_period` |
-| Estado y recuperación de los periodos abiertos | `export`, `restore`, `PendingPeriod` | `test_restore_keeps_the_open_periods_and_the_next_write`, `test_restore_rejects_a_corrupted_open_period`, `test_session_window_and_recovery_keep_the_open_periods` |
+| Orden canónico de cada evento en su periodo | `PendingPeriod.extend` | `test_the_open_period_keeps_each_event_in_canonical_order` |
+| Estado y recuperación de los periodos abiertos | `export`, `restore`, `PendingPeriod`, `MultiscaleMemory._check_pending` | `test_restore_keeps_the_open_periods_and_the_next_write`, `test_restore_rejects_a_corrupted_open_period_for_its_reason`, `test_a_memory_without_writes_has_neither_open_periods_nor_written_experts`, `test_session_window_and_recovery_keep_the_open_periods` |
 | Ventana completa con periodos cerrados | `CorrectionInference` | `test_window_matches_an_independent_recurrence_of_closed_periods` |
 | E1 sin cambios al no declarar periodos | `identity`, `export`, `_normalized` | `test_without_periods_the_identity_and_state_of_e1_do_not_change`, `test_the_factor_is_normalized_by_the_common_window_builder` |
 | Límite de filas y bytes | `PendingPeriod.extend`, `state_tensor_bytes` | `test_an_open_period_holds_at_most_the_cohort_limit`, `test_state_bytes_count_the_open_periods_and_their_bound` |
