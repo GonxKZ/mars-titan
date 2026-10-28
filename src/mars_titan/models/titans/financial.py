@@ -379,21 +379,7 @@ class FinancialConfig:
                 self.inputs.representation,
                 masked=masked_inputs(self.inputs.input_policy),
             )
-        object.__setattr__(
-            self, "axial_time_region", parse_axial_time_region(self.axial_time_region)
-        )
-        if self.axial_time_region is not None and (
-            self.variant != "mac_online"
-            or self.regional_fusion is not None
-            or self.regional_execution is not None
-            or self.regional_variant is not None
-            or self.presence_modulation is not None
-            or self.holographic_network is not None
-        ):
-            raise ValueError(
-                "C2 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
-                "combina con el operador regional, C1, C6, PT6 ni la red holográfica"
-            )
+        self._check_axial_time_region()
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
             if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
@@ -474,6 +460,24 @@ class FinancialConfig:
             or self.refinements != 1
         ):
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
+
+    def _check_axial_time_region(self):
+        """C2 sobre mac_online, sin el operador regional, C1, C6, PT6 ni la red holográfica."""
+        object.__setattr__(
+            self, "axial_time_region", parse_axial_time_region(self.axial_time_region)
+        )
+        if self.axial_time_region is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.presence_modulation is not None
+            or self.holographic_network is not None
+        ):
+            raise ValueError(
+                "C2 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
+                "combina con el operador regional, C1, C6, PT6 ni la red holográfica"
+            )
 
     def identity(self):
         result = dict(
