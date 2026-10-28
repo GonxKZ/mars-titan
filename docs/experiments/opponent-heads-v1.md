@@ -104,6 +104,7 @@ La comprobación del 28 de octubre se hizo en CPU, sin pasos de optimizador y co
 
 - Las 49 pruebas dirigidas de A4 pasan con medida de cobertura. Con coverage 7.16.1 y radon 6.0.1, `opponent_heads.py` cubre 58/58 sentencias y 12/12 ramas, y `output_objectives.py` 38/38 y 20/20. El CRAP máximo es 13.
 - La regresión de los 24 módulos que recorren estos cambios, incluida la guarda del bloqueo, pasa 566 casos y omite 29 por el bloqueo o por el enlace nativo. Fallan las cuatro variantes `gru_episodic` de `test_joint_stop_trainers.py`, porque el enlace episódico compilado no declara la versión tensorial del candidato. Fallan igual en develop y no pasan por A4.
+- Tras integrar el análisis de la criba de develop, las pruebas de A4, del padre congelado, del protocolo, del motor y del análisis y la guarda del bloqueo pasan 119 casos y omiten la prueba CUDA de A4.
 - Doce mutaciones dirigidas se detectan con los controles en verde antes y después. Cubren el intercambio de los pesos asimétricos, la familia ignorada, las dos cabezas del mismo lado, la suma en lugar de la media, la semiamplitud inicial aleatoria, la emisión de la cabeza optimista, el nivel equivocado del control, los niveles por encima de 0,5, el objetivo sin registrar, la aceptación en el postentrenamiento, la firma congelada sin niveles y el entrenamiento con la pérdida de la referencia.
 
 El [recibo de verificación](../../reports/engineering/opponent-heads-20261028/verification.json) conserva los recuentos y las huellas de los informes JUnit, de la cobertura y de las mutaciones.

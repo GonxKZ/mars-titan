@@ -36,6 +36,15 @@
       "skipped": 0,
       "xml_sha256": "167b5cc36ed6972cdacb8ed8305249f3c0450d94409da4fff98ad4a915e74fe3",
       "note": "Las mismas cuatro pruebas sobre develop con el mismo enlace nativo."
+    },
+    {
+      "name": "after_integrating_the_screening_analysis",
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "xml_sha256": "d0040137eb90710e76c469e623c40e7a48dbf20fb2622ba6267fdc8862821e51",
+      "note": "Pruebas de A4, del padre congelado, del protocolo, del motor y del análisis de la criba y la guarda del bloqueo tras integrar #779. La omisión es la prueba CUDA de A4."
     }
   ],
   "quality": {
