@@ -91,6 +91,8 @@ def test_identical_definitions_are_a_single_job(jobs):
     assert uses["B1/area_memory"] == uses["B2/no_bridge"] == uses["B3/no_binding"]
     assert uses["B1/linear_codec"] == uses["E1/historical_retention"] == uses["E3/baseline"]
     assert uses["E3/baseline"] == uses["E4/baseline"]
+    # El control de profundidad fija de D2 es la lectura de cuatro pasos de D1.
+    assert uses["D2/fixed_j4"] == uses["D1/flat_k1_j4_final"]
     assert len({job["id"] for job in jobs}) == len(jobs)
 
 
@@ -139,7 +141,7 @@ def test_the_parent_is_the_reference_fit_of_the_same_origin_and_seed(jobs):
     }
     for job in jobs:
         label = job["used_by"][0]
-        if label.startswith(("B1/", "E1/", "D1/")):
+        if label.startswith(("B1/", "E1/", "D1/", "D2/")):
             assert job["parent"] == reference[(job["origin"], job["seed"])]
         if label.startswith("E2/"):
             assert job["parent"] == reader[(job["origin"], job["seed"])]
@@ -159,13 +161,31 @@ def test_the_matched_control_reads_the_variant_of_its_own_case(jobs):
 
 def test_output_stages_and_pending_entries_have_no_jobs(protocol, jobs):
     labels = {label.partition("/")[0] for job in jobs for label in job["used_by"]}
-    assert not labels & {"A1", "A2", "A3", "C4", "B4", "C2", "C3", "D2", "G1", "G2", "G3"}
+    assert not labels & {"A1", "A2", "A3", "C4", "B4", "C2", "C3", "G1", "G2", "G3"}
     statuses = {row["entry"]: row["status"] for row in screening.pending(protocol)}
     assert statuses["C2"] == statuses["C3"] == "pending_implementation"
     assert statuses["G1"] == "after_the_screening_needs_its_own_approval"
     arms = screening.entry_arms(protocol, "A2")
     assert all(arm.runner == "output" for arm in arms.values())
     assert arms["abstention"].definition["source"] == "quantile_reference"
+
+
+def test_the_adaptive_reader_reserves_the_depth_of_its_control(jobs):
+    """D2 solo cambia la parada: la lectura adaptativa calcula J4 como su control."""
+    definitions = {}
+    for job in jobs:
+        for label in job["used_by"]:
+            definitions.setdefault(label, job["definition"])
+    adaptive = copy.deepcopy(definitions["D2/adaptive_j4"]["components"]["evidence_bridge"])
+    fixed = definitions["D2/fixed_j4"]["components"]["evidence_bridge"]
+    stopping = adaptive["recurrence"].pop("stopping")
+    assert stopping == dict(atol=0.0, rtol=0.05, backend="adaptive_reference_full")
+    assert adaptive == fixed and fixed["recurrence"]["steps"] == 4
+    shallow = definitions["D2/fixed_j1"]["components"]["evidence_bridge"]
+    assert shallow["recurrence"]["steps"] == 1
+    assert {key: value for key, value in shallow.items() if key != "recurrence"} == {
+        key: value for key, value in fixed.items() if key != "recurrence"
+    }
 
 
 def test_every_contrast_endpoint_resolves(protocol):

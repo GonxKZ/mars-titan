@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "adaptive_bridge_depth_variants",
+  "variant": "mars_titan_extensions_v1",
+  "issues": [
+    751,
+    734
+  ],
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_executed",
+  "depth": {
+    "maximum_bridge_steps_per_prediction": 4,
+    "reservation": "the_adaptive_model_reserves_and_computes_j4_like_its_control",
+    "parameters": "equal_in_every_arm",
+    "tolerance": "fixed_before_opening_any_data_not_tuned"
+  },
+  "arms": {
+    "adaptive_j4": {
+      "role": "Una lectura que elige por predicción el prefijo J1, J2 o J4 con la parada residual",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 4,
+            "max_node_updates_per_row": 1216,
+            "stopping": {
+              "atol": 0.0,
+              "rtol": 0.05,
+              "backend": "adaptive_reference_full"
+            }
+          }
+        }
+      },
+      "recipe_changes": {}
+    },
+    "fixed_j4": {
+      "role": "Una lectura con cuatro pasos fijos, el mismo modelo que flat_k1_j4_final de D1",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 4,
+            "max_node_updates_per_row": 1216
+          }
+        }
+      },
+      "recipe_changes": {}
+    },
+    "fixed_j1": {
+      "role": "Una lectura con un paso fijo, la menor profundidad que puede elegir la parada",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 1,
+            "max_node_updates_per_row": 1216
+          }
+        }
+      },
+      "recipe_changes": {}
+    }
+  },
+  "contrasts": [
+    {
+      "variant": "adaptive_j4",
+      "control": "fixed_j4",
+      "factor": "adaptive_stopping_at_equal_reserved_depth"
+    },
+    {
+      "variant": "fixed_j4",
+      "control": "fixed_j1",
+      "factor": "bridge_depth"
+    }
+  ],
+  "pending": "La criba de #746 fija la métrica, el padre y el presupuesto. No hay ajuste ni evaluación ejecutados"
+}

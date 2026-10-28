@@ -300,7 +300,13 @@
     "D2": {
       "identity": "shared_evidence_bridge_adaptive_v1",
       "runner": "reader",
-      "status": "pending_declaration_of_the_matched_depth_control"
+      "declaration": "configs/experiments/adaptive-bridge-depth-v1.json",
+      "parent": "quantile_reference",
+      "recipe": "configs/titans/episodic-readout-historical-masked.json",
+      "metric": "session_ic",
+      "primary": ["adaptive_j4", "fixed_j4"],
+      "reported": [["fixed_j4", "fixed_j1"]],
+      "note": "fixed_j4 es el mismo modelo que D1/flat_k1_j4_final y comparte sus trabajos. La tolerancia se fija antes de abrir datos"
     },
     "E1": {
       "identity": "multiscale_mature_mixture_v1",

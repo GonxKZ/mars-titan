@@ -94,7 +94,7 @@ Una variante pasa la criba si el intervalo simultáneo de la familia declarada e
 | C5 | `fit` | Atención entre activos frente a la misma capa sobre sí mismo | | Falta integrar su declaración |
 | C6 | `fit` | Escritura por competición frente a escritura densa | | Ejecutable |
 | D1 | `reader` | K2×J2 frente a K4×J1 con pérdida final | | Ejecutable |
-| D2 | `reader` | | | Falta declarar el control de igual profundidad media |
+| D2 | `reader` | Parada adaptativa frente a J4 fijo con el mismo cálculo | | Ejecutable |
 | E1 | `correction` | Pesos adaptativos frente a uniformes | Una escala y réplicas trimestrales | Ejecutable |
 | E2 | `spaced` | Utilidad frente a utilidad permutada | Reservorio original | Ejecutable |
 | E3 | `correction_profile` | Error estandarizado frente a cupo uniforme | Error absoluto | Ejecutable |
@@ -171,7 +171,7 @@ Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, co
 - Un único caso de tasa para ajustes y lectores. La receta histórica explora dos.
 - Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
 - El coste es una estimación con medidas de otros estudios.
-- C2, C3, D2, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- C2, C3, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
 - La elección del caso de cada corrección por origen y semilla, la medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
 - La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula. La media de semillas de F2 espera a que se integre su declaración.
 - El análisis se ha comprobado con paneles sintéticos de respuesta conocida. No se ha ejecutado con predicciones reales.
