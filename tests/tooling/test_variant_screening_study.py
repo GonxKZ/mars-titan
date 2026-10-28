@@ -412,7 +412,9 @@ def test_the_maturity_of_the_view_follows_the_canonical_order_of_the_panels(monk
     tables = {}
     for k, name in enumerate(("validation", "calibration", "evaluation")):
         table = prediction_table(1_546_000_000_000_000 + 10 * k * DAY)
-        matures = pc.add(table["prediction_at"].cast(pa.int64()), pa.scalar(DAY + k))
+        # Cada fila madura en un instante propio, también dentro de la misma sesión.
+        offsets = pa.array(DAY + 1_000 * np.arange(table.num_rows) + k)
+        matures = pc.add(table["prediction_at"].cast(pa.int64()), offsets)
         tables[name] = table.select(
             ["asset_id", "market", "prediction_at", "target"]
         ).append_column("matures_at", matures)
@@ -432,10 +434,17 @@ def test_the_maturity_of_the_view_follows_the_canonical_order_of_the_panels(monk
             study.variant_screening_analysis.PARTITIONS,
         )
     ]
-    for k, name in enumerate(("validation", "calibration", "evaluation")):
-        panel = ForecastPanel.from_arrow(prediction_table(1_546_000_000_000_000 + 10 * k * DAY))
+    for name, table in tables.items():
+        sample = pc.binary_join_element_wise(
+            table["asset_id"], table["prediction_at"].cast(pa.int64()).cast(pa.string()), "/"
+        )
+        panel = ForecastPanel.from_arrow(
+            table.append_column("sample_id", sample).append_column("prediction", table["target"])
+        )
+        matures = dict(zip(sample.to_pylist(), table["matures_at"].to_pylist(), strict=True))
         assert cohorts[name] == panel.cohort_sha256
-        assert np.array_equal(aligned[name], panel.prediction_at + DAY + k)
+        assert aligned[name].tolist() == [matures[row] for row in panel.row_id.to_pylist()]
+        assert aligned[name].tolist() != table["matures_at"].to_pylist()
 
 
 def test_current_sectors_leave_missing_or_unknown_sectors_empty(tmp_path):
@@ -447,3 +456,53 @@ def test_current_sectors_leave_missing_or_unknown_sectors_empty(tmp_path):
     )
     sectors = study.current_sectors(tmp_path, ["US/AAA", "US/BBB", "US/ZZZ"])
     assert sectors == {"US/AAA": "US/Technology", "US/BBB": None, "US/ZZZ": None}
+
+
+def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
+    prepared, runners, monkeypatch, tmp_path
+):
+    work, receipt = prepared
+    for name in ("sp500stock_data_description.csv", "hs300stock_data_description.csv"):
+        (tmp_path / name).write_text(name)
+    monkeypatch.setattr(study, "_completed", lambda *_: dict(status="completed"))
+    monkeypatch.setattr(study, "origin_maturity", lambda view, policy: ({}, {}))
+    monkeypatch.setattr(study, "current_sectors", lambda path, assets: dict.fromkeys(assets))
+    read = []
+
+    def panels(folder, reads):
+        read.append(folder)
+        reads[f"{folder.name}/evaluation-predictions.parquet"] = "f" * 64
+        return {}
+
+    monkeypatch.setattr(study, "run_panels", panels)
+    seen = {}
+
+    def analyze(protocol, jobs, origins, root):
+        seen.update(protocol=protocol, jobs=jobs, origins=origins)
+        origins[2020].load("job-a")
+        origins[2020].load("job-a")
+        values, defined = np.array([0.1, 0.2, 0.3]), np.array([True, True, False])
+        report = dict(decisions=dict(B1=dict(passes=False)), sessions=3)
+        merged = {(("B1", "area_memory"), "session_ic"): (values, defined)}
+        return report, dict(session_time=np.array([1, 2, 3]), merged=merged)
+
+    monkeypatch.setattr(study.variant_screening_analysis, "analyze", analyze)
+    result = study.analyze(work, tmp_path / "analysis", tmp_path)
+    assert result["decisions"] == {"B1": False} and result["sessions"] == 3
+    assert seen["protocol"] == receipt["protocol"] and seen["jobs"] == receipt["jobs"]
+    assert sorted(seen["origins"]) == sorted(screening_cohorts.ORIGIN_FOLDS)
+    assert all(len(origin.sectors) == 256 for origin in seen["origins"].values())
+    assert read == [work / "runs" / "job-a"]
+    report = json.loads((tmp_path / "analysis" / "analysis.json").read_text())
+    assert report["final_test_access"] is False and report["optimizer_steps"] == 0
+    assert report["prepared_sha256"] == sha256(work / "prepared.json")
+    assert report["predictions_sha256"] == {"job-a/evaluation-predictions.parquet": "f" * 64}
+    assert set(report["descriptions_sha256"]) == {
+        "sp500stock_data_description.csv",
+        "hs300stock_data_description.csv",
+    }
+    series = pq.read_table(tmp_path / "analysis" / "series.parquet")
+    assert series["model"].to_pylist() == ["B1/area_memory"] * 3
+    assert series["defined"].to_pylist() == [True, True, False]
+    with pytest.raises(ValueError, match="directorio nuevo"):
+        study.analyze(work, tmp_path / "analysis", tmp_path)
