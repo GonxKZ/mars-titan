@@ -217,6 +217,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
+    # La carpeta se crea antes de medir, para no perder una medida al escribirla.
+    arguments.output.parent.mkdir(parents=True, exist_ok=True)
     result = run(arguments.device)
     arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
