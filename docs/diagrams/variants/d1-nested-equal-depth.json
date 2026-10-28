@@ -10,11 +10,11 @@
     }
   },
   "components": [
-    {"id": "state", "type": "external", "label": "Estado de la decisión", "sublabel": "salida de MAC", "pos": [40, 230], "size": [180, 72]},
-    {"id": "outer", "type": "backend", "label": "Bucle externo K", "sublabel": "pasos externos", "pos": [300, 40], "size": [180, 72]},
-    {"id": "inner", "type": "backend", "label": "Bucle interno J", "sublabel": "por paso externo", "pos": [560, 40], "size": [180, 72]},
-    {"id": "flat", "type": "backend", "label": "Bucle plano", "sublabel": "K·J aplicaciones", "tag": "control", "pos": [300, 420], "size": [180, 72]},
-    {"id": "head", "type": "frontend", "label": "Cabeza", "sublabel": "supervisión final o por paso", "pos": [820, 230], "size": [180, 72]},
+    {"id": "state", "type": "external", "label": "Estado de trabajo", "sublabel": "salida de MAC", "pos": [40, 230], "size": [180, 72]},
+    {"id": "outer", "type": "backend", "label": "Lecturas del banco K", "sublabel": "refinamientos del lector", "pos": [300, 40], "size": [180, 72]},
+    {"id": "inner", "type": "backend", "label": "Pasos del puente J", "sublabel": "dentro de cada lectura", "pos": [560, 40], "size": [180, 72]},
+    {"id": "flat", "type": "backend", "label": "Bucle plano", "sublabel": "K=4 con J=1", "tag": "control", "pos": [300, 420], "size": [180, 72]},
+    {"id": "head", "type": "frontend", "label": "Cabeza", "sublabel": "pérdida final o en 2 y 4", "pos": [820, 230], "size": [180, 72]},
     {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]}
   ],
   "connections": [
@@ -30,20 +30,20 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "J pasos internos dentro de cada uno de K pasos externos",
-        "Supervisión final o por paso como factor del diseño",
-        "Fuente: TRM (2025), análisis de HRM de ARC Prize, Saunshi et al. (2025)"
+        "K=2 lecturas con J=2 pasos del puente, cuatro en total",
+        "Pérdida final o media en las profundidades 2 y 4",
+        "Fuente: TRM (2025) y análisis de HRM de ARC Prize"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Bucle plano con el mismo número de aplicaciones", "Mismos parámetros y misma supervisión"]
+      "items": ["Bucle plano K=4 con J=1 y la misma supervisión", "Mismos parámetros y el mismo trabajo del puente"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751 y #709, pendiente de implementar", "Coste estimado de 1 a 1,3 ajustes"]
+      "items": ["Implementada en #751 con pruebas técnicas", "Sin entrenar ni evaluar"]
     }
   ]
 }

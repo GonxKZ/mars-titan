@@ -186,6 +186,12 @@ GUARDS = {
     ),
     "mars_titan.training.mars_titan_correction:carry_correction": ("carry_correction",),
     "mars_titan.training.cm_v1_factorial:run_cm_v1_core_window": ("cm_v1_core_window",),
+    "mars_titan.training.window_variant_run:run_window_variant": (
+        node(
+            "training/test_window_variants.py",
+            "test_learning_hold_precedes_manifest_cuda_and_output",
+        ),
+    ),
     "mars_titan.training.cm_v1_factorial:run_cm_v1_window": ("cm_v1_window",),
     "mars_titan.training.cm_v1_factorial:carry_cm_v1": ("carry_cm_v1",),
     # Campaña con máscaras y regeneración de predicciones.
@@ -256,6 +262,12 @@ GUARDS = {
     "scripts.benchmark_adaptive_rl:main": ("benchmark_adaptive_rl",),
     "scripts.run_financial_comparators:main": ("run_financial_comparators",),
     "scripts.run_titans_walk_forward:main": ("run_titans_walk_forward",),
+    "scripts.run_window_variant:main": (
+        node(
+            "training/test_window_variant_cli.py",
+            "test_learning_hold_blocks_before_gpu_or_execution_and_is_not_modified",
+        ),
+    ),
 }
 
 # Funciones que registran un gancho de PyTorch que rechaza cualquier paso mientras miden. Solo
