@@ -430,6 +430,32 @@ def test_each_series_is_the_seed_mean_of_the_stage_outputs(analyzed):
     values, defined = arrays["merged"][(("version_arbiter", REFERENCE, "arbiter"), "session_ic")]
     assert np.array_equal(values, np.concatenate([v for v, _ in parts]))
     assert np.array_equal(defined, np.concatenate([d for _, d in parts]))
+    # El informe resume cada serie con su media en las sesiones definidas.
+    assert report["models"][f"version_arbiter/{REFERENCE}/arbiter"]["session_ic"] == dict(
+        mean=float(values[defined].mean()), defined_sessions=int(defined.sum())
+    )
+
+
+def test_the_summary_of_each_output_only_averages_its_defined_sessions():
+    arbiter, emission = (
+        ("version_arbiter", "B/x", "arbiter"),
+        ("time_averaging", "F2/y", "emission"),
+    )
+    merged = {
+        (arbiter, "session_ic"): (np.array([1.0, 3.0, 9.0]), np.array([True, True, False])),
+        (arbiter, "session_mae"): (np.zeros(3), np.zeros(3, dtype=bool)),
+        (emission, "session_ic"): (np.array([2.0, 5.0, 0.0]), np.array([True, False, False])),
+    }
+    means = stage._means(merged)
+    # Las salidas van por orden y cada una conserva el orden de sus métricas.
+    assert list(means) == ["time_averaging/F2/y/emission", "version_arbiter/B/x/arbiter"]
+    assert means["version_arbiter/B/x/arbiter"] == {
+        "session_ic": dict(mean=2.0, defined_sessions=2),
+        "session_mae": dict(mean=None, defined_sessions=0),
+    }
+    assert means["time_averaging/F2/y/emission"] == {
+        "session_ic": dict(mean=2.0, defined_sessions=1)
+    }
 
 
 def test_the_arbiter_is_compared_apart_with_the_time_averaging_models(analyzed):

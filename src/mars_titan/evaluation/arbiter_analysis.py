@@ -307,16 +307,8 @@ def families(protocol, rows, averaging, combination, day):
     )
 
 
-def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
-    """Series por sesión, contrastes, familia y decisiones de los árbitros sobre la criba.
-
-    `declaration` es la de `online_arbiters`, `jobs` el catálogo sellado por el motor y
-    `origins` asigna a cada año su `Origin`, que debe recibir las versiones de los ajustes.
-    """
-    _require(
-        sorted(origins) == [origin["year"] for origin in protocol["origins"]],
-        "Los árbitros necesitan los cuatro orígenes de la criba",
-    )
+def _checked_stages(protocol, declaration):
+    """Opciones de las dos etapas, que puntúan las sesiones como la criba."""
     stages = {
         name: arbiters.stage_options(declaration, identity)
         for name, identity in (
@@ -334,29 +326,27 @@ def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
         all(stage["metric"] == metric for stage in stages.values()),
         "Los árbitros se miden con la métrica principal de la criba",
     )
-    arms = variant_screening.all_arms(protocol, root)
-    index = analysis.job_index(jobs)
+    return stages
+
+
+def _series(protocol, arms, index, origins, stages, compared):
+    """Serie por sesión de cada salida y métrica, con su media de semillas y los orígenes unidos.
+
+    Devuelve también las sesiones de S y lo que el informe guarda de la lectura: la cobertura
+    de cada salida, los miembros de la combinación y los casos de selección.
+    """
+    min_assets = protocol["contrast"]["primary"]["minimum_assets"]
     # El MAE menos el del control cero no se calcula aquí, porque el cero no es una opción.
     secondary = [m for m in protocol["contrast"]["secondary"] if m != "session_mae_minus_zero"]
-    metrics = [metric, *secondary]
-    versioned = protocol["selection"]["versions"]["models"]
-    compared = compared_models(protocol, arms, root)
-    averaging = stages[VERSIONS]["time_averaging"]
-    _require(
-        averaging["arbiter_of"] in versioned
-        and all(tuple(name.split("/", 1)) in compared for name in averaging["compared_with"]),
-        "La comparación con las medias de pesos usa un modelo con versiones y modelos de la "
-        "criba con predicciones propias",
-    )
+    metrics = [protocol["contrast"]["primary"]["metric"], *secondary]
+    averaging = stages[VERSIONS]["time_averaging"]["compared_with"]
     cases, series, times, coverage, members = [], {}, [], {}, {}
     for year in sorted(origins):
         origin, per_origin = origins[year], {}
         for seed in protocol["seeds"]:
             emissions = (
                 *_version_emissions(protocol, arms, index, origin, seed, cases, stages[VERSIONS]),
-                *_averaging_emissions(
-                    protocol, arms, index, origin, seed, cases, averaging["compared_with"]
-                ),
+                *_averaging_emissions(protocol, arms, index, origin, seed, cases, averaging),
                 *_combination_emissions(
                     protocol,
                     arms,
@@ -381,7 +371,6 @@ def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
         origin.stages.clear()
     session_time = np.concatenate(times)
     _require(np.all(np.diff(session_time) > 0), "Las sesiones de S no siguen el orden temporal")
-    day = session_time // DAY_MICROSECONDS
     merged = {
         key: (
             np.concatenate([values for values, _ in parts]),
@@ -389,6 +378,17 @@ def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
         )
         for key, parts in series.items()
     }
+    read = dict(
+        coverage={label: float(np.mean(values)) for label, values in sorted(coverage.items())},
+        combination_members=members,
+        cases=cases,
+    )
+    return session_time, merged, read
+
+
+def _contrasts(protocol, merged, averaging):
+    """Contrastes del árbitro de versiones, de las medias de pesos y de la combinación."""
+    metric = protocol["contrast"]["primary"]["metric"]
     direction = protocol["contrast"]["primary"]["direction"]
     rows = [
         _contrast(
@@ -399,7 +399,7 @@ def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
             role,
             direction,
         )
-        for model in versioned
+        for model in protocol["selection"]["versions"]["models"]
         for control, role in VERSION_CONTROLS
     ]
     averaged = [
@@ -422,27 +422,53 @@ def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
         "reported",
         direction,
     )
-    report = families(protocol, rows, averaged, combination, day)
+    return rows, averaged, combination
+
+
+def _means(merged):
+    """Media y sesiones definidas de cada salida en cada métrica, por orden de salida."""
+    means = {"/".join(label): {} for label in sorted({label for label, _ in merged})}
+    for (label, name), (values, defined) in merged.items():
+        means["/".join(label)][name] = dict(
+            mean=float(values[defined].mean()) if defined.any() else None,
+            defined_sessions=int(defined.sum()),
+        )
+    return means
+
+
+def analyze(protocol, declaration, jobs, origins, root=variant_screening.ROOT):
+    """Series por sesión, contrastes, familia y decisiones de los árbitros sobre la criba.
+
+    `declaration` es la de `online_arbiters`, `jobs` el catálogo sellado por el motor y
+    `origins` asigna a cada año su `Origin`, que debe recibir las versiones de los ajustes.
+    """
+    _require(
+        sorted(origins) == [origin["year"] for origin in protocol["origins"]],
+        "Los árbitros necesitan los cuatro orígenes de la criba",
+    )
+    stages = _checked_stages(protocol, declaration)
+    arms = variant_screening.all_arms(protocol, root)
+    index = analysis.job_index(jobs)
+    versioned = protocol["selection"]["versions"]["models"]
+    compared = compared_models(protocol, arms, root)
+    averaging = stages[VERSIONS]["time_averaging"]
+    _require(
+        averaging["arbiter_of"] in versioned
+        and all(tuple(name.split("/", 1)) in compared for name in averaging["compared_with"]),
+        "La comparación con las medias de pesos usa un modelo con versiones y modelos de la "
+        "criba con predicciones propias",
+    )
+    session_time, merged, read = _series(protocol, arms, index, origins, stages, compared)
+    rows, averaged, combination = _contrasts(protocol, merged, averaging)
+    report = families(protocol, rows, averaged, combination, session_time // DAY_MICROSECONDS)
     report.update(
         kind=KIND,
         sessions=len(session_time),
         first_session=int(session_time[0]),
         last_session=int(session_time[-1]),
         stages=stages,
-        coverage={label: float(np.mean(values)) for label, values in sorted(coverage.items())},
-        combination_members=members,
-        cases=cases,
-        models={
-            "/".join(label): {
-                name: dict(
-                    mean=float(values[defined].mean()) if defined.any() else None,
-                    defined_sessions=int(defined.sum()),
-                )
-                for (other, name), (values, defined) in merged.items()
-                if other == label
-            }
-            for label in sorted({label for label, _ in merged})
-        },
+        **read,
+        models=_means(merged),
     )
     return report, dict(
         session_time=session_time, merged=merged, contrasts=[*rows, *averaged, combination]
