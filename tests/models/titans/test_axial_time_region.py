@@ -545,8 +545,13 @@ def test_a_payload_with_an_impossible_history_is_refused():
 def test_a_state_without_its_history_is_refused():
     predictor = moved(VARIANT)
     state = predictor.initial_state(batch().flow_ids)
+    missing = replace(state, regions=None)
     with pytest.raises(ValueError, match="historial de C2"):
-        predictor.prepare(batch(), replace(state, regions=None))
+        predictor.prepare(batch(), missing)
+    # La exportación y el recuento de bytes también lo exigen, sin pasar por el módulo.
+    for refuse in (predictor.export_state, predictor.state_usage):
+        with pytest.raises(ValueError, match="historial de C2"):
+            refuse(missing)
     base, _ = setup()
     plain = base.initial_state(batch().flow_ids)
     with pytest.raises(ValueError, match="Sin C2"):
