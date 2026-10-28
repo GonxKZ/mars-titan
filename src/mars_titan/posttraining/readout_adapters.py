@@ -365,14 +365,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
                 target = torch.tensor(
                     [labels[keys[i]] for i in positions], dtype=self.dtype, device=self.device
                 )
-                chosen = replace(
-                    result,
-                    point_predictions=result.point_predictions.index_select(0, index),
-                    quantiles=None
-                    if result.quantiles is None
-                    else result.quantiles.index_select(0, index),
-                )
-                loss = self._loss(chosen, target) * (len(positions) / total)
+                loss = self._loss(result, index, target) * (len(positions) / total)
                 if not torch.isfinite(loss).item():
                     raise ValueError("La pérdida del tramo no es finita")
                 loss_sum += float(loss.detach())
