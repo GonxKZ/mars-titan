@@ -213,6 +213,36 @@ def test_a_fit_runs_with_its_sealed_files_and_is_charged_once(prepared, runners)
     assert len(runners) == 1
 
 
+def test_a_failed_job_is_charged_and_keeps_its_error(prepared, runners, monkeypatch):
+    work, receipt = prepared
+    item = job(receipt, "references/scalar_reference", origin=2021, seed=45)
+
+    def broken(*args, **options):
+        raise RuntimeError("fallo del ejecutor de fixture")
+
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", broken)
+    before = set((work / "attempts").glob("*.json"))
+    with pytest.raises(RuntimeError, match="fallo del ejecutor"):
+        study.run_job(work, item["id"])
+    (path,) = set((work / "attempts").glob("*.json")) - before
+    attempt = json.loads(path.read_text())
+    assert attempt["status"] == "failed" and attempt["closure_confirmed"] is True
+    assert attempt["error"] == "RuntimeError: fallo del ejecutor de fixture"
+    assert attempt["charged_seconds"] == attempt["actual_seconds"] > 0
+    assert study._completed(work, item["id"]) is None
+
+
+def test_no_job_starts_once_the_budget_is_spent(prepared, runners, monkeypatch):
+    work, receipt = prepared
+    budget = receipt["protocol"]["budget"]["max_total_gpu_hours"] * 3600
+    monkeypatch.setattr(study, "_charged", lambda _: budget)
+    item = job(receipt, "references/scalar_reference", origin=2022, seed=46)
+    before = set((work / "attempts").glob("*.json"))
+    with pytest.raises(RuntimeError, match="presupuesto"):
+        study.run_job(work, item["id"])
+    assert runners == [] and set((work / "attempts").glob("*.json")) == before
+
+
 def test_a_correction_waits_for_its_parent_and_receives_its_case(prepared, runners):
     work, receipt = prepared
     item = job(receipt, "B1/area_memory", seed=44, case="eta25e-2")
@@ -242,6 +272,18 @@ def test_the_matched_e4_control_uses_the_mean_gate_of_its_variant(prepared, runn
     gate = runners[-1][2]["regime_gate"]
     assert gate.mode == "constant" and gate.constant == 0.375
     assert runners[-2][2]["regime_gate"].mode == "cusum"
+
+
+def test_the_e3_profile_reaches_the_correction_as_its_salience_budget(prepared, runners):
+    from mars_titan.memory.salience_budget import SalienceBudgetConfig
+
+    work, receipt = prepared
+    item = job(receipt, "E3/standardized_error", origin=2020, seed=42, case="eta5e-2")
+    study.run_job(work, item["parent"])
+    study.run_job(work, item["id"])
+    options = runners[-1][2]
+    assert options["salience"] == SalienceBudgetConfig(**item["definition"]["value"])
+    assert options["search_case"] == "eta5e-2" and "regime_gate" not in options
 
 
 def test_readers_and_spaced_windows_receive_their_parent(prepared, runners):
@@ -279,3 +321,16 @@ def test_plan_estimates_the_cost_from_the_cohorts(cohorts):
     assert result["jobs"] == result["cost"]["jobs"] > 0
     assert result["cost"]["estimate"] == "pilot_measurements_not_a_measured_screening_cost"
     assert {row["entry"] for row in result["pending"]} >= {"C2", "C3", "G1"}
+    approximate = study.plan()
+    assert approximate["jobs"] == result["jobs"]
+    assert study.origin_rows()[2019] == study.DEFAULT_ROWS
+
+
+def test_the_command_line_prints_the_plan_and_the_status(prepared, monkeypatch, capsys):
+    work, receipt = prepared
+    monkeypatch.setattr("sys.argv", ["variant_screening_study", "status", "--work", str(work)])
+    study.main()
+    assert json.loads(capsys.readouterr().out)["jobs"] == len(receipt["jobs"])
+    monkeypatch.setattr("sys.argv", ["variant_screening_study", "plan"])
+    study.main()
+    assert json.loads(capsys.readouterr().out)["jobs"] == len(receipt["jobs"])
