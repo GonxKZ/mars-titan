@@ -833,6 +833,11 @@ def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
         study.combination_epoch(tmp_path, jobs[:3], arm, protocol)
     with pytest.raises(ValueError, match="todas sus épocas"):
         study.combination_epoch(tmp_path, jobs, arm, dict(protocol, fit=dict(epochs=5)))
+    # Una semilla que valida otros objetivos no se promedia con las demás.
+    shifted = dict(jobs[-1], id="2019-45-shifted")
+    write_epochs(tmp_path, shifted["id"], [target] * 4, target + 1.0, times)
+    with pytest.raises(ValueError, match="mismas filas"):
+        study.combination_epoch(tmp_path, [*jobs[:3], shifted], arm, protocol)
     (tmp_path / "runs" / jobs[0]["id"] / "epochs" / "validation-epoch-0002.parquet").write_bytes(
         b"PAR1 x PAR1"
     )
@@ -1037,6 +1042,11 @@ def test_each_replicate_of_the_seed_mean_reads_the_epoch_of_its_combination(tmp_
     version.write_bytes(b"PAR1 x PAR1")
     with pytest.raises(ValueError, match="Ha cambiado"):
         study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
+    # Una fuente con dos casos de búsqueda en una semilla no tiene una sola tabla que promediar.
+    searched = dict(jobs[1], id="2019-43-other-case", definition=dict(runner="fit", search_case=1))
+    receipt = dict(receipt, jobs=[*jobs, searched])
+    with pytest.raises(ValueError, match="un solo caso"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (43, 45, 46))
 
 
 def test_the_rule_check_reads_every_group_and_writes_its_report(
