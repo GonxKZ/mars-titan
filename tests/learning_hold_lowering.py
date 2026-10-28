@@ -365,6 +365,11 @@ DOUBLES = {
         "sustituye el módulo lightgbm por un doble que recorre las rondas y devuelve un booster "
         "de predicción fija, así que no estima ningún parámetro",
     ),
+    "tests/models/test_session_ridge.py": (
+        1,
+        "sustituye `Ridge` de scikit-learn por un doble que predice una columna fija según su "
+        "alpha, así que no estima ningún coeficiente",
+    ),
     "tests/training/test_common_control_windows.py": (
         4,
         "la regla no ajusta nada y el ajuste de LightGBM es un doble de predicción fija sobre la "

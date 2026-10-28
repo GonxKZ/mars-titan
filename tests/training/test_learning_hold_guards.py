@@ -291,6 +291,11 @@ ENTRY_POINTS = {
         "_checked_training",
         lambda m, out: m.fit(None, None, {}, 42, min_assets=3),
     ),
+    "session_ridge": _simple(
+        "mars_titan.models.baselines.session_ridge",
+        "_declares_training",
+        lambda m, out: m.fit(None, None, {}, min_assets=3),
+    ),
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",
