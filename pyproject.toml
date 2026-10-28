@@ -44,6 +44,9 @@ reinforcement = [
     "gymnasium==1.3.0",
     "hmmlearn==0.3.3",
 ]
+optimizers = [
+    "schedulefree==1.4.1",
+]
 
 [project.urls]
 Repository = "https://github.com/GonxKZ/mars-titan"
