@@ -1,0 +1,156 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 746,
+ "scope": "variant_screening_protocol_and_engine",
+ "implementation_commit": "2d33daf9dff5924c73826446077e3270a4ac59a1",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "test_runners": "Los ejecutores del motor se sustituyen por dobles que solo escriben su run.json. Ninguna prueba construye un modelo ni ejecuta pasos de optimizador, y la protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 45,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "c7863074ec9614cb47ab4ee2ccce04ec1bcd61206f30537c5462872276634869",
+   "modules": [
+    "tests/training/test_variant_screening.py",
+    "tests/tooling/test_variant_screening_study.py"
+   ]
+  },
+  {
+   "name": "learning_hold_guard",
+   "tests": 17,
+   "failures": 2,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "2d7a78c1dc381b8c572c64bf6af01d50076bdf4c7683235f1feb6b1f0e81ec3e",
+   "note": "Los dos fallos señalaban tests/training/test_regime_gate_correction_window.py, que usa learning_doubles sin declararlo desde 4cce7e64b en develop. La rama declara ese uso en el inventario."
+  },
+  {
+   "name": "learning_hold_guard_after_the_inventory_fix",
+   "tests": 2,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "3fba87c631aa47db8603ed9b9b01fc0e06186f6b58a439d4c196b063d8b71997"
+  }
+ ],
+ "coverage": {
+  "tool": "coverage 7.16.1 con ramas",
+  "totals": {
+   "statements": 489,
+   "covered_statements": 482,
+   "branches": 164,
+   "covered_branches": 158
+  },
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "f679e81b6d76650f23769d4cc3109ceb8163551c9bcf53d1cab37e3ca3d61776",
+    "statements": 255,
+    "covered_statements": 249,
+    "branches": 60,
+    "covered_branches": 56
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "e3ca5576ed557ea4faca659be0eac6883c2fd9a33026084aa3ef615a0d9cd084",
+    "statements": 234,
+    "covered_statements": 233,
+    "branches": 104,
+    "covered_branches": 102
+   }
+  ],
+  "max_crap": 45.0,
+  "uncovered": "Memoria CUDA del intento, ramas prepare y run de la línea de órdenes y la combinación de semillas de F2, que espera a integrar su declaración.",
+  "highest_crap": "checked_protocol tiene complejidad 45 por su cadena de condiciones. Está cubierta al completo y sus rechazos se comprueban caso a caso."
+ },
+ "mutations": {
+  "scope": "Trece defectos dirigidos del protocolo y del motor. No es una puntuación global.",
+  "planned": 13,
+  "killed": 13,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "06464c0df0771477866d4dbf35ad0a2f6c0953bf08ec2880412393243011e50e",
+  "source_sha256": {
+   "benchmarks/variant_screening_study.py": "f679e81b6d76650f23769d4cc3109ceb8163551c9bcf53d1cab37e3ca3d61776",
+   "src/mars_titan/training/variant_screening.py": "aec3018c08be24873bef7257d743af7397dd93a0d932184ce71fda6956ca97a1"
+  },
+  "cases": [
+   {
+    "id": "job_per_label_instead_of_definition",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "parent_of_the_first_seed",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "corrections_with_a_single_case",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "matched_control_of_another_case",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "accept_final_test_access",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "cost_without_validation",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "hold_after_reading",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "skip_requirements",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "repeat_a_completed_job",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "epochs_without_multiplier",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "drop_recipe_changes",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "matched_gate_is_the_variant",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "skip_artifact_hashes",
+    "status": "killed_with_green_controls"
+   }
+  ],
+  "note": "Se ejecutaron antes de retirar la propiedad Arm.label, que no usaba nadie, y de añadir cuatro pruebas del motor. El resto del código es el mismo."
+ },
+ "plan": {
+  "file": "plan.json",
+  "jobs": 1740,
+  "contrasts": 62,
+  "estimated_hours": 94.34,
+  "hours_by_runner": {
+   "correction": 10.34,
+   "correction_profile": 1.99,
+   "fit": 56.55,
+   "reader": 12.73,
+   "spaced": 12.73
+  },
+  "within_budget": true,
+  "cohorts": "Cohortes reales de 256 activos por origen preparadas el 26 de octubre con screening_cohorts",
+  "estimate": "pilot_measurements_not_a_measured_screening_cost"
+ }
+}

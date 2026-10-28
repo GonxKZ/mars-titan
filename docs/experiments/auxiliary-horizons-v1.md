@@ -98,6 +98,7 @@ La comprobación del 27 y 28 de octubre se hizo en CPU, sin pasos de optimizador
 - `make test-fast` pasa 11.220 pruebas y omite 381. La guarda del bloqueo de aprendizaje pasa con 54 casos y una omisión prevista.
 - Nueve mutaciones dirigidas de F5, dentro de las quince de la familia, se detectan con los controles en verde antes y después. Se ejecutaron antes de integrar desde develop C1, C6 y el registro de sus fuentes, sobre el mismo código de F5. Quitar C1 y C6 del rechazo de la configuración o de `fused_tokens` hace fallar la prueba de operadores que mezclan filas.
 - Con coverage 7.16.1 y radon 6.0.1, `auxiliary_horizons.py` cubre 49/49 sentencias y 10/10 ramas, con CRAP máximo 14, y `horizon_labels.py` cubre 106/106 sentencias y 42/42 ramas, con CRAP máximo 19.
+- El 28 de octubre, tras pasar F1 al marco de objetivos de salida de #760, la regresión de los 22 módulos que recorren estos cambios pasó 588 casos con una omisión de la guarda. Los cuatro fallos eran pruebas del recorrido de F1 que esperaban la interfaz anterior, y sus 9 casos pasan tras actualizarlas.
 
 El [recibo de verificación](../../reports/engineering/scale-head-horizons-20261027/verification.json) conserva los recuentos y las huellas de los informes JUnit y de las mutaciones.
 

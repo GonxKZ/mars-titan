@@ -179,8 +179,8 @@ def test_emitted_rows_carry_the_laplace_quantiles_of_each_prediction(shared):
 @pytest.mark.parametrize(
     ("options", "message"),
     [
-        (dict(loss="mse"), "receta mae"),
-        (dict(loss="huber"), "receta mae"),
+        (dict(loss="mse"), "sustituye la pérdida mae"),
+        (dict(loss="huber"), "sustituye la pérdida mae"),
         (dict(distillation_weight=0.5), "sin destilación"),
     ],
 )
@@ -205,6 +205,7 @@ def test_posttraining_is_refused_until_it_is_declared(shared, tmp_path):
 def test_the_run_identity_records_the_scale_head(shared, tmp_path):
     engine = trainer(shared, tmp_path / "laplace")
     control = trainer(shared, tmp_path / "control", model=predictor(shared, head=None))
-    assert engine.identity["predictor"]["laplace_scale_head"] == HEAD.identity()
-    assert "laplace_scale_head" not in control.identity["predictor"]
+    # F1 es un objetivo de salida: la identidad lo registra como tal.
+    assert engine.identity["predictor"]["output_objective"] == HEAD.identity()
+    assert "output_objective" not in control.identity["predictor"]
     assert engine.run_id != control.run_id
