@@ -33,6 +33,10 @@ MAX_FIT_MONTHS = 12
 COMMON = ("zero", "past_median")
 # Trabajos que deben haber terminado antes: el padre congelado y la variante emparejada.
 REQUIRES = ("parent", "after")
+# Enmienda de la selección registrada el 28 de octubre antes de abrir S. Los ajustes y los
+# lectores emiten la época común de sus semillas, elegida con el IC medio de validación.
+SELECTION_RULE = "common_epoch_session_ic_v1"
+EPOCH_RUNNERS = ("fit", "reader")
 
 
 def _require(condition, message):
@@ -93,11 +97,13 @@ def checked_protocol(document):
         and 1 <= fit["fit_months"] <= MAX_FIT_MONTHS
         and type(fit.get("epochs")) is int
         and 1 <= fit["epochs"] <= 30
-        and fit.get("stopping") == "fixed_budget"
+        and fit.get("stopping") == "common_epoch"
+        and fit.get("selection") == SELECTION_RULE
         and isinstance(fit.get("search_case"), str)
         and fit.get("precision") == "fp32_strict",
-        "El ajuste necesita meses, épocas con presupuesto fijo, caso de búsqueda y FP32",
+        "El ajuste necesita meses, épocas con la época común, caso de búsqueda y FP32",
     )
+    checked_selection(document.get("selection"), fit["epochs"])
     partitions = document.get("partitions", {})
     _require(
         partitions.get("confirmation", {}).get("opened_by_the_screening") is False
@@ -156,6 +162,52 @@ def checked_protocol(document):
         "El presupuesto necesita horas totales, segundos por trabajo y una carga GPU",
     )
     return document
+
+
+def checked_selection(selection, epochs):
+    """Validar la regla de la época común, sus versiones y el registro de la enmienda."""
+    selection = selection if isinstance(selection, dict) else {}
+    versions = selection.get("versions", {})
+    amendment = selection.get("amendment", {})
+    check = selection.get("rule_check", {})
+    _require(
+        selection.get("rule") == SELECTION_RULE
+        and selection.get("applies_to") == list(EPOCH_RUNNERS)
+        and selection.get("metric") == "session_ic"
+        and selection.get("partition") == "validation"
+        and type(selection.get("smoothing_radius")) is int
+        and 0 <= selection["smoothing_radius"] < epochs,
+        "La selección necesita la época común con el IC de validación y su radio",
+    )
+    listed = versions.get("epochs")
+    models = versions.get("models")
+    _require(
+        isinstance(listed, list)
+        and all(type(epoch) is int and 1 <= epoch <= epochs for epoch in listed)
+        and listed == sorted(set(listed))
+        and isinstance(models, list)
+        and all(isinstance(model, str) and "/" in model for model in models)
+        and len(set(models)) == len(models)
+        and versions.get("partitions") == ["calibration", "evaluation"],
+        "Las versiones declaran épocas evaluadas, modelos sin repetir y sus dos tramos",
+    )
+    _require(
+        type(check.get("choose_months")) is int
+        and type(check.get("measure_months")) is int
+        and check["choose_months"] >= 1
+        and check["measure_months"] >= 1
+        and check.get("partition") == "validation"
+        and check.get("device") == "cpu_only",
+        "La comprobación de la regla elige y mide con meses de validación, solo en CPU",
+    )
+    _require(
+        amendment.get("registered_before_opening_s") is True
+        and amendment.get("previous_rule") == "best_validation_session_mae_within_the_fixed_budget"
+        and isinstance(amendment.get("date"), str)
+        and isinstance(amendment.get("reason"), str)
+        and amendment["reason"].strip(),
+        "La enmienda de la selección registra su fecha, su motivo y la regla anterior",
+    )
 
 
 def load_protocol(root=ROOT):
@@ -382,9 +434,32 @@ def _definitions(protocol, arms, arm, root):
     return result
 
 
+def combination_sources(arms):
+    """Modelos cuyas semillas combina una etapa de salida, con las semillas que combina.
+
+    La época de una combinación se elige con el IC de la propia combinación en validación,
+    así que los trabajos de su fuente guardan la predicción puntual de cada época.
+    """
+    sources = {}
+    for (entry, _), arm in arms.items():
+        if arm.runner == "output" and "combine" in arm.definition:
+            source = (entry, arm.definition["source"])
+            _require(source in arms, f"La combinación de {entry} no tiene fuente")
+            sources.setdefault(source, []).append(arm)
+    return sources
+
+
 def screening_jobs(protocol, root=ROOT):
-    """Trabajos únicos por definición, caso, origen y semilla, con su padre y sus usos."""
+    """Trabajos únicos por definición, caso, origen y semilla, con su padre y sus usos.
+
+    Los ajustes y los lectores llevan además su grupo de semillas (`common_group`), las
+    épocas que emiten como versiones (`versions`) y si guardan la predicción de cada época
+    de validación porque una combinación los usa (`epoch_predictions`).
+    """
     arms = all_arms(protocol, root)
+    combined = {"/".join(label) for label in combination_sources(arms)}
+    versioned = set(protocol["selection"]["versions"]["models"])
+    epochs = protocol["selection"]["versions"]["epochs"]
     jobs = {}
     for label, arm in arms.items():
         if arm.runner not in JOB_RUNNERS:
@@ -419,6 +494,17 @@ def screening_jobs(protocol, root=ROOT):
                     job["used_by"].append("/".join(label))
     for job in jobs.values():
         job["used_by"].sort()
+        if job["definition"]["runner"] in EPOCH_RUNNERS:
+            uses = set(job["used_by"])
+            job.update(
+                common_group=f"{job['origin']}-{job['definition_sha256'][:16]}",
+                versions=list(epochs) if uses & versioned else [],
+                epoch_predictions=bool(uses & combined),
+            )
+    used = {label for job in jobs.values() if "common_group" in job for label in job["used_by"]}
+    _require(
+        versioned <= used, "Las versiones solo se declaran sobre ajustes o lectores de la criba"
+    )
     _require(
         all(
             job[field] is None or job[field] in jobs for job in jobs.values() for field in REQUIRES
@@ -436,7 +522,13 @@ def screening_jobs(protocol, root=ROOT):
             )
         return depth[job_id]
 
-    return sorted(jobs.values(), key=lambda job: (level(job["id"]), job["id"]))
+    # Las cinco semillas de cada definición van seguidas. Así cada grupo de la época común
+    # decide en cuanto termina su última semilla y libera sus estados antes de que empiece
+    # el siguiente.
+    return sorted(
+        jobs.values(),
+        key=lambda job: (level(job["id"]), job["origin"], job["definition_sha256"], job["seed"]),
+    )
 
 
 def pending(protocol):
@@ -456,7 +548,9 @@ def cost_estimate(protocol, jobs, rows):
     `rows` da por origen las filas de ajuste, validación, calibración y evaluación. Un
     ajuste repite cada época el ajuste y la validación y predice una vez la calibración y
     la evaluación. Una corrección predice una vez los tres tramos medidos con su caso, y un
-    lector cuesta lo que declara la medida de referencia.
+    lector cuesta lo que declara la medida de referencia. Cada versión de la época común
+    predice otra vez la calibración y la evaluación, y la época de una combinación puede
+    añadir una más a cada semilla de su fuente.
     """
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
@@ -481,6 +575,13 @@ def cost_estimate(protocol, jobs, rows):
             cost = measured / reference["inference_rows_per_second"]
         else:
             cost = reference["reader_window_seconds"]
+        if definition["runner"] in EPOCH_RUNNERS:
+            extra = len(job["versions"]) + int(job["epoch_predictions"])
+            cost += (
+                extra
+                * (counts["calibration"] + counts["evaluation"])
+                / reference["inference_rows_per_second"]
+            )
         seconds += cost
         by_runner[definition["runner"]] = by_runner.get(definition["runner"], 0.0) + cost
     hours = seconds / 3600

@@ -355,9 +355,10 @@ _REUSES = (
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
     "tests/tooling/test_variant_screening_study.py": (
-        1,
-        "el motor de la criba llama a ejecutores dobles que solo escriben su run.json, sin "
-        "construir modelos ni ejecutar pasos de optimizador",
+        2,
+        "el motor de la criba llama a ejecutores dobles que solo escriben su run.json, también "
+        "el ajuste que espera la época común, sin construir modelos ni ejecutar pasos de "
+        "optimizador",
     ),
     "tests/training/test_salience_correction_window.py": (
         1,
