@@ -11,7 +11,7 @@ una publicación con errores e_i = etiqueta − punto emitido, todos ya maduros:
 Mientras el mercado no acumula `min_history` errores, y vale cero. La primera cohorte del
 mercado fija r_m² con su media cuadrática. Después, todos los errores actualizan esa media
 de forma exponencial, con semivida medida en publicaciones.
-La puerta multiplica los pesos de las escrituras proximales del mercado en esa misma
+La puerta multiplica la tasa η de las escrituras proximales del mercado en esa misma
 publicación. Con errores estables S se queda cerca de cero y la corrección escribe con
 g_min. Un aumento sostenido del error abre la puerta y la corrección se adapta más deprisa.
 
@@ -99,7 +99,7 @@ class RegimeGateConfig:
             statistic="mean_squared_standardized_mature_error_minus_one",
             detector="one_sided_page_cusum_per_market_capped_at_the_threshold",
             scale="exponential_mean_square_of_issued_errors_before_the_cohort",
-            target="weights_of_the_proximal_mature_writes_of_the_market",
+            target="rate_of_the_proximal_mature_writes_of_the_market",
         )
 
 
@@ -192,7 +192,9 @@ class RegimeEvidenceGate:
             count, square, statistic = self._prior(market)
             if count >= self.config.min_history:
                 scale = max(math.sqrt(square), self.config.scale_floor)
-                excess = math.fsum((error / scale) ** 2 for error in errors) / len(errors) - 1.0
+                # z·z da infinito al desbordar, mientras que z ** 2 lanzaría OverflowError.
+                ratios = [error / scale for error in errors]
+                excess = math.fsum(z * z for z in ratios) / len(errors) - 1.0
                 if not math.isfinite(excess):
                     raise ValueError("El error estandarizado de E4 desborda FP64")
                 statistic = min(

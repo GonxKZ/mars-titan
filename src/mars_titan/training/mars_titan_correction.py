@@ -547,7 +547,11 @@ class CorrectionInference(ChronologicalInference):
             for key in decisions:
                 del self._mature_experts[key]
             return updated, feedback
-        return memory.write(feedback, cutoff=at), feedback
+        return self._write_memory(memory, feedback, staged, at), feedback
+
+    def _write_memory(self, memory, feedback, staged, at):
+        """Escribir el resultado en A. E4 lo sustituye para regular la tasa por mercado."""
+        return memory.write(feedback, cutoff=at)
 
     def _close(self, run):
         if self.lesion_ledger is not None:
@@ -638,14 +642,42 @@ class CorrectionInference(ChronologicalInference):
         return self.evaluate(source, stop=stop, rows=rows)
 
 
-def _correction_inference(predictor, recipe, correction, codec, *, salience=None, **options):
-    if salience is None:
-        return CorrectionInference(predictor, recipe, correction, codec, **options)
-    from .salience_inference import SalienceCorrectionInference
+# Factores opcionales que limitan (E3) o ponderan (E4) las escrituras de A. Cada uno tiene
+# un módulo con checked_configuration, source_hashes, restore_configuration y su clase de
+# inferencia, que recibe la configuración con el nombre del factor. No se combinan.
+WRITE_FACTORS = {
+    "salience": dict(
+        label="E3",
+        module="salience_inference",
+        inference="SalienceCorrectionInference",
+        policy="reset_scale_and_write_budget_at_each_phase_start",
+    ),
+    "regime_gate": dict(
+        label="E4",
+        module="regime_gate_inference",
+        inference="RegimeGateCorrectionInference",
+        policy="reset_scale_and_cusum_at_each_phase_start",
+    ),
+}
 
-    return SalienceCorrectionInference(
-        predictor, recipe, correction, codec, salience=salience, **options
-    )
+
+def _factor_module(name):
+    return importlib.import_module(f"mars_titan.training.{WRITE_FACTORS[name]['module']}")
+
+
+def _write_factor(**factors):
+    """El factor de escritura declarado como (nombre, configuración), o None."""
+    declared = [(name, config) for name, config in factors.items() if config is not None]
+    _require(len(declared) <= 1, "Los factores de escritura E3 y E4 no se combinan")
+    return declared[0] if declared else None
+
+
+def _correction_inference(predictor, recipe, correction, codec, *, factor=None, **options):
+    if factor is None:
+        return CorrectionInference(predictor, recipe, correction, codec, **options)
+    name, config = factor
+    inference = getattr(_factor_module(name), WRITE_FACTORS[name]["inference"])
+    return inference(predictor, recipe, correction, codec, **{name: config}, **options)
 
 
 class KalmanPredictionRows(PredictionRows):
@@ -932,6 +964,7 @@ def run_correction_window(
     traces=None,
     lesions=None,
     salience=None,
+    regime_gate=None,
 ):
     """Predecir los tramos medidos con el padre elegido y la corrección B6 del caso.
 
@@ -955,10 +988,9 @@ def run_correction_window(
     # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
     # un modelo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
-    if salience is not None:
-        from .salience_inference import checked_configuration
-
-        checked_configuration(salience, correction)
+    factor = _write_factor(salience=salience, regime_gate=regime_gate)
+    if factor is not None:
+        _factor_module(factor[0]).checked_configuration(factor[1], correction)
     if lesions is not None:
         _require(type(lesions) is LesionProtocol, "B4 necesita su protocolo identificado")
         lesions.bind(correction)
@@ -990,11 +1022,9 @@ def run_correction_window(
     if lesions is not None:
         request["lesions"] = lesions.identity()
         request["code"].update(_lesion_code())
-    if salience is not None:
-        from .salience_inference import source_hashes
-
-        request["salience"] = salience.identity()
-        request["code"].update(source_hashes())
+    if factor is not None:
+        request[factor[0]] = factor[1].identity()
+        request["code"].update(_factor_module(factor[0]).source_hashes())
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -1042,7 +1072,7 @@ def run_correction_window(
     variant = _variant(predictor, parent_report, combination)
     codec = FrozenEpisodeCodec(specification)
     inference = _correction_inference(
-        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
+        predictor, chronological, variant.correction, codec, lesions=lesions, factor=factor
     )
     identity = dict(
         schema_version=1,
@@ -1071,14 +1101,15 @@ def run_correction_window(
         # Solo kalman la lleva, así que las demás reglas conservan su identidad.
         identity["cohort_noise"] = noise
         identity["diagnostics"] = KALMAN_DIAGNOSTICS
-    if salience is not None:
-        identity["salience"] = salience.identity()
-        identity["memory_policy"]["salience"] = "reset_scale_and_write_budget_at_each_phase_start"
-        identity["variant"] = dict(
-            kind="salience_correction_variant_v1",
-            base=identity["variant"],
-            salience=salience.identity(),
-        )
+    if factor is not None:
+        name, config = factor
+        identity[name] = config.identity()
+        identity["memory_policy"][name] = WRITE_FACTORS[name]["policy"]
+        identity["variant"] = {
+            "kind": f"{name}_correction_variant_v1",
+            "base": identity["variant"],
+            name: config.identity(),
+        }
         identity["variant_sha256"] = hashlib.sha256(
             canonical(identity["variant"]).encode()
         ).hexdigest()
@@ -1102,7 +1133,7 @@ def run_correction_window(
                 parent=request["parent"],
                 correction=variant.correction.identity(),
                 variant_sha256=identity["variant_sha256"],
-                **({"salience": salience.identity()} if salience is not None else {}),
+                **({factor[0]: factor[1].identity()} if factor is not None else {}),
             ),
         )
         report = dict(
@@ -1220,28 +1251,31 @@ def carry_correction(
     _verify(anchor, report)
     request, identity = report["request"], report["identity"]
     lesions = diagnostic_protocol(request)
-    _require(
-        ("salience" in request) == ("salience" in identity),
-        "El ancla no identifica E3 de forma coherente",
-    )
-    salience = None
-    if "salience" in request:
-        from .salience_inference import restore_configuration
-
-        salience = restore_configuration(request)
+    factors = {}
+    for name, spec in WRITE_FACTORS.items():
+        label = spec["label"]
         _require(
-            canonical(identity["salience"]) == canonical(salience.identity()),
-            "La identidad E3 del ancla contradice a su petición",
+            (name in request) == (name in identity),
+            f"El ancla no identifica {label} de forma coherente",
         )
+        if name in request:
+            factors[name] = _factor_module(name).restore_configuration(request)
+            _require(
+                canonical(identity[name]) == canonical(factors[name].identity()),
+                f"La identidad {label} del ancla contradice a su petición",
+            )
+    factor = _write_factor(**factors)
     _require(
         sha256(anchor / "selected.json") == report["checkpoint"]["sha256"],
         "El estado elegido del ancla ha cambiado",
     )
-    if salience is not None:
+    if factor is not None:
+        name, config = factor
+        label = WRITE_FACTORS[name]["label"]
         selected, _ = read_manifest(anchor / "selected.json", 64 * 1024)
         _require(
-            canonical(selected.get("salience")) == canonical(salience.identity()),
-            "El estado seleccionado no conserva el factor E3 del ancla",
+            canonical(selected.get(name)) == canonical(config.identity()),
+            f"El estado seleccionado no conserva el factor {label} del ancla",
         )
     parent = Path(request["parent"]["path"])
     parent_report, parent_sha = read_manifest(parent / "run.json", 16 * 1024**2)
@@ -1297,7 +1331,7 @@ def carry_correction(
     )
     codec = FrozenEpisodeCodec(specification)
     inference = _correction_inference(
-        predictor, chronological, variant.correction, codec, lesions=lesions, salience=salience
+        predictor, chronological, variant.correction, codec, lesions=lesions, factor=factor
     )
     predictions = {}
     for name in partitions:
@@ -1346,10 +1380,8 @@ def carry_correction(
     if lesions is not None:
         receipt["lesions"] = lesions.identity()
         receipt["code"].update(_lesion_code())
-    if salience is not None:
-        from .salience_inference import source_hashes
-
-        receipt["salience"] = salience.identity()
-        receipt["code"].update(source_hashes())
+    if factor is not None:
+        receipt[factor[0]] = factor[1].identity()
+        receipt["code"].update(_factor_module(factor[0]).source_hashes())
     atomic_json(output / "carry.json", receipt)
     return receipt

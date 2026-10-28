@@ -127,6 +127,8 @@ def test_availability_is_checked_before_any_financial_value(monkeypatch):
         ((("US/A", 0, 1, -1e308, 1e308),), 3),
         ((("US/A", True, 1, 0.0, 1.0),), 3),
         (cohort((1.0,), at=0, available=1), 0),
+        ((("US/A", 0, 1, 0.0),), 3),
+        ({"US/A"}, 3),
     ],
 )
 def test_invalid_publications_do_not_change_the_confirmed_state(rows, cutoff):
@@ -135,6 +137,33 @@ def test_invalid_publications_do_not_change_the_confirmed_state(rows, cutoff):
     with pytest.raises(ValueError):
         gate.step(rows, cutoff=cutoff)
     assert gate.export() == before
+
+
+def test_overflowing_errors_are_rejected_before_the_state_changes():
+    gate = RegimeEvidenceGate(replace(CONFIG, min_history=1))
+    with pytest.raises(ValueError, match="media cuadrática"):
+        gate.step(cohort((1e200,)), cutoff=2)
+    _, tiny = gate.step(cohort((1e-300,)), cutoff=2)
+    with pytest.raises(ValueError, match="estandarizado"):
+        tiny.step(cohort((1e300,), at=3, available=4), cutoff=4)
+    assert tiny.publications == 1 and tiny.cursor == 2
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        dict(config=None),
+        dict(markets={"UK": [1, 1.0, 0.0, 1, 0.25]}),
+        dict(markets={"US": [1, 1.0, 0.0]}, cursor=1, publications=1),
+        dict(markets={"US": [1, 1.0, 0.0, 1, 0.25]}),
+        dict(cursor=3),
+        dict(markets={"US": [1, 1.0, 5.0, 1, 0.25]}, cursor=1, publications=1),
+    ],
+)
+def test_incoherent_states_are_rejected(arguments):
+    arguments = dict(config=CONFIG) | arguments
+    with pytest.raises(ValueError):
+        RegimeEvidenceGate(arguments.pop("config"), **arguments)
 
 
 def test_export_round_trips_through_json_and_rejects_changes():
@@ -153,6 +182,11 @@ def test_export_round_trips_through_json_and_rejects_changes():
             RegimeEvidenceGate.restore(CONFIG, changed)
     with pytest.raises(ValueError):
         RegimeEvidenceGate.restore(replace(CONFIG, drift=0.25), payload)
+    short = json.loads(json.dumps(payload))
+    short["markets"]["US"] = short["markets"]["US"][:4]
+    short["sha256"] = e4._digest({k: v for k, v in short.items() if k != "sha256"})
+    with pytest.raises(ValueError, match="cuenta, media"):
+        RegimeEvidenceGate.restore(CONFIG, short)
 
 
 @pytest.mark.parametrize(
