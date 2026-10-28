@@ -359,6 +359,11 @@ DOUBLES = {
         "recorre la corrección E3 con un padre de pesos literales, sin construir entrenadores "
         "ni ejecutar pasos de optimizador",
     ),
+    "tests/training/test_regime_gate_correction_window.py": (
+        1,
+        "recorre la corrección E4 con un padre de pesos literales, sin construir entrenadores "
+        "ni ejecutar pasos de optimizador",
+    ),
     "tests/training/test_area_correction_bounded.py": (1, _RECORDER),
     "tests/conftest.py": (2, _DEFINES),
     "tests/training/test_window_variants.py": (
