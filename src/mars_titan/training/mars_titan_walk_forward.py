@@ -200,6 +200,10 @@ def _parent(folder, view, seed, control=None):
         changes.get("cross_asset_attention", predictor.get("cross_asset_attention")) is None,
         "El consumidor congelado aún no registra la atención entre activos de C5",
     )
+    _require(
+        changes.get("axial_time_region", predictor.get("axial_time_region")) is None,
+        "El consumidor congelado aún no registra el historial de regiones de C2",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -220,6 +224,10 @@ def _frozen_parent(
     _require(
         options.get("cross_asset_attention") is None,
         "El consumidor congelado aún no registra la atención entre activos de C5",
+    )
+    _require(
+        options.get("axial_time_region") is None,
+        "El consumidor congelado aún no registra el historial de regiones de C2",
     )
     _require(
         allow_context or options.get("session_context") is None,

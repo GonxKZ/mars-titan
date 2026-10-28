@@ -288,7 +288,10 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
     for config, present in ((None, False), (VARIANT, True)):
         trainer.predictor = SimpleNamespace(
             config=SimpleNamespace(
-                temporal_encoder=None, regional_variant=None, cross_asset_attention=config
+                temporal_encoder=None,
+                regional_variant=None,
+                cross_asset_attention=config,
+                axial_time_region=None,
             )
         )
         assert (name in trainer._code()) is present

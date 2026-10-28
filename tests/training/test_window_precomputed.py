@@ -67,7 +67,10 @@ def test_trainers_inherit_the_real_precomputed_source_without_initializing_train
         trainer = object.__new__(trainer_type)
         # `_code` lee estos campos de la configuración real del predictor.
         config = SimpleNamespace(
-            temporal_encoder=kind, regional_variant=None, cross_asset_attention=None
+            temporal_encoder=kind,
+            regional_variant=None,
+            cross_asset_attention=None,
+            axial_time_region=None,
         )
         trainer.predictor = SimpleNamespace(config=config)
         # La receta decide si F2 y F3 añaden su código.
