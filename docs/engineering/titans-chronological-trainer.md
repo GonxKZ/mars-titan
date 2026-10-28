@@ -43,6 +43,8 @@ La pérdida principal es el MAE residual. La receta admite también MSE y Huber 
 
 La selección reutiliza `selection.py`. El estado inicial se evalúa antes de ajustar y es elegible como mejor estado. La paciencia cuenta validaciones completas con la mejora mínima declarada. Con `stopping="fixed_budget"`, la regla común de `selection.py` recorre todas las épocas, conserva el mejor estado y registra en `plateau_epoch` dónde habría parado la paciencia, para que los controles emparejados tengan el mismo número de actualizaciones. Con los mismos eventos, los cuatro controles hacen los mismos pasos, cortes y etiquetas en la pérdida.
 
+Con `stopping="common_epoch"`, que solo admiten este entrenador y el lector de MARS-TITAN, el ajuste recorre todo el presupuesto, puntúa cada validación con el IC por sesión de sus propias filas y fija el estado de cada época en los puntos de control. Después espera a que el grupo de semillas elija la época común. Al recibirla, marca como elegido el estado fijado de esa época y conserva el mejor estado por MAE solo como sensibilidad. Lo usa la criba de variantes ([#746](https://github.com/GonxKZ/mars-titan/issues/746)), cuya [regla de selección](../experiments/variant-screening-v1.md#selección-del-estado) describe la ventana, las versiones y la liberación de los estados fijados.
+
 La receta propuesta está en [`configs/titans/chronological-training.json`](../../configs/titans/chronological-training.json), marcada como no ejecutada. Ventanas, calentamiento y épocas dependen del protocolo de #363.
 
 ## Checkpoints y reanudación

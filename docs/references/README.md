@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **356 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **364 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -41,6 +41,12 @@ El 10 de octubre se añadieron al mismo catálogo tres referencias para el
 de los pilotos (PT7): Bouthillier et al. (2021) sobre la varianza de las
 comparaciones, Agarwal et al. (2021) sobre los intervalos con pocas ejecuciones
 y Lakens (2017) sobre los límites de equivalencia.
+
+El 28 de octubre se añadieron al mismo catálogo tres referencias para la
+[regla de selección de la criba de variantes](../experiments/variant-screening-v1.md#selección-del-estado):
+Cawley y Talbot (2010) sobre el sobreajuste de la propia selección, Gulrajani y
+Lopez-Paz (2021) sobre la selección como parte del método y Ranjan et al. (2024)
+sobre el cambio de orden de los estados al combinar modelos.
 
 ## Contenido
 

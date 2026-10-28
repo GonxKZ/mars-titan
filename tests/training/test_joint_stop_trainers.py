@@ -14,7 +14,7 @@ import pytest
 import torch
 
 from mars_titan.training.checkpoints import load_training_state
-from mars_titan.training.selection import AWAIT, JOINT_PLATEAU
+from mars_titan.training.selection import AWAIT, COMMON_EPOCH, JOINT_PLATEAU
 from tests.training.test_financial_run import shared as shared
 from tests.training.test_financial_run import trainer as titans_trainer
 
@@ -195,3 +195,114 @@ def test_other_modes_refuse_a_joint_epoch(build, shared, tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="época conjunta"):
         fresh.run(joint_epoch=3)
     assert script.calls == 0
+
+
+COMMON = dict(JOINT, stopping=COMMON_EPOCH)
+# IC de validación de las épocas 1 a 6, que la puntuación doble entrega en orden.
+IC = [0.01, 0.02, 0.05, 0.03, 0.02, 0.01]
+
+
+class ScriptedIC:
+    """Puntuación por época escrita de antemano que registra las épocas que recibe."""
+
+    def __init__(self, values):
+        self.values, self.epochs = list(values), []
+
+    def rows(self):
+        return []
+
+    def score(self, epoch, rows, metrics):
+        assert rows == [] and "session_mae" in metrics
+        self.epochs.append(epoch)
+        value = self.values.pop(0)
+        return dict(
+            session_ic=value,
+            session_ic_values=[value],
+            session_ic_defined=[True],
+            session_time=[0],
+            cohort_sha256="cohort",
+        )
+
+
+COMMON_TRAINERS = [
+    pytest.param(titans, id="titans_mac"),
+    pytest.param(readout, id="mars_titan_readout", marks=NATIVE),
+]
+
+
+def common_build(build, streams, output, monkeypatch, values, scores):
+    engine, script = build(streams, output, monkeypatch, values, selection=COMMON)
+    engine.epoch_scorer = ScriptedIC(scores)
+    return engine, script, engine.epoch_scorer
+
+
+@pytest.mark.usefixtures("learning_doubles")
+@pytest.mark.parametrize("build", COMMON_TRAINERS)
+def test_common_epoch_fits_the_budget_pins_each_epoch_and_emits_the_chosen_one(
+    build, shared, tmp_path, monkeypatch
+):
+    _, streams = shared
+    output = tmp_path / "run"
+    engine, script, scorer = common_build(build, streams, output, monkeypatch, EARLY, IC)
+    report = engine.run()
+    # Recorre todo el presupuesto aunque el MAE llegue a una meseta en la época 3.
+    assert report["status"] == AWAIT and report["individual_stop_epoch"] == EPOCHS
+    assert report["plateau_epoch"] is None and engine.global_step == EPOCHS
+    assert script.calls == EPOCHS + 1 and scorer.epochs == list(range(1, EPOCHS + 1))
+    assert sorted(report["epoch_states"], key=int) == [str(e) for e in range(1, EPOCHS + 1)]
+    assert [entry["validation"].get("session_ic") for entry in report["history"]] == [None, *IC]
+    for epoch, reference in report["epoch_states"].items():
+        state = load_training_state(
+            output / "checkpoints",
+            expected_identity=engine.identity,
+            selection="pinned",
+            expected_sha256=reference["sha256"],
+        )
+        assert state["global_step"] == int(epoch)
+
+    # Sin época común no avanza, y una época fuera del presupuesto no se acepta.
+    again, script, _ = common_build(build, streams, output, monkeypatch, [], [])
+    assert again.run(resume=True)["status"] == AWAIT and script.calls == 0
+    for broken in (0, EPOCHS + 1):
+        refused, _, _ = common_build(build, streams, output, monkeypatch, [], [])
+        with pytest.raises(ValueError, match="época común"):
+            refused.run(resume=True, joint_epoch=broken)
+
+    done, script, _ = common_build(build, streams, output, monkeypatch, [], [])
+    report = done.run(resume=True, joint_epoch=3)
+    assert report["status"] == "completed" and script.calls == 0
+    # Emite el estado de la época común, no el mejor por MAE, que queda como sensibilidad.
+    assert (report["best_epoch"], report["best_score"]) == (3, EARLY[3])
+    assert report["common_epoch"] == 3 and report["common_epoch_session_ic"] == IC[2]
+    assert report["mae_selection"] == dict(best_epoch=4, best_score=EARLY[4])
+    assert report["best_checkpoint"] == report["epoch_states"]["3"]
+    chosen = load_training_state(
+        output / "checkpoints",
+        expected_identity=engine.identity,
+        selection="best",
+        expected_sha256=report["best_checkpoint"]["sha256"],
+    )
+    assert chosen["global_step"] == 3 and done.global_step == EPOCHS
+    # Una ejecución terminada solo se confirma con su misma época común.
+    for other in (4, None):
+        later, _, _ = common_build(build, streams, output, monkeypatch, [], [])
+        with pytest.raises(ValueError, match="otra época conjunta"):
+            later.run(resume=True, joint_epoch=other)
+
+
+@pytest.mark.usefixtures("learning_doubles")
+@pytest.mark.parametrize("build", COMMON_TRAINERS)
+def test_common_epoch_needs_a_scorer(build, shared, tmp_path, monkeypatch):
+    _, streams = shared
+    engine, script = build(streams, tmp_path / "run", monkeypatch, EARLY, selection=COMMON)
+    with pytest.raises(ValueError, match="puntuar cada validación"):
+        engine.run()
+    assert script.calls == 0 and not (tmp_path / "run").exists()
+
+
+def test_the_candidate_recipe_refuses_the_common_epoch():
+    from mars_titan.training.candidate_run import CandidateRecipe
+
+    # La GRU candidata no conserva el estado de cada época, así que no admite el modo.
+    with pytest.raises(ValueError, match="solo la admiten Titans-MAC"):
+        CandidateRecipe(epochs=EPOCHS, selection=COMMON)

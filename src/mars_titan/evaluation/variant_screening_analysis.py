@@ -4,7 +4,8 @@ Cada modelo del catálogo da, en cada origen y semilla, una predicción de la ev
 origen, que es su bloque de S:
 
 - un ajuste, un lector o una ventana E2 emiten la de su trabajo;
-- una corrección elige su caso con el MAE por sesión de su validación, sin mirar S;
+- una corrección usa en todas sus semillas el caso con mayor IC medio de validación, sin
+  mirar S, por la enmienda de la selección de #746;
 - la referencia textual de una corrección emite las predicciones de su padre;
 - una etapa de salida (A1, A2, A3 y C4) se ajusta con la calibración de su fuente y se aplica
   sin cambios a S;
@@ -41,7 +42,7 @@ from mars_titan.evaluation import neutral_abstention, pit_region_gate
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import DAY_MICROSECONDS
 from mars_titan.evaluation.paired_comparisons import circular_block_counts, family_intervals
-from mars_titan.training import variant_screening
+from mars_titan.training import selection, variant_screening
 
 KIND = "variant_screening_analysis_v1"
 PARTITIONS = ("validation", "calibration", "evaluation")
@@ -120,32 +121,61 @@ def job_index(jobs):
     return index
 
 
-def choose_case(origin, candidates):
-    """Trabajo con menor MAE medio por sesión en su validación. Empata el primer caso."""
-    scores = {}
-    for job in candidates:
-        validation = origin.panels(job["id"])["validation"]
-        scores[job["id"]] = float(np.mean(sd.session_mae(validation, validation.prediction)))
-    chosen = min(candidates, key=lambda job: scores[job["id"]])
-    return chosen, scores
+def choose_case(origin, candidates, *, min_assets):
+    """Caso común a las semillas con mayor IC medio de validación. Empata el primer caso.
 
-
-def _model(origin, index, label, seed, cases):
-    candidates = index.get((label, origin.year, seed))
-    _require(bool(candidates), f"No hay trabajos de {'/'.join(label)} en {origin.year}")
-    chosen, scores = choose_case(origin, candidates)
-    if len(candidates) > 1:
-        cases.append(
-            dict(
-                model="/".join(label),
-                origin=origin.year,
-                seed=seed,
-                job=chosen["id"],
-                case=chosen["definition"].get("search_case"),
-                validation_session_mae=scores,
+    `candidates` tiene, por semilla, sus trabajos en el mismo orden de casos. El IC de cada
+    caso se promedia entre semillas en las sesiones que todas definen, como la serie de un
+    modelo. Devuelve la posición del caso, su IC y el MAE medio de cada trabajo, que es la
+    regla anterior y solo se informa como sensibilidad.
+    """
+    names = [[str(job["definition"].get("search_case")) for job in jobs] for jobs in candidates]
+    _require(all(item == names[0] for item in names), "Las semillas no comparten los casos")
+    scores, mae = [], {}
+    for position in range(len(names[0])):
+        items = []
+        for jobs in candidates:
+            validation = origin.panels(jobs[position]["id"])["validation"]
+            items.append(
+                sd.session_correlations(validation, validation.prediction, min_assets=min_assets)
             )
+            mae[jobs[position]["id"]] = float(
+                np.mean(sd.session_mae(validation, validation.prediction))
+            )
+        values, defined = _average(items)
+        _require(defined.any(), "Un caso no define el IC de validación en ninguna sesión común")
+        scores.append(float(values[defined].mean()))
+    best = max(range(len(scores)), key=lambda position: (scores[position], -position))
+    return best, dict(zip(names[0], scores, strict=True)), mae
+
+
+def _model(protocol, origin, index, label, seed, cases):
+    key = ("case", label)
+    if key not in origin.stages:
+        candidates = [index.get((label, origin.year, other)) for other in protocol["seeds"]]
+        _require(
+            all(candidates), f"No hay trabajos de {'/'.join(label)} en {origin.year} y semilla"
         )
-    return origin.panels(chosen["id"])
+        # Con un solo caso no hay nada que elegir ni validación que leer.
+        origin.stages[key] = 0
+        if len(candidates[0]) > 1:
+            position, scores, mae = choose_case(
+                origin, candidates, min_assets=protocol["contrast"]["primary"]["minimum_assets"]
+            )
+            origin.stages[key] = position
+            cases.append(
+                dict(
+                    model="/".join(label),
+                    origin=origin.year,
+                    case=candidates[0][position]["definition"].get("search_case"),
+                    jobs={str(jobs[0]["seed"]): jobs[position]["id"] for jobs in candidates},
+                    validation_session_ic=scores,
+                    validation_session_mae=mae,
+                )
+            )
+    jobs = index.get((label, origin.year, seed))
+    _require(bool(jobs), f"No hay trabajos de {'/'.join(label)} en {origin.year}")
+    return origin.panels(jobs[origin.stages[key]]["id"])
 
 
 def _abstention(protocol, origin, index, seed, cases):
@@ -153,7 +183,7 @@ def _abstention(protocol, origin, index, seed, cases):
     config = protocol["catalog"]["A2"]["arms"]["abstention"]["stage"][neutral_abstention.IDENTITY]
     key = (neutral_abstention.IDENTITY, seed)
     if key not in origin.stages:
-        panels = _model(origin, index, SOURCE, seed, cases)
+        panels = _model(protocol, origin, index, SOURCE, seed, cases)
         evaluation = panels["evaluation"]
         record = neutral_abstention.fit(
             panels["calibration"], origin.maturity["calibration"], config
@@ -166,7 +196,8 @@ def _abstention(protocol, origin, index, seed, cases):
             min_labels=config["volatility_min_labels"],
         )
         seeds = [
-            _model(origin, index, SOURCE, other, cases)["evaluation"] for other in protocol["seeds"]
+            _model(protocol, origin, index, SOURCE, other, cases)["evaluation"]
+            for other in protocol["seeds"]
         ]
         outputs, summary = neutral_abstention.emit(
             record,
@@ -181,7 +212,7 @@ def _abstention(protocol, origin, index, seed, cases):
 
 def _stage(protocol, origin, index, seed, entry, value, cases):
     """Predicción de S de una etapa de salida ajustada con la calibración de su fuente."""
-    panels = _model(origin, index, SOURCE, seed, cases)
+    panels = _model(protocol, origin, index, SOURCE, seed, cases)
     calibration, evaluation = panels["calibration"], panels["evaluation"]
     sd.ensure_before(calibration, evaluation)
     stage = value["stage"]
@@ -232,7 +263,7 @@ def _stage(protocol, origin, index, seed, entry, value, cases):
 def emission(protocol, arms, index, origin, label, seed, cases):
     """Predicción de S de un modelo en un origen y una semilla."""
     if label == ZERO:
-        evaluation = _model(origin, index, SOURCE, seed, cases)["evaluation"]
+        evaluation = _model(protocol, origin, index, SOURCE, seed, cases)["evaluation"]
         return Emission(evaluation, np.zeros(evaluation.rows), None)
     _require(label[0] != "common", f"El control común {label[1]} no está implementado")
     arm = arms[label]
@@ -241,11 +272,11 @@ def emission(protocol, arms, index, origin, label, seed, cases):
         _require("combine" not in arm.definition, "La media de semillas de F2 está pendiente")
         _require(arm.definition["source"] == SOURCE[1], "Las etapas parten de la referencia B")
         prediction = _stage(protocol, origin, index, seed, label[0], arm.definition, cases)
-        evaluation = _model(origin, index, SOURCE, seed, cases)["evaluation"]
+        evaluation = _model(protocol, origin, index, SOURCE, seed, cases)["evaluation"]
         return Emission(evaluation, np.asarray(prediction, dtype=np.float64), None)
     if runner == "reference":
         label = ("references", arm.definition["reference"])
-    panels = _model(origin, index, label, seed, cases)
+    panels = _model(protocol, origin, index, label, seed, cases)
     return Emission(panels["evaluation"], panels["evaluation"].prediction, panels["calibration"])
 
 
@@ -537,3 +568,102 @@ def families(protocol, contrasts, day):
             for row in contrasts
         ],
     )
+
+
+def _months(session_time):
+    """Mes de cada sesión contado desde el mes de la primera, con instantes en µs UTC."""
+    months = np.asarray(session_time, dtype="datetime64[us]").astype("datetime64[M]")
+    return (months - months[0]).astype(np.int64)
+
+
+def _measured(epochs, members, mask):
+    """IC medio de las semillas en las sesiones de `mask`, cada una con su época."""
+    items = []
+    for epoch, member in zip(epochs, members, strict=True):
+        record = member[epoch - 1]
+        values = np.asarray(record["session_ic_values"], dtype=np.float64)
+        defined = np.asarray(record["session_ic_defined"], dtype=bool) & mask
+        items.append((values, defined))
+    values, defined = _average(items)
+    _require(defined.any(), "La comprobación no tiene sesiones medidas definidas")
+    return float(values[defined].mean())
+
+
+def group_rule_check(members, check, *, radius):
+    """Elegir con los primeros meses de validación y medir en los siguientes, en un grupo.
+
+    `members` tiene, por semilla, el registro de validación de cada época con su IC y su MAE
+    por sesión. Se comparan la época común, la mejor época por MAE de cada semilla (la regla
+    anterior) y la última. La mejor época medida en los meses de medida es una cota con
+    información futura y solo se informa.
+    """
+    times = {tuple(record["session_time"]) for member in members for record in member}
+    _require(len(times) == 1, "Las semillas del grupo no validan las mismas sesiones")
+    months = _months(next(iter(times)))
+    choose = months < check["choose_months"]
+    measure = (months >= check["choose_months"]) & (
+        months < check["choose_months"] + check["measure_months"]
+    )
+    _require(choose.any() and measure.any(), "La validación no cubre los meses de la comprobación")
+    epochs = len(members[0])
+    series = [
+        [
+            (
+                record["session_ic_values"],
+                np.asarray(record["session_ic_defined"], dtype=bool) & choose,
+            )
+            for record in member
+        ]
+        for member in members
+    ]
+    common = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)["epoch"]
+    mae = []
+    for member in members:
+        scores = [
+            float(np.mean(np.asarray(record["session_mae_values"])[choose])) for record in member
+        ]
+        mae.append(min(range(epochs), key=lambda index: (scores[index], index)) + 1)
+    measured = dict(
+        common_epoch=_measured([common] * len(members), members, measure),
+        session_mae_best_epoch=_measured(mae, members, measure),
+        last_epoch=_measured([epochs] * len(members), members, measure),
+    )
+    bound = max(
+        _measured([epoch] * len(members), members, measure) for epoch in range(1, epochs + 1)
+    )
+    return dict(
+        common_epoch=common,
+        session_mae_best_epochs=mae,
+        measured=measured,
+        bound_with_future_information=bound,
+        choose_sessions=int(choose.sum()),
+        measure_sessions=int(measure.sum()),
+    )
+
+
+def rule_check(groups, check, *, radius, replicates, seed, confidence):
+    """Resumen de la comprobación de la regla sobre todos los grupos de la criba.
+
+    Cada diferencia es la época común menos otra regla en los meses de medida. El intervalo
+    es un bootstrap por percentiles que remuestrea grupos con la confianza del protocolo, una
+    descripción sin corrección por multiplicidad que no forma parte de la decisión de la criba.
+    """
+    _require(bool(groups), "La comprobación necesita grupos")
+    tail = (1 - confidence) / 2
+    rows = {name: group_rule_check(members, check, radius=radius) for name, members in groups}
+    summary = {}
+    for other in ("session_mae_best_epoch", "last_epoch"):
+        differences = np.array(
+            [row["measured"]["common_epoch"] - row["measured"][other] for row in rows.values()]
+        )
+        draws = np.random.default_rng(seed).choice(
+            differences, size=(replicates, len(differences)), replace=True
+        )
+        means = draws.mean(axis=1)
+        summary[other] = dict(
+            mean_difference=float(differences.mean()),
+            interval=[float(np.quantile(means, tail)), float(np.quantile(means, 1 - tail))],
+            groups_where_the_common_epoch_is_not_worse=int(np.count_nonzero(differences >= 0)),
+            groups=len(differences),
+        )
+    return dict(groups=rows, summary=summary)

@@ -53,7 +53,7 @@ La [variante B1](../experiments/redundant-area-memory-v1.md) proyecta la clave e
 
 ## Entrenador del lector episódico
 
-`training/mars_titan_run.py` ajusta solo `EpisodicReadout` sobre el padre `mac_online` seleccionado, que llega congelado, en evaluación y sin gradientes. La memoria rápida del padre avanza con la regla asociativa de Titans en cada observación, igual que en el modelo Titans-MAC, y no recibe información de etiquetas. La receta es `configs/titans/episodic-readout-historical-masked.json`, con el mismo número de casos de búsqueda que Titans-MAC (tasas 1e-4 y 1e-3), 30 épocas, presupuesto fijo, selección por `session_mae` de validación, recorte 1,0 y `update_instants` igual al truncamiento de la receta de Titans.
+`training/mars_titan_run.py` ajusta solo `EpisodicReadout` sobre el padre `mac_online` seleccionado, que llega congelado, en evaluación y sin gradientes. La memoria rápida del padre avanza con la regla asociativa de Titans en cada observación, igual que en el modelo Titans-MAC, y no recibe información de etiquetas. La receta es `configs/titans/episodic-readout-historical-masked.json`, con el mismo número de casos de búsqueda que Titans-MAC (tasas 1e-4 y 1e-3), 30 épocas, presupuesto fijo, selección por `session_mae` de validación, recorte 1,0 y `update_instants` igual al truncamiento de la receta de Titans. La criba de variantes ([#746](https://github.com/GonxKZ/mars-titan/issues/746)) ajusta el lector con la parada `common_epoch`: recorre todo el presupuesto, fija el estado de cada época y emite la época común de sus semillas, elegida con el IC por sesión de validación.
 
 Orden dentro de cada evento del ajuste:
 

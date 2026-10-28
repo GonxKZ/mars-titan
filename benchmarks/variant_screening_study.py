@@ -6,9 +6,15 @@
 - `run` ejecuta un trabajo sellado. Comprueba la protección del aprendizaje antes de leer
   nada, exige que sus requisitos hayan terminado, cobra el intento contra el presupuesto y
   usa una GPU exclusiva. Un trabajo interrumpido se reanuda desde su carpeta.
-- `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Se detiene al
-  llegar a su límite o ante el primer trabajo que no termina.
-- `status` resume los trabajos terminados, los pendientes y el tiempo cobrado.
+- `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Un ajuste o un
+  lector recorre su presupuesto y espera a las demás semillas de su grupo. Cuando todas
+  esperan, la cola fija la época común del grupo (`decide_group`) y las reanuda para que
+  emitan sus predicciones. Se detiene al llegar a su límite, ante el primer trabajo que no
+  termina ni espera o cuando ningún trabajo pendiente puede avanzar.
+- `status` resume los trabajos terminados, los que esperan, los pendientes y el tiempo cobrado.
+- `rule-check` repite, solo en CPU y dentro de validación, la elección de la época con los
+  primeros meses y la mide en los últimos, frente a la regla anterior por MAE y la última
+  época. No abre S.
 - `analyze` comprueba la protección, exige todos los trabajos terminados, verifica la huella
   de cada archivo de predicciones y escribe los contrastes, las familias y la decisión.
 
@@ -39,13 +45,17 @@ from benchmarks.refinement_study_traces import attempt_cost, settle_attempt
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation import variant_screening_analysis
 from mars_titan.evaluation.forecast_panel import ForecastPanel
-from mars_titan.training import screening_cohorts, variant_screening
+from mars_titan.evaluation.splits import stopping_rule
+from mars_titan.training import screening_cohorts, selection, variant_screening
 from mars_titan.training.learning_hold import require_learning_allowed
 
 ROOT = Path(__file__).resolve().parents[1]
 KIND = "variant_screening_work_v1"
+GROUP_KIND = "variant_screening_common_epoch_v1"
+RULE_CHECK_KIND = "variant_screening_rule_check_v1"
 # Filas aproximadas de un origen sin cohortes: 256 activos y las sesiones de cada tramo.
 DEFAULT_ROWS = dict(fit=256 * 252, validation=256 * 126, calibration=256 * 63, evaluation=256 * 252)
 GIB = 1024**3
@@ -263,12 +273,161 @@ def verify_prepared(work):
     return receipt
 
 
-def _completed(work, job_id):
+def _report(work, job_id, status):
     path = Path(work) / "runs" / job_id / "run.json"
     if not path.exists():
         return None
     report = read_manifest(path, 16 * 1024**2)[0]
-    return report if report.get("status") == "completed" else None
+    return report if report.get("status") == status else None
+
+
+def _completed(work, job_id):
+    return _report(work, job_id, "completed")
+
+
+def _awaiting(work, job_id):
+    return _report(work, job_id, selection.AWAIT)
+
+
+def _decision(work, group):
+    path = Path(work) / "groups" / f"{group}.json"
+    return read_manifest(path, 4 * 1024**2)[0] if path.exists() else None
+
+
+def _members(receipt, group):
+    members = [job for job in receipt["jobs"] if job.get("common_group") == group]
+    return sorted(members, key=lambda job: job["seed"])
+
+
+def _budget(protocol, job):
+    """Épocas que recorre un ajuste o un lector de la criba."""
+    return protocol["fit"]["epochs"] * _multiplier(job["definition"])
+
+
+def _fit_report(work, protocol, job):
+    """Informe del entrenador de un trabajo que espera la época común, con su huella."""
+    path = Path(work) / "runs" / job["id"] / "fit" / "run.json"
+    report = read_manifest(path, 16 * 1024**2)[0]
+    epochs = _budget(protocol, job)
+    history = [entry for entry in report["history"] if entry["epoch"] >= 1]
+    _require(
+        report.get("status") == selection.AWAIT
+        and [entry["epoch"] for entry in history] == list(range(1, epochs + 1))
+        and sorted(report.get("epoch_states", {}), key=int)
+        == [str(epoch) for epoch in range(1, epochs + 1)],
+        f"El trabajo {job['id']} no espera la época común con todas sus épocas evaluadas",
+    )
+    return report, sha256(path), history
+
+
+def _same_sessions(histories):
+    """Todas las épocas de todas las semillas puntúan las mismas filas de validación."""
+    cohorts = {entry["validation"]["cohort_sha256"] for history in histories for entry in history}
+    _require(len(cohorts) == 1, "Las semillas del grupo no validan las mismas filas")
+
+
+def _epoch_panels(work, job, epochs):
+    """Predicción puntual de validación de cada época de un trabajo, con su huella."""
+    report = read_manifest(Path(work) / "runs" / job["id"] / "fit" / "run.json", 16 * 1024**2)[0]
+    history = [entry for entry in report["history"] if entry["epoch"] >= 1]
+    _require(len(history) == epochs, f"El trabajo {job['id']} no ha evaluado todas sus épocas")
+    panels = []
+    for entry in history:
+        record = entry["validation"]["epoch_predictions"]
+        path = Path(work) / "runs" / job["id"] / record["path"]
+        _require(sha256(path) == record["sha256"], f"Ha cambiado {path.name} de {job['id']}")
+        panels.append(ForecastPanel.from_arrow(pq.read_table(path)))
+    return panels
+
+
+def combination_epoch(work, members, arm, protocol):
+    """Época de una combinación de semillas con el IC por sesión de la propia combinación."""
+    seeds = arm["definition"].get("seeds", protocol["seeds"])
+    chosen = [job for job in members if job["seed"] in seeds]
+    _require(len(chosen) == len(seeds) >= 2, f"{arm['label']} no tiene todas sus semillas")
+    epochs = _budget(protocol, chosen[0])
+    panels = [_epoch_panels(work, job, epochs) for job in chosen]
+    minimum = protocol["contrast"]["primary"]["minimum_assets"]
+    scores = []
+    for epoch in range(epochs):
+        items = [seed_panels[epoch] for seed_panels in panels]
+        _require(
+            len({panel.cohort_sha256 for panel in items}) == 1,
+            "Las semillas de la combinación no predicen las mismas filas",
+        )
+        mean = np.mean([panel.prediction for panel in items], axis=0)
+        values, defined = sd.session_correlations(items[0], mean, min_assets=minimum)
+        _require(defined.any(), f"La combinación no define el IC en la época {epoch + 1}")
+        scores.append(float(values[defined].mean()))
+    result = selection.common_epoch(scores, radius=protocol["selection"]["smoothing_radius"])
+    return dict(result, model=arm["label"], seeds=sorted(seeds))
+
+
+def decide_group(work, receipt, group):
+    """Fijar la época común de un grupo cuyas semillas esperan tras recorrer su presupuesto.
+
+    La época común maximiza el IC medio de las semillas en validación, suavizado con sus
+    vecinas. Si una etapa combina las semillas del modelo, su época se elige con el IC de la
+    combinación y se añade a las versiones del grupo. La decisión queda escrita antes de
+    reanudar ninguna semilla y no se reescribe.
+    """
+    work = Path(work)
+    existing = _decision(work, group)
+    if existing is not None:
+        return existing
+    protocol = receipt["protocol"]
+    members = _members(receipt, group)
+    _require(
+        len(members) == len(protocol["seeds"]), f"El grupo {group} no tiene todas sus semillas"
+    )
+    _require(
+        _group_waits(work, receipt, group),
+        f"Alguna semilla del grupo {group} no espera la época común",
+    )
+    fits = {job["id"]: _fit_report(work, protocol, job) for job in members}
+    histories = [history for _, _, history in fits.values()]
+    _same_sessions(histories)
+    series = [
+        [
+            (entry["validation"]["session_ic_values"], entry["validation"]["session_ic_defined"])
+            for entry in history
+        ]
+        for history in histories
+    ]
+    radius = protocol["selection"]["smoothing_radius"]
+    chosen = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)
+    combinations = []
+    if members[0]["epoch_predictions"]:
+        arms = variant_screening.all_arms(protocol, ROOT)
+        sources = variant_screening.combination_sources(arms)
+        for label in sorted(set(members[0]["used_by"])):
+            for arm in sources.get(tuple(label.split("/", 1)), ()):
+                combinations.append(
+                    combination_epoch(
+                        work,
+                        members,
+                        dict(label=f"{arm.entry}/{arm.name}", definition=arm.definition),
+                        protocol,
+                    )
+                )
+    extra = set(members[0]["versions"]) | {item["epoch"] for item in combinations}
+    decision = dict(
+        schema_version=1,
+        kind=GROUP_KIND,
+        group=group,
+        rule=variant_screening.SELECTION_RULE,
+        members={job_id: digest for job_id, (_, digest, _) in fits.items()},
+        mae_best_epochs={
+            job_id: report["selection"]["best_epoch"] for job_id, (report, _, _) in fits.items()
+        },
+        **chosen,
+        combinations=combinations,
+        versions=sorted(extra - {chosen["epoch"]}),
+        decided_at_utc=datetime.now(UTC).isoformat(),
+        final_test_access=False,
+    )
+    atomic_json(work / "groups" / f"{group}.json", decision)
+    return decision
 
 
 def _charged(work):
@@ -329,6 +488,27 @@ def _value(definition, work, receipt, job):
     )
 
 
+def common_options(work, receipt, job, files):
+    """Época común de un ajuste o un lector: regla, puntuación, época del grupo y versiones.
+
+    La regla es la del protocolo de su origen con la parada `common_epoch`, que conserva la
+    métrica, la paciencia y el presupuesto. Hasta que el grupo decide, el trabajo recorre su
+    presupuesto y espera.
+    """
+    protocol = receipt["protocol"]
+    rule = stopping_rule(read_manifest(files["protocol"], 8 * 1024**2)[0])
+    decision = _decision(work, job["common_group"])
+    return dict(
+        stopping=dict(rule, stopping=selection.COMMON_EPOCH),
+        epoch_scoring=dict(
+            min_assets=protocol["contrast"]["primary"]["minimum_assets"],
+            predictions=job["epoch_predictions"],
+        ),
+        joint_epoch=None if decision is None else decision["epoch"],
+        versions=None if decision is None else decision["versions"],
+    )
+
+
 def _dispatch(work, receipt, job, budget):
     """Llamar al ejecutor del trabajo con sus artefactos sellados."""
     definition = job["definition"]
@@ -337,6 +517,11 @@ def _dispatch(work, receipt, job, budget):
     output = work / "runs" / job["id"]
     indices = work / "indices" / str(job["origin"])
     parent = work / "runs" / job["parent"] if job["parent"] else None
+    common = (
+        common_options(work, receipt, job, files)
+        if runner in variant_screening.EPOCH_RUNNERS
+        else {}
+    )
     if runner == "fit":
         from mars_titan.training.titans_walk_forward import run_titans_window
 
@@ -353,6 +538,7 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             search_case=definition["search_case"],
             predictor_changes=definition["predictor_changes"] or None,
+            **common,
         )
     if runner in ("correction", "correction_profile"):
         from mars_titan.training.mars_titan_correction import run_correction_window
@@ -387,6 +573,7 @@ def _dispatch(work, receipt, job, budget):
             device="cuda:0",
             indices=indices,
             stop=budget,
+            **common,
         )
     from mars_titan.training.spaced_window import run_spaced_window
 
@@ -412,6 +599,10 @@ def run_job(work, job_id):
     done = _completed(work, job_id)
     if done is not None:
         return done
+    waiting = _awaiting(work, job_id)
+    if waiting is not None and _decision(work, job["common_group"]) is None:
+        # Sin la época común del grupo no hay nada que hacer: no se cobra ningún intento.
+        return waiting
     for field in variant_screening.REQUIRES:
         _require(
             job[field] is None or _completed(work, job[field]) is not None,
@@ -420,7 +611,14 @@ def run_job(work, job_id):
     (work / "attempts").mkdir(exist_ok=True)
     with (work / "execution.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return _run(work, receipt, job)
+        result = _run(work, receipt, job)
+    # Cada ajuste espera una sola vez. Si volviera a esperar con la época de su grupo, la cola
+    # lo repetiría y cobraría un intento tras otro.
+    _require(
+        waiting is None or result.get("status") != selection.AWAIT,
+        "El trabajo volvió a esperar después de recibir la época común de su grupo",
+    )
+    return result
 
 
 def _run(work, receipt, job):
@@ -479,43 +677,91 @@ def _run(work, receipt, job):
                 lease.__exit__()
 
 
+def _ready(work, job):
+    """Un trabajo pendiente puede avanzar si sus requisitos han terminado y, si espera la
+    época común, su grupo ya la ha fijado."""
+    if any(
+        job[field] is not None and _completed(work, job[field]) is None
+        for field in variant_screening.REQUIRES
+    ):
+        return False
+    return _awaiting(work, job["id"]) is None or _decision(work, job["common_group"]) is not None
+
+
+def _group_waits(work, receipt, group):
+    return all(_awaiting(work, job["id"]) is not None for job in _members(receipt, group))
+
+
 def run_queue(work, limit=None):
     """Ejecutar los trabajos pendientes en el orden sellado, que pone cada padre antes.
 
-    Un trabajo que falla detiene la cola con su error y queda cobrado. Uno pausado, por
-    ejemplo por el límite de tiempo de su intento, la detiene sin error.
+    Cada paso ejecuta el primer trabajo listo. Un ajuste o un lector que espera la época
+    común no detiene la cola. Cuando todas las semillas de su grupo esperan, la cola fija la
+    época del grupo, y como sus semillas van seguidas y antes que el resto, el paso siguiente
+    ya las reanuda y libera sus estados. Un trabajo que falla detiene la cola con su error y
+    queda cobrado. Uno pausado, por ejemplo por el límite de tiempo de su intento, la detiene
+    sin error. El límite cuenta ejecuciones, porque un ajuste que recorre su presupuesto y
+    espera ya ha consumido su entrenamiento.
     """
     require_learning_allowed("la cola de la criba de variantes")
     _require(
         limit is None or (type(limit) is int and limit >= 1), "El límite es un entero positivo"
     )
     work = Path(work).resolve()
-    completed = []
-    for job in verify_prepared(work)["jobs"]:
-        if limit is not None and len(completed) == limit:
+    receipt = verify_prepared(work)
+    completed, executed = [], 0
+    while True:
+        job = next(
+            (
+                item
+                for item in receipt["jobs"]
+                if _completed(work, item["id"]) is None and _ready(work, item)
+            ),
+            None,
+        )
+        if job is None:
             break
-        if _completed(work, job["id"]) is not None:
-            continue
+        if limit is not None and executed == limit:
+            return dict(
+                completed=completed, stopped_at=None, status="limit_reached", executed=executed
+            )
         result = run_job(work, job["id"])
-        if result.get("status") != "completed":
-            return dict(completed=completed, stopped_at=job["id"], status=result.get("status"))
-        completed.append(job["id"])
-    return dict(completed=completed, stopped_at=None, status="queued_jobs_completed")
+        executed += 1
+        status = result.get("status")
+        if status == selection.AWAIT:
+            if _group_waits(work, receipt, job["common_group"]):
+                decide_group(work, receipt, job["common_group"])
+        elif status != "completed":
+            return dict(completed=completed, stopped_at=job["id"], status=status, executed=executed)
+        else:
+            completed.append(job["id"])
+    pending = [job["id"] for job in receipt["jobs"] if _completed(work, job["id"]) is None]
+    return dict(
+        completed=completed,
+        stopped_at=None,
+        status="blocked" if pending else "queued_jobs_completed",
+        executed=executed,
+        pending=len(pending),
+    )
 
 
 def status(work):
     work = Path(work).resolve()
     jobs = read_manifest(work / "prepared.json", 64 * 1024**2)[0]["jobs"]
     completed = [job["id"] for job in jobs if _completed(work, job["id"]) is not None]
+    waiting = [job["id"] for job in jobs if _awaiting(work, job["id"]) is not None]
     ready = [
         job["id"]
         for job in jobs
-        if job["id"] not in completed
-        and all(job[f] is None or job[f] in completed for f in variant_screening.REQUIRES)
+        if job["id"] not in completed and job["id"] not in waiting and _ready(work, job)
     ]
+    groups = {job["common_group"] for job in jobs if "common_group" in job}
     return dict(
         jobs=len(jobs),
         completed=len(completed),
+        awaiting_common_epoch=len(waiting),
+        groups=len(groups),
+        decided_groups=sum(_decision(work, group) is not None for group in groups),
         ready=ready[:20],
         ready_count=len(ready),
         charged_seconds=_charged(work) if (work / "attempts").exists() else 0.0,
@@ -598,6 +844,17 @@ def _series_table(arrays):
     return tables
 
 
+def _emits_its_group(work, job):
+    """El trabajo terminado emite la época y las versiones que fijó su grupo."""
+    decision = _decision(work, job["common_group"])
+    report = _completed(work, job["id"])
+    return (
+        decision is not None
+        and report["fit"]["joint_stop_epoch"] == decision["epoch"]
+        and report["versions"]["epochs"] == decision["versions"]
+    )
+
+
 def analyze(work, output, descriptions):
     """Analizar una criba terminada y escribir el informe y las series por sesión."""
     require_learning_allowed("el análisis de la criba de variantes")
@@ -606,6 +863,12 @@ def analyze(work, output, descriptions):
     _require(not output.exists(), "El análisis necesita un directorio nuevo")
     missing = [job["id"] for job in receipt["jobs"] if _completed(work, job["id"]) is None]
     _require(not missing, f"Faltan {len(missing)} trabajos por terminar, como {missing[:1]}")
+    for job in receipt["jobs"]:
+        if "common_group" in job:
+            _require(
+                _emits_its_group(work, job),
+                f"El trabajo {job['id']} no emite la época común y las versiones de su grupo",
+            )
     protocol, reads, origins = receipt["protocol"], {}, {}
     # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
     load = functools.lru_cache(maxsize=CACHED_RUNS)(
@@ -648,6 +911,56 @@ def analyze(work, output, descriptions):
     )
 
 
+def rule_check(work, output):
+    """Comprobar la regla de la época común dentro de validación, sin abrir S.
+
+    Lee el historial de validación de cada semilla de cada grupo, con su IC y su MAE por
+    sesión, y escribe la comparación con la regla anterior y con la última época.
+    """
+    require_learning_allowed("la comprobación de la regla de la criba de variantes")
+    work, output = Path(work).resolve(), Path(output).resolve()
+    receipt = verify_prepared(work)
+    _require(not output.exists(), "La comprobación necesita un directorio nuevo")
+    protocol, reads, groups = receipt["protocol"], {}, []
+    names = sorted({job["common_group"] for job in receipt["jobs"] if "common_group" in job})
+    for group in names:
+        members = []
+        for job in _members(receipt, group):
+            path = work / "runs" / job["id"] / "fit" / "run.json"
+            _require(path.exists(), f"El trabajo {job['id']} no ha recorrido su presupuesto")
+            report = read_manifest(path, 16 * 1024**2)[0]
+            history = [entry["validation"] for entry in report["history"] if entry["epoch"] >= 1]
+            _require(
+                len(history) == _budget(protocol, job),
+                f"El trabajo {job['id']} no ha evaluado todas sus épocas",
+            )
+            reads[f"{job['id']}/fit/run.json"] = sha256(path)
+            members.append(history)
+        groups.append((group, members))
+    result = variant_screening_analysis.rule_check(
+        groups,
+        protocol["selection"]["rule_check"],
+        radius=protocol["selection"]["smoothing_radius"],
+        replicates=protocol["inference"]["replicates"],
+        seed=protocol["inference"]["seed"],
+        confidence=protocol["inference"]["confidence"],
+    )
+    report = dict(
+        schema_version=1,
+        kind=RULE_CHECK_KIND,
+        prepared_sha256=sha256(work / "prepared.json"),
+        protocol_sha256=receipt["protocol_sha256"],
+        code=code_identity(),
+        reads=reads,
+        final_test_access=False,
+        optimizer_steps=0,
+        **result,
+    )
+    output.mkdir(parents=True)
+    atomic_json(output / "rule-check.json", report)
+    return dict(groups=len(groups), summary=result["summary"])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -668,6 +981,9 @@ def main():
     analyze_parser.add_argument("--work", type=Path, required=True)
     analyze_parser.add_argument("--output", type=Path, required=True)
     analyze_parser.add_argument("--descriptions", type=Path, required=True)
+    check_parser = commands.add_parser("rule-check", help="Comprobar la regla en validación")
+    check_parser.add_argument("--work", type=Path, required=True)
+    check_parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "plan":
         result = plan(args.cohorts)
@@ -680,6 +996,8 @@ def main():
         result = run_queue(args.work, args.limit)
     elif args.command == "analyze":
         result = analyze(args.work, args.output, args.descriptions)
+    elif args.command == "rule-check":
+        result = rule_check(args.work, args.output)
     else:
         result = status(args.work)
     print(json.dumps(result, ensure_ascii=False, indent=1))

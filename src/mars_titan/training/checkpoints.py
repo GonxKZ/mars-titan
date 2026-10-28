@@ -243,18 +243,50 @@ def release_recovery_states(directory: Path) -> int:
         return released
 
 
+def _pinned(directory, index, expected_sha256):
+    """Registro fijado e íntegro con esa huella, o error si no existe."""
+    record = next((r for r in index["pinned"] if r["sha256"] == expected_sha256), None)
+    if record is None or not _intact(directory, record):
+        raise ValueError("No existe un estado fijado íntegro con esa huella")
+    return record
+
+
+def choose_pinned(directory: Path, *, expected_identity: dict, expected_sha256: str) -> dict:
+    """Marcar como elegido un estado fijado e íntegro y devolver su registro.
+
+    La época común de la criba (#746) elige uno de los estados ya evaluados. El índice se
+    reescribe de forma atómica, así que una interrupción deja el elegido anterior o el nuevo.
+    """
+    if not isinstance(expected_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", expected_sha256):
+        raise ValueError("La identidad explícita del punto de control no es válida")
+    with _locked(directory, expected_identity, create=False) as (directory, _):
+        index = _index(directory)
+        record = _pinned(directory, index, expected_sha256)
+        if index["best"] != record:
+            atomic_json(directory / "latest.json", dict(index, best=record))
+        return dict(record)
+
+
 def load_training_state(
     directory: Path, *, expected_identity: dict, selection="latest", expected_sha256=None
 ) -> dict:
-    """Restaurar solo estados confirmados. Avisar si se descarta el más reciente."""
-    if selection not in {"latest", "best"}:
-        raise ValueError("La selección del punto de control debe ser latest o best")
+    """Restaurar solo estados confirmados. Avisar si se descarta el más reciente.
+
+    `pinned` carga el estado fijado cuya huella da `expected_sha256`, que es obligatoria.
+    """
+    if selection not in {"latest", "best", "pinned"}:
+        raise ValueError("La selección del punto de control debe ser latest, best o pinned")
     if expected_sha256 is not None and (
         not isinstance(expected_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", expected_sha256)
     ):
         raise ValueError("La identidad explícita del punto de control no es válida")
+    if selection == "pinned" and expected_sha256 is None:
+        raise ValueError("Un estado fijado se carga con su huella")
     with _locked(directory, expected_identity, create=False) as (directory, canonical):
         index = _index(directory)
+        if selection == "pinned":
+            record = _pinned(directory, index, expected_sha256)
+            return _read_payload(directory / record["name"], canonical, record["global_step"])
         selected = index["best"] if selection == "best" else next(iter(index["latest"]), None)
         if expected_sha256 is not None and (
             selected is None
