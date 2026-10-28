@@ -88,7 +88,7 @@ El componente solo existe con `mac_online`. Se rechaza con el control local C de
 - Cada fase empieza neutral, así que las primeras decisiones de validación y evaluación no se modulan.
 - El control de sorpresa cambia también el momento de la señal, porque la sorpresa se conoce al emitir. Es una diferencia buscada, ya que la madura no puede adelantarse.
 - Solo están conectadas la escritura y el olvido. η, PT4, el consumidor congelado y CM-v1 C quedan fuera.
-- La señal es una adaptación propia. Las puertas dependientes de la entrada son las de Titans (Behrouz, Zhong y Mirrokni, 2024) y la modulación de la plasticidad por un resultado conocido con retraso viene de las reglas de tres factores (Gerstner y otros, 2018). No reproduce ningún resultado publicado.
+- La señal es una adaptación propia. Las puertas dependientes de la entrada son las de Titans (Behrouz, Zhong y Mirrokni, 2025) y la modulación de la plasticidad por un resultado conocido con retraso viene de las reglas de tres factores (Gerstner y otros, 2018). No reproduce ningún resultado publicado.
 
 ## Coste
 
@@ -119,5 +119,5 @@ Pendiente de la verificación final.
 
 ## Referencias
 
-- Behrouz, A., Zhong, P. y Mirrokni, V. (2024). *Titans: Learning to memorize at test time*. arXiv. https://arxiv.org/abs/2501.00663
+- Behrouz, A., Zhong, P. y Mirrokni, V. (2025). Titans: Learning to memorize at test time. En *Advances in Neural Information Processing Systems 38* (pp. 113506–113543). https://doi.org/10.52202/085713-3786
 - Gerstner, W., Lehmann, M., Liakoni, V., Corneil, D. y Brea, J. (2018). Eligibility traces and plasticity on behavioral time scales: Experimental support of neoHebbian three-factor learning rules. *Frontiers in Neural Circuits, 12*, 53. https://doi.org/10.3389/fncir.2018.00053
