@@ -41,6 +41,11 @@ from .config import (
     canonical,
     require_identity,
 )
+from .cross_asset_attention import (
+    CrossAssetAttention,
+    CrossAssetAttentionConfig,
+    parse_cross_asset_attention,
+)
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -166,6 +171,9 @@ class FinancialConfig:
     # cabeza de escala. Sin declararlas, la identidad y el cálculo no cambian.
     session_rank_inputs: str | None = None
     session_ic_objective: SessionICObjective | None = None
+    # C5 de #751: atención entre los activos de la misma sesión tras MAC. Sin declararla, la
+    # identidad y el cálculo no cambian.
+    cross_asset_attention: CrossAssetAttentionConfig | None = None
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -355,6 +363,9 @@ class FinancialConfig:
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
             )
         check_objectives(self)
+        object.__setattr__(
+            self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
+        )
         if isinstance(self.auxiliary_horizons, dict):
             if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
                 raise ValueError(
@@ -378,9 +389,13 @@ class FinancialConfig:
                 raise ValueError(
                     "Las cabezas auxiliares con fusión regional necesitan otro contraste"
                 )
-            # Las operaciones por sesión usan todas las filas emitidas de la sesión, que el
-            # cálculo fila a fila de F5 no reproduce.
-            if self.session_rank_inputs is not None or self.session_ic_objective is not None:
+            # Las operaciones por sesión y la atención entre activos de C5 usan todas las filas
+            # emitidas de la sesión, que el cálculo fila a fila de F5 no reproduce.
+            if (
+                self.session_rank_inputs is not None
+                or self.session_ic_objective is not None
+                or self.cross_asset_attention is not None
+            ):
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
@@ -468,6 +483,8 @@ class FinancialConfig:
         if self.session_rank_inputs is not None:
             result.update(session_rank_inputs=session_rank_identity())
         result.update(objective_identity(self))
+        if self.cross_asset_attention is not None:
+            result.update(cross_asset_attention=self.cross_asset_attention.identity())
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -694,6 +711,13 @@ class FinancialPredictor(nn.Module):
         )
         # Los objetivos de #749 se crean al final y sin el generador global.
         self.output_objective = build_objective(config, dtype=dtype)
+        self.cross_asset_attention = (
+            CrossAssetAttention(
+                config.hidden_size, config.cross_asset_attention, seed=config.seed, dtype=dtype
+            )
+            if config.cross_asset_attention is not None
+            else None
+        )
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -710,8 +734,10 @@ class FinancialPredictor(nn.Module):
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
         objective = self.output_objective
-        return self.config.session_rank_inputs is not None or (
-            objective is not None and objective.session_level
+        return (
+            self.config.session_rank_inputs is not None
+            or self.cross_asset_attention is not None
+            or (objective is not None and objective.session_level)
         )
 
     def _signature(self):
@@ -1431,6 +1457,9 @@ class FinancialPredictor(nn.Module):
                 )
             else:
                 encoded, next_mac = token, None
+            if self.cross_asset_attention is not None:
+                # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
+                encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,

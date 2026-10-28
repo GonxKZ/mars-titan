@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "C5 · Atención entre activos de la sesión (cross_asset_attention_v1)",
+    "title": "C5 · Atención entre activos de la misma sesión (cross_asset_attention_v1)",
     "quality_profile": "showcase",
     "viewBox": [1300, 592],
     "legend": {
@@ -16,33 +16,40 @@
     }
   },
   "components": [
-    {"id": "assets", "type": "external", "label": "Activos de la sesión", "sublabel": "entradas en la emisión", "pos": [40, 230], "size": [180, 72]},
-    {"id": "encoder", "type": "backend", "label": "Codificador por activo", "sublabel": "Titans-MAC", "pos": [300, 230], "size": [180, 72]},
     {
-      "id": "availability",
-      "type": "security",
-      "label": "Máscara de disponibilidad",
-      "sublabel": "solo emitidos en t",
-      "pos": [560, 40],
+      "id": "assets",
+      "type": "external",
+      "label": "Activos de la sesión",
+      "sublabel": "mismo mercado e instante",
+      "pos": [40, 230],
       "size": [180, 72]
     },
+    {"id": "encoder", "type": "backend", "label": "MAC por flujo", "sublabel": "Titans-MAC en línea", "pos": [300, 230], "size": [180, 72]},
+    {"id": "availability", "type": "security", "label": "Sesión completa", "sublabel": "un bloque por instante", "pos": [560, 40], "size": [180, 72]},
     {
       "id": "cross",
       "type": "backend",
       "label": "Atención entre activos",
-      "sublabel": "misma sesión",
+      "sublabel": "residual, W_o a cero",
       "tag": "sin etiquetas",
       "pos": [560, 230],
       "size": [180, 72]
     },
     {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "por activo", "pos": [820, 230], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
-    {"id": "controls", "type": "security", "label": "Controles", "sublabel": "mismo codificador y LightGBM", "pos": [560, 420], "size": [180, 72]}
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "MAE por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Control self_only",
+      "sublabel": "mismos pesos, solo la diagonal",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
   ],
   "connections": [
     {"id": "assets-encoder", "from": "assets", "to": "encoder"},
     {"id": "encoder-cross", "from": "encoder", "to": "cross", "label": "estados", "variant": "emphasis"},
-    {"id": "availability-cross", "from": "availability", "to": "cross", "label": "máscara", "variant": "security", "labelDy": 24},
+    {"id": "availability-cross", "from": "availability", "to": "cross", "label": "grupos", "variant": "security", "labelDy": 24},
     {"id": "cross-emit", "from": "cross", "to": "emit", "variant": "emphasis"},
     {"id": "emit-screen", "from": "emit", "to": "screen"},
     {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
@@ -52,20 +59,20 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Cada activo atiende a los demás activos de la misma sesión",
-        "Solo con entradas disponibles al emitir, nunca con etiquetas",
-        "Fuente: MASTER de Li et al. (2024), referencias de Qlib"
+        "Cada activo atiende a los activos de su mercado en el mismo instante de decisión",
+        "Solo representaciones calculadas al emitir, nunca etiquetas",
+        "Fuente: agregación entre acciones de MASTER (Li et al., 2024), aplicada una vez"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["El mismo codificador por activo sin atención cruzada", "LightGBM con las mismas características"]
+      "items": ["self_only con los mismos pesos, que solo se atiende a sí mismo", "La referencia sin C5 separa el efecto de añadir la capa"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751, pendiente de implementar", "Coste estimado de 1,2 a 1,5 ajustes con 64 a 128 activos"]
+      "items": ["Implementada con pruebas CPU sobre fixtures, sin entrenar", "CUDA y consumidor congelado pendientes"]
     }
   ]
 }

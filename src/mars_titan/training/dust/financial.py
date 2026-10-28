@@ -89,6 +89,7 @@ class FinancialDustAdapter:
             "regional_execution",
             "memory_bank_readout",
             "regional_variant",
+            "cross_asset_attention",
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -114,6 +115,7 @@ class FinancialDustAdapter:
                     "regional_variant",
                     "presence_modulation",
                     "fusion_branch",
+                    "cross_asset_attention",
                     "output_objective",
                     "auxiliary_heads",
                 )
