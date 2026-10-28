@@ -2,6 +2,8 @@
 
 `fractal_shared_operator_v1` es la variante C3 del estudio de variantes ([#742](https://github.com/GonxKZ/mars-titan/issues/742), [#751](https://github.com/GonxKZ/mars-titan/issues/751)). Antes de la fusión, recorre de arriba abajo una jerarquía de cuatro niveles dentro de cada sesión de un mercado (el mercado, sus sectores estadísticos, sus activos y las cinco fuentes de cada activo) con el mismo operador de atención en cada nivel y una adaptación de rango bajo propia de cada uno. Está implementada en `src/mars_titan/models/titans/fractal_shared_operator.py` y declarada en [su configuración](../../configs/experiments/fractal-shared-operator-v1.json) junto a cuatro controles. Solo se ha comprobado con pruebas técnicas sobre fixtures. No se ha entrenado y no hay ninguna mejora medida.
 
+![Diagrama de C3](../diagrams/variants/c3-fractal-shared-operator.png)
+
 ## Motivación y alcance
 
 En `mac_online` cada activo se fusiona por separado y la información de los demás solo llega a través de la atención entre activos C5, después de MAC, o de la memoria de mercado PT4. C3 pregunta si conviene que cada fuente de un activo lea, antes de fusionarse, el contexto de su activo, de su sector y de su mercado en la misma sesión, y si para eso basta un único operador repetido en cada nivel. «Fractal» describe esa repetición del mismo cálculo a varias escalas. No es una afirmación sobre la geometría de los mercados.
