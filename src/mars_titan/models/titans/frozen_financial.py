@@ -18,7 +18,9 @@ from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
+from .output_objectives import reads_scalar_point
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
@@ -38,7 +40,9 @@ _TITANS_MODULES = (
     "presence_modulation",
     "regional_fusion",
     "regional_execution",
+    "auxiliary_horizons",
     "bank_readout",
+    "laplace_scale",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -165,7 +169,7 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
-    elif type(module) is SessionScale:
+    elif type(module) in (SessionScale, LaplaceScale):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
@@ -349,7 +353,7 @@ class FrozenFinancialConsumer:
             raise ValueError(
                 "El programa regional requiere el consumidor de mecanismos y su archivo"
             )
-        if readout is not None and predictor.output_objective is not None:
+        if readout is not None and not reads_scalar_point(predictor.output_objective):
             raise ValueError("El lector necesita una integración propia del objetivo de salida")
         # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
         if predictor.cross_asset_attention is not None:

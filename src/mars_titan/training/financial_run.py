@@ -22,19 +22,26 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from mars_titan import nvtx_ranges
 from mars_titan.budget_training import validate_loss
+from mars_titan.data.input_policy import MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
+from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
-from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batches
+from mars_titan.models.titans.financial_inputs import (
+    DecisionBatch,
+    device_tensor,
+    validated_cpu_batches,
+)
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import (
     deferred_checks,
@@ -52,6 +59,7 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
@@ -75,12 +83,20 @@ _OWN_MODULES = (
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
     "mars_titan.training.quantile_objectives",
+    "mars_titan.training.horizon_labels",
     "mars_titan.evaluation.session_metrics",
 )
 
 
 # Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
 _REPLAY = object()
+# Contadores de F5. Solo aparecen si el predictor declara las cabezas auxiliares.
+_AUXILIARY_COUNTERS = (
+    "auxiliary_labels",
+    "auxiliary_labels_in_loss",
+    "auxiliary_labels_discarded",
+    "auxiliary_loss_sum",
+)
 
 
 def _default_selection():
@@ -392,6 +408,8 @@ class _Pass:
     penalties: list = field(default_factory=list)
     # Con PT4, el contexto de mercado del recorrido. Entre eventos no guarda nada pendiente.
     context: object = None
+    # Con F5, el registro de etiquetas auxiliares del recorrido de ajuste.
+    horizons: object = None
 
 
 class ChronologicalInference:
@@ -426,6 +444,12 @@ class ChronologicalInference:
             recipe.loss != "mae" or recipe.distillation_weight is not None
         ):
             raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
+        # F1 es otro objetivo de salida. Solo se distingue para rechazar el postentrenamiento.
+        self.laplace = predictor.config.laplace_scale_head is not None
+        # Las filas emitidas llevan cinco niveles con la cabeza de cuantiles o con F1.
+        self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
+        # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
+        self.horizons = predictor.config.auxiliary_horizons
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -462,6 +486,14 @@ class ChronologicalInference:
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
+        ledger = None
+        if differentiable and self.horizons is not None:
+            if run.horizons is None:
+                run.horizons = HorizonLabels(self.horizons)
+                for key in _AUXILIARY_COUNTERS:
+                    run.counters.setdefault(key, 0)
+            ledger = run.horizons
+            ledger.observe(flow.split("/", 1)[0] for cpu in validated for flow in cpu.flow_ids)
         # Las operaciones por sesión solo admiten el instante completo en un único bloque.
         complete = len(validated) == 1
         if self.uses_context and run.context is None:
@@ -518,6 +550,8 @@ class ChronologicalInference:
                         run.graphs[key] = _REPLAY if accumulate else graphs[row]
                 emitted.append((batch, prepared))
                 run.counters["predictions"] += size
+                if ledger is not None:
+                    ledger.remember(cpu)
             if self.uses_context:
                 # La sesión se escribe una vez, después de emitir todas sus predicciones.
                 with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
@@ -538,6 +572,11 @@ class ChronologicalInference:
             return prepared.outputs
         return prepared.point_predictions
 
+    def _levels(self, prepared):
+        if self.quantiles:
+            return prepared.quantiles.detach()
+        return self.objective.levels(prepared.outputs)
+
     def _emit(self, run, source, emitted):
         """Registrar las predicciones emitidas del evento con una sola copia al anfitrión.
 
@@ -550,8 +589,8 @@ class ChronologicalInference:
             [prepared.point_predictions.detach() for _, prepared in emitted]
         ).tolist()
         levels = None
-        if run.rows is not None and self.quantiles:
-            levels = torch.cat([prepared.quantiles.detach() for _, prepared in emitted]).tolist()
+        if run.rows is not None and self.emits_levels:
+            levels = torch.cat([self._levels(prepared) for _, prepared in emitted]).tolist()
         keys = [
             key
             for batch, _ in emitted
@@ -629,6 +668,8 @@ class ChronologicalInference:
             if key not in run.pending:
                 raise ValueError("El label no tiene una predicción emitida pendiente")
             issued = run.pending.pop(key)
+            if train and run.horizons is not None:
+                run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             markets.append(flow.split("/", 1)[0])
             moments.append(decision_at)
             errors.append(issued - value)
@@ -658,6 +699,7 @@ class ChronologicalInference:
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
         run.context = None
+        run.horizons = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -793,6 +835,8 @@ class ChronologicalTrainer(ChronologicalInference):
             not isinstance(posttraining, dict) or pairing is not None or not posttraining
         ):
             raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
+        if posttraining is not None and (self.laplace or self.horizons is not None):
+            raise ValueError("F1 y F5 no tienen todavía un postentrenamiento declarado")
         self.roles = parameter_roles(predictor)
         if "adapters" in self.roles and posttraining is None:
             raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
@@ -1047,11 +1091,62 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
         return torch.tensor(total)
 
+    def _auxiliary(self, run):
+        """Sumar al gradiente el término de F5 con las etiquetas auxiliares entregadas.
+
+        El token de cada decisión se calcula una vez, con los parámetros vigentes y las
+        entradas guardadas al emitirla, para todos sus horizontes maduros. Se procesa por
+        bloques de hasta `accumulation_rows` decisiones o del lote del predictor. Cada bloque
+        divide su suma por todas las etiquetas auxiliares del tramo, así que la suma de los
+        bloques es su media. Con peso cero no se calcula nada y el gradiente es el de la
+        referencia.
+        """
+        ready, config = run.horizons.take(), self.horizons
+        labels = sum(len(heads) for _, heads, _ in ready)
+        run.counters["auxiliary_labels_in_loss"] += labels
+        if not ready or config.weight == 0:
+            return
+        predictor = self.predictor
+        dtype, limit = predictor.head.weight.dtype, predictor.config.max_batch
+        size = min(self.recipe.accumulation_rows or limit, limit)
+        total = 0.0
+        for start in range(0, len(ready), size):
+            values, heads, targets = zip(*ready[start : start + size], strict=True)
+            inputs = {
+                name: device_tensor(
+                    np.stack([row[name] for row in values]),
+                    self.device,
+                    torch.bool if name == "presence" else dtype,
+                )
+                for name in (*MODALITIES, "presence")
+            }
+            presence = inputs.pop("presence")
+            # Una fila del token por decisión y una entrada de la pérdida por horizonte.
+            rows = torch.tensor(
+                [index for index, names in enumerate(heads) for _ in names], device=self.device
+            )
+            heads = torch.tensor([head for names in heads for head in names], device=self.device)
+            targets = torch.tensor(
+                [value for row in targets for value in row], dtype=dtype, device=self.device
+            )
+            with deferred_checks():
+                outputs = predictor.auxiliary_heads(predictor.fused_tokens(inputs, presence))
+                errors = auxiliary_errors(
+                    outputs.index_select(0, rows), targets, heads, config.horizons
+                )
+                term = config.weight * errors.sum() / labels
+                require_true(torch.isfinite(term), "El término auxiliar no es finito")
+            term.backward()
+            total += float(term.detach())
+        run.counters["auxiliary_loss_sum"] += total
+
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
             with nvtx_ranges.phase("titans.backward"):
                 loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
+                if run.horizons is not None:
+                    self._auxiliary(run)
             if run.penalties:
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
@@ -1081,6 +1176,10 @@ class ChronologicalTrainer(ChronologicalInference):
             run.counters["control_groups_discarded"] = run.counters.get(
                 "control_groups_discarded", 0
             ) + len(run.penalties)
+        if run.horizons is not None and run.horizons.ready:
+            # Igual que C, F5 no añade pasos: sin etiquetas principales se descartan.
+            discarded = run.horizons.take()
+            run.counters["auxiliary_labels_discarded"] += sum(len(row[1]) for row in discarded)
         parameter_id = self.predictor._parameter_id
         with nvtx_ranges.phase("titans.truncate"):
             run.flows.detach(parameter_id)
@@ -1134,6 +1233,8 @@ class ChronologicalTrainer(ChronologicalInference):
                     self._labels(run, event, train=True)
                 decision = bool(event.inputs) and event.at >= source.phase.decision_start
                 if (decision and run.instants == self.recipe.truncation) or event.close_phase:
+                    if event.close_phase and run.horizons is not None:
+                        run.horizons.flush()
                     before = self.global_step
                     with nvtx_ranges.phase("titans.update"):
                         self._update(run, event.at)
@@ -1183,11 +1284,18 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_context
                 else {}
             ),
+            **(
+                dict(horizons=None if run.horizons is None else run.horizons.export())
+                if self.horizons is not None
+                else {}
+            ),
         )
 
     def _restore(self, payload):
         if self.uses_context != ("context" in payload):
             raise ValueError("El recorrido guardado no corresponde al contexto del predictor")
+        if (self.horizons is not None) != ("horizons" in payload):
+            raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1205,6 +1313,8 @@ class ChronologicalTrainer(ChronologicalInference):
         run.counters = dict(payload["counters"])
         if self.uses_context and payload["context"] is not None:
             run.context = self.predictor.restore_context(payload["context"])
+        if self.horizons is not None and payload["horizons"] is not None:
+            run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         return run
 
     def _load_best(self, report, directory=None):

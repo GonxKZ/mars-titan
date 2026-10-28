@@ -182,6 +182,8 @@ class SessionScale(nn.Module):
     # La emisión estandariza dentro de la sesión y la pérdida agrupa sesiones completas.
     session_level = True
     row_decomposable = False
+    # El punto emitido es la puntuación estandarizada por la escala, no la cabeza escalar.
+    scalar_point = False
 
     def __init__(self, config, *, dtype=torch.float32):
         super().__init__()

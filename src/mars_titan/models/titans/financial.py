@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .auxiliary_horizons import AuxiliaryHeads, AuxiliaryHorizons
 from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
@@ -53,6 +54,7 @@ from .financial_inputs import (
     FinancialInputSpec,
 )
 from .key_competition_config import KeyCompetition
+from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .output_objectives import build_objective, check_objectives, objective_identity
@@ -171,6 +173,10 @@ class FinancialConfig:
     # C5 de #751: atención entre los activos de la misma sesión tras MAC. Sin declararla, la
     # identidad y el cálculo no cambian.
     cross_asset_attention: CrossAssetAttentionConfig | None = None
+    # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
+    laplace_scale_head: LaplaceScaleHead | None = None
+    # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
+    auxiliary_horizons: AuxiliaryHorizons | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -357,6 +363,39 @@ class FinancialConfig:
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
+        if isinstance(self.auxiliary_horizons, dict):
+            if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
+                raise ValueError(
+                    "auxiliary_horizons debe declarar horizons, weight y maturity_slack"
+                )
+            object.__setattr__(
+                self, "auxiliary_horizons", AuxiliaryHorizons(**self.auxiliary_horizons)
+            )
+        if self.auxiliary_horizons is not None:
+            if type(self.auxiliary_horizons) is not AuxiliaryHorizons:
+                raise ValueError(
+                    "auxiliary_horizons necesita AuxiliaryHorizons, sus valores o None"
+                )
+            # El token se vuelve a calcular fila a fila al madurar la etiqueta. La fusión
+            # regional y sus variantes C1 y C6 mezclan las filas del bloque emitido.
+            if (
+                self.regional_fusion is not None
+                or self.regional_execution is not None
+                or self.regional_variant is not None
+            ):
+                raise ValueError(
+                    "Las cabezas auxiliares con fusión regional necesitan otro contraste"
+                )
+            # Las operaciones por sesión y la atención entre activos de C5 usan todas las filas
+            # emitidas de la sesión, que el cálculo fila a fila de F5 no reproduce.
+            if (
+                self.session_rank_inputs is not None
+                or self.session_ic_objective is not None
+                or self.cross_asset_attention is not None
+            ):
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -443,6 +482,8 @@ class FinancialConfig:
         result.update(objective_identity(self))
         if self.cross_asset_attention is not None:
             result.update(cross_asset_attention=self.cross_asset_attention.identity())
+        if self.auxiliary_horizons is not None:
+            result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -672,6 +713,14 @@ class FinancialPredictor(nn.Module):
                 config.hidden_size, config.cross_asset_attention, seed=config.seed, dtype=dtype
             )
             if config.cross_asset_attention is not None
+            else None
+        )
+        # F5 usa su propio generador derivado de la semilla, como PT6.
+        self.auxiliary_heads = (
+            AuxiliaryHeads(
+                config.hidden_size, config.auxiliary_horizons, seed=config.seed, dtype=dtype
+            )
+            if config.auxiliary_horizons is not None
             else None
         )
         self.to(device=device, dtype=dtype)
@@ -1224,6 +1273,40 @@ class FinancialPredictor(nn.Module):
             )
         return token, pending, execution.trace
 
+    def _fuse(self, price, inputs, presence):
+        return fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=self.regional_fusion
+            if self.regional_fusion is not None
+            else self.regional_variant
+            if self.regional_variant is not None
+            else self.presence_modulation,
+            branch=self.fusion_branch,
+        )
+
+    def fused_tokens(self, inputs, presence):
+        """Tokens fusionados de filas independientes, sin MAC ni estado de flujo.
+
+        F5 los vuelve a calcular al madurar una etiqueta auxiliar. Coinciden con los que
+        devuelve `prepare` para las mismas entradas y parámetros.
+        """
+        if (
+            self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+        ):
+            raise ValueError("La fusión regional no se calcula fila a fila")
+        price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
+        for value, message in checks:
+            require_finite(value, message)
+        token = self._fuse(price, inputs, presence)
+        check_finite(token, "El token fusionado")
+        return token
+
     def prepare(
         self,
         batch,
@@ -1339,19 +1422,7 @@ class FinancialPredictor(nn.Module):
                     price, batch, context, context_selection
                 )
             else:
-                token = fuse_modalities(
-                    price,
-                    batch.inputs,
-                    self.encoders,
-                    self.fusion,
-                    batch.presence if self.masked else None,
-                    modulation=self.regional_fusion
-                    if self.regional_fusion is not None
-                    else self.regional_variant
-                    if self.regional_variant is not None
-                    else self.presence_modulation,
-                    branch=self.fusion_branch,
-                )
+                token = self._fuse(price, batch.inputs, batch.presence)
                 next_context = context
             check_finite(token, "El token fusionado")
             observed = token
