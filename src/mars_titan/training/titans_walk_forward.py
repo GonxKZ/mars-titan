@@ -87,6 +87,9 @@ _CODE = (
     "mars_titan.models.titans.causal_convolution",
     "mars_titan.models.titans.key_competition",
     "mars_titan.models.titans.key_competition_config",
+    "mars_titan.models.titans.session_ranks",
+    "mars_titan.models.titans.session_ic_objective",
+    "mars_titan.models.titans.output_objectives",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
 )

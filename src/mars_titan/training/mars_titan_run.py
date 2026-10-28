@@ -406,6 +406,8 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
+        if predictor.output_objective is not None:
+            raise ValueError("El lector necesita una integración propia del objetivo de salida")
         self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
@@ -562,6 +564,8 @@ class MarsTitanInference:
                 validated = blocks.result()
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        if predictor.session_level:
+            plan = dict(plan, session_complete=len(validated) == 1)
         if self.uses_context and run.parent_context is None:
             run.parent_context = predictor.initial_context()
         # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del

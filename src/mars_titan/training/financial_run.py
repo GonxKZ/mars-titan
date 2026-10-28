@@ -419,6 +419,13 @@ class ChronologicalInference:
             raise ValueError(
                 "La cabeza de cuantiles requiere pinball o un control puntual identificado"
             )
+        # Un objetivo de salida de #749 sustituye la pérdida MAE de la cabeza escalar, que es
+        # su control declarado. La destilación supone las salidas escalares o de cuantiles.
+        self.objective = predictor.output_objective
+        if self.objective is not None and (
+            recipe.loss != "mae" or recipe.distillation_weight is not None
+        ):
+            raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -455,6 +462,8 @@ class ChronologicalInference:
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
+        # Las operaciones por sesión solo admiten el instante completo en un único bloque.
+        complete = len(validated) == 1
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=grad)
         context = dict(context=run.context) if self.uses_context else {}
@@ -474,11 +483,16 @@ class ChronologicalInference:
                         if flow not in run.starts:
                             # La repetición parte del estado sin grafo de cada flujo al empezar.
                             run.starts[flow] = None if flow in new else run.flows.handle(flow)
-                    run.segment.append((batch, plan))
+                    run.segment.append((batch, plan, complete))
                 state = run.flows.gather(batch.flow_ids)
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
                     prepared = predictor.prepare(
-                        batch, state, differentiable=grad, **plan, **context
+                        batch,
+                        state,
+                        differentiable=grad,
+                        session_complete=complete,
+                        **plan,
+                        **context,
                     )
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
@@ -496,9 +510,7 @@ class ChronologicalInference:
                     continue
                 # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
                 # `unbind` deja un solo nodo de autograd para las filas del bloque.
-                graphs = (
-                    prepared.quantiles if self.quantiles else prepared.point_predictions
-                ).unbind()
+                graphs = self._graphs(prepared).unbind()
                 if grad:
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
@@ -517,6 +529,14 @@ class ChronologicalInference:
                     self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
+
+    def _graphs(self, prepared):
+        """Salidas por fila que entran en la pérdida del tramo."""
+        if self.quantiles:
+            return prepared.quantiles
+        if self.objective is not None:
+            return prepared.outputs
+        return prepared.point_predictions
 
     def _emit(self, run, source, emitted):
         """Registrar las predicciones emitidas del evento con una sola copia al anfitrión.
@@ -875,8 +895,19 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.kernel_policy)
 
+    def _task_loss(self, prediction, target, keys):
+        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5].
+
+        Con un objetivo de salida, `prediction` son sus salidas y `keys` los pares (flujo,
+        decisión) de cada fila, que identifican su sesión (mercado e instante).
+        """
+        if self.objective is not None:
+            sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+            return self.objective.loss(prediction, target, sessions)
+        return self._loss(prediction, target)
+
     def _loss(self, prediction, target):
-        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
+        """Pérdida anterior sin objetivo por sesión, con su interfaz de dos tensores."""
         functional = torch.nn.functional
         if self.recipe.loss == PINBALL:
             return pinball_loss(prediction, target)
@@ -904,8 +935,9 @@ class ChronologicalTrainer(ChronologicalInference):
         """
         prediction = torch.stack(run.predictions)
         target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
-        loss = self._loss(prediction, target)
-        objective = self._distilled(loss, prediction, [(flow, at) for flow, at, _ in run.used])
+        keys = [(flow, at) for flow, at, _ in run.used]
+        loss = self._task_loss(prediction, target, keys)
+        objective = self._distilled(loss, prediction, keys)
         if run.penalties:
             objective = objective + torch.stack(run.penalties).mean()
         if not torch.isfinite(objective).item():
@@ -934,6 +966,17 @@ class ChronologicalTrainer(ChronologicalInference):
         }
         controlled = [flow for flows in run.penalties for flow in flows]
         order = list(dict.fromkeys([*(flow for flow, _, _ in run.used), *controlled]))
+        sessions = predictor.session_level or (
+            self.objective is not None and not self.objective.row_decomposable
+        )
+        if sessions:
+            # Las operaciones por sesión repiten cada instante entero, también las filas sin
+            # etiqueta en el tramo, y su pérdida no es una suma de términos por bloque.
+            order = list(
+                dict.fromkeys([*order, *(f for batch, _, _ in run.segment for f in batch.flow_ids)])
+            )
+            if len(order) > size:
+                raise ValueError("Las operaciones por sesión necesitan repetir todos los flujos")
         total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
@@ -948,24 +991,26 @@ class ChronologicalTrainer(ChronologicalInference):
             # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
             with deferred_checks():
                 members, graphs, penalties = set(group), {}, []
-                for batch, plan in run.segment:
+                for batch, plan, whole in run.segment:
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
+                    # Solo la selección de todas las filas de un instante completo lo sigue siendo.
+                    complete = whole and len(rows) == len(batch.flow_ids)
                     batch = batch.select(rows)
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
                     state = states.gather(batch.flow_ids)
                     with torch.enable_grad():
-                        prepared = predictor.prepare(batch, state, differentiable=True, **plan)
+                        prepared = predictor.prepare(
+                            batch, state, differentiable=True, session_complete=complete, **plan
+                        )
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
                         replayed += len(prepared.local_control.flow_ids)
-                    outputs = (
-                        prepared.quantiles if self.quantiles else prepared.point_predictions
-                    ).unbind()
+                    outputs = self._graphs(prepared).unbind()
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):
@@ -982,7 +1027,7 @@ class ChronologicalTrainer(ChronologicalInference):
                         dtype=prediction.dtype,
                         device=prediction.device,
                     )
-                    task = self._loss(prediction, target)
+                    task = self._task_loss(prediction, target, keys)
                     share = len(keys) / len(run.used)
                     loss = task * share
                     total += float(loss.detach())

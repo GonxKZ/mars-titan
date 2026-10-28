@@ -318,7 +318,19 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             matured.setdefault(block, {})[flow, decision_at] = value
         controlled = [flow for flows in run.penalties for flow in flows]
         order = list(dict.fromkeys([*(flow for flow, _, _, _ in run.used), *controlled]))
+        if predictor.session_level:
+            # Los rangos necesitan también las filas observadas que aún no tienen etiqueta.
+            order = list(
+                dict.fromkeys(
+                    [
+                        *order,
+                        *(f for record in run.blocks.values() for f in record["batch"].flow_ids),
+                    ]
+                )
+            )
         size = self.core_rows or len(order)
+        if predictor.session_level and len(order) > size:
+            raise ValueError("Las operaciones por sesión necesitan repetir todos los flujos")
         loss_sum, replayed, used = 0.0, 0, 0
         for start in range(0, len(order), size):
             members = set(order[start : start + size])
@@ -334,13 +346,16 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
                     continue
                 whole = len(rows) == len(batch.flow_ids)
                 selected = batch if whole else batch.select(rows)
+                plan = record["plan"]
+                if predictor.session_level:
+                    plan = dict(
+                        plan, session_complete=whole and plan.get("session_complete") is True
+                    )
                 if any(flow not in states for flow in selected.flow_ids):
                     raise ValueError("Un flujo repetido no tiene su estado al empezar el tramo")
                 state = states.gather(selected.flow_ids)
                 with torch.enable_grad():
-                    prepared = predictor.prepare(
-                        selected, state, differentiable=True, **record["plan"]
-                    )
+                    prepared = predictor.prepare(selected, state, differentiable=True, **plan)
                 states.put(prepared.next_state)
                 if prepared.local_control is not None:
                     penalties.append(prepared.local_control.penalty)

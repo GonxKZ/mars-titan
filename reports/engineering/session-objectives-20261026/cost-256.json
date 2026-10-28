@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "kind": "objective_variants_cost",
+  "issue": 749,
+  "recorded_at_utc": "2026-10-26T12:09:44.736157+00:00",
+  "commit": "b94a43413e9e61c0dc958754a4a7663e14bd4b22",
+  "scope": "Forward con grafo de T instantes, p\u00e9rdida de cada objetivo frente a etiquetas sint\u00e9ticas y backward, m\u00e1s inferencia sin grafo. Entradas sint\u00e9ticas con las formas de la edici\u00f3n v3.1. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32",
+  "kernel_policy": {
+    "schema_version": 1,
+    "precision": "fp32_strict",
+    "matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "float32_matmul_precision": "highest",
+    "retired_native_overrides": [
+      "bmm"
+    ],
+    "native_overrides": [
+      "_foreach_mm/CUDA/native",
+      "linalg_polar.out/CUDA/native",
+      "linalg_polar/CUDA/native"
+    ]
+  },
+  "sdpa_backend": "MATH",
+  "source_sha256": {
+    "benchmarks/objective_variants_cost.py": "861eaf8f59e834916cdcfdb1562bd0b4c7094ad3609ba531fc21d6fdf8410652",
+    "src/mars_titan/models/titans/session_ranks.py": "14a0fc9a3abbfffa745d81c66332e160aebca80294e106a2062a8409732f5a5e",
+    "src/mars_titan/models/titans/session_ic_objective.py": "b3586923bd8b4b623124988030f5c7373c41964bb8fdf728f742ac203fa03ba7",
+    "src/mars_titan/models/titans/financial.py": "8a2501c36cabc8957c13a979818b43eda8e85045e57a713c8d16222b20050887"
+  },
+  "threads": 2,
+  "shapes": {
+    "rows": 256,
+    "instants": 8,
+    "hidden_size": 64,
+    "news": 384,
+    "charts": 512,
+    "concepts": 26,
+    "indicators": 140
+  },
+  "base_predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728,
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "repetitions": 5,
+  "warmup": 1,
+  "order": "repeticiones alternadas entre modelos con orden rotatorio",
+  "memory": "pico neto del asignador de ATen en CPU con el perfilador, una pasada con grafo",
+  "models": {
+    "reference_mae": {
+      "predictor_changes": {},
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 0.849657213082537,
+        "minimum": 0.6274963528849185,
+        "maximum": 1.0087013540323824,
+        "samples": [
+          0.6274963528849185,
+          0.7683852680493146,
+          1.0087013540323824,
+          0.9207571120932698,
+          0.849657213082537
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.3382488989736885,
+        "minimum": 0.272437283070758,
+        "maximum": 0.4083817810751498,
+        "samples": [
+          0.2810209859162569,
+          0.3382488989736885,
+          0.4083817810751498,
+          0.272437283070758,
+          0.3642455299850553
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.8220379750709981,
+        "minimum": 0.6044841019902378,
+        "maximum": 0.9728435659781098,
+        "samples": [
+          0.6044841019902378,
+          0.8220379750709981,
+          0.9728435659781098,
+          0.6674770431127399,
+          0.8551484171766788
+        ]
+      },
+      "allocated_peak_bytes": 504923500,
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0,
+        "backward_seconds": 1.0,
+        "inference_seconds": 1.0,
+        "allocated_peak_bytes": 1.0
+      }
+    },
+    "session_rank_inputs_v1": {
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1"
+      },
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 1.0138874819967896,
+        "minimum": 0.7249528639949858,
+        "maximum": 1.2105564139783382,
+        "samples": [
+          0.7249528639949858,
+          1.2105564139783382,
+          0.9743808081839234,
+          1.1364728400949389,
+          1.0138874819967896
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.38276117108762264,
+        "minimum": 0.3340376871638,
+        "maximum": 0.40309559903107584,
+        "samples": [
+          0.3340376871638,
+          0.3756676360499114,
+          0.38276117108762264,
+          0.40309559903107584,
+          0.3859810580033809
+        ]
+      },
+      "inference_seconds": {
+        "median": 1.0385957278776914,
+        "minimum": 0.9755899938754737,
+        "maximum": 1.0961564050521702,
+        "samples": [
+          0.9755899938754737,
+          1.0680258888751268,
+          0.9894008259288967,
+          1.0385957278776914,
+          1.0961564050521702
+        ]
+      },
+      "allocated_peak_bytes": 505562476,
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.1932900308330565,
+        "backward_seconds": 1.1315962069617753,
+        "inference_seconds": 1.2634400835168103,
+        "allocated_peak_bytes": 1.0012654907129497
+      }
+    },
+    "session_ic_objective_v1": {
+      "predictor_changes": {
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      },
+      "total_parameters": 185860,
+      "forward_with_graph_seconds": {
+        "median": 0.914652890060097,
+        "minimum": 0.813569552032277,
+        "maximum": 1.1045516037847847,
+        "samples": [
+          1.0783726791851223,
+          0.813569552032277,
+          0.897105426993221,
+          0.914652890060097,
+          1.1045516037847847
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.4248573228251189,
+        "minimum": 0.37989224889315665,
+        "maximum": 0.4941777039784938,
+        "samples": [
+          0.4941777039784938,
+          0.4323149810079485,
+          0.41916204313747585,
+          0.37989224889315665,
+          0.4248573228251189
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.9011729471385479,
+        "minimum": 0.8058026519138366,
+        "maximum": 1.1081327649299055,
+        "samples": [
+          0.9893994329031557,
+          0.9011729471385479,
+          1.1081327649299055,
+          0.8558374538552016,
+          0.8058026519138366
+        ]
+      },
+      "allocated_peak_bytes": 504955248,
+      "parameters_unchanged": true,
+      "added_parameters": 1,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.076496351677822,
+        "backward_seconds": 1.2560493888205309,
+        "inference_seconds": 1.096266808185735,
+        "allocated_peak_bytes": 1.000062876851642
+      }
+    },
+    "session_rank_inputs_and_ic_objective": {
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1",
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      },
+      "total_parameters": 185860,
+      "forward_with_graph_seconds": {
+        "median": 1.0564996488392353,
+        "minimum": 1.000329331960529,
+        "maximum": 1.1871625029016286,
+        "samples": [
+          1.000329331960529,
+          1.0169064949732274,
+          1.1871625029016286,
+          1.0564996488392353,
+          1.0807410988491029
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.41653615795075893,
+        "minimum": 0.34874535584822297,
+        "maximum": 0.44872555206529796,
+        "samples": [
+          0.41554469894617796,
+          0.41901564900763333,
+          0.44872555206529796,
+          0.41653615795075893,
+          0.34874535584822297
+        ]
+      },
+      "inference_seconds": {
+        "median": 1.11046207183972,
+        "minimum": 0.6972389181610197,
+        "maximum": 1.305142795201391,
+        "samples": [
+          1.305142795201391,
+          1.11046207183972,
+          1.284714950947091,
+          0.907536149956286,
+          0.6972389181610197
+        ]
+      },
+      "allocated_peak_bytes": 505594224,
+      "parameters_unchanged": true,
+      "added_parameters": 1,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.2434422171339883,
+        "backward_seconds": 1.2314486734904648,
+        "inference_seconds": 1.3508646869310523,
+        "allocated_peak_bytes": 1.0013283675645914
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "total_wall_seconds": 63.019595169927925,
+  "process_peak_ram_bytes": 1932771328,
+  "load_average_start": [
+    2.9931640625,
+    2.5595703125,
+    2.67431640625
+  ],
+  "load_average_end": [
+    4.65576171875,
+    3.08935546875,
+    2.849609375
+  ]
+}
