@@ -1,0 +1,162 @@
+# Protocolo de la criba de variantes
+
+Este documento registra el protocolo de la criba del estudio de variantes de [#742](https://github.com/GonxKZ/mars-titan/issues/742), que se implementa en [#746](https://github.com/GonxKZ/mars-titan/issues/746). Se fija antes de abrir ningún dato de S. La [declaración](../../configs/experiments/variant-screening-v1.json) contiene todos los valores y el [motor](../../benchmarks/variant_screening_study.py) la lee sin admitir cambios a mitad de la criba.
+
+Nada de lo descrito se ha ejecutado. La protección del aprendizaje sigue activa, el test de 2024 sigue cerrado y la GPU solo se usará cuando quede libre. Las cifras de coste son estimaciones a partir de pilotos anteriores.
+
+## Pregunta
+
+La criba responde a una pregunta acotada: qué mecanismos del catálogo mejoran a su propio control con los mismos datos, filas, semillas y presupuesto. No confirma una mejora. Una variante que pase la criba necesita la confirmación de la fase 2, con 2023, 128 activos y China por separado, que requiere otra aprobación.
+
+La fase 0 ([#744](https://github.com/GonxKZ/mars-titan/issues/744)) encontró que ningún predictor de los pilotos tenía un IC por sesión distinguible de cero con 64 activos y que la amplitud de las predicciones explicaba la pérdida frente a cero. Por la regla declarada antes de aquel cálculo, el contraste principal pasa a ser el IC por sesión y la población, 256 activos de EE. UU.
+
+## Población y orígenes
+
+Cada origen tiene su propia cohorte de 256 activos, elegida con la regla de [`screening_cohorts`](../engineering/screening-origin-cohorts.md): huella SHA-256 con sal fija entre los activos con alguna etiqueta de ajuste anterior al origen. Ni el objetivo ni la cobertura futura intervienen en la elección.
+
+| Origen | Vista | Ajuste (12 meses) | Validación | Calibración | S |
+| --- | --- | --- | --- | --- | --- |
+| 2019 | `fold-014` | abr. 2017 a mar. 2018 | abr. a sep. 2018 | oct. a dic. 2018 | 2019 |
+| 2020 | `fold-015` | abr. 2018 a mar. 2019 | abr. a sep. 2019 | oct. a dic. 2019 | 2020 |
+| 2021 | `fold-016` | abr. 2019 a mar. 2020 | abr. a sep. 2020 | oct. a dic. 2020 | 2021 |
+| 2022 | `fold-017` | abr. 2020 a mar. 2021 | abr. a sep. 2021 | oct. a dic. 2021 | 2022 |
+
+El ajuste usa los doce meses finales del tramo de entrenamiento de cada vista (`fit_months = 12`), que nunca superan 366 días. Antes del ajuste el modelo observa sin etiquetas sus meses de calentamiento, como en el resto del walk-forward. La validación elige el estado dentro del presupuesto y la calibración fija λ, las correcciones conformales, los umbrales y las etapas de salida. Juntas forman G. La evaluación de cada origen es su bloque de S, y los cuatro años de 2019 a 2022 forman una única serie de unas 1.000 sesiones. Los trimestres de cada año son los bloques de meses que usarán más adelante los ciclos de autoedición.
+
+E es 2023 (`fold-018`). La criba no lo abre. Es un año de desarrollo reutilizado, porque los pilotos de octubre y la fase 0 ya lo evaluaron con otros predictores, y así se indicará en cualquier confirmación.
+
+Las sesiones de 2019 son S del origen 2019 y, a la vez, ajuste, validación y calibración del origen 2020. No es una fuga. Cada origen elige su estado con su propia G, y ningún veredicto usa las filas con las que se eligió el modelo que juzga.
+
+## Ajuste
+
+Todos los ajustes parten de su receta declarada con estos cambios comunes:
+
+- 12 épocas con presupuesto fijo y el estado elegido por el MAE por sesión de la validación. Con 256 activos, unas 250 sesiones de ajuste y bloques de 1.024 filas, son unas 740 actualizaciones, del orden de las 685 de los pilotos de octubre. La receta histórica declara 30 épocas sobre todo el tramo desde 2000, y aquí el tramo es de un año.
+- Un caso de búsqueda, `lr1e-3`, el de los pilotos. Las correcciones B6 recorren todos los casos de su receta y eligen el suyo con la validación en el análisis.
+- Cinco semillas, de 42 a 46.
+- FP32 estricto, sin TF32 ni BF16, y SDPA con el backend matemático.
+
+Los controles emparejados conservan el mismo número de actualizaciones. La única excepción declarada es el control de la media de semillas de F2, una sola semilla con tres veces las actualizaciones, que se traduce en 36 épocas con su propia vista.
+
+## Modelos y ejecutores
+
+Cada entrada del catálogo declara cómo se obtiene cada uno de sus modelos:
+
+| Ejecutor | Qué hace | Entradas |
+| --- | --- | --- |
+| `fit` | Ajusta un Titans-MAC `mac_online` con `run_titans_window` | A4, C1, C5, C6, F1, F2, F3, F4, F5 |
+| `correction` | Corrige con errores maduros el padre congelado (`run_correction_window`) | B1, B2, B3, E1 |
+| `correction_profile` | La misma corrección con el factor de escritura de E3 o E4 | E3, E4 |
+| `reader` | Ajusta el lector episódico sobre el padre congelado (`run_mars_titan_window`) | D1 y el ancla de E2 |
+| `spaced` | Ventana congelada de retención (`run_spaced_window`) | E2 |
+| `output` | Transforma las predicciones guardadas de su fuente, sin ajustar nada | A1, A2, A3, C4 y la media de semillas de F2 |
+
+Hay cuatro referencias. `quantile_reference` es B con la cabeza de cuantiles y pinball, el padre de las correcciones y la fuente de las etapas de salida. `scalar_reference` es la misma receta con la cabeza escalar y MAE, la base de los objetivos de salida. `regional_reference` es el operador regional en anillo con resumen que sustituyen C1 y C6. `reader_reference` es el lector M1 con K = 1, ancla de E2.
+
+Dos modelos con la misma definición son un mismo trabajo. Así, la referencia escalar es también el control de F1 y de F4, y la memoria por áreas de B1 coincide con el control sin puente de B2 y con el control sin ligadura de B3. El motor ajusta cada definición una vez por origen y semilla y registra qué entradas la usan.
+
+## Contraste
+
+**Principal.** IC por sesión: la correlación de Pearson, en cada sesión de S, entre la predicción emitida y el residuo, con al menos tres activos. Se promedian las semillas en cada sesión y se compara la serie del modelo con la de su control propio. Mejora si la diferencia media es positiva. El margen es cero.
+
+**Amplitud.** A1 y A2 no pueden cambiar o apenas cambian el orden dentro de una sesión. Un λ positivo por mercado deja el IC igual por construcción. Para ellas el contraste principal es el MAE por sesión con λ de la calibración del mismo origen, y mejoran si la diferencia es negativa. A3 solo recalibra intervalos y se contrasta a través de la abstención de A2.
+
+**Secundarios.** IC de rangos, MAE calibrado, MAE en bruto y MAE frente a cero. Se publican siempre y no deciden.
+
+## Inferencia y familias
+
+Las series por sesión se remuestrean con bootstrap circular por bloques de 16 días UTC, 2.000 réplicas y semilla 20261023, los mismos valores de la fase 0. La familia declarada son los contrastes principales de todas las entradas ejecutables, con intervalos simultáneos por paso descendente de Romano y Wolf sobre el máximo estudentizado. Holm sobre los valores p del bootstrap es la comprobación de robustez. El efecto mínimo detectable se publica con Bonferroni unilateral, α = 0,05 y potencia 0,8.
+
+Algunas entradas exigen superar más de un control, por ejemplo A2 frente a sus cuatro controles con la misma cobertura. Esos contrastes exigidos forman una prueba de intersección y unión: todos deben favorecer a la variante, y no se añade otra corrección porque la conclusión exige todos a la vez.
+
+La fase 0 mostró que su conclusión cambiaba al redefinir la familia. Por eso se publican también dos definiciones de sensibilidad, una familia por grupo del catálogo (A, B, C, D, E y F) y una familia con todos los contrastes declarados. Decide la familia declarada.
+
+## Regla de decisión
+
+Una variante pasa la criba si el intervalo simultáneo de la familia declarada excluye el cero en la dirección favorable con bloques de 16 días y todos sus contrastes exigidos también la favorecen. Se publica, sin que cambie la decisión, si se mantiene con bloques de 8 y 32 días, con Holm y con las dos familias de sensibilidad. Todos los intentos, incluidos los negativos y los fallidos, quedan registrados.
+
+## Catálogo
+
+| ID | Ejecutor | Contraste principal | Controles exigidos | Estado |
+| --- | --- | --- | --- | --- |
+| A1 | `output` | λ·mediana frente a cero (MAE) | | Ejecutable |
+| A2 | `output` | Abstención frente a la aleatoria con la misma cobertura (MAE) | Mediana pequeña, volatilidad pasada y desacuerdo entre semillas | Ejecutable |
+| A3 | `output` | Ponderación por contexto frente a uniforme, dentro de A2 (MAE) | Contextos barajados | Ejecutable |
+| A4 | `fit` | Oponentes por cuantiles frente a su control simétrico | | Falta integrar su declaración |
+| B1 | `correction` | Áreas frente a un área con las mismas coordenadas | Áreas idénticas y etiquetas barajadas | Ejecutable |
+| B2 | `correction` | Puente frente a B1 sin puente | Mismos mapas con ganancia cero | Ejecutable |
+| B3 | `correction` | Régimen frente a rol constante | Concatenación proyectada | Ejecutable |
+| B4 | | Curvas de lesión sobre B1 y B2 | | Diagnóstico fuera de la familia |
+| C1 | `fit` | Talking-heads frente a cinco cabezas sin mezcla | | Ejecutable |
+| C2 | `fit` | | | Sin implementar |
+| C3 | `fit` | | | Sin implementar |
+| C4 | `output` | Regiones por correlación pasada frente a etiquetas permutadas | | Ejecutable |
+| C5 | `fit` | Atención entre activos frente a la misma capa sobre sí mismo | | Falta integrar su declaración |
+| C6 | `fit` | Escritura por competición frente a escritura densa | | Ejecutable |
+| D1 | `reader` | K2×J2 frente a K4×J1 con pérdida final | | Ejecutable |
+| D2 | `reader` | | | Falta declarar el control de igual profundidad media |
+| E1 | `correction` | Pesos adaptativos frente a uniformes | Una escala y réplicas trimestrales | Ejecutable |
+| E2 | `spaced` | Utilidad frente a utilidad permutada | Reservorio original | Ejecutable |
+| E3 | `correction_profile` | Error estandarizado frente a cupo uniforme | Error absoluto | Ejecutable |
+| E4 | `correction_profile` | CUSUM frente a la puerta constante con su media de validación | | Ejecutable |
+| F1 | `fit` | Escala de Laplace frente al control L1 | | Ejecutable |
+| F2 | `fit` | Media exponencial rápida frente a la misma semilla | | Falta integrar su declaración |
+| F3 | `fit` | AdamW sin calendario frente a AdamW | | Falta integrar su declaración. La contracción espera a una etapa de continuación |
+| F4 | `fit` | Objetivo de IC por sesión frente al control MAE | | Ejecutable |
+| F5 | `fit` | Horizontes auxiliares frente a peso cero | | Ejecutable |
+| G1 | | | | Necesita su propia aprobación tras la criba |
+| G2 | | | | Criterio financiero propio, fuera de la familia |
+| G3 | | | | Comprobación de validez, fuera de la familia |
+
+Los contrastes que solo se publican están en la declaración de cada entrada. El control de E4 se construye con la puerta media de la validación de la ventana CUSUM de la misma semilla y el mismo caso, así que su trabajo espera a que termine el de la variante.
+
+## Controles comunes
+
+Cero, la referencia de su cabeza y la mediana pasada del residuo de la fase 0 están disponibles. La regla de momentum y reversión y LightGBM con las mismas características figuran en #742 y todavía no están implementados. Nadaraya-Watson es un control de B1 dentro de su declaración.
+
+## Presupuesto y coste estimado
+
+La criba ejecuta una sola carga GPU a la vez, con la GPU en exclusiva y sin parar otros procesos. Cada intento se cobra y nunca se devuelve. Un trabajo tiene como máximo 5.400 segundos y 20.000 actualizaciones.
+
+Con las entradas ejecutables hoy, el motor enumera 1.740 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
+
+| Ejecutor | Trabajos | Horas estimadas |
+| --- | ---: | ---: |
+| `fit` | 260 | 56,6 |
+| `correction` | 1.040 | 10,3 |
+| `correction_profile` | 200 | 2,0 |
+| `reader` | 120 | 12,7 |
+| `spaced` | 120 | 12,7 |
+| Total | 1.740 | 94,3 |
+
+Las cuatro entradas pendientes de integrar (A4, C5, F2 y F3 sin la contracción) añaden unos doce ajustes por origen y semilla, contando el triple del control de F2, unas 52 horas más con la misma medida. El total quedaría cerca del límite aprobado de 150 horas. Si al integrarlas la estimación lo supera, el motor lo indicará en `plan` y la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
+
+## Motor
+
+```bash
+uv run python -m benchmarks.variant_screening_study plan --cohorts "${MARS_SCREENING_COHORTS:?}"
+uv run python -m benchmarks.variant_screening_study prepare \
+  --cohorts "${MARS_SCREENING_COHORTS:?}" --work "${MARS_SCREENING_WORK:?}"
+uv run python -m benchmarks.variant_screening_study run --work "${MARS_SCREENING_WORK:?}" --job <id>
+uv run python -m benchmarks.variant_screening_study status --work "${MARS_SCREENING_WORK:?}"
+```
+
+`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite.
+
+El análisis de la criba, que leerá las predicciones de cada trabajo y aplicará las etapas de salida, los contrastes y las familias con `scale_diagnostics` y `paired_comparisons`, es la siguiente parte de #746.
+
+## Desviaciones y límites
+
+- E es 2023, un año ya usado en desarrollo. La recomendación inicial era un bloque nuevo y el autor eligió los orígenes rodantes.
+- Doce épocas sobre un año sustituyen a las 30 épocas de la receta histórica sobre todo el tramo. El número de actualizaciones es del orden del de los pilotos, pero el modelo repite cada sesión de ajuste doce veces.
+- Un único caso de tasa para ajustes y lectores. La receta histórica explora dos.
+- Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
+- El coste es una estimación con medidas de otros estudios.
+- C2, C3, D2, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- El análisis de la criba aún no está implementado.
+
+## Comprobaciones
+
+`tests/training/test_variant_screening.py` comprueba la declaración, sus rechazos, que las definiciones idénticas comparten trabajo, que cada trabajo corre tras su padre y su variante emparejada del mismo origen y semilla, los casos de búsqueda, los contrastes y la fórmula del coste. `tests/tooling/test_variant_screening_study.py` prepara una criba con cohortes de fixture y comprueba vistas, recetas, sellos, la protección, los requisitos, el cobro de cada intento, incluido el que falla, el rechazo con el presupuesto agotado y los argumentos de cada ejecutor con ejecutores dobles que no construyen modelos ni ejecutan pasos de optimizador.
+
+La comprobación del 28 de octubre se hizo en CPU y sin pasos de optimizador. Las 45 pruebas dirigidas pasan. Con coverage 7.16.1, el protocolo cubre 233/234 sentencias y 102/104 ramas, y el motor 249/255 y 56/60. Quedan fuera la memoria CUDA del intento, dos ramas de la línea de órdenes y la combinación de semillas de F2, que espera a su declaración. El CRAP máximo es 45, el de `checked_protocol`, que suma una condición por cada campo validado y está cubierta entera. Trece mutaciones dirigidas del protocolo y del motor se detectan con los controles en verde antes y después. La guarda del bloqueo detectó que `tests/training/test_regime_gate_correction_window.py` usaba los dobles sin declararlos, un fallo que ya estaba en develop. Tras declararlo, sus dos casos pasan. El [recibo de verificación](../../reports/engineering/variant-screening-20261028/verification.json) conserva los recuentos y las huellas.
