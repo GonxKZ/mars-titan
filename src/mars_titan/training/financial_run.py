@@ -1007,6 +1007,11 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.predictor.config.cross_asset_attention is not None:
             name = "mars_titan.models.titans.cross_asset_attention"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H1 de #783 también, con el catálogo macro del que salen sus familias.
+        if self.predictor.config.holographic_network is not None:
+            module = importlib.import_module("mars_titan.models.titans.holographic_network")
+            own[module.__name__] = sha256(Path(module.__file__))
+            own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
         for option, name in _WEIGHT_MODULES.items():
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:

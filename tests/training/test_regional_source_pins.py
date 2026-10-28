@@ -35,6 +35,7 @@ def source_reader(variant):
             temporal_encoder=None,
             regional_variant=variant,
             cross_asset_attention=None,
+            holographic_network=None,
         )
     )
     # La receta decide si F2 y F3 añaden su código.
