@@ -52,7 +52,7 @@ En la criba, C2 se compara también con C1 (`talking_heads`), que mezcla regione
 
 ## Requisitos de ejecución
 
-C2 ocupa la modulación de la fusión y no se combina con el operador regional, C1, C6 ni PT6, y solo se declara sobre `mac_online`. Como necesita el historial de cada flujo, los tokens fila a fila de `fused_tokens` la rechazan y no se combina con las cabezas auxiliares de F5, que los usan. El consumidor congelado, sus cargadores del recorrido y Dust la rechazan hasta que registren el historial. La fuente del módulo entra en la identidad del entrenador solo cuando está activa.
+C2 ocupa la modulación de la fusión y no se combina con el operador regional, C1, C6, PT6 ni la [red holográfica H1](holographic-network-v1.md) de [#783](https://github.com/GonxKZ/mars-titan/issues/783), que también la ocupa, y solo se declara sobre `mac_online`. Como necesita el historial de cada flujo, los tokens fila a fila de `fused_tokens` la rechazan y no se combina con las cabezas auxiliares de F5, que los usan. El consumidor congelado, sus cargadores del recorrido y Dust la rechazan hasta que registren el historial. La fuente del módulo entra en la identidad del entrenador solo cuando está activa.
 
 ## Correspondencia con el código y las pruebas
 

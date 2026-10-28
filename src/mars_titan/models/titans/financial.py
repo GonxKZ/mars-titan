@@ -388,10 +388,11 @@ class FinancialConfig:
             or self.regional_execution is not None
             or self.regional_variant is not None
             or self.presence_modulation is not None
+            or self.holographic_network is not None
         ):
             raise ValueError(
                 "C2 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
-                "combina con el operador regional, C1, C6 ni PT6"
+                "combina con el operador regional, C1, C6, PT6 ni la red holográfica"
             )
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
