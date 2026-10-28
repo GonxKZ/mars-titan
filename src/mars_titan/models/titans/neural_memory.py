@@ -640,9 +640,20 @@ class NeuralMemory(nn.Module):
         return result
 
     def update(
-        self, observed: Tensor, state: NeuralMemoryState, *, differentiable: bool = False
+        self,
+        observed: Tensor,
+        state: NeuralMemoryState,
+        *,
+        differentiable: bool = False,
+        gate_shift: dict | None = None,
+        surprise: list | None = None,
     ) -> NeuralMemoryState:
-        """Actualiza por token usando la derivada parcial con la observación fija."""
+        """Actualiza por token usando la derivada parcial con la observación fija.
+
+        `gate_shift` suma a los logits de θ y α el desplazamiento por fila de #791, con forma
+        [filas, 1], en las claves `write` y `forget`. Si `surprise` es una lista, recibe por
+        token la pérdida asociativa de cada fila con la memoria anterior, sin grafo.
+        """
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
@@ -679,6 +690,11 @@ class NeuralMemory(nn.Module):
                     keys = competitive_normalize(keys, self.config.key_competition)
                 elif self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
+                if gate_shift is not None:
+                    if "write" in gate_shift:
+                        theta_logits = theta_logits + gate_shift["write"]
+                    if "forget" in gate_shift:
+                        alpha_logits = alpha_logits + gate_shift["forget"]
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
                 # La copia separa la variable de derivación interna de y(M_prev). Con el banco
                 # de PT5 la memoria lee la media de sus niveles, y el gradiente se toma en ella.
@@ -690,6 +706,8 @@ class NeuralMemory(nn.Module):
                 residual = prediction.squeeze(1) - values
                 loss = residual.square().sum()
                 check_finite(loss, "La pérdida asociativa")
+                if surprise is not None:
+                    surprise.append(residual.detach().square().sum(-1))
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 observation = {} if self.observer is not None else None
                 weights, momentum, levels, modulation = self._write(
