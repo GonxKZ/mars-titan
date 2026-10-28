@@ -51,6 +51,7 @@ H3 = HolographicNetworkConfig(
     kind=HIDDEN_GROUPS_ONLY, hidden_groups=6, rank=None, leakage=None, topology="complete"
 )
 KINDS = (H1, H2, H3)
+KIND_DEFAULTS = {config.kind: config for config in KINDS}
 
 
 def configs():
@@ -59,7 +60,12 @@ def configs():
 
 
 def name(config):
-    return f"{config.kind}-{config.areas}"
+    changed = [
+        f"{key}={value}"
+        for key, value in asdict(config).items()
+        if key not in ("kind", "areas") and value != getattr(KIND_DEFAULTS[config.kind], key)
+    ]
+    return "-".join([config.kind, str(config.areas), *changed])
 
 
 def specification(*, historical=True):
@@ -268,7 +274,15 @@ def reference(net, blocks, presence, inputs, encoders):
     return result
 
 
-@pytest.mark.parametrize("config", configs(), ids=name)
+# Variantes de la configuración que recorren las demás ramas del puente.
+OPTIONS = [
+    replace(H1, hidden_groups=0),
+    replace(H2, areas=38, summary=False, local_steps=2, topology="small_world"),
+    replace(H3, areas=5, cycles=1, hidden_groups=1),
+]
+
+
+@pytest.mark.parametrize("config", configs() + OPTIONS, ids=name)
 def test_the_module_matches_a_reference_written_area_by_area(config):
     net, arguments = network(config), module_inputs()
     torch.testing.assert_close(net(*arguments), reference(net, *arguments), rtol=1e-10, atol=1e-12)
@@ -328,6 +342,15 @@ def test_a_us_only_representation_keeps_both_fundamental_families():
     assert families["fundamentals_balance"] == USD_CONCEPTS[:8]
     assert families["fundamentals_ratios"] == FACTOR_CONCEPTS
     assert dict(layout.widths)["fundamentals"] == 45
+
+
+def test_without_presence_every_modality_counts_as_present():
+    net = network(replace(H1, areas=5))
+    blocks, presence, inputs, encoders = module_inputs()
+    full = torch.ones_like(presence)
+    assert torch.equal(net(blocks, None), net(blocks, full, inputs, encoders))
+    with pytest.raises(ValueError, match="admite"):
+        area_layout(7)
 
 
 def test_the_five_areas_are_the_modalities():

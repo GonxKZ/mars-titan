@@ -30,8 +30,10 @@ de la familia del bloque y `leakage` entre las demás, y Δ empieza en cero. H2
 
     h_a = LayerNorm(m_a + U_a V_aᵀ m_a + e_a),   m_a = Σ_b p_ab z_b,
 
-que equivale a leer cada bloque con W_ab = W_b + U_a V_aᵀ. U empieza en cero y e_a es un
-embedding propio del área, sin identidad de activo.
+así que el área a lee cada bloque con (I + U_a V_aᵀ) z_b. El proyector compartido W_b de la
+issue es el propio codificador de la referencia, que ya produce z_b, y el ajuste de rango bajo
+se compone tras él en lugar de sumarse a sus pesos. U empieza en cero, como en LoRA, y e_a es
+un embedding propio del área, sin identidad de activo.
 
 Grupos ocultos. Cada ranura s mezcla los bloques presentes con
 d_sb = softmax_b(k_s · LayerNorm(z_b) / √H) y su estado inicial es
@@ -318,8 +320,6 @@ def area_layout(areas, representation=None, *, masked=True, catalog=CATALOG):
                 add(name, modality, _columns(concepts, set(items), indices), [name])
         else:
             add(family, modality, _columns(concepts, set(items), (0, 1, 2)), [family])
-    if len(names) != areas:
-        raise ValueError("La disposición de las áreas no tiene el tamaño declarado")
     widths = (("fundamentals", 3 * len(fundamentals)), ("macro", 3 * len(indicators)))
     return AreaLayout(tuple(names), tuple(blocks), tuple(members), tuple(families), widths)
 
