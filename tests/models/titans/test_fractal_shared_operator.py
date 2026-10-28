@@ -187,7 +187,12 @@ def test_an_absent_leaf_keeps_its_block_and_sends_nothing(kind):
     blocks, presence, prices = inputs()
     output = module(blocks, presence, FLOWS, AT, prices)
     changed = blocks.clone()
-    changed[~presence] = 9.0
+    # Una constante se normaliza igual en todas las filas y ocultaría que una hoja ausente
+    # entrara como clave, así que el relleno es aleatorio.
+    generator = torch.Generator().manual_seed(5)
+    changed[~presence] = torch.randn(
+        changed[~presence].shape, generator=generator, dtype=changed.dtype
+    )
     moved = module(changed, presence, FLOWS, AT, prices)
     assert torch.equal(moved[~presence], changed[~presence])
     torch.testing.assert_close(moved[presence], output[presence], rtol=0, atol=0)
@@ -753,3 +758,21 @@ def test_declared_configurations_build_with_their_controls():
     assert counts["per_level"] >= counts["fractal_shared_operator"] > counts["all_shared"] > plain
     for contrast in declaration["contrasts"]:
         assert {contrast["variant"], contrast["control"]} <= set(declaration["arms"])
+
+
+def test_the_market_node_weighs_each_sector_equally():
+    flows = tuple(f"US/D{i:02d}" for i in range(8))
+    instants = (7,) * 8
+    module = layer()
+    blocks, presence, _ = inputs(8)
+    prices = windows(8)
+    ((rows, sectors),) = module.sessions(flows, instants, prices)
+    assert rows == list(range(8)) and sorted(np.bincount(sectors).tolist()) == [2, 3, 3]
+    actual = module(blocks, presence, flows, instants, prices)
+    expected = reference(module, blocks, presence, flows, instants, prices)
+    torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-12)
+    # Con sectores de tamaños distintos, la media de los sectores no es la de los activos, así
+    # que un mercado que promediara los activos daría otra salida.
+    assets = torch.stack([blocks[i][presence[i]].mean(0) for i in range(8)])
+    by_sector = torch.stack([assets[np.asarray(sectors) == g].mean(0) for g in range(3)])
+    assert not torch.allclose(by_sector.mean(0), assets.mean(0))

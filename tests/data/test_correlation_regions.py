@@ -41,11 +41,15 @@ def test_the_planted_groups_are_recovered_and_numbered_by_their_first_asset():
     assert {result[name] for name in ASSETS[6:]} == {"2"}
 
 
-def test_unobserved_positions_do_not_count_whatever_they_hold():
+@pytest.mark.parametrize("filler", [1e6, np.nan, np.inf])
+def test_unobserved_positions_do_not_count_whatever_they_hold(filler):
     series, mask = two_factor_series(), np.ones((12, 60), dtype=bool)
     mask[:, ::3] = False
+    # B5 es constante en lo observado y sigue sin historial aunque lo demás varíe.
+    series[11] = 0.25
     expected = regions.correlation_regions(ASSETS, series, mask, clusters=2, min_observations=30)
-    noisy = np.where(mask, series, 1e6)
+    assert expected["B5"] == regions.NO_HISTORY
+    noisy = np.where(mask, series, filler)
     assert (
         regions.correlation_regions(ASSETS, noisy, mask, clusters=2, min_observations=30)
         == expected
