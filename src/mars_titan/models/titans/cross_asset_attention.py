@@ -9,10 +9,12 @@ los demás activos del mismo mercado y del mismo instante:
 
 G(i) son las filas del bloque con el mercado y el instante de i. Todas sus entradas están
 disponibles en la emisión, así que la mezcla no lee nada posterior. W_o empieza en cero y el
-predictor emite al construirse lo mismo que sin C5. Es la agregación entre acciones de MASTER
-(Li et al., 2024, https://arxiv.org/abs/2312.15235), que mezcla las acciones de cada instante
-después de la agregación temporal. Aquí la parte temporal es el núcleo MAC de cada flujo.
-MASTER añade además una puerta guiada por el estado del mercado, que C5 no incorpora.
+predictor emite al construirse lo mismo que sin C5. Parte de la agregación entre acciones de
+MASTER (Li et al., 2024, https://arxiv.org/abs/2312.15235). MASTER la aplica en cada instante
+de su ventana, entre la codificación de cada acción y el resumen temporal. Aquí el estado
+temporal de cada flujo es el de MAC y solo existe la representación de la emisión, así que C5
+mezcla una vez, en el instante de decisión. Tampoco incorpora la puerta guiada por el estado
+del mercado de MASTER.
 
 El control `self_only` tiene los mismos parámetros y la misma inicialización, pero G(i) = {i}.
 Cada activo solo se atiende a sí mismo y la mezcla se reduce a W_o W_v n_i. Así separa la
