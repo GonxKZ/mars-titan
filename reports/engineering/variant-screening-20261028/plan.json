@@ -1,0 +1,85 @@
+{
+ "protocol_sha256": "39a1f257f89ace304dddc8e35c84073705c4050415495db5783d12fa25b5b786",
+ "jobs": 1740,
+ "cost": {
+  "jobs": 1740,
+  "hours": 94.34303162746775,
+  "hours_by_runner": {
+   "correction": 10.335751405239122,
+   "correction_profile": 1.9876445010075292,
+   "fit": 56.552969054552676,
+   "reader": 12.733333333333333,
+   "spaced": 12.733333333333333
+  },
+  "budget_hours": 150,
+  "within_budget": true,
+  "estimate": "pilot_measurements_not_a_measured_screening_cost"
+ },
+ "pending": [
+  {
+   "entry": "A4",
+   "status": "pending_merge_of_its_declaration"
+  },
+  {
+   "entry": "B4",
+   "status": "diagnostic_after_b1_and_b2_outside_the_family"
+  },
+  {
+   "entry": "C2",
+   "status": "pending_implementation"
+  },
+  {
+   "entry": "C3",
+   "status": "pending_implementation"
+  },
+  {
+   "entry": "C5",
+   "status": "pending_merge_of_its_declaration"
+  },
+  {
+   "entry": "D2",
+   "status": "pending_declaration_of_the_matched_depth_control"
+  },
+  {
+   "entry": "F2",
+   "status": "pending_merge_of_its_declaration"
+  },
+  {
+   "entry": "F3",
+   "status": "pending_merge_of_its_declaration"
+  },
+  {
+   "entry": "F3",
+   "arm": "continuation_control",
+   "status": "pending_arm"
+  },
+  {
+   "entry": "F3",
+   "arm": "shrink_perturb",
+   "status": "pending_arm"
+  },
+  {
+   "entry": "F3",
+   "arm": "shrink_only",
+   "status": "pending_arm"
+  },
+  {
+   "entry": "F3",
+   "arm": "perturb_only",
+   "status": "pending_arm"
+  },
+  {
+   "entry": "G1",
+   "status": "after_the_screening_needs_its_own_approval"
+  },
+  {
+   "entry": "G2",
+   "status": "own_financial_criterion_outside_the_family"
+  },
+  {
+   "entry": "G3",
+   "status": "validity_check_outside_the_family"
+  }
+ ],
+ "contrasts": 62
+}

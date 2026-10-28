@@ -118,16 +118,16 @@ Cero, la referencia de su cabeza y la mediana pasada del residuo de la fase 0 es
 
 La criba ejecuta una sola carga GPU a la vez, con la GPU en exclusiva y sin parar otros procesos. Cada intento se cobra y nunca se devuelve. Un trabajo tiene como máximo 5.400 segundos y 20.000 actualizaciones.
 
-Con las entradas ejecutables hoy, el motor enumera 1.740 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas.
+Con las entradas ejecutables hoy, el motor enumera 1.740 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
 
 | Ejecutor | Trabajos | Horas estimadas |
 | --- | ---: | ---: |
-| `fit` | 260 | 56,8 |
-| `correction` | 1.040 | 10,4 |
+| `fit` | 260 | 56,6 |
+| `correction` | 1.040 | 10,3 |
 | `correction_profile` | 200 | 2,0 |
 | `reader` | 120 | 12,7 |
 | `spaced` | 120 | 12,7 |
-| Total | 1.740 | 94,6 |
+| Total | 1.740 | 94,3 |
 
 Las cuatro entradas pendientes de integrar (A4, C5, F2 y F3 sin la contracción) añaden unos doce ajustes por origen y semilla, contando el triple del control de F2, unas 52 horas más con la misma medida. El total quedaría cerca del límite aprobado de 150 horas. Si al integrarlas la estimación lo supera, el motor lo indicará en `plan` y la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
 
@@ -157,4 +157,6 @@ El análisis de la criba, que leerá las predicciones de cada trabajo y aplicar�
 
 ## Comprobaciones
 
-`tests/training/test_variant_screening.py` comprueba la declaración, sus rechazos, que las definiciones idénticas comparten trabajo, que cada trabajo corre tras su padre y su variante emparejada del mismo origen y semilla, los casos de búsqueda, los contrastes y la fórmula del coste. `tests/tooling/test_variant_screening_study.py` prepara una criba con cohortes de fixture y comprueba vistas, recetas, sellos, la protección, los requisitos, el cobro de cada intento y los argumentos de cada ejecutor con ejecutores dobles que no construyen modelos ni ejecutan pasos de optimizador.
+`tests/training/test_variant_screening.py` comprueba la declaración, sus rechazos, que las definiciones idénticas comparten trabajo, que cada trabajo corre tras su padre y su variante emparejada del mismo origen y semilla, los casos de búsqueda, los contrastes y la fórmula del coste. `tests/tooling/test_variant_screening_study.py` prepara una criba con cohortes de fixture y comprueba vistas, recetas, sellos, la protección, los requisitos, el cobro de cada intento, incluido el que falla, el rechazo con el presupuesto agotado y los argumentos de cada ejecutor con ejecutores dobles que no construyen modelos ni ejecutan pasos de optimizador.
+
+La comprobación del 28 de octubre se hizo en CPU y sin pasos de optimizador. Las 45 pruebas dirigidas pasan. Con coverage 7.16.1, el protocolo cubre 233/234 sentencias y 102/104 ramas, y el motor 249/255 y 56/60. Quedan fuera la memoria CUDA del intento, dos ramas de la línea de órdenes y la combinación de semillas de F2, que espera a su declaración. El CRAP máximo es 45, el de `checked_protocol`, que suma una condición por cada campo validado y está cubierta entera. Trece mutaciones dirigidas del protocolo y del motor se detectan con los controles en verde antes y después. La guarda del bloqueo detectó que `tests/training/test_regime_gate_correction_window.py` usaba los dobles sin declararlos, un fallo que ya estaba en develop. Tras declararlo, sus dos casos pasan. El [recibo de verificación](../../reports/engineering/variant-screening-20261028/verification.json) conserva los recuentos y las huellas.
