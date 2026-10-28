@@ -68,13 +68,14 @@ from mars_titan.models.titans.financial import (
 
 from . import window_indices
 from .checkpoints import StopRequest, load_training_state
+from .common_epoch import EpochValidation, checked_scoring
 from .corpus_inputs import CorpusDataset
 from .financial_run import Paused
 from .learning_hold import require_learning_allowed
 from .mars_titan_run import MarsTitanInference, ReadoutTrainer, case_recipe, load_recipe
 from .mars_titan_run import retention_config as readout_retention
 from .search_cases import checked_predictor_changes
-from .selection import AWAIT, campaign_rule, with_rule
+from .selection import AWAIT, CHRONOLOGICAL_MODES, campaign_rule, with_rule
 from .titans_walk_forward import (
     DTYPES,
     PREDICTED,
@@ -88,6 +89,7 @@ from .titans_walk_forward import (
     _verify,
     checked_tables,
     control_config,
+    emit_versions,
     memory_policy,
     predictor_options,
     unfused_attention,
@@ -113,6 +115,7 @@ _CODE = (
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.training.mars_titan_run",
     "mars_titan.training.titans_walk_forward",
+    "mars_titan.training.common_epoch",
     "mars_titan.memory.mars_titan_variant",
     "mars_titan.memory.write_scores",
     "mars_titan.models.titans.episodic_readout",
@@ -427,6 +430,8 @@ def run_mars_titan_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    epoch_scoring=None,
+    versions=None,
     traces=None,
 ):
     """Ajustar el lector de una combinación sobre el padre elegido y escribir sus filas.
@@ -434,8 +439,8 @@ def run_mars_titan_window(
     La protección del aprendizaje se comprueba antes de leer ninguna fuente.
     `optimizer_factory` solo existe para comprobar el bucle con un optimizador que no
     modifica pesos. `stopping` y `joint_epoch` son la parada temprana de la campaña y la
-    época común del grupo, como en `titans_walk_forward.run_titans_window`, y `traces` las
-    trazas de #448.
+    época común del grupo, y `epoch_scoring` y `versions` los de la época común de la criba,
+    como en `titans_walk_forward.run_titans_window`. `traces` son las trazas de #448.
     """
     require_learning_allowed("run_mars_titan_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
@@ -453,6 +458,8 @@ def run_mars_titan_window(
         optimizer_factory=optimizer_factory,
         stopping=stopping,
         joint_epoch=joint_epoch,
+        epoch_scoring=epoch_scoring,
+        versions=versions,
         traces=traces,
     )
 
@@ -472,6 +479,8 @@ def run_readout_window(
     optimizer_factory=None,
     stopping=None,
     joint_epoch=None,
+    epoch_scoring=None,
+    versions=None,
     traces=None,
 ):
     """Recorrido común de la ventana para cualquier familia de lector."""
@@ -489,8 +498,13 @@ def run_readout_window(
         readout_recipe.epochs == rule["max_epochs"] and readout_recipe.selection == selection,
         "La receta del lector no aplica la regla de selección y parada del protocolo",
     )
-    rule = campaign_rule(rule, stopping)
+    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)
     readout_recipe = with_rule(readout_recipe, rule)
+    scoring = checked_scoring(epoch_scoring, rule)
+    _require(
+        versions is None or (scoring is not None and joint_epoch is not None),
+        "Las versiones llegan junto con la época común",
+    )
     request = dict(
         view_sha256=sha256(view),
         protocol_sha256=protocol_sha,
@@ -511,6 +525,8 @@ def run_readout_window(
         # La regla solo se añade con parada temprana, para que las demás peticiones
         # conserven su forma.
         request["stopping_rule"] = dict(stopping)
+    if scoring is not None:
+        request["epoch_scoring"] = scoring
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -563,6 +579,13 @@ def run_readout_window(
         fold=fold["id"],
         optimizer_factory=optimizer_factory,
     )
+    if scoring is not None:
+        trainer.epoch_scorer = EpochValidation(
+            lambda: PredictionRows(trainer.quantiles),
+            lambda rows, metrics: checked_tables(rows, metrics, dataset, "validation"),
+            min_assets=scoring["min_assets"],
+            directory=output / "epochs" if scoring["predictions"] else None,
+        )
     identity = dict(
         schema_version=1,
         kind=family.kind,
@@ -667,6 +690,14 @@ def run_readout_window(
                 metrics=metrics,
             )
             atomic_json(report_path, report)
+        if scoring is not None:
+
+            def emit(name):
+                rows = PredictionRows(trainer.quantiles)
+                metrics = trainer.evaluate(sources[name], stop=stop, rows=rows)
+                return checked_tables(rows, metrics, dataset, name), rows.count, metrics
+
+            emit_versions(output, report, trainer, fit, versions, emit, stop)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
     except Paused:

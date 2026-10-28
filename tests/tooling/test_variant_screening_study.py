@@ -6,6 +6,7 @@ prueba crea un entrenador ni ejecuta pasos de optimizador.
 
 import json
 from contextlib import nullcontext
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -16,11 +17,14 @@ import torch
 
 from benchmarks import variant_screening_study as study
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.evaluation import scale_diagnostics as sd
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.training import (
     experiment_resources,
     mars_titan_correction,
     mars_titan_walk_forward,
     screening_cohorts,
+    selection,
     spaced_window,
     titans_walk_forward,
     variant_screening,
@@ -338,6 +342,13 @@ def test_the_command_line_prints_the_plan_and_the_status(prepared, monkeypatch, 
     monkeypatch.setattr("sys.argv", ["variant_screening_study", "plan"])
     study.main()
     assert json.loads(capsys.readouterr().out)["jobs"] == len(receipt["jobs"])
+    calls = []
+    monkeypatch.setattr(study, "rule_check", lambda *args: calls.append(args) or dict(groups=0))
+    command = ["variant_screening_study", "rule-check", "--work", str(work), "--output", "check"]
+    monkeypatch.setattr("sys.argv", command)
+    study.main()
+    assert json.loads(capsys.readouterr().out) == dict(groups=0)
+    assert calls == [(work, Path("check"))]
 
 
 def test_the_analysis_checks_the_hold_before_reading_the_preparation(
@@ -464,7 +475,9 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     work, receipt = prepared
     for name in ("sp500stock_data_description.csv", "hs300stock_data_description.csv"):
         (tmp_path / name).write_text(name)
-    monkeypatch.setattr(study, "_completed", lambda *_: dict(status="completed"))
+    finished = dict(status="completed", fit=dict(joint_stop_epoch=4), versions=dict(epochs=[3]))
+    monkeypatch.setattr(study, "_completed", lambda *_: finished)
+    monkeypatch.setattr(study, "_decision", lambda *_: dict(epoch=4, versions=[3]))
     monkeypatch.setattr(study, "origin_maturity", lambda view, policy: ({}, {}))
     monkeypatch.setattr(study, "current_sectors", lambda path, assets: dict.fromkeys(assets))
     read = []
@@ -506,13 +519,21 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     assert series["defined"].to_pylist() == [True, True, False]
     with pytest.raises(ValueError, match="directorio nuevo"):
         study.analyze(work, tmp_path / "analysis", tmp_path)
+    # Un ajuste emitido con otra época o con otras versiones que las de su grupo se rechaza.
+    for changed in (dict(epoch=5, versions=[3]), dict(epoch=4, versions=[6]), None):
+        monkeypatch.setattr(study, "_decision", lambda *_, value=changed: value)
+        with pytest.raises(ValueError, match="no emite la época común"):
+            study.analyze(work, tmp_path / "again", tmp_path)
+    assert not (tmp_path / "again").exists()
 
 
 def test_the_queue_runs_pending_jobs_in_sealed_order_up_to_its_limit(prepared, runners):
     work, receipt = prepared
     pending = [job["id"] for job in receipt["jobs"] if study._completed(work, job["id"]) is None]
     result = study.run_queue(work, limit=3)
-    assert result == dict(completed=pending[:3], stopped_at=None, status="queued_jobs_completed")
+    assert result == dict(
+        completed=pending[:3], stopped_at=None, status="limit_reached", executed=3
+    )
     assert [options["output"].name for _, _, options in runners] == pending[:3]
     with pytest.raises(ValueError, match="entero positivo"):
         study.run_queue(work, limit=0)
@@ -542,3 +563,355 @@ def test_the_queue_checks_the_hold_before_reading_the_preparation(
     )
     with pytest.raises(LearningHoldError):
         study.run_queue(work)
+
+
+EPOCHS = 12
+# IC medio con máximo suavizado en la época 5. Cada semilla suma una constante pequeña.
+PEAK = [0.05 - 0.01 * abs(epoch - 5) for epoch in range(1, EPOCHS + 1)]
+# Tres sesiones al mes durante seis meses: la comprobación de la regla elige con los cuatro
+# primeros y mide con los dos últimos.
+SESSIONS = [
+    int(np.datetime64(f"2019-{month:02d}-{day:02d}T21:00", "us").astype(np.int64))
+    for month in range(1, 7)
+    for day in (3, 10, 17)
+]
+
+
+def epoch_record(seed, epoch):
+    value = PEAK[epoch - 1] + 0.001 * (seed - 42)
+    return dict(
+        session_mae=0.5,
+        session_ic=value,
+        session_ic_values=[value] * len(SESSIONS),
+        session_ic_defined=[True] * len(SESSIONS),
+        session_mae_values=[0.5 - 0.01 * epoch] * len(SESSIONS),
+        session_time=SESSIONS,
+        cohort_sha256="cohort",
+    )
+
+
+@pytest.fixture
+def common_runners(monkeypatch, learning_doubles):
+    """Ajuste doble que recorre su presupuesto, espera la época común y después termina."""
+    calls = []
+
+    def fit(*args, **options):
+        calls.append(options)
+        output = options["output"]
+        if options["joint_epoch"] is None:
+            history = [dict(epoch=0, validation=dict(session_mae=0.6))]
+            history += [
+                dict(epoch=epoch, validation=epoch_record(options["seed"], epoch))
+                for epoch in range(1, EPOCHS + 1)
+            ]
+            atomic_json(
+                output / "fit" / "run.json",
+                dict(
+                    status=selection.AWAIT,
+                    history=history,
+                    epoch_states={str(e): dict(sha256="0" * 64) for e in range(1, EPOCHS + 1)},
+                    selection=dict(best_epoch=EPOCHS),
+                ),
+            )
+            report = dict(status=selection.AWAIT, individual_stop_epoch=EPOCHS)
+        else:
+            report = dict(
+                status="completed",
+                fit=dict(best_epoch=options["joint_epoch"]),
+                versions=options["versions"],
+            )
+        atomic_json(output / "run.json", report)
+        return report
+
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", fit)
+    monkeypatch.setattr(experiment_resources, "GpuLease", lambda **_: Lease())
+    monkeypatch.setattr(torch.cuda, "set_device", lambda device: None)
+    monkeypatch.setattr(titans_walk_forward, "unfused_attention", nullcontext)
+    return calls
+
+
+def attempts(work):
+    return len(list((work / "attempts").glob("*.json"))) if (work / "attempts").exists() else 0
+
+
+def test_a_group_waits_for_its_seeds_and_resumes_with_the_common_epoch(
+    prepared, common_runners, monkeypatch
+):
+    work, receipt = prepared
+    members = [
+        job(receipt, "F4/session_ic_objective", origin=2021, seed=seed)
+        for seed in receipt["protocol"]["seeds"]
+    ]
+    group = members[0]["common_group"]
+    assert {item["common_group"] for item in members} == {group}
+    assert members[0]["versions"] == [3, 6, 9, 12] and not members[0]["epoch_predictions"]
+    for position, item in enumerate(members):
+        result = study.run_job(work, item["id"])
+        assert result["status"] == selection.AWAIT
+        options = common_runners[-1]
+        assert options["stopping"]["stopping"] == "common_epoch"
+        assert options["stopping"]["metric"] == "session_mae"
+        assert options["epoch_scoring"] == dict(min_assets=3, predictions=False)
+        assert options["joint_epoch"] is None and options["versions"] is None
+        assert study._group_waits(work, receipt, group) is (position == len(members) - 1)
+        if position == 0:
+            with pytest.raises(ValueError, match="no espera la época común"):
+                study.decide_group(work, receipt, group)
+    # Repetir un trabajo que espera sin la época del grupo no llama al ejecutor ni se cobra.
+    before, calls = attempts(work), len(common_runners)
+    assert study.run_job(work, members[0]["id"])["status"] == selection.AWAIT
+    assert (attempts(work), len(common_runners)) == (before, calls)
+    assert study.status(work)["awaiting_common_epoch"] >= len(members)
+    decision = study.decide_group(work, receipt, group)
+    assert decision["epoch"] == 5 and decision["versions"] == [3, 6, 9, 12]
+    assert decision["kind"] == study.GROUP_KIND and decision["final_test_access"] is False
+    assert decision["mae_best_epochs"] == {item["id"]: EPOCHS for item in members}
+    assert set(decision["members"]) == {item["id"] for item in members}
+    # La decisión no se reescribe.
+    assert study.decide_group(work, receipt, group) == decision
+    resume = titans_walk_forward.run_titans_window
+    monkeypatch.setattr(
+        titans_walk_forward, "run_titans_window", lambda *_, **__: dict(status=selection.AWAIT)
+    )
+    with pytest.raises(ValueError, match="volvió a esperar"):
+        study.run_job(work, members[0]["id"])
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", resume)
+    for item in members:
+        result = study.run_job(work, item["id"])
+        assert result["status"] == "completed" and result["fit"]["best_epoch"] == 5
+        assert common_runners[-1]["joint_epoch"] == 5
+        assert common_runners[-1]["versions"] == [3, 6, 9, 12]
+    assert study.status(work)["decided_groups"] >= 1
+
+
+def test_the_queue_releases_each_group_before_the_next_one_trains(
+    prepared, common_runners, monkeypatch
+):
+    work, receipt = prepared
+    seeds = receipt["protocol"]["seeds"]
+    first = [job(receipt, "F5/auxiliary_horizons", origin=2020, seed=seed) for seed in seeds]
+    second = [job(receipt, "F4/session_ic_objective", origin=2022, seed=seed) for seed in seeds]
+    reduced = dict(receipt, jobs=first + second)
+    monkeypatch.setattr(study, "verify_prepared", lambda _: reduced)
+    # Cinco ajustes recorren su presupuesto y esperan, y el límite corta tras dos reanudaciones.
+    result = study.run_queue(work, limit=7)
+    ids = [item["id"] for item in first]
+    assert result == dict(completed=ids[:2], stopped_at=None, status="limit_reached", executed=7)
+    assert study._decision(work, first[0]["common_group"])["epoch"] == 5
+    result = study.run_queue(work)
+    assert result["status"] == "queued_jobs_completed" and result["pending"] == 0
+    assert result["completed"] == ids[2:] + [item["id"] for item in second]
+    # El primer grupo emite y libera sus estados antes de que el segundo empiece a ajustar.
+    order = [(options["output"].name, options["joint_epoch"]) for options in common_runners]
+    assert order == [(i, None) for i in ids] + [(i, 5) for i in ids] + [
+        (item["id"], epoch) for epoch in (None, 5) for item in second
+    ]
+
+
+def test_the_group_decision_needs_the_same_validation_rows(prepared, common_runners):
+    work, receipt = prepared
+    members = [
+        job(receipt, "F1/laplace_scale_head", origin=2022, seed=seed)
+        for seed in receipt["protocol"]["seeds"]
+    ]
+    for item in members:
+        study.run_job(work, item["id"])
+    path = work / "runs" / members[-1]["id"] / "fit" / "run.json"
+    report = json.loads(path.read_text())
+    report["history"][3]["validation"]["cohort_sha256"] = "other"
+    atomic_json(path, report)
+    with pytest.raises(ValueError, match="mismas filas"):
+        study.decide_group(work, receipt, members[0]["common_group"])
+    assert study._decision(work, members[0]["common_group"]) is None
+
+
+def write_epochs(root, job_id, predictions, target, times):
+    """Historial de un trabajo con la predicción puntual de validación de cada época."""
+    history = [dict(epoch=0, validation={})]
+    for epoch, prediction in enumerate(predictions, 1):
+        name = f"epochs/validation-epoch-{epoch:04d}.parquet"
+        path = root / "runs" / job_id / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        assets = [f"US/A{i:02d}" for i in range(len(target) // len(times))]
+        pq.write_table(
+            pa.table(
+                dict(
+                    sample_id=[f"{a}/{t}" for t in times for a in assets],
+                    market=["US"] * len(target),
+                    prediction_at=pa.array(
+                        [t for t in times for _ in assets], type=pa.timestamp("us", tz="UTC")
+                    ),
+                    target=target,
+                    prediction=prediction,
+                )
+            ),
+            path,
+        )
+        history.append(
+            dict(
+                epoch=epoch, validation=dict(epoch_predictions=dict(path=name, sha256=sha256(path)))
+            )
+        )
+    atomic_json(root / "runs" / job_id / "fit" / "run.json", dict(history=history))
+
+
+def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
+    rng = np.random.default_rng(7)
+    times = [1_546_380_000_000_000 + day * 86_400_000_000 for day in range(40)]
+    assets = 24
+    target = rng.standard_normal(len(times) * assets)
+    common = rng.standard_normal(len(target))
+    seeds = (42, 43, 44)
+    own = {seed: rng.standard_normal(len(target)) for seed in seeds}
+    # En la época 2 el ruido es común a las semillas y en la 4 es independiente: cada semilla
+    # sola ordena mejor en la 2, pero su media ordena mejor en la 4.
+    shape = {1: (1.5, 1.0), 2: (0.8, 1.0), 3: (1.5, 0.0), 4: (1.0, 0.0)}
+    jobs = []
+    for seed in seeds:
+        predictions = [
+            target + scale * (mix * common + np.sqrt(1 - mix**2) * own[seed])
+            for scale, mix in (shape[epoch] for epoch in range(1, 5))
+        ]
+        job_id = f"2019-{seed}-source"
+        write_epochs(tmp_path, job_id, predictions, target, times)
+        jobs.append(dict(id=job_id, seed=seed, definition=dict(runner="fit")))
+    protocol = dict(
+        seeds=list(seeds),
+        fit=dict(epochs=4),
+        contrast=dict(primary=dict(minimum_assets=3)),
+        selection=dict(smoothing_radius=0),
+    )
+    arm = dict(label="F2/seed_mean", definition=dict(runner="output", source="reference"))
+    result = study.combination_epoch(tmp_path, jobs, arm, protocol)
+    assert result["epoch"] == 4 and result["seeds"] == list(seeds)
+    assert result["model"] == "F2/seed_mean"
+    assert max(range(4), key=lambda i: result["scores"][i]) == 3
+    with pytest.raises(ValueError, match="todas sus semillas"):
+        study.combination_epoch(tmp_path, jobs[:2], arm, protocol)
+    with pytest.raises(ValueError, match="todas sus épocas"):
+        study.combination_epoch(tmp_path, jobs, arm, dict(protocol, fit=dict(epochs=5)))
+    (tmp_path / "runs" / jobs[0]["id"] / "epochs" / "validation-epoch-0002.parquet").write_bytes(
+        b"PAR1 x PAR1"
+    )
+    with pytest.raises(ValueError, match="Ha cambiado"):
+        study.combination_epoch(tmp_path, jobs, arm, protocol)
+
+
+def test_a_group_adds_the_epoch_of_its_seed_combination_to_the_versions(tmp_path, monkeypatch):
+    rng = np.random.default_rng(11)
+    times = [1_546_380_000_000_000 + day * 86_400_000_000 for day in range(30)]
+    target = rng.standard_normal(len(times) * 12)
+    common = rng.standard_normal(len(target))
+    seeds = [42, 43, 44, 45, 46]
+    own = {seed: rng.standard_normal(len(target)) for seed in seeds}
+    # El mismo patrón que la prueba anterior: cada semilla sola ordena mejor en la época 2 y la
+    # media de las tres semillas de la combinación ordena mejor en la 4.
+    shape = {1: (1.5, 1.0), 2: (0.8, 1.0), 3: (1.5, 0.0), 4: (1.0, 0.0)}
+    members = []
+    for seed in seeds:
+        job_id = f"2019-{seed}-reference"
+        predictions = [
+            target + scale * (mix * common + np.sqrt(1 - mix**2) * own[seed])
+            for scale, mix in (shape[epoch] for epoch in range(1, 5))
+        ]
+        write_epochs(tmp_path, job_id, predictions, target, times)
+        path = tmp_path / "runs" / job_id / "fit" / "run.json"
+        report = json.loads(path.read_text())
+        for entry in report["history"][1:]:
+            record = entry["validation"]["epoch_predictions"]
+            panel = ForecastPanel.from_arrow(pq.read_table(path.parents[1] / record["path"]))
+            values, defined = sd.session_correlations(panel, panel.prediction, min_assets=3)
+            entry["validation"].update(
+                session_ic_values=values.tolist(),
+                session_ic_defined=defined.tolist(),
+                cohort_sha256=panel.cohort_sha256,
+            )
+        report.update(
+            status=selection.AWAIT,
+            epoch_states={str(epoch): dict(sha256="0" * 64) for epoch in range(1, 5)},
+            selection=dict(best_epoch=4),
+        )
+        atomic_json(path, report)
+        atomic_json(tmp_path / "runs" / job_id / "run.json", dict(status=selection.AWAIT))
+        members.append(
+            dict(
+                id=job_id,
+                seed=seed,
+                common_group="2019-reference",
+                definition=dict(runner="fit"),
+                used_by=["F2/single_seed_reference"],
+                versions=[3],
+                epoch_predictions=True,
+            )
+        )
+    arms = {
+        ("F2", "single_seed_reference"): variant_screening.Arm(
+            "F2", "single_seed_reference", dict(runner="fit")
+        ),
+        ("F2", "seed_mean"): variant_screening.Arm(
+            "F2",
+            "seed_mean",
+            dict(
+                runner="output",
+                source="single_seed_reference",
+                combine="seed_mean_v1",
+                seeds=[42, 43, 44],
+            ),
+        ),
+    }
+    monkeypatch.setattr(variant_screening, "all_arms", lambda *_: arms)
+    protocol = dict(
+        seeds=seeds,
+        fit=dict(epochs=4),
+        contrast=dict(primary=dict(minimum_assets=3)),
+        selection=dict(smoothing_radius=0),
+    )
+    decision = study.decide_group(tmp_path, dict(protocol=protocol, jobs=members), "2019-reference")
+    assert decision["epoch"] == 2
+    [combination] = decision["combinations"]
+    assert (combination["model"], combination["epoch"]) == ("F2/seed_mean", 4)
+    assert combination["seeds"] == [42, 43, 44]
+    # La época de la combinación se emite como una versión más del grupo.
+    assert decision["versions"] == [3, 4]
+    del arms[("F2", "single_seed_reference")]
+    with pytest.raises(ValueError, match="no tiene fuente"):
+        variant_screening.combination_sources(arms)
+
+
+def test_the_rule_check_reads_every_group_and_writes_its_report(
+    prepared, common_runners, monkeypatch, tmp_path
+):
+    work, receipt = prepared
+    members = [
+        job(receipt, "F5/auxiliary_horizons", origin=2021, seed=seed)
+        for seed in receipt["protocol"]["seeds"]
+    ]
+    monkeypatch.setattr(study, "verify_prepared", lambda _: dict(receipt, jobs=members))
+    with pytest.raises(ValueError, match="no ha recorrido su presupuesto"):
+        study.rule_check(work, tmp_path / "early")
+    for item in members:
+        study.run_job(work, item["id"])
+    result = study.rule_check(work, tmp_path / "check")
+    report = json.loads((tmp_path / "check" / "rule-check.json").read_text())
+    assert result == dict(groups=1, summary=report["summary"])
+    assert report["kind"] == study.RULE_CHECK_KIND and report["final_test_access"] is False
+    assert report["optimizer_steps"] == 0
+    assert set(report["reads"]) == {f"{item['id']}/fit/run.json" for item in members}
+    assert list(report["groups"]) == [members[0]["common_group"]]
+    (row,) = report["groups"].values()
+    assert row["common_epoch"] == 5 and row["session_mae_best_epochs"] == [EPOCHS] * 5
+    with pytest.raises(ValueError, match="directorio nuevo"):
+        study.rule_check(work, tmp_path / "check")
+
+
+def test_the_rule_check_checks_the_hold_before_reading_the_preparation(
+    prepared, learning_hold, monkeypatch, tmp_path
+):
+    work, _ = prepared
+    learning_hold(False)
+    monkeypatch.setattr(
+        study, "verify_prepared", lambda *_: pytest.fail("Se leyó la criba bajo la protección")
+    )
+    with pytest.raises(LearningHoldError):
+        study.rule_check(work, tmp_path / "check")
+    assert not (tmp_path / "check").exists()

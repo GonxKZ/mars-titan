@@ -3500,5 +3500,62 @@
       6
     ],
     "verification_date": "2026-10-20"
+  },
+  {
+    "id": "cawley2010overfitting",
+    "title": "On Over-fitting in Model Selection and Subsequent Selection Bias in Performance Evaluation",
+    "authors": [
+      "Gavin C. Cawley",
+      "Nicola L. C. Talbot"
+    ],
+    "year": 2010,
+    "url": "https://www.jmlr.org/papers/v11/cawley10a.html",
+    "access": "Leído el resumen en la página del artículo en JMLR, volumen 11.",
+    "redistribution": "unknown",
+    "relevance": "La varianza de un criterio de selección permite sobreajustar la propia selección. Motiva que la enmienda de la criba de #746 elija una época común a las semillas, suavizada con sus vecinas.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "gulrajani2021lost",
+    "title": "In Search of Lost Domain Generalization",
+    "authors": [
+      "Ishaan Gulrajani",
+      "David Lopez-Paz"
+    ],
+    "year": 2021,
+    "url": "https://arxiv.org/abs/2007.01434",
+    "access": "Leído el resumen en arXiv:2007.01434 y la ficha del póster de ICLR 2021.",
+    "redistribution": "unknown",
+    "relevance": "La regla de selección forma parte del método que se compara. La criba de #746 aplica la misma regla a todos los modelos y la fija antes de abrir S.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "ranjan2024posthoc",
+    "title": "Post-Hoc Reversal: Are We Selecting Models Prematurely?",
+    "authors": [
+      "Rishabh Ranjan",
+      "Saurabh Garg",
+      "Mrigank Raman",
+      "Carlos Guestrin",
+      "Zachary C. Lipton"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/a6805b5564bd8d813a81c4b5a97e5ca6-Abstract.html",
+    "access": "Leído el resumen en las actas de NeurIPS 2024 y en arXiv:2404.07815.",
+    "redistribution": "unknown",
+    "relevance": "Promediar modelos o pesos puede invertir el orden de los estados. En la criba de #746 una salida que combina semillas elige su época con el IC de la propia combinación.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-28"
   }
 ]

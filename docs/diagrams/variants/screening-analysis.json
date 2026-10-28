@@ -78,7 +78,7 @@
       "id": "case",
       "type": "security",
       "label": "Caso por validación",
-      "sublabel": "MAE de G, sin mirar S",
+      "sublabel": "IC de G común a las semillas",
       "pos": [
         300,
         40
