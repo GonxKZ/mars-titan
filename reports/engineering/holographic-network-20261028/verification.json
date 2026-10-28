@@ -1,0 +1,119 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 783,
+ "scope": "holographic_network_v1_with_h2_and_h3",
+ "implementation_commit": "e360e0040bf15b08ad3ba2f14cebd1a3cb5c4880",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas del módulo solo calculan gradientes con autograd y la medida de coste propaga una suma de cuadrados con un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 91,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "31f1070245cece0011791d96311c4e60a005c12cc3e2bb73671400466ab69858",
+   "note": "Pruebas de H1, H2, H3 y de su medida de coste con cobertura de ramas sobre el árbol de implementation_commit. La prueba CUDA queda deseleccionada porque la GPU estaba ocupada por otros procesos."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 4630,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 17,
+   "xml_sha256": "1785dbefa1bdaea44ea8170482d7d51dccf726e7065420aa7a13a09f60fe69eb",
+   "note": "Los módulos que importan los caminos cambiados, con tres procesos sobre el árbol de implementation_commit. De las 17 omisiones, 15 son la protección del aprendizaje y 2 los binarios nativos mars-titan-ppo y libmars_titan_simulation, que no están compilados."
+  },
+  {
+   "name": "targeted_on_the_final_tree",
+   "tests": 91,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "3cec3c1f8a3b09e1bb46bd59ff4f4e156d33fc7a18adf0607b946b26887e8670",
+   "note": "Las mismas pruebas dirigidas sobre el árbol de mutations.tree_commit, que solo cambia la prosa de la medida de coste y de su prueba."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 327,
+   "covered_statements": 327,
+   "branches": 114,
+   "covered_branches": 114
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/holographic_network.py",
+    "source_sha256": "d1d81af2c7361ad376e517f0148ed7cfba126daea63b423e6ed9c7615e112a6c",
+    "statements": 327,
+    "covered_statements": 327,
+    "branches": 114,
+    "covered_branches": 114
+   }
+  ],
+  "max_crap": 33.0,
+  "quality_sha256": "d637f304310ce014c2f2a3360dfd15b72b56ab337007bfbbcd476fddeb423ce3",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "mutations": {
+  "tree_commit": "fae684a4740e0c64a70bfcc89d700ac79ebfd15e",
+  "planned": 19,
+  "killed": 19,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "2294ad96a6b9a55f4f16785f689a686951e14c658894ca65ef65924046e3c0d3",
+  "executor_sha256": "f7ef2a2177eb5cdc5daabb6e1d40054873b8c09f8c84e3ffbc3eecfd8bd06003",
+  "source_sha256": {
+   "src/mars_titan/models/titans/holographic_network.py": "d1d81af2c7361ad376e517f0148ed7cfba126daea63b423e6ed9c7615e112a6c",
+   "src/mars_titan/models/titans/frozen_financial.py": "169171092e973ef0faeac10e63cb395fc948dd42d3c411acf195fb171742daa1",
+   "src/mars_titan/training/mars_titan_walk_forward.py": "0792a57b10db6c0ad6941e31ddca4f3711304ef5237f20635b4321fa55107a05",
+   "src/mars_titan/training/financial_run.py": "8e2e772a5cd9d7009ba1e7542ef9348ca22cf16e3a4db845ba11d53fc55be46f",
+   "src/mars_titan/models/titans/financial.py": "5fe66a38ca448558293c3cea2f58732d791c454bb3b160812f51d1dc0bb6662d"
+  },
+  "cases": [
+   "membership_delta_ignored",
+   "absent_areas_send_messages",
+   "modality_sum_instead_of_mean",
+   "context_read_twice",
+   "summary_over_absent_nodes",
+   "dispatch_over_absent_blocks",
+   "catalog_leakage_inside_the_family",
+   "family_columns_of_one_channel",
+   "random_readout",
+   "global_generator_consumed",
+   "absent_modality_written",
+   "absent_family_block_kept",
+   "small_world_without_chords",
+   "levels_two_admitted",
+   "interval_without_type_check",
+   "mac_frozen_admitted",
+   "trainer_identity_without_catalog",
+   "frozen_consumer_accepts_h1",
+   "parent_with_h1_verified"
+  ],
+  "summary_sha256": "61bebbab28ca680bad3bb8d4778ce33ab6bbcfd12c5d609e24775e467611c4d9",
+  "scope": "Diecinueve defectos dirigidos de H1, H2 y H3 sobre el árbol final, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada con los catálogos versionados de data/. No es una puntuación global."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046",
+  "used_by": "regression_of_the_changed_paths"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "31be9422c5bf93e33977e39e5404bb9b5239144076f47dd3f9b43cec6a19daa2"
+ }
+}
