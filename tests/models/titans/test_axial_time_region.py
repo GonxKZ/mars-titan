@@ -353,6 +353,16 @@ def test_construction_refuses_other_configurations_and_precisions():
         AxialTimeRegion(HIDDEN, VARIANT, seed=1, dtype=torch.bfloat16)
 
 
+def test_loading_weights_checks_the_declared_configuration():
+    variant, control = (AxialTimeRegion(HIDDEN, c, seed=1) for c in (VARIANT, CONTROL))
+    copied = AxialTimeRegion(HIDDEN, VARIANT, seed=2)
+    copied.load_state_dict(variant.state_dict())
+    assert torch.equal(copied.time_qkv.weight, variant.time_qkv.weight)
+    # Los pesos tienen la misma forma, pero la configuración del control es otra.
+    with pytest.raises(ValueError, match="contrato del módulo"):
+        control.load_state_dict(variant.state_dict())
+
+
 def test_the_identity_and_the_operation_counts_follow_the_kind():
     variant, control = (AxialTimeRegion(HIDDEN, c, seed=1) for c in (VARIANT, CONTROL))
     assert variant.config.identity()["second_layer"].startswith("attention_across")
