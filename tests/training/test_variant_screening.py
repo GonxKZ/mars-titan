@@ -409,6 +409,9 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     reader = dict(
         id="c", origin=2019, definition=dict(runner="reader"), versions=[9], epoch_predictions=False
     )
+    # La regla y LightGBM cuestan su cota por origen, sin depender de las filas.
+    rule = dict(id="d", origin=2019, definition=dict(runner="rule"))
+    tabular = dict(id="e", origin=2019, definition=dict(runner="tabular"))
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
     inference = 1000 / reference["inference_rows_per_second"]
@@ -424,11 +427,15 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     )
     expected_correction = 1500 / reference["inference_rows_per_second"]
     expected_reader = reference["reader_window_seconds"] + inference
-    result = screening.cost_estimate(protocol, [fit, correction, reader], rows)
-    total = expected_fit + expected_correction + expected_reader
+    result = screening.cost_estimate(protocol, [fit, correction, reader, rule, tabular], rows)
+    bounds = reference["rule_window_seconds"] + reference["tabular_window_seconds"]
+    total = expected_fit + expected_correction + expected_reader + bounds
     assert result["hours"] == pytest.approx(total / 3600)
     assert result["hours_by_runner"]["fit"] == pytest.approx(expected_fit / 3600)
     assert result["hours_by_runner"]["reader"] == pytest.approx(expected_reader / 3600)
+    for runner in ("rule", "tabular"):
+        expected = reference[f"{runner}_window_seconds"] / 3600
+        assert result["hours_by_runner"][runner] == pytest.approx(expected)
     assert result["within_budget"] is (result["hours"] <= protocol["budget"]["max_total_gpu_hours"])
 
 
