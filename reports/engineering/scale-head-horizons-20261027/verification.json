@@ -42,9 +42,26 @@
       "errors": 0,
       "skipped": 0,
       "xml_sha256": "7bb04f18a6cd237de4d0f6adfee3f55bd48e49c2dc999b9ffd49c2a91e729aa5"
+    },
+    {
+      "name": "integration_with_the_output_objective_framework_20261028",
+      "tests": 593,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 1,
+      "xml_sha256": "848947df00d1d7e9e1bc662fab010e7d3033e6c7f6c6db48ddc26f5313b1e2a4",
+      "note": "22 módulos tras pasar F1 al marco de objetivos de salida de #760. Los cuatro fallos eran pruebas del recorrido de F1 sin actualizar: el espía de la pérdida, el mensaje de la receta y la identidad del objetivo. La omisión es la guarda del bloqueo."
+    },
+    {
+      "name": "f1_run_tests_after_their_update_20261028",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "fccd557eb958922555b2a8a20db17ad28ef64d8a68231cab09574f04a1cb0c56"
     }
   ],
-  "suites_note": "La batería dirigida con cobertura y las mutaciones se ejecutaron antes de integrar los últimos cambios de develop, con el mismo código de F1 y F5. La confirmación posterior, la regresión, test-fast y la guarda se ejecutaron sobre implementation_commit.",
+  "suites_note": "La batería dirigida con cobertura y las mutaciones se ejecutaron antes de integrar los últimos cambios de develop, con el mismo código de F1 y F5. La confirmación posterior, la regresión, test-fast y la guarda se ejecutaron sobre implementation_commit. El 28 de octubre se repitió la regresión tras integrar #760 y pasar F1 al marco común de objetivos de salida.",
   "fast_suite": {
     "command": "memslot suite --max 6G -- make test-fast",
     "summary": "11220 passed, 381 skipped, 2 warnings in 376.05s (0:06:16)"
