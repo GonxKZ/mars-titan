@@ -168,6 +168,19 @@ def test_an_absent_region_keeps_its_block_and_sends_nothing(config):
     assert torch.equal(result[0, [0, 2, 4]], base[0, [0, 2, 4]])
 
 
+@pytest.mark.parametrize("config", [VARIANT, CONTROL])
+def test_a_region_absent_now_and_in_all_its_past_stays_finite_and_intact(config):
+    """Sin ninguna posición presente, la consulta propia evita un softmax vacío."""
+    module = layer(config)
+    blocks, presence, _ = inputs()
+    empty = module.initial_history(3, device="cpu")
+    result, _ = module(blocks, presence, empty)
+    assert torch.isfinite(result).all()
+    assert torch.equal(result[0, 1], blocks[0, 1]) and torch.equal(result[2, 4], blocks[2, 4])
+    expected, _ = reference(module, blocks, presence, empty)
+    torch.testing.assert_close(result, expected, rtol=1e-12, atol=1e-12)
+
+
 def test_only_the_axial_layer_mixes_regions():
     blocks, presence, history = inputs()
     changed = history.blocks.clone()
