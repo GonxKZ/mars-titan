@@ -249,6 +249,35 @@ def test_heads_must_divide_the_hidden_size():
         CrossAssetAttention(30, CrossAssetAttentionConfig(heads=4), seed=1)
 
 
+def test_construction_refuses_other_configurations_and_precisions():
+    with pytest.raises(ValueError, match="CrossAssetAttentionConfig"):
+        CrossAssetAttention(16, asdict(VARIANT), seed=1)
+    with pytest.raises(ValueError, match="FP32 o FP64"):
+        CrossAssetAttention(16, VARIANT, seed=1, dtype=torch.bfloat16)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        dict(values=encoded()[:, :8]),
+        dict(values=encoded().float()),
+        dict(values=encoded()[:0], markets=(), instants=()),
+        dict(markets=MARKETS[:-1]),
+        dict(instants=AT[:-1]),
+    ],
+)
+def test_each_row_needs_its_representation_market_and_instant(change):
+    arguments = dict(values=encoded(), markets=MARKETS, instants=AT) | change
+    with pytest.raises(ValueError, match="un mercado y un instante por fila"):
+        module()(arguments["values"], arguments["markets"], arguments["instants"])
+
+
+def test_autocast_is_refused():
+    layer = CrossAssetAttention(16, VARIANT, seed=1)
+    with torch.autocast("cpu", dtype=torch.bfloat16), pytest.raises(ValueError, match="autocast"):
+        layer(encoded().float(), MARKETS, AT)
+
+
 def test_the_source_enters_the_trainer_identity_only_when_active():
     from mars_titan.training.financial_run import ChronologicalTrainer
 
