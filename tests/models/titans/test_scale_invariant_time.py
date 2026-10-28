@@ -155,3 +155,4 @@ def test_the_identity_records_the_spread_only_when_declared():
     identity = declared.identity()["alpha_time_scales"]
     assert identity["name"] == SCALE_INVARIANT_TIME and identity["octaves"] == 6.0
     assert plain.fingerprint() != declared.fingerprint()
+    assert declared.fingerprint() == memory_config(ScaleInvariantTime(6.0)).fingerprint()

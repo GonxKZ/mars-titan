@@ -71,6 +71,8 @@ class DifferentialMap(nn.Module):
         """Devuelve W_O[λ_h A₂,h V_h]_h para las últimas `length` posiciones de `packed`.
 
         `mask` es la máscara booleana de la MHA, con True en las posiciones que no se atienden.
+        `output_projection` es la W_O de la MHA de MAC, que no tiene bias, así que con λ nulo
+        el resultado es exactamente cero.
         """
         batch, _, dim = packed.shape
         heads = self.weight.shape[0]

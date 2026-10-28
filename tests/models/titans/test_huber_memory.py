@@ -202,6 +202,8 @@ def test_the_identity_records_the_loss_only_when_declared():
     assert declared.identity()["associative_loss"] == HuberMemory(2.0).identity()
     assert declared.identity()["associative_loss"]["name"] == HUBER_MEMORY
     assert plain.fingerprint() != declared.fingerprint()
+    # κ₀ se guarda como real, así que 2 y 2,0 declaran la misma memoria.
+    assert declared.fingerprint() == memory_config(HuberMemory(2.0)).fingerprint()
     model = NeuralMemory(declared, dtype=torch.float64)
     restored = NeuralMemory(declared, dtype=torch.float64)
     restored.load_state_dict(model.state_dict())

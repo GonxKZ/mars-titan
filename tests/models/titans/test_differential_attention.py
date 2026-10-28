@@ -1,5 +1,6 @@
 """Atención diferencial de U1 (#786): paridad al empezar, fórmula, causalidad y presupuesto."""
 
+import hashlib
 import math
 
 import pytest
@@ -166,12 +167,25 @@ def test_the_projections_use_a_derived_seed_and_the_bound_of_the_in_proj():
     bound = math.sqrt(6 / (4 * DIM))
     for value in (first.query, first.key):
         assert value.shape == (DIM, DIM) and float(value.detach().abs().max()) <= bound
+    # La semilla es la de MAC pasada por SHA-256, así que Q₂ y K₂ no repiten los primeros
+    # valores que MAC sortea con su propia semilla.
+    derived = hashlib.sha256(f"{DIFFERENTIAL_ATTENTION}/43".encode()).digest()
+    generator = torch.Generator().manual_seed(int.from_bytes(derived[:7], "little"))
+    drawn = torch.empty(2 * DIM, DIM, dtype=torch.float64).uniform_(
+        -bound, bound, generator=generator
+    )
+    assert torch.equal(first.query, drawn[:DIM]) and torch.equal(first.key, drawn[DIM:])
     assert not torch.count_nonzero(first.weight)
     reference = dict(mac().named_parameters())
     declared = dict(mac(DIFFERENTIAL_ATTENTION).named_parameters())
     for name, value in reference.items():
         assert torch.equal(declared[name], value), name
     assert torch.equal(declared["differential.query"], first.query)
+
+
+def test_the_heads_must_divide_the_dimension():
+    with pytest.raises(ValueError, match="heads debe dividir dim"):
+        DifferentialMap(DIM, 3, seed=43, dtype=torch.float64)
 
 
 def test_the_attention_budget_counts_the_second_map():

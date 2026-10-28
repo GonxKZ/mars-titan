@@ -53,3 +53,21 @@ def test_two_declarations_cannot_give_one_model_different_changes(monkeypatch, t
     monkeypatch.setattr(cost, "DECLARATIONS", ("a.json", "b.json"))
     with pytest.raises(ValueError, match="cambios distintos"):
         cost.arms()
+
+
+def test_a_measure_that_changes_a_parameter_is_refused(monkeypatch, tmp_path):
+    original = cost.inference
+
+    def altered(model, inputs):
+        seconds = original(model, inputs)
+        # El predictor rechaza el cambio en su siguiente frontera de sesión. Tras la última
+        # pasada de cada modelo solo queda la huella final de la medida para detectarlo.
+        with torch.no_grad():
+            next(model.parameters()).add_(1.0)
+        return seconds
+
+    monkeypatch.setattr(cost, "inference", altered)
+    output = tmp_path / "cost.json"
+    with pytest.raises(RuntimeError, match="modificado parámetros"):
+        cost.measure(output, rows=4, instants=2, repetitions=1, warmup=0, threads=1)
+    assert not output.exists()
