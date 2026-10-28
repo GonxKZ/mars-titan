@@ -16,43 +16,51 @@
     }
   },
   "components": [
-    {"id": "errors", "type": "database", "label": "Errores maduros", "sublabel": "estandarizados", "pos": [40, 230], "size": [180, 72]},
-    {"id": "detector", "type": "security", "label": "CUSUM o BOCPD", "sublabel": "evidencia acumulada", "pos": [300, 230], "size": [180, 72]},
-    {"id": "fast", "type": "database", "label": "Escala rápida", "sublabel": "semivida corta", "pos": [560, 40], "size": [180, 72]},
-    {"id": "gate", "type": "backend", "label": "Puerta", "sublabel": "peso de la escala rápida", "pos": [560, 230], "size": [180, 72]},
-    {"id": "slow", "type": "database", "label": "Escala lenta", "sublabel": "semivida larga", "pos": [560, 420], "size": [180, 72]},
-    {"id": "mix", "type": "frontend", "label": "Combinación", "sublabel": "predicción emitida", "pos": [820, 230], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
-    {"id": "controls", "type": "security", "label": "Control", "sublabel": "puerta constante, misma media", "pos": [1080, 420], "size": [180, 72]}
+    {"id": "errors", "type": "database", "label": "Errores maduros", "sublabel": "etiqueta − emisión final", "pos": [40, 230], "size": [180, 72]},
+    {"id": "scale", "type": "backend", "label": "Escala previa", "sublabel": "media cuadrática exponencial", "pos": [300, 40], "size": [180, 72]},
+    {"id": "detector", "type": "security", "label": "CUSUM de Page", "sublabel": "por mercado, acotado en h", "pos": [300, 230], "size": [180, 72]},
+    {"id": "gate", "type": "backend", "label": "Puerta g", "sublabel": "entre g_min y 1", "pos": [560, 230], "size": [180, 72]},
+    {"id": "memory", "type": "database", "label": "Memoria A proximal", "sublabel": "tasa η·g en ese evento", "pos": [820, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "núcleo + corrección", "pos": [820, 420], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "mismas filas, padre y receta", "pos": [1080, 420], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Control emparejado",
+      "sublabel": "g constante = media de validación",
+      "pos": [1080, 230],
+      "size": [180, 72],
+      "tag": "misma tasa media"
+    }
   ],
   "connections": [
     {"id": "errors-detector", "from": "errors", "to": "detector"},
-    {"id": "detector-gate", "from": "detector", "to": "gate", "label": "evidencia", "variant": "emphasis"},
-    {"id": "fast-mix", "from": "fast", "to": "mix"},
-    {"id": "gate-mix", "from": "gate", "to": "mix", "label": "peso", "variant": "emphasis", "labelDx": -23},
-    {"id": "slow-mix", "from": "slow", "to": "mix"},
-    {"id": "mix-screen", "from": "mix", "to": "screen"},
-    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+    {"id": "scale-detector", "from": "scale", "to": "detector", "label": "z = e / r", "labelDy": 24},
+    {"id": "detector-gate", "from": "detector", "to": "gate", "label": "S", "variant": "emphasis"},
+    {"id": "gate-memory", "from": "gate", "to": "memory", "label": "tasa", "variant": "emphasis"},
+    {"id": "memory-emit", "from": "memory", "to": "emit"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed", "labelAt": [1210, 361]}
   ],
   "cards": [
     {
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Un detector secuencial sobre errores maduros acumula evidencia de cambio",
-        "Solo con evidencia suficiente gana peso la escala rápida",
-        "Fuente: Black-Mamba (2026), Liakoni et al. (2021)"
+        "Un CUSUM sobre el error maduro estandarizado acumula evidencia de cambio",
+        "Con errores estables la memoria A escribe con g_min, tras un cambio con η completa",
+        "Motivación: Behrens et al. (2007), Nassar et al. (2010), Liakoni et al. (2021)"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Puerta constante con la misma media", "Ganancia constante sin detector"]
+      "items": ["Puerta constante igual a la media de la variante en validación", "B6 sin puerta con las mismas filas"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Coste despreciable"]
+      "items": ["Núcleo y ventanas con pruebas CPU, sin entrenar ni evaluar", "Sesión durable y CUDA pendientes"]
     }
   ]
 }

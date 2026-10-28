@@ -18,10 +18,13 @@ from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
+from .output_objectives import reads_scalar_point
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
+from .session_ic_objective import SessionScale
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -51,6 +54,9 @@ _TITANS_MODULES = (
     "bridge_stopping_record",
     "regional_mechanism_trace",
     "regional_episode_readout",
+    "session_ranks",
+    "session_ic_objective",
+    "output_objectives",
     "frozen_financial",
 )
 _SOURCE_MODULES = tuple(f"mars_titan.models.titans.{name}" for name in _TITANS_MODULES) + (
@@ -163,6 +169,8 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) in (SessionScale, LaplaceScale):
+        settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
         settings["regional_fusion"] = module.config.identity()
@@ -345,6 +353,8 @@ class FrozenFinancialConsumer:
             raise ValueError(
                 "El programa regional requiere el consumidor de mecanismos y su archivo"
             )
+        if readout is not None and not reads_scalar_point(predictor.output_objective):
+            raise ValueError("El lector necesita una integración propia del objetivo de salida")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
@@ -414,7 +424,17 @@ class FrozenFinancialConsumer:
             ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")
 
-    def prepare(self, batch, state, *, context_id, snapshot=None, warmup=False, selection=None):
+    def prepare(
+        self,
+        batch,
+        state,
+        *,
+        context_id,
+        snapshot=None,
+        warmup=False,
+        selection=None,
+        session_complete=False,
+    ):
         self.verify(strong=False)
         if type(warmup) is not bool or len(set(batch.prediction_at)) != 1:
             raise ValueError("La preparación necesita un evento y corte únicos")
@@ -430,7 +450,9 @@ class FrozenFinancialConsumer:
                 self.readout.config.refinements,
                 snapshot.count if isinstance(snapshot, EpisodeSnapshot) else 0,
             )
-        prepared = self.predictor.prepare(batch, state, differentiable=False, **options)
+        prepared = self.predictor.prepare(
+            batch, state, differentiable=False, session_complete=session_complete, **options
+        )
         if warmup:
             return FrozenPreparation(None, prepared.next_state, None, prepared.local_control)
         result = apply_episodic_readout(

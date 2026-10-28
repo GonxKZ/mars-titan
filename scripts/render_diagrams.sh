@@ -8,6 +8,16 @@ set -eu
 : "${ARCHIFY_HOME:?Indica la carpeta de archify en ARCHIFY_HOME}"
 cd "$(dirname "$0")/.."
 mkdir -p build/diagrams
+archify_for_kind() {
+  diagram_kind=$1
+  diagram_action=$2
+  shift 2
+  if [ "$diagram_kind" = architecture ]; then
+    archify "$diagram_action" "$diagram_kind" "$@" --repo-root .
+  else
+    archify "$diagram_action" "$diagram_kind" "$@"
+  fi
+}
 pairs=""
 for spec in docs/diagrams/*/*.json; do
   name=$(basename "$spec" .json)
@@ -16,9 +26,9 @@ for spec in docs/diagrams/*/*.json; do
   fi
   kind=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).diagram_type)' "$spec")
   # Si falla, se repite sin --json para mostrar los errores.
-  archify validate "$kind" "$spec" --quality showcase --json >/dev/null ||
-    { archify validate "$kind" "$spec" --quality showcase; exit 1; }
-  archify deliver "$kind" "$spec" "build/diagrams/$name.html" --quality showcase --json >/dev/null
+  archify_for_kind "$kind" validate "$spec" --quality showcase --json >"build/diagrams/$name.validation.json" ||
+    { archify_for_kind "$kind" validate "$spec" --quality showcase; exit 1; }
+  archify_for_kind "$kind" deliver "$spec" "build/diagrams/$name.html" --quality showcase --json >"build/diagrams/$name.receipt.json"
   pairs="$pairs build/diagrams/$name.html ${spec%.json}.png"
 done
 [ -n "$pairs" ] || { echo "Ningún diagrama coincide con: $*" >&2; exit 1; }

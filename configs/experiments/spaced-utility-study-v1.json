@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "kind": "spaced_utility_frozen_study_v1",
+  "variant_id": "spaced_utility_consolidation_v1",
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "retention": {
+    "capacity": 1024,
+    "frontier": 8,
+    "seed": 73,
+    "max_working_bytes": 536870912
+  },
+  "arms": ["baseline", "reservoir", "utility", "permuted_utility", "uniform_frontier", "recent"],
+  "compute_budget": {"max_seconds": 900.0, "max_phase_rows": 1000000}
+}

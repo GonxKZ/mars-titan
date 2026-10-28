@@ -55,7 +55,7 @@ def predictor(streams, *, head=HEAD, scale_weight=None):
         # Estado posterior simulado sin optimizador, con la escala dependiente de la entrada.
         generator = torch.Generator().manual_seed(7)
         with torch.no_grad():
-            model.scale_head.weight.normal_(0.0, scale_weight, generator=generator)
+            model.output_objective.weight.normal_(0.0, scale_weight, generator=generator)
         model._seal_parameters()
     return model
 
@@ -103,8 +103,8 @@ def test_every_update_uses_the_beta_nll_and_matches_the_l1_control_at_zero_scale
     laplace, reference = named_records(engine), named_records(control)
     assert len(laplace) == len(reference)
     for left, right in zip(laplace, reference, strict=True):
-        assert torch.count_nonzero(left.pop("scale_head.weight"))
-        assert left.pop("scale_head.bias").abs() > 0
+        assert torch.count_nonzero(left.pop("output_objective.weight"))
+        assert left.pop("output_objective.bias").abs() > 0
         # Sin paso real los pesos de la escala siguen en cero y el tronco recibe el
         # gradiente del control: el de la mediana es exactamente el del error absoluto.
         assert left.keys() == right.keys()
@@ -151,7 +151,7 @@ def test_future_suffix_does_not_change_past_scales_or_gradients(tmp_path):
         for name, value in left.items():
             assert same(value, right[name]), name
     later = named_records(base)[len(steps)], named_records(future)[len(steps)]
-    assert not torch.equal(later[0]["scale_head.weight"], later[1]["scale_head.weight"])
+    assert not torch.equal(later[0]["output_objective.weight"], later[1]["output_objective.weight"])
 
 
 def test_emitted_rows_carry_the_laplace_quantiles_of_each_prediction(shared):

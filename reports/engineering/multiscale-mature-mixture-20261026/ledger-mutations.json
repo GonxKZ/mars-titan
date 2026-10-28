@@ -1,0 +1,77 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_multiscale_session.py",
+      "test_sha256": "81451f6d23ced00590cadd7e6ee0eeb52bf49e5143d5aed9058640e273515997"
+    }
+  },
+  "sources": {
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "b0d9e06dc12bff72547a36e3dd6072104c0ac0b59079c090750a2b0ee28cb282"
+    },
+    "window": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "98e410a0a0e6715afecfb3ff90720467cfd258d4478188f1a49ba5a753d6557e"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "sha256": "eed3908005359ea76dd5bbbfb1316659c82b2640ca71934ec2de64056fd3566f"
+    },
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "7c7ed879884bafc5a7aa12f4ec8f22aad1a883862cb8fe9871b24411586acc4d"
+    }
+  },
+  "recipes": [
+    {
+      "id": "discard_window_components",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/memory/test_multiscale_session.py::test_linear_window_matches_independent_calendar_and_issued_loss_recurrence[unclipped_fixture]",
+      "anchor": "self._issued_experts[decision] = parts[index].detach().clone()",
+      "replacement": "self._issued_experts[decision] = torch.zeros_like(parts[index])",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "discard_session_components",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_missing_or_misaligned_pending_experts",
+      "anchor": "value[\"issued_experts\"] = parts",
+      "replacement": "value[\"issued_experts\"] = torch.zeros_like(parts)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      }
+    },
+    {
+      "id": "omit_mixture_source_pin",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_multiscale_session.py::test_session_identity_pins_the_mixture_source",
+      "anchor": "(multiscale_mixture, associative.multiscale is not None)",
+      "replacement": "(multiscale_mixture, False)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "model_id"
+      }
+    },
+    {
+      "id": "omit_artifact_budget",
+      "family": "Objective",
+      "source_key": "session",
+      "nodeid": "tests/memory/test_multiscale_session.py::test_session_rejects_a_mixture_that_cannot_fit_its_artifact_budget",
+      "anchor": "if required > 64 * 1024**2 - 65536:",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

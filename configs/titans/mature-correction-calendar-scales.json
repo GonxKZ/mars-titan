@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_mature_correction_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "forgetting": 0.0
+  },
+  "walk_forward": {
+    "search_cases": {
+      "eta5e-2": {
+        "rate": 0.05
+      },
+      "eta25e-2": {
+        "rate": 0.25
+      }
+    }
+  },
+  "pending": [
+    "Receta no canónica de E1. El olvido discreto es cero porque las semividas se aplican al tiempo de calendario.",
+    "El padre, datos, filas, cortes y casos de eta son comunes a las configuraciones comparadas. No hay nuevos parámetros compartidos, épocas u optimizador.",
+    "Las predicciones de los expertos se calculan y guardan al emitir la mezcla. Sus errores solo se utilizan tras madurar las etiquetas.",
+    "Las semividas no garantizan retención semántica. No se ejecuta ninguna comparación científica mientras la protección y el protocolo no lo permitan."
+  ]
+}

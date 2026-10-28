@@ -1,0 +1,207 @@
+{
+  "kind": "technical_durable_session_cost",
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "probe_sha256": "3969bebd88cbe19248356921239deebed04ceabfcc4a7eafab7ed625ccefe667",
+  "cpu_threads": 2,
+  "dtype": "torch.float64",
+  "cases": [
+    {
+      "seconds": 5.059013925027102,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4891921,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": false,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 6.0600348259322345,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4948075,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": true,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 6.377735356101766,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4948075,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": true,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 4.2047676329966635,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4891921,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": false,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 4.32346744206734,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4891921,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": false,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 6.668751140125096,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4948075,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": true,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 5.600608896929771,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4948075,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": true,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 4.566028088098392,
+      "common_state_sha256": "a7c9858faaba1bd88ee3d9328c1e819260cadfc7dd135ba4bbd73bcef0da8cdf",
+      "retained_bytes": 4891921,
+      "recovery_equal": true,
+      "assets": 64,
+      "active": false,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 19.508422292070463,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19452788,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": false,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 19.421953863929957,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19659086,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": true,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "seconds": 21.302178357960656,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19659086,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": true,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 16.171439546858892,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19452788,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": false,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "seconds": 15.448529161978513,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19452788,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": false,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 19.74662356893532,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19659086,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": true,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "seconds": 19.842209084890783,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19659086,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": true,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "seconds": 15.667102918960154,
+      "common_state_sha256": "b221eeaa8849998ee71628d7346c72c95bb5111cf4419fa43ee0600d6ea999a8",
+      "retained_bytes": 19452788,
+      "recovery_equal": true,
+      "assets": 256,
+      "active": false,
+      "repetition": 3,
+      "warmup": false
+    }
+  ],
+  "process_seconds_without_imports": 194.55566057306714,
+  "peak_rss_kib": 700520,
+  "limits": [
+    "Fixtures compactos, etiquetas manuales y ningún ajuste.",
+    "Incluye cuatro decisiones, cierre, recuperación, settlement y siguiente decisión.",
+    "Fuentes fuera del cronómetro. Incluye almacenamiento y comprobaciones.",
+    "Tres muestras por modo no estiman colas p95/p99 con precisión.",
+    "Sin GPU. Energía no medida.",
+    "RSS absoluto del proceso completo. No representa el incremento de E2."
+  ],
+  "summary": [
+    {
+      "assets": 64,
+      "original": {
+        "median_seconds": 4.32346744206734,
+        "median_retained_bytes": 4891921,
+        "samples": 3
+      },
+      "spaced": {
+        "median_seconds": 6.377735356101766,
+        "median_retained_bytes": 4948075,
+        "samples": 3
+      }
+    },
+    {
+      "assets": 256,
+      "original": {
+        "median_seconds": 15.667102918960154,
+        "median_retained_bytes": 19452788,
+        "samples": 3
+      },
+      "spaced": {
+        "median_seconds": 19.842209084890783,
+        "median_retained_bytes": 19659086,
+        "samples": 3
+      }
+    }
+  ]
+}

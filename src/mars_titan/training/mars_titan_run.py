@@ -60,6 +60,7 @@ from mars_titan.models.titans.financial_inputs import (
     validated_cpu_batches,
 )
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
+from mars_titan.models.titans.output_objectives import reads_scalar_point
 from mars_titan.models.titans.state import deferred_checks
 
 from . import anchored_decay
@@ -406,6 +407,8 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
+        if not reads_scalar_point(predictor.output_objective):
+            raise ValueError("El lector necesita una integración propia del objetivo de salida")
         self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
@@ -562,6 +565,8 @@ class MarsTitanInference:
                 validated = blocks.result()
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        if predictor.session_level:
+            plan = dict(plan, session_complete=len(validated) == 1)
         if self.uses_context and run.parent_context is None:
             run.parent_context = predictor.initial_context()
         # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del

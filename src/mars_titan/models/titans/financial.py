@@ -49,9 +49,10 @@ from .financial_inputs import (
     FinancialInputSpec,
 )
 from .key_competition_config import KeyCompetition
-from .laplace_scale import LaplaceScale, LaplaceScaleHead
+from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
+from .output_objectives import build_objective, check_objectives, objective_identity
 from .presence_modulation import (
     FILM,
     PRESENCE_MODULATIONS,
@@ -86,6 +87,9 @@ from .regional_variants import (
     parse_regional_variant,
 )
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
+from .session_ic_objective import SessionICObjective
+from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
+from .session_ranks import identity as session_rank_identity
 from .state import (
     MACState,
     check_differentiable,
@@ -157,7 +161,11 @@ class FinancialConfig:
     temporal_encoder: str | None = None
     # C1 o C6 de #751: sustituyen al operador regional y no se combinan con él.
     regional_variant: RegionAxisMixingConfig | SharedWorkspaceConfig | None = None
-    # F1 de #749: escala de Laplace junto a la cabeza escalar. Sin declararla nada cambia.
+    # F4 de #749: entradas en rangos gaussianos por sesión y pérdida de IC por sesión con
+    # cabeza de escala. Sin declararlas, la identidad y el cálculo no cambian.
+    session_rank_inputs: str | None = None
+    session_ic_objective: SessionICObjective | None = None
+    # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
     auxiliary_horizons: AuxiliaryHorizons | None = None
@@ -335,16 +343,15 @@ class FinancialConfig:
                 raise ValueError("El lector necesita bancos EMA o réplicas identificados")
             if self.memory_plasticity is not None or self.memory_stability is not None:
                 raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
-        if isinstance(self.laplace_scale_head, dict):
-            if set(self.laplace_scale_head) != {f.name for f in fields(LaplaceScaleHead)}:
-                raise ValueError("laplace_scale_head debe declarar floor e initial_scale")
-            object.__setattr__(
-                self, "laplace_scale_head", LaplaceScaleHead(**self.laplace_scale_head)
-            )
-        if self.laplace_scale_head is not None and (
-            type(self.laplace_scale_head) is not LaplaceScaleHead or self.head != SCALAR_HEAD
+        if self.session_rank_inputs is not None and (
+            type(self.session_rank_inputs) is not str
+            or self.session_rank_inputs != SESSION_RANK_INPUTS
+            or not masked_inputs(self.inputs.input_policy)
         ):
-            raise ValueError("laplace_scale_head necesita su configuración y la cabeza escalar")
+            raise ValueError(
+                "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
+            )
+        check_objectives(self)
         if isinstance(self.auxiliary_horizons, dict):
             if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
                 raise ValueError(
@@ -367,6 +374,12 @@ class FinancialConfig:
             ):
                 raise ValueError(
                     "Las cabezas auxiliares con fusión regional necesitan otro contraste"
+                )
+            # Las operaciones por sesión usan todas las filas emitidas de la sesión, que el
+            # cálculo fila a fila de F5 no reproduce.
+            if self.session_rank_inputs is not None or self.session_ic_objective is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
@@ -449,8 +462,9 @@ class FinancialConfig:
             result.update(regional_variant=self.regional_variant.identity())
         if self.memory_bank_readout is not None:
             result.update(memory_bank_readout=self.memory_bank_readout.identity())
-        if self.laplace_scale_head is not None:
-            result.update(laplace_scale_head=self.laplace_scale_head.identity())
+        if self.session_rank_inputs is not None:
+            result.update(session_rank_inputs=session_rank_identity())
+        result.update(objective_identity(self))
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -507,8 +521,8 @@ class PreparedDecisions:
     quantiles: torch.Tensor | None = None
     # Solo con PT4: el contexto con los tokens de este bloque pendientes de su sesión.
     next_context: object = None
-    # Solo con `laplace_scale_head_v1`: [flujos], la escala b de cada predicción.
-    scales: torch.Tensor | None = None
+    # Solo con un objetivo de salida de #749: [flujos, k] salidas que usa su pérdida.
+    outputs: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -675,12 +689,8 @@ class FinancialPredictor(nn.Module):
             if local_control is not None
             else None
         )
-        # F1 se crea al final y sin el generador global, como PT6.
-        self.scale_head = (
-            LaplaceScale(config.hidden_size, config.laplace_scale_head, dtype=dtype)
-            if config.laplace_scale_head is not None
-            else None
-        )
+        # Los objetivos de #749 se crean al final y sin el generador global.
+        self.output_objective = build_objective(config, dtype=dtype)
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -692,6 +702,14 @@ class FinancialPredictor(nn.Module):
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
+
+    @property
+    def session_level(self):
+        """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        objective = self.output_objective
+        return self.config.session_rank_inputs is not None or (
+            objective is not None and objective.session_level
+        )
 
     def _signature(self):
         return tuple(
@@ -1273,11 +1291,14 @@ class FinancialPredictor(nn.Module):
         control_context_id=None,
         context=None,
         context_selection=None,
+        session_complete=False,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
         Las comprobaciones de datos en CUDA se resuelven juntas antes de devolver, con el
         mismo error y mensaje que en su línea, para no esperar al dispositivo en cada una.
+        `session_complete=True` declara que el bloque contiene todas las filas de su instante,
+        condición que exigen las operaciones por sesión de #749.
         """
         with deferred_checks():
             return self._prepare(
@@ -1288,6 +1309,7 @@ class FinancialPredictor(nn.Module):
                 control_context_id=control_context_id,
                 context=context,
                 context_selection=context_selection,
+                session_complete=session_complete,
             )
 
     def _prepare(
@@ -1300,6 +1322,7 @@ class FinancialPredictor(nn.Module):
         control_context_id,
         context,
         context_selection=None,
+        session_complete=False,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1326,6 +1349,15 @@ class FinancialPredictor(nn.Module):
                 raise ValueError("Las entradas y los parámetros necesitan el mismo dispositivo")
         if any(value.dtype != self.head.weight.dtype for value in batch.inputs.values()):
             raise ValueError("Las entradas y los parámetros necesitan la misma precisión")
+        if self.session_level and session_complete is not True:
+            raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
+        markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        received = batch
+        if self.config.session_rank_inputs is not None:
+            # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
+            batch = batch.derived(
+                rank_session_inputs(batch.inputs, markets), self.config.session_rank_inputs
+            )
         if self.local_control is None:
             if control_selection is not None or control_context_id is not None:
                 raise ValueError("El predictor anterior no admite una selección de C")
@@ -1407,18 +1439,17 @@ class FinancialPredictor(nn.Module):
                     context_id=control_context_id,
                     differentiable=differentiable,
                 )
-            quantiles = None
+            quantiles = outputs = None
             if self.config.head == QUANTILE_HEAD:
                 quantiles = self.head(encoded)
                 check_finite(quantiles, "Los cuantiles")
                 point = median(quantiles)
             else:
                 point = self.head(encoded).squeeze(-1)
+                if self.output_objective is not None:
+                    outputs, point = self.output_objective(point, encoded, markets)
+                    check_finite(outputs, "Las salidas del objetivo")
             check_finite(point, "La predicción")
-            scales = None
-            if self.scale_head is not None:
-                scales = self.scale_head(encoded)
-                check_finite(scales, "La escala de Laplace")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
             state,
@@ -1435,12 +1466,12 @@ class FinancialPredictor(nn.Module):
             token.detach().clone(),
             next_state,
             hashlib.sha256(canonical([self._config_id(), self._parameter_id]).encode()).hexdigest(),
-            batch.input_digest,
+            received.input_digest,
             working,
             local_result,
             quantiles,
             next_context,
-            scales,
+            outputs,
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

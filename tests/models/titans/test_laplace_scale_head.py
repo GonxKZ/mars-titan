@@ -19,6 +19,7 @@ from mars_titan.models.titans.laplace_scale import (
     laplace_beta_nll,
     laplace_quantiles,
 )
+from mars_titan.models.titans.session_ic_objective import SessionICObjective
 from mars_titan.training.search_cases import checked_predictor_changes
 
 HEAD = LaplaceScaleHead(floor=1e-6, initial_scale=0.02)
@@ -137,10 +138,14 @@ def test_scale_starts_at_the_declared_value_without_global_rng():
     module = LaplaceScale(8, HEAD, dtype=torch.float64)
     assert torch.equal(before, torch.random.get_rng_state())
     assert torch.count_nonzero(module.weight) == 0
-    value = module(torch.randn(5, 8, dtype=torch.float64))
+    assert not module.session_level and module.row_decomposable
+    point = torch.randn(5, dtype=torch.float64)
+    outputs, emitted = module(point, torch.randn(5, 8, dtype=torch.float64), ["US"] * 5)
+    assert emitted is point and torch.equal(outputs[:, 0], point)
     torch.testing.assert_close(
-        value, torch.full((5,), 0.02, dtype=torch.float64), rtol=1e-14, atol=0
+        outputs[:, 1], torch.full((5,), 0.02, dtype=torch.float64), rtol=1e-14, atol=0
     )
+    assert torch.equal(module.levels(outputs), laplace_quantiles(point, outputs[:, 1]))
     with pytest.raises(ValueError, match="configuración de Laplace"):
         LaplaceScale(8, asdict(HEAD))
 
@@ -153,17 +158,22 @@ def test_declaration_travels_as_a_predictor_change_with_its_own_identity():
     assert changed.laplace_scale_head == HEAD
     assert "laplace_scale_head" not in base.config.identity()
     identity = changed.identity()
-    assert identity["laplace_scale_head"] == HEAD.identity()
-    assert identity["laplace_scale_head"]["name"] == LAPLACE_SCALE_HEAD
-    assert {
-        k: v for k, v in identity.items() if k != "laplace_scale_head"
-    } == base.config.identity()
-    with pytest.raises(ValueError, match="floor e initial_scale"):
+    # F1 es un objetivo de salida, como el de IC por sesión, y se identifica igual.
+    assert identity["output"] == LAPLACE_SCALE_HEAD
+    assert identity["output_objective"] == HEAD.identity()
+    reference = base.config.identity()
+    assert reference["output"] != LAPLACE_SCALE_HEAD and "output_objective" not in reference
+    assert {k: v for k, v in identity.items() if k not in ("output", "output_objective")} == {
+        k: v for k, v in reference.items() if k != "output"
+    }
+    with pytest.raises(ValueError, match="toda su configuración"):
         replace(base.config, laplace_scale_head=dict(floor=1e-6))
     with pytest.raises(ValueError, match="cabeza escalar"):
         replace(base.config, head=QUANTILE_HEAD, laplace_scale_head=HEAD)
-    with pytest.raises(ValueError, match="cabeza escalar"):
+    with pytest.raises(ValueError, match="sus valores o None"):
         replace(base.config, laplace_scale_head="laplace_scale_head_v1")
+    with pytest.raises(ValueError, match="excluyentes"):
+        replace(base.config, laplace_scale_head=HEAD, session_ic_objective=SessionICObjective())
     with pytest.raises(ValueError):
         checked_predictor_changes(dict(laplace_scale_head={}))
 
@@ -172,7 +182,7 @@ def test_declaration_travels_as_a_predictor_change_with_its_own_identity():
 def test_disabled_head_is_the_reference_and_enabled_head_keeps_its_median(variant):
     control, batch = setup(variant)
     reference, _ = setup(variant)
-    assert reference.config == control.config and reference.scale_head is None
+    assert reference.config == control.config and reference.output_objective is None
     assert reference._parameter_id == control._parameter_id
     before = torch.random.get_rng_state().clone()
     model = api().FinancialPredictor(
@@ -180,16 +190,17 @@ def test_disabled_head_is_the_reference_and_enabled_head_keeps_its_median(varian
     )
     assert torch.equal(before, torch.random.get_rng_state())
     shared = dict(model.named_parameters())
-    names = set(shared) - {"scale_head.weight", "scale_head.bias"}
+    names = set(shared) - {"output_objective.weight", "output_objective.bias"}
     assert names == set(dict(control.named_parameters()))
     for name, value in control.named_parameters():
         assert torch.equal(value, shared[name]), name
     expected = control.prepare(batch, control.initial_state(batch.flow_ids))
     result = model.prepare(batch, model.initial_state(batch.flow_ids))
-    assert expected.scales is None
+    assert expected.outputs is None
     # La mediana no cambia al añadir la escala, que empieza en su valor declarado.
     assert torch.equal(result.point_predictions, expected.point_predictions)
-    torch.testing.assert_close(result.scales, torch.full((2,), 0.02, dtype=torch.float64))
+    assert torch.equal(result.outputs[:, 0], result.point_predictions)
+    torch.testing.assert_close(result.outputs[:, 1], torch.full((2,), 0.02, dtype=torch.float64))
     assert result.quantiles is None
 
 
@@ -202,11 +213,11 @@ def laplace_and_control_gradients(scale_weight=None):
         # Estado posterior simulado sin optimizador: la escala ya depende del estado codificado.
         generator = torch.Generator().manual_seed(7)
         with torch.no_grad():
-            model.scale_head.weight.normal_(0.0, scale_weight, generator=generator)
+            model.output_objective.weight.normal_(0.0, scale_weight, generator=generator)
         model._seal_parameters()
     target = torch.tensor([0.01, -0.03], dtype=torch.float64)
     result = model.prepare(batch, model.initial_state(batch.flow_ids), differentiable=True)
-    laplace_beta_nll(torch.stack((result.point_predictions, result.scales), -1), target).backward()
+    model.output_objective.loss(result.outputs, target, None).backward()
     expected = control.prepare(batch, control.initial_state(batch.flow_ids), differentiable=True)
     functional.l1_loss(expected.point_predictions, target).backward()
     grads = {name: value.grad for name, value in model.named_parameters()}
@@ -220,8 +231,8 @@ def test_gradients_reach_the_scale_and_the_median_keeps_the_l1_gradient(scale_we
     # La cabeza de la mediana solo ve ∂L/∂μ, que es el del error absoluto.
     assert torch.equal(grads["head.weight"], references["head.weight"])
     assert torch.equal(grads["head.bias"], references["head.bias"])
-    assert torch.count_nonzero(grads["scale_head.weight"])
-    assert grads["scale_head.bias"].abs() > 0
+    assert torch.count_nonzero(grads["output_objective.weight"])
+    assert grads["output_objective.bias"].abs() > 0
     trunk = ("fusion.0.weight", "mac.persistent")
     if scale_weight is None:
         # Con los pesos de la escala en cero, el tronco recibe el gradiente del control.
@@ -236,7 +247,7 @@ def test_state_dict_round_trip_restores_the_scale():
     config = replace(control.config, laplace_scale_head=HEAD)
     model = api().FinancialPredictor(config, dtype=torch.float64)
     with torch.no_grad():
-        model.scale_head.weight.normal_(generator=torch.Generator().manual_seed(5))
+        model.output_objective.weight.normal_(generator=torch.Generator().manual_seed(5))
     model._seal_parameters()
     restored = api().FinancialPredictor(config, dtype=torch.float64)
     assert restored._parameter_id != model._parameter_id
@@ -244,8 +255,8 @@ def test_state_dict_round_trip_restores_the_scale():
     assert restored._parameter_id == model._parameter_id
     left = model.prepare(batch, model.initial_state(batch.flow_ids))
     right = restored.prepare(batch, restored.initial_state(batch.flow_ids))
-    assert torch.equal(left.scales, right.scales)
-    assert not torch.allclose(left.scales, torch.full_like(left.scales, 0.02))
+    assert torch.equal(left.outputs, right.outputs)
+    assert not torch.allclose(left.outputs[:, 1], torch.full_like(left.outputs[:, 1], 0.02))
     with pytest.raises(ValueError, match="contrato completo"):
         control.load_state_dict(model.state_dict())
 
@@ -275,8 +286,8 @@ def test_declared_arms_build_with_the_walk_forward_factory(device):
             raw_batch(), model.config.inputs, device=device, dtype=torch.float32
         )
         result = model.prepare(batch, model.initial_state(batch.flow_ids))
-        scales[name] = result.scales
-        if result.scales is not None:
-            assert "scale_head.weight" in parameter_roles(model)["shared"]
+        scales[name] = None if result.outputs is None else result.outputs[:, 1]
+        if result.outputs is not None:
+            assert "output_objective.weight" in parameter_roles(model)["shared"]
     assert scales["absolute_error_control"] is None
     assert torch.isfinite(scales["laplace_scale_head"]).all()

@@ -83,6 +83,14 @@ def test_operators_that_mix_rows_are_refused_because_tokens_are_recomputed_alone
         model.fused_tokens(batch.inputs, batch.presence)
 
 
+def test_session_level_operations_are_refused_because_tokens_are_recomputed_alone():
+    from mars_titan.models.titans.session_ic_objective import SessionICObjective
+
+    base, _ = setup()
+    with pytest.raises(ValueError, match="operaciones por sesión"):
+        replace(base.config, auxiliary_horizons=CONFIG, session_ic_objective=SessionICObjective())
+
+
 def test_heads_use_their_own_generator_and_leave_the_reference_untouched():
     control, batch = setup()
     before = torch.random.get_rng_state().clone()

@@ -1,6 +1,6 @@
 # Escala de Laplace con β-NLL
 
-Este documento describe F1 del estudio de variantes de [#742](https://github.com/GonxKZ/mars-titan/issues/742), que se implementa en [#749](https://github.com/GonxKZ/mars-titan/issues/749). `laplace_scale_head_v1` es un componente opcional de `FinancialConfig` (`laplace_scale_head`) que añade a la cabeza escalar una escala por fila y cambia la pérdida del ajuste por una NLL de Laplace ponderada.
+Este documento describe F1 del estudio de variantes de [#742](https://github.com/GonxKZ/mars-titan/issues/742), que se implementa en [#749](https://github.com/GonxKZ/mars-titan/issues/749). `laplace_scale_head_v1` es un componente opcional de `FinancialConfig` (`laplace_scale_head`) que añade a la cabeza escalar una escala por fila y cambia la pérdida del ajuste por una NLL de Laplace ponderada. Desde la integración con F4 es un objetivo de salida del marco común de `output_objectives`, igual que el objetivo de IC por sesión. Los dos sustituyen la pérdida MAE de la cabeza escalar y no se pueden declarar a la vez.
 
 Está integrada en el predictor, en el recorrido cronológico y en la escritura de predicciones de la ventana. Se ha comprobado con pruebas en CPU sobre fixtures. La comprobación CUDA está pendiente porque la GPU está ocupada. No se ha entrenado ni evaluado con datos financieros y nada de lo que sigue es una mejora observada.
 
@@ -45,7 +45,7 @@ q₀,₅ es exactamente μ y los cinco valores son no decrecientes en coma flota
 - El suelo b_min es una decisión propia, no del artículo.
 - La escala comparte el estado codificado con la mediana. Una escala con su propio tronco sería otro contraste.
 - Con la memoria v1 sin residual ni LayerNorm, el estado codificado del fixture es casi nulo ([escala de la salida de MAC](../engineering/titans-mac-output-scale.md)) y la escala no varía entre filas. Las pruebas del recorrido usan la memoria de la receta histórica.
-- F1 se rechaza con la cabeza de cuantiles, con una receta distinta de `mae`, con destilación, en el postentrenamiento y en el ajuste Dust inicial, que no tienen todavía una pérdida declarada para la escala. El lector episódico consume μ como cualquier otro padre y no ajusta la escala.
+- F1 se rechaza con la cabeza de cuantiles, con una receta distinta de `mae`, con destilación, en el postentrenamiento y en el ajuste Dust inicial, que no tienen todavía una pérdida declarada para la escala. El lector episódico consume μ como cualquier otro padre y no ajusta la escala. El objetivo declara `scalar_point`, porque su punto emitido es la cabeza escalar sin transformar. El objetivo de IC por sesión no lo cumple y el lector lo sigue rechazando.
 
 ## Correspondencia entre ecuaciones, módulo y prueba
 
@@ -63,7 +63,7 @@ Las pruebas del predictor están en `tests/models/titans/test_laplace_scale_head
 
 ## Paridad, estado y recuperación
 
-Sin declarar `laplace_scale_head`, `FinancialConfig.identity()` no cambia, el predictor no crea el módulo y `PreparedDecisions.scales` vale None. Con la escala, los parámetros de la referencia conservan sus valores iniciales con la misma semilla, la mediana inicial coincide bit a bit y el generador global no avanza. Solo se añaden `scale_head.weight` y `scale_head.bias`, 65 parámetros con H = 64, que pertenecen al papel `shared` del optimizador. No hay estado por flujo. La escala viaja en el `state_dict` del checkpoint y la prueba de ida y vuelta reproduce las escalas tras cargarlo.
+Sin declarar `laplace_scale_head`, `FinancialConfig.identity()` no cambia, el predictor no crea el módulo y `PreparedDecisions.outputs` vale None. Con la escala, la identidad registra `output` y `output_objective` como cualquier objetivo de salida, los parámetros de la referencia conservan sus valores iniciales con la misma semilla, la mediana inicial coincide bit a bit y el generador global no avanza. `PreparedDecisions.outputs` contiene [μ, b] por fila. Solo se añaden `output_objective.weight` y `output_objective.bias`, 65 parámetros con H = 64, que pertenecen al papel `shared` del optimizador. No hay estado por flujo. La escala viaja en el `state_dict` del checkpoint y la prueba de ida y vuelta reproduce las escalas tras cargarlo.
 
 ## Controles
 

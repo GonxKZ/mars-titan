@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T21:46:07.794459+00:00",
+  "kind": "frozen_correction_window_integration_fixture_checks",
+  "implementation_commit": "b829091cc439072bec26811134b611e4ca80a556",
+  "tests": {
+    "passed": 160,
+    "new": 59,
+    "regressions": 101,
+    "skipped": 0,
+    "failures": 0,
+    "full_suite_executed": false,
+    "by_module": {
+      "tests.memory.test_salience_correction": 42,
+      "tests.training.test_salience_correction_window": 11,
+      "tests.training.test_salience_window_profile": 1,
+      "tests.training.test_historical_fixture_layout": 5,
+      "tests.memory.test_salience_budget": 57,
+      "tests.memory.test_multiscale_mixture": 30,
+      "tests.training.test_learning_hold": 14
+    },
+    "xml_sha256": "11fdc08d734b4308590cfff2824a4876176bd8be39fe3bfcddeef3d8220629cc",
+    "strengthened_regeneration": {
+      "passed": 1,
+      "counts_overlap": true,
+      "xml_sha256": "f80f65d9e0aef0e8610d6cf91714a1263765a77ffd500901037c9478697ab245"
+    }
+  },
+  "integration": {
+    "window_api": true,
+    "carried_predictions": true,
+    "phase_recovery": true,
+    "financial_session": false,
+    "calendar_session_budget": false,
+    "cuda_verified": false
+  },
+  "cuda": {
+    "collected": 6,
+    "executed": 0,
+    "collection_sha256": "3bbff8f4b5959743df3daddb9bffb4cefa1815f583e25e26f9f2c3ee033597d1",
+    "reason": "Dos procesos de cómputo ajenos y 745 MiB libres, por debajo del margen de admisión. No se intentó carga ni fallback silencioso."
+  },
+  "legacy": {
+    "correction_class_source_unchanged": true,
+    "source_segment_sha256": "ded9a7e58bfe84d6854a0453533151dbf4c4e10447248db10eb961c56f779cab",
+    "parity": "Las lecturas, coeficientes y métricas con cupo grande coinciden con B6/B1/B2/E1. Sin factor se conserva la clase original.",
+    "runtime_limit": "Los recibos antiguos conservan sus fuentes fijadas. No se rebajaron hashes para reanudar con otro código."
+  },
+  "compute": {
+    "device": "cpu",
+    "dtype": "float64",
+    "scientific_data": false,
+    "shared_parameter_updates": false,
+    "final_test_access": false
+  },
+  "quality": {
+    "primary": "quality.json",
+    "support": "quality-support.json",
+    "reused": "quality-reused.json",
+    "convention": "CRAP por cobertura de sentencias. Ramas informadas por separado."
+  },
+  "cost": {
+    "completed_windows": 32,
+    "phases_per_window": 3,
+    "warmup_windows": 8,
+    "measured_windows": 24,
+    "assets": [
+      64,
+      256
+    ],
+    "price_row_group_size": 8192,
+    "partial_attempt_retained": "cost-incomplete-v2.json",
+    "profile": "preparation-profile.json"
+  },
+  "harness_notes": [
+    "El primer arnés de coste no se colectó por un import dependiente del directorio. Se corrigió con imports completos de paquete.",
+    "Un intento terminó por un límite de 660 s con 16 ventanas de 64 activos completadas antes de crear el padre de 256 activos. Sus tiempos de bucle de fase no sustituyen latencia completa.",
+    "La ejecución compacta inicial agotó 300 s por tamaño. La final completó la misma matriz con 900 s por tamaño y salida nueva, sin reducir precisión o repeticiones.",
+    "Se conserva un recibo parcial por muestra y se rechazan salidas existentes para no medir la relectura de informes como inferencia nueva.",
+    "Una redirección de prueba antigua a un bloqueo temporal cerrado no estaba declarada. Se documentó sin cambiar su conducta ni la protección global.",
+    "La referencia de claves del test independiente tenía una dimensión adicional. Se corrigió concatenando las filas del codec, sin cambiar producción.",
+    "La regeneración se reforzó porque una mutación sobrevivía al comparar solo pronósticos en un fixture homogéneo. Ahora comprueba también el estado y los contadores E3."
+  ],
+  "sources": {
+    "src/mars_titan/training/salience_inference.py": "878ea152ebd00c445ca9cd1d63d79fb67413bc6c082c55e93f81b1a1c4c79bd3",
+    "src/mars_titan/training/mars_titan_correction.py": "f609f0652fee20384a6b947805965c0324bb7d0912cf5eb566fb9a32c6ef3f53",
+    "src/mars_titan/memory/salience_budget.py": "4e876a3a5dd04a92169ef6d35ae00cb3ee9e1fc88b1255b20964ced75c1627db",
+    "tests/memory/test_salience_correction.py": "3d75f04ee731b2a0c81d934f5251d7fdd6f665770727e541516149dd208cc1bc",
+    "tests/training/test_salience_correction_window.py": "817deb2de6ef417be59769b1f31647276e67bce1f7f4ea7ef9caa981d52eceaa",
+    "tests/training/test_salience_window_profile.py": "a3a44a9cacdaf2dbab4cfaf2c3d2935ce25186f0325506867fec0151b5a9843b",
+    "tests/training/test_historical_fixture_layout.py": "be4be93039f32259fb18ee46fe3a20bb297a68872d6a5c507fbef35c2aa93639",
+    "tests/training/historical_temporal_fixture.py": "c3f5d48a7d5129eb4adcf907a4e801f56ce3274caa84df0e75a6c8154e5d293a",
+    "tests/memory/spaced_window_fixture.py": "ece8d0f39c8c305471de319d4289207a4f28da56ea611f2092ce285ce4839a21",
+    "tests/learning_hold_lowering.py": "b087eab747170dc84218a8b7dc83cd8e540496d265bff9c03d86a8ac69623493",
+    "tests/memory/cuda_salience_correction_check.py": "4a2d447f470e6b08aee6467c1733b0b3f9a357cbb748a3e8d7ddf43e971c3305",
+    "benchmarks/salience_window_cost_check.py": "e3876f38706f826630f431b299dd492fb40bea7bc867533fa61392f9be290041",
+    "configs/experiments/salience-correction-window-v1.json": "4a81081e04e9e8bd38cb970b1aaff7a390ab9aa3ef825b946257520e2380c42d"
+  },
+  "limits": [
+    "El cupo permanece por mercado y publicación completa, sin equivalencia general demostrada con una sesión de calendario.",
+    "La sesión durable y los casos parciales, tardíos y ausentes quedan pendientes.",
+    "El corpus y el padre son fixtures identificados sin entrenamiento. No hay efecto predictivo o de generalización medido.",
+    "Los tiempos no acreditan aceleración, p95/p99 estable, energía o coste del universo real.",
+    "Las actualizaciones de memoria son las del mecanismo técnico, no pasos del optimizador ni reajustes de parámetros compartidos."
+  ],
+  "artifacts": {
+    "cost.json": "ec170411e9d37a267edfa2b71869b63ffdd0c5771e523deec599ed2c4599a266",
+    "quality-support.json": "01511dfdf142e5fa5e4ee3fe1bae5e5bfea0c53b23e327dc9fa9693bfce58385",
+    "mutations.json": "9dcb4077eadbbd73e550649f7e6a9ab3785b64d25d8b62fda52ccfff4097bbda",
+    "cost-incomplete-v2.json": "b5ac802ca914fe1bc2d2952f58f76921ba0b3ab451674a967236ee4be813418e",
+    "preparation-profile.json": "feb8e048fa5be8263193dd977174ab181b908660d3eb8a8382df0d842c742e85",
+    "quality.json": "2dca26aa40a9276331d9152bbad1dec3e57598a9250e5dcb84ed424e6d0c6225",
+    "quality-reused.json": "6e7d99c652e7844df69371eb2df8105519a607ecd727e478f00c1e7c204f4b49"
+  },
+  "mutations": {
+    "planned": 12,
+    "killed": 12,
+    "optimizer_attempts": 0,
+    "green_controls": true,
+    "earlier_survivor_retained": true
+  }
+}

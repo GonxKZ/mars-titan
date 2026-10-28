@@ -61,6 +61,10 @@ class LaplaceScaleHead:
         object.__setattr__(self, "floor", floor)
         object.__setattr__(self, "initial_scale", initial)
 
+    @property
+    def name(self):
+        return LAPLACE_SCALE_HEAD
+
     def identity(self):
         return dict(
             schema_version=1,
@@ -76,9 +80,22 @@ class LaplaceScaleHead:
             emitted_quantiles="laplace_quantiles_at_quantile_head_levels",
         )
 
+    def build(self, hidden_size, *, seed, dtype):
+        return LaplaceScale(hidden_size, self, dtype=dtype)
+
 
 class LaplaceScale(nn.Module):
-    """Proyección lineal del estado codificado a la escala b de la Laplace."""
+    """Proyección lineal del estado codificado a la escala b de la Laplace.
+
+    Es el módulo del objetivo de salida F1: las salidas del ajuste son [μ, b] por fila, la
+    predicción emitida es la mediana μ de la cabeza escalar y las filas emitidas llevan los
+    cuantiles de la Laplace.
+    """
+
+    session_level = False
+    row_decomposable = True
+    # El punto emitido es la salida de la cabeza escalar sin transformar.
+    scalar_point = True
 
     def __init__(self, hidden_size, config, *, dtype=torch.float32):
         super().__init__()
@@ -93,9 +110,20 @@ class LaplaceScale(nn.Module):
         self.weight = nn.Parameter(torch.zeros(1, hidden_size, dtype=dtype))
         self.bias = nn.Parameter(torch.tensor([bias], dtype=dtype))
 
-    def forward(self, encoded):
+    def scale(self, encoded):
         logit = functional.linear(encoded, self.weight, self.bias).squeeze(-1)
         return functional.softplus(logit) + self.config.floor
+
+    def forward(self, point, encoded, markets):
+        return torch.stack((point, self.scale(encoded)), dim=-1), point
+
+    def loss(self, outputs, target, sessions):
+        return laplace_beta_nll(outputs, target)
+
+    def levels(self, outputs):
+        """Cuantiles emitidos [filas, 5] a partir de las salidas [μ, b] sin gradiente."""
+        point, scale = outputs.detach().unbind(-1)
+        return laplace_quantiles(point, scale)
 
 
 def laplace_beta_nll(prediction, target):

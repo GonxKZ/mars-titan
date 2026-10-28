@@ -49,7 +49,7 @@ Sin declarar `auxiliary_horizons`, `FinancialConfig.identity()`, el estado expor
 - La suma de residuos diarios no es un residuo de h sesiones con α̂ y β̂ reestimados para ese horizonte.
 - El token se recalcula al madurar con los parámetros vigentes, no con los de la emisión. Es la única forma de obtener gradiente sin conservar grafos durante 20 sesiones.
 - El término no ajusta MAC. Unas cabezas sobre la salida de MAC necesitarían conservar o reconstruir el estado rápido de cada flujo en la emisión.
-- Con fusión regional, programa regional o sus variantes C1 y C6 de [#751](https://github.com/GonxKZ/mars-titan/issues/751), el token depende del bloque emitido y no se calcula fila a fila. Esas combinaciones se rechazan, igual que el postentrenamiento, que no tiene todavía una pérdida declarada para las cabezas, y el ajuste Dust inicial. Los rangos por sesión de F4 necesitarían guardar las entradas ya transformadas.
+- Con fusión regional, programa regional o sus variantes C1 y C6 de [#751](https://github.com/GonxKZ/mars-titan/issues/751), el token depende del bloque emitido y no se calcula fila a fila. Esas combinaciones se rechazan, igual que el postentrenamiento, que no tiene todavía una pérdida declarada para las cabezas, y el ajuste Dust inicial. También se rechazan los rangos por sesión y el objetivo de IC de F4, porque usan todas las filas emitidas de la sesión y el cálculo fila a fila no las reproduce. Los rangos necesitarían guardar las entradas ya transformadas.
 - Las entradas guardadas ocupan unos 7,1 kB por decisión en FP32 con las dimensiones de v3.1. El tamaño de checkpoint y la memoria crecen con el número de activos (tabla de coste).
 
 ## Correspondencia entre ecuaciones, módulo y prueba

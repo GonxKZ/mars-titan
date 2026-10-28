@@ -1,0 +1,75 @@
+{
+  "kind": "prefix_signature_abba_comparison",
+  "criterion": "at_least_5_percent_pooled_median_reduction_and_both_candidate_processes_better_than_adjacent_reference_in_both_modes",
+  "results": [
+    {
+      "diagnostics": false,
+      "samples": {
+        "a1": [
+          1.6634633098728955,
+          1.8928489980753511,
+          1.8392873839475214
+        ],
+        "b1": [
+          1.365091442130506,
+          1.4099549918901175,
+          1.5286060150247067
+        ],
+        "b2": [
+          1.8361739120446146,
+          1.7163909708615392,
+          1.566268587950617
+        ],
+        "a2": [
+          4.191523903049529,
+          3.7572678211145103,
+          3.4567135588731617
+        ]
+      },
+      "original_median_seconds": 2.6747812784742564,
+      "candidate_median_seconds": 1.547437301487662,
+      "reduction_percent": 42.14714623805248,
+      "neighbor_processes_better": true
+    },
+    {
+      "diagnostics": true,
+      "samples": {
+        "a1": [
+          1.9943083520047367,
+          1.8563003479503095,
+          1.8150460631586611
+        ],
+        "b1": [
+          1.9878399060107768,
+          1.6165485489182174,
+          1.5796906971372664
+        ],
+        "b2": [
+          2.1113093560561538,
+          1.9667428319808096,
+          2.1295406210701913
+        ],
+        "a2": [
+          4.054642613977194,
+          3.7731823280919343,
+          3.748065538937226
+        ]
+      },
+      "original_median_seconds": 2.8711869454709813,
+      "candidate_median_seconds": 1.9772913689957932,
+      "reduction_percent": 31.1333115346328,
+      "neighbor_processes_better": true
+    }
+  ],
+  "endpoint_sha256": "80865783ba02b4aa28314054033d19927b88feb7260767e970098d65f84d8850",
+  "checkpoint_comparisons": 64,
+  "prediction_comparisons": 16384,
+  "scope": "Paridad de puntos y contadores por activo/fecha en checkpoints4/5, con metadatos propios de cada origen. La paridad completa de memoria y reanudación dentro de cada ejecución se conserva en sus recibos.",
+  "numeric_criterion_met": true,
+  "adopted": false,
+  "interpretation": "inconclusive_reference_drift",
+  "reference_drift": {
+    "original": 2.042784533785348,
+    "diagnostic": 2.0326356843375093
+  }
+}

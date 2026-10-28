@@ -11,6 +11,7 @@ from mars_titan.models.titans.auxiliary_horizons import AuxiliaryHorizons
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.financial_inputs import DecisionBatch
 from mars_titan.models.titans.laplace_scale import LaplaceScaleHead
+from mars_titan.models.titans.session_ic_objective import SessionICObjective
 
 DEVICES = ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)]
 DTYPES = [torch.float32, torch.float64]
@@ -128,6 +129,7 @@ def test_instrumented_clean_core_matches_prepare_values_and_all_bp_gradients(dev
         dict(presence_modulation="wide_fusion_v1"),
         dict(laplace_scale_head=LaplaceScaleHead()),
         dict(auxiliary_horizons=AuxiliaryHorizons()),
+        dict(session_ic_objective=SessionICObjective()),
     ],
 )
 def test_unsupported_models_are_rejected_without_changing_the_predictor(changes):

@@ -58,8 +58,17 @@ PREDICTOR_CHANGES = (
     "memory_bank_readout",
     "temporal_encoder",
     "regional_variant",
+    "session_rank_inputs",
+    "session_ic_objective",
     "laplace_scale_head",
     "auxiliary_horizons",
+)
+# Cambios que se declaran con un nombre en lugar de un objeto.
+NAMED_CHANGES = (
+    "presence_modulation",
+    "attention_layout",
+    "temporal_encoder",
+    "session_rank_inputs",
 )
 
 
@@ -73,7 +82,7 @@ def checked_predictor_changes(changes):
         and set(changes) <= set(PREDICTOR_CHANGES)
         and all(
             (type(value) is str and bool(value))
-            if name in ("presence_modulation", "attention_layout", "temporal_encoder")
+            if name in NAMED_CHANGES
             else (isinstance(value, dict) and bool(value))
             for name, value in changes.items()
         )
@@ -81,10 +90,11 @@ def checked_predictor_changes(changes):
         raise ValueError(
             "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
             "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion, "
-            "regional_execution, memory_bank_readout, regional_variant, laplace_scale_head y "
-            "auxiliary_horizons "
+            "regional_execution, memory_bank_readout, regional_variant, session_ic_objective, "
+            "laplace_scale_head y auxiliary_horizons "
             "como objetos no vacíos, "
-            "y presence_modulation, attention_layout y temporal_encoder como nombres no vacíos"
+            "y presence_modulation, attention_layout, temporal_encoder y session_rank_inputs "
+            "como nombres no vacíos"
         )
     return changes
 

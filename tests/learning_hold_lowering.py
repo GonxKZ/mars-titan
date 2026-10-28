@@ -159,12 +159,6 @@ INVENTORY = {
         "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
         "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
     ),
-    "tests/training/test_mars_titan_correction.py::"
-    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it": (
-        "ejecuta la ventana B6 con la regla kalman y su traslado sobre el padre que ajusta la "
-        "fixture del módulo con el optimizador que no modifica pesos, y los dos ejecutores se "
-        "detienen con la protección"
-    ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
         "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
@@ -360,6 +354,12 @@ _REUSES = (
 # `learning_doubles_module`, `allowed_hold`) y a la variable o la ruta de la protección. La
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
+    "tests/training/test_salience_correction_window.py": (
+        1,
+        "recorre la corrección E3 con un padre de pesos literales, sin construir entrenadores "
+        "ni ejecutar pasos de optimizador",
+    ),
+    "tests/training/test_area_correction_bounded.py": (1, _RECORDER),
     "tests/conftest.py": (2, _DEFINES),
     "tests/training/test_window_variants.py": (
         1,
@@ -442,6 +442,7 @@ DOUBLES = {
     "tests/training/test_joint_stop_trainers.py": (4, _COUNTED),
     "tests/training/test_mars_titan_correction.py": (4, _RECORDER),
     "tests/training/test_mars_titan_run.py": (10, _RECORDER),
+    "tests/training/test_mars_session_inputs.py": (1, _RECORDER),
     "tests/training/test_mars_titan_walk_forward.py": (3, _RECORDER),
     "tests/training/test_masked_campaign.py": (1, _CAMPAIGN),
     "tests/training/test_masked_campaign_joint.py": (1, _CAMPAIGN),
@@ -460,6 +461,7 @@ DOUBLES = {
     "tests/training/test_titans_walk_forward.py": (5, _RECORDER),
 }
 REDIRECTIONS = {
+    "tests/memory/test_lesion_inference.py": (1, _CLOSES),
     "tests/conftest.py": (3, _FIXTURES),
     "tests/tooling/test_cuda_test_runner.py": (
         2,

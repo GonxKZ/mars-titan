@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-27T01:54:51.266347",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [
+    "src/mars_titan/memory/lesion_study.py",
+    "src/mars_titan/evaluation/lesion_curves.py",
+    "scripts/run_lesion_window.py",
+    "scripts/analyze_lesion_curves.py"
+  ],
+  "totals": {
+    "statements": 264,
+    "covered_statements": 253,
+    "branches": 62,
+    "covered_branches": 50
+  },
+  "files": [
+    {
+      "path": "scripts/analyze_lesion_curves.py",
+      "source_sha256": "35153f913bf2f02ff7a132444147b260c3e126c3a28eb1040593b3d939690e2f",
+      "statements": 16,
+      "covered_statements": 15,
+      "branches": 4,
+      "covered_branches": 3
+    },
+    {
+      "path": "scripts/run_lesion_window.py",
+      "source_sha256": "020dcbfab5b9a9c13aa9fb8bb795d5acc5cfebb6fe14729b74f37af63468a577",
+      "statements": 34,
+      "covered_statements": 32,
+      "branches": 6,
+      "covered_branches": 4
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "source_sha256": "9b3d3037389aade649b0bd5836ed34e5218e6aab94a87ce7578a20cf563eb79a",
+      "statements": 164,
+      "covered_statements": 161,
+      "branches": 30,
+      "covered_branches": 27
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "source_sha256": "9ce4efe69d5cb20e9268b5e82cc4cbe83fd24eb3923a25605fb56a53add00b1c",
+      "statements": 50,
+      "covered_statements": 45,
+      "branches": 22,
+      "covered_branches": 16
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "analyze_lesion_run",
+      "start_line": 257,
+      "end_line": 366,
+      "cyclomatic_complexity": 18,
+      "statements": 35,
+      "covered_statements": 35,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 18.0
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "function": "select_arm",
+      "start_line": 90,
+      "end_line": 111,
+      "cyclomatic_complexity": 12,
+      "statements": 7,
+      "covered_statements": 5,
+      "coverage_fraction": 0.7142857142857143,
+      "branches": 4,
+      "covered_branches": 2,
+      "crap": 15.358600583090379
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "function": "_analysis",
+      "start_line": 18,
+      "end_line": 49,
+      "cyclomatic_complexity": 14,
+      "statements": 9,
+      "covered_statements": 8,
+      "coverage_fraction": 0.8888888888888888,
+      "branches": 8,
+      "covered_branches": 7,
+      "crap": 14.26886145404664
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_schema",
+      "start_line": 112,
+      "end_line": 144,
+      "cyclomatic_complexity": 12,
+      "statements": 15,
+      "covered_statements": 15,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "function": "load_study",
+      "start_line": 60,
+      "end_line": 87,
+      "cyclomatic_complexity": 10,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 10.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_scores",
+      "start_line": 202,
+      "end_line": 254,
+      "cyclomatic_complexity": 9,
+      "statements": 20,
+      "covered_statements": 19,
+      "coverage_fraction": 0.95,
+      "branches": 6,
+      "covered_branches": 4,
+      "crap": 9.010125
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_source",
+      "start_line": 65,
+      "end_line": 109,
+      "cyclomatic_complexity": 7,
+      "statements": 15,
+      "covered_statements": 15,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 7.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_geometry",
+      "start_line": 42,
+      "end_line": 62,
+      "cyclomatic_complexity": 6,
+      "statements": 11,
+      "covered_statements": 9,
+      "coverage_fraction": 0.8181818181818182,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 6.216378662659654
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "function": "freeze_study",
+      "start_line": 114,
+      "end_line": 141,
+      "cyclomatic_complexity": 6,
+      "statements": 14,
+      "covered_statements": 12,
+      "coverage_fraction": 0.8571428571428571,
+      "branches": 8,
+      "covered_branches": 5,
+      "crap": 6.104956268221574
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_sessions",
+      "start_line": 147,
+      "end_line": 176,
+      "cyclomatic_complexity": 6,
+      "statements": 19,
+      "covered_statements": 19,
+      "coverage_fraction": 1.0,
+      "branches": 8,
+      "covered_branches": 7,
+      "crap": 6.0
+    },
+    {
+      "path": "scripts/run_lesion_window.py",
+      "function": "main",
+      "start_line": 11,
+      "end_line": 66,
+      "cyclomatic_complexity": 5,
+      "statements": 26,
+      "covered_statements": 25,
+      "coverage_fraction": 0.9615384615384616,
+      "branches": 4,
+      "covered_branches": 3,
+      "crap": 5.001422394173874
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_session_scores",
+      "start_line": 179,
+      "end_line": 199,
+      "cyclomatic_complexity": 5,
+      "statements": 14,
+      "covered_statements": 14,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 5.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_scores.flush",
+      "start_line": 214,
+      "end_line": 217,
+      "cyclomatic_complexity": 3,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "scripts/analyze_lesion_curves.py",
+      "function": "main",
+      "start_line": 10,
+      "end_line": 32,
+      "cyclomatic_complexity": 2,
+      "statements": 9,
+      "covered_statements": 9,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "function": "_require",
+      "start_line": 37,
+      "end_line": 39,
+      "cyclomatic_complexity": 2,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "function": "_integer",
+      "start_line": 14,
+      "end_line": 15,
+      "cyclomatic_complexity": 2,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "69bd392c41e1c23495ff1f277815c4076f059835fc960f7ce635550b55a24569",
+  "functions_measured": 16
+}

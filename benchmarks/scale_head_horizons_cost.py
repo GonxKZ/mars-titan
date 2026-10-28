@@ -40,7 +40,7 @@ from mars_titan.models.titans.financial_inputs import (
     FinancialInputSpec,
     validated_cpu_batch,
 )
-from mars_titan.models.titans.laplace_scale import LaplaceScaleHead, laplace_beta_nll
+from mars_titan.models.titans.laplace_scale import LaplaceScaleHead
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.horizon_labels import HorizonLabels
 from mars_titan.training.kernel_policy import FP32_STRICT, apply_kernel_policy
@@ -191,11 +191,11 @@ def graph_pass(model, batches, targets, auxiliary):
         prepared.append(result)
     point = torch.cat([value.point_predictions for value in prepared])
     target = torch.cat(targets)
-    if model.scale_head is None:
+    if model.output_objective is None:
         loss = torch.nn.functional.l1_loss(point, target)
     else:
-        scale = torch.cat([value.scales for value in prepared])
-        loss = laplace_beta_nll(torch.stack((point, scale), dim=-1), target)
+        outputs = torch.cat([value.outputs for value in prepared])
+        loss = model.output_objective.loss(outputs, target, None)
     forward = time.perf_counter() - started
     started = time.perf_counter()
     loss.backward()

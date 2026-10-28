@@ -91,6 +91,8 @@ class FinancialDustAdapter:
             "regional_variant",
             "laplace_scale_head",
             "auxiliary_horizons",
+            "session_rank_inputs",
+            "session_ic_objective",
         )
         if (
             config.variant != "transformer_direct"
@@ -111,7 +113,7 @@ class FinancialDustAdapter:
                     "regional_variant",
                     "presence_modulation",
                     "fusion_branch",
-                    "scale_head",
+                    "output_objective",
                     "auxiliary_heads",
                 )
             )
