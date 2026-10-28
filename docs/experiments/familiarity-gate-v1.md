@@ -52,7 +52,17 @@ Con la puerta en uno, el producto por el cambio es exacto. El estado refinado y 
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/familiarity_gate_cost.py`, sin pasos de optimizador.
+Medido en CPU con `benchmarks/familiarity_gate_cost.py` sobre el commit 0c3c8fab5, sin pasos de optimizador. Las dos pasadas usan un bloque de 512 filas, 64 coordenadas, ocho vecinos y una instantánea de 1.024 episodios, con tres ciclos de calentamiento y treinta repeticiones por modelo en orden rotatorio, dos hilos y FP32 estricto, en un AMD Ryzen 9 8945HS. Cada repetición mide la lectura con grafo, su backward y la lectura sin grafo. Antes de medir, las dos puertas reprodujeron bit a bit el estado de la referencia, y ningún parámetro cambió durante la medida. La [primera pasada](../../reports/engineering/familiarity-gate-20261028/benchmark-1.json) y la [segunda](../../reports/engineering/familiarity-gate-20261028/benchmark-2.json) conservan todas las muestras y las huellas de las fuentes.
+
+| Medida | Mediana de la referencia, pasada 1 (ms) | Cociente de `familiarity_gate`, pasadas 1 y 2 | Cociente de `constant_gate`, pasadas 1 y 2 |
+| --- | --- | --- | --- |
+| Lectura con grafo | 57,75 | 1,00 y 1,01 | 1,00 y 1,00 |
+| Backward | 4,40 | 1,02 y 1,04 | 1,07 y 1,01 |
+| Lectura sin grafo | 58,56 | 1,00 y 1,01 | 1,01 y 1,00 |
+
+La CPU estaba compartida con otras baterías, con una carga media de 15 a 24 en sus 16 hilos. Las dos lecturas cuestan lo mismo que la referencia con un margen del 1 %, porque la consulta, la selección de vecinos y la proyección de los episodios dominan el tiempo. El backward de la referencia pasó de 4,4 a 7,0 ms entre pasadas, y las diferencias de las puertas en él no conservan su orden de una pasada a otra, así que no se atribuyen a R3. La medida en CUDA y con la máquina libre queda pendiente.
+
+El presupuesto de trabajo estimado sube de 24.068.096 a 24.240.128 bytes sin grafo (un 0,7 %) y de 45.744.128 a 46.432.256 bytes con grafo (un 1,5 %). La puerta de familiaridad añade dos parámetros escalares y su control uno, sobre los 20.801 del lector. El pico de memoria residente del proceso fue de 687 y 715 MiB.
 
 ## Desviaciones y límites
 
