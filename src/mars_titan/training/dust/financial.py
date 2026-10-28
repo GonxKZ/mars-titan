@@ -93,6 +93,7 @@ class FinancialDustAdapter:
             "auxiliary_horizons",
             "session_rank_inputs",
             "session_ic_objective",
+            "opponent_heads",
         )
         if (
             config.variant != "transformer_direct"
