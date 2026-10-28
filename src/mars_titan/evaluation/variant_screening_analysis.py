@@ -29,6 +29,11 @@ favorable con bloques de 16 días y cada contraste exigido la favorece por sí s
 nivel. Las otras longitudes de bloque, Holm y las familias de sensibilidad se publican sin
 cambiar la decisión.
 
+Una continuación (F3) empieza en el estado elegido del origen anterior y no tiene serie en
+el primero, cuyas sesiones quedan sin definir. Sus contrastes forman una familia propia sobre
+las sesiones de los demás orígenes, con la misma regla, y no entran en la familia declarada
+ni en sus sensibilidades, que conservan así las sesiones de los cuatro orígenes.
+
 El módulo no lee predicciones ni importa PyTorch. El motor de la criba le entrega los paneles
 ya verificados de cada trabajo y la madurez de las etiquetas.
 """
@@ -450,17 +455,28 @@ def analyze(protocol, jobs, origins, root=variant_screening.ROOT):
         for side in ("variant", "control"):
             needed.setdefault(row[side], set(secondary)).add(row["metric"])
     cases, series, times = [], {}, []
+    first = protocol["origins"][0]["year"]
     for year in sorted(origins):
         origin = origins[year]
+        # Todas las emisiones de un origen predicen las mismas filas de S que la referencia.
+        reference = _model(protocol, origin, index, SOURCE, protocol["seeds"][0], cases)
+        sessions = reference["evaluation"].sessions
         per_origin = {}
         for label, metrics in needed.items():
+            if year == first and label in arms and "continues" in arms[label].definition:
+                # Una continuación no tiene padre en el primer origen ni sesiones definidas.
+                for metric in metrics:
+                    per_origin[(label, metric)] = [
+                        (np.zeros(sessions), np.zeros(sessions, dtype=bool))
+                    ]
+                continue
             for seed in replicates(protocol, arms, label):
                 output = emission(protocol, arms, index, origin, label, seed, cases)
                 for metric in metrics:
                     per_origin.setdefault((label, metric), []).append(
                         session_metric(output, metric, min_assets=min_assets)
                     )
-        times.append(np.asarray(output.panel.session_time))
+        times.append(np.asarray(reference["evaluation"].session_time))
         for key, items in per_origin.items():
             series.setdefault(key, []).append(_average(items))
         origin.stages.clear()
@@ -518,15 +534,76 @@ def _summary(merged, label):
     return result
 
 
-def families(protocol, contrasts, day):
-    """Familia declarada, sensibilidades y decisión de cada entrada del catálogo."""
-    inference = protocol["inference"]
+def _by_blocks(primary, day, inference):
+    """Familia de unos contrastes principales con cada longitud de bloque declarada."""
     blocks = [inference["block_days"], *inference["sensitivity_block_days"]]
-    primary = [row for row in contrasts if row["role"] == "primary"]
-    declared = {
+    return {
         length: evaluate_family(primary, day, block_length=length, inference=inference)
         for length in blocks
     }
+
+
+def _effect(row, primary, inference):
+    """Efecto mínimo detectable de un contraste principal dentro de su familia."""
+    return sd.minimum_detectable_effect(
+        row["values"][row["defined"]],
+        candidates=(len(primary),),
+        alpha=inference["minimum_detectable_effect"]["alpha"],
+        power=inference["minimum_detectable_effect"]["power"],
+    )
+
+
+def continuation_family(protocol, rows, day):
+    """Familia propia de las continuaciones con sus sensibilidades y la decisión de cada una.
+
+    Sus contrastes principales pasan con la misma regla que la familia declarada. La familia
+    con todos los contrastes de continuación, incluidos los publicados, es su sensibilidad.
+    """
+    inference = protocol["inference"]
+    main = inference["block_days"]
+    primary = [row for row in rows if row["role"] == variant_screening.CONTINUATION_ROLES[0]]
+    declared = _by_blocks(primary, day, inference)
+    everything = evaluate_family(rows, day, block_length=main, inference=inference)
+    named = {member["name"]: member for member in everything["members"]}
+    decisions = {}
+    for k, row in enumerate(primary):
+        member = declared[main]["members"][k]
+        decisions[row["name"]] = dict(
+            entry=row["entry"],
+            metric=row["metric"],
+            passes=member["passes"],
+            robustness=dict(
+                {
+                    f"blocks_{length}": family["members"][k]["passes"]
+                    for length, family in declared.items()
+                },
+                holm=member["passes_holm"],
+                all_contrasts_family=named[row["name"]]["passes"],
+            ),
+        )
+    return dict(
+        declared_family={str(length): family for length, family in declared.items()},
+        all_contrasts=everything,
+        minimum_detectable_effect={
+            row["name"]: _effect(row, primary, inference) for row in primary
+        },
+        decisions=decisions,
+    )
+
+
+def families(protocol, contrasts, day):
+    """Familia declarada, sensibilidades y decisión de cada entrada del catálogo.
+
+    Los contrastes de continuación se evalúan aparte con `continuation_family`.
+    """
+    inference = protocol["inference"]
+    blocks = [inference["block_days"], *inference["sensitivity_block_days"]]
+    continued = [row for row in contrasts if row["role"] in variant_screening.CONTINUATION_ROLES]
+    screening = [
+        row for row in contrasts if row["role"] not in variant_screening.CONTINUATION_ROLES
+    ]
+    primary = [row for row in screening if row["role"] == "primary"]
+    declared = _by_blocks(primary, day, inference)
     main = inference["block_days"]
     groups = {}
     for row in primary:
@@ -536,7 +613,7 @@ def families(protocol, contrasts, day):
             group: evaluate_family(members, day, block_length=main, inference=inference)
             for group, members in groups.items()
         },
-        all_contrasts=evaluate_family(contrasts, day, block_length=main, inference=inference),
+        all_contrasts=evaluate_family(screening, day, block_length=main, inference=inference),
     )
     required = {
         row["name"]: evaluate_family([row], day, block_length=main, inference=inference)["members"][
@@ -545,14 +622,7 @@ def families(protocol, contrasts, day):
         for row in contrasts
         if row["role"] == "required"
     }
-    effects = {}
-    for row in primary:
-        effects[row["entry"]] = sd.minimum_detectable_effect(
-            row["values"][row["defined"]],
-            candidates=(len(primary),),
-            alpha=inference["minimum_detectable_effect"]["alpha"],
-            power=inference["minimum_detectable_effect"]["power"],
-        )
+    effects = {row["entry"]: _effect(row, primary, inference) for row in primary}
     everything = {m["name"]: m for m in sensitivity["all_contrasts"]["members"]}
     decisions = {}
     for k, row in enumerate(primary):
@@ -580,6 +650,7 @@ def families(protocol, contrasts, day):
         required_contrasts=required,
         minimum_detectable_effect=effects,
         decisions=decisions,
+        continuation=continuation_family(protocol, continued, day) if continued else None,
         decision_rule=protocol["decision"],
         contrasts=[
             {key: row[key] for key in ("name", "entry", "role", "metric", "direction")}
