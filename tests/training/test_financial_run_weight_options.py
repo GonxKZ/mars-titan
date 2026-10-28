@@ -193,6 +193,24 @@ def drifted_update(self, named):
     self.updates += 1
 
 
+@pytest.mark.parametrize("options", [EMA, FREE], ids=["ema", "free"])
+def test_the_run_validates_and_keeps_the_emitted_weights(shared, tmp_path, options, monkeypatch):
+    monkeypatch.setattr(weight_averaging.ShadowWeights, "update", drifted_update)
+    factory = ScheduleFreeDouble if "schedule_free" in options else RecordingOptimizer
+    engine = trainer(shared, tmp_path / "run", factory=factory, **options)
+    report = engine.run()
+    last = load_training_state(engine.output / "checkpoints", expected_identity=engine.identity)
+    assert last["global_step"] == engine.global_step > 2
+    scores = []
+    for key in ("model", "trained_model"):
+        twin = predictor(shared)
+        twin.load_state_dict(last[key])
+        reference = trainer(shared, tmp_path / key, model=twin)
+        scores.append(reference.evaluate(reference.validation)["session_mae"])
+    # La última validación es la de los pesos emitidos, no la de los del ajuste.
+    assert report["history"][-1]["validation"]["session_mae"] == scores[0] != scores[1]
+
+
 @pytest.mark.parametrize("options", [EMA, FREE, SHRINK], ids=["ema", "free", "shrink"])
 def test_resume_restores_the_trained_weights_and_reproduces_the_run(
     shared, tmp_path, options, monkeypatch
