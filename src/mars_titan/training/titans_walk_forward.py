@@ -61,12 +61,19 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 from .candidate_walk_forward import check_view_rows
-from .checkpoints import StopRequest
+from .checkpoints import StopRequest, release_recovery_states
+from .common_epoch import (
+    VERSIONED,
+    EpochValidation,
+    bind_versions,
+    checked_scoring,
+    version_path,
+)
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, load_recipe
 from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_predictor_changes, checked_search_cases
-from .selection import AWAIT, campaign_rule, with_rule
+from .selection import AWAIT, CHRONOLOGICAL_MODES, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import PREDICTED, checked_fit_months, checked_warmup, window_phases
 from .window_indices import index_root, phase_sources
@@ -79,6 +86,7 @@ _CODE = (
     "mars_titan.training.search_cases",
     "mars_titan.training.titans_walk_forward",
     "mars_titan.training.financial_run",
+    "mars_titan.training.common_epoch",
     "mars_titan.training.horizon_labels",
     "mars_titan.memory.financial_observations",
     "mars_titan.models.titans.financial",
@@ -194,7 +202,7 @@ def _recipe(path, rule, search_case=None, stopping=None):
         "La receta no aplica la regla de selección y parada del protocolo",
     )
     return (
-        with_rule(recipe, campaign_rule(rule, stopping)),
+        with_rule(recipe, campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)),
         document,
         walk_forward_options(document, bounded_fit=True),
     )
@@ -292,13 +300,14 @@ def _request(
     local_control=None,
     stopping=None,
     predictor_changes=None,
+    epoch_scoring=None,
 ):
     """Construye una petición verificable sin abrir la vista, con huellas de archivos y código.
 
     El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide,
-    la regla de parada solo si la campaña declara una parada temprana y los cambios del
-    predictor solo si el modelo los declara, de modo que las demás peticiones conservan su
-    forma anterior.
+    la regla de parada solo si la campaña declara una parada temprana, los cambios del
+    predictor solo si el modelo los declara y la puntuación por época solo con la época
+    común, de modo que las demás peticiones conservan su forma anterior.
     """
     request = dict(
         view_sha256=sha256(Path(view)),
@@ -318,6 +327,8 @@ def _request(
         request["stopping_rule"] = dict(stopping)
     if predictor_changes is not None:
         request[CHANGES] = checked_predictor_changes(predictor_changes)
+    if epoch_scoring is not None:
+        request["epoch_scoring"] = dict(epoch_scoring)
     return request
 
 
@@ -375,9 +386,16 @@ def checked_tables(rows, metrics, dataset, partition):
     return tables
 
 
+def _confirmed_records(report):
+    """Registros de las predicciones confirmadas, también las de las versiones."""
+    yield from report["predictions"].values()
+    for partitions in report.get("versions", {}).get("predictions", {}).values():
+        yield from partitions.values()
+
+
 def _verify(output, report):
     """Comprobar las predicciones confirmadas, presentes, compactadas o liberadas."""
-    for record in report["predictions"].values():
+    for record in _confirmed_records(report):
         path = output / record["path"]
         safe_destination(path)
         prediction_files.verify(
@@ -403,6 +421,8 @@ def run_titans_window(
     stopping=None,
     joint_epoch=None,
     predictor_changes=None,
+    epoch_scoring=None,
+    versions=None,
     traces=None,
     trace_family="titans_mac",
 ):
@@ -417,9 +437,12 @@ def run_titans_window(
     meseta conjunta la ventana devuelve `awaiting_joint_stop` en la primera meseta y se
     completa al reanudarla con la época común del grupo (`joint_epoch`).
     `predictor_changes` son las extensiones del núcleo que declara el modelo, como PT1.
-    `traces` declara las trazas de #448 (cadencia y presupuesto), que se escriben en
-    `output/traces` sin entrar en la identidad, y `trace_family` su familia (los núcleos de
-    CM-v1 usan `cm_v1_core`).
+    Con la época común (#746), `epoch_scoring` declara la puntuación de cada validación
+    (`common_epoch.checked_scoring`), la ventana espera tras la última época y `joint_epoch`
+    es la época común del grupo. `versions` son otras épocas cuya calibración y evaluación
+    se emiten también. `traces` declara las trazas de #448 (cadencia y presupuesto), que se
+    escriben en `output/traces` sin entrar en la identidad, y `trace_family` su familia (los
+    núcleos de CM-v1 usan `cm_v1_core`).
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -434,7 +457,12 @@ def run_titans_window(
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
     chronological, document, options = _recipe(recipe, rule, search_case, stopping)
-    rule = campaign_rule(rule, stopping)
+    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)
+    scoring = checked_scoring(epoch_scoring, rule)
+    _require(
+        versions is None or (scoring is not None and joint_epoch is not None),
+        "Las versiones llegan junto con la época común",
+    )
     request = _request(
         view,
         protocol_sha,
@@ -447,6 +475,7 @@ def run_titans_window(
         local_control,
         stopping,
         predictor_changes,
+        scoring,
     )
     safe_destination(output)
     report_path = output / "run.json"
@@ -494,6 +523,13 @@ def run_titans_window(
         optimizer_factory=optimizer_factory,
         pairing=pairing,
     )
+    if scoring is not None:
+        trainer.epoch_scorer = EpochValidation(
+            lambda: PredictionRows(trainer.emits_levels),
+            lambda rows, metrics: checked_tables(rows, metrics, dataset, "validation"),
+            min_assets=scoring["min_assets"],
+            directory=output / "epochs" if scoring["predictions"] else None,
+        )
     identity = dict(
         schema_version=1,
         kind=KIND,
@@ -584,6 +620,14 @@ def run_titans_window(
                 metrics=metrics,
             )
             atomic_json(report_path, report)
+        if scoring is not None:
+
+            def emit(name):
+                rows = PredictionRows(trainer.emits_levels)
+                metrics = trainer.predict_partition(sources[name], rows, stop=stop)
+                return checked_tables(rows, metrics, dataset, name), rows.count, metrics
+
+            emit_versions(output, report, trainer, fit, versions, emit, stop)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
     except Paused:
@@ -595,6 +639,44 @@ def run_titans_window(
     finally:
         report["attempts"].append(dict(seconds=time.perf_counter() - started))
         atomic_json(report_path, report)
+
+
+def emit_versions(output, report, trainer, fit, versions, emit, stop):
+    """Emitir las versiones pedidas y liberar después los estados fijados de la época común.
+
+    `emit(tramo)` predice el tramo con el estado cargado y devuelve sus tablas conciliadas
+    con la vista, sus filas y sus métricas. Cada tramo confirmado queda en el informe, así
+    que una reanudación continúa por el primero que falte.
+    """
+    bound = bind_versions(
+        report, versions, epochs=trainer.recipe.epochs, common=fit["common_epoch"]
+    )
+    atomic_json(output / "run.json", report)
+    for epoch in bound["epochs"]:
+        confirmed = bound["predictions"].setdefault(str(epoch), {})
+        if len(confirmed) == len(VERSIONED):
+            continue
+        trainer.load_epoch(fit, epoch)
+        for name in VERSIONED:
+            if name in confirmed:
+                continue
+            if stop.requested:
+                raise Paused
+            tables, count, metrics = emit(name)
+            path = version_path(output, epoch, name)
+            written = atomic_parquet_batches(path, tables)
+            _require(written == count, f"El Parquet de {name} no conserva sus filas")
+            confirmed[name] = dict(
+                path=str(path.relative_to(output)),
+                sha256=sha256(path),
+                rows=written,
+                bytes=path.stat().st_size,
+                metrics=metrics,
+            )
+            atomic_json(output / "run.json", report)
+    # Ya no hace falta ningún otro estado: queda solo el elegido de la época común.
+    released = release_recovery_states(output / "fit" / "checkpoints")
+    report["released_state_bytes"] = report.get("released_state_bytes", 0) + released
 
 
 CARRY_KIND = "titans_carried_predictions"

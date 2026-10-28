@@ -59,6 +59,7 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .common_epoch import chosen_state
 from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
@@ -67,6 +68,8 @@ from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_ob
 from .schedule_free import AveragedPoint, ScheduleFree, is_schedule_free
 from .selection import (
     AWAIT,
+    CHRONOLOGICAL_MODES,
+    COMMON_EPOCH,
     FINISH,
     VALIDATION_PLATEAU,
     advance_selection,
@@ -85,6 +88,7 @@ _OWN_MODULES = (
     "mars_titan.memory.financial_observations",
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
+    "mars_titan.training.common_epoch",
     "mars_titan.training.quantile_objectives",
     "mars_titan.training.horizon_labels",
     "mars_titan.evaluation.session_metrics",
@@ -154,7 +158,7 @@ class ChronologicalRecipe:
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
         validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
-        validate_selection(self.selection, epochs=self.epochs)
+        validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
             raise ValueError("El control de solo mediana no admite destilación de las colas")
@@ -822,6 +826,9 @@ class ChronologicalTrainer(ChronologicalInference):
     # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
     # None, `traced_update` y `observing` son bloques vacíos.
     traces = None
+    # Puntuación de cada validación con la parada `common_epoch` (#746), que la exige. La
+    # asigna la ventana con un `common_epoch.EpochValidation`.
+    epoch_scorer = None
 
     def _trace_modules(self):
         """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
@@ -1468,17 +1475,32 @@ class ChronologicalTrainer(ChronologicalInference):
         self.predictor.load_state_dict(state["model"])
         return state
 
+    def load_epoch(self, report, epoch):
+        """Dejar cargado el estado fijado de una época evaluada con la época común."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="pinned",
+            expected_sha256=report["epoch_states"][str(epoch)]["sha256"],
+        )
+        self.predictor.load_state_dict(state["model"])
+        return state
+
     def run(self, *, resume=False, stop=None, joint_epoch=None):
         """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo.
 
         Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
-        reanuda con la época común del grupo (`joint_epoch`).
+        reanuda con la época común del grupo (`joint_epoch`). Con la época común, espera tras
+        la última época y `joint_epoch` elige el estado fijado de una de ellas.
         """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
+        common = self.recipe.selection.get("stopping") == COMMON_EPOCH
+        if common and self.epoch_scorer is None:
+            raise ValueError("La época común necesita puntuar cada validación con su IC")
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
@@ -1523,7 +1545,8 @@ class ChronologicalTrainer(ChronologicalInference):
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             self._start_weights(report)
 
-        def save(position, current=None, *, best=False):
+        def save(position, current=None, *, best=False, pin=None):
+            # `pin` es la época evaluada cuyo estado se conserva hasta fijar la época común.
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
@@ -1538,11 +1561,15 @@ class ChronologicalTrainer(ChronologicalInference):
             )
             if self.traces is not None:
                 state["traces"] = self.traces.checkpoint()
-            path = save_training_state(checkpoints, state, identity=self.identity, best=best)
+            path = save_training_state(
+                checkpoints, state, identity=self.identity, best=best, pin=pin is not None
+            )
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
             if best:
                 report["best_checkpoint"] = reference
+            if pin is not None:
+                report.setdefault("epoch_states", {})[str(pin)] = reference
             report.update(selection=self.selection, history=self.history, cursor=position)
             atomic_json(report_path, report)
 
@@ -1567,8 +1594,12 @@ class ChronologicalTrainer(ChronologicalInference):
                         save(cursor)
                         continue
                 if cursor["phase"] == "validation":
+                    # La época común puntúa las filas de esta misma validación desde la época 1.
+                    rows = self.epoch_scorer.rows() if common and epoch >= 1 else None
                     with self._emitted_weights():
-                        metrics = self.evaluate(self.validation, stop=stop)
+                        metrics = self.evaluate(self.validation, stop=stop, rows=rows)
+                    if rows is not None:
+                        metrics.update(self.epoch_scorer.score(epoch, rows, metrics))
                     if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
@@ -1608,7 +1639,11 @@ class ChronologicalTrainer(ChronologicalInference):
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
                     # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
-                    save(cursor, best=self.selection["last_improved"])
+                    save(
+                        cursor,
+                        best=self.selection["last_improved"],
+                        pin=epoch if rows is not None else None,
+                    )
                     if stop.requested and not finished:
                         raise Paused
                     continue
@@ -1616,14 +1651,23 @@ class ChronologicalTrainer(ChronologicalInference):
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
+            chosen = (
+                chosen_state(
+                    checkpoints, self.identity, report, self.history, self.selection, joint_epoch
+                )
+                if common
+                else dict(
+                    best_epoch=self.selection["best_epoch"],
+                    best_score=self.selection["best_score"],
+                )
+            )
+            report.update(chosen)
             self._load_best(report)
             report.update(
                 status="completed",
                 stopped_early=cursor["epoch"] < self.recipe.epochs,
                 stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
                 plateau_epoch=self.selection.get("plateau_epoch"),
-                best_epoch=self.selection["best_epoch"],
-                best_score=self.selection["best_score"],
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report

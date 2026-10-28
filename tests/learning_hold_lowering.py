@@ -449,7 +449,7 @@ DOUBLES = {
     "tests/training/test_candidate_walk_forward.py": (2, _RECORDER),
     "tests/training/test_cm_v1_factorial.py": (3, _RECORDER),
     "tests/training/test_external_shared_cuda.py": (1, _ESTIMATOR),
-    "tests/training/test_joint_stop_trainers.py": (4, _COUNTED),
+    "tests/training/test_joint_stop_trainers.py": (6, _COUNTED),
     "tests/training/test_mars_titan_correction.py": (4, _RECORDER),
     "tests/training/test_mars_titan_run.py": (10, _RECORDER),
     "tests/training/test_mars_session_inputs.py": (1, _RECORDER),
