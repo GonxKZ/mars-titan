@@ -36,6 +36,8 @@ def source_reader(variant):
             regional_variant=variant,
         )
     )
+    # La receta decide si F2 y F3 añaden su código.
+    reader.recipe = financial_run.ChronologicalRecipe()
     return reader
 
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "F2 · Conjunto de semillas y EMA de pesos (seed_ema_ensemble_v1)",
+    "title": "F2 · Media exponencial de pesos y media de semillas (seed_ema_ensemble_v1)",
     "quality_profile": "showcase",
     "viewBox": [1300, 592],
     "legend": {
@@ -10,46 +10,51 @@
         "external": {"label": "Entradas"},
         "backend": {"label": "Cálculo"},
         "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
         "security": {"label": "Control o protección"},
         "cloud": {"label": "Evaluación"}
       }
     }
   },
   "components": [
-    {"id": "data", "type": "external", "label": "Mismas filas", "sublabel": "y presupuesto por ajuste", "pos": [40, 230], "size": [180, 72]},
-    {"id": "seeds", "type": "backend", "label": "K ajustes", "sublabel": "semillas distintas", "pos": [300, 40], "size": [180, 72]},
-    {"id": "ema", "type": "database", "label": "EMA de los pesos", "sublabel": "una copia por ajuste", "pos": [560, 40], "size": [180, 72]},
-    {"id": "mean", "type": "backend", "label": "Media de predicciones", "sublabel": "de los K modelos", "pos": [820, 230], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
-    {"id": "single", "type": "security", "label": "Control", "sublabel": "una semilla con K·N pasos", "pos": [300, 420], "size": [180, 72]}
+    {"id": "inputs", "type": "external", "label": "Mismas filas y receta", "sublabel": "casos de tasa declarados", "pos": [40, 230], "size": [180, 72]},
+    {"id": "fit", "type": "backend", "label": "Ajuste con AdamW", "sublabel": "pesos propios θ", "pos": [300, 40], "size": [180, 72]},
+    {"id": "shadow", "type": "database", "label": "Sombra θ̄", "sublabel": "δθ̄ + (1 − δ)θ tras cada paso", "pos": [560, 40], "size": [180, 72]},
+    {"id": "chosen", "type": "frontend", "label": "Validación y estado elegido", "sublabel": "con θ̄, el ajuste sigue con θ", "pos": [820, 40], "size": [180, 72]},
+    {"id": "seeds", "type": "backend", "label": "Tres ajustes", "sublabel": "semillas 42, 43 y 44", "pos": [300, 420], "size": [180, 72]},
+    {"id": "mean", "type": "frontend", "label": "Media de predicciones", "sublabel": "por fila y nivel, en FP64", "pos": [820, 420], "size": [180, 72]},
+    {"id": "controls", "type": "security", "label": "Controles", "sublabel": "sin media y con 3 veces los pasos", "pos": [560, 230], "size": [180, 72], "tag": "misma receta"},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "MAE por sesión", "pos": [1080, 230], "size": [180, 72]}
   ],
   "connections": [
-    {"id": "data-seeds", "from": "data", "to": "seeds"},
-    {"id": "seeds-ema", "from": "seeds", "to": "ema", "variant": "emphasis"},
-    {"id": "ema-mean", "from": "ema", "to": "mean", "label": "K predicciones", "variant": "emphasis"},
-    {"id": "mean-screen", "from": "mean", "to": "screen"},
-    {"id": "data-single", "from": "data", "to": "single", "variant": "dashed"},
-    {"id": "single-screen", "from": "single", "to": "screen", "label": "control", "variant": "dashed"}
+    {"id": "inputs-fit", "from": "inputs", "to": "fit"},
+    {"id": "inputs-seeds", "from": "inputs", "to": "seeds"},
+    {"id": "fit-shadow", "from": "fit", "to": "shadow", "label": "cada paso"},
+    {"id": "shadow-chosen", "from": "shadow", "to": "chosen", "variant": "emphasis"},
+    {"id": "chosen-screen", "from": "chosen", "to": "screen", "label": "predicción con θ̄", "variant": "emphasis"},
+    {"id": "seeds-mean", "from": "seeds", "to": "mean", "label": "3 predicciones por fila"},
+    {"id": "mean-screen", "from": "mean", "to": "screen", "variant": "emphasis"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
   ],
   "cards": [
     {
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Promedia K modelos entrenados con semillas distintas",
-        "Cada modelo usa la media móvil exponencial de sus pesos",
-        "Fuente: Lakshminarayanan et al. (2017), Morales-Brotons et al. (2024)"
+        "La sombra θ̄ sigue a los pesos con retención δ tras cada paso",
+        "Se valida, se elige y se emite con θ̄. La media de semillas combina predicciones",
+        "Fuentes: Polyak y Juditsky (1992), Lakshminarayanan et al. (2017), Morales-Brotons et al. (2024)"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Una sola semilla con los mismos pasos totales K·N"]
+      "items": ["Media de pesos frente a la misma semilla sin media", "Tres semillas frente a una con tres veces las actualizaciones"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Coste de K ajustes y una copia de parámetros"]
+      "items": ["Implementada y comprobada en CPU, sin entrenar ni evaluar", "δ = 0,99 y 0,999, con semividas de 69 y 693 pasos"]
     }
   ]
 }
