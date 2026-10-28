@@ -145,11 +145,12 @@ def declaration(section):
     return section
 
 
-def view_maturity(path, input_policy, expected_sha256):
-    """Filas de calibración y evaluación de una vista con su objetivo y su madurez.
+def view_maturity(path, input_policy, expected_sha256, partitions=PARTITIONS):
+    """Filas de los tramos de una vista con su objetivo y su madurez.
 
     Devuelve, por tramo, una tabla con ``asset_id``, ``market``, ``prediction_at`` y
-    ``target`` en el formato de las predicciones y ``matures_at`` en microsegundos UTC.
+    ``target`` en el formato de las predicciones y ``matures_at`` en microsegundos UTC. Por
+    defecto lee la calibración y la evaluación. La criba de #746 pide también la validación.
     """
     dataset = CorpusDataset(Path(path), cache_bytes=0, input_policy=input_policy)
     _require(
@@ -159,15 +160,15 @@ def view_maturity(path, input_policy, expected_sha256):
     _require(dataset.identity == expected_sha256, "La vista cambió antes de leer la madurez")
     columns = {
         name: dict(asset_id=[], market=[], prediction_at=[], target=[], matures_at=[])
-        for name in PARTITIONS
+        for name in partitions
     }
     for asset in sorted(dataset.assets, key=lambda row: (row["market"], row["symbol"])):
-        if not any(asset["counts"][name] for name in PARTITIONS):
+        if not any(asset["counts"][name] for name in partitions):
             continue
         with pq.ParquetFile(dataset._file(asset, "samples")) as file:
             rows = file.metadata.num_rows
         _require(1 <= rows <= MAX_SAMPLE_ROWS, "Las muestras superan el presupuesto de filas")
-        for name in PARTITIONS:
+        for name in partitions:
             if not asset["counts"][name]:
                 continue
             _, moments, targets, maturity = dataset._labels(asset, name, rows)
