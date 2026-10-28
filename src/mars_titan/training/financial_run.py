@@ -17,7 +17,7 @@ import importlib
 import json
 import math
 import time
-from contextlib import closing
+from contextlib import closing, contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -64,6 +64,7 @@ from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_objective
+from .schedule_free import AveragedPoint, ScheduleFree, is_schedule_free
 from .selection import (
     AWAIT,
     FINISH,
@@ -75,6 +76,8 @@ from .selection import (
     initial_selection,
     validate_selection,
 )
+from .shrink_perturb import ShrinkPerturb, shrink_perturb
+from .weight_averaging import ShadowWeights, WeightAverage, applied
 
 RECIPE = "titans_financial_chronological_v1"
 _OWN_MODULES = (
@@ -85,6 +88,15 @@ _OWN_MODULES = (
     "mars_titan.training.quantile_objectives",
     "mars_titan.training.horizon_labels",
     "mars_titan.evaluation.session_metrics",
+)
+# F2 y F3 de #749, en el orden de la receta. Su código entra en la identidad si se declaran.
+_WEIGHT_OPTIONS = dict(
+    weight_average=WeightAverage, schedule_free=ScheduleFree, shrink_perturb=ShrinkPerturb
+)
+_WEIGHT_MODULES = dict(
+    weight_average="mars_titan.training.weight_averaging",
+    schedule_free="mars_titan.training.schedule_free",
+    shrink_perturb="mars_titan.training.shrink_perturb",
 )
 
 
@@ -130,6 +142,14 @@ class ChronologicalRecipe:
     # None ajusta solo con las etiquetas. Una fracción w suma la distancia a las salidas de un
     # profesor en las filas de ajuste con peso w y deja 1 − w a la tarea (#57).
     distillation_weight: float | None = None
+    # None valida con los pesos del ajuste. Un objeto declara la media exponencial de F2
+    # (#749), con la que se valida, se elige y se emite.
+    weight_average: dict | None = None
+    # None ajusta con AdamW. Un objeto declara AdamW sin calendario de F3 (#749).
+    schedule_free: dict | None = None
+    # None empieza con los pesos recibidos. Un objeto declara la contracción y el ruido de
+    # F3 (#749), aplicados una vez antes del primer paso de una ejecución nueva.
+    shrink_perturb: dict | None = None
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
@@ -166,6 +186,23 @@ class ChronologicalRecipe:
             raise ValueError(
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
             )
+        self.weight_options()
+
+    def weight_options(self):
+        """Configuraciones de F2 y F3 sobre los pesos del ajuste, o None si no se declaran."""
+        options = {}
+        for name, kind in _WEIGHT_OPTIONS.items():
+            value = getattr(self, name)
+            if value is not None and (type(value) is not dict or set(value) != set(asdict(kind()))):
+                raise ValueError(f"{name} debe declarar toda su configuración")
+            options[name] = None if value is None else kind(**value)
+        if options["weight_average"] is not None and options["schedule_free"] is not None:
+            raise ValueError("La media exponencial y el ajuste sin calendario promedian dos veces")
+        if self.weight_decay_anchor is not None and (
+            options["schedule_free"] is not None or options["shrink_perturb"] is not None
+        ):
+            raise ValueError("El decaimiento anclado solo se combina con AdamW sin contracción")
+        return options
 
     def _bounded(self):
         return (
@@ -190,11 +227,18 @@ class ChronologicalRecipe:
             fields.pop("distillation_weight")
         else:
             fields["distillation_distance"] = distillation.DISTANCE
+        # F2 y F3 solo aparecen si se declaran, con la identidad de su configuración.
+        options = self.weight_options()
+        for name, option in options.items():
+            if option is None:
+                fields.pop(name)
+            else:
+                fields[name] = option.identity()
         return dict(
             schema_version=1,
             recipe=RECIPE,
             **fields,
-            optimizer="AdamW",
+            optimizer="AdamW" if options["schedule_free"] is None else "AdamWScheduleFree",
             truncation_unit="decision_instants_per_differentiable_segment",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
             loss_reduction="mean_over_matured_labels_of_segment",
@@ -841,6 +885,18 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
         if posttraining is not None and (self.undeclared_posttraining or self.horizons is not None):
             raise ValueError("F1, F5 y A4 no tienen todavía un postentrenamiento declarado")
+        options = recipe.weight_options()
+        self.weight_average = options["weight_average"]
+        self.schedule_free = options["schedule_free"]
+        self.shrink = options["shrink_perturb"]
+        # Con F2 o F3 se emiten otros pesos que los del ajuste y el estado guarda ambos.
+        self.emits_other_weights = self.weight_average is not None or self.schedule_free is not None
+        if posttraining is not None and any(option is not None for option in options.values()):
+            raise ValueError("F2 y F3 no tienen todavía un postentrenamiento declarado")
+        if self.shrink is not None and (
+            predictor.local_control is not None or self.shrink.seed == predictor.config.seed
+        ):
+            raise ValueError("F3 contrae sin control local y con θ₀ de otra semilla")
         self.roles = parameter_roles(predictor)
         if "adapters" in self.roles and posttraining is None:
             raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
@@ -859,12 +915,29 @@ class ChronologicalTrainer(ChronologicalInference):
             for role, names in self.roles.items()
             if names
         ]
+        if optimizer_factory is None and self.schedule_free is not None:
+
+            def optimizer_factory(values):
+                return self.schedule_free.build(
+                    values, learning_rate=recipe.learning_rate, weight_decay=recipe.weight_decay
+                )
+
         factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        trainable = {id(named[name]) for names in self.roles.values() for name in names}
+        self.trainable = {name: named[name] for names in self.roles.values() for name in names}
+        trainable = {id(value) for value in self.trainable.values()}
         if len(listed) != len(set(listed)) or set(listed) != trainable or not trainable:
             raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
+        if isinstance(self.optimizer, torch.optim.Optimizer) and is_schedule_free(
+            self.optimizer
+        ) != (self.schedule_free is not None):
+            raise ValueError("El optimizador no es el que declara la receta para F3")
+        # Con F2 la sombra se crea al empezar o reanudar, después de la contracción de F3.
+        self.shadow = None
+        self.averaged_point = (
+            None if self.schedule_free is None else AveragedPoint(self.optimizer, self.trainable)
+        )
         self.identity = dict(
             schema_version=1,
             recipe=recipe.identity(),
@@ -930,6 +1003,9 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.predictor.config.regional_variant is not None:
             name = "mars_titan.models.titans.regional_variants"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
+        for option, name in _WEIGHT_MODULES.items():
+            if getattr(self.recipe, option) is not None:
+                own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
@@ -1162,6 +1238,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 with nvtx_ranges.phase("titans.optimizer"):
                     self.optimizer.step()
                     self.optimizer.zero_grad(set_to_none=True)
+                    if self.shadow is not None:
+                        self.shadow.update(self.trainable)
                     # El paso es la única modificación admitida de los parámetros. Se sella
                     # de nuevo.
                     self.predictor._seal_parameters()
@@ -1317,6 +1395,63 @@ class ChronologicalTrainer(ChronologicalInference):
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         return run
 
+    def _emission(self):
+        """Origen de los pesos emitidos con F2 o F3, o None si se emiten los del ajuste."""
+        return self.shadow if self.shadow is not None else self.averaged_point
+
+    @contextmanager
+    def _emitted_weights(self):
+        """Validar con los pesos que se eligen y se emiten, y volver después a los del ajuste."""
+        source = self._emission()
+        if source is None:
+            yield
+            return
+        try:
+            with applied(dict(self.predictor.named_parameters()), source.emitted()):
+                self.predictor._seal_parameters()
+                yield
+        finally:
+            self.predictor._seal_parameters()
+
+    def _model_states(self):
+        """Pesos del estado guardado, con los emitidos en `model`.
+
+        Con F2 o F3, `trained_model` guarda además los del ajuste, que son los que se
+        recuperan al reanudar. Los consumidores del estado elegido leen `model`.
+        """
+        model = self.predictor.state_dict()
+        source = self._emission()
+        if source is None:
+            return dict(model=model)
+        states = dict(model=model, trained_model=self.predictor.state_dict())
+        for name, value in source.emitted().items():
+            model[name] = value.detach().clone()
+        if self.shadow is not None:
+            states["weight_average"] = self.shadow.state_dict()
+        return states
+
+    def _start_weights(self, report, state=None):
+        """Aplicar F3 a una ejecución nueva y crear o recuperar la sombra de F2."""
+        if state is None and self.shrink is not None:
+            before = self.predictor._parameter_id
+            fresh = type(self.predictor)(
+                replace(self.predictor.config, seed=self.shrink.seed),
+                device=self.device,
+                dtype=self.predictor.head.weight.dtype,
+            )
+            shrink_perturb(self.trainable, dict(fresh.named_parameters()), self.shrink)
+            self.predictor._seal_parameters()
+            report["shrink_perturb"] = dict(
+                configuration=self.shrink.identity(),
+                parameters_before_sha256=before,
+                fresh_parameters_sha256=fresh._parameter_id,
+                parameters_after_sha256=self.predictor._parameter_id,
+            )
+        if self.weight_average is not None:
+            self.shadow = ShadowWeights(self.weight_average, self.trainable)
+            if state is not None:
+                self.shadow.load_state_dict(state["weight_average"])
+
     def _load_best(self, report, directory=None):
         """Dejar el predictor con el estado seleccionado que acredita el informe.
 
@@ -1351,8 +1486,11 @@ class ChronologicalTrainer(ChronologicalInference):
             if report["identity"] != self.identity:
                 raise ValueError("La identidad o configuración de la ejecución ha cambiado")
             state = load_training_state(checkpoints, expected_identity=self.identity)
-            self.predictor.load_state_dict(state["model"])
+            # Con F2 o F3 se reanuda con los pesos del ajuste, no con los emitidos.
+            trained = "trained_model" if self.emits_other_weights else "model"
+            self.predictor.load_state_dict(state[trained])
             self.optimizer.load_state_dict(state["optimizer"])
+            self._start_weights(report, state)
             restore_rng(state["rng"], str(self.device))
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
@@ -1382,13 +1520,14 @@ class ChronologicalTrainer(ChronologicalInference):
                 attempts=[],
             )
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
+            self._start_weights(report)
 
         def save(position, current=None, *, best=False):
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
                 cursor=position,
-                model=self.predictor.state_dict(),
+                **self._model_states(),
                 optimizer=self.optimizer.state_dict(),
                 rng=capture_rng(str(self.device)),
                 selection=self.selection,
@@ -1427,7 +1566,8 @@ class ChronologicalTrainer(ChronologicalInference):
                         save(cursor)
                         continue
                 if cursor["phase"] == "validation":
-                    metrics = self.evaluate(self.validation, stop=stop)
+                    with self._emitted_weights():
+                        metrics = self.evaluate(self.validation, stop=stop)
                     if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
