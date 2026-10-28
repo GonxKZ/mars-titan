@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 
 import pytest
 
+from mars_titan.models.baselines import same_inputs_lightgbm
 from mars_titan.training import variant_screening as screening
 from mars_titan.training.screening_cohorts import ORIGIN_FOLDS
 
@@ -116,12 +117,88 @@ def test_identical_definitions_are_a_single_job(jobs):
     assert len({job["id"] for job in jobs}) == len(jobs)
 
 
+COMMON = ("common_controls",)
+MODELS = (*COMMON, "models")
+
+
+def test_the_registered_common_controls_are_those_of_their_modules(protocol):
+    models = protocol["common_controls"]["models"]
+    assert tuple(models) == screening.COMMON and protocol["common_controls"]["date"] == "2026-10-28"
+    assert models["lightgbm"]["config"]["parameters"] == same_inputs_lightgbm.PARAMETERS
+    assert models["lightgbm"]["config"]["source"] == same_inputs_lightgbm.QLIB_SOURCE
+    assert models["momentum_reversal"]["config"]["reversal_sessions"] == 5
+    family = protocol["common_controls"]["family"]
+    assert family["role"] == "reported_outside_the_decisions" and family["metric"] == "session_ic"
+    assert {control for _, control in family["contrasts"]} == {
+        "past_median",
+        "momentum_reversal",
+        "lightgbm",
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ((*COMMON, "registered_before_opening_s"), False, "el cero, la mediana pasada"),
+        ((*MODELS, "lightgbm", "runner"), "fit", "el cero, la mediana pasada"),
+        ((*MODELS, "zero"), "cero", "el cero, la mediana pasada"),
+        ((*MODELS, "past_median", "identity"), "past_mean_v1", "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "lag_sessions"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "window"), 60.0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 61, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "momentum_reversal", "config", "reversal_sessions"), 0, "sesiones de reversión"),
+        ((*MODELS, "lightgbm", "config", "max_rounds"), 500, "parámetros de Qlib"),
+        ((*MODELS, "lightgbm", "config", "checkpoint_rounds"), 7, "parámetros de Qlib"),
+        ((*COMMON, "family", "role"), "decision", "familia de los controles comunes"),
+        ((*COMMON, "family", "metric"), "sharpe", "familia de los controles comunes"),
+        ((*COMMON, "family", "contrasts"), [], "familia de los controles comunes"),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "scalar_reference"]],
+            "familia de los controles comunes",
+        ),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "lightgbm"]] * 2,
+            "familia de los controles comunes",
+        ),
+        ((*COMMON, "family", "contrasts"), [["quantile_reference"]], "familia de los controles"),
+    ],
+)
+def test_the_common_controls_keep_their_declaration_and_their_own_family(
+    protocol, path, value, message
+):
+    with pytest.raises(ValueError, match=message):
+        screening.checked_protocol(_changed(protocol, path, value))
+
+
 def test_every_definition_runs_once_per_origin_and_seed(protocol, jobs):
-    counts = Counter(job["definition_sha256"] for job in jobs)
+    seeded = [job for job in jobs if job["seed"] is not None]
+    counts = Counter(job["definition_sha256"] for job in seeded)
     assert set(counts.values()) == {len(protocol["origins"]) * len(protocol["seeds"])}
-    for job in jobs:
+    for job in seeded:
         assert job["id"].startswith(f"{job['origin']}-{job['seed']}-")
-        assert job["fold"] == ORIGIN_FOLDS[job["origin"]]
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and "seeds" not in job
+
+
+def test_each_common_control_with_a_job_runs_once_per_origin_for_every_seed(protocol, jobs):
+    origin = [job for job in jobs if job["seed"] is None]
+    assert Counter(job["definition"]["runner"] for job in origin) == {"rule": 4, "tabular": 4}
+    assert Counter(tuple(job["used_by"]) for job in origin) == {
+        ("common/momentum_reversal",): 4,
+        ("common/lightgbm",): 4,
+    }
+    models = protocol["common_controls"]["models"]
+    for job in origin:
+        name = job["used_by"][0].split("/")[1]
+        assert job["definition"] == dict(
+            runner=models[name]["runner"], config=models[name]["config"]
+        )
+        assert job["id"] == f"{job['origin']}-{job['definition_sha256'][:16]}"
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and job["seeds"] == protocol["seeds"]
+        assert job["parent"] is None and job["after"] is None and "common_group" not in job
+    assert {job["origin"] for job in origin} == set(ORIGIN_FOLDS)
 
 
 def test_every_job_runs_after_its_parent_and_its_matched_variant(jobs):
