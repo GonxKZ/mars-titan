@@ -33,6 +33,8 @@ class RegionalEpisodeRead:
 class BridgedReadoutResult:
     state: torch.Tensor
     reads: tuple[RegionalEpisodeRead, ...]
+    # El estado tras cada refinamiento, en orden. El último es `state`.
+    states: tuple[torch.Tensor, ...] = ()
 
 
 def regional_read(model, state, snapshot, context_id, cutoff, positions):

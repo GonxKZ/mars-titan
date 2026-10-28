@@ -194,7 +194,7 @@ def stage_sha256(record):
 def apply(record, panel):
     """Predicción emitida y filas abstenidas de un tramo posterior, sin leer sus objetivos."""
     record = checked_record(record)
-    median = _median(panel)
+    _median(panel)
     _require(
         tuple(record["calibrator"]["levels"]) == panel.levels,
         "El panel no emite los niveles calibrados",
@@ -206,7 +206,24 @@ def apply(record, panel):
     calibrated, _ = cqr.apply_conformal_quantiles(
         record["calibrator"], panel.quantiles, _groups(panel)
     )
-    lower, upper = panel.interval(record["config"]["nominal"])
+    return emit_calibrated(panel, calibrated, record["config"]["nominal"])
+
+
+def emit_calibrated(panel, calibrated, nominal):
+    """Emitir la mediana donde el intervalo calibrado excluye el cero y cero en el resto.
+
+    `nominal` es la cobertura del intervalo que decide. `calibrated` son los cuantiles ya
+    calibrados en el orden canónico del panel, por la CQR de esta etapa o por otra
+    calibración posterior como la de A3. Devuelve la predicción emitida y las filas
+    abstenidas.
+    """
+    median = _median(panel)
+    calibrated = np.asarray(calibrated)
+    _require(
+        calibrated.shape == panel.quantiles.shape,
+        "Los cuantiles calibrados no tienen la forma de los del panel",
+    )
+    lower, upper = panel.interval(nominal)
     claim = (calibrated[:, lower] > 0) | (calibrated[:, upper] < 0)
     return np.where(claim, median, 0.0), ~claim
 

@@ -51,6 +51,7 @@ from mars_titan.models.titans.episodic_readout import (
     REFINEMENT_INITIALIZATIONS,
     EpisodicReadout,
     apply_episodic_readout,
+    head_predictions,
 )
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
@@ -139,9 +140,22 @@ class ReadoutRecipe:
     # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
     weight_decay_anchor: str | None = None
     refinement_initialization: str = "pytorch_default"
+    # D1 de #751. None supervisa solo el último refinamiento, como antes. Una lista creciente
+    # que acaba en K promedia la pérdida de la predicción tras cada refinamiento declarado.
+    supervised_refinements: tuple[int, ...] | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
+        if type(self.supervised_refinements) is list:
+            object.__setattr__(self, "supervised_refinements", tuple(self.supervised_refinements))
+        declared = self.supervised_refinements
+        if declared is not None and (
+            type(declared) is not tuple
+            or not declared
+            or any(type(k) is not int or k not in (1, 2, 3, 4) for k in declared)
+            or list(declared) != sorted(set(declared))
+        ):
+            raise ValueError("Los refinamientos supervisados deben ser enteros crecientes de 1 a 4")
         integers = (
             (self.update_instants, 1, 256),
             (self.epochs, 1, 1000),
@@ -189,6 +203,8 @@ class ReadoutRecipe:
             fields.pop("weight_decay_anchor")
         if fields["refinement_initialization"] == "pytorch_default":
             fields.pop("refinement_initialization")
+        if fields["supervised_refinements"] is None:
+            fields.pop("supervised_refinements")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -397,6 +413,9 @@ class MarsTitanInference:
         self.quantiles = config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
+        supervised = recipe.supervised_refinements
+        if supervised is not None and supervised[-1] != readout.config.refinements:
+            raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
         if admission not in ADMISSIONS:
             raise ValueError("La escritura debe ser M0, M1, M2 o M3")
         if (admission == "m0") != (readout.config.mode == "no_bank") or (
@@ -755,6 +774,29 @@ class MarsTitanInference:
         return self._pass(source.phase, events, stop=stop, rows=rows)
 
 
+def readout_loss(result, head, index, target, *, loss, supervised=None):
+    """Pérdida de las filas `index` con pinball de cinco niveles o L1 de la salida escalar.
+
+    Sin `supervised` se evalúa solo la predicción emitida. Con una lista de refinamientos,
+    se promedia la pérdida de la predicción de la cabeza tras cada uno. El último es K y
+    reutiliza la predicción emitida.
+    """
+
+    def single(point, quantiles):
+        if loss == PINBALL:
+            return pinball_loss(quantiles.index_select(0, index), target)
+        return torch.nn.functional.l1_loss(point.index_select(0, index), target)
+
+    final = single(result.point_predictions, result.quantiles)
+    if supervised is None:
+        return final
+    states = result.readout.states
+    if supervised[-1] != len(states):
+        raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
+    losses = [single(*head_predictions(head, states[k - 1])) for k in supervised[:-1]]
+    return torch.stack([*losses, final]).mean()
+
+
 class ReadoutTrainer(MarsTitanInference):
     """Ajustar el lector episódico sobre el padre congelado recorriendo instantes en orden."""
 
@@ -907,11 +949,16 @@ class ReadoutTrainer(MarsTitanInference):
         if self.predictor._parameter_id != self.identity["parent"]["parameters_sha256"]:
             raise ValueError("El padre congelado cambió durante el ajuste del lector")
 
-    def _loss(self, result, target):
-        """Pinball de los cinco niveles con `quantile_head_v1` o L1 de la salida escalar."""
-        if self.recipe.loss == PINBALL:
-            return pinball_loss(result.quantiles, target)
-        return torch.nn.functional.l1_loss(result.point_predictions, target)
+    def _loss(self, result, index, target):
+        """Pérdida de las filas `index` según la receta, con `readout_loss`."""
+        return readout_loss(
+            result,
+            self.predictor.head,
+            index,
+            target,
+            loss=self.recipe.loss,
+            supervised=self.recipe.supervised_refinements,
+        )
 
     def _update(self, run, at):
         """Repetir cada bloque del tramo con etiquetas y acumular la pérdida media del tramo."""
@@ -957,14 +1004,7 @@ class ReadoutTrainer(MarsTitanInference):
                         self.device,
                         self.dtype,
                     )
-                    selected = replace(
-                        result,
-                        point_predictions=result.point_predictions.index_select(0, index),
-                        quantiles=None
-                        if result.quantiles is None
-                        else result.quantiles.index_select(0, index),
-                    )
-                    loss = self._loss(selected, target) * (len(positions) / total)
+                    loss = self._loss(result, index, target) * (len(positions) / total)
                     checks.append(torch.isfinite(loss))
                     messages.append("La pérdida del tramo no es finita")
                     self._backward_block(loss, record)
