@@ -370,6 +370,11 @@ DOUBLES = {
         "sustituye `Ridge` de scikit-learn por un doble que predice una columna fija según su "
         "alpha, así que no estima ningún coeficiente",
     ),
+    "tests/training/test_signal_ceiling.py": (
+        1,
+        "Ridge y LightGBM son dobles de predicción fija sobre la vista corta del fixture, así "
+        "que el origen se recorre entero sin ajustar ningún modelo",
+    ),
     "tests/training/test_common_control_windows.py": (
         4,
         "la regla no ajusta nada y el ajuste de LightGBM es un doble de predicción fija sobre la "

@@ -296,6 +296,14 @@ ENTRY_POINTS = {
         "_declares_training",
         lambda m, out: m.fit(None, None, {}, min_assets=3),
     ),
+    # Tras la guarda, el origen del techo comprueba primero su declaración.
+    "signal_ceiling": _simple(
+        "mars_titan.training.signal_ceiling",
+        "checked_declaration",
+        lambda m, out: m.run_origin(
+            out.with_name("v.json"), {"year": 2019, "fold": "fold-014"}, {}, out
+        ),
+    ),
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",
