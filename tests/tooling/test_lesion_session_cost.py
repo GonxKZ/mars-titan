@@ -11,10 +11,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "benchmarks/lesion_session_cost.py"
 # El benchmark arma su propia alarma con este presupuesto desde que empieza su cuerpo. El límite
-# del proceso añade el arranque de uv, coverage, torch y el binario episódico, que con la
-# máquina cargada pasa de 10 s. Con 90 y 100 s la prueba falló dos veces en la regresión (#803).
-BUDGET = 180
-STARTUP = 60
+# del proceso añade el arranque de uv, coverage, torch y el binario episódico y el cierre de
+# coverage. Con la CPU compartida con otras baterías el cuerpo llegó a 159 s y el proceso a 201,
+# y con 90 y 100 s la prueba falló dos veces en la regresión (#803).
+BUDGET = 360
+STARTUP = 120
 
 
 def test_cost_summary_keeps_pairing_and_reports_added_time():
