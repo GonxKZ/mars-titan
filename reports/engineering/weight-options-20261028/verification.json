@@ -1,0 +1,154 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 749,
+ "scope": [
+  "seed_ema_ensemble_v1",
+  "schedule_free_shrink_perturb_v1"
+ ],
+ "implementation_commit": "d5732acd229f886300de638376f7e3925c48f875",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "test_optimizers": "Los recorridos usan un optimizador que registra gradientes sin modificar pesos y un doble con la forma de AdamWScheduleFree que fija z a mano. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "regression_of_changed_paths",
+   "tests": 645,
+   "failures": 14,
+   "errors": 0,
+   "skipped": 15,
+   "xml_sha256": "d459d6867f9cf2436b99173c0aac942551795a94adb10f090c5051ba4955f817",
+   "modules": 30,
+   "failures_explained": {
+    "gru_episodic_native_link": "Cuatro variantes gru_episodic de tests/training/test_joint_stop_trainers.py fallan porque el enlace episódico compilado no declara candidate_abi_version. Fallan igual en develop.",
+    "code_changed_during_the_run": "Cinco casos de test_financial_run.py, test_financial_run_accumulation.py y test_financial_run_opponent_heads.py se detuvieron porque la huella del código cambió durante el recorrido. Pasan en la repetición y tras integrar.",
+    "f1_tests_out_of_step": "Tres casos de test_financial_run_laplace_scale.py no coincidían con el código de ese momento. Sus cuatro casos actuales pasan sobre el árbol final (suite laplace_recipes_on_the_final_tree).",
+    "hold_inventory": "Dos casos de la guarda del bloqueo señalaban tests/training/test_regime_gate_correction_window.py, una prueba nueva de develop que usaba un doble del bloqueo sin declararlo en el inventario. Pasan tras integrar develop."
+   }
+  },
+  {
+   "name": "rerun_of_the_modules_with_failures",
+   "tests": 95,
+   "failures": 4,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6f9ee8a76a235c83b19a342d2523607141965633b576ce70974050cc5998aa31",
+   "modules": 5,
+   "note": "Solo fallan las cuatro variantes gru_episodic del enlace nativo."
+  },
+  {
+   "name": "after_integrating_a4_and_the_screening_analysis",
+   "tests": 166,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "8b9ed37abfde53b8527d59c40b4bf45e6a2bc7149a543ed3459ae63a9d162e8b",
+   "modules": 11,
+   "note": "Pruebas de F2, F3, sus recorridos, F1, A4, el coste y la guarda del bloqueo sobre el commit de implementación. La omisión es la prueba CUDA."
+  },
+  {
+   "name": "laplace_recipes_on_the_final_tree",
+   "tests": 4,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "bc9ec9c7ddbd8924541c8e85102fc33ba9d1076384c81d1d340d02eb1d841834",
+   "modules": 1
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 165,
+   "covered_statements": 164,
+   "branches": 62,
+   "covered_branches": 61
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/evaluation/seed_ensemble.py",
+    "source_sha256": "5db353feccb0d5690a4ed7f5c93a15a00ffd31f3566cb372bb1740e4cbf25a8b",
+    "statements": 35,
+    "covered_statements": 34,
+    "branches": 18,
+    "covered_branches": 17
+   },
+   {
+    "path": "src/mars_titan/training/schedule_free.py",
+    "source_sha256": "d9a8385488f23f936d6dfdf3a255c7fd66676e68933fae5ec3dfd3cbbe48a80f",
+    "statements": 48,
+    "covered_statements": 48,
+    "branches": 16,
+    "covered_branches": 16
+   },
+   {
+    "path": "src/mars_titan/training/shrink_perturb.py",
+    "source_sha256": "cdb34364bc0828b46fb225a97f62ee6b3602d014c2c261077cb7b843169d49c8",
+    "statements": 31,
+    "covered_statements": 31,
+    "branches": 12,
+    "covered_branches": 12
+   },
+   {
+    "path": "src/mars_titan/training/weight_averaging.py",
+    "source_sha256": "88ef1513cb7879619811f1a24c1b81f459b237f3fa9ea4efc4d1baad4d8bc66d",
+    "statements": 51,
+    "covered_statements": 51,
+    "branches": 16,
+    "covered_branches": 16
+   }
+  ],
+  "max_crap": 25.03,
+  "max_crap_function": "src/mars_titan/evaluation/seed_ensemble.py::seed_mean",
+  "quality_sha256": "160f2a6755af57214b0d19472ad90ed02bace2c07d39c68741e4abc54a63a8f7",
+  "coverage_sha256": "1aef1cffdbc0ec2cd4502bdf0143f2698140b16130098f6e6f7c23c6fc3bee42",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "mutations": {
+  "planned": 14,
+  "killed": 14,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "c23aa014762ad256708b2bfe1b7a53b1d10fac344148d6f16760f5e5e40ce92f",
+  "executor_sha256": "f3f77c08929c208862e14d2d55885bbbca14bc3de832dc7ef616316c3f5c9992",
+  "source_sha256": {
+   "src/mars_titan/evaluation/seed_ensemble.py": "5db353feccb0d5690a4ed7f5c93a15a00ffd31f3566cb372bb1740e4cbf25a8b",
+   "src/mars_titan/training/financial_run.py": "3d20c117f4d4fe3761b61062db749b9282fb4143a516a8f4a5c653946d12b302",
+   "src/mars_titan/training/schedule_free.py": "d9a8385488f23f936d6dfdf3a255c7fd66676e68933fae5ec3dfd3cbbe48a80f",
+   "src/mars_titan/training/shrink_perturb.py": "cdb34364bc0828b46fb225a97f62ee6b3602d014c2c261077cb7b843169d49c8",
+   "src/mars_titan/training/weight_averaging.py": "88ef1513cb7879619811f1a24c1b81f459b237f3fa9ea4efc4d1baad4d8bc66d"
+  },
+  "summary_sha256": "962fd281f414a6ce9da31d74df8ddbf85c24c93a7b98649d627a5d0cf852914a",
+  "cases": [
+   "skip_the_shadow_update",
+   "validate_with_the_trained_weights",
+   "resume_from_the_emitted_weights",
+   "save_the_trained_weights_as_model",
+   "shrink_again_on_resume",
+   "accept_another_optimizer",
+   "allow_both_averages",
+   "hide_the_option_identity",
+   "shrink_with_the_wrong_noise",
+   "ema_with_the_complement",
+   "leave_the_emitted_weights",
+   "x_with_the_train_weight",
+   "x_in_place",
+   "seeds_in_arrival_order"
+  ],
+  "note": "Las mutaciones se ejecutaron antes de integrar A4. Esa integración cambió financial_run.py, y las pruebas que matan sus ocho casos pasan sobre el commit de implementación."
+ },
+ "cost": {
+  "receipt": "cost-256.json",
+  "sha256": "9f034bd999d3c10953aca3f4748d4cddafa70021fa2acbdc5bbac8fe04a19d9d",
+  "load_average_start_1m": 7.47,
+  "load_average_end_1m": 7.51
+ }
+}

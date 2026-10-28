@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "online_arbiter_variants",
+  "issue": 789,
+  "epic": 782,
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_executed",
+  "core": {
+    "identity": "adanormalhedge_v1",
+    "form": "adanormalhedge_tv",
+    "source": "Luo y Schapire (2015), algoritmo 1 con las secciones 4 y 5.1",
+    "prior_over_options": "uniform",
+    "prior_over_start_rounds": "inverse_square",
+    "loss": "half_of_one_minus_the_session_ic",
+    "rounds": "mature_scored_sessions_in_maturity_order",
+    "state": "one_per_market",
+    "mixture_of": "session_standardized_predictions",
+    "precision": "float64_on_cpu",
+    "pass": "calibration_then_evaluation_in_time_order_with_one_state",
+    "amplitude": "market_lambda_chosen_on_the_calibration_output_and_applied_unchanged_in_evaluation",
+    "guarantee": "linear_loss_of_the_mixture_on_the_mature_rounds"
+  },
+  "stages": {
+    "version_arbiter_v1": {
+      "options": "common_epoch_and_versions_of_the_same_fit",
+      "repeated_epoch": "an_epoch_that_is_both_common_and_version_is_one_option",
+      "versions_source": "configs/experiments/variant-screening-v1.json#selection.versions",
+      "partitions": ["calibration", "evaluation"],
+      "measured_on": "evaluation",
+      "reliability_window_sessions": 21,
+      "abstention_margin": 0.0,
+      "min_assets": 3,
+      "abstained_sessions": "count_as_ic_zero_and_report_coverage",
+      "controls": {
+        "common_epoch": "the_emission_of_the_epoch_chosen_in_validation",
+        "uniform_mixture": "mean_of_the_standardized_options_without_abstention",
+        "shuffled_outcomes": {
+          "seed": 20261028,
+          "rule": "state_rebuilt_at_each_decision_from_the_mature_sessions_in_a_fixed_random_order"
+        }
+      }
+    },
+    "model_combination_v1": {
+      "options": "every_compared_model_of_the_same_origin_and_seed",
+      "partitions": ["calibration", "evaluation"],
+      "measured_on": "evaluation",
+      "reliability_window_sessions": 21,
+      "abstention_margin": null,
+      "min_assets": 3,
+      "controls": {
+        "simple_mean": "mean_of_the_standardized_models"
+      },
+      "attribution": "reported_apart_and_never_attributed_to_mars_titan"
+    }
+  },
+  "reasons": {
+    "window": "Veintiuna sesiones son un mes de mercado, la velocidad más lenta de la señal de fiabilidad de #791",
+    "margin": "La issue pide abstenerse si ninguna versión tiene fiabilidad madura positiva. El margen cero se fija aquí antes de abrir datos y no se ajusta",
+    "per_market": "Las sesiones de dos mercados pueden decidirse en el mismo instante. Un estado por mercado mantiene instantes de decisión únicos y no mezcla calendarios",
+    "abstention_scoring": "Contar una sesión abstenida como IC cero evita medir el árbitro solo en las sesiones que elige",
+    "repeated_epoch": "Si la época común coincide con una versión, contarla dos veces le daría el doble de prior sin aportar otra predicción",
+    "amplitude": "La mezcla de predicciones tipificadas no tiene escala propia. El λ de cada mercado se elige con la salida del árbitro en calibración y se aplica sin cambios en S, como en el resto de la criba"
+  },
+  "pending": [
+    "La etapa del análisis que lee las versiones de la criba y su entrada en el protocolo de la segunda ola",
+    "fractal_arbiter_v1, que necesita los niveles de H1 de #783",
+    "tool_arbiter_v1, que necesita las predicciones de cada acción registrada"
+  ]
+}

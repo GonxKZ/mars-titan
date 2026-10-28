@@ -34,8 +34,11 @@ def source_reader(variant):
         config=SimpleNamespace(
             temporal_encoder=None,
             regional_variant=variant,
+            cross_asset_attention=None,
         )
     )
+    # La receta decide si F2 y F3 añaden su código.
+    reader.recipe = financial_run.ChronologicalRecipe()
     return reader
 
 
