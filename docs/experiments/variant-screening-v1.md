@@ -50,6 +50,8 @@ La regla `common_epoch_session_ic_v1` se aplica a los ajustes y a los lectores:
 - Una salida que combina semillas elige su propia época con el IC de la combinación, porque una transformación posterior puede invertir el orden de los estados ([Ranjan et al., 2024](https://proceedings.neurips.cc/paper_files/paper/2024/hash/a6805b5564bd8d813a81c4b5a97e5ca6-Abstract.html)).
 - El MAE por sesión de cada época y la época de menor MAE de cada semilla se publican como sensibilidad y nunca se emiten.
 
+**Media de semillas.** La de F2 no se ajusta. Promedia por fila, con la suma ordenada de `seed_ensemble`, las predicciones de la referencia B en cada una de las diez ternas de las cinco semillas de la criba. Con todas las ternas cada semilla aparece seis veces y el resultado no depende de su orden, así que la media de las ternas estima el IC esperado de un conjunto de tres semillas, el tamaño que declara F2 y que iguala su control de tres veces las actualizaciones. Su época es común a las diez ternas: la de mayor IC medio de las ternas en validación, en las sesiones que todas definen y con el mismo radio. Si no coincide con la época común de la referencia, se emite como una versión más de su grupo. En el análisis cada terna ocupa el lugar de una semilla y su calibración fija el λ del MAE calibrado.
+
 Cada grupo escribe su decisión en `groups/<grupo>.json` antes de reanudar ninguna semilla, con las huellas de los informes que ha leído, y no la reescribe. Los estados fijados ocupan disco hasta que la ventana confirma todas sus predicciones. Después se liberan y solo queda el punto de control de recuperación.
 
 **Versiones.** La referencia B, F1, F4, F5 y C6 emiten también la calibración y la evaluación de las épocas 3, 6, 9 y 12, que usará el árbitro de versiones de #789. Son la referencia y cuatro variantes que cambian la pérdida, el objetivo, la supervisión auxiliar y la memoria. F2 y F3 ya promedian pesos en el tiempo, así que el árbitro se comparará con ellas sobre la referencia en lugar de aplicarse encima. Las versiones no intervienen en la criba.
@@ -102,7 +104,7 @@ Una variante pasa la criba si el intervalo simultáneo de la familia declarada e
 | A1 | `output` | λ·mediana frente a cero (MAE) | | Ejecutable |
 | A2 | `output` | Abstención frente a la aleatoria con la misma cobertura (MAE) | Mediana pequeña, volatilidad pasada y desacuerdo entre semillas | Ejecutable |
 | A3 | `output` | Ponderación por contexto frente a uniforme, dentro de A2 (MAE) | Contextos barajados | Ejecutable |
-| A4 | `fit` | Oponentes por cuantiles frente a su control simétrico | | Falta integrar su declaración |
+| A4 | `fit` | Oponentes por cuantiles frente a su control simétrico | | Ejecutable |
 | B1 | `correction` | Áreas frente a un área con las mismas coordenadas | Áreas idénticas y etiquetas barajadas | Ejecutable |
 | B2 | `correction` | Puente frente a B1 sin puente | Mismos mapas con ganancia cero | Ejecutable |
 | B3 | `correction` | Régimen frente a rol constante | Concatenación proyectada | Ejecutable |
@@ -111,7 +113,7 @@ Una variante pasa la criba si el intervalo simultáneo de la familia declarada e
 | C2 | `fit` | | | Sin implementar |
 | C3 | `fit` | | | Sin implementar |
 | C4 | `output` | Regiones por correlación pasada frente a etiquetas permutadas | | Ejecutable |
-| C5 | `fit` | Atención entre activos frente a la misma capa sobre sí mismo | | Falta integrar su declaración |
+| C5 | `fit` | Atención entre activos frente a la misma capa sobre sí mismo | | Ejecutable |
 | C6 | `fit` | Escritura por competición frente a escritura densa | | Ejecutable |
 | D1 | `reader` | K2×J2 frente a K4×J1 con pérdida final | | Ejecutable |
 | D2 | `reader` | Parada adaptativa frente a J4 fijo con el mismo cálculo | | Ejecutable |
@@ -120,8 +122,8 @@ Una variante pasa la criba si el intervalo simultáneo de la familia declarada e
 | E3 | `correction_profile` | Error estandarizado frente a cupo uniforme | Error absoluto | Ejecutable |
 | E4 | `correction_profile` | CUSUM frente a la puerta constante con su media de validación | | Ejecutable |
 | F1 | `fit` | Escala de Laplace frente al control L1 | | Ejecutable |
-| F2 | `fit` | Media exponencial rápida frente a la misma semilla | | Falta integrar su declaración |
-| F3 | `fit` | AdamW sin calendario frente a AdamW | | Falta integrar su declaración. La contracción espera a una etapa de continuación |
+| F2 | `fit` | Media exponencial rápida frente a la misma semilla | | Ejecutable, con la media de semillas como etapa de salida |
+| F3 | `fit` | AdamW sin calendario frente a AdamW | | Ejecutable sin la contracción, que espera a una etapa de continuación |
 | F4 | `fit` | Objetivo de IC por sesión frente al control MAE | | Ejecutable |
 | F5 | `fit` | Horizontes auxiliares frente a peso cero | | Ejecutable |
 | G1 | | | | Necesita su propia aprobación tras la criba |
@@ -138,20 +140,20 @@ Cero, la referencia de su cabeza y la mediana pasada del residuo de la fase 0 es
 
 La criba ejecuta una sola carga GPU a la vez, con la GPU en exclusiva y sin parar otros procesos. Cada intento se cobra y nunca se devuelve. Un trabajo tiene como máximo 5.400 segundos y 20.000 actualizaciones.
 
-Con las entradas ejecutables hoy, el motor enumera 1.740 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
+Con las entradas ejecutables hoy, el motor enumera 1.980 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
 
 | Ejecutor | Trabajos | Horas estimadas |
 | --- | ---: | ---: |
-| `fit` | 260 | 59,4 |
+| `fit` | 460 | 111,4 |
 | `correction` | 1.040 | 10,3 |
 | `correction_profile` | 200 | 2,0 |
-| `reader` | 120 | 12,7 |
+| `reader` | 160 | 17,0 |
 | `spaced` | 120 | 12,7 |
-| Total | 1.740 | 97,2 |
+| Total | 1.980 | 153,5 |
 
 Las versiones de la época común añaden 2,8 horas a los ajustes. Cada versión vuelve a predecir la calibración y la evaluación de su trabajo, y los 100 ajustes de los cinco modelos con versiones predicen cuatro. Antes de la enmienda la estimación era de 94,3 horas.
 
-Las cuatro entradas pendientes de integrar (A4, C5, F2 y F3 sin la contracción) añaden unos doce ajustes por origen y semilla, contando el triple del control de F2, unas 52 horas más con la misma medida. El total quedaría cerca del límite aprobado de 150 horas. Si al integrarlas la estimación lo supera, el motor lo indicará en `plan` y la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
+Antes de integrar A4, C5, F2, F3 y D2 el motor enumeraba 1.740 trabajos y unas 97,2 horas. Las cinco entradas añaden 240 trabajos: A4 unas 17,4 horas, F2 21,5 (el control de tres veces las actualizaciones cuesta como tres ajustes), C5 8,7, F3 4,4 y D2 4,2. Las referencias de A4, C5, F2 y F3 son los mismos trabajos que las del protocolo y no se repiten. La estimación de 153,5 horas supera el límite aprobado de 150, y `plan` lo indica con `within_budget` en falso. Como prevé el protocolo, la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
 
 ## Motor
 
@@ -199,7 +201,7 @@ Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, co
 - La medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
 - La selección del estado y del caso de las correcciones cambió el 28 de octubre, antes de abrir S. La regla anterior, la de menor MAE de validación en cada semilla, se conserva como sensibilidad y en la comprobación de la regla.
 - La época común conserva un estado por época hasta que el grupo emite sus predicciones. En pilotos anteriores, el estado de un ajuste de Titans-MAC ocupaba entre 2,3 y 3,1 MB y el de un lector unos 0,5 MB, así que un grupo de ajustes fija unos 190 MB. Como solo hay un grupo abierto a la vez, el pico es ese, pero no se ha medido con los modelos de la criba.
-- La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula. La media de semillas de F2 espera a que se integre su declaración.
+- La mediana pasada figura entre los controles comunes, pero ningún contraste declarado la usa y el análisis no la calcula.
 - El análisis se ha comprobado con paneles sintéticos de respuesta conocida. No se ha ejecutado con predicciones reales.
 
 ## Comprobaciones

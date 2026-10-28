@@ -1,25 +1,21 @@
 {
- "protocol_sha256": "591de3c2ec9c4a36dfb86da239cf3f2102f08c4d0956707deb950e8df1ef9006",
- "jobs": 1740,
+ "protocol_sha256": "c366f72888d0003a1e0b1eb5bfa93ceee232b7b857d7f7e9b18e485df2870270",
+ "jobs": 1980,
  "cost": {
-  "jobs": 1740,
-  "hours": 97.17973223198578,
+  "jobs": 1980,
+  "hours": 153.48508231194515,
   "hours_by_runner": {
    "correction": 10.335751405239122,
    "correction_profile": 1.9876445010075292,
-   "fit": 59.389669659070705,
-   "reader": 12.733333333333333,
+   "fit": 111.45057529458565,
+   "reader": 16.977777777777778,
    "spaced": 12.733333333333333
   },
   "budget_hours": 150,
-  "within_budget": true,
+  "within_budget": false,
   "estimate": "pilot_measurements_not_a_measured_screening_cost"
  },
  "pending": [
-  {
-   "entry": "A4",
-   "status": "pending_merge_of_its_declaration"
-  },
   {
    "entry": "B4",
    "status": "diagnostic_after_b1_and_b2_outside_the_family"
@@ -31,22 +27,6 @@
   {
    "entry": "C3",
    "status": "pending_implementation"
-  },
-  {
-   "entry": "C5",
-   "status": "pending_merge_of_its_declaration"
-  },
-  {
-   "entry": "D2",
-   "status": "pending_declaration_of_the_matched_depth_control"
-  },
-  {
-   "entry": "F2",
-   "status": "pending_merge_of_its_declaration"
-  },
-  {
-   "entry": "F3",
-   "status": "pending_merge_of_its_declaration"
   },
   {
    "entry": "F3",
@@ -81,5 +61,5 @@
    "status": "validity_check_outside_the_family"
   }
  ],
- "contrasts": 62
+ "contrasts": 73
 }
