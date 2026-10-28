@@ -17,6 +17,8 @@
   época. No abre S.
 - `analyze` comprueba la protección, exige todos los trabajos terminados, verifica la huella
   de cada archivo de predicciones y escribe los contrastes, las familias y la decisión.
+- `arbiters` hace las mismas comprobaciones y escribe los árbitros en línea de #789 sobre las
+  versiones y los modelos de la criba, con su propia familia de contrastes.
 
 Las etapas de salida (A1, A2, A3, C4 y la media de semillas) no son trabajos. Se calculan
 en el análisis sobre las predicciones guardadas de su fuente.
@@ -45,14 +47,15 @@ from benchmarks.refinement_study_traces import attempt_cost, settle_attempt
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import arbiter_analysis, seed_ensemble, variant_screening_analysis
 from mars_titan.evaluation import scale_diagnostics as sd
-from mars_titan.evaluation import seed_ensemble, variant_screening_analysis
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import stopping_rule
 from mars_titan.training import screening_cohorts, selection, variant_screening
 from mars_titan.training.learning_hold import require_learning_allowed
 
 ROOT = Path(__file__).resolve().parents[1]
+ARBITERS = ROOT / "configs/experiments/online-arbiters-v1.json"
 KIND = "variant_screening_work_v1"
 GROUP_KIND = "variant_screening_common_epoch_v1"
 RULE_CHECK_KIND = "variant_screening_rule_check_v1"
@@ -861,6 +864,29 @@ def combination_panels(work, receipt, year, reads):
     return combine
 
 
+def version_panels(work, receipt, reads):
+    """Calibración y evaluación de cada versión de un ajuste terminado, sin su época común.
+
+    `versions(job_id)` lee las épocas de `selection.versions` que el trabajo emite como
+    versiones, con la huella de cada archivo. La época común no es una versión, porque ya está
+    en sus predicciones principales.
+    """
+    epochs = receipt["protocol"]["selection"]["versions"]["epochs"]
+
+    def versions(job_id):
+        folder = Path(work) / "runs" / job_id
+        common = read_manifest(folder / "run.json", 16 * 1024**2)[0]["fit"]["joint_stop_epoch"]
+        return {
+            epoch: {
+                name: _panel(table) for name, table in epoch_tables(folder, epoch, reads).items()
+            }
+            for epoch in epochs
+            if epoch != common
+        }
+
+    return versions
+
+
 def current_sectors(descriptions, assets):
     """Sector de las fichas actuales de cada activo, o None si la ficha no lo tiene."""
     from mars_titan.data.sector_map import UNKNOWN, SectorMap
@@ -924,10 +950,8 @@ def _emits_its_group(work, job):
     )
 
 
-def analyze(work, output, descriptions):
-    """Analizar una criba terminada y escribir el informe y las series por sesión."""
-    require_learning_allowed("el análisis de la criba de variantes")
-    work, output = Path(work).resolve(), Path(output).resolve()
+def _finished(work, output):
+    """Recibo de una criba con todos sus trabajos terminados, para una salida nueva."""
     receipt = verify_prepared(work)
     _require(not output.exists(), "El análisis necesita un directorio nuevo")
     missing = [job["id"] for job in receipt["jobs"] if _completed(work, job["id"]) is None]
@@ -938,38 +962,69 @@ def analyze(work, output, descriptions):
                 _emits_its_group(work, job),
                 f"El trabajo {job['id']} no emite la época común y las versiones de su grupo",
             )
-    protocol, reads, origins = receipt["protocol"], {}, {}
+    return receipt
+
+
+def _origins(work, receipt, reads, descriptions=None):
+    """Orígenes con sus paneles, su madurez, sus medias de semillas y sus versiones.
+
+    Los sectores de las fichas actuales solo se leen con `descriptions`, porque solo los usa
+    el control sectorial de C4.
+    """
+    protocol, origins = receipt["protocol"], {}
     # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
     load = functools.lru_cache(maxsize=CACHED_RUNS)(
         lambda job_id: run_panels(work / "runs" / job_id, reads)
     )
     for year in screening_cohorts.ORIGIN_FOLDS:
         view = work / "origins" / str(year) / "view-x1.json"
-        assets = [
-            f"{a['market']}/{a['symbol']}" for a in read_manifest(view, 8 * 1024**2)[0]["assets"]
-        ]
         cohorts, maturity = origin_maturity(view, protocol["population"]["input_policy"])
+        sectors = None
+        if descriptions is not None:
+            assets = read_manifest(view, 8 * 1024**2)[0]["assets"]
+            sectors = current_sectors(
+                descriptions, [f"{a['market']}/{a['symbol']}" for a in assets]
+            )
         origins[year] = variant_screening_analysis.Origin(
             year=year,
             load=load,
             cohorts=cohorts,
             maturity=maturity,
-            sectors=current_sectors(descriptions, assets),
+            sectors=sectors,
             combine=combination_panels(work, receipt, year, reads),
+            versions=version_panels(work, receipt, reads),
         )
-    report, arrays = variant_screening_analysis.analyze(protocol, receipt["jobs"], origins, ROOT)
-    report.update(
+    return origins
+
+
+def _report_identities(work, receipt, reads):
+    """Huellas comunes de los informes del análisis."""
+    return dict(
         prepared_sha256=sha256(work / "prepared.json"),
         protocol_sha256=receipt["protocol_sha256"],
         code=code_identity(),
         environment=environment_identity(),
+        predictions_sha256=dict(sorted(reads.items())),
+        final_test_access=False,
+        optimizer_steps=0,
+    )
+
+
+def analyze(work, output, descriptions):
+    """Analizar una criba terminada y escribir el informe y las series por sesión."""
+    require_learning_allowed("el análisis de la criba de variantes")
+    work, output = Path(work).resolve(), Path(output).resolve()
+    receipt, reads = _finished(work, output), {}
+    origins = _origins(work, receipt, reads, descriptions)
+    report, arrays = variant_screening_analysis.analyze(
+        receipt["protocol"], receipt["jobs"], origins, ROOT
+    )
+    report.update(
+        _report_identities(work, receipt, reads),
         descriptions_sha256={
             name: sha256(Path(descriptions) / name)
             for name in ("sp500stock_data_description.csv", "hs300stock_data_description.csv")
         },
-        predictions_sha256=dict(sorted(reads.items())),
-        final_test_access=False,
-        optimizer_steps=0,
     )
     output.mkdir(parents=True)
     atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
@@ -978,6 +1033,27 @@ def analyze(work, output, descriptions):
         decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
         sessions=report["sessions"],
         analysis_sha256=sha256(output / "analysis.json"),
+    )
+
+
+def analyze_arbiters(work, output, declaration=ARBITERS):
+    """Árbitros en línea de #789 sobre una criba terminada, con su informe y sus series."""
+    require_learning_allowed("el análisis de los árbitros en línea")
+    work, output = Path(work).resolve(), Path(output).resolve()
+    receipt, reads = _finished(work, output), {}
+    document, digest = read_manifest(Path(declaration), 1024**2)
+    origins = _origins(work, receipt, reads)
+    report, arrays = arbiter_analysis.analyze(
+        receipt["protocol"], document, receipt["jobs"], origins, ROOT
+    )
+    report.update(_report_identities(work, receipt, reads), declaration_sha256=digest)
+    output.mkdir(parents=True)
+    atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
+    atomic_json(output / "arbiters.json", report)
+    return dict(
+        decisions={model: row["passes"] for model, row in report["decisions"].items()},
+        sessions=report["sessions"],
+        arbiters_sha256=sha256(output / "arbiters.json"),
     )
 
 
@@ -1051,6 +1127,9 @@ def main():
     analyze_parser.add_argument("--work", type=Path, required=True)
     analyze_parser.add_argument("--output", type=Path, required=True)
     analyze_parser.add_argument("--descriptions", type=Path, required=True)
+    arbiters_parser = commands.add_parser("arbiters", help="Árbitros en línea de #789")
+    arbiters_parser.add_argument("--work", type=Path, required=True)
+    arbiters_parser.add_argument("--output", type=Path, required=True)
     check_parser = commands.add_parser("rule-check", help="Comprobar la regla en validación")
     check_parser.add_argument("--work", type=Path, required=True)
     check_parser.add_argument("--output", type=Path, required=True)
@@ -1066,6 +1145,8 @@ def main():
         result = run_queue(args.work, args.limit)
     elif args.command == "analyze":
         result = analyze(args.work, args.output, args.descriptions)
+    elif args.command == "arbiters":
+        result = analyze_arbiters(args.work, args.output)
     elif args.command == "rule-check":
         result = rule_check(args.work, args.output)
     else:
