@@ -1029,6 +1029,11 @@ class ChronologicalTrainer(ChronologicalInference):
         for option, name in _PREDICTOR_MODULES.items():
             if getattr(self.predictor.config, option) is not None:
                 own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H1 de #783 también, con el catálogo macro del que salen sus familias.
+        if self.predictor.config.holographic_network is not None:
+            module = importlib.import_module("mars_titan.models.titans.holographic_network")
+            own[module.__name__] = sha256(Path(module.__file__))
+            own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
         # C3 agrupa sus sectores con el módulo común de C4, que también entra en la identidad.
         if self.predictor.config.fractal_shared_operator is not None:
             name = "mars_titan.data.correlation_regions"

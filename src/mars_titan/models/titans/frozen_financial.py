@@ -360,6 +360,9 @@ class FrozenFinancialConsumer:
         # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
         if predictor.cross_asset_attention is not None:
             raise ValueError("El consumidor congelado aún no registra la atención entre activos")
+        # Tampoco registra la red holográfica de #783.
+        if predictor.holographic_network is not None:
+            raise ValueError("El consumidor congelado aún no registra la red holográfica")
         # Tampoco el historial de regiones de C2 en el estado de cada flujo.
         if predictor.axial_time_region is not None:
             raise ValueError("El consumidor congelado aún no registra el historial de C2")

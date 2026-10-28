@@ -363,6 +363,27 @@ def test_loading_weights_checks_the_declared_configuration():
         control.load_state_dict(variant.state_dict())
 
 
+def test_sealing_refuses_a_c2_module_other_than_the_declared_one():
+    predictor = model(axial_time_region=VARIANT)
+    original, size = predictor.axial_time_region, predictor.config.hidden_size
+    others = (
+        None,
+        AxialTimeRegion(size, CONTROL, seed=1, dtype=torch.float64),
+        AxialTimeRegion(size, VARIANT, seed=1, dtype=torch.float32),
+    )
+    for module in others:
+        predictor.axial_time_region = module
+        with pytest.raises(ValueError, match="C2 no corresponde a la configuración declarada"):
+            predictor._seal_parameters()
+    predictor.axial_time_region = original
+    predictor._seal_parameters()
+    # Un módulo sin declaración tampoco se admite.
+    plain = model()
+    plain.axial_time_region = original
+    with pytest.raises(ValueError, match="C2 no corresponde a la configuración declarada"):
+        plain._seal_parameters()
+
+
 def test_the_identity_and_the_operation_counts_follow_the_kind():
     variant, control = (AxialTimeRegion(HIDDEN, c, seed=1) for c in (VARIANT, CONTROL))
     assert variant.config.identity()["second_layer"].startswith("attention_across")
@@ -631,6 +652,16 @@ def test_it_is_exclusive_with_other_modulations_and_row_wise_tokens(changes):
         replace(base.config, axial_time_region=VARIANT, **changes)
 
 
+def test_it_does_not_combine_with_the_holographic_network():
+    # H1 necesita la edición con el catálogo de sus familias, que su prueba ya construye.
+    from test_holographic_network import H1, api, specification
+
+    options = dict(variant="mac_online", hidden_size=32, holographic_network=H1)
+    api().FinancialConfig(specification(), **options)
+    with pytest.raises(ValueError, match="ni la red holográfica"):
+        api().FinancialConfig(specification(), axial_time_region=VARIANT, **options)
+
+
 def test_the_source_enters_the_trainer_identity_only_when_active():
     from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
 
@@ -643,6 +674,7 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
                 temporal_encoder=None,
                 regional_variant=None,
                 cross_asset_attention=None,
+                holographic_network=None,
                 axial_time_region=config,
                 fractal_shared_operator=None,
             )
