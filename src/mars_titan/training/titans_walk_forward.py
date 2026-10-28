@@ -92,6 +92,7 @@ _CODE = (
     "mars_titan.models.titans.session_ic_objective",
     "mars_titan.models.titans.output_objectives",
     "mars_titan.models.titans.laplace_scale",
+    "mars_titan.models.titans.opponent_heads",
     "mars_titan.models.titans.auxiliary_horizons",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",

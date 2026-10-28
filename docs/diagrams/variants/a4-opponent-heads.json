@@ -9,6 +9,7 @@
       "entries": {
         "external": {"label": "Entradas"},
         "backend": {"label": "Cálculo"},
+        "frontend": {"label": "Salida"},
         "security": {"label": "Control o protección"},
         "cloud": {"label": "Evaluación"}
       }
@@ -20,23 +21,40 @@
       "type": "external",
       "label": "Entradas en la emisión",
       "sublabel": "4 modalidades y macro",
-      "tag": "con máscaras",
       "pos": [40, 230],
-      "size": [180, 72]
+      "size": [180, 72],
+      "tag": "con máscaras"
     },
     {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de Titans-MAC", "pos": [300, 230], "size": [180, 72]},
-    {"id": "optimist", "type": "backend", "label": "Cabeza optimista", "sublabel": "expectil 0,75", "pos": [560, 40], "size": [180, 72]},
-    {"id": "pessimist", "type": "backend", "label": "Cabeza pesimista", "sublabel": "expectil 0,25", "pos": [560, 420], "size": [180, 72]},
-    {"id": "neutral", "type": "backend", "label": "Integrador neutral", "sublabel": "combinación fija", "pos": [820, 230], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
-    {"id": "controls", "type": "security", "label": "Control", "sublabel": "cabeza compartida", "pos": [1080, 420], "size": [180, 72]}
+    {
+      "id": "pair",
+      "type": "backend",
+      "label": "Centro c y semiamplitud d",
+      "sublabel": "cabeza escalar y d nula al empezar",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "optimist", "type": "backend", "label": "Optimista c + d", "sublabel": "nivel 1 − τ", "pos": [820, 40], "size": [180, 72]},
+    {"id": "pessimist", "type": "backend", "label": "Pesimista c − d", "sublabel": "nivel τ", "pos": [820, 420], "size": [180, 72]},
+    {"id": "neutral", "type": "frontend", "label": "Integrador neutral", "sublabel": "media fija, emite c", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "mismas filas y padre", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Control simétrico",
+      "sublabel": "τ = 0,5, mismos parámetros",
+      "pos": [1080, 420],
+      "size": [180, 72],
+      "tag": "misma familia"
+    }
   ],
   "connections": [
     {"id": "inputs-trunk", "from": "inputs", "to": "trunk"},
-    {"id": "trunk-optimist", "from": "trunk", "to": "optimist"},
-    {"id": "trunk-pessimist", "from": "trunk", "to": "pessimist"},
-    {"id": "optimist-neutral", "from": "optimist", "to": "neutral", "label": "lectura alta"},
-    {"id": "pessimist-neutral", "from": "pessimist", "to": "neutral", "label": "lectura baja"},
+    {"id": "trunk-pair", "from": "trunk", "to": "pair"},
+    {"id": "pair-optimist", "from": "pair", "to": "optimist"},
+    {"id": "pair-pessimist", "from": "pair", "to": "pessimist"},
+    {"id": "optimist-neutral", "from": "optimist", "to": "neutral", "label": "lectura alta", "labelAt": [962, 171]},
+    {"id": "pessimist-neutral", "from": "pessimist", "to": "neutral", "label": "lectura baja", "labelAt": [962, 361]},
     {"id": "neutral-screen", "from": "neutral", "to": "screen", "label": "predicción", "variant": "emphasis"},
     {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
   ],
@@ -45,20 +63,20 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Dos cabezas con parámetros propios leen el mismo dato como bueno y como malo",
-        "Un integrador fijo, sin parámetros aprendidos, emite la predicción",
-        "Fuente: Collins y Frank (2014), Dabney et al. (2020)"
+        "Cada cabeza se ajusta con un expectil o cuantil asimétrico, τ y 1 − τ",
+        "El integrador emite la media de ambas, que es la cabeza escalar c",
+        "Fuentes: Newey y Powell (1987), Collins y Frank (2014), Dabney et al. (2020)"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Cabeza compartida de cinco cuantiles con los mismos parámetros", "Vías aisladas ya existentes del proyecto"]
+      "items": ["Mismas cabezas con τ = 0,5: d no recibe gradiente y sigue en cero", "Referencia L1 sin objetivo de salida"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Coste estimado de un ajuste de referencia por semilla"]
+      "items": ["Objetivo de salida con pruebas CPU, sin entrenar ni evaluar", "CUDA pendiente de admisión GPU"]
     }
   ]
 }
