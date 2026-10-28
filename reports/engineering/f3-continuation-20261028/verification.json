@@ -1,0 +1,228 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 749,
+ "related_issues": [
+  746
+ ],
+ "scope": "f3_continuation_from_the_chosen_parent_state",
+ "implementation_commit": "d85d266010ed405a8af339ea0dd28d5d0de4e2f7",
+ "base_commit": "07a40bb83",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Los recorridos usan un optimizador que registra gradientes sin modificar pesos, y las mutaciones registran un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "f3_continuation_with_coverage",
+   "tests": 473,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "ca5d5ad494192116be1cf22f602f3929bb9e40b497b969d5c310c439637db22d",
+   "note": "Contracción, recorrido de financial_run, ventana de Titans-MAC con padre, motor, análisis y orden de la criba, y protecciones del bloqueo, con cobertura de ramas sobre el árbol de implementation_commit. Las dos omisiones se deben al bloqueo de aprendizaje y la deselección es la prueba CUDA."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 1110,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 18,
+   "xml_sha256": "cb3a532891940966e55082c4dd53e4776e5bcb931fc720049fc5c21c304d92a7",
+   "note": "Los 51 módulos que importan los cambios, con tres procesos sobre el árbol de implementation_commit. Las dieciocho omisiones se deben al bloqueo de aprendizaje."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2516,
+   "covered_statements": 2292,
+   "branches": 788,
+   "covered_branches": 673
+  },
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "1eee06732309bcf4b9a73ce5dd1024d48f624e29581b343ed0d8e1d0b88a6cd9",
+    "statements": 526,
+    "covered_statements": 518,
+    "branches": 114,
+    "covered_branches": 108
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "802a3e180d5b172c3156effc38b39bdf7c06d465157bb862ad7427b5c054524a",
+    "statements": 342,
+    "covered_statements": 342,
+    "branches": 80,
+    "covered_branches": 80
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "2bd2ad5e4a544aa7029bc13646c6ceb353f3a8c49ccd4da1d5eebbb3b69db472",
+    "statements": 905,
+    "covered_statements": 770,
+    "branches": 368,
+    "covered_branches": 279
+   },
+   {
+    "path": "src/mars_titan/training/shrink_perturb.py",
+    "source_sha256": "7dafdbee68d1da64195040b79aad26a7cbab4f0fef32e1657cd060ea5234b4b3",
+    "statements": 36,
+    "covered_statements": 36,
+    "branches": 14,
+    "covered_branches": 14
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "11ee30cdb200a0f7f1acc10f755a55e60b78d2e17394fa6584bcdace39cf5a06",
+    "statements": 397,
+    "covered_statements": 318,
+    "branches": 86,
+    "covered_branches": 68
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "2598e11ffdcb69c5f417f273f089ed6d89a7cf974d7c8b90b03761ccf621ad50",
+    "statements": 310,
+    "covered_statements": 308,
+    "branches": 126,
+    "covered_branches": 124
+   }
+  ],
+  "max_crap": 240.0,
+  "quality_sha256": "93fd1516de57c02ec830d96b60c8b458ed8eec92eccc43176e7ccc72e7f41c7a",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "07a40bb83881a1201f21e681d1c722835d4ca10e",
+  "head": "d85d266010ed405a8af339ea0dd28d5d0de4e2f7",
+  "functions": 20,
+  "max_crap": 89.15345448300427,
+  "changed_executable_lines": 94,
+  "changed_covered_lines": 94,
+  "highest": [
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer.__init__",
+    "cyclomatic_complexity": 69,
+    "crap": 89.15345448300427,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "function": "run_titans_window",
+    "cyclomatic_complexity": 32,
+    "crap": 32.03029343477894,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "entry_arms",
+    "cyclomatic_complexity": 27,
+    "crap": 27.008,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "families",
+    "cyclomatic_complexity": 26,
+    "crap": 26.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "screening_jobs",
+    "cyclomatic_complexity": 22,
+    "crap": 22.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Funciones con líneas cambiadas frente a base_commit, con su CRAP y la cobertura de esas líneas. Las 94 líneas ejecutables cambiadas están cubiertas. El CRAP máximo, 89,2, es de ChronologicalTrainer.__init__, cuya complejidad de 69 ya existía y que no tiene líneas ejecutables cambiadas.",
+  "changed_sha256": "f5e3d6468b7a5145114341123b883b42bc29a9c7f5897f08dce6cec8b76f1e08"
+ },
+ "mutations": {
+  "tree_commit": "d85d266010ed405a8af339ea0dd28d5d0de4e2f7",
+  "planned": 27,
+  "killed": 27,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "b29213c84bfd3aca9e4cac68cb910387cf13646d4953dae070c2154e886b8c65",
+  "executor_sha256": "22026130f5ac7e438c8e03454088eb121dde42d8768d6519d47a4975f546182e",
+  "source_sha256": {
+   "src/mars_titan/training/shrink_perturb.py": "7dafdbee68d1da64195040b79aad26a7cbab4f0fef32e1657cd060ea5234b4b3",
+   "src/mars_titan/training/titans_walk_forward.py": "11ee30cdb200a0f7f1acc10f755a55e60b78d2e17394fa6584bcdace39cf5a06",
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "802a3e180d5b172c3156effc38b39bdf7c06d465157bb862ad7427b5c054524a",
+   "src/mars_titan/training/variant_screening.py": "2598e11ffdcb69c5f417f273f089ed6d89a7cf974d7c8b90b03761ccf621ad50",
+   "src/mars_titan/training/financial_run.py": "2bd2ad5e4a544aa7029bc13646c6ceb353f3a8c49ccd4da1d5eebbb3b69db472",
+   "benchmarks/variant_screening_study.py": "1eee06732309bcf4b9a73ce5dd1024d48f624e29581b343ed0d8e1d0b88a6cd9"
+  },
+  "cases": [
+   "fresh_seed_ignores_the_fit_seed",
+   "fit_seed_out_of_range_accepted",
+   "trainer_uses_the_declared_seed",
+   "trainer_checks_the_declared_seed",
+   "shrink_without_a_parent_accepted",
+   "continuation_with_pairing_accepted",
+   "parent_of_the_same_window_accepted",
+   "parent_of_another_seed_accepted",
+   "paused_parent_accepted",
+   "parent_predictions_not_verified",
+   "parent_state_not_loaded",
+   "parent_missing_from_the_request",
+   "continuation_in_the_first_origin",
+   "continuation_from_the_same_origin",
+   "continuation_arms_without_parent",
+   "parent_that_continues_accepted",
+   "seed_mean_parent_accepted",
+   "continuation_without_continued_arms_accepted",
+   "primary_with_a_fit_from_scratch_accepted",
+   "continuation_not_required_by_the_motor",
+   "continuation_read_in_the_first_origin",
+   "first_origin_sessions_defined",
+   "continuations_in_the_screening_sensitivity",
+   "continuation_family_dropped",
+   "continuation_family_of_the_reported",
+   "motor_without_the_parent_state",
+   "motor_without_the_continuation_decisions"
+  ],
+  "summary_sha256": "de01eb5f2ddc81151f6220ce0f2d3396ed63d1de479ebea1823072fdba227a8b",
+  "scope": "Veintisiete defectos dirigidos de la semilla de θ₀, la continuación desde el padre, el motor y la familia de continuación, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "regression_of_the_changed_paths",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "seed-derivation-cost.json",
+  "sha256": "e6e77aec9a77570a9524f3a355c771abaa629019a6b6a621ac7443132a4ff47e"
+ }
+}

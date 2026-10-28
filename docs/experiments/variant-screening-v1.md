@@ -123,7 +123,7 @@ Una variante pasa la criba si el intervalo simultáneo de la familia declarada e
 | E4 | `correction_profile` | CUSUM frente a la puerta constante con su media de validación | | Ejecutable |
 | F1 | `fit` | Escala de Laplace frente al control L1 | | Ejecutable |
 | F2 | `fit` | Media exponencial rápida frente a la misma semilla | | Ejecutable, con la media de semillas como etapa de salida |
-| F3 | `fit` | AdamW sin calendario frente a AdamW | | Ejecutable sin la contracción, que espera a una etapa de continuación |
+| F3 | `fit` | AdamW sin calendario frente a AdamW | | Ejecutable. Contraer y perturbar, solo contraer y solo perturbar frente a la continuación directa forman una familia propia de 2020 a 2022 |
 | F4 | `fit` | Objetivo de IC por sesión frente al control MAE | | Ejecutable |
 | F5 | `fit` | Horizontes auxiliares frente a peso cero | | Ejecutable |
 | G1 | | | | Necesita su propia aprobación tras la criba |
@@ -140,20 +140,20 @@ Cero, la referencia de su cabeza y la mediana pasada del residuo de la fase 0 es
 
 La criba ejecuta una sola carga GPU a la vez, con la GPU en exclusiva y sin parar otros procesos. Cada intento se cobra y nunca se devuelve. Un trabajo tiene como máximo 5.400 segundos y 20.000 actualizaciones.
 
-Con las entradas ejecutables hoy, el motor enumera 1.980 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
+Con las entradas ejecutables hoy, el motor enumera 2.040 trabajos. La estimación usa medidas de pilotos con 64 y 256 activos y otra carga concurrente: el coste por fila y época de la captura local para los ajustes, el caudal de inferencia de 256 activos para las correcciones y la media de los lectores episódicos de la ronda de refinamientos para lectores y ventanas. Las filas son las de las cohortes reales de cada origen, y el [plan](../../reports/engineering/variant-screening-20261028/plan.json) guarda el cálculo.
 
 | Ejecutor | Trabajos | Horas estimadas |
 | --- | ---: | ---: |
-| `fit` | 460 | 111,4 |
+| `fit` | 520 | 124,5 |
 | `correction` | 1.040 | 10,3 |
 | `correction_profile` | 200 | 2,0 |
 | `reader` | 160 | 17,0 |
 | `spaced` | 120 | 12,7 |
-| Total | 1.980 | 153,5 |
+| Total | 2.040 | 166,5 |
 
 Las versiones de la época común añaden 2,8 horas a los ajustes. Cada versión vuelve a predecir la calibración y la evaluación de su trabajo, y los 100 ajustes de los cinco modelos con versiones predicen cuatro. Antes de la enmienda la estimación era de 94,3 horas.
 
-Antes de integrar A4, C5, F2, F3 y D2 el motor enumeraba 1.740 trabajos y unas 97,2 horas. Las cinco entradas añaden 240 trabajos: A4 unas 17,4 horas, F2 21,5 (el control de tres veces las actualizaciones cuesta como tres ajustes), C5 8,7, F3 4,4 y D2 4,2. Las referencias de A4, C5, F2 y F3 son los mismos trabajos que las del protocolo y no se repiten. La estimación de 153,5 horas supera el límite aprobado de 150, y `plan` lo indica con `within_budget` en falso. Como prevé el protocolo, la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
+Antes de integrar A4, C5, F2, F3 y D2 el motor enumeraba 1.740 trabajos y unas 97,2 horas. Las cinco entradas añaden 240 trabajos: A4 unas 17,4 horas, F2 21,5 (el control de tres veces las actualizaciones cuesta como tres ajustes), C5 8,7, F3 4,4 y D2 4,2. Las referencias de A4, C5, F2 y F3 son los mismos trabajos que las del protocolo y no se repiten. Las continuaciones de F3 añaden después 60 ajustes y unas 13,0 horas. La estimación de 166,5 horas supera el límite aprobado de 150, y `plan` lo indica con `within_budget` en falso. Como prevé el protocolo, la criba no empezará sin una decisión del autor sobre el presupuesto o una versión nueva y reducida del protocolo.
 
 ## Motor
 
@@ -170,7 +170,7 @@ uv run python -m benchmarks.variant_screening_study rule-check --work "${MARS_SC
   --output "${MARS_SCREENING_RULE_CHECK:?}"
 ```
 
-`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre y la variante emparejada hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre y cada variante emparejada antes de quien los necesita. Las cinco semillas de cada definición van seguidas en ese orden. Un ajuste o un lector que ha recorrido su presupuesto espera a su grupo sin detener la cola. Cuando esperan las cinco semillas, la cola fija la época común y las reanuda en los pasos siguientes para emitir sus predicciones y sus versiones, antes de que empiece otro grupo. Un trabajo que espera sin la decisión de su grupo no se ejecuta ni se cobra, y si volviera a esperar después de recibirla la cola se detiene con un error. La cola se detiene en su límite opcional, que cuenta ejecuciones y no trabajos terminados, o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo. `status` añade los trabajos que esperan y los grupos decididos.
+`prepare` verifica las cohortes, proyecta la vista de cada origen con las épocas y semillas del protocolo, escribe las recetas de cada definición y sella en `prepared.json` el protocolo, las declaraciones, las huellas de todo el paquete, el entorno y el catálogo de trabajos. `run` comprueba la protección antes de leer nada, vuelve a verificar el sello, exige que el padre, la variante emparejada y, en una continuación, el trabajo del origen anterior hayan terminado, reserva el saldo del presupuesto y toma la GPU en exclusiva. Un trabajo interrumpido se reanuda desde su carpeta con los puntos de control de su ejecutor, y uno terminado no se repite. `queue` encadena `run` sobre los trabajos pendientes en el orden sellado, que pone cada padre, cada variante emparejada y cada trabajo del que parte una continuación antes de quien los necesita. Las cinco semillas de cada definición van seguidas en ese orden. Un ajuste o un lector que ha recorrido su presupuesto espera a su grupo sin detener la cola. Cuando esperan las cinco semillas, la cola fija la época común y las reanuda en los pasos siguientes para emitir sus predicciones y sus versiones, antes de que empiece otro grupo. Un trabajo que espera sin la decisión de su grupo no se ejecuta ni se cobra, y si volviera a esperar después de recibirla la cola se detiene con un error. La cola se detiene en su límite opcional, que cuenta ejecuciones y no trabajos terminados, o ante el primer trabajo que falla o queda en pausa, y al volver a lanzarla continúa por ese trabajo. `status` añade los trabajos que esperan y los grupos decididos.
 
 `analyze` comprueba la protección antes de leer nada, exige que todos los trabajos hayan terminado, que cada ajuste y cada lector hayan emitido la época común y las versiones de su grupo, y verifica la huella de cada Parquet frente a su `run.json`. Lee la madurez de las etiquetas de los tres tramos de cada vista y el sector de las fichas actuales, que solo usa el control sectorial de C4. Escribe `analysis.json`, con decisiones, familias, casos elegidos y las huellas de lo leído, del código y del entorno, y `series.parquet`, con la serie por sesión de cada modelo y métrica.
 
@@ -188,6 +188,8 @@ uv run python -m benchmarks.variant_screening_study rule-check --work "${MARS_SC
 
 Cada trabajo tiene que reproducir las filas y los objetivos de su vista en los tres tramos, y ninguna emisión puede pertenecer al test final. El MAE calibrado multiplica la predicción de un modelo por el λ de cada mercado elegido en su calibración. Una etapa de salida ya emite su predicción final y se mide sin otro λ, así que A1 compara λ·mediana con cero y A2 compara salidas sin reescalar. Las semillas se promedian en cada sesión, que solo cuenta si todas la definen, y los cuatro orígenes se concatenan en una serie de 2019 a 2022. Cada modelo publica la media de la métrica principal y de las secundarias.
 
+Las continuaciones de F3 no tienen trabajo en 2019, así que sus sesiones de ese año quedan sin definir. Sus tres contrastes principales con la continuación directa forman una familia propia sobre las sesiones de 2020 a 2022, con la misma regla de decisión, los mismos bloques de sensibilidad y Holm. La familia con sus cinco contrastes, incluidos los dos publicados frente al ajuste desde cero, es su sensibilidad. Ningún contraste de continuación entra en la familia declarada, en la de su grupo ni en la de todos los contrastes, que conservan así las sesiones de los cuatro orígenes. `analyze` publica sus decisiones en `continuation`.
+
 Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, con los mismos bloques de días para todos. El paso descendente de Romano y Wolf usa el estadístico bilateral |θ̂|/σ y el máximo de las réplicas centradas sobre las hipótesis que siguen sin rechazar, con los valores ajustados monótonos. Rechaza al menos lo mismo que los intervalos simultáneos de un paso, que también se publican. Los valores p se cuentan como (1 + n)/(1 + R), de modo que con 2.000 réplicas el menor posible es 0,0005. Una variante pasa si el paso descendente rechaza su contraste principal al 5 % en la dirección favorable, con bloques de 16 días, y cada contraste exigido la favorece con su valor p marginal por debajo del 5 %. Holm, los bloques de 8 y 32 días, la familia de su grupo y la de todos los contrastes se publican como robustez.
 
 ## Desviaciones y límites
@@ -197,7 +199,8 @@ Cada familia se remuestrea sobre las sesiones que definen todos sus miembros, co
 - Un único caso de tasa para ajustes y lectores. La receta histórica explora dos.
 - Las cohortes se verificaron solo con metadatos. El lector del corpus comprueba los archivos Parquet al ejecutar.
 - El coste es una estimación con medidas de otros estudios.
-- C2, C3, la contracción de F3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- C2, C3, la regla de momentum y LightGBM siguen pendientes. Sus entradas se registran con su estado y no producen trabajos.
+- La familia de continuación de F3 se evalúa aparte de la declarada, así que el nivel del 5 % se controla dentro de cada una. Para el conjunto de las dos, la desigualdad de Bonferroni solo acota el error por la suma de sus niveles. Esta separación se registró el 28 de octubre, antes de abrir S, para no recortar a tres años la serie de las demás entradas.
 - La medida de las etapas de salida sin otro λ y el conteo (1 + n)/(1 + R) son decisiones del análisis que el protocolo no detallaba.
 - La selección del estado y del caso de las correcciones cambió el 28 de octubre, antes de abrir S. La regla anterior, la de menor MAE de validación en cada semilla, se conserva como sensibilidad y en la comprobación de la regla.
 - La época común conserva un estado por época hasta que el grupo emite sus predicciones. En pilotos anteriores, el estado de un ajuste de Titans-MAC ocupaba entre 2,3 y 3,1 MB y el de un lector unos 0,5 MB, así que un grupo de ajustes fija unos 190 MB. Como solo hay un grupo abierto a la vez, el pico es ese, pero no se ha medido con los modelos de la criba.
