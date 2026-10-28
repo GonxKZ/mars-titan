@@ -51,7 +51,9 @@ from . import scale_diagnostics as sd
 ADANORMALHEDGE = "adanormalhedge_v1"
 VERSION_ARBITER = "version_arbiter_v1"
 MODEL_COMBINATION = "model_combination_v1"
+DECLARATION_KIND = "online_arbiter_variants"
 MAX_OPTIONS = 64
+MAX_WINDOW = 252
 
 
 def _require(condition, message):
@@ -462,3 +464,56 @@ def uniform_mixture(panel, predictions):
     predictions = np.asarray(predictions, dtype=np.float64)
     columns = [standardized(panel, predictions[:, i]) for i in range(predictions.shape[1])]
     return np.mean(columns, axis=0)
+
+
+def stage_options(document, identity):
+    """Parámetros declarados de una etapa, comprobados antes de abrir ningún dato.
+
+    Devuelve la ventana de fiabilidad, el margen de abstención, los activos mínimos por
+    sesión y la semilla del control desordenado. `version_arbiter_v1` necesita un margen
+    finito y ese control. `model_combination_v1` no se abstiene y solo tiene la media simple.
+    """
+    core = document.get("core", {}) if isinstance(document, dict) else {}
+    _require(
+        isinstance(document, dict)
+        and document.get("kind") == DECLARATION_KIND
+        and document.get("default_enabled") is False
+        and document.get("final_test_access") is False
+        and core.get("identity") == ADANORMALHEDGE
+        and core.get("form") == "adanormalhedge_tv",
+        "La declaración de los árbitros debe usar AdaNormalHedge.TV, desactivada y sin test final",
+    )
+    stages = document.get("stages")
+    stage = stages.get(identity) if isinstance(stages, dict) else None
+    _require(
+        identity in (VERSION_ARBITER, MODEL_COMBINATION) and isinstance(stage, dict),
+        f"{identity} no está declarada",
+    )
+    window, margin = stage.get("reliability_window_sessions"), stage.get("abstention_margin")
+    min_assets, controls = stage.get("min_assets"), stage.get("controls")
+    _require(isinstance(controls, dict), f"{identity} declara sus controles")
+    _require(
+        type(window) is int
+        and 1 <= window <= MAX_WINDOW
+        and type(min_assets) is int
+        and min_assets >= 3,
+        f"{identity} necesita una ventana de 1 a {MAX_WINDOW} sesiones y al menos tres activos",
+    )
+    seed = None
+    if identity == VERSION_ARBITER:
+        shuffled = controls.get("shuffled_outcomes", {})
+        seed = shuffled.get("seed") if isinstance(shuffled, dict) else None
+        _require(
+            type(margin) in (int, float)
+            and math.isfinite(margin)
+            and set(controls) == {"common_epoch", "uniform_mixture", "shuffled_outcomes"}
+            and type(seed) is int
+            and seed >= 0,
+            "El árbitro de versiones declara un margen finito y sus tres controles",
+        )
+    else:
+        _require(
+            margin is None and set(controls) == {"simple_mean"},
+            "La combinación de modelos no se abstiene y su control es la media simple",
+        )
+    return dict(window=window, margin=margin, min_assets=min_assets, seed=seed)

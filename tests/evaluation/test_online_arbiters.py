@@ -1,6 +1,9 @@
 """Núcleo AdaNormalHedge de los árbitros en línea (#789), en CPU y sin ajustar nada."""
 
+import copy
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -559,3 +562,74 @@ def test_invalid_arbiter_inputs_are_rejected(change, message):
     predictions, matures, options = change(predictions, matures)
     with pytest.raises(ValueError, match=message):
         arbiter(panel, predictions, matures, **options)
+
+
+DECLARATION = json.loads(Path("configs/experiments/online-arbiters-v1.json").read_text())
+
+
+def test_the_declared_stages_fix_their_options_before_any_data():
+    version = arbiters.stage_options(DECLARATION, arbiters.VERSION_ARBITER)
+    assert version == dict(window=21, margin=0.0, min_assets=3, seed=20261028)
+    combination = arbiters.stage_options(DECLARATION, arbiters.MODEL_COMBINATION)
+    assert combination == dict(window=21, margin=None, min_assets=3, seed=None)
+
+
+def changed(path, value):
+    document = copy.deepcopy(DECLARATION)
+    target = document
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    return document
+
+
+@pytest.mark.parametrize(
+    "identity, path, value, message",
+    [
+        (arbiters.VERSION_ARBITER, ("default_enabled",), True, "desactivada"),
+        (arbiters.VERSION_ARBITER, ("final_test_access",), True, "test final"),
+        (arbiters.VERSION_ARBITER, ("core", "form"), "adanormalhedge", "AdaNormalHedge.TV"),
+        ("tool_arbiter_v1", ("kind",), arbiters.DECLARATION_KIND, "no está declarada"),
+        (arbiters.VERSION_ARBITER, ("stages", "version_arbiter_v1"), [], "no está declarada"),
+        (
+            arbiters.MODEL_COMBINATION,
+            ("stages", "model_combination_v1", "controls"),
+            ["simple_mean"],
+            "declara sus controles",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "reliability_window_sessions"),
+            0,
+            "ventana",
+        ),
+        (arbiters.VERSION_ARBITER, ("stages", "version_arbiter_v1", "min_assets"), 2, "tres"),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "abstention_margin"),
+            None,
+            "margen finito",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "controls", "shuffled_outcomes"),
+            dict(seed=-1),
+            "tres controles",
+        ),
+        (
+            arbiters.MODEL_COMBINATION,
+            ("stages", "model_combination_v1", "abstention_margin"),
+            0.0,
+            "no se abstiene",
+        ),
+        (
+            arbiters.MODEL_COMBINATION,
+            ("stages", "model_combination_v1", "controls"),
+            dict(simple_mean="x", uniform_mixture="y"),
+            "media simple",
+        ),
+    ],
+)
+def test_a_declaration_that_breaks_its_contract_is_rejected(identity, path, value, message):
+    with pytest.raises(ValueError, match=message):
+        arbiters.stage_options(changed(path, value), identity)
