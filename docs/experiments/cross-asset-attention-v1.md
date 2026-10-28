@@ -46,7 +46,14 @@ El consumidor congelado todavía no registra C5 y la rechaza al construirse. Dus
 
 ## Comprobación técnica
 
-{{VERIFICACION}}
+La comprobación del 28 de octubre se hizo en CPU, sin pasos de optimizador y con la GPU ocupada por otras cargas.
+
+- Las 58 pruebas de C5, de su ejecución y de las cabezas de horizontes auxiliares pasan con medida de cobertura. Con coverage 7.16.1 y radon 6.0.1, `cross_asset_attention.py` cubre 83/83 sentencias y 24/24 ramas, y el CRAP máximo es 13 (`CrossAssetAttention.forward`).
+- Sobre el árbol final, tras integrar F2, F3 y la corrección de [la PR #795](https://github.com/GonxKZ/mars-titan/pull/795), pasan los 201 casos de C5, de las cabezas de horizontes y de escala, del padre congelado, de Dust, de las etiquetas de horizonte y de la paridad de precisión.
+- La regresión de los 202 módulos que recorren estos cambios dio 87 nodos fallidos. 77 venían del enlace episódico compilado, que no tenía la versión tensorial del candidato, 6 de un doble de prueba sin el campo de C5, 3 de dos extras que faltaban en el entorno y 1 de la prueba de precisión que confundía la escala del Hedge de E1. Repetidos sobre develop, fallan los mismos 78 casos que en C5 una vez corregido el doble y sincronizados los extras. Con el enlace recompilado desde develop pasan los 111 casos de esos nodos.
+- Once mutaciones dirigidas se detectan con los controles en verde antes y después. Cubren agrupar solo por instante, que el control lea toda la sesión, conservar la proyección de salida aleatoria, quitar el camino residual, omitir la escala de la atención, admitir sesiones partidas, dejar la fuente de C5 fuera de la identidad, combinar F5 con C5, que el consumidor congelado o su cargador acepten C5 y que un padre con C5 llegue a verificar su checkpoint.
+
+El [recibo de verificación](../../reports/engineering/cross-asset-attention-20261028/verification.json) conserva los recuentos y las huellas de los informes JUnit, de la cobertura, de las mutaciones y del enlace nativo.
 
 ## Coste
 
