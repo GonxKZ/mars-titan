@@ -189,6 +189,18 @@ def fit(train, validation, config, seed, *, min_assets):
     return booster, series
 
 
+def model_text(booster):
+    """Texto del booster con todas sus rondas, que `load` reconstruye sin ajustar nada."""
+    return booster.model_to_string(num_iteration=-1)
+
+
+def load(text):
+    """Booster guardado con `model_text`, para reanudar una ventana sin repetir su ajuste."""
+    import lightgbm
+
+    return lightgbm.Booster(model_str=text)
+
+
 def predict(booster, values, rounds):
     """Predicción float64 con las `rounds` primeras rondas."""
     prediction = np.asarray(booster.predict(values, num_iteration=rounds), dtype=np.float64)

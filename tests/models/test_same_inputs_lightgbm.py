@@ -106,6 +106,8 @@ def test_the_pinned_lightgbm_offers_what_the_control_uses():
         field.name for field in dataclasses.fields(library.callback.CallbackEnv)
     }
     assert "num_iteration" in inspect.signature(library.Booster.predict).parameters
+    assert "num_iteration" in inspect.signature(library.Booster.model_to_string).parameters
+    assert "model_str" in inspect.signature(library.Booster).parameters
     assert {"label", "free_raw_data"} <= set(inspect.signature(library.Dataset).parameters)
     aliases = library.basic._ConfigAliases._get_all_param_aliases()
     known = set(aliases) | {alias for names in aliases.values() for alias in names}
@@ -223,6 +225,7 @@ def lightgbm(monkeypatch, learning_doubles):
         return booster
 
     module.Dataset, module.train = dataset, train
+    module.Booster = lambda model_str: ("booster", model_str)
     monkeypatch.setitem(sys.modules, "lightgbm", module)
     return calls
 
@@ -277,6 +280,17 @@ def test_the_fit_fails_if_lightgbm_skips_a_checkpoint(lightgbm, monkeypatch):
         control.fit(
             Rows(panel(4, 6), 1), Rows(panel(4, 6, seed=2), 2), declared(), 42, min_assets=3
         )
+
+
+def test_a_booster_is_saved_with_every_round_and_loaded_without_fitting(lightgbm):
+    class Fitted:
+        def model_to_string(self, num_iteration=None):
+            return f"rondas {num_iteration}"
+
+    # Con num_iteration ≤ 0, LightGBM guarda todas las rondas.
+    assert control.model_text(Fitted()) == "rondas -1"
+    assert control.load("rondas -1") == ("booster", "rondas -1")
+    assert lightgbm["datasets"] == [] and lightgbm["trains"] == []
 
 
 def test_a_prediction_that_is_not_finite_or_misses_rows_is_refused():

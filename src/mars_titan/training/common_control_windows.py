@@ -9,8 +9,9 @@ filas y los objetivos de la vista (`check_view_rows`). Las tablas siguen el orde
 - LightGBM se ajusta con las filas de entrenamiento decididas en los meses de ajuste de la
   criba, las mismas que usan los modelos (`window_phases`). Ajusta las cinco semillas en el
   mismo trabajo, elige sus rondas con la época común de todas y deja una carpeta por semilla.
-  Repetir un ajuste con la misma semilla da el mismo booster, así que un intento interrumpido
-  se repite entero.
+  Cada booster se guarda con su serie de validación al terminar su ajuste, así que un
+  intento interrumpido solo ajusta las semillas que faltan. Los ajustes guardados se
+  borran cuando la ventana confirma sus predicciones.
 
 Las dos comprueban la protección del aprendizaje antes de leer la vista y se detienen en la
 siguiente barrera si el presupuesto del trabajo lo pide.
@@ -19,6 +20,7 @@ siguiente barrera si el presupuesto del trabajo lo pide.
 import dataclasses
 import hashlib
 import importlib
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -48,6 +50,8 @@ RULE_KIND = "common_rule_window_v1"
 TABULAR_KIND = "common_tabular_window_v1"
 # Filas por tanda de lectura, el máximo que admite el corpus.
 BLOCK_ROWS = 4096
+# Un booster de 1.000 rondas con 210 hojas ocupa unos 25 MB de texto.
+FIT_BYTES = 256 * 1024**2
 _CODE = (
     "mars_titan.training.common_control_windows",
     "mars_titan.models.baselines.momentum_reversal",
@@ -265,13 +269,53 @@ def _checked_seeds(seeds):
     return seeds
 
 
-def _fit_seeds(train, validation, config, seeds, *, min_assets, stop):
-    """Booster y serie del IC de validación de cada semilla. La barrera va entre semillas."""
-    fits = []
+def _saved_fit(output, seed, booster, scored):
+    """Guardar el booster de una semilla y su serie puntuada, de donde parte una reanudación."""
+    path = output / "fits" / f"seed-{seed}.json"
+    atomic_json(
+        path,
+        dict(
+            seed=seed,
+            model=lightgbm_control.model_text(booster),
+            series=[[values.tolist(), defined.tolist()] for values, defined in scored],
+        ),
+    )
+    return dict(path=f"fits/{path.name}", sha256=sha256(path))
+
+
+def _loaded_fit(output, seed, record):
+    """Ajuste guardado de una semilla, leído una sola vez y comprobado con su huella."""
+    document, digest = read_manifest(output / record["path"], FIT_BYTES)
+    _require(
+        digest == record["sha256"] and document.get("seed") == seed,
+        f"Ha cambiado el ajuste guardado de la semilla {seed}",
+    )
+    series = [
+        (np.asarray(values, dtype=np.float64), np.asarray(defined, dtype=bool))
+        for values, defined in document["series"]
+    ]
+    return lightgbm_control.load(document["model"]), series
+
+
+def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, report):
+    """Booster y serie del IC de validación de cada semilla, con la barrera entre semillas.
+
+    Una semilla ya guardada se carga sin ajustar. Las demás se ajustan y se guardan antes de
+    pasar a la siguiente, con el informe actualizado.
+    """
+    fits, saved = [], report.setdefault("fits", {})
     for seed in seeds:
+        if str(seed) in saved:
+            fits.append(_loaded_fit(output, seed, saved[str(seed)]))
+            continue
         if stop is not None and stop.requested:
             raise Stopped
-        fits.append(lightgbm_control.fit(train, validation, config, seed, min_assets=min_assets))
+        booster, scored = lightgbm_control.fit(
+            train, validation, config, seed, min_assets=min_assets
+        )
+        saved[str(seed)] = _saved_fit(output, seed, booster, scored)
+        atomic_json(output / "run.json", report)
+        fits.append((booster, scored))
     return fits
 
 
@@ -302,6 +346,9 @@ def run_tabular_window(
     )
     report = _start(output, request, TABULAR_KIND)
     if report["status"] == "completed":
+        # Un corte justo después de confirmar deja los ajustes guardados, que ya sobran.
+        if (output / "fits").exists():
+            shutil.rmtree(output / "fits")
         return report
     dataset, fold = _open(view, document, window, output)
     since = window_phases(fold, 0, fit_months)["train"].decision_start
@@ -309,7 +356,14 @@ def run_tabular_window(
     predicted = {name: partition_rows(dataset, name, with_features=True) for name in PREDICTED}
     try:
         fits = _fit_seeds(
-            train, predicted["validation"], config, seeds, min_assets=min_assets, stop=stop
+            train,
+            predicted["validation"],
+            config,
+            seeds,
+            min_assets=min_assets,
+            stop=stop,
+            output=output,
+            report=report,
         )
     except Stopped:
         report["status"] = "paused"
@@ -347,7 +401,9 @@ def run_tabular_window(
         )
         atomic_json(folder / "run.json", record)
         members[str(seed)] = dict(path=f"seed-{seed}/run.json", sha256=sha256(folder / "run.json"))
-    return _finish(
+    # Las predicciones confirmadas sustituyen a los ajustes guardados, que se borran después.
+    report.pop("fits")
+    finished = _finish(
         output,
         report,
         selection=dict(chosen, rounds=rounds, checkpoint_rounds=config["checkpoint_rounds"]),
@@ -355,3 +411,5 @@ def run_tabular_window(
         train_rows=train.panel.rows,
         seeds=members,
     )
+    shutil.rmtree(output / "fits")
+    return finished

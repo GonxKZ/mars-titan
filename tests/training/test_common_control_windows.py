@@ -217,6 +217,16 @@ class Booster:
         angle = num_iteration / 1000 * np.pi
         return values @ (np.cos(angle) * self.first + np.sin(angle) * self.second)
 
+    def model_to_string(self, num_iteration=None):
+        assert num_iteration == -1
+        return json.dumps(dict(first=self.first.tolist(), second=self.second.tolist()))
+
+    @classmethod
+    def from_text(cls, text):
+        booster, values = cls.__new__(cls), json.loads(text)
+        booster.first, booster.second = np.asarray(values["first"]), np.asarray(values["second"])
+        return booster
+
 
 @pytest.fixture
 def doubled_fit(monkeypatch, learning_doubles):
@@ -240,6 +250,7 @@ def doubled_fit(monkeypatch, learning_doubles):
         return booster, series
 
     monkeypatch.setattr(lightgbm_control, "fit", fit)
+    monkeypatch.setattr(lightgbm_control, "load", Booster.from_text)
     return calls
 
 
@@ -302,8 +313,13 @@ def test_a_completed_tabular_window_checks_every_seed_file(view, tmp_path, doubl
     manifest, protocol = view
     output = tmp_path / "tabular"
     report = tabular(manifest, protocol, output)
+    assert "fits" not in report and not (output / "fits").exists()
     doubled_fit.clear()
     assert tabular(manifest, protocol, output) == report and doubled_fit == []
+    # Un corte justo después de confirmar dejaría los ajustes guardados, que ya sobran.
+    (output / "fits").mkdir()
+    (output / "fits" / "seed-42.json").write_text("{}")
+    assert tabular(manifest, protocol, output) == report and not (output / "fits").exists()
     path = output / "seed-43" / "calibration-predictions.parquet"
     original = path.read_bytes()
     path.write_bytes(original + b"\0")
@@ -318,20 +334,48 @@ def test_a_completed_tabular_window_checks_every_seed_file(view, tmp_path, doubl
         tabular(manifest, protocol, output, radius=2)
 
 
-def test_the_tabular_window_pauses_between_seeds(view, tmp_path, doubled_fit):
+class StopAfter:
+    """Pide parar cuando el ajuste doble lleva `fits` semillas."""
+
+    def __init__(self, calls, fits):
+        self.calls, self.fits = calls, fits
+
+    @property
+    def requested(self):
+        return len(self.calls) == self.fits
+
+
+def test_a_paused_tabular_window_keeps_its_fitted_seeds_and_fits_only_the_rest(
+    view, tmp_path, doubled_fit
+):
     manifest, protocol = view
     output = tmp_path / "tabular"
-
-    class Stop:
-        @property
-        def requested(self):
-            return len(doubled_fit) == 2
-
-    paused = tabular(manifest, protocol, output, stop=Stop())
+    paused = tabular(manifest, protocol, output, stop=StopAfter(doubled_fit, 2))
     assert paused["status"] == "paused" and [call["seed"] for call in doubled_fit] == [42, 43]
-    assert not (output / "seed-42").exists()
+    assert sorted(paused["fits"]) == ["42", "43"] and not (output / "seed-42").exists()
+    for record in paused["fits"].values():
+        assert sha256(output / record["path"]) == record["sha256"]
+    assert json.loads((output / "run.json").read_text()) == paused
     resumed = tabular(manifest, protocol, output)
+    # Solo se ajusta la semilla que faltaba y las guardadas emiten lo mismo que sin pausa.
+    assert [call["seed"] for call in doubled_fit] == [42, 43, 44]
     assert resumed["status"] == "completed" and sorted(resumed["seeds"]) == ["42", "43", "44"]
+    assert "fits" not in resumed and not (output / "fits").exists()
+    whole = tabular(manifest, protocol, tmp_path / "whole")
+    assert whole["selection"] == resumed["selection"]
+    assert {seed: member["sha256"] for seed, member in whole["seeds"].items()} == {
+        seed: member["sha256"] for seed, member in resumed["seeds"].items()
+    }
+
+
+def test_a_changed_saved_fit_is_refused_when_the_window_resumes(view, tmp_path, doubled_fit):
+    manifest, protocol = view
+    output = tmp_path / "tabular"
+    paused = tabular(manifest, protocol, output, stop=StopAfter(doubled_fit, 1))
+    path = output / paused["fits"]["42"]["path"]
+    path.write_text(path.read_text() + " ")
+    with pytest.raises(ValueError, match="ajuste guardado de la semilla 42"):
+        tabular(manifest, protocol, output)
 
 
 @pytest.mark.parametrize("seeds", [[], [42, 42], [42.0], [2**31], "42"])
