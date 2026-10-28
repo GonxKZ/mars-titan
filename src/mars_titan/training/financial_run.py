@@ -444,8 +444,12 @@ class ChronologicalInference:
             recipe.loss != "mae" or recipe.distillation_weight is not None
         ):
             raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
-        # F1 es otro objetivo de salida. Solo se distingue para rechazar el postentrenamiento.
-        self.laplace = predictor.config.laplace_scale_head is not None
+        # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
+        # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
+        self.undeclared_posttraining = (
+            predictor.config.laplace_scale_head is not None
+            or predictor.config.opponent_heads is not None
+        )
         # Las filas emitidas llevan cinco niveles con la cabeza de cuantiles o con F1.
         self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
         # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
@@ -835,8 +839,8 @@ class ChronologicalTrainer(ChronologicalInference):
             not isinstance(posttraining, dict) or pairing is not None or not posttraining
         ):
             raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
-        if posttraining is not None and (self.laplace or self.horizons is not None):
-            raise ValueError("F1 y F5 no tienen todavía un postentrenamiento declarado")
+        if posttraining is not None and (self.undeclared_posttraining or self.horizons is not None):
+            raise ValueError("F1, F5 y A4 no tienen todavía un postentrenamiento declarado")
         self.roles = parameter_roles(predictor)
         if "adapters" in self.roles and posttraining is None:
             raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "opponent_heads_variants",
+  "issue": 749,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "arms": {
+    "absolute_error_reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "expectile_symmetric_control": {
+      "role": "control",
+      "predictor_changes": {
+        "opponent_heads": {"family": "expectile", "level": 0.5}
+      }
+    },
+    "expectile_opponents": {
+      "role": "variant",
+      "control": "expectile_symmetric_control",
+      "predictor_changes": {
+        "opponent_heads": {"family": "expectile", "level": 0.25}
+      }
+    },
+    "quantile_symmetric_control": {
+      "role": "control",
+      "predictor_changes": {
+        "opponent_heads": {"family": "quantile", "level": 0.5}
+      }
+    },
+    "quantile_opponents": {
+      "role": "variant",
+      "control": "quantile_symmetric_control",
+      "predictor_changes": {
+        "opponent_heads": {"family": "quantile", "level": 0.25}
+      }
+    }
+  }
+}

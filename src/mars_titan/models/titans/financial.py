@@ -57,6 +57,7 @@ from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
+from .opponent_heads import OpponentHeads
 from .output_objectives import build_objective, check_objectives, objective_identity
 from .presence_modulation import (
     FILM,
@@ -177,6 +178,8 @@ class FinancialConfig:
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
     auxiliary_horizons: AuxiliaryHorizons | None = None
+    # A4 de #749: cabezas oponentes con integrador neutral, otro objetivo de salida.
+    opponent_heads: OpponentHeads | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (

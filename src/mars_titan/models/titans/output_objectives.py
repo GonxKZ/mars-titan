@@ -23,10 +23,15 @@ from dataclasses import fields
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 
 from .laplace_scale import LaplaceScaleHead
+from .opponent_heads import OpponentHeads
 from .session_ic_objective import SessionICObjective
 
-# F4 y F1 de #749. Ambos sustituyen la pérdida MAE de la cabeza escalar.
-OBJECTIVES = {"session_ic_objective": SessionICObjective, "laplace_scale_head": LaplaceScaleHead}
+# F4, F1 y A4 de #749. Todos sustituyen la pérdida MAE de la cabeza escalar.
+OBJECTIVES = {
+    "session_ic_objective": SessionICObjective,
+    "laplace_scale_head": LaplaceScaleHead,
+    "opponent_heads": OpponentHeads,
+}
 
 
 def check_objectives(config):

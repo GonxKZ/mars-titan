@@ -392,8 +392,10 @@ def labels_maturity(view, partition):
 def test_view_maturity_reads_the_labels_of_each_row(technical):  # noqa: F811
     for fold in technical.folds:
         view = technical.root / "views" / fold["id"] / "manifest.json"
-        tables = online.view_maturity(view, HISTORICAL_MASKED, sha256(view))
-        for partition in online.PARTITIONS:
+        partitions = ("validation", *online.PARTITIONS)
+        tables = online.view_maturity(view, HISTORICAL_MASKED, sha256(view), partitions)
+        assert set(tables) == set(partitions)
+        for partition in partitions:
             table = tables[partition]
             expected = labels_maturity(view, partition)
             assert table.num_rows == len(expected) > 0

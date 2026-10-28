@@ -20,6 +20,7 @@ from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
 from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
+from .opponent_heads import OpponentSpread
 from .output_objectives import reads_scalar_point
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
@@ -43,6 +44,7 @@ _TITANS_MODULES = (
     "auxiliary_horizons",
     "bank_readout",
     "laplace_scale",
+    "opponent_heads",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -169,7 +171,7 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
-    elif type(module) in (SessionScale, LaplaceScale):
+    elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
