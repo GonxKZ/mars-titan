@@ -363,6 +363,27 @@ def test_loading_weights_checks_the_declared_configuration():
         control.load_state_dict(variant.state_dict())
 
 
+def test_sealing_refuses_a_c2_module_other_than_the_declared_one():
+    predictor = model(axial_time_region=VARIANT)
+    original, size = predictor.axial_time_region, predictor.config.hidden_size
+    others = (
+        None,
+        AxialTimeRegion(size, CONTROL, seed=1, dtype=torch.float64),
+        AxialTimeRegion(size, VARIANT, seed=1, dtype=torch.float32),
+    )
+    for module in others:
+        predictor.axial_time_region = module
+        with pytest.raises(ValueError, match="C2 no corresponde a la configuración declarada"):
+            predictor._seal_parameters()
+    predictor.axial_time_region = original
+    predictor._seal_parameters()
+    # Un módulo sin declaración tampoco se admite.
+    plain = model()
+    plain.axial_time_region = original
+    with pytest.raises(ValueError, match="C2 no corresponde a la configuración declarada"):
+        plain._seal_parameters()
+
+
 def test_the_identity_and_the_operation_counts_follow_the_kind():
     variant, control = (AxialTimeRegion(HIDDEN, c, seed=1) for c in (VARIANT, CONTROL))
     assert variant.config.identity()["second_layer"].startswith("attention_across")
