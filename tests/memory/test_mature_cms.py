@@ -200,6 +200,9 @@ def test_without_periods_the_identity_and_state_of_e1_do_not_change():
     )
     payload = write(correction.empty(), feedback, 10).export()
     assert set(payload) == E1_FIELDS and payload["state_sha256"] == E1_STATE
+    # E1 no guarda periodos abiertos.
+    with pytest.raises(ValueError, match="no comparten"):
+        multiscale_mixture.MultiscaleMemory(PLAIN, config, pending=(None, None, None))
 
 
 def test_the_identity_names_the_periods_only_when_declared():
