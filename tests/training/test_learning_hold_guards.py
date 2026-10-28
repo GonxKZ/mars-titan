@@ -59,6 +59,15 @@ def _blocks():
     return lambda: iter([(rng.normal(size=(4, 3)), rng.normal(size=4))])
 
 
+def _common(name):
+    """Declaración válida de un control común, la que usan las pruebas de su módulo."""
+    from tests.models import test_momentum_reversal, test_same_inputs_lightgbm
+
+    if name == "momentum_reversal":
+        return test_momentum_reversal.CONFIG
+    return test_same_inputs_lightgbm.declared()
+
+
 def _simple(name, attribute, call):
     def prepare(tmp_path, monkeypatch):
         module, double = _module(name, attribute, monkeypatch)
@@ -253,6 +262,29 @@ ENTRY_POINTS = {
         "mars_titan.training.tabular_corpus",
         "CorpusDataset",
         lambda m, out: m.run_tabular_reference(out.with_name("m.json"), out, kind="boosting"),
+    ),
+    # Tras la guarda y la declaración, el primer paso de las dos ventanas lee el protocolo.
+    "common_rule_window": _simple(
+        "mars_titan.training.common_control_windows",
+        "_protocol",
+        lambda m, out: m.run_rule_window(
+            out.with_name("v.json"), {}, "fold-000", output=out, config=_common("momentum_reversal")
+        ),
+    ),
+    "common_tabular_window": _simple(
+        "mars_titan.training.common_control_windows",
+        "_protocol",
+        lambda m, out: m.run_tabular_window(
+            out.with_name("v.json"),
+            {},
+            "fold-000",
+            seeds=[42, 43],
+            fit_months=12,
+            output=out,
+            config=_common("lightgbm"),
+            radius=1,
+            min_assets=3,
+        ),
     ),
     "same_inputs_lightgbm": _simple(
         "mars_titan.models.baselines.same_inputs_lightgbm",

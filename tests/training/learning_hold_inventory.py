@@ -126,6 +126,9 @@ GUARDS = {
     "mars_titan.training.temporal_search:run_temporal_search": ("temporal_search",),
     "mars_titan.training.reference_campaign:run_reference_campaign": ("reference_campaign",),
     "mars_titan.training.tabular_corpus:run_tabular_reference": ("tabular_corpus",),
+    # Controles comunes de la criba de variantes (#746).
+    "mars_titan.training.common_control_windows:run_rule_window": ("common_rule_window",),
+    "mars_titan.training.common_control_windows:run_tabular_window": ("common_tabular_window",),
     "mars_titan.training.tabular_search:run_tabular_search": ("tabular_search",),
     "mars_titan.training.external_corpus:run_external_reference": ("external_corpus",),
     "mars_titan.training.external_corpus:_execute": (
