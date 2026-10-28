@@ -256,7 +256,9 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
     trainer = object.__new__(ChronologicalTrainer)
     for config, present in ((None, False), (VARIANT, True)):
         trainer.predictor = SimpleNamespace(
-            config=SimpleNamespace(temporal_encoder=None, cross_asset_attention=config)
+            config=SimpleNamespace(
+                temporal_encoder=None, regional_variant=None, cross_asset_attention=config
+            )
         )
         assert (name in trainer._code()) is present
 

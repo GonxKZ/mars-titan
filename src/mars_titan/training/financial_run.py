@@ -879,6 +879,9 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        if self.predictor.config.regional_variant is not None:
+            name = "mars_titan.models.titans.regional_variants"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         # C5 solo entra en la identidad cuando está activa, igual que las variantes regionales.
         if self.predictor.config.cross_asset_attention is not None:
             name = "mars_titan.models.titans.cross_asset_attention"

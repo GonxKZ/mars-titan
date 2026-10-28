@@ -380,6 +380,7 @@ def test_optimizer_must_cover_exactly_the_trainable_readout(shared, tmp_path, na
         "m1_without_bank",
         "other_neighbors",
         "other_codec",
+        "supervision_before_k",
     ],
 )
 def test_constructor_rejects_parents_readers_and_admissions_outside_the_contract(
@@ -409,6 +410,9 @@ def test_constructor_rejects_parents_readers_and_admissions_outside_the_contract
         retention = None
     elif case == "other_neighbors":
         readout, codec = reader(streams, "m1", neighbors=4)
+    elif case == "supervision_before_k":
+        readout, codec = reader(streams, "m1", refinements=2)
+        plan = recipe(supervised_refinements=[1])
     elif case == "other_codec":
         other = copy.copy(streams["train"].specification())
         object.__setattr__(other, "view_sha256", "c" * 64)
@@ -632,6 +636,36 @@ def test_segment_gradient_is_the_mean_over_labels_whatever_the_block_size(
                 assert left[name] is None
             else:
                 torch.testing.assert_close(left[name], value, rtol=1e-9, atol=1e-12)
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+def test_supervising_only_the_last_refinement_reproduces_the_previous_gradients(
+    shared, tmp_path, native, learning_doubles
+):
+    """D1 de #751: declarar solo K repite el ajuste anterior y añadir K=1 cambia el gradiente."""
+    _, streams = shared
+    records, engines = {}, {}
+    for name, supervised in (("final", None), ("last", [2]), ("both", [1, 2])):
+        engine = build(
+            streams,
+            tmp_path / name,
+            native,
+            refinements=2,
+            plan=recipe(max_grad_norm=None, supervised_refinements=supervised),
+        )
+        engine.run()
+        records[name], engines[name] = gradients(engine), engine
+    assert len(records["final"]) == len(records["both"]) > 3
+    assert engines["final"].run_id != engines["last"].run_id != engines["both"].run_id
+    for left, right in zip(records["final"], records["last"], strict=True):
+        assert left.keys() == right.keys()
+        for name, value in left.items():
+            assert (value is None and right[name] is None) or torch.equal(value, right[name])
+    assert any(
+        value is not None and not torch.equal(value, right[name])
+        for left, right in zip(records["final"], records["both"], strict=True)
+        for name, value in left.items()
+    )
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
@@ -871,7 +905,7 @@ def test_a_non_finite_segment_loss_stops_before_the_step(
     _, streams = shared
     engine = build(streams, tmp_path / "nan", native)
     original = engine._loss
-    monkeypatch.setattr(engine, "_loss", lambda result, target: original(result, target) * math.nan)
+    monkeypatch.setattr(engine, "_loss", lambda *args: original(*args) * math.nan)
     with pytest.raises(ValueError, match="^La pérdida del tramo no es finita$"):
         engine.run()
     assert engine.optimizer.calls == 0 and engine.global_step == 0

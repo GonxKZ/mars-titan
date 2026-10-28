@@ -1,0 +1,113 @@
+{
+  "sources": {
+    "bank": {
+      "path": "src/mars_titan/memory/spaced_retention.py",
+      "sha256": "70d65da29702db566915978298ce77aac5e5bb47d6b7155561c70f9722220795"
+    },
+    "state": {
+      "path": "src/mars_titan/memory/spaced_retention_state.py",
+      "sha256": "6ceadc6cb2d6bdc9741835d0d98898bb8398c5b4cfcb9d77372ad12a3ce03bc0"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_retention.py",
+  "test_sha256": "a247f271c5659afe38f7d4c05ff06ed19235959bba64c50fa4efee4e74796db9",
+  "recipes": [
+    {
+      "id": "remove_new_frontier",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+      "anchor": "frontier = [r.id for r in incoming][-self.config.frontier :]",
+      "replacement": "frontier = []",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "reverse_utility_ranking",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_utility_ranking_changes_selection_when_qualified_episodes_exceed_slots",
+      "anchor": "ranking.sort(key=lambda item: (-item[2], item[0]))",
+      "replacement": "ranking.sort(key=lambda item: (item[2], item[0]))",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "do_not_permute_control",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_permuted_utility_moves_the_control_ranking_but_not_the_real_statistics",
+      "anchor": "self._rng.permutation(ids).tolist()",
+      "replacement": "ids",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "omit_registry_sync",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_utility_protects_spaced_evidence_and_reserves_a_new_episode",
+      "anchor": "following.synchronize(",
+      "replacement": "(lambda *a, **k: None)(",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "allow_future_evidence",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_future_evidence_is_rejected_before_inspecting_its_usage",
+      "anchor": "(cutoff is None or evidence.clock == cutoff)",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "Uso de evidencia futura"
+      }
+    },
+    {
+      "id": "allow_foreign_scope",
+      "family": "Objective",
+      "source_key": "bank",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_evidence_from_another_predictor_is_rejected_even_with_identical_episode_ids",
+      "anchor": "evidence.scope_id == self.fingerprint()",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "Uso de evidencia ajena"
+      }
+    },
+    {
+      "id": "skip_frontier_recovery_check",
+      "family": "Objective",
+      "source_key": "state",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_invalid_native_receipt_cannot_be_reinterpreted_with_a_new_checksum[<lambda>1]",
+      "anchor": "frontier == (new[-run.config.frontier :] if overflow and not original else [])",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "skip_state_checksum",
+      "family": "Objective",
+      "source_key": "state",
+      "nodeid": "tests/memory/test_spaced_retention.py::test_empty_snapshot_and_checksum_are_checked_separately",
+      "anchor": "checksum(state) == payload[\"sha256\"]",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ],
+  "method": "Copias con pins, G1 verde, M1 con el fallo esperado y G2 restaurada verde, sin optimizadores y con importaciones comprobadas."
+}

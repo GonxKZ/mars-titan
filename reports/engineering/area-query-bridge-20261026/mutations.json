@@ -1,0 +1,545 @@
+{
+  "schema_version": 1,
+  "scope": "Nueve mutaciones dirigidas de B2, incluido el dominio del RNG.",
+  "method": "Referencia verde, mutación en copia aislada, fallo CALL esperado por tipo y texto, restauración y referencia verde. Sin fallos de importación o setup, sin omisiones.",
+  "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+  "cases": [
+    {
+      "id": "reverse_ring",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_query_messages_are_synchronous_and_use_the_previous_step[1]",
+      "anchor": "torch.stack(messages).roll(shifts=1, dims=0)",
+      "replacement": "torch.stack(messages).roll(shifts=-1, dims=0)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.5713946889154613,
+          "xml_sha256": "988e8b49ef4a409987d55cf7fcedd6b1f6830cc74fec02b7ac21cc2738585e71",
+          "events_sha256": "b5f65687030e1b763845212d33e02cbfc2af1aaf86094b63b974f69bae503eb9",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.8207572118844837,
+          "xml_sha256": "a969d136cf276a0ded229d76aaa18c2c08cd85bae9155ddfbf74a72fe4f05c71",
+          "events_sha256": "18c2f32ba7b50b4b1e040a04b89a87ece41971558e41988c34b0f98e3e7e4b56",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.820112159010023,
+          "xml_sha256": "b7f06922da94869ba272bfc5c65c432d75b9dd67b81934e7c9c232c045d4fa19",
+          "events_sha256": "fd874b3204b03b7911ea048a846ea6bb398d7f8bae15660fd9f7b2a3ef9cb203",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "reuse_initial_query",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_query_messages_are_synchronous_and_use_the_previous_step[2]",
+      "anchor": "item.read(current[a])",
+      "replacement": "item.read(queries[a])",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.6703507241327316,
+          "xml_sha256": "043a6cf1f3b1983a6d70a4604e28dba2fb64c9a3077377837c3b984ba09fdccb",
+          "events_sha256": "c3f029ce4d30d7fea0d07a74c2a310863f5376bbeacce1af8899b1836217d1d2",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.3197359268087894,
+          "xml_sha256": "285ebb77291e339096a7df16429a9e975be6ec98f42fd92362e1cb6840bca359",
+          "events_sha256": "24648e2dac518e9959d08a1f10b14082755fa8c0465483387ce6ba2c8ed12e30",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.2699929259251803,
+          "xml_sha256": "9e266eba2e978f929d64dac52c6ac38d197343eab49e8c6b388dcd7d56e98df2",
+          "events_sha256": "99e86055de9f19ba481e9218e5480043d965f9d96402ec465ab6713cf9b30216",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "ignore_correspondence_shuffle",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_shuffled_correspondence_preserves_targets_and_is_independent_of_delivery_order",
+      "anchor": "if self.config.targets == \"shuffled_within_cohort\":",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.370017374167219,
+          "xml_sha256": "8daa0ac145384752a555c9b546df53461974526fed62e04809e3c49560696f9e",
+          "events_sha256": "4fac4cc4c94845c2364fc19fab9f4a4d1a51b668917618357616cd2ae703123f",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.7698196270503104,
+          "xml_sha256": "4fd8a5f98737d67a2a5409cbc8d9c877728b894061987f60b4d914fdccf55f26",
+          "events_sha256": "daf0308e209ae038369fad54010f72ca50a42cd2df696cf9f59241d1ac9c5564",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.6701336491387337,
+          "xml_sha256": "6abe556fb7fe14061fb370577af822ed16e3dd80fa8bf424203e824e809dfd3d",
+          "events_sha256": "ec57e31d9debb8bf3bb0cd8db81094973f85a31ab45a45349af78af2164c7df7",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "allow_inactive_messages",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_inactive_areas_cannot_send_or_receive_query_messages",
+      "anchor": "if mask is None or (mask[a] and mask[(a + 1) % self.areas])",
+      "replacement": "if True",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "count_nonzero"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.319542852928862,
+          "xml_sha256": "918b170831c7ee6fa71dc8f17ad26bb1fdb505accac1d778ef0aaa293a936a22",
+          "events_sha256": "2b362da6a3146b29ed7ee8bba970172912d83f071deabbd9760a3c693582e2d5",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 1.7683752700686455,
+          "xml_sha256": "1463a19f408d40b033f3b82292cbffe803cfd3fc1a9bfe17dbd9f4e33a80414d",
+          "events_sha256": "33a0c40beb4f50c947fd1039d2b16e1bbf2ba040bc54b40dafd151f3c1083271",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.2706147369462997,
+          "xml_sha256": "8474337bcdf8881f326147349a1ed1f61581aefa17005e3cc80d150e2704f2ff",
+          "events_sha256": "cddc1a3cb56b148b7ef23d9c240ee2777d4a89d19d974faf787840574e126e06",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "restore_changes_layout",
+      "source": {
+        "path": "src/mars_titan/memory/associative_memory.py",
+        "sha256": "ac60739dece56bd3fe3bba05c2e3cd94d94ea36a5a6e201a66b2452c1195a59a"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_area_bridge_is_used_before_reading_corrections_and_is_part_of_the_checkpoint",
+      "anchor": "self._matrix = matrix.detach().clone(memory_format=torch.contiguous_format)",
+      "replacement": "self._matrix = matrix.detach().clone()",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.169356466969475,
+          "xml_sha256": "8ee26d30a17786a53a0b1f73ce3b2902c0d1829b6425a496bc3c7e8d5c9af8d6",
+          "events_sha256": "85c3f114c9269dd9642ed96e91ba3ce2138973ac88e484d8c251aa0fa40f38f8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.0701207250822335,
+          "xml_sha256": "d6a4485b936adff48c5dd49ce90c658f2a8ebed3a928fe1db185eb80c5847024",
+          "events_sha256": "4fa733fedf009e469a3872b009e8f8063fa458536a3651231c6b54d3f4bcca96",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.069917557062581,
+          "xml_sha256": "4ccca3db02ce8551a250d36e95630bd7b41038ca8cc7ec203b1bdbc97a438c9e",
+          "events_sha256": "fc8aad196d1b22405cd8179bf88f84b27f470823e0bc81c608885b3d91a2cae3",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "accept_boolean_schema",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_bridge_checkpoint_schema_requires_an_integer_version",
+      "anchor": "type(payload[\"schema_version\"]) is not int",
+      "replacement": "False",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 1.6182261239737272,
+          "xml_sha256": "a3ff89631b98a625092f204284f498a44e61a7b387181cad29635e0ebe8c91b5",
+          "events_sha256": "f01ed72fab5512129da16f9d1289797af32401d3711f9222a5be095e62d8fc2f",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 1.7190118699800223,
+          "xml_sha256": "0af2d03a94c5796c3a0329ffbf39b4a648bccfcc5cc094ec411677d8889123d5",
+          "events_sha256": "3547798f5f7256e8536367c0e3e859ffc0d771eb18b14bfb9ca0b92c4301a1f6",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 1.6689265980385244,
+          "xml_sha256": "0cd8f371cef62c474001558b245f15202a3b1596de746ba9cc0062a36b7172d0",
+          "events_sha256": "690517a1480f79d7ac79219ef35f4b3281c6094c69e6440ca15e97954e6774aa",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "accept_future_map_label",
+      "source": {
+        "path": "src/mars_titan/memory/associative_memory.py",
+        "sha256": "ac60739dece56bd3fe3bba05c2e3cd94d94ea36a5a6e201a66b2452c1195a59a"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_bridge_rejects_future_and_repeated_cohorts_without_mutating_state",
+      "anchor": "not d < a <= cutoff",
+      "replacement": "not d < a",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 1.6679248791188002,
+          "xml_sha256": "4425caf5c2d3dcf300b083b65afc3496b7805f25e07167f34a75139e18965bc4",
+          "events_sha256": "1eb27bd582ce64125e1f2c2afc4b523f3a9ef1e0c211a762f136e34a47966b78",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.019840800901875,
+          "xml_sha256": "29ad5b5d083f162ed7be679f2885482909696f4a217b1516f7ba04e2c6faf381",
+          "events_sha256": "7ff1f5325a47941c592795a50291fcce781bdd03af428167aa3ff16e4b2b13c2",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.0704593299888074,
+          "xml_sha256": "94c6696ceb4adf0b5205386aac421625f1a836a3382ad3595b8ae0b7515474e0",
+          "events_sha256": "8eb3ab6683070e1e4eaa3c6e1028c8677436345916ca75882c442841146e7a18",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "hide_overflow",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_overflow_in_a_finite_map_is_rejected_before_normalizing_the_query",
+      "anchor": "translated = torch.stack(messages).roll(shifts=1, dims=0)",
+      "replacement": "translated = torch.nan_to_num(torch.stack(messages).roll(shifts=1, dims=0), posinf=1.0, neginf=-1.0)",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.070231624878943,
+          "xml_sha256": "375a7b88aa74e23aa42905278aa8c4aa385b84fa72792ed7ebc422fbb8114f8f",
+          "events_sha256": "5aac5ede1ca0b5e8f87f0985c3a08dd3f53140c64c25bda733edc0a8d8966211",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 1.9201708391774446,
+          "xml_sha256": "b40d347e20e162403248cb81b0f026b614560afbb507c41d48d71077c4da5498",
+          "events_sha256": "b3d26994780f08587c37b7191b0b7b0e0ce898c6d1caff96c19103748f95601e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 1.6685125539079309,
+          "xml_sha256": "098825cad020ec4da729fa4508e1abb1c5c198a72cb39f6ed11588d620b26444",
+          "events_sha256": "385047cec38c7749c373084ccac782dc139b6fac30933dd3f906bb317a047f79",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "reuse_label_shuffle_stream",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "41134506d112fa4793569de0cc49379e54129a9e4afa07c3f65a810f549663ac"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_bridge_shuffle_does_not_reuse_the_area_label_shuffle_stream",
+      "anchor": "[SHUFFLE_DOMAIN, self.config.seed,",
+      "replacement": "[self.config.seed,",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.allclose"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 1.81890554795973,
+          "xml_sha256": "5aad39d6656511dc972b06f111b8d046d63d6a32fa72039dac729f84dcbbdf9c",
+          "events_sha256": "f2302c44a06319b11239bce21b08f024aa360fa7cfe3dee0d5131a9d3beba5b2",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 1.66938213002868,
+          "xml_sha256": "74e460f078f38af837ff1d3cc9f05ca43096b7f63674b3816c36d552bc97f30f",
+          "events_sha256": "2c498632d60955172690118906b0d903a806c0350bee22e12f2d38a6398ee044",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 1.7688301149755716,
+          "xml_sha256": "6f4f393aa5e32a0de725c13205c7fe2b3cb901c76ced3029623ef908c2bf1516",
+          "events_sha256": "13fa0a42d76b8c74e22e6ffb758c0fcea3e8d1ce1ccbb8117b82ca03409aeaf7",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    }
+  ],
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "original_sources_unchanged": true,
+  "limits": [
+    "La proporción 8/8 se refiere a estas sustituciones, sin una estimación universal de mutaciones posibles.",
+    "Las recetas permiten repetir las sustituciones en copias aisladas. Los recibos completos se conservan fuera del repositorio."
+  ]
+}

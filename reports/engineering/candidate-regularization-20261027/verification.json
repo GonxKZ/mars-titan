@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T08:40:36.970484+00:00",
+  "kind": "technical_configuration_checks_without_learning",
+  "base_commit": "4a308312276e1744e64620f171b17b87020f31dd",
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "cuda_available": true,
+    "cuda_initialized": false,
+    "workload_device": "cpu",
+    "reason": "Contratos de configuración y construcción de AdamW sin pasos, no carga de aprendizaje"
+  },
+  "tests": {
+    "regression": {
+      "collected": 123,
+      "passed": 112,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 11,
+      "xml_sha256": "ad7e43c0ba5f3e73e18d6159b17c86a87bf8c3fbe62c733ccaaf95e63eb8dbee"
+    },
+    "new_profiles_only": {
+      "collected": 37,
+      "passed": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "9ee04f5ca3ed524dc40f68e165f4659c83b682ebce397d07af18df4e17e06795"
+    },
+    "new_tests": 37,
+    "counts_overlap": true,
+    "full_suite_executed": false,
+    "omissions": "Seis casos antiguos de ajuste de referencias y cinco casos antiguos con pasos de optimizador del módulo anclado continúan bloqueados. No se sustituyeron por simulaciones."
+  },
+  "mutations": {
+    "planned": 3,
+    "killed": 3,
+    "optimizer_attempts": 0,
+    "phases": "G1, M1, G2 por mutación"
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 812,
+      "covered_statements": 315,
+      "branches": 308,
+      "covered_branches": 63
+    },
+    "max_crap": 930.0,
+    "convention": "Cobertura de sentencias para CRAP, ramas por separado. El entrenador no se recorre en esta comprobación de perfiles."
+  },
+  "sources": {
+    "configs/candidate/chronological-training.json": "0b309e544817bf967206b0a87e282497f854de55de47c39aaea12bb22e8b7903",
+    "configs/candidate/chronological-training-weight-decay-1e-3.json": "c9584a8e8a4f1802e96adc681d1df6b03df11c3c1a98e98d7ab9270f33fc985b",
+    "configs/candidate/chronological-training-weight-decay-1e-2.json": "a3c581124b6e82199d611c804fccf9ef860c74d7d3c02d7a273e7b11b801f7b2",
+    "configs/evaluation/historical-masked-us-walk-forward-v2.json": "c4addc74c5ac5efd76993263b31bdc49e9e9a12f745c84368f7cead35e2d6648",
+    "src/mars_titan/training/candidate_run.py": "035bfd9849ebef1306ac58ff475d5635d2b24af3c07c824baa14e9077ee0a832",
+    "src/mars_titan/training/anchored_decay.py": "6eb96360f654021355aa48d8475f8f85f43c9bcec824bce07a3de06e4ea90714",
+    "src/mars_titan/training/selection.py": "3d1fd15d6de2ea5e4a3a3510860cd341de9778b77f639d5b3e234475df99253a",
+    "tests/training/test_candidate_regularization_profiles.py": "eab2d28f6994bd8df694fe8815f9228c36a7720cd8b3e88f045c0284082868e4",
+    "tests/training/test_regularization_profiles.py": "993544ce8d5e4af52ab5baac4aed1422c16440b77a22372019619a25da740676",
+    "tests/training/test_readout_regularization_profiles.py": "71df70e7de9638c27b015027ac64e72c4ade92ce1ca392d34a77ba487aee0c8d",
+    "scripts/summarize_python_quality.py": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "unchanged_sources": [
+    "configs/candidate/chronological-training.json",
+    "configs/evaluation/historical-masked-us-walk-forward-v2.json",
+    "src/mars_titan/training/candidate_run.py",
+    "src/mars_titan/training/anchored_decay.py",
+    "src/mars_titan/training/selection.py"
+  ],
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_training_executed": false,
+  "final_test_access": false,
+  "predictive_improvement_measured": false,
+  "performance_measured": false,
+  "limits": [
+    "Los perfiles preparan contrastes, no identifican una intensidad óptima.",
+    "La referencia GRU conserva su arquitectura y sus controles M0/M1 y K. No se añade dropout.",
+    "No se ejecutaron cargas CUDA, campañas ni comparaciones de precisión financiera. No hay medidas de coste de entrenamiento.",
+    "No se atribuye una garantía de generalización ni de veracidad a la regularización."
+  ],
+  "artifacts": {
+    "mutations.json": "137ab78990db299c6ef528bda9f1e56c2e0e9775769c07e23c57eb28d5a8829a",
+    "quality.json": "2b752b1bb24370e05e514cd4b27518678f89fec285557101fc3558f41c14c143"
+  }
+}

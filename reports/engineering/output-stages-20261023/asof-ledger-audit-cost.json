@@ -1,0 +1,75 @@
+{
+ "schema_version": 1,
+ "kind": "asof_ledger_audit_cost",
+ "issue": 748,
+ "measured_at": "2026-10-27T21:51:28+00:00",
+ "commit": "3443228a950b7a8ee91140bd4ad78bbe78fccbd0",
+ "sources_sha256": {
+  "src/mars_titan/integrity/asof_ledger_audit.py": "1d210ab425bfde80b5081da83674062c0ba2c67e87c0a71be76f35f309cec2e7",
+  "src/mars_titan/calibration/online_conformal.py": "537ef6db93bc0db484738cf952e7a4f4099307cfa2a6030fed389efecf2993a0",
+  "benchmarks/asof_ledger_audit_cost.py": "8338d0da4627f6ebf74cf341b88572296fd572ba99b84f4a0b62535faef57cf4"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   41.01025390625,
+   37.78125,
+   29.6044921875
+  ],
+  "load_average_at_end": [
+   41.169921875,
+   37.8681640625,
+   29.6767578125
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver las cargas medias"
+ },
+ "not_measured": [
+  "GPU y modelos, porque la auditoría solo repite etapas de salida",
+  "lectura de Parquet, que hará la criba",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "month_256": {
+   "assets": 256,
+   "audited_rows": 5376,
+   "cutoffs": 21,
+   "emissions_per_audit": 44,
+   "stage_emission": {
+    "median_s": 0.02156687993556261,
+    "min_s": 0.01901609799824655,
+    "repeats": 3
+   },
+   "audit": {
+    "median_s": 0.7487940317951143,
+    "min_s": 0.7124438830651343,
+    "repeats": 3
+   },
+   "rejection_s": 0.055894143180921674,
+   "passed": true,
+   "rejection_accepted": []
+  },
+  "quarter_256": {
+   "assets": 256,
+   "audited_rows": 16128,
+   "cutoffs": 63,
+   "emissions_per_audit": 128,
+   "stage_emission": {
+    "median_s": 0.027973491000011563,
+    "min_s": 0.027973491000011563,
+    "repeats": 1
+   },
+   "audit": {
+    "median_s": 5.207722370047122,
+    "min_s": 5.207722370047122,
+    "repeats": 1
+   },
+   "rejection_s": 0.07056853594258428,
+   "passed": true,
+   "rejection_accepted": []
+  }
+ }
+}

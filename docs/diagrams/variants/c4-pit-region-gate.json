@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "C4 · Regiones en fecha como puerta (pit_region_gate_v1)",
+    "title": "C4 · Regiones en fecha como puerta de escala (pit_region_gate_v1)",
     "quality_profile": "showcase",
     "viewBox": [1300, 592],
     "legend": {
@@ -17,8 +17,22 @@
     }
   },
   "components": [
-    {"id": "residuals", "type": "database", "label": "Residuos pasados", "sublabel": "ventana hasta t − 1", "pos": [40, 40], "size": [180, 72]},
-    {"id": "clusters", "type": "backend", "label": "Clústeres de correlación", "sublabel": "o sector en fecha", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "residuals",
+      "type": "database",
+      "label": "Residuos maduros",
+      "sublabel": "hasta la primera emisión de G",
+      "pos": [40, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "clusters",
+      "type": "backend",
+      "label": "Clústeres de correlación",
+      "sublabel": "enlace medio, k = 8",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
     {
       "id": "inputs",
       "type": "external",
@@ -28,16 +42,16 @@
       "pos": [40, 230],
       "size": [180, 72]
     },
-    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "Titans-MAC mac_online", "pos": [300, 230], "size": [180, 72]},
-    {"id": "gate", "type": "backend", "label": "Puerta por región", "sublabel": "reescalado del estado", "pos": [560, 230], "size": [180, 72]},
-    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "por activo", "pos": [820, 230], "size": [180, 72]},
+    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "predicción ya emitida", "pos": [300, 230], "size": [180, 72]},
+    {"id": "gate", "type": "backend", "label": "Factor por región", "sublabel": "λ de A1 ajustado en G", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción reescalada", "sublabel": "λ de su región por x", "pos": [820, 230], "size": [180, 72]},
     {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
     {
       "id": "controls",
       "type": "security",
       "label": "Controles",
-      "sublabel": "etiquetas permutadas",
-      "tag": "GICS actual",
+      "sublabel": "regiones permutadas",
+      "tag": "sector actual y A1",
       "pos": [560, 420],
       "size": [180, 72]
     }
@@ -46,7 +60,7 @@
     {"id": "residuals-clusters", "from": "residuals", "to": "clusters", "label": "correlaciones"},
     {"id": "clusters-gate", "from": "clusters", "to": "gate", "label": "región"},
     {"id": "inputs-base", "from": "inputs", "to": "base"},
-    {"id": "base-gate", "from": "base", "to": "gate", "label": "estado", "variant": "emphasis", "labelDx": 27, "labelDy": -37},
+    {"id": "base-gate", "from": "base", "to": "gate", "label": "predicción", "variant": "emphasis", "labelDx": 36, "labelDy": -37},
     {"id": "gate-emit", "from": "gate", "to": "emit", "variant": "emphasis"},
     {"id": "emit-screen", "from": "emit", "to": "screen"},
     {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
@@ -56,20 +70,20 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Agrupa activos con información anterior a la emisión",
-        "La región reescala el estado de B con una puerta aprendida",
-        "Fuente: MASTER (2024) y la revisión de GICS de 2023"
+        "Agrupa activos con residuos maduros antes de G",
+        "Cada región reescala la predicción con su propio λ de A1",
+        "Fuentes: Mantegna (1999), MASTER (2024) y Borde (2026)"
       ]
     },
     {
       "dot": "rose",
       "title": "Control que la descarta",
-      "items": ["Etiquetas permutadas con los mismos tamaños", "GICS actual como control de fuga y modelo plano"]
+      "items": ["Regiones permutadas con los mismos tamaños", "Sector actual como control de fuga y A1 como modelo plano"]
     },
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751, pendiente de implementar", "Preparación de etiquetas en CPU"]
+      "items": ["Etapa de salida implementada y probada en CPU", "Sin evaluar con datos por el bloqueo de aprendizaje"]
     }
   ]
 }

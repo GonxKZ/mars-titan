@@ -66,7 +66,9 @@ def test_trainers_inherit_the_real_precomputed_source_without_initializing_train
     for trainer_type in (ChronologicalTrainer, ReadoutTrainer, ReadoutAdapterTrainer):
         trainer = object.__new__(trainer_type)
         # `_code` lee estos campos de la configuración real del predictor.
-        config = SimpleNamespace(temporal_encoder=kind, cross_asset_attention=None)
+        config = SimpleNamespace(
+            temporal_encoder=kind, regional_variant=None, cross_asset_attention=None
+        )
         trainer.predictor = SimpleNamespace(config=config)
         assert trainer._code()[module.__name__] == expected
 

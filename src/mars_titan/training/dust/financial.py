@@ -88,6 +88,7 @@ class FinancialDustAdapter:
             "regional_fusion",
             "regional_execution",
             "memory_bank_readout",
+            "regional_variant",
             "cross_asset_attention",
         )
         if (
@@ -106,6 +107,7 @@ class FinancialDustAdapter:
                     "session_context",
                     "regional_fusion",
                     "regional_execution",
+                    "regional_variant",
                     "presence_modulation",
                     "fusion_branch",
                     "cross_asset_attention",

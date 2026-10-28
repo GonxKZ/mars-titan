@@ -1,0 +1,300 @@
+{
+  "kind": "path_signature_microbenchmark",
+  "python": "3.12.14",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "source_sha256": "dea9d0a47aa5164152f6f6cc6147dd6ae3e01ef9c52f83a766d88dcc8ef41863",
+  "script_sha256": "1dc0956757e90476ef217e4fcb40aed08a07234fc1be6ed753b71a2fe1e31415",
+  "samples": [
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 0,
+      "warmup": true,
+      "seconds": 0.09505656897090375,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 0,
+      "warmup": true,
+      "seconds": 0.05881127598695457,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 1,
+      "warmup": false,
+      "seconds": 0.0551512660458684,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 1,
+      "warmup": false,
+      "seconds": 0.07806256995536387,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 2,
+      "warmup": false,
+      "seconds": 0.07669184287078679,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 2,
+      "warmup": false,
+      "seconds": 0.05107829812914133,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 3,
+      "warmup": false,
+      "seconds": 0.05219900491647422,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 3,
+      "warmup": false,
+      "seconds": 0.08860345813445747,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 4,
+      "warmup": false,
+      "seconds": 0.08846573787741363,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 4,
+      "warmup": false,
+      "seconds": 0.060101893031969666,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 5,
+      "warmup": false,
+      "seconds": 0.05233979085460305,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 5,
+      "warmup": false,
+      "seconds": 0.08281520497985184,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 6,
+      "warmup": false,
+      "seconds": 0.08231193898245692,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 6,
+      "warmup": false,
+      "seconds": 0.054165482986718416,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 7,
+      "warmup": false,
+      "seconds": 0.0551692801527679,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 7,
+      "warmup": false,
+      "seconds": 0.08265951205976307,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "reference",
+      "repeat": 8,
+      "warmup": false,
+      "seconds": 0.08122745994478464,
+      "calls": 2000
+    },
+    {
+      "path_depth": 8,
+      "implementation": "candidate",
+      "repeat": 8,
+      "warmup": false,
+      "seconds": 0.058406534837558866,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 0,
+      "warmup": true,
+      "seconds": 0.14568333816714585,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 0,
+      "warmup": true,
+      "seconds": 0.09199629514478147,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 1,
+      "warmup": false,
+      "seconds": 0.09125245711766183,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 1,
+      "warmup": false,
+      "seconds": 0.13435998000204563,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 2,
+      "warmup": false,
+      "seconds": 0.1435720499139279,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 2,
+      "warmup": false,
+      "seconds": 0.09095696196891367,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 3,
+      "warmup": false,
+      "seconds": 0.08918297616764903,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 3,
+      "warmup": false,
+      "seconds": 0.13227754505351186,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 4,
+      "warmup": false,
+      "seconds": 0.14518288802355528,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 4,
+      "warmup": false,
+      "seconds": 0.09064227994531393,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 5,
+      "warmup": false,
+      "seconds": 0.08884662389755249,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 5,
+      "warmup": false,
+      "seconds": 0.13353539002127945,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 6,
+      "warmup": false,
+      "seconds": 0.13259230717085302,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 6,
+      "warmup": false,
+      "seconds": 0.09368571196682751,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 7,
+      "warmup": false,
+      "seconds": 0.09057593578472733,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 7,
+      "warmup": false,
+      "seconds": 0.13220027997158468,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "reference",
+      "repeat": 8,
+      "warmup": false,
+      "seconds": 0.13991797994822264,
+      "calls": 2000
+    },
+    {
+      "path_depth": 15,
+      "implementation": "candidate",
+      "repeat": 8,
+      "warmup": false,
+      "seconds": 0.09389563603326678,
+      "calls": 2000
+    }
+  ],
+  "limitations": [
+    "Sin inferencia ni corpus. No prueba un ahorro end-to-end."
+  ]
+}

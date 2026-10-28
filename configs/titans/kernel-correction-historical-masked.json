@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_kernel_correction_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "forgetting": 0.01,
+    "capacity": 65536
+  },
+  "walk_forward": {
+    "search_cases": {
+      "tau1e-1": {"bandwidth": 0.1},
+      "tau5e-1": {"bandwidth": 0.5}
+    }
+  },
+  "pending": [
+    "Receta del control de Nadaraya-Watson de la memoria por áreas B1 (#750) sobre el Titans-MAC mac_online elegido en la misma ventana y semilla. Declarada sin ejecutar. No tiene parámetros entrenables, épocas ni optimizador.",
+    "Dos casos de búsqueda, como B6 y los demás modelos. Solo cambia el ancho τ del núcleo exp(qᵀk/τ) sobre claves del codec de norma uno. Con τ = 0,1 una diferencia de 0,1 en el coseno multiplica el peso por e, así que pesan sobre todo los episodios más parecidos. Con τ = 0,5 el peso apenas distingue claves y la lectura se acerca a una media de errores recientes. Son valores fijados antes de ejecutar, sin datos.",
+    "λ = 0,01 es el de B6 y B1: cada escritura multiplica por ρ = 0,99 el peso de los episodios anteriores, igual que la retención de la regla proximal por cohorte.",
+    "La capacidad de 65.536 episodios cubre unas 256 sesiones con 256 activos. Los episodios más antiguos se descartan, y con ρ = 0,99 su peso ya había caído por debajo del 8 % del de la última escritura.",
+    "Los episodios empiezan vacíos en cada tramo medido y solo reciben etiquetas maduras de ese tramo. No se usa el tramo de entrenamiento del padre."
+  ]
+}

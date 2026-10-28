@@ -37,6 +37,51 @@ _REGENERATION = node(
 )
 
 GUARDS = {
+    "scripts.run_window_variant:main": (
+        node(
+            "training/test_window_variant_cli.py",
+            "test_learning_hold_blocks_before_gpu_or_execution_and_is_not_modified",
+        ),
+    ),
+    "mars_titan.training.window_variant_run:run_window_variant": (
+        node(
+            "training/test_window_variants.py",
+            "test_learning_hold_precedes_manifest_cuda_and_output",
+        ),
+    ),
+    "scripts.run_lesion_window:main": (
+        node(
+            "memory/test_lesion_study.py",
+            "test_window_cli_checks_the_hold_before_reading_files_or_reserving_cuda",
+        ),
+    ),
+    "mars_titan.training.spaced_inference:SpacedInference.evaluate": (
+        node(
+            "memory/test_spaced_inference.py",
+            "test_public_evaluation_checks_hold_before_reading_source",
+        ),
+    ),
+    "mars_titan.training.spaced_window:run_spaced_window": (
+        node(
+            "memory/test_spaced_study.py",
+            "test_window_guard_precedes_every_input_read_and_output_creation",
+        ),
+    ),
+    "scripts.run_spaced_window:main": (
+        node(
+            "memory/test_spaced_study.py",
+            "test_cli_guard_precedes_every_input_read_and_gpu_reservation",
+        ),
+    ),
+    "mars_titan.evaluation.lesion_curves:analyze_lesion_run": (
+        node("evaluation/test_lesion_curves.py", "test_hold_precedes_all_report_io_and_output"),
+    ),
+    "mars_titan.evaluation.spaced_comparison:analyze_spaced_runs": (
+        node(
+            "evaluation/test_spaced_comparison.py",
+            "test_hold_precedes_every_report_and_output_access",
+        ),
+    ),
     "mars_titan.training.mechanism_policy_fit:fit_policy": (
         node(
             "training/test_mechanism_policy_fit.py",

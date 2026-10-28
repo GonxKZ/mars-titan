@@ -197,19 +197,36 @@ def apply_conformal_quantiles(record, quantiles, groups):
     _require(not missing, f"No hay corrección definida para los grupos {missing}")
     names = sorted(record["groups"])
     codes = np.searchsorted(names, groups)
+    corrections = np.column_stack(
+        [
+            np.array(
+                [
+                    record["groups"][name]["intervals"][f"{nominal:g}"]["correction"]
+                    for name in names
+                ]
+            )[codes]
+            for nominal, _, _ in pairs
+        ]
+    )
+    return widen_in_order(quantiles, pairs, median, corrections)
+
+
+def widen_in_order(quantiles, pairs, median, corrections):
+    """Aplicar una corrección por fila e intervalo con la regla de orden declarada.
+
+    `corrections` tiene forma [filas, intervalos] en el orden de `pairs`, del intervalo más
+    estrecho al más ancho. Devuelve los cuantiles corregidos y, por intervalo nominal, las
+    filas cuyo extremo se ensanchó hasta la mediana o el intervalo interior.
+    """
     calibrated = quantiles.copy()
     inner_low = inner_high = quantiles[:, median]
     adjusted = {}
-    for nominal, lower, upper in pairs:
-        key = f"{nominal:g}"
-        correction = np.array(
-            [record["groups"][name]["intervals"][key]["correction"] for name in names]
-        )[codes]
-        low = quantiles[:, lower] - correction
-        high = quantiles[:, upper] + correction
+    for column, (nominal, lower, upper) in enumerate(pairs):
+        low = quantiles[:, lower] - corrections[:, column]
+        high = quantiles[:, upper] + corrections[:, column]
         widened = (low > inner_low) | (high < inner_high)
         low, high = np.minimum(low, inner_low), np.maximum(high, inner_high)
         calibrated[:, lower], calibrated[:, upper] = low, high
         inner_low, inner_high = low, high
-        adjusted[key] = int(np.count_nonzero(widened))
+        adjusted[f"{nominal:g}"] = int(np.count_nonzero(widened))
     return calibrated, adjusted
