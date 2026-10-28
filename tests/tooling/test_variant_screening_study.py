@@ -506,3 +506,39 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     assert series["defined"].to_pylist() == [True, True, False]
     with pytest.raises(ValueError, match="directorio nuevo"):
         study.analyze(work, tmp_path / "analysis", tmp_path)
+
+
+def test_the_queue_runs_pending_jobs_in_sealed_order_up_to_its_limit(prepared, runners):
+    work, receipt = prepared
+    pending = [job["id"] for job in receipt["jobs"] if study._completed(work, job["id"]) is None]
+    result = study.run_queue(work, limit=3)
+    assert result == dict(completed=pending[:3], stopped_at=None, status="queued_jobs_completed")
+    assert [options["output"].name for _, _, options in runners] == pending[:3]
+    with pytest.raises(ValueError, match="entero positivo"):
+        study.run_queue(work, limit=0)
+
+
+def test_the_queue_stops_at_a_job_that_does_not_finish(prepared, runners, monkeypatch):
+    work, receipt = prepared
+    paused = []
+
+    def pause(*args, **options):
+        paused.append(options["output"].name)
+        return dict(status="paused")
+
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", pause)
+    result = study.run_queue(work)
+    assert result["status"] == "paused" and result["stopped_at"] == paused[0]
+    assert len(paused) == 1 and study._completed(work, paused[0]) is None
+
+
+def test_the_queue_checks_the_hold_before_reading_the_preparation(
+    prepared, learning_hold, monkeypatch
+):
+    work, _ = prepared
+    learning_hold(False)
+    monkeypatch.setattr(
+        study, "verify_prepared", lambda *_: pytest.fail("Se leyó la criba bajo la protección")
+    )
+    with pytest.raises(LearningHoldError):
+        study.run_queue(work)

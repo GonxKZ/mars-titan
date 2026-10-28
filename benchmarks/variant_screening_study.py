@@ -6,6 +6,8 @@
 - `run` ejecuta un trabajo sellado. Comprueba la protección del aprendizaje antes de leer
   nada, exige que sus requisitos hayan terminado, cobra el intento contra el presupuesto y
   usa una GPU exclusiva. Un trabajo interrumpido se reanuda desde su carpeta.
+- `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Se detiene al
+  llegar a su límite o ante el primer trabajo que no termina.
 - `status` resume los trabajos terminados, los pendientes y el tiempo cobrado.
 - `analyze` comprueba la protección, exige todos los trabajos terminados, verifica la huella
   de cada archivo de predicciones y escribe los contrastes, las familias y la decisión.
@@ -477,6 +479,30 @@ def _run(work, receipt, job):
                 lease.__exit__()
 
 
+def run_queue(work, limit=None):
+    """Ejecutar los trabajos pendientes en el orden sellado, que pone cada padre antes.
+
+    Un trabajo que falla detiene la cola con su error y queda cobrado. Uno pausado, por
+    ejemplo por el límite de tiempo de su intento, la detiene sin error.
+    """
+    require_learning_allowed("la cola de la criba de variantes")
+    _require(
+        limit is None or (type(limit) is int and limit >= 1), "El límite es un entero positivo"
+    )
+    work = Path(work).resolve()
+    completed = []
+    for job in verify_prepared(work)["jobs"]:
+        if limit is not None and len(completed) == limit:
+            break
+        if _completed(work, job["id"]) is not None:
+            continue
+        result = run_job(work, job["id"])
+        if result.get("status") != "completed":
+            return dict(completed=completed, stopped_at=job["id"], status=result.get("status"))
+        completed.append(job["id"])
+    return dict(completed=completed, stopped_at=None, status="queued_jobs_completed")
+
+
 def status(work):
     work = Path(work).resolve()
     jobs = read_manifest(work / "prepared.json", 64 * 1024**2)[0]["jobs"]
@@ -631,6 +657,9 @@ def main():
     run_parser = commands.add_parser("run", help="Ejecutar un trabajo sellado")
     run_parser.add_argument("--work", type=Path, required=True)
     run_parser.add_argument("--job", required=True)
+    queue_parser = commands.add_parser("queue", help="Ejecutar en orden los trabajos pendientes")
+    queue_parser.add_argument("--work", type=Path, required=True)
+    queue_parser.add_argument("--limit", type=int)
     status_parser = commands.add_parser("status", help="Resumir el avance")
     status_parser.add_argument("--work", type=Path, required=True)
     analyze_parser = commands.add_parser("analyze", help="Contrastes y decisión de la criba")
@@ -645,6 +674,8 @@ def main():
         result = dict(jobs=len(receipt["jobs"]), protocol_sha256=receipt["protocol_sha256"])
     elif args.command == "run":
         result = run_job(args.work, args.job)
+    elif args.command == "queue":
+        result = run_queue(args.work, args.limit)
     elif args.command == "analyze":
         result = analyze(args.work, args.output, args.descriptions)
     else:
