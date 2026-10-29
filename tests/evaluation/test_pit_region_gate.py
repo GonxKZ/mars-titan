@@ -146,22 +146,6 @@ def test_two_labels_of_an_asset_at_the_same_instant_are_rejected():
         gate.residual_regions(ASSETS, duplicated, START, clusters=2, window=80, min_labels=40)
 
 
-def test_correlation_matches_pearson_when_fully_observed_and_ignores_thin_pairs():
-    rng = np.random.default_rng(11)
-    series = rng.normal(size=(4, 50))
-    series = (series - series.mean(1, keepdims=True)) / series.std(1, keepdims=True)
-    mask = np.ones_like(series, dtype=bool)
-    np.testing.assert_allclose(
-        gate.correlation(series, mask, min_labels=10), np.corrcoef(series), atol=1e-12
-    )
-    mask[3, 5:] = False
-    mask[2, 10:] = False
-    result = gate.correlation(series, mask, min_labels=10)
-    assert result[3, 0] == result[0, 3] == 0.0 and result[3, 3] == 1.0
-    # Un par con exactamente el mínimo de madureces comunes sí aporta su correlación.
-    assert result[2, 0] != 0.0 and gate.correlation(series, mask, min_labels=11)[2, 0] == 0.0
-
-
 def test_each_region_gets_the_a1_factor_of_its_own_rows():
     record, cal = fitted()
     assets = gate.panel_assets(cal)

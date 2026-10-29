@@ -294,6 +294,7 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
                 holographic_network=None,
                 axial_time_region=None,
                 mature_reliability=None,
+                fractal_shared_operator=None,
                 three_factor_bridge=None,
             )
         )
