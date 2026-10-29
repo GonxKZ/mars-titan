@@ -217,6 +217,10 @@ def test_the_fit_rows_are_the_train_decisions_of_the_fit_months(view):
     assert rows.panel.rows == int(np.count_nonzero(every["prediction_at"] >= since)) > 0
     assert rows.panel.prediction_at.min() >= since
     assert rows.panel.rows < len(every["target"])
+    # El inicio es inclusivo: la primera decisión del ajuste, justo en `since`, entra.
+    first = int(every["prediction_at"][every["prediction_at"] >= since].min())
+    exact = sc.partition_rows(data, cohort, "train", since=first)
+    assert exact.panel.prediction_at.min() == first and exact.panel.rows == rows.panel.rows
     with pytest.raises(ValueError, match="no tiene filas"):
         sc.partition_rows(data, cohort, "train", since=2**62)
 
@@ -305,26 +309,29 @@ def test_a_changed_factor_or_filings_file_is_refused(view):
     with pytest.raises(ValueError, match="factor de mercado de su residuo"):
         sc.load_cohort(without, "US")
     # Un factor declarado con su huella que no sigue el calendario no sirve para el residuo.
+    # Un microsegundo antes, cada instante cae dentro del calendario y solo lo detecta la
+    # coincidencia exacta. Uno después, el último ya queda fuera.
     table = pq.read_table(factor)
-    later = table["available_at"].cast(pa.int64()).to_numpy() + 1
-    shifted = factor.with_name("shifted.parquet")
-    pq.write_table(
-        table.set_column(
-            table.schema.get_field_index("available_at"),
-            "available_at",
-            pa.array(later, type=pa.timestamp("us", tz="UTC")),
-        ),
-        shifted,
-    )
-    entry = dict(
-        data.manifest["market_factors"]["US"],
-        prices_path=str(shifted),
-        prices_sha256=sha256(shifted),
-    )
-    elsewhere = dataset(view)
-    elsewhere.manifest = dict(elsewhere.manifest, market_factors={"US": entry})
-    with pytest.raises(ValueError, match="no sigue el calendario declarado"):
-        sc.load_cohort(elsewhere, "US")
+    for shift in (-1, 1):
+        moved = table["available_at"].cast(pa.int64()).to_numpy() + shift
+        shifted = factor.with_name(f"shifted{shift}.parquet")
+        pq.write_table(
+            table.set_column(
+                table.schema.get_field_index("available_at"),
+                "available_at",
+                pa.array(moved, type=pa.timestamp("us", tz="UTC")),
+            ),
+            shifted,
+        )
+        entry = dict(
+            data.manifest["market_factors"]["US"],
+            prices_path=str(shifted),
+            prices_sha256=sha256(shifted),
+        )
+        elsewhere = dataset(view)
+        elsewhere.manifest = dict(elsewhere.manifest, market_factors={"US": entry})
+        with pytest.raises(ValueError, match="no sigue el calendario declarado"):
+            sc.load_cohort(elsewhere, "US")
 
 
 def test_the_session_of_a_row_skips_the_sessions_absent_in_the_whole_market(view):

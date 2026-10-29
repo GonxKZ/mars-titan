@@ -171,6 +171,10 @@ def test_each_filing_is_known_from_its_first_fact_and_at_or_after_a_decision():
     # Sin la sesión ausente, «a» cae en la sesión 1, «b» en la 2 y «c» en la 3. «d» se conoce en
     # la siguiente sesión con mercado, la misma que «b», y «e» no se conoce nunca.
     assert sessions.tolist() == [1, 2, 3]
+    # Sola, una presentación que llega justo en una decisión se conoce en ella, y una que llega
+    # un instante después espera a la siguiente.
+    for moment, session in ((39, 2), (40, 2), (41, 3)):
+        assert af.filing_sessions(["b"], [moment], decisions, absent).tolist() == [session]
     assert af.filing_sessions([], [], decisions, absent).size == 0
     with pytest.raises(ValueError, match="no tiene acceso"):
         af.filing_sessions([""], [15], decisions, absent)
