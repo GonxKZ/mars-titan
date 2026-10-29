@@ -76,3 +76,35 @@ def test_only_the_first_cuda_device_is_measured(monkeypatch):
         monkeypatch.setattr(torch.cuda, "is_available", lambda value=available: value)
         with pytest.raises(RuntimeError, match="cuda:0 disponible"):
             cost.run(device)
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [
+        ("sectors", [("sessions", True)]),
+        ("forward", [("call", False)]),
+        ("backward", [("zero_grad", True), ("call", True), ("backward", True)]),
+    ],
+)
+def test_the_warmup_calls_run_before_the_measured_ones(monkeypatch, kind, expected):
+    monkeypatch.setattr(cost, "WARMUP", 2)
+    monkeypatch.setattr(cost, "REPETITIONS", 3)
+    calls, synchronized = [], []
+
+    class Module:
+        def sessions(self, *arguments):
+            calls.append(("sessions", torch.is_grad_enabled()))
+
+        def zero_grad(self, set_to_none):
+            calls.append(("zero_grad", set_to_none))
+
+        def __call__(self, *arguments):
+            calls.append(("call", torch.is_grad_enabled()))
+            value = torch.ones(2, requires_grad=True)
+            value.register_hook(lambda grad: calls.append(("backward", True)))
+            return value
+
+    samples = cost.measure(Module(), (None,) * 5, kind, lambda: synchronized.append(kind))
+    # Dos llamadas de calentamiento y tres medidas, cada una seguida de su sincronización.
+    assert len(samples) == 3
+    assert calls == expected * 5 and len(synchronized) == 5
