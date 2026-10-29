@@ -1,5 +1,6 @@
 """La medida de coste de H4 recorre sus tres modos con bloques pequeños y no ajusta nada."""
 
+import importlib
 import json
 from pathlib import Path
 
@@ -75,9 +76,31 @@ def test_a_small_run_covers_every_mode_and_keeps_the_optimizer_closed(monkeypatc
         cost.forbid_optimizer_steps(None, (), {})
 
 
+def test_the_optimizer_guard_covers_every_measure(monkeypatch):
+    events = []
+
+    class Handle:
+        def remove(self):
+            events.append("removed")
+
+    def register(hook):
+        events.append(hook)
+        return Handle()
+
+    # torch.optim no expone el submódulo como atributo, así que se toma de los importados.
+    optimizer = importlib.import_module("torch.optim.optimizer")
+    monkeypatch.setattr(optimizer, "register_optimizer_step_pre_hook", register)
+    monkeypatch.setattr(cost, "SHAPES", ((8, 1),))
+    monkeypatch.setattr(cost, "measure", lambda *arguments: events.append("measured") or [1.0])
+    cost.run("cpu")
+    assert events[0] is cost.forbid_optimizer_steps and events[-1] == "removed"
+    assert set(events[1:-1]) == {"measured"}
+
+
 def test_the_measure_needs_a_new_output(monkeypatch, tmp_path):
     existing = tmp_path / "cost.json"
     existing.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(cost, "run", lambda device: pytest.fail("No debería medir"))
     for argv in (["cost", "--run"], ["cost", "--run", "--output", str(existing)]):
         monkeypatch.setattr("sys.argv", argv)
         with pytest.raises(SystemExit, match="destino nuevo"):

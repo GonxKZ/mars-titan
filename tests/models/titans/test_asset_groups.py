@@ -144,6 +144,10 @@ def test_the_controls_have_the_same_parameters_and_the_shuffle_permutes_whole_ro
     mixed, families = shuffled.memberships(prices, flows, ("US", 7))
     order = shuffled._permutation(("US", 7), 8)
     assert sorted(order.tolist()) == list(range(8)) and order.tolist() != list(range(8))
+    # La permutación sale de la semilla del predictor, del mercado y del instante.
+    digest = hashlib.sha256(f"{ASSET_GROUP_MEMBERSHIP}/3/US/7".encode()).digest()
+    generator = torch.Generator().manual_seed(int.from_bytes(digest[:7], "little"))
+    assert torch.equal(order, torch.randperm(8, generator=generator))
     assert torch.equal(mixed, plain[order])
     assert families.tolist() == [5.0] * 8
     assert torch.equal(shuffled.memberships(prices, flows, ("US", 7))[0], mixed)

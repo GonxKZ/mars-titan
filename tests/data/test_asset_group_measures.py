@@ -122,6 +122,7 @@ def test_rows_with_too_few_observations_are_not_valid():
     assert valid["momentum"].tolist() == valid["volatility"].tolist()
     assert valid["liquidity_spread"].tolist() == [False, False, True, True, True]
     assert valid["beta"].tolist() == valid["correlation"].tolist() == [False] + [True] * 4
+    assert measures["beta"][0].item() == 0
     assert torch.count_nonzero(measures["residual"][0]) == 0
     # La fila sin historia no entra en el mercado de las demás.
     reduced = ag.window_measures(prices[1:], 36)
@@ -140,12 +141,13 @@ def test_a_session_with_one_valid_row_has_no_beta_or_correlation():
 
 def test_momentum_reads_the_first_and_last_present_sessions():
     prices, _ = sectors(rows=4)
-    # Ausencias de todo el mercado al principio y al final de la ventana.
+    # Ausencias de todo el mercado al principio y al final, de longitudes distintas para que
+    # el último presente no coincida con el reflejo del primero.
     prices[:, :3] = 0
-    prices[:, 61:] = 0
+    prices[:, 60:] = 0
     measures = ag.window_measures(prices, 36)
     close = prices[..., 3]
-    torch.testing.assert_close(measures["momentum"], close[:, 60] - close[:, 3], rtol=0, atol=0)
+    torch.testing.assert_close(measures["momentum"], close[:, 59] - close[:, 3], rtol=0, atol=0)
     assert measures["valid"]["momentum"].all()
 
 
@@ -258,6 +260,21 @@ def test_farthest_first_starts_far_from_the_mean_and_skips_invalid_rows():
     # Tras trasladar los puntos, el más alejado del origen sería (−12, 0) y no cambia nada.
     offset = torch.tensor([-10.0, 0.0], dtype=torch.float64)
     assert torch.equal(ag.farthest_first(points + offset, valid, 3), centers + offset)
+
+
+def test_farthest_first_follows_the_traversal_of_gonzalez():
+    generator = torch.Generator().manual_seed(6)
+    points = torch.randn(20, 2, generator=generator, dtype=torch.float64)
+    valid = torch.ones(20, dtype=torch.bool)
+    valid[[4, 11]] = False
+    centers = ag.farthest_first(points, valid, 6)
+    data, rows = points.numpy(), np.flatnonzero(valid.numpy())
+    # Tras el primero, la distancia a la media ya no cuenta: solo la del centro más cercano.
+    chosen = [rows[np.argmax(((data[rows] - data[rows].mean(0)) ** 2).sum(1))]]
+    while len(chosen) < 6:
+        gaps = ((data[rows, None, :] - data[None, chosen, :]) ** 2).sum(-1).min(1)
+        chosen.append(rows[np.argmax(gaps)])
+    np.testing.assert_array_equal(centers.numpy(), data[chosen])
 
 
 def test_fuzzy_clusters_recover_separated_sectors():
