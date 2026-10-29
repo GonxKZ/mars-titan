@@ -24,6 +24,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data.storage import atomic_json
+
 ROOT = Path(__file__).resolve().parents[1]
 DECLARATION = ROOT / "configs/experiments/holographic-network-v1.json"
 ROWS = (64, 256, 1024)
@@ -248,8 +250,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
-    result = run(arguments.device)
-    arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(arguments.output, run(arguments.device))
 
 
 if __name__ == "__main__":
