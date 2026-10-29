@@ -112,6 +112,18 @@ def test_the_initial_workspace_is_the_one_inherited_at_start():
         assert result.stdout.split() == [expected, expected]
 
 
+def test_the_initial_workspace_reads_the_last_value_of_the_start_environment(monkeypatch):
+    # El mismo análisis que la prueba anterior, dentro del proceso para que la cobertura lo vea.
+    entries = {
+        b"A=1\0CUBLAS_WORKSPACE_CONFIG=:16:8\0CUBLAS_WORKSPACE_CONFIG=:4096:8\0": ":4096:8",
+        b"A=1\0CUBLAS_WORKSPACE_CONFIGX=:16:8\0": None,
+        b"": None,
+    }
+    for content, expected in entries.items():
+        monkeypatch.setattr(determinism.Path, "read_bytes", lambda self, content=content: content)
+        assert determinism._initial_workspace() == expected
+
+
 def test_the_initial_workspace_is_unknown_without_proc(monkeypatch):
     def unreadable(self):
         raise OSError("sin /proc")
