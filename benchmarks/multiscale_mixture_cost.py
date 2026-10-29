@@ -3,6 +3,8 @@
 La primera cohorte publica en t=0. Los componentes pendientes se calculan en el día 7.
 Cada ciclo medido consulta en el día 14 y después publica la etiqueta de aquella decisión,
 usando los componentes guardados del día 7. No mide error financiero ni calcula el régimen.
+Con la declaración de R2 (#786) el día 14 cae en otra semana ISO y en el mismo mes, así que
+cada ciclo cierra el periodo semanal con su paso proximal y amplía el mensual.
 """
 
 import argparse
@@ -37,6 +39,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=40)
+    parser.add_argument(
+        "--declaration",
+        type=Path,
+        default=Path("configs/experiments/multiscale-mature-mixture-v1.json"),
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("El recibo debe ser nuevo")
@@ -46,13 +53,13 @@ def main():
         raise RuntimeError("Esta medida de correctores CPU no usa CUDA")
     torch.set_num_threads(2)
     torch.set_num_interop_threads(1)
-    path = Path("configs/experiments/multiscale-mature-mixture-v1.json")
+    path = args.declaration
     study = json.loads(path.read_text())
     declaration = load_declaration()
     start, load = time.perf_counter(), os.getloadavg()
     cases = {}
     recipes = {}
-    for name, arm in (study["arms"] | study["references"]).items():
+    for name, arm in (study["arms"] | study.get("references", {})).items():
         recipe = load_correction_recipe(arm["recipe"])
         recipes[arm["recipe"]] = hashlib.sha256(Path(arm["recipe"]).read_bytes()).hexdigest()
         _, correction = check_components(
@@ -125,6 +132,7 @@ def main():
                 else state_bytes(memory.export()),
                 serialized_tensor_bytes=state_bytes(memory.export()),
                 pending_component_bytes_per_row=0 if issued is None else issued.shape[1] * 8,
+                open_period_rows=memory.pending_rows if issued is not None else None,
                 recovery_bitwise=True,
             )
     atomic_json(
@@ -139,6 +147,7 @@ def main():
             versions=dict(
                 python=platform.python_version(), torch=str(torch.__version__), numpy=np.__version__
             ),
+            declaration=str(path),
             configuration_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
             sources_sha256=_code(),
             recipes_sha256=recipes,
