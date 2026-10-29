@@ -7,6 +7,7 @@ import torch
 from torch.optim import optimizer
 
 from benchmarks import three_factor_bridge_cost as cost
+from mars_titan.models.titans.holographic_network import HolographicNetwork
 
 
 def test_the_protocol_names_the_declared_network_and_every_bridge():
@@ -34,19 +35,29 @@ def test_a_small_run_covers_both_modes_and_every_rule_and_keeps_the_optimizer_cl
         return register(hook)
 
     monkeypatch.setattr(optimizer, "register_optimizer_step_pre_hook", registered)
-    measured, measure = [], cost.measure
+    calls, forward, backward = [], HolographicNetwork.forward, torch.Tensor.backward
 
-    def recorded(module, encoders, arguments, kind, bias, synchronize):
-        measured.append(bias)
-        return measure(module, encoders, arguments, kind, bias, synchronize)
+    def called(self, *arguments, edge_bias=None, traces=None):
+        calls.append((edge_bias, torch.is_grad_enabled()))
+        return forward(self, *arguments, edge_bias=edge_bias, traces=traces)
 
-    monkeypatch.setattr(cost, "measure", recorded)
+    def propagated(self, *arguments, **options):
+        calls.append(("backward",))
+        return backward(self, *arguments, **options)
+
+    monkeypatch.setattr(HolographicNetwork, "forward", called)
+    monkeypatch.setattr(torch.Tensor, "backward", propagated)
     result = cost.run("cpu")
-    # La referencia se mide sin pesos y P1 con pesos fijos [filas, aristas] dentro de la cota.
-    assert sum(bias is None for bias in measured) == len(measured) // 2
-    weights = [bias for bias in measured if bias is not None]
+    # Dos órdenes por dos modos y dos pasadas, con una llamada de calentamiento y una medida.
+    measured = [call for call in calls if len(call) == 2]
+    assert len(measured) == 16 and calls.count(("backward",)) == 8
+    # La referencia llega a la red sin pesos y P1 con los mismos pesos [filas, aristas] fijos
+    # y dentro de la cota. `forward` va sin gradiente y `backward` lo propaga.
+    assert sum(bias is None for bias, _ in measured) == 8
+    weights = [bias for bias, _ in measured if bias is not None]
     assert all(bias is weights[0] for bias in weights) and weights[0].shape == (8, 38)
     assert 0 < weights[0].abs().max() <= cost.WEIGHT_SCALE
+    assert sum(grad for _, grad in measured) == 8
     # La medida instala el gancho que rechaza cualquier paso de optimizador.
     assert hooks == [cost.forbid_optimizer_steps]
     expected = {(mode, 8, kind) for mode in cost.MODES for kind in cost.PASSES}
