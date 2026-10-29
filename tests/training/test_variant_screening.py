@@ -407,6 +407,16 @@ def test_a_continuation_declares_a_fitted_parent_that_does_not_continue(protocol
         screening.entry_arms(_continuation_change(protocol, change), "F3")
 
 
+def test_a_pending_arm_is_left_out_and_the_others_keep_their_definition(protocol):
+    complete = screening.entry_arms(protocol, "F3")
+    pending = _continuation_change(
+        protocol, lambda entry: entry.update(pending_arms=["shrink_only"])
+    )
+    arms = screening.entry_arms(pending, "F3")
+    assert set(arms) == set(complete) - {"shrink_only"}
+    assert all(arms[arm] == complete[arm] for arm in arms)
+
+
 def test_the_parent_of_a_continuation_is_not_a_seed_mean(protocol, monkeypatch):
     original = screening._declaration
 
