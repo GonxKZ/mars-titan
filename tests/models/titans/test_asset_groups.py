@@ -463,6 +463,7 @@ def test_the_sources_enter_the_trainer_identity_only_when_active():
                 cross_asset_attention=None,
                 asset_groups=config,
                 holographic_network=None,
+                mature_reliability=None,
             )
         )
         code = trainer._code()

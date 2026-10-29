@@ -87,9 +87,18 @@ class TitansMAC(nn.Module):
         )
 
     def forward(
-        self, segment: Tensor, state: MACState, *, differentiable: bool = False
+        self,
+        segment: Tensor,
+        state: MACState,
+        *,
+        differentiable: bool = False,
+        gate_shift: dict | None = None,
+        surprise: list | None = None,
     ) -> tuple[Tensor, MACState]:
+        """`gate_shift` y `surprise` llegan a la escritura de la memoria, que solo existe online."""
         check_differentiable(differentiable)
+        if (gate_shift is not None or surprise is not None) and self.config.memory_mode != "online":
+            raise ValueError("Las puertas moduladas necesitan la memoria online")
         self._validate_state(state)
         self.memory.validate_input(segment, state.memory)
         batch, length, _ = segment.shape
@@ -130,7 +139,11 @@ class TitansMAC(nn.Module):
             check_finite(observed, "La salida de atención")
             if self.config.memory_mode == "online":
                 next_memory = self.memory.update(
-                    observed, state.memory, differentiable=differentiable
+                    observed,
+                    state.memory,
+                    differentiable=differentiable,
+                    gate_shift=gate_shift,
+                    surprise=surprise,
                 )
             else:
                 next_memory = copy_state(state.memory, differentiable=differentiable)

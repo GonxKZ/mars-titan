@@ -143,3 +143,5 @@ se obtendría operando. No incluye préstamo, impacto ni restricciones de capaci
 la población tiene sesgo de supervivencia. Un Sharpe alto en el periodo de evaluación
 no prueba que la señal sea útil fuera de él. El resultado se interpreta siempre junto
 con la pregunta predictiva principal.
+El [análisis de sobreajuste del backtest](backtest-overfitting.md) mide con PBO y DSR
+cuánto resiste la afirmación de que un modelo tiene la mejor cartera.

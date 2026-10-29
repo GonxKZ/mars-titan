@@ -97,6 +97,7 @@ class FinancialDustAdapter:
             "session_rank_inputs",
             "session_ic_objective",
             "opponent_heads",
+            "mature_reliability",
         )
         if (
             config.variant != "transformer_direct"

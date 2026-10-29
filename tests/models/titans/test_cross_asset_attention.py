@@ -293,6 +293,7 @@ def test_the_source_enters_the_trainer_identity_only_when_active():
                 cross_asset_attention=config,
                 asset_groups=None,
                 holographic_network=None,
+                mature_reliability=None,
             )
         )
         assert (name in trainer._code()) is present

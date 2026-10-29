@@ -104,6 +104,7 @@ from .regional_variants import (
     build_regional_variant,
     parse_regional_variant,
 )
+from .reliability_gates import MatureReliability, ReliabilityGates
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
@@ -199,6 +200,9 @@ class FinancialConfig:
     auxiliary_horizons: AuxiliaryHorizons | None = None
     # A4 de #749: cabezas oponentes con integrador neutral, otro objetivo de salida.
     opponent_heads: OpponentHeads | None = None
+    # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    mature_reliability: MatureReliability | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -451,6 +455,16 @@ class FinancialConfig:
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
+        if isinstance(self.mature_reliability, dict):
+            if set(self.mature_reliability) != {f.name for f in fields(MatureReliability)}:
+                raise ValueError("mature_reliability debe declarar todos sus campos")
+            object.__setattr__(
+                self, "mature_reliability", MatureReliability(**self.mature_reliability)
+            )
+        if self.mature_reliability is not None and (
+            type(self.mature_reliability) is not MatureReliability or self.variant != "mac_online"
+        ):
+            raise ValueError("mature_reliability necesita MatureReliability y mac_online")
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -547,6 +561,8 @@ class FinancialConfig:
             result.update(asset_groups=groups)
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
+        if self.mature_reliability is not None:
+            result.update(mature_reliability=self.mature_reliability.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -603,6 +619,8 @@ class PreparedDecisions:
     next_context: object = None
     # Solo con un objetivo de salida de #749: [flujos, k] salidas que usa su pérdida.
     outputs: torch.Tensor | None = None
+    # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
+    surprise: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -634,6 +652,9 @@ class FinancialPredictor(nn.Module):
             or config.hidden_size > 64
         ):
             raise ValueError("El control local requiere MAC online de dimensión hasta 64")
+        # C vuelve a calcular la escritura de MAC sin la señal de #791.
+        if local_control is not None and config.mature_reliability is not None:
+            raise ValueError("La fiabilidad madura no se combina con el control local")
         self.config = config
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -802,6 +823,12 @@ class FinancialPredictor(nn.Module):
                 dtype=dtype,
             )
             if config.asset_groups is not None
+            else None
+        )
+        # #791 empieza con pesos nulos y no consume ningún generador.
+        self.reliability_gates = (
+            ReliabilityGates(config.mature_reliability, dtype=dtype)
+            if config.mature_reliability is not None
             else None
         )
         # F5 usa su propio generador derivado de la semilla, como PT6.
@@ -1435,13 +1462,15 @@ class FinancialPredictor(nn.Module):
         context=None,
         context_selection=None,
         session_complete=False,
+        reliability=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
         Las comprobaciones de datos en CUDA se resuelven juntas antes de devolver, con el
         mismo error y mensaje que en su línea, para no esperar al dispositivo en cada una.
         `session_complete=True` declara que el bloque contiene todas las filas de su instante,
-        condición que exigen las operaciones por sesión de #749.
+        condición que exigen las operaciones por sesión de #749. Con #791, `reliability` es
+        la señal de fiabilidad del mercado de cada fila, [filas, consumidores, velocidades].
         """
         with deferred_checks():
             return self._prepare(
@@ -1453,6 +1482,7 @@ class FinancialPredictor(nn.Module):
                 context=context,
                 context_selection=context_selection,
                 session_complete=session_complete,
+                reliability=reliability,
             )
 
     def _prepare(
@@ -1466,6 +1496,7 @@ class FinancialPredictor(nn.Module):
         context,
         context_selection=None,
         session_complete=False,
+        reliability=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1508,6 +1539,13 @@ class FinancialPredictor(nn.Module):
             self.local_control._resolve_selection(
                 control_selection, control_context_id, batch.flow_ids, state.observed_steps
             )
+        if self.reliability_gates is None:
+            if reliability is not None:
+                raise ValueError("El predictor no declara la señal de fiabilidad madura")
+        elif reliability is None:
+            raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
+        else:
+            self.reliability_gates.validate(reliability, len(batch.flow_ids))
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -1565,9 +1603,14 @@ class FinancialPredictor(nn.Module):
                     extra = torch.zeros_like(token).index_copy(0, positions, part)
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
+            gates, sink = {}, None
+            if self.reliability_gates is not None:
+                gates = dict(gate_shift=self.reliability_gates(reliability))
+                if self.config.mature_reliability.source == "titans_surprise":
+                    sink = gates["surprise"] = []
             if self.mac:
                 encoded, next_mac = self.mac(
-                    observed.unsqueeze(1), state.mac, differentiable=differentiable
+                    observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
                 )
             else:
                 encoded, next_mac = token, None
@@ -1627,6 +1670,7 @@ class FinancialPredictor(nn.Module):
             quantiles,
             next_context,
             outputs,
+            surprise=None if sink is None else sink[0],
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

@@ -45,6 +45,7 @@ _TITANS_MODULES = (
     "bank_readout",
     "laplace_scale",
     "opponent_heads",
+    "reliability_gates",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -366,6 +367,9 @@ class FrozenFinancialConsumer:
         # Ni los grupos de activos de H4, que como C5 mezclan las filas de la sesión.
         if predictor.asset_groups is not None:
             raise ValueError("El consumidor congelado aún no registra los grupos de activos")
+        # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
+        if predictor.reliability_gates is not None:
+            raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
