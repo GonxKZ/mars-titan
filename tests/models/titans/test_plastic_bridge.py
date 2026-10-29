@@ -166,7 +166,8 @@ def test_a_non_finite_weight_is_refused():
     net = network(replace(H1, areas=19))
     bias = edge_bias(net)
     bias[2, 3] = math.nan
-    with pytest.raises(ValueError, match="finit"):
+    # La red rechaza los pesos antes de usarlos, no al revisar la salida.
+    with pytest.raises(ValueError, match="pesos rápidos del puente contiene NaN"):
         net(*module_inputs(), edge_bias=bias, traces=[])
 
 
