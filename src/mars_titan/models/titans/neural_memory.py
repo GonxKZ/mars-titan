@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from .bank_readout import BankReadout
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
 from .plasticity import initial_history, validate_history
@@ -83,6 +84,12 @@ class NeuralMemory(nn.Module):
                 logits = config.gate_bias.logits(config.theta_max, config.stability)
                 for gate, value in zip(gates, logits, strict=True):
                     gate.bias = nn.Parameter(torch.full((gate.out_features,), value, dtype=dtype))
+                if config.time_scales is not None:
+                    # U2 da a cada fila de α su propia semivida inicial, también sin RNG.
+                    rows = config.time_scales.alpha_logits(
+                        config.gate_bias, config.dim, config.theta_max, config.stability
+                    )
+                    self.alpha_projection.bias = nn.Parameter(torch.tensor(rows, dtype=dtype))
             if config.qkv_convolution:
                 # Se sortean después de los parámetros anteriores para que estos conserven
                 # sus valores con la misma semilla.
@@ -97,6 +104,12 @@ class NeuralMemory(nn.Module):
             if config.bank_readout is not None
             else None
         )
+        if config.huber is not None:
+            # El umbral de R1 empieza con w = 0 y un bias constante, sin consumir RNG.
+            self.huber_weight = nn.Parameter(torch.zeros(1, config.dim, dtype=dtype))
+            self.huber_bias = nn.Parameter(
+                torch.full((config.dim,), config.huber.bias, dtype=dtype)
+            )
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -558,6 +571,8 @@ class NeuralMemory(nn.Module):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        if self.config.huber is not None:
+            raise ValueError("La memoria compartida de PT4 conserva la pérdida L2")
         self._check_shared(observed, state)
         require_true(
             (state.steps < torch.iinfo(torch.int64).max).all(),
@@ -652,7 +667,8 @@ class NeuralMemory(nn.Module):
 
         `gate_shift` suma a los logits de θ y α el desplazamiento por fila de #791, con forma
         [filas, 1], en las claves `write` y `forget`. Si `surprise` es una lista, recibe por
-        token la pérdida asociativa de cada fila con la memoria anterior, sin grafo.
+        token la pérdida asociativa de cada fila con la memoria anterior, sin grafo. Con R1 de
+        #786 esa pérdida es la de Huber por canal.
         """
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -704,10 +720,16 @@ class NeuralMemory(nn.Module):
                     differentiable,
                 )
                 residual = prediction.squeeze(1) - values
-                loss = residual.square().sum()
+                if self.config.huber is None:
+                    elements = residual.square()
+                else:
+                    # R1 cambia r² por 2·H_δ en cada canal. Dentro del umbral sigue siendo r².
+                    threshold = huber_threshold(self.huber_weight, self.huber_bias, token, values)
+                    elements = huber_elements(residual, threshold)
+                loss = elements.sum()
                 check_finite(loss, "La pérdida asociativa")
                 if surprise is not None:
-                    surprise.append(residual.detach().square().sum(-1))
+                    surprise.append(elements.detach().sum(-1))
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 observation = {} if self.observer is not None else None
                 weights, momentum, levels, modulation = self._write(

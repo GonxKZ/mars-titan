@@ -46,6 +46,8 @@ from .cross_asset_attention import (
     CrossAssetAttentionConfig,
     parse_cross_asset_attention,
 )
+from .differential_attention import DIFFERENTIAL_ATTENTION
+from .differential_attention import identity as differential_identity
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -59,6 +61,7 @@ from .holographic_network import (
     area_layout,
     parse_holographic_network,
 )
+from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
@@ -99,6 +102,7 @@ from .regional_variants import (
     parse_regional_variant,
 )
 from .reliability_gates import MatureReliability, ReliabilityGates
+from .scale_invariant_time import ScaleInvariantTime
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
@@ -193,6 +197,11 @@ class FinancialConfig:
     # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
     # declararla, la identidad y el cálculo no cambian.
     mature_reliability: MatureReliability | None = None
+    # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
+    # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
+    memory_huber: HuberMemory | None = None
+    memory_time_scales: ScaleInvariantTime | None = None
+    differential_attention: str | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -443,6 +452,7 @@ class FinancialConfig:
             type(self.mature_reliability) is not MatureReliability or self.variant != "mac_online"
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
+        self._check_core_variants()
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -460,6 +470,35 @@ class FinancialConfig:
             or self.refinements != 1
         ):
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
+
+    def _check_core_variants(self):
+        """R1 y U2 cambian la escritura de la memoria y U1 la atención de MAC."""
+        for name, kind in (
+            ("memory_huber", HuberMemory),
+            ("memory_time_scales", ScaleInvariantTime),
+        ):
+            value = getattr(self, name)
+            if isinstance(value, dict):
+                if set(value) != {f.name for f in fields(kind)}:
+                    raise ValueError(f"{name} debe declarar todos sus campos")
+                object.__setattr__(self, name, kind(**value))
+            elif value is not None and type(value) is not kind:
+                raise ValueError(f"{name} necesita {kind.__name__}, sus valores o None")
+        if (
+            self.memory_huber is not None or self.memory_time_scales is not None
+        ) and self.variant != "mac_online":
+            raise ValueError("La pérdida de Huber y las semividas geométricas necesitan mac_online")
+        if self.memory_time_scales is not None:
+            if self.gate_bias is None:
+                raise ValueError("memory_time_scales reparte la semivida de gate_bias")
+            self.memory_time_scales.alpha_logits(
+                self.gate_bias, self.hidden_size, MemoryConfig.theta_max, self.memory_stability
+            )
+        if self.differential_attention is not None and (
+            self.differential_attention != DIFFERENTIAL_ATTENTION
+            or self.variant == "transformer_direct"
+        ):
+            raise ValueError(f"differential_attention admite {DIFFERENTIAL_ATTENTION} con MAC")
 
     def identity(self):
         result = dict(
@@ -535,6 +574,12 @@ class FinancialConfig:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
             result.update(mature_reliability=self.mature_reliability.identity())
+        if self.memory_huber is not None:
+            result.update(memory_huber=self.memory_huber.identity())
+        if self.memory_time_scales is not None:
+            result.update(memory_time_scales=self.memory_time_scales.identity())
+        if self.differential_attention is not None:
+            result.update(differential_attention=differential_identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -627,6 +672,13 @@ class FinancialPredictor(nn.Module):
         # C vuelve a calcular la escritura de MAC sin la señal de #791.
         if local_control is not None and config.mature_reliability is not None:
             raise ValueError("La fiabilidad madura no se combina con el control local")
+        # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
+        if local_control is not None and (
+            config.memory_huber is not None
+            or config.memory_time_scales is not None
+            or config.differential_attention is not None
+        ):
+            raise ValueError("Las variantes del núcleo de #786 necesitan su propio contraste con C")
         self.config = config
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -760,6 +812,8 @@ class FinancialPredictor(nn.Module):
                         plasticity=config.memory_plasticity,
                         key_competition=config.memory_key_competition,
                         bank_readout=config.memory_bank_readout,
+                        huber=config.memory_huber,
+                        time_scales=config.memory_time_scales,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -767,6 +821,7 @@ class FinancialPredictor(nn.Module):
                     memory_mode=config.variant.removeprefix("mac_"),
                     parameter_seed=config.seed,
                     attention_layout=config.attention_layout,
+                    differential_attention=config.differential_attention,
                 ),
                 dtype=dtype,
             )
