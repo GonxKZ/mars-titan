@@ -42,12 +42,15 @@ def test_the_standard_error_is_the_spread_of_the_block_bootstrap_means():
 
 
 def test_the_sessions_of_one_utc_day_are_resampled_together():
-    # Días con una y con tres sesiones: el bootstrap sortea días, cada día arrastra todas sus
-    # sesiones y la media de cada réplica se pondera por las sesiones que entran.
-    day = np.repeat(np.arange(SESSIONS // 2), np.tile([1, 3], SESSIONS // 4))
+    # Días con una, tres y dos sesiones: el bootstrap sortea días, cada día arrastra todas sus
+    # sesiones y la media de cada réplica se pondera por las sesiones que entran. Con un
+    # periodo de tres días, un bloque de ocho cubre 15, 16 o 17 sesiones según dónde empiece,
+    # así que las réplicas no tienen todas el tamaño de la muestra.
+    day = np.repeat(np.arange(SESSIONS // 2), np.tile([1, 3, 2], SESSIONS // 6))
     differences = noise(17)
     error = rh.standard_error(differences, day, block_days=8, replicates=500, seed=7)
     counts = circular_block_counts(np.random.default_rng(7), 500, SESSIONS // 2, 8)[:, day]
+    assert len(set(counts.sum(axis=1).tolist())) > 1
     means = counts @ differences / counts.sum(axis=1)
     assert error == pytest.approx(means.std(ddof=1), rel=1e-12)
 
