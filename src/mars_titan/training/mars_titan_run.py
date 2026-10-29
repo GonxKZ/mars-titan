@@ -76,7 +76,6 @@ from .common_epoch import chosen_state
 from .determinism import (
     TORCH_DETERMINISTIC,
     declared_determinism,
-    require_determinism,
     valid_determinism,
 )
 from .financial_run import FlowStates, Paused, _compatible, _read_report
@@ -977,7 +976,6 @@ class ReadoutTrainer(MarsTitanInference):
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.identity.get("kernel_policy"))
-        require_determinism(self.recipe.determinism, self.identity.get("determinism"))
         self.predictor.verify_parameter_identity()
         if self.predictor._parameter_id != self.identity["parent"]["parameters_sha256"]:
             raise ValueError("El padre congelado cambió durante el ajuste del lector")

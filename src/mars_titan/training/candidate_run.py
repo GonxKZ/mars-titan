@@ -64,7 +64,6 @@ from .checkpoints import (
 from .determinism import (
     TORCH_DETERMINISTIC,
     declared_determinism,
-    require_determinism,
     valid_determinism,
 )
 from .financial_run import _compatible
@@ -817,7 +816,6 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.kernel_policy)
-        require_determinism(self.recipe.determinism, self.determinism)
 
     def _extra_state(self):
         """Estado ajustable fuera del módulo nativo. El ajuste del candidato no tiene ninguno."""

@@ -63,7 +63,6 @@ from .common_epoch import chosen_state
 from .determinism import (
     TORCH_DETERMINISTIC,
     declared_determinism,
-    require_determinism,
     valid_determinism,
 )
 from .horizon_labels import HorizonLabels
@@ -1057,7 +1056,6 @@ class ChronologicalTrainer(ChronologicalInference):
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.kernel_policy)
-        require_determinism(self.recipe.determinism, self.determinism)
 
     def _task_loss(self, prediction, target, keys):
         """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5].

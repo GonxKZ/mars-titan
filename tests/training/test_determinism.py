@@ -60,7 +60,6 @@ def test_the_policy_turns_on_the_deterministic_algorithms_and_cudnn():
         cublas_workspace=":4096:8",
     )
     assert determinism.determinism_identity(POLICY) == identity
-    determinism.require_determinism(POLICY, identity)
 
 
 @pytest.mark.parametrize("workspace", [None, "", ":4096:2", "4096:8", ":16:8 "])
@@ -132,19 +131,23 @@ def test_the_initial_workspace_is_unknown_without_proc(monkeypatch):
     ids=["algorithms", "warn_only", "cudnn_deterministic", "cudnn_benchmark"],
 )
 def test_the_identity_fails_when_the_process_leaves_the_policy(leave):
-    identity = determinism.apply_determinism(POLICY)
+    determinism.apply_determinism(POLICY)
     leave()
     with pytest.raises(ValueError, match="determinismo declarado"):
         determinism.determinism_identity(POLICY)
-    with pytest.raises(ValueError, match="determinismo declarado"):
-        determinism.require_determinism(POLICY, identity)
+
+
+def test_the_identity_names_only_the_declared_policy():
+    determinism.apply_determinism(POLICY)
+    for policy in ("deterministic", None):
+        with pytest.raises(ValueError, match="determinismo declarado"):
+            determinism.determinism_identity(policy)
 
 
 def test_a_changed_workspace_changes_the_identity(monkeypatch):
     identity = determinism.apply_determinism(POLICY)
     monkeypatch.setenv(determinism.WORKSPACE_VARIABLE, ":16:8")
-    with pytest.raises(ValueError, match="cambió durante el recorrido"):
-        determinism.require_determinism(POLICY, identity)
+    assert determinism.determinism_identity(POLICY) == dict(identity, cublas_workspace=":16:8")
 
 
 @pytest.mark.parametrize("policy", ["deterministic", POLICY.upper(), True, 1, ""])
@@ -164,7 +167,6 @@ def test_undeclared_determinism_keeps_the_process_and_the_previous_identity():
     assert determinism.valid_determinism(None) and determinism.valid_determinism(POLICY)
     assert determinism.declared_determinism(None) is None
     assert not torch.are_deterministic_algorithms_enabled()
-    determinism.require_determinism(None, None)
     for recipe in RECIPES:
         assert "determinism" not in recipe().identity()
         declared = recipe(determinism=POLICY).identity()
@@ -172,7 +174,11 @@ def test_undeclared_determinism_keeps_the_process_and_the_previous_identity():
         assert {k: v for k, v in declared.items() if k != "determinism"} == recipe().identity()
 
 
-def test_declared_determinism_enters_the_run_identity_and_is_checked(shared, tmp_path):  # noqa: F811
+def test_declared_determinism_enters_the_run_identity_and_is_checked(
+    shared,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
     _, streams = shared
     plain = trainer(streams, tmp_path / "plain")
     assert "determinism" not in plain.identity
@@ -184,6 +190,13 @@ def test_declared_determinism_enters_the_run_identity_and_is_checked(shared, tmp
     assert fixed.identity["numerics"]["deterministic"] is True
     assert MODULE in fixed.identity["implementation"]
     assert fixed.run_id != plain.run_id
+    fixed._check_runtime()
+    # `_numerics` guarda el espacio de trabajo y las banderas, así que el recorrido detecta
+    # cualquier cambio de los dos.
+    monkeypatch.setenv(determinism.WORKSPACE_VARIABLE, ":16:8")
+    with pytest.raises(ValueError, match="configuración numérica"):
+        fixed._check_runtime()
+    monkeypatch.setenv(determinism.WORKSPACE_VARIABLE, ":4096:8")
     fixed._check_runtime()
     torch.use_deterministic_algorithms(True, warn_only=True)
     with pytest.raises(ValueError, match="configuración numérica"):

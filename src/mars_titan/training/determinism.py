@@ -7,8 +7,9 @@ de trabajo fijo, que se declara en `CUBLAS_WORKSPACE_CONFIG` antes de crear su p
 cuDNN necesita además `deterministic=True` y `benchmark=False`.
 
 La política no toca la aritmética declarada. Se combina con el FP32 estricto de
-`kernel_policy` y su identidad entra en la de cada ajuste que la declara. Sin declararla, el
-proceso y la identidad quedan como estaban.
+`kernel_policy` y su identidad entra en la de cada ajuste que la declara. Durante el recorrido
+no necesita otra comprobación: `_check_runtime` compara `_numerics`, que ya registra estas
+banderas y el espacio de trabajo. Sin declararla, el proceso y la identidad quedan como estaban.
 """
 
 import os
@@ -90,9 +91,3 @@ def apply_determinism(policy):
 def declared_determinism(policy):
     """Aplicar la política de una receta. Sin política declarada no cambia nada."""
     return None if policy is None else apply_determinism(policy)
-
-
-def require_determinism(policy, identity):
-    """Exigir que el proceso siga cumpliendo la política registrada al empezar."""
-    if identity is not None and determinism_identity(policy) != identity:
-        raise ValueError("El determinismo del proceso cambió durante el recorrido")
