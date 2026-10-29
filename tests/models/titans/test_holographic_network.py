@@ -785,6 +785,7 @@ def test_the_source_and_its_catalog_enter_the_trainer_identity_only_when_active(
                 regional_variant=None,
                 cross_asset_attention=None,
                 holographic_network=config,
+                mature_reliability=None,
             )
         )
         code = trainer._code()

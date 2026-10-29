@@ -65,6 +65,7 @@ PREDICTOR_CHANGES = (
     "laplace_scale_head",
     "auxiliary_horizons",
     "opponent_heads",
+    "mature_reliability",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -94,8 +95,8 @@ def checked_predictor_changes(changes):
             "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
             "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion, "
             "regional_execution, memory_bank_readout, regional_variant, holographic_network, "
-            "session_ic_objective, cross_asset_attention, laplace_scale_head, auxiliary_horizons "
-            "y opponent_heads como objetos no vacíos, "
+            "session_ic_objective, cross_asset_attention, laplace_scale_head, auxiliary_horizons, "
+            "opponent_heads y mature_reliability como objetos no vacíos, "
             "y presence_modulation, attention_layout, temporal_encoder y session_rank_inputs "
             "como nombres no vacíos"
         )
