@@ -66,6 +66,10 @@ PREDICTOR_CHANGES = (
     "laplace_scale_head",
     "auxiliary_horizons",
     "opponent_heads",
+    "mature_reliability",
+    "memory_huber",
+    "memory_time_scales",
+    "differential_attention",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -73,6 +77,7 @@ NAMED_CHANGES = (
     "attention_layout",
     "temporal_encoder",
     "session_rank_inputs",
+    "differential_attention",
 )
 
 
@@ -96,9 +101,9 @@ def checked_predictor_changes(changes):
             "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion, "
             "regional_execution, memory_bank_readout, regional_variant, holographic_network, "
             "axial_time_region, session_ic_objective, cross_asset_attention, laplace_scale_head, "
-            "auxiliary_horizons y opponent_heads como objetos no vacíos, "
-            "y presence_modulation, attention_layout, temporal_encoder y session_rank_inputs "
-            "como nombres no vacíos"
+            "auxiliary_horizons, opponent_heads, mature_reliability, memory_huber y "
+            "memory_time_scales como objetos no vacíos, y presence_modulation, attention_layout, "
+            "temporal_encoder, session_rank_inputs y differential_attention como nombres no vacíos"
         )
     return changes
 
