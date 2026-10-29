@@ -48,6 +48,7 @@ from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
 from mars_titan.models.titans.episodic_readout import (
+    FAMILIARITY_GATES,
     REFINEMENT_INITIALIZATIONS,
     EpisodicReadout,
     apply_episodic_readout,
@@ -155,6 +156,8 @@ class ReadoutRecipe:
     supervised_refinements: tuple[int, ...] | None = None
     # None conserva el determinismo del proceso, como en la receta del núcleo (#794).
     determinism: str | None = None
+    # R3 de #786. None conserva el lector y la identidad anteriores.
+    familiarity_gate: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
@@ -198,6 +201,13 @@ class ReadoutRecipe:
             or type(self.refinement_initialization) is not str
             or self.refinement_initialization not in REFINEMENT_INITIALIZATIONS
             or (
+                self.familiarity_gate is not None
+                and (
+                    type(self.familiarity_gate) is not str
+                    or self.familiarity_gate not in FAMILIARITY_GATES
+                )
+            )
+            or (
                 clip is not None
                 and (type(clip) not in (int, float) or not math.isfinite(clip) or clip <= 0)
             )
@@ -221,6 +231,8 @@ class ReadoutRecipe:
             fields.pop("supervised_refinements")
         if fields["determinism"] is None:
             fields.pop("determinism")
+        if fields["familiarity_gate"] is None:
+            fields.pop("familiarity_gate")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -459,6 +471,7 @@ class MarsTitanInference:
             or readout.config.temperature != recipe.temperature
             or readout.config.max_working_bytes != recipe.max_working_bytes
             or readout.config.refinement_initialization != recipe.refinement_initialization
+            or readout.config.familiarity_gate != recipe.familiarity_gate
             or recipe.block_rows > min(config.max_batch, readout.config.max_batch)
         ):
             raise ValueError("El lector no corresponde al padre o a la receta declarada")
