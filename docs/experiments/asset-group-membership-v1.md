@@ -110,21 +110,21 @@ H4 se rechaza junto a C5, porque son dos respuestas a la misma pregunta, y junto
 
 ## Coste
 
-La medida CPU del 29 de octubre (`benchmarks/asset_groups_cost.py`, commit `fa5da1608`, [recibo](../../reports/engineering/asset-group-membership-20261029/cost-cpu.json)) llama solo al módulo con representaciones aleatorias en FP32, H = 64 y la configuración declarada. Las ventanas son sintéticas, con un factor de mercado, cuatro sectores y ruido propio, y solo fijan las formas. Se usaron dos hilos, tres calentamientos y veinte repeticiones en cada uno de los dos órdenes de los modos, sin optimizador. El equipo tenía otras baterías de pruebas en marcha, con una carga media de un minuto de 28,7 al empezar y 28,5 al terminar en 16 hilos, así que los percentiles son descriptivos. `memberships` mide solo las pertenencias, `forward` la inferencia sin gradiente y `backward` añade la propagación de una suma de cuadrados hasta los parámetros de H4.
+La medida CPU del 29 de octubre (`benchmarks/asset_groups_cost.py`, commit `eb06ca91c`, [recibo](../../reports/engineering/asset-group-membership-20261029/cost-cpu.json)) llama solo al módulo con representaciones aleatorias en FP32, H = 64 y la configuración declarada. Las ventanas son sintéticas, con un factor de mercado, cuatro sectores y ruido propio, y solo fijan las formas. Se usaron dos hilos, tres calentamientos y veinte repeticiones en cada uno de los dos órdenes de los modos, sin optimizador. El equipo tenía otras baterías de pruebas en marcha, con una carga media de un minuto de 25,8 al empezar y 25,9 al terminar en 16 hilos, así que los percentiles son descriptivos. `memberships` mide solo las pertenencias, `forward` la inferencia sin gradiente y `backward` añade la propagación de una suma de cuadrados hasta los parámetros de H4.
 
 | Filas | Sesiones | Pasada | H4 | Control barajado | Control sectorial |
 | ---: | ---: | --- | ---: | ---: | ---: |
-| 64 | 1 | Pertenencias | 9,95 ms (27,01) | 10,91 ms (14,65) | 0,13 ms (0,18) |
-| 64 | 1 | Forward | 10,89 ms (12,40) | 11,90 ms (32,94) | 0,74 ms (3,82) |
-| 64 | 1 | Backward | 12,66 ms (17,20) | 13,05 ms (16,36) | 2,08 ms (2,44) |
-| 256 | 1 | Pertenencias | 16,88 ms (22,52) | 17,04 ms (21,75) | 0,38 ms (0,43) |
-| 256 | 1 | Forward | 18,00 ms (20,13) | 19,30 ms (26,45) | 1,54 ms (1,82) |
-| 256 | 1 | Backward | 21,39 ms (27,81) | 20,82 ms (26,73) | 3,29 ms (5,80) |
-| 1.024 | 4 | Pertenencias | 75,38 ms (87,36) | 74,00 ms (82,01) | 1,79 ms (1,99) |
-| 1.024 | 4 | Forward | 75,16 ms (109,06) | 79,14 ms (95,36) | 5,04 ms (5,81) |
-| 1.024 | 4 | Backward | 80,63 ms (96,47) | 84,90 ms (103,31) | 10,07 ms (18,40) |
+| 64 | 1 | Pertenencias | 12,05 ms (14,50) | 12,76 ms (16,68) | 0,16 ms (0,19) |
+| 64 | 1 | Forward | 13,66 ms (14,55) | 13,66 ms (15,15) | 0,93 ms (1,00) |
+| 64 | 1 | Backward | 14,04 ms (17,02) | 14,65 ms (19,83) | 2,35 ms (2,62) |
+| 256 | 1 | Pertenencias | 17,89 ms (20,68) | 17,66 ms (21,88) | 0,43 ms (0,53) |
+| 256 | 1 | Forward | 19,35 ms (21,27) | 20,14 ms (21,91) | 1,41 ms (1,57) |
+| 256 | 1 | Backward | 20,18 ms (33,22) | 19,51 ms (22,85) | 3,37 ms (4,51) |
+| 1.024 | 4 | Pertenencias | 70,41 ms (78,03) | 72,90 ms (93,32) | 2,01 ms (24,88) |
+| 1.024 | 4 | Forward | 71,47 ms (85,15) | 77,25 ms (85,16) | 5,15 ms (6,30) |
+| 1.024 | 4 | Backward | 79,09 ms (87,69) | 80,53 ms (84,80) | 10,10 ms (11,68) |
 
-Cada celda da la mediana y, entre paréntesis, el percentil 95. Los tres modos tienen 12.544 parámetros. Las pertenencias se llevan casi todo el tiempo, y el coste crece con el número de sesiones más que con sus filas, porque cada sesión recorre sus 32 iteraciones y su descomposición propia por separado. El control barajado cuesta lo mismo que H4 y el sectorial es mucho más barato porque no mide la ventana. Con 256 activos, los 18 a 21 ms de H4 serían del orden del 6 al 7 % de los 0,31 s por instante del forward con grafo del predictor completo, medido también con dos hilos para la [fiabilidad madura](mature-reliability-signal-v1.md), aunque esa relación no se ha medido en un mismo proceso. No se han medido la memoria, la VRAM ni la energía.
+Cada celda da la mediana y, entre paréntesis, el percentil 95. Los tres modos tienen 12.544 parámetros. Las pertenencias se llevan casi todo el tiempo, y el coste crece con el número de sesiones más que con sus filas, porque cada sesión recorre sus 32 iteraciones y su descomposición propia por separado. El control barajado cuesta lo mismo que H4 y el sectorial es mucho más barato porque no mide la ventana. Con 256 activos, los 19 a 20 ms de H4 serían del orden del 6 al 7 % de los 0,31 s por instante del forward con grafo del predictor completo, medido también con dos hilos para la [fiabilidad madura](mature-reliability-signal-v1.md), aunque esa relación no se ha medido en un mismo proceso. La medida anterior, sobre `fa5da1608` y antes de la tolerancia al redondeo, dio valores del mismo orden. No se han medido la memoria, la VRAM ni la energía.
 
 En CUDA, `torch.linalg.eigh` sincroniza el dispositivo con el anfitrión, según la documentación de PyTorch 2.14, así que H4 añadiría una sincronización por sesión y pasada. La medida CUDA dirá si compensa calcular las sesiones de un bloque en una sola llamada por lotes.
 
