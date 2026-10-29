@@ -3,6 +3,7 @@
 import importlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -95,3 +96,42 @@ def test_the_optimizer_guard_covers_every_measure(monkeypatch):
     cost.run("cpu")
     assert events[0] is cost.forbid_optimizer_steps and events[-1] == "removed"
     assert set(events[1:-1]) == {"measured"}
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [
+        ("memberships", [("memberships", ["US/A", "US/B"])]),
+        ("forward", [("call", False)]),
+        ("backward", [("zero_grad", True), ("call", True), ("backward", True)]),
+    ],
+)
+def test_the_warmup_calls_run_before_the_measured_ones(monkeypatch, kind, expected):
+    monkeypatch.setattr(cost, "WARMUP", 2)
+    monkeypatch.setattr(cost, "REPETITIONS", 3)
+    calls, synchronized = [], []
+
+    class Module:
+        # Con el sector actual la medida no reparte grupos y solo llama a `memberships`.
+        config = SimpleNamespace(mode="current_sector")
+
+        def sessions(self, markets, instants):
+            return [(("US", 1), [0, 1])]
+
+        def memberships(self, prices, flows, key):
+            calls.append(("memberships", flows))
+
+        def zero_grad(self, set_to_none):
+            calls.append(("zero_grad", set_to_none))
+
+        def __call__(self, *arguments):
+            calls.append(("call", torch.is_grad_enabled()))
+            value = torch.ones(2, requires_grad=True)
+            value.register_hook(lambda grad: calls.append(("backward", True)))
+            return value
+
+    inputs = (None, torch.zeros(2, 4), ["US/A", "US/B"], ["US", "US"], [1, 1])
+    samples = cost.measure(Module(), inputs, kind, lambda: synchronized.append(kind))
+    # Dos llamadas de calentamiento y tres medidas, cada una seguida de su sincronización.
+    assert len(samples) == 3
+    assert calls == expected * 5 and len(synchronized) == 5
