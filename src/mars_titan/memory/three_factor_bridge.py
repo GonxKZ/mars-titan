@@ -9,9 +9,9 @@ traza de elegibilidad,
     e_{ij} = (1 / (C · L)) Σ_{c,l} a^{(c,l)}_{ij},
 
 la media de las probabilidades de atención entre las dos áreas en los C ciclos y L pasos
-locales. Solo es positiva si las dos áreas están presentes, porque un área ausente no envía
-mensajes y su consulta solo se atiende a sí misma. La traza queda junto a la predicción
-pendiente y no decae mientras espera (τ_e → ∞).
+locales. Solo es positiva si las dos áreas están presentes: un área ausente no envía mensajes
+y la red anula la traza de su consulta, cuyo estado se descarta. La traza queda junto a la
+predicción pendiente y no decae mientras espera (τ_e → ∞).
 
 Cuando madura la etiqueta llega el tercer factor, de una de dos fuentes declaradas. Con la
 brecha relativa del error (`relative_error_gap`), ε = |ŷ − y| es el error absoluto de la
