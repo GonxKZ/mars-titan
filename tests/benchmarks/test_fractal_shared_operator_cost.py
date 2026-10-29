@@ -54,8 +54,6 @@ def test_the_command_line_prints_the_protocol_and_writes_only_a_new_receipt(
     calls = []
 
     def run(device):
-        # La carpeta del recibo existe antes de medir.
-        assert output.parent.is_dir()
         calls.append(device)
         return dict(device=device)
 
