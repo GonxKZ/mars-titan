@@ -118,4 +118,45 @@ recorre las filas de cada mitad con una tolerancia relativa de $10^{-12}$.
   abre posiciones queda fuera con su nombre, y el análisis se detiene si solo queda un modelo
   con cartera variable. El orden de las filas del archivo no cambia el resultado.
 
-Las mutaciones dirigidas, la cobertura y el coste se publican con su recibo cuando terminan.
+La verificación del 28 y 29 de octubre se hizo en CPU, sin pasos de optimizador:
+
+- En el commit final pasan los 80 casos de este análisis y de la
+  [escalera](../experiments/reusable-holdout-v1.md). Con coverage 7.16.1 y radon 6.0.1,
+  `backtest_overfitting.py` cubre 193/194 sentencias y 21/22 ramas. La única línea sin
+  ejecutar es la llamada a `main()` bajo `if __name__ == "__main__"`. El CRAP máximo es 11, en
+  `_market`, y las 246 líneas ejecutables cambiadas de los dos módulos quedan cubiertas. Las
+  medidas de coste no tienen pruebas y se comprueban al ejecutarlas.
+- 72 mutaciones dirigidas sobre `116ce47c8`, cada una con controles en verde antes y después
+  en una copia aislada. Cubren las fórmulas del PSR, del máximo esperado y del DSR (longitud,
+  curtosis en exceso, signo de la asimetría, constantes y raíz), los momentos de la muestra,
+  el reparto en bloques, la CSCV (empates, rango, ω̄, mediana, degradación y lotes de
+  mitades), el recorte de las sesiones más antiguas, las carteras constantes, el número de
+  ensayos y su procedencia, la lectura de la fuente y la salida. Se detectaron 71. La que
+  sobrevivió quitaba el límite de 16 bloques, porque el patrón de la prueba («par») también
+  coincidía con el mensaje de un reparto desigual. Con la frase completa y una serie que
+  sería válida sin el límite (`e84d9eaed`), la mutación repetida sobre `622ad936e` se detecta.
+
+El [recibo de verificación](../../reports/engineering/backtest-overfitting-20261029/verification.json)
+conserva los recuentos y las huellas de los informes JUnit, de la cobertura y de las
+mutaciones.
+
+## Coste
+
+`benchmarks/backtest_overfitting_cost.py` mide en CPU, con dos hilos y rendimientos normales de
+semilla fija que solo fijan las formas, 1.248 sesiones y las 12.870 mitades de $S=16$. La
+máquina tenía otras pruebas en marcha, con una carga media de 18 al empezar, así que las cifras
+son descriptivas. El [recibo](../../reports/engineering/backtest-overfitting-20261029/cost-cpu.json)
+conserva las muestras.
+
+| Modelos | CSCV, mediana | Mínimo | Pico de memoria trazado |
+| ---: | ---: | ---: | ---: |
+| 8 | 41 ms | 40 ms | 2,5 MB |
+| 30 | 56 ms | 55 ms | 2,7 MB |
+| 128 | 129 ms | 127 ms | 5,5 MB |
+| 1.024 | 828 ms | 817 ms | 31,5 MB |
+
+En 40 mitades por caso, el Sharpe calculado con los momentos de los bloques difiere del que
+recorre las filas en un error relativo de 1,7·10⁻¹³ como máximo. El análisis completo de un
+informe con 8 modelos, 3 semillas, dos mercados y dos costes (60.144 filas por sesión) tarda
+0,48 s de mediana, y con 23 modelos (172.914 filas) 1,02 s, con un pico trazado de 67 MB. No
+hay tensores, así que no se mide la GPU. Tampoco la energía.
