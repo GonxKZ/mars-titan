@@ -103,7 +103,15 @@ Las pruebas están en `tests/models/titans/test_fractal_shared_operator.py` y la
 
 ## Comprobación técnica
 
-Pendiente de la verificación final.
+El [recibo de verificación](../../reports/engineering/fractal-shared-operator-20261028/verification.json) reúne la evidencia del commit de implementación `82ffa84ab` y del último commit de código de la rama, `d408af8d0`. No hay entrenamiento ni pasos de optimizador, y el test final sigue cerrado.
+
+- Las 569 pruebas dirigidas de C3, de las regiones de correlación, de la puerta PIT y de los módulos que comparten su configuración, su estado y la identidad del entrenador pasan con cobertura de ramas. La omisión es la protección del aprendizaje.
+- La regresión de los módulos que importan los caminos cambiados reúne 7.944 pruebas. Falló la misma prueba de tiempo de las lesiones que en C2, que agotó su plazo de 100 s con la máquina cargada. #804 ajustó después ese presupuesto, y sobre el commit fusionado pasan sus 12 pruebas en 95 s.
+- Al fusionar develop con C2, #805 a #808 y los recibos atómicos, el doble del entrenador de C3 necesitó el campo `mature_reliability` y la medida pasó a escribir su recibo con `atomic_json`. En `140f2fa60` pasan 1.010 pruebas de C3, de C2, de H1, de las variantes del núcleo, de la fiabilidad madura, de los módulos que cambió la fusión y de los recibos de coste, con la omisión de la protección. Las 29 pruebas CUDA quedan fuera porque la verificación no usa la GPU.
+- Las 43 funciones con líneas cambiadas frente a develop tienen cubiertas 351 de sus 354 líneas ejecutables. Las tres restantes son los caminos CUDA de la medida de coste. El CRAP más alto es el de `FinancialConfig.__post_init__` (1.222), con complejidad 123, una deuda previa recogida en #801.
+- Las 55 mutaciones dirigidas de C3 y de su integración se detectaron con fases de control en verde antes y después. También se detectan las cuatro de la escritura atómica del recibo y las cuatro del calentamiento, el modo sin gradiente, la limpieza de gradientes y la sincronización de cada pasada de la medida.
+
+CRAP y cobertura localizan complejidad poco comprobada, pero no demuestran que no haya errores.
 
 ## Coste
 
