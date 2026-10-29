@@ -37,6 +37,7 @@ def source_reader(variant):
             cross_asset_attention=None,
             holographic_network=None,
             mature_reliability=None,
+            three_factor_bridge=None,
         )
     )
     # La receta decide si F2 y F3 añaden su código.
