@@ -3557,5 +3557,28 @@
       6
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "ye2025differential",
+    "title": "Differential Transformer",
+    "authors": [
+      "Tianzhu Ye",
+      "Li Dong",
+      "Yuqing Xia",
+      "Yutao Sun",
+      "Yi Zhu",
+      "Gao Huang",
+      "Furu Wei"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2410.05258",
+    "access": "Leídas en la versión HTML de arXiv:2410.05258v2 las ecuaciones de la sección 2.1, con la atención diferencial, la reparametrización de λ, λ_init y la normalización por cabeza, y la arquitectura de la sección 2.2. La página de arXiv indica su aceptación como presentación oral en ICLR 2025. No se ha consultado la ficha de las actas ni se reproducen sus experimentos.",
+    "redistribution": "unknown",
+    "relevance": "Fuente de U1 de #786. La adaptación a MAC parte de λ nulo, sin normalización por cabeza ni el factor (1 − λ_init), y no hereda los resultados del artículo.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-28"
   }
 ]

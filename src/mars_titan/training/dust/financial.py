@@ -98,6 +98,9 @@ class FinancialDustAdapter:
             "session_ic_objective",
             "opponent_heads",
             "mature_reliability",
+            "memory_huber",
+            "memory_time_scales",
+            "differential_attention",
         )
         if (
             config.variant != "transformer_direct"

@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **374 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **375 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -52,7 +52,9 @@ El mismo día se añadieron dos fuentes de la
 [red de redes holográfica H1](../experiments/holographic-network-v1.md):
 Puigcerver et al. (2024), cuyo despacho y combinación usan sus ranuras ocultas, y
 Tan et al. (2025), la pertenencia blanda de MaGNet de la que se aparta su partida
-desde el catálogo.
+desde el catálogo. También se añadió al catálogo posterior a Titans el Transformer
+diferencial de Ye et al. (2025), fuente de la
+[atención diferencial U1](../experiments/differential-attention-v1.md).
 
 El 29 de octubre se añadieron al catálogo adversarial la lista REFORMS de Kapoor et
 al. (2024), que ordena la [revisión del estudio](../research/reforms-checklist.md)

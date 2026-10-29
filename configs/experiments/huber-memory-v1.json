@@ -1,0 +1,42 @@
+{
+  "kind": "huber_memory_variants",
+  "schema_version": 1,
+  "issue": 786,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "estimated_gpu_hours_per_arm_with_five_seeds": 4.4,
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "huber_memory": {
+      "role": "variant",
+      "predictor_changes": {
+        "memory_huber": {
+          "initial_ratio": 1.0
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "huber_against_l2",
+      "variant": "huber_memory",
+      "control": "reference"
+    }
+  ],
+  "reasons": {
+    "initial_ratio": "a_channel_is_clipped_when_its_residual_exceeds_the_rms_of_the_target_value",
+    "threshold": "input_dependent_as_in_yaad_with_a_rank_one_dependence_like_eta_and_theta",
+    "start": "an_infinite_threshold_reproduces_l2_but_gives_no_gradient_to_the_threshold",
+    "opposite_of": "E3_salience_writes_that_emphasize_large_errors",
+    "gpu_hours": "one_fit_definition_of_the_screening_with_its_cost_reference_and_a_measured_cpu_ratio_near_one"
+  }
+}
