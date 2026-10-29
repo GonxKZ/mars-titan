@@ -104,6 +104,13 @@ _WEIGHT_MODULES = dict(
     schedule_free="mars_titan.training.schedule_free",
     shrink_perturb="mars_titan.training.shrink_perturb",
 )
+# Variantes de #751 cuyo código solo entra en la identidad cuando el predictor las declara.
+_PREDICTOR_MODULES = dict(
+    regional_variant="mars_titan.models.titans.regional_variants",
+    cross_asset_attention="mars_titan.models.titans.cross_asset_attention",
+    axial_time_region="mars_titan.models.titans.axial_time_region",
+    fractal_shared_operator="mars_titan.models.titans.fractal_shared_operator",
+)
 
 
 # Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
@@ -1052,21 +1059,17 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        if self.predictor.config.regional_variant is not None:
-            name = "mars_titan.models.titans.regional_variants"
-            own[name] = sha256(Path(importlib.import_module(name).__file__))
-        # C5 solo entra en la identidad cuando está activa, igual que las variantes regionales.
-        if self.predictor.config.cross_asset_attention is not None:
-            name = "mars_titan.models.titans.cross_asset_attention"
-            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        for option, name in _PREDICTOR_MODULES.items():
+            if getattr(self.predictor.config, option) is not None:
+                own[name] = sha256(Path(importlib.import_module(name).__file__))
         # H1 de #783 también, con el catálogo macro del que salen sus familias.
         if self.predictor.config.holographic_network is not None:
             module = importlib.import_module("mars_titan.models.titans.holographic_network")
             own[module.__name__] = sha256(Path(module.__file__))
             own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
-        # C2 también, con el historial de regiones que guarda en el estado de cada flujo.
-        if self.predictor.config.axial_time_region is not None:
-            name = "mars_titan.models.titans.axial_time_region"
+        # C3 agrupa sus sectores con el módulo común de C4, que también entra en la identidad.
+        if self.predictor.config.fractal_shared_operator is not None:
+            name = "mars_titan.data.correlation_regions"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
         # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
         # porque `financial` importa siempre su configuración.

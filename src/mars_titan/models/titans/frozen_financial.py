@@ -370,6 +370,9 @@ class FrozenFinancialConsumer:
         # Tampoco el historial de regiones de C2 en el estado de cada flujo.
         if predictor.axial_time_region is not None:
             raise ValueError("El consumidor congelado aún no registra el historial de C2")
+        # Ni la fuente ni los sectores por sesión de C3.
+        if predictor.fractal_shared_operator is not None:
+            raise ValueError("El consumidor congelado aún no registra el operador fractal de C3")
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
