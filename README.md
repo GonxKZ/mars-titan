@@ -436,7 +436,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Biblioteca y revisión bibliográfica](docs/references/README.md): publicaciones primarias, libros, fuentes financieras, BibTeX y descargas locales con huella de integridad.
 - [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
 - [Contraste de los ocho posts aportados](docs/references/social-followup.md): recursos aprovechables, límites de acceso y afirmaciones que no se pueden verificar.
-- [Entorno y reproducción](docs/engineering/reproducibility.md) y [riesgos](docs/research/risks.md).
+- [Entorno y reproducción](docs/engineering/reproducibility.md), con el [determinismo declarado](docs/engineering/reproducibility.md#determinismo-declarado) de las recetas, y [riesgos](docs/research/risks.md).
 - [Verificación de esta entrega](docs/engineering/research-verification.md), con comprobaciones realizadas y límites pendientes.
 
 ## Estructura del repositorio
