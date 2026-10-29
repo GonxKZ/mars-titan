@@ -82,7 +82,15 @@ C2 ocupa la modulación de la fusión y no se combina con el operador regional, 
 
 ## Comprobación técnica
 
-Pendiente de la verificación final.
+El [recibo de verificación](../../reports/engineering/axial-time-region-20261028/verification.json) reúne la evidencia del commit de implementación `0ff84be9b` y del commit final de la rama `02e3ca825`. No hay entrenamiento ni pasos de optimizador, y el test final sigue cerrado.
+
+- Las 551 pruebas dirigidas de C2 y de los módulos que comparten su configuración, su estado y la identidad del entrenador pasan con cobertura de ramas. La omisión es la protección del aprendizaje.
+- La regresión de los módulos que importan los caminos cambiados reúne 7.551 pruebas. Falló una prueba de tiempo de las lesiones, que agotó su plazo de 100 s con una carga media de 29 en 16 hilos lógicos. Repetida sola pasó en 89 s, y #804 ajustó después su presupuesto para una máquina cargada. Sobre el commit final pasan sus 12 pruebas.
+- Al fusionar develop con #805, #806 y #807, el doble del entrenador de C2 no tenía el campo `mature_reliability` que la identidad del código empezó a leer. Con el campo añadido y la fusión de #808, pasan en el commit final las 859 pruebas de C2, de la fiabilidad madura, de las variantes del núcleo, de los módulos que cambió la fusión y de los recibos de coste.
+- Las 54 funciones con líneas cambiadas frente a develop tienen cubiertas 299 de sus 303 líneas ejecutables. Las cuatro restantes son los caminos CUDA de la medida de coste. El CRAP más alto es el de `FinancialConfig.__post_init__` (1.295), que ya tenía complejidad 113 en develop y que C2 deja en 114. Su separación está en #801.
+- Las 34 mutaciones dirigidas de C2 y de su integración, y las cuatro de la escritura atómica de su recibo, se detectaron con fases de control en verde antes y después.
+
+CRAP y cobertura localizan complejidad poco comprobada, pero no demuestran que no haya errores.
 
 ## Coste
 
