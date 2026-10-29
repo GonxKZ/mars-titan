@@ -22,15 +22,15 @@ medidas:
   el mercado y las filas de una sesión tienen las mismas sesiones presentes. Las K primeras
   componentes principales de z, los vectores propios de ZᵀZ de mayor valor propio, dan una
   inmersión que se normaliza por filas como en el paso 4 de Ng, Jordan y Weiss (2002). Así,
-  |y_i − y_j|² = 2 (1 − ρ̂_ij), con ρ̂ la correlación reconstruida con las K componentes, que es la
-  distancia de Mantegna (1999) sobre esa correlación. A diferencia de Ng, Jordan y Weiss, la
-  matriz de la que salen los vectores propios es la correlación de los residuos, que puede ser
-  negativa, y no una afinidad gaussiana normalizada por el grado. Las c-medias difusas de Bezdek
-  (1981), con m = 2, reparten la inmersión en K grupos desde los centros del recorrido más
-  lejano de Gonzalez (1985). Agrupar los residuos y no los rendimientos evita que el modo común
-  del mercado decida los grupos, y la inmersión de dimensión K evita que las distancias entre
-  las 63 sesiones se concentren, que es el caso en que las c-medias difusas dan pertenencias
-  uniformes (Winkler, Klawonn y Kruse, 2011).
+  |y_i − y_j|² = 2 (1 − ρ̂_ij), con ρ̂ la correlación reconstruida con las K componentes, y dos
+  filas quedan más lejos cuanto menos se parecen sus residuos. A diferencia de Ng, Jordan y
+  Weiss, la matriz de la que salen los vectores propios es la correlación de los residuos, que
+  puede ser negativa, y no una afinidad gaussiana normalizada por el grado. Las c-medias
+  difusas de Bezdek (1981), con m = 2, reparten la inmersión en K grupos desde los centros del
+  recorrido más lejano de Gonzalez (1985). Agrupar los residuos y no los rendimientos evita que
+  el modo común del mercado decida los grupos. Agrupar la inmersión de dimensión K y no las 63
+  sesiones responde a que, en dimensión alta, los prototipos de las c-medias difusas acaban en
+  el centro de gravedad de los datos (Winkler, Klawonn y Kruse, 2011).
 
 Cada medida necesita al menos `min_observations` rendimientos o pares válidos. El valor por
 defecto, 36, aplica a los 63 pares de la ventana la proporción entre los 12 días aplicables que

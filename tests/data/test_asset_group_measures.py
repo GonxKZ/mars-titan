@@ -227,7 +227,7 @@ def test_the_embedding_does_not_depend_on_the_sign_of_each_component(monkeypatch
     torch.testing.assert_close(ag.fuzzy_clusters(points, kept, 4, 32), expected)
 
 
-def test_the_embedding_distance_is_the_mantegna_distance_of_the_reconstructed_correlation():
+def test_the_embedding_distance_follows_the_reconstructed_residual_correlation():
     prices, _ = sectors(rows=24)
     measures = ag.window_measures(prices, 36)
     residual, valid = measures["residual"], measures["valid"]["correlation"]
