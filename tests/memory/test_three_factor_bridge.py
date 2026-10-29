@@ -292,6 +292,7 @@ def test_an_invalid_event_is_refused_before_changing_anything():
         ([("US/A", 1)], [[0.5, 0.5, 0.5, -0.1]], r"\[0, 1\]"),
         ([("US/A", 1)], [[0.5, 0.5, 0.5, math.nan]], r"\[0, 1\]"),
         ([("US/A", 1), ("US/A", 1)], [FIRST, SECOND], "pendiente"),
+        ([("US/C", 1), ("US/C", 1)], [FIRST, SECOND], "pendiente"),
         ([("US/B", 1), ("US/A", 1)], [FIRST, SECOND], "pendiente"),
         ([("US/C", 1.0)], [FIRST], "instante"),
         ([("US/C", 1, 2)], [FIRST], "instante"),
@@ -304,6 +305,28 @@ def test_a_trace_is_held_once_and_atomically(keys, traces, message):
     with pytest.raises(ValueError, match=message):
         plastic.hold(keys, np.array(traces))
     assert plastic.keys() == [("US/A", 1)]
+
+
+def test_the_state_keeps_its_own_copies_of_traces_and_weights():
+    plastic = bridge(learning_rate=1.0)
+    opening(plastic)
+    held(plastic, [("US/A", 2, FIRST)])
+    plastic.settle([("US/A", 2, 1.0, 0.0)])
+    weights = plastic._markets["US"]["weights"].tolist()
+    assert any(weights)
+    traces = np.array([FIRST, SECOND])
+    plastic.hold([("US/A", 3), ("US/B", 3)], traces)
+    # Cambiar las trazas entregadas no cambia las guardadas.
+    traces[:] = 0.0
+    saved = plastic.export()
+    assert saved["pending"]["traces"].tolist() == [FIRST, SECOND]
+    restored = BridgePlasticity.restore(plastic.config, EDGES, 3, saved)
+    # Cambiar lo exportado no cambia el puente ni el restaurado desde ello.
+    saved["markets"]["US"]["weights"].add_(0.5)
+    saved["pending"]["traces"].zero_()
+    for state in (plastic, restored):
+        assert state._markets["US"]["weights"].tolist() == weights
+        assert state.export()["pending"]["traces"].tolist() == [FIRST, SECOND]
 
 
 def test_resume_from_an_export_continues_bit_for_bit():
@@ -347,33 +370,53 @@ def _set(path, value):
     return change
 
 
+FOREIGN = "estado guardado no corresponde"
+MARKET = "mercado guardado no corresponde"
+PENDING = "pendientes guardadas no corresponden"
+
+
+# Cada corrupción la detecta su propia comprobación, no un error posterior de otra.
 @pytest.mark.parametrize(
-    "change",
+    ("change", "message"),
     [
-        _set(("configuration", "budget"), 2.0),
-        _set(("areas",), 4),
-        _set(("edges",), [[0, 1], [0, 2], [1, 0]]),
-        _set(("schema_version",), 2),
-        _set(("markets", "US", "weights"), torch.zeros(4, dtype=torch.float32)),
-        _set(("markets", "US", "weights"), torch.zeros(3, dtype=torch.float64)),
-        _set(("markets", "US", "weights"), torch.tensor([math.nan, 0, 0, 0], dtype=torch.float64)),
-        _set(("markets", "US", "weights"), torch.tensor([0.9, 0.9, 0, 0], dtype=torch.float64)),
-        _set(("markets", "US", "events"), 0),
-        _set(("markets", "US", "expected"), None),
-        _set(("markets", "US", "expected"), -1.0),
-        _set(("markets", "US", "delta_sum"), 99.0),
-        _set(("markets", "US", "delta_count"), 0),
-        _set(("markets", "US", "extra"), 1),
-        _set(("markets", "US/A"), {}),
-        _set(("pending", "flows"), ["US/B", "US/A"]),
-        _set(("pending", "traces"), torch.zeros(2, 4, dtype=torch.float32)),
-        _set(("pending", "decision_at"), torch.tensor([9], dtype=torch.int64)),
-        _set(("pending", "extra"), []),
-        _set(("extra",), None),
+        (_set(("configuration", "budget"), 2.0), FOREIGN),
+        (_set(("areas",), 4), FOREIGN),
+        (_set(("edges",), [[0, 1], [0, 2], [1, 0]]), FOREIGN),
+        (_set(("schema_version",), 2), FOREIGN),
+        (_set(("extra",), None), FOREIGN),
+        (_set(("markets",), []), FOREIGN),
+        (_set(("markets", "US", "weights"), torch.zeros(4, dtype=torch.float32)), MARKET),
+        (_set(("markets", "US", "weights"), torch.zeros(3, dtype=torch.float64)), MARKET),
+        (_set(("markets", "US", "weights"), [0.0] * 4), MARKET),
+        (
+            _set(("markets", "US", "weights"), torch.tensor([math.nan, 0, 0, 0]).double()),
+            MARKET,
+        ),
+        (_set(("markets", "US", "weights"), torch.tensor([0.9, 0.9, 0, 0]).double()), "cota"),
+        (_set(("markets", "US", "events"), 0), MARKET),
+        (_set(("markets", "US", "events"), 1.0), MARKET),
+        (_set(("markets", "US", "expected"), None), MARKET),
+        (_set(("markets", "US", "expected"), -1.0), "expectativa guardada"),
+        (_set(("markets", "US", "expected"), math.inf), "expectativa guardada"),
+        (_set(("markets", "US", "delta_sum"), 99.0), "suma de δ"),
+        (_set(("markets", "US", "delta_sum"), math.nan), "suma de δ"),
+        (_set(("markets", "US", "delta_count"), 0), MARKET),
+        (_set(("markets", "US", "delta_count"), 99.0), MARKET),
+        (_set(("markets", "US", "extra"), 1), "mercado guardado no conserva"),
+        (_set(("markets", "US/A"), {}), "nombre válido"),
+        (_set(("pending", "flows"), ["US/B", "US/A"]), "ordenadas"),
+        (_set(("pending", "flows"), ("US/A", "US/B")), PENDING),
+        (_set(("pending", "traces"), torch.zeros(2, 4, dtype=torch.float32)), PENDING),
+        (_set(("pending", "traces"), torch.zeros(2, 3, dtype=torch.float64)), PENDING),
+        (_set(("pending", "traces"), [[0.0] * 4] * 2), PENDING),
+        (_set(("pending", "decision_at"), torch.tensor([9], dtype=torch.int64)), PENDING),
+        (_set(("pending", "decision_at"), torch.tensor([9.0, 9.0])), PENDING),
+        (_set(("pending", "decision_at"), [9, 9]), PENDING),
+        (_set(("pending", "extra"), []), "pendientes guardadas no conservan"),
     ],
 )
-def test_restore_refuses_corrupted_or_foreign_states(change):
-    with pytest.raises(ValueError):
+def test_restore_refuses_corrupted_or_foreign_states(change, message):
+    with pytest.raises(ValueError, match=message):
         BridgePlasticity.restore(ThreeFactorBridge(), EDGES, 3, corrupted(change))
 
 
@@ -393,6 +436,7 @@ def test_a_restored_state_without_markets_or_pending_traces_is_empty():
         ([(0, 1)], 3),
         (((0, 1),), 1),
         (((0, True),), 3),
+        (((0, 1),), 3.0),
     ],
 )
 def test_the_edges_must_be_ordered_pairs_of_distinct_areas(edges, areas):
