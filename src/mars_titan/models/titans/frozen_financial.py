@@ -45,6 +45,7 @@ _TITANS_MODULES = (
     "bank_readout",
     "laplace_scale",
     "opponent_heads",
+    "reliability_gates",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -363,6 +364,9 @@ class FrozenFinancialConsumer:
         # Tampoco registra la red holográfica de #783.
         if predictor.holographic_network is not None:
             raise ValueError("El consumidor congelado aún no registra la red holográfica")
+        # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
+        if predictor.reliability_gates is not None:
+            raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
