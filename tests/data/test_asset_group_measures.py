@@ -16,15 +16,28 @@ from mars_titan.data import asset_groups as ag
 SESSIONS = 64
 
 
-def window(close, *, half_range=0.004, present=None):
-    """Ventana [filas, 64, 6] con el cierre dado y un rango simétrico alrededor."""
+def window(close, *, half_range=0.004, present=None, skew=0.0):
+    """Ventana [filas, 64, 6] con el cierre dado y un rango alrededor.
+
+    El máximo queda a half_range (1 + skew) del cierre y el mínimo a half_range (1 − skew).
+    Con skew = 0 el cierre cae en el centro del rango y el diferencial de Abdi y Ranaldo es
+    nulo, así que las pruebas del diferencial necesitan otro valor.
+    """
     close = torch.as_tensor(close, dtype=torch.float64)
     rows = len(close)
     present = torch.ones(rows, SESSIONS, dtype=torch.bool) if present is None else present
     half = torch.as_tensor(half_range, dtype=torch.float64).expand(rows, SESSIONS)
+    skew = torch.as_tensor(skew, dtype=torch.float64).expand(rows, SESSIONS)
     opened = torch.cat([close[:, :1], close[:, :-1]], dim=1)
     values = torch.stack(
-        [opened, close + half, close - half, close, torch.zeros_like(close)], dim=-1
+        [
+            opened,
+            close + half * (1 + skew),
+            close - half * (1 - skew),
+            close,
+            torch.zeros_like(close),
+        ],
+        dim=-1,
     )
     values = torch.where(present[..., None], values, 0.0)
     return torch.cat([values, present[..., None].to(torch.float64)], dim=-1)
@@ -42,7 +55,9 @@ def sectors(rows=48, groups=4, seed=3):
     returns[:, 0] = 0
     close = returns.cumsum(1)
     half = 0.001 + torch.rand(rows, SESSIONS, generator=generator, dtype=torch.float64) * 0.01
-    return window(close - close[:, :1], half_range=half), labels
+    # Se saca al final para no cambiar los cierres. El cierre no cae en el centro del rango.
+    skew = torch.rand(rows, SESSIONS, generator=generator, dtype=torch.float64) * 1.6 - 0.8
+    return window(close - close[:, :1], half_range=half, skew=skew), labels
 
 
 def direct_spread(close, high, low, present):
@@ -77,7 +92,7 @@ def test_each_measure_matches_a_direct_calculation():
             data[row, :, 3], data[row, :, 1], data[row, :, 2], present[row]
         )
         assert measures["liquidity_spread"][row].item() == pytest.approx(spread, rel=1e-12)
-        assert pairs == (59 if row == 2 else 61)
+        assert spread > 0 and pairs == (59 if row == 2 else 61)
     # Todas las filas comparten las sesiones válidas, así que el mercado es su media.
     assert (valid == valid[0]).all()
     market = returns[:, valid[0]].mean(axis=0)
