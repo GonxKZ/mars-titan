@@ -396,6 +396,12 @@ def test_the_state_dict_round_trips_and_each_mode_is_another_identity():
     for config in (SHUFFLED, SECTOR, replace(SMALL, buckets=4)):
         with pytest.raises(ValueError):
             model(**changes(config)).load_state_dict(source.state_dict())
+    # El módulo comprueba su propia identidad, también fuera del predictor.
+    layer = module(SMALL)
+    module(SMALL).load_state_dict(layer.state_dict())
+    for config in (SHUFFLED, SECTOR, replace(SMALL, buckets=4)):
+        with pytest.raises(ValueError, match="contrato del módulo"):
+            module(config).load_state_dict(layer.state_dict())
 
 
 def test_the_predictor_change_registry_admits_it():
