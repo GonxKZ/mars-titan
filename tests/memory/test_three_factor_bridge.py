@@ -256,6 +256,24 @@ def test_random_events_match_the_reference_and_ignore_the_label_order(kind):
     assert any(state["weights"].any() for state in plastic._markets.values())
 
 
+@pytest.mark.parametrize("kind", [THREE_FACTOR_BRIDGE, MEAN_THIRD_FACTOR])
+def test_the_update_does_not_depend_on_the_arrival_order_of_the_labels(kind):
+    # Con estas trazas y errores, sumar en el orden de llegada daría otro redondeo en cada orden.
+    flows = ["US/A", "US/B", "US/C"]
+    rows = [
+        (flow, 2, [value] * len(EDGES)) for flow, value in zip(flows, (0.1, 0.2, 0.3), strict=True)
+    ]
+    issued = dict(zip(flows, (0.01, 0.01, 0.02), strict=True))
+    weights = []
+    for order in (flows, flows[::-1]):
+        plastic = bridge(kind, learning_rate=1.0, budget=4.0)
+        opening(plastic)
+        held(plastic, rows)
+        plastic.settle([(flow, 2, issued[flow], 0.0) for flow in order])
+        weights.append(plastic._markets["US"]["weights"].tolist())
+    assert weights[0] == weights[1] and all(weights[0])
+
+
 def test_a_market_does_not_move_the_weights_of_another():
     plastic = bridge(learning_rate=1.0)
     opening(plastic)
