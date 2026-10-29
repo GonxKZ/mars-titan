@@ -601,6 +601,17 @@ class MatureCorrection:
             raise ValueError(
                 "La mezcla multiescala necesita delta o proximal con olvido discreto cero"
             )
+        # R2 de #786 cierra cada periodo con un paso proximal sobre la pérdida de sus eventos.
+        if (
+            self.multiscale is not None
+            and self.multiscale.write_periods is not None
+            and (
+                self.memory.rule != "proximal"
+                or self.areas is not None
+                or self.role_binding is not None
+            )
+        ):
+            raise ValueError("R2 escribe sus periodos con la regla proximal, sin áreas ni roles")
         if self.role_binding is not None and (
             type(self.role_binding) is not RoleBindingConfig
             or type(self.memory) is not AssociativeMemoryConfig
