@@ -1848,6 +1848,7 @@ class FinancialPredictor(nn.Module):
         if (
             not isinstance(bias, torch.Tensor)
             or bias.shape != (rows, len(self.holographic_network.plastic_edges))
+            or bias.layout != torch.strided
             or bias.dtype != self.head.weight.dtype
             or bias.device != self.head.weight.device
             or bias.requires_grad

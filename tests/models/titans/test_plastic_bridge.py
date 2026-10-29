@@ -146,6 +146,8 @@ def test_gradients_cross_the_biased_bridge_and_never_reach_the_weights():
         (lambda net: edge_bias(net).t().contiguous().t(), [torch.zeros(1)]),
         (lambda net: edge_bias(net).tolist(), []),
         (lambda net: edge_bias(net), ()),
+        (lambda net: edge_bias(net).to_sparse(), []),
+        (lambda net: edge_bias(net).to("meta"), []),
     ],
 )
 def test_the_weights_need_their_contract(bias, traces):
@@ -220,6 +222,8 @@ def test_prepare_needs_the_weights_only_when_the_bridge_is_declared():
         (zero[:, 1:], "pesos rápidos de sus filas"),
         (zero[1:], "pesos rápidos de sus filas"),
         (zero.float(), "pesos rápidos de sus filas"),
+        (zero.to_sparse(), "pesos rápidos de sus filas"),
+        (zero.to("meta"), "pesos rápidos de sus filas"),
         (zero.clone().requires_grad_(), "pesos rápidos de sus filas"),
         (zero + P1.budget * 1.5, "dentro de su cota"),
         (zero + math.inf, "dentro de su cota"),
