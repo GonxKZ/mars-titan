@@ -83,6 +83,49 @@ otra forma o tipo, valores no finitos en sesiones definidas, nombres repetidos, 
 desordenados, envíos sin ninguna sesión común con el mejor o con un solo día común, opciones
 fuera de su tipo y declaraciones que no describen este mecanismo.
 
+La verificación del 29 de octubre se hizo en CPU, sin pasos de optimizador:
+
+- En el commit final pasan los 80 casos de la escalera y del
+  [análisis del sobreajuste](../research/backtest-overfitting.md). Con coverage 7.16.1 y radon
+  6.0.1, `reusable_holdout.py` cubre 92/92 sentencias y 10/10 ramas, y el CRAP máximo de los dos
+  módulos es 11.
+- 39 mutaciones dirigidas sobre `622ad936e`, con controles en verde antes y después en una
+  copia aislada. Cubren el redondeo, el error típico (dispersión poblacional, sesiones tomadas
+  como días, tamaños de día ignorados, media sin ponderar y bloques tan largos como la serie),
+  las máscaras y la finitud de los envíos, las sesiones comunes, el empate, una mejora
+  cualquiera, la mediana en lugar de la media, la sustitución del mejor, la parte pública, las
+  opciones y la declaración. Se detectaron 38. La media sin ponderar sobrevivió porque la
+  prueba de días desiguales alternaba días de una y tres sesiones con bloques de ocho días, y
+  así todas las réplicas tenían el tamaño de la muestra. Con días de una, tres y dos sesiones
+  los bloques cubren 15, 16 o 17 sesiones (`805dbbdcc`) y la mutación repetida se detecta.
+- Una primera pasada sobre `e3ee85a42` tuvo recetas con el identificador de prueba o el
+  sangrado equivocados y se repitió completa tras corregirlas.
+
+El [recibo de verificación](../../reports/engineering/reusable-holdout-20261029/verification.json)
+conserva los recuentos y las huellas de los informes JUnit, de la cobertura y de las
+mutaciones.
+
+## Coste
+
+`benchmarks/reusable_holdout_cost.py` mide en CPU, con dos hilos, la escalera completa sobre
+1.008 días UTC con la declaración de la segunda ola, bloques de 16 días y 2.000 réplicas. Las
+series son ruido con semilla fija y solo fijan las formas. La máquina tenía otras pruebas en
+marcha, con una carga media de 15 al empezar, así que las cifras son descriptivas. El
+[recibo](../../reports/engineering/reusable-holdout-20261029/cost-cpu.json) conserva las
+muestras.
+
+| Envíos | Decisiones por día | Mediana | Mínimo | Por envío | Pico de memoria trazado |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 1 | 0,98 s | 0,70 s | 98 ms | 30,7 MB |
+| 40 | 1 | 1,94 s | 1,87 s | 49 ms | 31,2 MB |
+| 40 | 2 | 3,15 s | 1,87 s | 79 ms | 33,4 MB |
+
+La primera versión repetía en cada réplica las sesiones sorteadas y tardaba 18,0 s de mediana
+con 40 envíos y dos decisiones por día. Sumar una vez por día y ponderar por las veces que sale
+cada día, $\sum_d n_d S_d / \sum_d n_d c_d$, da el mismo error típico con una tolerancia
+relativa de $10^{-12}$ en las pruebas y lo reduce a 3,15 s. Con unas decenas de envíos por ola,
+la escalera cuesta segundos. No hay tensores, así que no se mide la GPU. Tampoco la energía.
+
 ## Referencia
 
 Blum, A. y Hardt, M. (2015). The Ladder: A reliable leaderboard for machine learning
