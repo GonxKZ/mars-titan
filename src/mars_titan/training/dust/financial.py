@@ -90,12 +90,17 @@ class FinancialDustAdapter:
             "memory_bank_readout",
             "regional_variant",
             "holographic_network",
+            "axial_time_region",
             "cross_asset_attention",
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
             "session_ic_objective",
             "opponent_heads",
+            "mature_reliability",
+            "memory_huber",
+            "memory_time_scales",
+            "differential_attention",
         )
         if (
             config.variant != "transformer_direct"
@@ -115,6 +120,7 @@ class FinancialDustAdapter:
                     "regional_execution",
                     "regional_variant",
                     "holographic_network",
+                    "axial_time_region",
                     "presence_modulation",
                     "fusion_branch",
                     "cross_asset_attention",

@@ -15,16 +15,16 @@
     }
   },
   "components": [
-    {"id": "tensor", "type": "external", "label": "Tensor tiempo × región", "sublabel": "[T, R, D] por activo", "pos": [40, 40], "size": [180, 72]},
+    {"id": "tensor", "type": "external", "label": "Bloques de fuente", "sublabel": "[W, 5, H] por flujo", "pos": [40, 40], "size": [180, 72]},
     {"id": "time", "type": "backend", "label": "Eje temporal", "sublabel": "atención con máscara causal", "pos": [300, 40], "size": [180, 72]},
-    {"id": "region", "type": "backend", "label": "Eje de región", "sublabel": "misma sesión", "pos": [560, 40], "size": [180, 72]},
-    {"id": "state", "type": "backend", "label": "Estado fusionado", "sublabel": "para la cabeza", "pos": [820, 40], "size": [180, 72]},
+    {"id": "region", "type": "backend", "label": "Eje de región", "sublabel": "misma emisión", "pos": [560, 40], "size": [180, 72]},
+    {"id": "state", "type": "backend", "label": "Bloques modulados", "sublabel": "hacia la fusión y MAC", "pos": [820, 40], "size": [180, 72]},
     {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]},
     {"id": "controls", "type": "security", "label": "Controles", "sublabel": "C1 y atención solo temporal", "pos": [560, 230], "size": [180, 72]}
   ],
   "connections": [
     {"id": "tensor-time", "from": "tensor", "to": "time"},
-    {"id": "time-region", "from": "time", "to": "region", "label": "alterna", "variant": "emphasis"},
+    {"id": "time-region", "from": "time", "to": "region", "label": "segunda capa", "variant": "emphasis"},
     {"id": "region-state", "from": "region", "to": "state", "variant": "emphasis"},
     {"id": "state-screen", "from": "state", "to": "screen", "label": "predicción"},
     {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
@@ -34,8 +34,8 @@
       "dot": "cyan",
       "title": "Mecanismo",
       "items": [
-        "Alterna atención en el eje del tiempo y en el de las regiones",
-        "El eje temporal solo ve instantes anteriores a la emisión",
+        "Atiende primero al tiempo y después entre regiones",
+        "El tiempo solo incluye la emisión y las anteriores del flujo",
         "Fuente: Ho et al. (2019), MASTER de Li et al. (2024)"
       ]
     },
@@ -47,7 +47,7 @@
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Registrada en #751, pendiente de implementar", "Coste estimado de 1,1 ajustes de referencia"]
+      "items": ["Implementada con pruebas CPU sobre fixtures, sin entrenar", "CUDA, consumidor congelado y criba pendientes"]
     }
   ]
 }

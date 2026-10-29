@@ -23,6 +23,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data.storage import atomic_json
+
 ARMS = (
     ("k2_j2_final", 2, 2, None),
     ("k2_j2_per_step", 2, 2, (1, 2)),
@@ -223,9 +225,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
-    result = run(arguments.device)
-    arguments.output.parent.mkdir(parents=True, exist_ok=True)
-    arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(arguments.output, run(arguments.device))
 
 
 if __name__ == "__main__":

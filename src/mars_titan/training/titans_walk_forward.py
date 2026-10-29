@@ -102,6 +102,11 @@ _CODE = (
     "mars_titan.models.titans.laplace_scale",
     "mars_titan.models.titans.opponent_heads",
     "mars_titan.models.titans.auxiliary_horizons",
+    "mars_titan.models.titans.reliability_gates",
+    "mars_titan.memory.mature_reliability",
+    "mars_titan.models.titans.huber_memory",
+    "mars_titan.models.titans.scale_invariant_time",
+    "mars_titan.models.titans.differential_attention",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
 )
