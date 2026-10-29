@@ -61,6 +61,12 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    require_determinism,
+    valid_determinism,
+)
 from .financial_run import _compatible
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
@@ -128,6 +134,8 @@ class CandidateRecipe:
     # None conserva el decaimiento de AdamW hacia cero. `initial_parameters` lo ancla al
     # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
     weight_decay_anchor: str | None = None
+    # None conserva el determinismo del proceso, como en la receta del núcleo (#794).
+    determinism: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs)
@@ -167,6 +175,8 @@ class CandidateRecipe:
                 "La receta necesita banco M0/M1, K = 1, 2 o 4, pérdida, presupuesto, "
                 "optimizador, acumulación, recomputación y checkpoints válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
 
     def identity(self):
         fields = asdict(self)
@@ -174,6 +184,8 @@ class CandidateRecipe:
             fields.pop("precision")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -457,8 +469,10 @@ class CandidateChronologicalPredictor:
         if self.device == "cuda:0" and not torch.cuda.is_available():
             raise RuntimeError("cuda:0 no está disponible y no se cambia de dispositivo")
         self.adapter, self.model, self.recipe = adapter, model, recipe
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
         self.native, self.specification = adapter.native, adapter.specification
         self.sources = sources
         self.world, self.fold = world, fold
@@ -773,6 +787,8 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
@@ -786,9 +802,13 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         roles, inert = parameter_roles(model, admission)
         return roles, inert, model.named_parameters()
 
-    @staticmethod
-    def _code():
-        return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+    def _code(self):
+        own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        # El determinismo de #794 añade su módulo solo si la receta lo declara.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        return own
 
     def _check_runtime(self):
         if (
@@ -797,6 +817,7 @@ class CandidateChronologicalTrainer(CandidateChronologicalPredictor):
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.kernel_policy)
+        require_determinism(self.recipe.determinism, self.determinism)
 
     def _extra_state(self):
         """Estado ajustable fuera del módulo nativo. El ajuste del candidato no tiene ninguno."""

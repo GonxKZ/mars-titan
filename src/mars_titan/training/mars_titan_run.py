@@ -73,6 +73,12 @@ from .checkpoints import (
     save_training_state,
 )
 from .common_epoch import chosen_state
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    require_determinism,
+    valid_determinism,
+)
 from .financial_run import FlowStates, Paused, _compatible, _read_report
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
@@ -148,6 +154,8 @@ class ReadoutRecipe:
     # D1 de #751. None supervisa solo el último refinamiento, como antes. Una lista creciente
     # que acaba en K promedia la pérdida de la predicción tras cada refinamiento declarado.
     supervised_refinements: tuple[int, ...] | None = None
+    # None conserva el determinismo del proceso, como en la receta del núcleo (#794).
+    determinism: str | None = None
 
     def __post_init__(self):
         validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
@@ -199,6 +207,8 @@ class ReadoutRecipe:
                 "La receta del lector necesita pérdida, tramo, banco, presupuesto, "
                 "optimizador y checkpoints válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
 
     def identity(self):
         fields = asdict(self)
@@ -210,6 +220,8 @@ class ReadoutRecipe:
             fields.pop("refinement_initialization")
         if fields["supervised_refinements"] is None:
             fields.pop("supervised_refinements")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -459,8 +471,10 @@ class MarsTitanInference:
         if admission != "m0" and not hasattr(native, "MemoryRecord"):
             raise ValueError("El banco necesita el enlace episódico nativo")
         self.predictor, self.readout, self.recipe = predictor, readout, recipe
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
         self.admission, self.retention, self.native, self.codec = (
             admission,
             retention,
@@ -918,6 +932,8 @@ class ReadoutTrainer(MarsTitanInference):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
@@ -945,6 +961,10 @@ class ReadoutTrainer(MarsTitanInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        # El determinismo de #794 añade su módulo solo si la receta lo declara.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
@@ -957,6 +977,7 @@ class ReadoutTrainer(MarsTitanInference):
         ):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.identity.get("kernel_policy"))
+        require_determinism(self.recipe.determinism, self.identity.get("determinism"))
         self.predictor.verify_parameter_identity()
         if self.predictor._parameter_id != self.identity["parent"]["parameters_sha256"]:
             raise ValueError("El padre congelado cambió durante el ajuste del lector")
