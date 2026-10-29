@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **370 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **371 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -63,7 +63,10 @@ El 29 de octubre se añadieron al catálogo adversarial la lista REFORMS de Kapo
 al. (2024), que ordena la [revisión del estudio](../research/reforms-checklist.md)
 por puntos de reproducibilidad, fugas y límites, y la escalera de Blum y Hardt
 (2015), en la que se basa la [reutilización de S](../experiments/reusable-holdout-v1.md)
-en la segunda ola.
+en la segunda ola. Al catálogo posterior a Titans se sumó Gerstner et al. (2018),
+de donde salen la traza de elegibilidad y el tercer factor como desviación de su
+media del [puente de tres factores P1](../experiments/three-factor-bridge-v1.md)
+y de la [fiabilidad madura](../experiments/mature-reliability-signal-v1.md).
 
 ## Contenido
 
