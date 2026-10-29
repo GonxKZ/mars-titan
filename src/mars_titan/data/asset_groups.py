@@ -11,28 +11,35 @@ medidas:
   logarítmico de la ventana.
 - **Diferencial.** Estimador CHL de Abdi y Ranaldo (2017) en su versión corregida por dos días,
   la media de sqrt(max(4 (c_t − η_t)(c_t − η_{t+1}), 0)) con η = (h + l)/2. Se descartan los
-  pares con una sesión ausente o sin rango (h = l), como en el artículo. El volumen de la
-  ventana está dividido por su media en cada activo y no permite comparar activos, por eso la
-  liquidez sale de los precios.
+  pares con una sesión ausente o sin rango (h = l), como en las simulaciones del artículo. En
+  su aplicación empírica el artículo arrastra los precios del día anterior, y aquí no se imputa
+  ningún precio. El volumen de la ventana está dividido por su media en cada activo y no permite
+  comparar activos, por eso la liquidez sale de los precios.
 - **Beta.** Pendiente de MCO de r frente a m, la media equiponderada de los rendimientos de las
   filas válidas de la sesión en cada paso.
 - **Correlación.** Con el residuo centrado e = (r − r̄) − β (m − m̄) normalizado, z_i · z_j es la
-  correlación de los residuos de los activos i y j. Las K primeras componentes principales de z,
-  los vectores propios de ZᵀZ de mayor valor propio, dan una inmersión que se normaliza por
-  filas como en Ng, Jordan y Weiss (2002). Las c-medias difusas de Bezdek (1981), con m = 2,
-  reparten la inmersión en K grupos desde los centros del recorrido más lejano de Gonzalez
-  (1985). Agrupar los residuos y no los rendimientos evita que el modo común del mercado decida
-  los grupos, y la inmersión de dimensión K evita que las distancias entre las 63 sesiones se
-  concentren, que es el caso en que las c-medias difusas dan pertenencias uniformes (Winkler,
-  Klawonn y Kruse, 2011).
+  correlación de los residuos de los activos i y j, porque la v3.1 solo admite ausencias de todo
+  el mercado y las filas de una sesión tienen las mismas sesiones presentes. Las K primeras
+  componentes principales de z, los vectores propios de ZᵀZ de mayor valor propio, dan una
+  inmersión que se normaliza por filas como en el paso 4 de Ng, Jordan y Weiss (2002). Así,
+  |y_i − y_j|² = 2 (1 − ρ̂_ij), con ρ̂ la correlación reconstruida con las K componentes, que es la
+  distancia de Mantegna (1999) sobre esa correlación. A diferencia de Ng, Jordan y Weiss, la
+  matriz de la que salen los vectores propios es la correlación de los residuos, que puede ser
+  negativa, y no una afinidad gaussiana normalizada por el grado. Las c-medias difusas de Bezdek
+  (1981), con m = 2, reparten la inmersión en K grupos desde los centros del recorrido más
+  lejano de Gonzalez (1985). Agrupar los residuos y no los rendimientos evita que el modo común
+  del mercado decida los grupos, y la inmersión de dimensión K evita que las distancias entre
+  las 63 sesiones se concentren, que es el caso en que las c-medias difusas dan pertenencias
+  uniformes (Winkler, Klawonn y Kruse, 2011).
 
 Cada medida necesita al menos `min_observations` rendimientos o pares válidos. El valor por
-defecto, 36, aplica a los 63 pares de la ventana la proporción de 12 de 21 sesiones con que el
-artículo de Abdi y Ranaldo descarta un mes. Las cuatro primeras medidas se convierten en el rango
-medio u ∈ (0, 1) entre las filas válidas de la sesión, y u en una partición difusa de Ruspini
-(1969) con Q cubos: con p = clamp(uQ − 1/2, 0, Q − 1), la fila pertenece al cubo ⌊p⌋ con
-1 − (p − ⌊p⌋) y al siguiente con el resto. Una fila sin observaciones suficientes no pertenece
-a ningún grupo de esa familia. Las pertenencias de cada familia suman uno en las demás.
+defecto, 36, aplica a los 63 pares de la ventana la proporción entre los 12 días aplicables que
+el artículo de Abdi y Ranaldo exige en un mes y los meses de 21 sesiones de sus simulaciones.
+Las cuatro primeras medidas se convierten en el rango medio u ∈ (0, 1) entre las filas válidas
+de la sesión, y u en una partición difusa de Ruspini (1969) con Q cubos: con
+p = clamp(uQ − 1/2, 0, Q − 1), la fila pertenece al cubo ⌊p⌋ con 1 − (p − ⌊p⌋) y al siguiente
+con el resto. Una fila sin observaciones suficientes no pertenece a ningún grupo de esa familia.
+Las pertenencias de cada familia suman uno en las demás.
 
 Todo se calcula sin gradiente y en el dispositivo de la ventana, sin copias al anfitrión. Con
 menos filas válidas que K, algunos centros se repiten y cada fila queda en su propio grupo.

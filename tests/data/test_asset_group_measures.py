@@ -227,6 +227,25 @@ def test_the_embedding_does_not_depend_on_the_sign_of_each_component(monkeypatch
     torch.testing.assert_close(ag.fuzzy_clusters(points, kept, 4, 32), expected)
 
 
+def test_the_embedding_distance_is_the_mantegna_distance_of_the_reconstructed_correlation():
+    prices, _ = sectors(rows=24)
+    measures = ag.window_measures(prices, 36)
+    residual, valid = measures["residual"], measures["valid"]["correlation"]
+    assert valid.all()
+    data = residual.numpy()
+    # Con las mismas sesiones presentes, z_i · z_j es la correlación de Pearson de los residuos.
+    np.testing.assert_allclose(data @ data.T, np.corrcoef(data), rtol=0, atol=1e-12)
+    points, kept = ag.correlation_embedding(residual, valid, 4)
+    assert kept.all()
+    values, vectors = np.linalg.eigh(data @ data.T)
+    reconstructed = (vectors[:, -4:] * values[-4:]) @ vectors[:, -4:].T
+    scale = np.sqrt(np.diag(reconstructed))
+    correlation = reconstructed / np.outer(scale, scale)
+    embedded = points.numpy()
+    distances = ((embedded[:, None, :] - embedded[None, :, :]) ** 2).sum(-1)
+    np.testing.assert_allclose(distances, 2 * (1 - correlation), rtol=0, atol=1e-10)
+
+
 def test_memberships_follow_a_permutation_of_the_rows():
     prices, _ = sectors()
     options = dict(buckets=5, clusters=4, min_observations=36, iterations=32)
