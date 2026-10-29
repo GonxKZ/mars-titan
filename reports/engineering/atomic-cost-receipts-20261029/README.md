@@ -17,4 +17,4 @@ Los recibos publicados no cambian. Los nuevos se escriben con sangría de dos es
 
 ## Límites
 
-Las pruebas sustituyen `run` para no medir, así que el cuerpo de las diez funciones `run` sigue sin cubrir, igual que estaba dentro de `main` antes del cambio. Las medidas de C2 (`axial_time_region_cost.py`) y de H4 (`asset_groups_cost.py`) todavía están en sus ramas y se pasarán a `atomic_json` cuando lleguen a `develop`.
+Las pruebas sustituyen `run` para no medir, así que el cuerpo de las diez funciones `run` sigue sin cubrir, igual que estaba dentro de `main` antes del cambio. Las medidas de C2 (`axial_time_region_cost.py`) y de H4 (`asset_groups_cost.py`) todavía están en sus ramas y se pasarán a `atomic_json` cuando lleguen a `develop`. La de C2 se pasó en su rama antes de integrarse (#751) y figura ya en `PROTOCOL_MEASURES`, con sus cuatro pruebas fuera de este recibo.
