@@ -49,6 +49,7 @@ _TITANS_MODULES = (
     "huber_memory",
     "scale_invariant_time",
     "differential_attention",
+    "plastic_bridge",
     "session_context",
     "local_control",
     "episodic_readout",

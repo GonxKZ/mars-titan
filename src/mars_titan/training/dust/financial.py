@@ -100,6 +100,7 @@ class FinancialDustAdapter:
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
+            "three_factor_bridge",
         )
         if (
             config.variant != "transformer_direct"
