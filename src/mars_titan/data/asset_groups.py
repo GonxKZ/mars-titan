@@ -21,7 +21,7 @@ medidas:
   correlación de los residuos de los activos i y j, porque la v3.1 solo admite ausencias de todo
   el mercado y las filas de una sesión tienen las mismas sesiones presentes. Las K primeras
   componentes principales de z, los vectores propios de ZᵀZ de mayor valor propio, dan una
-  inmersión que se normaliza por filas como en el paso 4 de Ng, Jordan y Weiss (2002). Así,
+  inmersión que se normaliza por filas como en el paso 4 de Ng, Jordan y Weiss (2001). Así,
   |y_i − y_j|² = 2 (1 − ρ̂_ij), con ρ̂ la correlación reconstruida con las K componentes, y dos
   filas quedan más lejos cuanto menos se parecen sus residuos. A diferencia de Ng, Jordan y
   Weiss, la matriz de la que salen los vectores propios es la correlación de los residuos, que

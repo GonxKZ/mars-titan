@@ -1110,5 +1110,144 @@
       4
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "bezdek1981pattern",
+    "title": "Pattern Recognition with Fuzzy Objective Function Algorithms",
+    "authors": [
+      "James C. Bezdek"
+    ],
+    "year": 1981,
+    "url": "https://doi.org/10.1007/978-1-4757-0450-1",
+    "doi": "10.1007/978-1-4757-0450-1",
+    "pdf_url": null,
+    "venue": "Plenum Press",
+    "volume": null,
+    "pages": null,
+    "access": "Metadatos contrastados en Crossref, que registra la edición digital de Springer US. No se ha consultado el libro. Se cita como origen de las c-medias difusas, cuyas ecuaciones con m = 2 comprueban las pruebas de H4.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1007/978-1-4757-0450-1"
+    ],
+    "relevance": "Algoritmo de las c-medias difusas con que H4 reparte la inmersión de los residuos en grupos de correlación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "gonzalez1985clustering",
+    "title": "Clustering to Minimize the Maximum Intercluster Distance",
+    "authors": [
+      "Teofilo F. Gonzalez"
+    ],
+    "year": 1985,
+    "url": "https://doi.org/10.1016/0304-3975(85)90224-5",
+    "doi": "10.1016/0304-3975(85)90224-5",
+    "pdf_url": null,
+    "venue": "Theoretical Computer Science",
+    "volume": "38",
+    "pages": "293-306",
+    "access": "Metadatos contrastados en Crossref. No se ha consultado el texto. Se cita como origen del recorrido más lejano con que H4 elige los centros iniciales.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1016/0304-3975(85)90224-5"
+    ],
+    "relevance": "Inicialización determinista de las c-medias difusas de H4 con centros separados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "ng2001spectral",
+    "title": "On Spectral Clustering: Analysis and an algorithm",
+    "authors": [
+      "Andrew Y. Ng",
+      "Michael I. Jordan",
+      "Yair Weiss"
+    ],
+    "year": 2001,
+    "url": "https://proceedings.neurips.cc/paper/2001/hash/801272ee79cfde7fa5960571fee36b9b-Abstract.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2001/file/801272ee79cfde7fa5960571fee36b9b-Paper.pdf",
+    "venue": "Advances in Neural Information Processing Systems 14",
+    "volume": "14",
+    "pages": null,
+    "access": "Ficha y PDF abiertos en las actas de NeurIPS, cuya referencia BibTeX da el año 2001, los editores y MIT Press. Leída la sección 2 de la página 2, con los seis pasos del algoritmo. La ficha no indica páginas. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "proceedings",
+      "date": "2001",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2001/file/801272ee79cfde7fa5960571fee36b9b-Paper.pdf",
+      "passages": [
+        "Sección 2, página 2: algoritmo con la normalización por filas del paso 4"
+      ]
+    },
+    "verification_sources": [
+      "https://proceedings.neurips.cc/paper/2001/hash/801272ee79cfde7fa5960571fee36b9b-Abstract.html"
+    ],
+    "relevance": "Normalización por filas de la inmersión espectral que H4 aplica a las componentes principales de los residuos. H4 parte de la correlación de los residuos y no de una afinidad gaussiana normalizada por el grado.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "ruspini1969new",
+    "title": "A new approach to clustering",
+    "authors": [
+      "Enrique H. Ruspini"
+    ],
+    "year": 1969,
+    "url": "https://doi.org/10.1016/S0019-9958(69)90591-9",
+    "doi": "10.1016/S0019-9958(69)90591-9",
+    "pdf_url": null,
+    "venue": "Information and Control",
+    "volume": "15",
+    "issue": "1",
+    "pages": "22-32",
+    "access": "Metadatos contrastados en Crossref. No se ha consultado el texto. Se cita como origen de la partición difusa, en la que las pertenencias de cada punto suman uno.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1016/S0019-9958(69)90591-9"
+    ],
+    "relevance": "Definición de la partición difusa que siguen los cubos de H4 sobre los rangos medios de la sesión.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "winkler2011fuzzy",
+    "title": "Fuzzy C-Means in High Dimensional Spaces",
+    "authors": [
+      "Roland Winkler",
+      "Frank Klawonn",
+      "Rudolf Kruse"
+    ],
+    "year": 2011,
+    "url": "https://doi.org/10.4018/ijfsa.2011010101",
+    "doi": "10.4018/ijfsa.2011010101",
+    "pdf_url": null,
+    "venue": "International Journal of Fuzzy System Applications",
+    "volume": "1",
+    "issue": "1",
+    "pages": "1-16",
+    "access": "Metadatos y resumen contrastados en Crossref. No se ha consultado el texto. El resumen afirma que en dimensión alta los prototipos de las c-medias difusas acaban en el centro de gravedad de los datos y que solo funcionan si se inicializan muy cerca de los centros de los grupos.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.4018/ijfsa.2011010101"
+    ],
+    "relevance": "Motivo para que H4 agrupe una inmersión de dimensión K y no las 63 sesiones de los residuos.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
   }
 ]
