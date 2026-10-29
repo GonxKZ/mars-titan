@@ -186,8 +186,9 @@ def test_strategies_without_skill_overfit_about_half_the_time():
 @pytest.mark.parametrize(
     ("values", "blocks", "message"),
     [
-        (np.zeros((40, 3)), 5, "par"),
-        (np.zeros((40, 3)), 18, "par"),
+        (np.zeros((40, 3)), 5, "número par de bloques"),
+        # Con 36 filas, 18 bloques serían válidos de no ser por el límite de bloques.
+        (np.random.default_rng(0).standard_normal((36, 3)), 18, "número par de bloques"),
         (np.ones((40, 1)), 4, "estrategias"),
         (np.full((40, 3), np.nan), 4, "finitos"),
         (np.random.default_rng(0).standard_normal((42, 3)), 4, "bloques iguales"),
