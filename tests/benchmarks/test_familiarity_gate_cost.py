@@ -79,3 +79,84 @@ def test_a_measure_that_changes_a_parameter_is_refused(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="modificado parámetros"):
         cost.measure(output, **SMALL)
     assert not output.exists()
+
+
+def test_the_warmup_runs_every_model_and_stays_out_of_the_samples(monkeypatch, tmp_path):
+    calls, graph, plain = [], cost.graph_pass, cost.inference
+
+    def graph_counted(model, *arguments):
+        calls.append(("graph", model))
+        return graph(model, *arguments)
+
+    def plain_counted(model, *arguments):
+        calls.append(("plain", model))
+        return plain(model, *arguments)
+
+    monkeypatch.setattr(cost, "graph_pass", graph_counted)
+    monkeypatch.setattr(cost, "inference", plain_counted)
+    receipt = cost.measure(tmp_path / "cost.json", **(SMALL | dict(warmup=2)))
+    # Dos rondas de calentamiento y una medida, con las dos pasadas de los tres modelos.
+    for kind in ("graph", "plain"):
+        models = [model for name, model in calls if name == kind]
+        assert len(models) == 3 * 3 and len({id(model) for model in models}) == 3
+    assert receipt["warmup"] == 2
+    for value in receipt["models"].values():
+        for key in ("forward_with_graph_seconds", "backward_seconds", "inference_seconds"):
+            assert len(value[key]["samples"]) == 1
+
+
+def test_a_non_finite_gradient_in_one_parameter_stops_the_measure():
+    model = cost.reader("familiarity", "cpu")
+    generator = torch.Generator().manual_seed(3)
+    state = torch.randn(4, cost.HIDDEN, generator=generator)
+    head = torch.randn(cost.HIDDEN, generator=generator)
+    arguments = (cost.snapshot(8, "cpu"), state, head, torch.zeros(4))
+    # Con gradientes finitos la pasada devuelve sus dos tiempos y deja los gradientes vacíos.
+    assert all(seconds > 0 for seconds in cost.graph_pass(model, *arguments))
+    assert all(value.grad is None for value in model.parameters())
+    # Basta un parámetro con NaN, aunque los demás tengan un gradiente finito.
+    model.familiarity_bias.register_hook(lambda grad: torch.full_like(grad, float("nan")))
+    with pytest.raises(ValueError, match="gradiente no finito"):
+        cost.graph_pass(model, *arguments)
+
+
+def test_only_the_first_cuda_device_is_synchronized(monkeypatch):
+    calls = []
+    monkeypatch.setattr(torch.cuda, "synchronize", calls.append)
+    cost._synchronize("cpu")
+    cost._synchronize("cuda:0")
+    assert calls == ["cuda:0"]
+
+
+def test_the_command_line_passes_its_shape_and_prints_each_ratio(monkeypatch, tmp_path, capsys):
+    calls, output = [], tmp_path / "cost.json"
+
+    def measured(path, **options):
+        calls.append((path, options))
+        ratios = dict(reference=1.0, familiarity_gate=1.5)
+        return dict(
+            models={
+                name: dict(relative_to_reference=dict(backward_seconds=value))
+                for name, value in ratios.items()
+            }
+        )
+
+    monkeypatch.setattr(cost, "measure", measured)
+    monkeypatch.setattr("sys.argv", ["familiarity_gate_cost.py", "--output", str(output)])
+    cost.main()
+    defaults = dict(rows=512, episodes=1024, repetitions=30, warmup=3, threads=2, device="cpu")
+    assert calls == [(output, defaults)]
+    assert capsys.readouterr().out.splitlines() == [
+        'reference {"backward_seconds": 1.0}',
+        'familiarity_gate {"backward_seconds": 1.5}',
+    ]
+    shape = dict(rows=4, episodes=8, repetitions=1, warmup=0, threads=1, device="cuda:0")
+    options = [item for key, value in shape.items() for item in (f"--{key}", str(value))]
+    monkeypatch.setattr("sys.argv", ["familiarity_gate_cost.py", "--output", str(output), *options])
+    cost.main()
+    assert calls[1] == (output, shape)
+    # Sin destino la medida no empieza.
+    monkeypatch.setattr("sys.argv", ["familiarity_gate_cost.py"])
+    with pytest.raises(SystemExit):
+        cost.main()
+    assert len(calls) == 2
