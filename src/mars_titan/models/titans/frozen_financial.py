@@ -45,6 +45,10 @@ _TITANS_MODULES = (
     "bank_readout",
     "laplace_scale",
     "opponent_heads",
+    "reliability_gates",
+    "huber_memory",
+    "scale_invariant_time",
+    "differential_attention",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -369,6 +373,9 @@ class FrozenFinancialConsumer:
         # Ni la fuente ni los sectores por sesión de C3.
         if predictor.fractal_shared_operator is not None:
             raise ValueError("El consumidor congelado aún no registra el operador fractal de C3")
+        # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
+        if predictor.reliability_gates is not None:
+            raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

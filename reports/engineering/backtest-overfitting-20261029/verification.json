@@ -1,0 +1,283 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 794,
+ "implementation_commit": "805dbbdcc5f00e4013a91b92668603a58b31beb1",
+ "base_commit": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Los dos módulos trabajan con NumPy y no crean optimizadores. Las mutaciones registran un gancho de torch.optim que rechaza cualquier paso y no hubo ningún intento.",
+ "scope": "backtest_overfitting_cscv_and_deflated_sharpe_v1",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 80,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "40e8f0cb2370376c9216fbc33f762959e87cc6d6384fa980d46b5883eb0d7ee6",
+   "note": "Pruebas del PBO, del DSR y de la escalera con cobertura de ramas sobre implementation_commit."
+  },
+  {
+   "name": "evaluation_regression",
+   "tests": 1696,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 7,
+   "xml_sha256": "655916d96be61662909817a8416551031ca47ba0ae52cb960a04e79029a481f5",
+   "note": "Toda la carpeta tests/evaluation con tres procesos sobre implementation_commit. Las siete omisiones son la paridad con scoringrules, del grupo de dependencias reference, que el entorno compartido no instala."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 286,
+   "covered_statements": 285,
+   "branches": 32,
+   "covered_branches": 31
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "source_sha256": "a0acd760019b2af7fe3625253b0586a62566954891f8fc4a111ca78df4b559a7",
+    "statements": 194,
+    "covered_statements": 193,
+    "branches": 22,
+    "covered_branches": 21
+   },
+   {
+    "path": "src/mars_titan/evaluation/reusable_holdout.py",
+    "source_sha256": "0fb821c186d485a6e6c2d37473c304fbdcabb48a7836de4a1519e014a1ba7243",
+    "statements": 92,
+    "covered_statements": 92,
+    "branches": 10,
+    "covered_branches": 10
+   }
+  ],
+  "max_crap": 11.0,
+  "quality_sha256": "ce41d198b10755f266e6472f25db3bb8d75fa148ef967cbbf4257baeb89d9002",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+  "head": "805dbbdcc5f00e4013a91b92668603a58b31beb1",
+  "functions": 28,
+  "max_crap": 11.0,
+  "changed_executable_lines": 246,
+  "changed_covered_lines": 246,
+  "highest": [
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "_market",
+    "cyclomatic_complexity": 11,
+    "crap": 11.0,
+    "changed_executable_lines": 20,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "load_declaration",
+    "cyclomatic_complexity": 10,
+    "crap": 10.0,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "pbo_cscv",
+    "cyclomatic_complexity": 7,
+    "crap": 7.0,
+    "changed_executable_lines": 34,
+    "changed_covered_lines": 34,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/reusable_holdout.py",
+    "function": "Ladder.__init__",
+    "cyclomatic_complexity": 7,
+    "crap": 7.0,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 15,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "_strategies",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 20,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "returns"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "direct_sharpe"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "reference_error"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "measure_cscv"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "portfolio"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "measure_analysis"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "main"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "submissions"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "measure"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "main"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. Las medidas de coste no tienen pruebas y se comprueban al ejecutarlas, por eso quedan sin medir.",
+  "changed_sha256": "6e192f9c5621e4aba8d4ce0f1a5cd90295894399021d6c29dd80fa874058c82f"
+ },
+ "mutations": {
+  "tree_commit": "116ce47c8bb665f63857154330ad089bef533c93",
+  "planned": 72,
+  "killed": 72,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "11227552775989564a0d48817ce4c323f0fcbcb26e3926d65c9f294369545875",
+  "executor_sha256": "70be614efb17d75429211524a8af379e2938cb6759d03851b2a856465a8d3527",
+  "source_sha256": {
+   "src/mars_titan/evaluation/backtest_overfitting.py": "a0acd760019b2af7fe3625253b0586a62566954891f8fc4a111ca78df4b559a7"
+  },
+  "cases": [
+   "psr_length_not_reduced",
+   "psr_excess_kurtosis",
+   "psr_skew_sign",
+   "psr_threshold_ignored",
+   "psr_kurtosis_floor",
+   "psr_spread_unchecked",
+   "psr_one_observation",
+   "finite_accepts_bool",
+   "finite_accepts_nan",
+   "count_accepts_float",
+   "maximum_weights_swapped",
+   "maximum_without_e",
+   "maximum_variance_floor",
+   "maximum_one_trial",
+   "maximum_without_square_root",
+   "deflated_zero_threshold",
+   "statistics_population_deviation",
+   "statistics_excess_kurtosis",
+   "statistics_unbiased_skewness",
+   "statistics_two_returns",
+   "statistics_infinite_accepted",
+   "statistics_constant_accepted",
+   "halves_odd_blocks",
+   "halves_without_maximum",
+   "halves_float_blocks",
+   "block_population_variance",
+   "block_spread_uncentered",
+   "block_within_dropped",
+   "block_grand_mean_dropped",
+   "block_variance_unchecked",
+   "cscv_one_strategy",
+   "cscv_nan_accepted",
+   "cscv_uneven_blocks",
+   "cscv_single_session_blocks",
+   "cscv_complement_is_inside",
+   "cscv_last_maximum",
+   "cscv_rank_counts_itself",
+   "cscv_ties_ranked_low",
+   "cscv_omega_over_n",
+   "cscv_median_not_overfit",
+   "cscv_degradation_reversed",
+   "cscv_degradation_always",
+   "cscv_chunk_gap",
+   "declaration_unchecked",
+   "declaration_blocks_unchecked",
+   "sensitivity_any_order",
+   "sensitivity_one_trial",
+   "provenance_without_comparison",
+   "provenance_empty_text",
+   "source_status_unchecked",
+   "source_kind_unchecked",
+   "source_final_test_unchecked",
+   "source_sessions_unchecked",
+   "strategies_markets_mixed",
+   "strategies_file_order",
+   "strategies_sessions_unchecked",
+   "strategies_seed_file_order",
+   "strategies_one_cost",
+   "market_latest_sessions_trimmed",
+   "market_constant_kept",
+   "market_one_model",
+   "market_population_variance",
+   "market_trials_without_comparison",
+   "market_trials_with_excluded",
+   "market_selected_minimum",
+   "market_excluded_unreported",
+   "market_chosen_names_of_all",
+   "analysis_markets_unchecked",
+   "analysis_first_cost_only",
+   "output_overwritten",
+   "output_inside_source",
+   "command_default_declaration"
+  ],
+  "summary_sha256": "f062c7168a4c4016aeaed978dadbe1e5fe5e0ac253c517c5310bc7ace6873a20",
+  "scope": "Setenta y dos defectos dirigidos del PSR, del máximo esperado, del DSR, de los momentos, de los bloques, de la CSCV, del recorte, de las carteras constantes, de los ensayos, de la fuente y de la salida, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada. No es una puntuación global.",
+  "first_pass_killed": 71,
+  "reruns": [
+   {
+    "tree_commit": "622ad936eb1b2a0759f086e82fe254dd9ba88cb3",
+    "cases": [
+     "halves_without_maximum"
+    ],
+    "killed": 1,
+    "recipes_sha256": "11227552775989564a0d48817ce4c323f0fcbcb26e3926d65c9f294369545875",
+    "source_sha256": {
+     "src/mars_titan/evaluation/backtest_overfitting.py": "a0acd760019b2af7fe3625253b0586a62566954891f8fc4a111ca78df4b559a7"
+    },
+    "summary_sha256": "54af03eee2f751ec791d75ed9a3167db958873daae72c3b94a6cd2ba1ba54724",
+    "reason": "La prueba del límite de bloques buscaba «par», que también coincide con el mensaje de un reparto desigual. e84d9eaed exige la frase completa y usa una serie que sería válida sin el límite."
+   }
+  ]
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "bf28bf1345dfe9aafe3d096b9e28593f0b736382ab5150895faa6305c1764c0e"
+ }
+}

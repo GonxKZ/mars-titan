@@ -82,11 +82,36 @@ C2 ocupa la modulación de la fusión y no se combina con el operador regional, 
 
 ## Comprobación técnica
 
-Pendiente de la verificación final.
+El [recibo de verificación](../../reports/engineering/axial-time-region-20261028/verification.json) reúne la evidencia del commit de implementación `0ff84be9b` y del commit final de la rama `02e3ca825`. No hay entrenamiento ni pasos de optimizador, y el test final sigue cerrado.
+
+- Las 551 pruebas dirigidas de C2 y de los módulos que comparten su configuración, su estado y la identidad del entrenador pasan con cobertura de ramas. La omisión es la protección del aprendizaje.
+- La regresión de los módulos que importan los caminos cambiados reúne 7.551 pruebas. Falló una prueba de tiempo de las lesiones, que agotó su plazo de 100 s con una carga media de 29 en 16 hilos lógicos. Repetida sola pasó en 89 s, y #804 ajustó después su presupuesto para una máquina cargada. Sobre el commit final pasan sus 12 pruebas.
+- Al fusionar develop con #805, #806 y #807, el doble del entrenador de C2 no tenía el campo `mature_reliability` que la identidad del código empezó a leer. Con el campo añadido y la fusión de #808, pasan en el commit final las 859 pruebas de C2, de la fiabilidad madura, de las variantes del núcleo, de los módulos que cambió la fusión y de los recibos de coste.
+- Las 54 funciones con líneas cambiadas frente a develop tienen cubiertas 299 de sus 303 líneas ejecutables. Las cuatro restantes son los caminos CUDA de la medida de coste. El CRAP más alto es el de `FinancialConfig.__post_init__` (1.295), que ya tenía complejidad 113 en develop y que C2 deja en 114. Su separación está en #801.
+- Las 34 mutaciones dirigidas de C2 y de su integración, y las cuatro de la escritura atómica de su recibo, se detectaron con fases de control en verde antes y después.
+
+CRAP y cobertura localizan complejidad poco comprobada, pero no demuestran que no haya errores.
 
 ## Coste
 
-Pendiente de la medida.
+La medida CPU del 28 de octubre llama solo a `AxialTimeRegion` con las formas de la emisión, en FP32 y con H = 64, dos hilos, tres calentamientos y veinte repeticiones en cada uno de los dos órdenes de los modelos. Cada fila tiene cinco bloques, con noticias, fundamentales y macro ausentes en el 60 %, el 30 % y el 10 % de las filas, y un historial lleno de siete emisiones con las mismas fracciones de presencia. `forward` es la inferencia sin gradiente, incluido el desplazamiento del historial, y `backward` añade la propagación de una suma de cuadrados hasta los parámetros del módulo, sin optimizador. Las dos proyecciones de salida se fijan iguales y distintas de cero en los dos modelos, para medir el módulo con todas sus rutas activas y no en su estado inicial, donde devuelve la entrada sin cambios. El equipo tenía otras cargas, con una carga media de 5 a 6 en 16 hilos lógicos, así que los percentiles son descriptivos. El [recibo](../../reports/engineering/axial-time-region-20261028/cost-cpu.json) conserva todas las muestras.
+
+| Forward | 64 filas | 256 filas | 1.024 filas |
+| --- | ---: | ---: | ---: |
+| C2 axial | 10,9 ms (15,4) | 33,6 ms (42,3) | 101,2 ms (141,2) |
+| Control de solo tiempo | 13,4 ms (18,2) | 51,0 ms (55,5) | 211,5 ms (358,4) |
+
+| Backward | 64 filas | 256 filas | 1.024 filas |
+| --- | ---: | ---: | ---: |
+| C2 axial | 29,9 ms (38,6) | 78,9 ms (114,1) | 227,1 ms (310,5) |
+| Control de solo tiempo | 50,2 ms (64,9) | 88,1 ms (158,5) | 469,5 ms (652,3) |
+
+Cada celda da la mediana y, entre paréntesis, el percentil 95 de las cuarenta muestras. Los dos modelos tienen 33.856 parámetros y guardan 8.995 bytes de historial por flujo, que son siete emisiones de cinco bloques en FP32 y su presencia. El control cuesta más porque su segunda capa vuelve a normalizar y proyectar las W × 5 = 40 posiciones de cada fila, mientras que la capa entre regiones solo proyecta los cinco bloques de la emisión. Con 1.024 filas tarda alrededor del doble en los dos órdenes. Con 256 filas en `backward` el orden invierte la comparación, así que esa celda no muestra una diferencia clara. El control iguala parámetros e inicialización, no operaciones, de modo que una ventaja predictiva de C2 no se podría atribuir a más cómputo. No se han medido la memoria, la VRAM ni la energía, y queda pendiente medir y perfilar en CUDA.
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 uv run python benchmarks/axial_time_region_cost.py --run \
+  --output "${MARS_AXIAL_COST:?}"
+```
 
 ## Pendiente
 
