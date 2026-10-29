@@ -212,6 +212,10 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado aún no registra el historial de regiones de C2",
     )
     _require(
+        changes.get("fractal_shared_operator", predictor.get("fractal_shared_operator")) is None,
+        "El consumidor congelado aún no registra el operador fractal de C3",
+    )
+    _require(
         changes.get("asset_groups", predictor.get("asset_groups")) is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
     )
@@ -243,6 +247,10 @@ def _frozen_parent(
     _require(
         options.get("axial_time_region") is None,
         "El consumidor congelado aún no registra el historial de regiones de C2",
+    )
+    _require(
+        options.get("fractal_shared_operator") is None,
+        "El consumidor congelado aún no registra el operador fractal de C3",
     )
     _require(
         options.get("asset_groups") is None,
@@ -317,6 +325,7 @@ def _readout(variant, codec, predictor, recipe, seed):
         temperature=recipe.temperature,
         max_working_bytes=recipe.max_working_bytes,
         refinement_initialization=recipe.refinement_initialization,
+        familiarity_gate=recipe.familiarity_gate,
         seed=seed,
         # El lector atiende los mismos bloques que su padre. Con 256 conserva su identidad.
         max_batch=predictor.config.max_batch,

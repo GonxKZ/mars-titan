@@ -1287,5 +1287,227 @@
       4
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "lan2020albert",
+    "title": "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations",
+    "authors": [
+      "Zhenzhong Lan",
+      "Mingda Chen",
+      "Sebastian Goodman",
+      "Kevin Gimpel",
+      "Piyush Sharma",
+      "Radu Soricut"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/1909.11942v6",
+    "doi": "10.48550/arXiv.1909.11942",
+    "pdf_url": "https://arxiv.org/pdf/1909.11942v6",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v6 del 9 de febrero de 2020. Ficha y PDF abiertos. Leídas la sección 3.1 de la página 4, que propone compartir parámetros entre capas y fija como opción por defecto compartirlos todos, y la sección 4.5 con la tabla 4 de la página 7, que compara compartir todo, solo la atención, solo la red feed-forward o nada. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v6",
+      "date": "2020-02-09",
+      "url": "https://arxiv.org/pdf/1909.11942v6",
+      "passages": [
+        "Sección 3.1, página 4: reparto de parámetros entre capas",
+        "Sección 4.5 y tabla 4, página 7: estrategias de reparto"
+      ]
+    },
+    "latest_publication": {
+      "title": "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations",
+      "authors": [
+        "Zhenzhong Lan",
+        "Mingda Chen",
+        "Sebastian Goodman",
+        "Kevin Gimpel",
+        "Piyush Sharma",
+        "Radu Soricut"
+      ],
+      "year": 2020,
+      "venue": "International Conference on Learning Representations (ICLR 2020)",
+      "volume": null,
+      "pages": null,
+      "url": "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html",
+      "doi": null,
+      "status": "Publicación confirmada en la página del póster de ICLR 2020.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/1909.11942v6",
+      "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html"
+    ],
+    "relevance": "Antecedente del reparto de un mismo operador entre niveles de C3. Con ALBERT-base, compartir solo la atención apenas cambia la media de sus tareas de lenguaje, mientras que compartir también la red feed-forward la reduce. No valida la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "bae2025relaxed",
+    "title": "Relaxed Recursive Transformers: Effective Parameter Sharing with Layer-wise LoRA",
+    "authors": [
+      "Sangmin Bae",
+      "Adam Fisch",
+      "Hrayr Harutyunyan",
+      "Ziwei Ji",
+      "Seungyeon Kim",
+      "Tal Schuster"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2410.20672v3",
+    "doi": "10.48550/arXiv.2410.20672",
+    "pdf_url": "https://arxiv.org/pdf/2410.20672v3",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v3 del 28 de febrero de 2025, con la nota de publicación en ICLR 2025. Ficha abierta. Leído el resumen, que relaja el reparto de capas con módulos LoRA por profundidad. No se han leído el método ni los experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v3",
+      "date": "2025-02-28",
+      "url": "https://arxiv.org/pdf/2410.20672v3",
+      "passages": [
+        "Resumen: Transformers recursivos relajados con LoRA por profundidad"
+      ]
+    },
+    "latest_publication": {
+      "title": "Relaxed Recursive Transformers: Effective Parameter Sharing with Layer-wise LoRA",
+      "authors": [
+        "Sangmin Bae",
+        "Adam Fisch",
+        "Hrayr Harutyunyan",
+        "Ziwei Ji",
+        "Seungyeon Kim",
+        "Tal Schuster"
+      ],
+      "year": 2025,
+      "venue": "International Conference on Learning Representations (ICLR 2025)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=WwpYSOkkCt",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, como póster de ICLR 2025.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=WwpYSOkkCt"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2410.20672v3",
+      "https://openreview.net/forum?id=WwpYSOkkCt"
+    ],
+    "relevance": "Fuente de la LoRA por nivel sobre un operador compartido de C3. Sus resultados son de modelos de lenguaje convertidos desde un modelo preentrenado y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "saunshi2025reasoning",
+    "title": "Reasoning with Latent Thoughts: On the Power of Looped Transformers",
+    "authors": [
+      "Nikunj Saunshi",
+      "Nishanth Dikkala",
+      "Zhiyuan Li",
+      "Sanjiv Kumar",
+      "Sashank J. Reddi"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2502.17416v1",
+    "doi": "10.48550/arXiv.2502.17416",
+    "pdf_url": "https://arxiv.org/pdf/2502.17416v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 24 de febrero de 2025, con la nota de publicación en ICLR 2025. Ficha abierta. Leído el resumen, según el cual un Transformer de k capas repetido L veces casi iguala a uno de kL capas sin repetir en problemas sintéticos de razonamiento. No se han leído las demostraciones ni los experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2025-02-24",
+      "url": "https://arxiv.org/pdf/2502.17416v1",
+      "passages": [
+        "Resumen: modelos en bucle frente a modelos profundos sin repetir"
+      ]
+    },
+    "latest_publication": {
+      "title": "Reasoning with Latent Thoughts: On the Power of Looped Transformers",
+      "authors": [
+        "Nikunj Saunshi",
+        "Nishanth Dikkala",
+        "Zhiyuan Li",
+        "Sanjiv Kumar",
+        "Sashank J. Reddi"
+      ],
+      "year": 2025,
+      "venue": "International Conference on Learning Representations (ICLR 2025)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=din0lGfZFd",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, como póster de ICLR 2025.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=din0lGfZFd"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2502.17416v1",
+      "https://openreview.net/forum?id=din0lGfZFd"
+    ],
+    "relevance": "Antecedente de que repetir un mismo bloque puede aproximar la profundidad sin multiplicar los parámetros, que C3 contrasta con su control de pesos por nivel. Sus resultados son de razonamiento sintético y de lenguaje.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "kakushadze2016statistical",
+    "title": "Statistical Industry Classification",
+    "authors": [
+      "Zura Kakushadze",
+      "Willie Yu"
+    ],
+    "year": 2016,
+    "url": "https://arxiv.org/abs/1607.04883v4",
+    "doi": "10.48550/arXiv.1607.04883",
+    "pdf_url": "https://arxiv.org/pdf/1607.04883v4",
+    "venue": "Journal of Risk & Control",
+    "volume": "3",
+    "number": "1",
+    "pages": "17–65",
+    "access": "Preprint v4 del 29 de diciembre de 2018. Ficha abierta. Leído el resumen, que construye clasificaciones industriales estadísticas de varios niveles, responde que no conviene agrupar ni las correlaciones ni los rendimientos y señala que sus backtests cambian bastante con esos detalles. La referencia de revista es la que declara la ficha de arXiv. El registro editorial no se ha corroborado.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v4",
+      "date": "2018-12-29",
+      "url": "https://arxiv.org/abs/1607.04883v4",
+      "passages": [
+        "Resumen: qué agrupar en una clasificación industrial estadística"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/1607.04883v4"
+    ],
+    "relevance": "Objeción a los sectores estadísticos de C3, que agrupan correlaciones de rendimientos con la regla de C4. El control random_partition mide si ese reparto aporta algo frente a sectores aleatorios de los mismos tamaños.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
   }
 ]

@@ -632,6 +632,12 @@ class CorrectionInference(ChronologicalInference):
                 clock=self.memory.clock,
                 cohorts=self.memory.cohorts,
             )
+            # R2 (#786) añade lo que cada velocidad ha aplicado y lo que espera.
+            if self.correction.multiscale.write_periods is not None:
+                metrics["multiscale"].update(
+                    applied_writes=self.memory.applied_writes,
+                    open_period_rows=self.memory.pending_rows,
+                )
         if self.lesion_ledger is not None:
             metrics["lesions"] = self.lesion_ledger.metrics()
         return metrics

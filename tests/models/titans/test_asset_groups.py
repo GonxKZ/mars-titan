@@ -23,6 +23,7 @@ from mars_titan.models.titans.asset_groups import (
     AssetGroupsConfig,
 )
 from mars_titan.models.titans.cross_asset_attention import CrossAssetAttentionConfig
+from mars_titan.models.titans.fractal_shared_operator import FractalSharedOperatorConfig
 from mars_titan.training.search_cases import checked_predictor_changes
 from tests.data.test_asset_group_measures import sectors
 from tests.models.test_price_presence_families import titans_specification
@@ -438,13 +439,15 @@ def test_the_sector_map_comes_only_with_the_sector_control():
     assert model(**changes(SECTOR)).asset_groups.sector_map == sector_map()
 
 
-def test_h4_needs_the_presence_window_and_does_not_combine_with_c5_or_f5():
+def test_h4_needs_the_presence_window_and_does_not_combine_with_c3_c5_or_f5():
     from mars_titan.models.titans.auxiliary_horizons import AuxiliaryHorizons
 
     with pytest.raises(ValueError, match="bit de presencia"):
         api().FinancialConfig(specification(), variant="mac_online", asset_groups=SMALL)
     with pytest.raises(ValueError, match="H4 y C5"):
         model(asset_groups=SMALL, cross_asset_attention=CrossAssetAttentionConfig())
+    with pytest.raises(ValueError, match="H4 y C3"):
+        model(asset_groups=SMALL, fractal_shared_operator=FractalSharedOperatorConfig())
     with pytest.raises(ValueError, match="operaciones por sesión"):
         model(asset_groups=SMALL, auxiliary_horizons=AuxiliaryHorizons())
 
@@ -506,6 +509,7 @@ def test_the_sources_enter_the_trainer_identity_only_when_active():
                 asset_groups=config,
                 holographic_network=None,
                 axial_time_region=None,
+                fractal_shared_operator=None,
                 mature_reliability=None,
             )
         )

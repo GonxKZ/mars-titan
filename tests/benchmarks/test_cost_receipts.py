@@ -15,6 +15,7 @@ PROTOCOL_MEASURES = (
     "asset_groups_cost",
     "axial_time_region_cost",
     "cross_asset_attention_cost",
+    "fractal_shared_operator_cost",
     "holographic_network_cost",
     "online_arbiters_cost",
     "regional_variants_cost",

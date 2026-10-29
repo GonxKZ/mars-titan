@@ -14,7 +14,9 @@ from mars_titan.training.mars_titan_correction import (
 
 
 def test_the_factor_is_normalized_by_the_common_window_builder():
+    # Sin los periodos de R2 (#786) la identidad normalizada de E1 no los nombra.
     factor = asdict(MultiscaleMixtureConfig())
+    assert factor.pop("write_periods") is None
     components = dict(associative_memory=dict(rule="proximal", key="codec", multiscale=factor))
     checked, correction = check_components(
         load_declaration(), arm_components(components, dict(rate=0.05, forgetting=0.0))
