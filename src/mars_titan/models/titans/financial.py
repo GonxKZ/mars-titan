@@ -1855,8 +1855,9 @@ class FinancialPredictor(nn.Module):
             raise ValueError(
                 "El puente de tres factores necesita los pesos rápidos de sus filas y aristas"
             )
+        # La cota es finita, así que NaN e infinito tampoco la cumplen.
         require_true(
-            torch.isfinite(bias).all() & (bias.abs() <= config.budget).all(),
+            (bias.abs() <= config.budget).all(),
             "Los pesos rápidos del puente deben ser finitos y estar dentro de su cota",
         )
 

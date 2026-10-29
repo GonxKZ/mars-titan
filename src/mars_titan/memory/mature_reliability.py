@@ -156,7 +156,7 @@ class ReliabilitySignal:
         if self.config.independent or self.config.source != "mature_directional_hit":
             raise ValueError("Solo la señal compartida de aciertos da un acierto esperado")
         result = {}
-        for market in sorted(markets):
+        for market in markets:
             channels = self._markets.get(market)
             result[market] = 0.0 if channels is None else channels[0]["values"][-1]
         return result

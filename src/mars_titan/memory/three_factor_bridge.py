@@ -17,10 +17,10 @@ Cuando madura la etiqueta llega el tercer factor, de una de dos fuentes declarad
 brecha relativa del error (`relative_error_gap`), ε = |ŷ − y| es el error absoluto de la
 predicción emitida y E_m la expectativa del mercado antes del evento,
 
-    δ = clip((E_m − ε) / E_m, −1, 1),
+    δ = max((E_m − ε) / E_m, −1),
 
-positivo si la predicción falló menos de lo esperado. En el primer evento del mercado, o con
-E_m = 0, δ = 0, y después
+que no pasa de 1 porque ε ≥ 0 y es positivo si la predicción falló menos de lo esperado. En el
+primer evento del mercado, o con E_m = 0, δ = 0, y después
 
     E_m ← λ · E_m + (1 − λ) · (1/n) Σ_k ε_k,        λ = exp(−1/τ),   E_m = media en el primero.
 
@@ -83,7 +83,6 @@ def _market(flow):
 def _edge_list(edges, areas):
     if (
         type(areas) is not int
-        or areas < 2
         or not isinstance(edges, tuple)
         or not edges
         or any(
@@ -165,9 +164,7 @@ class BridgePlasticity:
             not isinstance(expectations, dict)
             or not markets <= set(expectations)
             or any(
-                type(expectations[market]) is not float
-                or not math.isfinite(expectations[market])
-                or not -1.0 <= expectations[market] <= 1.0
+                type(expectations[market]) is not float or not -1.0 <= expectations[market] <= 1.0
                 for market in markets
             )
         ):
@@ -180,7 +177,8 @@ class BridgePlasticity:
         expected = state["expected"]
         if expected is None or expected == 0.0:
             return 0.0
-        return min(1.0, max(-1.0, (expected - error) / expected))
+        # Con ε ≥ 0 el cociente no pasa de 1, así que solo hace falta el límite inferior.
+        return max(-1.0, (expected - error) / expected)
 
     def settle(self, matured, expectations=None):
         """Aplicar las etiquetas maduras de un evento, cada una (flujo, decisión, ŷ, y).
@@ -204,7 +202,7 @@ class BridgePlasticity:
         groups = {}
         for key, error, hit in checked:
             groups.setdefault(_market(key[0]), []).append((key, error, hit, self._traces.pop(key)))
-        for market, labels in sorted(groups.items()):
+        for market, labels in groups.items():
             labels.sort(key=lambda label: label[0])
             self._update(self._state(market), labels, expectations.get(market))
 
@@ -274,8 +272,9 @@ class BridgePlasticity:
         ):
             raise ValueError("El mercado guardado no corresponde al puente")
         delta_sum = _real(state["delta_sum"], "La suma de δ guardada debe ser finita")
-        if expected is not None and _real(expected, "La expectativa debe ser finita") < 0:
-            raise ValueError("La expectativa debe ser finita")
+        message = "La expectativa guardada debe ser un real finito no negativo"
+        if expected is not None and _real(expected, message) < 0:
+            raise ValueError(message)
         if abs(delta_sum) > count:
             raise ValueError("La suma de δ guardada supera su número de etiquetas")
         values = weights.numpy().copy()

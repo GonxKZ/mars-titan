@@ -33,10 +33,10 @@ La traza de cada predicción emitida espera junto a ella hasta que madura su eti
 La brecha relativa del error (`relative_error_gap`) es la fuente de la issue. Con $\varepsilon=|\hat y-y|$ el error absoluto de la predicción realmente emitida y $E_m$ la expectativa del mercado antes del evento,
 
 $$
-\delta=\operatorname{clip}\Bigl(\frac{E_m-\varepsilon}{E_m},-1,1\Bigr),
+\delta=\max\Bigl(\frac{E_m-\varepsilon}{E_m},-1\Bigr),
 $$
 
-que es positivo cuando la predicción falló menos de lo esperado. En el primer evento del mercado, o con $E_m=0$, $\delta=0$. Después del evento, $E_m\leftarrow\lambda E_m+(1-\lambda)\,\bar\varepsilon$ con $\lambda=e^{-1/\tau}$, $\tau=21$ eventos de maduración y $\bar\varepsilon$ la media del evento, que es también el valor inicial.
+que no pasa de 1 porque $\varepsilon\ge 0$ y es positivo cuando la predicción falló menos de lo esperado. En el primer evento del mercado, o con $E_m=0$, $\delta=0$. Después del evento, $E_m\leftarrow\lambda E_m+(1-\lambda)\,\bar\varepsilon$ con $\lambda=e^{-1/\tau}$, $\tau=21$ eventos de maduración y $\bar\varepsilon$ la media del evento, que es también el valor inicial.
 
 La señal común (`mature_directional_hit`) convierte P1 en otro consumidor de la [fiabilidad madura](mature-reliability-signal-v1.md) de #791, como decidió la segunda ola. Con $h=\operatorname{sign}(\hat y)\operatorname{sign}(y)$ el acierto direccional de la etiqueta y $r_m$ la velocidad más lenta de la señal del mercado leída antes de que la señal reciba las etiquetas del evento,
 

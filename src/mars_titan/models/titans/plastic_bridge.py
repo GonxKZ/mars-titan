@@ -26,12 +26,8 @@ SOURCES = (RELATIVE_ERROR_GAP, MATURE_DIRECTIONAL_HIT)
 
 
 def _number(value, low, high, message):
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not math.isfinite(value)
-        or not low < value <= high
-    ):
+    # Los límites son finitos, así que la comparación también rechaza NaN e infinito.
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not low < value <= high:
         raise ValueError(message)
     return float(value)
 

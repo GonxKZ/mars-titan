@@ -349,11 +349,10 @@ def area_edges(count, topology):
 def plastic_edges(config):
     """Pares (i, j) de áreas distintas que une la topología, en orden de filas.
 
-    Son las aristas en las que P1 de #784 guarda pesos rápidos y trazas. H3 no tiene áreas.
+    Son las aristas en las que P1 de #784 guarda pesos rápidos y trazas. H3 no tiene áreas,
+    así que tampoco tiene aristas.
     """
     areas = config.catalog_areas
-    if not areas:
-        return ()
     edges = area_edges(areas, config.topology).tolist()
     return tuple((i, j) for i in range(areas) for j in range(areas) if i != j and edges[i][j])
 
@@ -619,7 +618,7 @@ class HolographicNetwork(nn.Module):
                     if trace is not None:
                         # Probabilidades del paso, con la escala 1/√H de SDPA y sin grafo.
                         with torch.no_grad():
-                            logits = q.detach() @ k.detach().transpose(-1, -2)
+                            logits = q @ k.transpose(-1, -2)
                             logits = logits / math.sqrt(self.hidden_size) + attention.squeeze(1)
                             trace += torch.softmax(logits, dim=-1)[:, target, source]
                     local = torch.where(
