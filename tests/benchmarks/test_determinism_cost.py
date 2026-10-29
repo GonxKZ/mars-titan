@@ -173,6 +173,15 @@ def test_the_command_compares_two_processes_per_mode_in_a_new_receipt(
     assert json.loads(capsys.readouterr().out) == receipt["comparison"]
 
 
+def test_a_receipt_with_nan_leaves_no_file(monkeypatch, tmp_path):
+    output = tmp_path / "receipts" / "determinism.json"
+    measured = record(["p", "p"], ["g", "g"], seconds=(float("nan"), 1.0))
+    monkeypatch.setattr(cost, "launch", lambda *arguments: measured)
+    with pytest.raises(ValueError):
+        cost.main(["--output", str(output)])
+    assert not list(output.parent.iterdir())
+
+
 def test_the_warmup_runs_before_the_measured_passes(monkeypatch):
     passes, original = [], cost.graph_pass
 
