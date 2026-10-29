@@ -37,6 +37,7 @@ from mars_titan.memory.three_factor_bridge import BridgePlasticity
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
+from mars_titan.models.titans.axial_time_region import join_history_rows, map_history_rows
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import (
@@ -311,7 +312,11 @@ def _detached(state, parameter_id=None):
     if mac is not None:
         # Todos los tensores del estado MAC, también las ventanas de la convolución causal.
         mac = map_mac_rows(mac, lambda value: value.detach())
-    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac)
+    regions = state.regions
+    if regions is not None:
+        # El historial de C2 corta su grafo en el mismo punto que MAC.
+        regions = map_history_rows(regions, lambda value: value.detach())
+    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac, regions=regions)
 
 
 class FlowStates:
@@ -390,13 +395,19 @@ class FlowStates:
             else:
                 runs.append([block, row, row + 1])
 
-        state, mac = first.state, None
+        state, mac, regions = first.state, None, None
         if state.mac is not None:
             parts = [
                 map_mac_rows(block.state.mac, lambda value, a=start, b=stop: value[a:b])
                 for block, start, stop in runs
             ]
             mac = parts[0] if len(parts) == 1 else join_mac_rows(parts)
+        if state.regions is not None:
+            pieces = [
+                map_history_rows(block.state.regions, lambda value, a=start, b=stop: value[a:b])
+                for block, start, stop in runs
+            ]
+            regions = pieces[0] if len(pieces) == 1 else join_history_rows(pieces)
         return FinancialState(
             state.config_id,
             state.parameter_id,
@@ -405,6 +416,7 @@ class FlowStates:
             tuple(block.state.last_prediction_at[row] for block, row in entries),
             torch.tensor([block.steps[row] for block, row in entries], dtype=torch.int64),
             mac,
+            regions,
         )
 
 
@@ -1087,6 +1099,10 @@ class ChronologicalTrainer(ChronologicalInference):
             module = importlib.import_module("mars_titan.models.titans.holographic_network")
             own[module.__name__] = sha256(Path(module.__file__))
             own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
+        # C2 también, con el historial de regiones que guarda en el estado de cada flujo.
+        if self.predictor.config.axial_time_region is not None:
+            name = "mars_titan.models.titans.axial_time_region"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
         # porque `financial` importa siempre su configuración.
         if self.predictor.config.mature_reliability is not None:

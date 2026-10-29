@@ -59,6 +59,7 @@ PREDICTOR_CHANGES = (
     "temporal_encoder",
     "regional_variant",
     "holographic_network",
+    "axial_time_region",
     "session_rank_inputs",
     "session_ic_objective",
     "cross_asset_attention",
@@ -100,10 +101,11 @@ def checked_predictor_changes(changes):
             "Los cambios del predictor admiten gate_bias, memory_stability y memory_multiscale "
             "junto a memory_plasticity, memory_key_competition, quantile_routing, regional_fusion, "
             "regional_execution, memory_bank_readout, regional_variant, holographic_network, "
-            "session_ic_objective, cross_asset_attention, laplace_scale_head, auxiliary_horizons, "
-            "opponent_heads, mature_reliability, memory_huber, memory_time_scales y "
-            "three_factor_bridge como objetos no vacíos, y presence_modulation, attention_layout, "
-            "temporal_encoder, session_rank_inputs y differential_attention como nombres no vacíos"
+            "axial_time_region, session_ic_objective, cross_asset_attention, laplace_scale_head, "
+            "auxiliary_horizons, opponent_heads, mature_reliability, memory_huber, "
+            "memory_time_scales y three_factor_bridge como objetos no vacíos, y "
+            "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs y "
+            "differential_attention como nombres no vacíos"
         )
     return changes
 

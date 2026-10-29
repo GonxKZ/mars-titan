@@ -36,6 +36,7 @@ def source_reader(variant):
             regional_variant=variant,
             cross_asset_attention=None,
             holographic_network=None,
+            axial_time_region=None,
             mature_reliability=None,
             three_factor_bridge=None,
         )
