@@ -64,13 +64,21 @@ def released_value(score, resolution):
 
 
 def standard_error(differences, day, *, block_days, replicates, seed):
-    """Error típico de la media de una serie por sesión con bloques circulares de días UTC."""
+    """Error típico de la media de una serie por sesión con bloques circulares de días UTC.
+
+    Cada réplica sortea días y cada día arrastra todas sus sesiones. Si el día d sale n_d
+    veces, suma S_d en sus sesiones y tiene c_d de ellas, la media de la réplica es
+    Σ_d n_d S_d / Σ_d n_d c_d, así que basta sumar una vez por día, sin repetir las sesiones
+    de cada réplica.
+    """
     _, period = np.unique(day, return_inverse=True)
     periods = int(period.max()) + 1
     _require(block_days < periods, "Se necesitan más días que la longitud del bloque")
     counts = circular_block_counts(np.random.default_rng(seed), replicates, periods, block_days)
-    weights = counts[:, period].astype(np.float64)
-    means = (weights @ differences) / weights.sum(axis=1)
+    counts = counts.astype(np.float64)
+    sums = np.bincount(period, weights=differences, minlength=periods)
+    sizes = np.bincount(period, minlength=periods).astype(np.float64)
+    means = (counts @ sums) / (counts @ sizes)
     return float(means.std(ddof=1))
 
 

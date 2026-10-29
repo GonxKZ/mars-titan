@@ -203,6 +203,8 @@ def test_an_undefined_session_may_hold_any_value():
     ("changes", "message"),
     [
         (dict(resolution=0), "resolución"),
+        (dict(resolution=0.0), "resolución"),
+        (dict(resolution=-0.001), "resolución"),
         (dict(resolution=1), "resolución"),
         (dict(resolution=float("inf")), "resolución"),
         (dict(block_days=0), "bloque"),
