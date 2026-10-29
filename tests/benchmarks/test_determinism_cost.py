@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+from pathlib import Path
 
 import pytest
 import torch
@@ -126,3 +127,92 @@ def test_the_command_needs_a_new_receipt_and_a_new_result(monkeypatch, tmp_path)
         cost.main(["--output", str(existing)])
     with pytest.raises(SystemExit, match="resultado nuevo"):
         cost.main(["--worker", cost.DEFAULT, "--result", str(existing)])
+
+
+def test_the_worker_command_writes_the_record_of_its_mode(monkeypatch, tmp_path):
+    calls, result = [], tmp_path / "result.json"
+
+    def worker(mode, device, **options):
+        calls.append((mode, device, options))
+        return dict(mode=mode, digests=[])
+
+    monkeypatch.setattr(cost, "worker", worker)
+    options = ["--rows", "4", "--instants", "1", "--repetitions", "2", "--warmup", "0"]
+    cost.main(["--worker", cost.DEFAULT, "--result", str(result), *options, "--threads", "1"])
+    assert calls == [(cost.DEFAULT, "cpu", TINY)]
+    assert json.loads(result.read_text(encoding="utf-8")) == dict(mode=cost.DEFAULT, digests=[])
+
+
+def test_the_command_compares_two_processes_per_mode_in_a_new_receipt(
+    monkeypatch, tmp_path, capsys
+):
+    calls, output = [], tmp_path / "receipts" / "determinism.json"
+    # Los dos modos predicen lo mismo y difieren en los gradientes.
+    default, fixed = record(["p", "p"], ["g", "g"]), record(["p", "p"], ["h", "h"])
+    measured = dict(zip(cost.MODES, (default, fixed), strict=True))
+
+    def launch(mode, device, options, scratch, index):
+        calls.append((mode, device, options, index, Path(scratch).parent))
+        return measured[mode]
+
+    monkeypatch.setattr(cost, "launch", launch)
+    options = ["--rows", "4", "--instants", "1", "--repetitions", "2", "--warmup", "0"]
+    cost.main(["--output", str(output), *options, "--threads", "1"])
+    expected = [
+        (mode, "cpu", TINY, index, output.parent) for mode in cost.MODES for index in (0, 1)
+    ]
+    assert calls == expected
+    receipt = json.loads(output.read_text(encoding="utf-8"))
+    records = {mode: [measured[mode]] * cost.PROCESSES for mode in cost.MODES}
+    assert receipt["processes"] == records and receipt["options"] == TINY
+    assert receipt["comparison"] == cost.compare(records)
+    assert not receipt["comparison"]["same_gradients_across_modes"]
+    assert len(receipt["commit"]) == 40 and len(receipt["sources_sha256"]) == 4
+    # Los resultados de cada proceso se borran y solo queda el recibo.
+    assert [path.name for path in output.parent.iterdir()] == ["determinism.json"]
+    assert json.loads(capsys.readouterr().out) == receipt["comparison"]
+
+
+def test_the_warmup_runs_before_the_measured_passes(monkeypatch):
+    passes, original = [], cost.graph_pass
+
+    def counted(*arguments):
+        passes.append(arguments[0])
+        return original(*arguments)
+
+    monkeypatch.setattr(cost, "graph_pass", counted)
+    result = cost.worker(cost.DEFAULT, "cpu", **(TINY | dict(warmup=1)))
+    assert len(passes) == 3 and len({id(model) for model in passes}) == 1
+    assert len(result["digests"]) == len(result["graph_seconds"]["samples"]) == 2
+
+
+def test_a_measure_that_changes_a_parameter_is_refused(monkeypatch):
+    calls, original = [], cost.graph_pass
+
+    def altered(model, *arguments):
+        result = original(model, *arguments)
+        calls.append(model)
+        # Tras la última pasada, porque el predictor ya rechaza otra con parámetros cambiados.
+        if len(calls) == TINY["repetitions"]:
+            with torch.no_grad():
+                next(model.parameters()).add_(1.0)
+        return result
+
+    monkeypatch.setattr(cost, "graph_pass", altered)
+    with pytest.raises(RuntimeError, match="modificado parámetros"):
+        cost.worker(cost.DEFAULT, "cpu", **TINY)
+
+
+def test_a_non_finite_gradient_in_one_parameter_stops_the_pass():
+    spec = cost.specification()
+    inputs = cost.batches(spec, 4, 1, device="cpu")
+    targets = [torch.zeros(4)]
+    config = cost.FinancialConfig(spec, variant="mac_online", seed=42, **cost.BASE)
+    model = cost.FinancialPredictor(config, dtype=torch.float32).train()
+    elapsed, digests = cost.graph_pass(model, inputs, targets, lambda: None)
+    assert elapsed > 0 and set(digests) == {"predictions", "gradients"}
+    assert all(value.grad is None for value in model.parameters())
+    # Basta un parámetro con NaN, aunque los demás tengan un gradiente finito.
+    next(model.parameters()).register_hook(lambda grad: torch.full_like(grad, float("nan")))
+    with pytest.raises(ValueError, match="gradiente no finito"):
+        cost.graph_pass(model, inputs, targets, lambda: None)
