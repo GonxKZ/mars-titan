@@ -110,6 +110,7 @@ def run(args):
     sources = {
         path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
         for path in (
+            "src/mars_titan/data/correlation_regions.py",
             "src/mars_titan/evaluation/pit_region_gate.py",
             "src/mars_titan/evaluation/scale_diagnostics.py",
             "benchmarks/output_stage_cost.py",
