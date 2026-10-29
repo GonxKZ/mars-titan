@@ -72,6 +72,16 @@ El presupuesto de trabajo estimado sube de 24.068.096 a 24.240.128 bytes sin gra
 - No admite el puente regional, cuyas lecturas no tienen una sola familiaridad por fila, ni el control sin banco.
 - No reproduce ningún resultado publicado.
 
+## Comprobación
+
+La verificación es conjunta con R2 y su [recibo](../../reports/engineering/mature-cms-20261028/verification.json) se describe en la [comprobación de R2](mature-cms-v1.md#comprobación). Para R3:
+
+- Todas las líneas cambiadas de `episodic_readout.py` se ejecutan con las pruebas dirigidas. El archivo completo cubre 326 de 399 sentencias y 104 de 160 ramas.
+- Las 42 mutaciones dirigidas de la puerta, su control, el recorrido y la medida de coste se detectan con las pruebas en verde antes y después de cada una.
+- Las pruebas añadidas a la medida de coste cubren el calentamiento, el rechazo de un gradiente no finito en un solo parámetro, la sincronización de `cuda:0` y la orden de línea de comandos, y detectan sus 13 mutaciones.
+
+No hay entrenamiento ni pasos de optimizador en ninguna de estas comprobaciones.
+
 ## Referencias
 
 - Drozdov, A., Wang, S., Rahimi, R., McCallum, A., Zamani, H. y Iyyer, M. (2022). You can't pick your neighbors, or can you? When and how to rely on retrieval in the kNN-LM. En *Findings of the Association for Computational Linguistics: EMNLP 2022* (pp. 2997–3007). https://aclanthology.org/2022.findings-emnlp.218/

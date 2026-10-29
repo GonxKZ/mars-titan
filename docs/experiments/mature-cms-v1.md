@@ -82,6 +82,17 @@ El estado numérico pasa de 1.560 bytes en el control a 72.216, 284.184 y 1.132.
 - No admite áreas, roles ni la regla delta.
 - No reproduce ningún resultado publicado.
 
+## Comprobación
+
+El [recibo](../../reports/engineering/mature-cms-20261028/verification.json) reúne la verificación conjunta de R2 y R3, desde el commit de implementación `c729296bb` hasta `84c91c846`, ya fusionado con develop. No hay entrenamiento ni pasos de optimizador, y el test final sigue cerrado.
+
+- 684 casos dirigidos con cobertura de ramas sobre `c729296bb`, con una omisión por la protección del aprendizaje. La regresión de los módulos que importan el código cambiado ejecutó 1.855 casos de `tests/training` y 5.131 del resto, sin fallos. De sus 111 omisiones, 39 necesitan los binarios nativos de PPO y de simulación sin compilar y las demás son de la protección.
+- Tras cada fusión de develop (#805 a #807, después #808 y #809 y por último C3 con #810) volvieron a pasar las pruebas dirigidas, las que cambió la fusión, las de C2 y las de los recibos de coste. En `84c91c846` son 1.058 casos con cobertura de ramas.
+- Las 52 funciones con líneas cambiadas frente a develop tienen cubiertas sus 309 líneas ejecutables. `multiscale_mixture.py` cubre 308 de 317 sentencias y 120 de 124 ramas. El CRAP más alto es el de `MatureCorrection.__post_init__` (62,1), la validación de la corrección madura, con complejidad 40.
+- Las 73 mutaciones dirigidas de R2 se detectan con las pruebas en verde antes y después de cada una. También se detectan las 42 de R3 y las 13 de su medida de coste.
+
+CRAP y cobertura localizan complejidad poco comprobada, pero no demuestran que no haya errores.
+
 ## Referencias
 
 - Behrouz, A., Razaviyayn, M., Zhong, P. y Mirrokni, V. (2025). Nested Learning: The illusion of deep learning architectures. En *Advances in Neural Information Processing Systems 38* (pp. 46968–47002). https://doi.org/10.52202/085713-1565
