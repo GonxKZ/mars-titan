@@ -238,6 +238,21 @@ def test_restore_rejects_a_state_that_does_not_belong_to_the_signal(change):
         ReliabilitySignal.restore(config, payload)
 
 
+def test_restore_rejects_a_channel_with_other_fields():
+    for change in (
+        lambda channel: channel.pop("history"),
+        lambda channel: channel.update(extra=1),
+    ):
+        config, payload = _payload()
+        change(payload["markets"]["US"][0])
+        with pytest.raises(ValueError, match="no conserva sus campos"):
+            ReliabilitySignal.restore(config, payload)
+    config, payload = _payload()
+    payload["markets"]["US"][0] = list(payload["markets"]["US"][0].items())
+    with pytest.raises(ValueError, match="no conserva sus campos"):
+        ReliabilitySignal.restore(config, payload)
+
+
 def test_restore_rejects_markets_channels_and_references_out_of_contract():
     config, payload = _payload()
     payload["markets"][""] = payload["markets"]["US"]

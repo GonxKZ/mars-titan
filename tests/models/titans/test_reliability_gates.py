@@ -14,6 +14,7 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.models.titans.local_control import MACProjectionConfig
 from mars_titan.models.titans.neural_memory import NeuralMemory
 from mars_titan.models.titans.reliability_gates import (
+    CONSUMERS,
     MATURE_RELIABILITY,
     MatureReliability,
     ReliabilityGates,
@@ -113,27 +114,44 @@ def capture(monkeypatch):
     return seen
 
 
-def test_the_signal_shifts_the_write_and_forget_logits_by_the_declared_amount(monkeypatch):
+@pytest.mark.parametrize(
+    "consumers", [("write", "forget"), ("write",), ("forget",)], ids=["both", "write", "forget"]
+)
+def test_the_signal_shifts_the_write_and_forget_logits_by_the_declared_amount(
+    monkeypatch, consumers
+):
     control, batch = setup()
-    model = gated(control, margin=0.1, bound=0.5)
+    model = gated(control, margin=0.1, bound=0.5, consumers=consumers)
+    rows = [CONSUMERS.index(name) for name in consumers]
     with torch.no_grad():
         model.reliability_gates.mixing.copy_(
-            torch.tensor([[1.0, -2.0, 0.5], [0.0, 3.0, -1.0]], dtype=torch.float64)
+            torch.tensor([[1.0, -2.0, 0.5], [0.0, 3.0, -1.0]], dtype=torch.float64)[rows]
         )
     model._seal_parameters()
-    value = torch.tensor([[0.3, -0.05, 0.9], [-0.6, 0.2, 0.08]], dtype=torch.float64)
+    value = torch.tensor([[0.3, -0.05, 0.9], [-0.6, 0.2, 0.08]], dtype=torch.float64)[rows]
     seen = capture(monkeypatch)
     with torch.no_grad():
         control.prepare(batch, control.initial_state(batch.flow_ids))
-        model.prepare(batch, model.initial_state(batch.flow_ids), reliability=value.expand(2, 2, 3))
+        model.prepare(
+            batch,
+            model.initial_state(batch.flow_ids),
+            reliability=value.expand(2, len(rows), 3),
+        )
     reference, shifted = seen
     # Con margen 0,1 quedan u = [0,2, 0, 0,8] y [−0,5, 0,1, 0], así que la escritura se desplaza
-    # 0,5 · tanh(0,6) y el olvido 0,5 · tanh(0,3) en unidades de logit.
+    # 0,5 · tanh(0,6) y el olvido 0,5 · tanh(0,3) en unidades de logit. La puerta que no
+    # consume la señal conserva los bits de la referencia.
     theta_max = control.mac.memory.config.theta_max
     write = torch.logit(shifted["theta"] / theta_max) - torch.logit(reference["theta"] / theta_max)
     forget = torch.logit(shifted["alpha"]) - torch.logit(reference["alpha"])
-    torch.testing.assert_close(write, torch.full_like(write, 0.5 * math.tanh(0.6)))
-    torch.testing.assert_close(forget, torch.full_like(forget, 0.5 * math.tanh(0.3)))
+    if "write" in consumers:
+        torch.testing.assert_close(write, torch.full_like(write, 0.5 * math.tanh(0.6)))
+    else:
+        assert torch.equal(shifted["theta"], reference["theta"])
+    if "forget" in consumers:
+        torch.testing.assert_close(forget, torch.full_like(forget, 0.5 * math.tanh(0.3)))
+    else:
+        assert torch.equal(shifted["alpha"], reference["alpha"])
     assert torch.equal(shifted["eta"], reference["eta"])
 
 
@@ -244,16 +262,16 @@ def test_the_configuration_records_its_role_and_normalizes_its_lists():
     assert identity["name"] == MATURE_RELIABILITY
     assert identity["role"] == "shared_signal_variant"
     assert identity["time_constants"] == [1, 5] and identity["consumers"] == ["write", "forget"]
+    # Cada control conserva su propio papel, no solo el conjunto de papeles.
     roles = {
-        MatureReliability(source="shuffled_in_time").identity()["role"],
-        MatureReliability(source="titans_surprise").identity()["role"],
-        MatureReliability(independent=True).identity()["role"],
+        source: MatureReliability(source=source).identity()["role"]
+        for source in ("shuffled_in_time", "titans_surprise")
     }
-    assert roles == {
-        "shuffled_in_time_control",
-        "titans_surprise_control",
-        "independent_signals_per_consumer_control",
-    }
+    assert roles == dict(
+        shuffled_in_time="shuffled_in_time_control", titans_surprise="titans_surprise_control"
+    )
+    independent = MatureReliability(independent=True).identity()["role"]
+    assert independent == "independent_signals_per_consumer_control"
     assert MatureReliability(independent=True).channels == 2
     scores = {MatureReliability(source=s).identity()["score"] for s in ("shuffled_in_time",)}
     assert scores == {"score_of_a_uniformly_drawn_earlier_or_current_maturity_event"}

@@ -27,6 +27,8 @@ E es 2023 (`fold-018`). La criba no lo abre. Es un año de desarrollo reutilizad
 
 Las sesiones de 2019 son S del origen 2019 y, a la vez, ajuste, validación y calibración del origen 2020. No es una fuga. Cada origen elige su estado con su propia G, y ningún veredicto usa las filas con las que se eligió el modelo que juzga.
 
+La segunda ola volverá a usar este S. Lo hará a través de la [escalera](reusable-holdout-v1.md), que solo publica un resultado nuevo cuando mejora al mejor ya publicado por más de un error típico y sella el resto hasta cerrar esa ola.
+
 ## Ajuste
 
 Todos los ajustes parten de su receta declarada con estos cambios comunes:

@@ -88,15 +88,37 @@ El componente solo existe con `mac_online`. Se rechaza con el control local C de
 - Cada fase empieza neutral, así que las primeras decisiones de validación y evaluación no se modulan.
 - El control de sorpresa cambia también el momento de la señal, porque la sorpresa se conoce al emitir. Es una diferencia buscada, ya que la madura no puede adelantarse.
 - Solo están conectadas la escritura y el olvido. η, PT4, el consumidor congelado y CM-v1 C quedan fuera.
-- La señal es una adaptación propia. Las puertas dependientes de la entrada son las de Titans (Behrouz, Zhong y Mirrokni, 2024) y la modulación de la plasticidad por un resultado conocido con retraso viene de las reglas de tres factores (Gerstner y otros, 2018). No reproduce ningún resultado publicado.
+- La señal es una adaptación propia. Las puertas dependientes de la entrada son las de Titans (Behrouz, Zhong y Mirrokni, 2025) y la modulación de la plasticidad por un resultado conocido con retraso viene de las reglas de tres factores (Gerstner y otros, 2018). No reproduce ningún resultado publicado.
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/mature_reliability_cost.py`, sin pasos de optimizador. La medida CUDA queda para cuando la GPU esté libre.
+El componente añade seis parámetros, las mezclas de dos puertas por tres velocidades. Por fila y bloque suma un tensor [filas, 2, 3], dos productos escalares de tres términos y dos `tanh`. El acumulador de la señal trabaja en Python fuera del grafo.
+
+La medida en CPU de `benchmarks/mature_reliability_cost.py` ([recibo](../../reports/engineering/mature-reliability-20261028/cost-cpu.json), commit `90e26af37`) recorre 8 instantes de 256 filas con `hidden_size` 64, dos hilos, FP32 estricto, 2 calentamientos y 10 repeticiones con orden rotatorio, sin optimizador y con los parámetros intactos al final. La máquina tenía otras pruebas en marcha y una carga media de 28 a 31 con 16 hilos, así que la dispersión es grande:
+
+| Modelo | Forward con grafo (s) | Backward (s) | Inferencia (s) | Relación de medianas |
+| --- | --- | --- | --- | --- |
+| `reference` | 2,52 (1,63 a 3,05) | 1,13 (0,89 a 1,41) | 2,41 (1,53 a 2,91) | 1 |
+| `shared_signal` | 2,52 (1,55 a 3,70) | 1,10 (0,73 a 1,66) | 2,26 (1,50 a 2,88) | 1,00 / 0,98 / 0,93 |
+| `shuffled_in_time` | 2,72 (1,83 a 3,65) | 1,22 (1,00 a 1,43) | 2,47 (1,87 a 2,99) | 1,08 / 1,08 / 1,02 |
+| `titans_surprise` | 2,36 (1,76 a 3,00) | 1,20 (0,78 a 1,52) | 2,43 (1,80 a 3,47) | 0,94 / 1,06 / 1,01 |
+| `independent_signals` | 2,40 (1,97 a 2,99) | 1,13 (0,90 a 1,38) | 2,33 (2,03 a 2,66) | 0,95 / 1,00 / 0,97 |
+
+Cada celda da la mediana con el mínimo y el máximo. Las medianas quedan entre 0,93 y 1,08 de la referencia y los intervalos se solapan por completo, de modo que esta medida no distingue diferencias de ese tamaño. No permite afirmar que el componente sea gratuito, solo que su coste queda por debajo de la resolución de la medida con esta carga.
+
+El acumulador, medido aparte con el mismo recibo, tarda por evento unos 0,35 ms en actualizar y 0,21 ms en leer con 64 etiquetas, 1,3 y 0,9 ms con 256, y 5,7 y 3,9 ms con 1.024 en la señal compartida. El control independiente tarda más en actualizar, 9,5 ms con 1.024, porque reparte cada etiqueta en dos canales. Con 256 filas, el acumulador supone menos del 1 % de los 0,31 s por instante del forward con grafo, así que no compensa vectorizarlo. La medida CUDA queda pendiente hasta que la GPU esté libre.
 
 ## Comprobación
 
-Pendiente de la verificación final.
+La comprobación se hizo en CPU el 28 y el 29 de octubre, sin pasos de optimizador y con la huella de la protección del aprendizaje igual antes y después de cada tanda.
+
+- En el commit final, con develop integrado, pasan 703 casos dirigidos de la señal, las puertas, su recorrido y su medida de coste, el adaptador financiero, la memoria neuronal, MAC, el consumidor congelado, el recorrido cronológico, Dust, las protecciones del bloqueo, la medida de lesiones que trae develop y los cuatro módulos con dobles de la identidad. Se omite uno que necesita una protección que permita aprender. Con coverage 7.16.1 y radon 6.0.1, `mature_reliability.py` cubre 115/115 sentencias y 50/50 ramas, y `reliability_gates.py` 74/74 y 20/20. El CRAP máximo de los dos módulos es 24, el de `MatureReliability.__post_init__`, que tiene complejidad 24 y cobertura completa.
+- De las 350 líneas ejecutables cambiadas frente a develop, 334 están cubiertas. Las 16 restantes son de la medida de coste: el calentamiento, que las pruebas recorren sin repeticiones, dos comprobaciones defensivas y la orden de línea de comandos. Entre las funciones cambiadas, el CRAP más alto es el de `FinancialConfig.__post_init__`, 2.225 con complejidad 119, una deuda previa recogida en [#801](https://github.com/GonxKZ/mars-titan/issues/801). El cambio de `FinancialDustAdapter.__init__`, que añade la señal a los cambios que Dust rechaza, quedó fuera de los archivos medidos.
+- La regresión de los módulos que importan el código cambiado, sobre `90e26af37`, recorrió 7.914 casos con 9 fallos y 166 omisiones. Los 9 fallos venían de cuatro dobles de configuración que no declaraban el campo nuevo y se corrigieron en `791a01d6e`. De las omisiones, 126 son de la protección del aprendizaje, una espera a que se levante y 39 necesitan binarios nativos de simulación que no estaban compilados. La prueba de identidad reforzada en ese commit mostró que las puertas ya entran en la identidad de todo predictor, porque `financial` importa siempre su configuración, y `34d56ce1c` dejó en la identidad del recorrido solo el acumulador de la señal.
+- Se ejecutaron 47 mutaciones dirigidas sobre `90e26af37`, cada una con una fase en verde antes, la mutación y otra fase en verde después en una copia aislada del árbol, y se detectaron 45. `roles_swapped`, que intercambia los papeles de dos controles, sobrevivió. La prueba añadida en `aa73b28f7` la detecta al repetirla sobre `a248f2219`. Las nueve mutaciones del recorrido se repitieron sobre `34d56ce1c` por el cambio de identidad y se detectan ocho.
+- `signal_kept_across_passes`, que quita `run.reliability = None` del cierre de la fase, sobrevive en las dos pasadas porque es equivalente. El cierre es siempre el último evento de la fase, después solo se leen métricas que no usan la señal, cada fase crea su propio `_Pass` y el checkpoint posterior al ajuste no guarda el recorrido cerrado. La línea se conserva para que el cierre vacíe todo el estado de la fase, como hace con los demás campos.
+
+El [recibo de verificación](../../reports/engineering/mature-reliability-20261028/verification.json) conserva los recuentos y las huellas de los informes JUnit, de la cobertura, de las mutaciones y del enlace nativo.
 
 ## Pendiente
 
@@ -105,5 +127,5 @@ Pendiente de la verificación final.
 
 ## Referencias
 
-- Behrouz, A., Zhong, P. y Mirrokni, V. (2024). *Titans: Learning to memorize at test time*. arXiv. https://arxiv.org/abs/2501.00663
+- Behrouz, A., Zhong, P. y Mirrokni, V. (2025). Titans: Learning to memorize at test time. En *Advances in Neural Information Processing Systems 38* (pp. 113506–113543). https://doi.org/10.52202/085713-3786
 - Gerstner, W., Lehmann, M., Liakoni, V., Corneil, D. y Brea, J. (2018). Eligibility traces and plasticity on behavioral time scales: Experimental support of neoHebbian three-factor learning rules. *Frontiers in Neural Circuits, 12*, 53. https://doi.org/10.3389/fncir.2018.00053
