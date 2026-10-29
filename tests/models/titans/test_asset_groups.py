@@ -3,6 +3,7 @@
 Las pruebas calculan salidas y gradientes sobre lotes ficticios, sin optimizador ni pasos.
 """
 
+import hashlib
 import json
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -11,6 +12,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 import torch
+from torch import nn
 from torch.nn import functional as F
 
 from mars_titan.data.asset_groups import session_memberships
@@ -163,6 +165,36 @@ def test_the_sector_control_groups_by_the_current_sector():
     values = encoded()
     base = layer(values, prices, FLOWS, MARKETS, AT)
     assert torch.equal(layer(values, prices * 3, FLOWS, MARKETS, AT), base)
+
+
+def test_a_row_with_fewer_families_reads_the_mean_of_its_own():
+    layer, prices = module(), windows()
+    # La fila 2 no tiene rango en ninguna sesión, así que le falta el diferencial.
+    prices[2, :, 1] = prices[2, :, 2] = prices[2, :, 3]
+    usa = [i for i, market in enumerate(MARKETS) if market == "US"]
+    membership, families = layer.memberships(prices[usa], [FLOWS[i] for i in usa], ("US", 7))
+    assert families.tolist() == [4.0 if row == 2 else 5.0 for row in usa]
+    values = encoded()
+    torch.testing.assert_close(
+        layer(values, prices, FLOWS, MARKETS, AT),
+        reference(layer, values, prices, FLOWS, MARKETS, AT),
+    )
+
+
+def test_the_weights_come_from_a_derived_seed_without_the_global_generator():
+    torch.random.default_generator.manual_seed(11)
+    before = torch.random.get_rng_state()
+    layer = AssetGroupMembership(16, SMALL, seed=3, dtype=torch.float64)
+    assert torch.equal(torch.random.get_rng_state(), before)
+    digest = hashlib.sha256(f"{ASSET_GROUP_MEMBERSHIP}/3".encode()).digest()
+    with torch.random.fork_rng(devices=[]):
+        torch.random.default_generator.manual_seed(int.from_bytes(digest[:7], "little"))
+        inner = nn.Linear(16, 16, dtype=torch.float64)
+        outer = nn.Linear(16, 16, dtype=torch.float64)
+    assert torch.equal(layer.inner.weight, inner.weight)
+    assert torch.equal(layer.outer.weight, outer.weight)
+    other = AssetGroupMembership(16, SMALL, seed=4, dtype=torch.float64)
+    assert not torch.equal(other.inner.weight, layer.inner.weight)
 
 
 def test_a_row_without_history_keeps_its_representation_exactly():
@@ -475,6 +507,38 @@ def test_the_frozen_consumer_rejects_h4_until_it_registers_it():
 
     with pytest.raises(ValueError, match="grupos de activos"):
         FrozenFinancialConsumer(model(asset_groups=SMALL))
+
+
+def test_dust_refuses_h4():
+    from mars_titan.training.dust.financial import FinancialDustAdapter
+
+    FinancialDustAdapter(model(variant="transformer_direct"))
+    with pytest.raises(ValueError, match="sin ampliaciones"):
+        FinancialDustAdapter(model(variant="transformer_direct", asset_groups=SMALL))
+
+
+def test_the_mars_titan_parents_refuse_h4(tmp_path):
+    from mars_titan.data.storage import sha256
+    from mars_titan.training import mars_titan_walk_forward as walk
+    from mars_titan.training.titans_walk_forward import KIND
+
+    request = dict(predictor_changes=dict(asset_groups=asdict(SMALL)))
+    with pytest.raises(ValueError, match="grupos de activos de H4"):
+        walk._frozen_parent(
+            dict(predictor=dict(dtype="float64")), None, 7, "cpu", tmp_path, dict(request=request)
+        )
+    view = tmp_path / "view.json"
+    view.write_text("{}", encoding="utf-8")
+    report = dict(
+        kind=KIND,
+        status="completed",
+        final_test_opened=False,
+        checkpoint={},
+        request=dict(request, variant="mac_online", seed=7, view_sha256=sha256(view)),
+    )
+    (tmp_path / "run.json").write_text(json.dumps(report), encoding="utf-8")
+    with pytest.raises(ValueError, match="grupos de activos de H4"):
+        walk._parent(tmp_path, view, 7)
 
 
 def test_declared_models_build_with_their_controls():
