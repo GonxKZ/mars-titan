@@ -35,6 +35,8 @@ medidas:
 Cada medida necesita al menos `min_observations` rendimientos o pares válidos. El valor por
 defecto, 36, aplica a los 63 pares de la ventana la proporción entre los 12 días aplicables que
 el artículo de Abdi y Ranaldo exige en un mes y los meses de 21 sesiones de sus simulaciones.
+La beta exige además que el mercado se aparte de su media más que el redondeo de esa media, y
+la correlación que el residuo de la fila también lo haga.
 Las cuatro primeras medidas se convierten en el rango medio u ∈ (0, 1) entre las filas válidas
 de la sesión, y u en una partición difusa de Ruspini (1969) con Q cubos: con
 p = clamp(uQ − 1/2, 0, Q − 1), la fila pertenece al cubo ⌊p⌋ con 1 − (p − ⌊p⌋) y al siguiente
@@ -113,13 +115,19 @@ def window_measures(prices, min_observations):
         market_mean = torch.where(covered, market[None, :], 0.0).sum(1) / used.clamp_min(1)
         deviation = torch.where(covered, returns - returns_mean[:, None], 0.0)
         market_deviation = torch.where(covered, market[None, :] - market_mean[:, None], 0.0)
+        # Restar la media de 63 términos deja un error de redondeo de hasta unas 63 veces el
+        # épsilon de la precisión. Una desviación de ese orden no es un movimiento, y con ella
+        # la beta y el residuo de un mercado o una fila de rendimientos constantes serían ruido.
+        tolerance = CONTEXT_SESSIONS * torch.finfo(prices.dtype).eps
         variance = market_deviation.square().sum(1)
-        regular = enough & (used >= min_observations) & (variance > 0)
+        market_scale = torch.where(covered, market[None, :], 0.0).square().sum(1)
+        regular = enough & (used >= min_observations) & (variance > tolerance**2 * market_scale)
         beta = (deviation * market_deviation).sum(1) / torch.where(regular, variance, 1.0)
         beta = torch.where(regular, beta, 0.0)
         residual = deviation - beta[:, None] * market_deviation
         norm = residual.norm(dim=1)
-        correlated = regular & (norm > 0)
+        scale = torch.where(covered, returns, 0.0).norm(dim=1)
+        correlated = regular & (norm > tolerance * scale)
         normalized = torch.where(
             correlated[:, None], residual / torch.where(correlated, norm, 1.0)[:, None], 0.0
         )

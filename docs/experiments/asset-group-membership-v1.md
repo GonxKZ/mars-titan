@@ -17,10 +17,10 @@ Con c, h y l el logaritmo del cierre, del máximo y del mínimo respecto del anc
 | Volatilidad | Desviación típica de r con ddof = 1 | Al menos 36 rendimientos |
 | Momentum | c de la última sesión presente menos c de la primera | Al menos 36 rendimientos |
 | Diferencial | $\frac1n\sum_t\sqrt{\max\{4(c_t-\eta_t)(c_t-\eta_{t+1}),0\}}$ con $\eta=(h+l)/2$, la versión CHL corregida por dos días de [Abdi y Ranaldo (2017)](https://doi.org/10.1093/rfs/hhx084) | Al menos 36 pares con las dos sesiones presentes y con rango |
-| Beta | Pendiente de MCO de r frente a m, la media equiponderada de los rendimientos de las filas válidas de la sesión | Al menos 36 rendimientos y 36 pasos cubiertos, y varianza de m positiva |
-| Correlación | Grupos de c-medias difusas de los residuos e = (r − r̄) − β (m − m̄) | Beta válida y residuo no nulo |
+| Beta | Pendiente de MCO de r frente a m, la media equiponderada de los rendimientos de las filas válidas de la sesión | Al menos 36 rendimientos y 36 pasos cubiertos, y un mercado que se aparte de su media más que el redondeo |
+| Correlación | Grupos de c-medias difusas de los residuos e = (r − r̄) − β (m − m̄) | Beta válida y un residuo mayor que el redondeo |
 
-El volumen de la ventana está dividido por su media en cada activo y no permite comparar activos entre sí, por eso la liquidez sale de los precios. El mínimo de 36 aplica a los 63 pares de la ventana la proporción entre los 12 días aplicables que el artículo de Abdi y Ranaldo exige en un mes (páginas 20 y 21 de la versión de autor) y los meses de 21 sesiones de sus simulaciones (página 17).
+El volumen de la ventana está dividido por su media en cada activo y no permite comparar activos entre sí, por eso la liquidez sale de los precios. Restar la media de 63 términos deja un error de redondeo que no supera unas 63 veces el épsilon $\varepsilon$ de la precisión, relativo a la escala de los términos. Por eso la beta exige $\sum(m-\bar m)^2>(63\varepsilon)^2\sum m^2$ y la correlación $\lVert e\rVert>63\varepsilon\lVert r\rVert$. Sin esa tolerancia, un mercado o una fila de rendimientos constantes daban una beta y un grupo de correlación hechos de redondeo. El mínimo de 36 aplica a los 63 pares de la ventana la proporción entre los 12 días aplicables que el artículo de Abdi y Ranaldo exige en un mes (páginas 20 y 21 de la versión de autor) y los meses de 21 sesiones de sus simulaciones (página 17).
 
 ## Pertenencias
 
@@ -86,17 +86,18 @@ H4 se rechaza junto a C5, porque son dos respuestas a la misma pregunta, y junto
 
 | Ecuación o regla | Código | Prueba |
 | --- | --- | --- |
-| Cinco medidas y su validez | `window_measures` | `test_each_measure_matches_a_direct_calculation`, `test_rows_with_too_few_observations_are_not_valid` |
+| Cinco medidas y su validez | `window_measures` | `test_each_measure_matches_a_direct_calculation`, `test_rows_with_too_few_observations_are_not_valid`, `test_the_minimum_counts_exactly_its_observations`, `test_momentum_reads_the_first_and_last_present_sessions` |
+| Residuo y tolerancia al redondeo | `window_measures` | `test_the_residual_removes_the_session_market_with_its_beta`, `test_a_market_without_variance_gives_no_beta_or_correlation`, `test_a_row_with_constant_returns_has_no_correlation_group` |
 | Diferencial corregido por dos días | `window_measures` | `test_the_spread_sets_each_negative_two_day_estimate_to_zero_before_the_square_root` |
 | Rangos medios y partición de Ruspini | `midranks`, `fuzzy_buckets` | `test_midranks_match_the_average_ranks_and_ignore_invalid_rows`, `test_fuzzy_buckets_are_a_ruspini_partition_between_neighbours`, `test_a_rank_on_a_centre_belongs_to_one_bucket_and_the_edges_saturate` |
-| Inmersión y distancia de la correlación reconstruida | `correlation_embedding` | `test_the_embedding_distance_follows_the_reconstructed_residual_correlation`, `test_the_embedding_does_not_depend_on_the_sign_of_each_component` |
-| Recorrido más lejano y c-medias difusas | `farthest_first`, `fuzzy_clusters` | `test_farthest_first_starts_far_from_the_mean_and_skips_invalid_rows`, `test_fuzzy_clusters_recover_separated_sectors`, `test_fewer_valid_rows_than_clusters_put_each_row_in_its_own_group` |
+| Inmersión y distancia de la correlación reconstruida | `correlation_embedding` | `test_the_embedding_distance_follows_the_reconstructed_residual_correlation`, `test_the_embedding_does_not_depend_on_the_sign_of_each_component`, `test_the_embedding_ignores_the_values_of_invalid_rows` |
+| Recorrido más lejano y c-medias difusas | `farthest_first`, `fuzzy_clusters` | `test_farthest_first_starts_far_from_the_mean_and_skips_invalid_rows`, `test_each_iteration_follows_the_fuzzy_c_means_update`, `test_fuzzy_clusters_recover_separated_sectors`, `test_fewer_valid_rows_than_clusters_put_each_row_in_its_own_group` |
 | Pertenencias de la sesión | `session_memberships`, `family_slices` | `test_session_memberships_sum_to_one_in_each_family_of_a_valid_row`, `test_memberships_follow_a_permutation_of_the_rows`, `test_the_fill_of_an_absent_session_does_not_reach_the_memberships` |
-| Agregación, estado de grupo y lectura | `AssetGroupMembership.forward` | `test_the_groups_match_a_row_by_row_reference`, `test_each_row_only_reads_rows_of_its_market_and_instant`, `test_a_row_without_history_keeps_its_representation_exactly` |
+| Agregación, estado de grupo y lectura | `AssetGroupMembership.forward` | `test_the_groups_match_a_row_by_row_reference`, `test_each_row_only_reads_rows_of_its_market_and_instant`, `test_a_row_with_fewer_families_reads_the_mean_of_its_own`, `test_a_row_without_history_keeps_its_representation_exactly` |
 | Controles | `memberships` y `_permutation` | `test_the_controls_have_the_same_parameters_and_the_shuffle_permutes_whole_rows`, `test_the_sector_control_groups_by_the_current_sector` |
-| Paridad y gradientes al empezar | $W_o=0$ | `test_h4_and_its_controls_start_as_the_reference`, `test_at_construction_only_the_output_projection_receives_gradient`, `test_gradients_reach_the_rows_of_the_session_and_never_the_window` |
+| Paridad, semilla y gradientes al empezar | $W_o=0$ y la semilla derivada | `test_h4_and_its_controls_start_as_the_reference`, `test_the_weights_come_from_a_derived_seed_without_the_global_generator`, `test_at_construction_only_the_output_projection_receives_gradient`, `test_gradients_reach_the_rows_of_the_session_and_never_the_window` |
 | Sesión completa en el recorrido | `session_level` y el recorrido cronológico | `test_h4_needs_the_complete_session_in_one_block`, `test_each_update_reads_whole_sessions_with_their_presence_windows`, `test_an_instant_split_into_blocks_is_refused` |
-| Identidad y rechazos | `FinancialConfig`, `_code` y los consumidores | `test_disabled_field_keeps_identity_parameters_and_predictions`, `test_the_sources_enter_the_trainer_identity_only_when_active`, `test_h4_needs_the_presence_window_and_does_not_combine_with_c5_or_f5`, `test_the_frozen_consumer_rejects_h4_until_it_registers_it` |
+| Identidad y rechazos | `FinancialConfig`, `_code` y los consumidores | `test_disabled_field_keeps_identity_parameters_and_predictions`, `test_the_sources_enter_the_trainer_identity_only_when_active`, `test_h4_needs_the_presence_window_and_does_not_combine_with_c5_or_f5`, `test_the_frozen_consumer_rejects_h4_until_it_registers_it`, `test_dust_refuses_h4`, `test_the_mars_titan_parents_refuse_h4` |
 
 ## Desviaciones y límites
 

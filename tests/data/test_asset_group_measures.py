@@ -138,13 +138,78 @@ def test_a_session_with_one_valid_row_has_no_beta_or_correlation():
     assert measures["beta"][0].item() == pytest.approx(1.0, rel=1e-12)
 
 
+def test_momentum_reads_the_first_and_last_present_sessions():
+    prices, _ = sectors(rows=4)
+    # Ausencias de todo el mercado al principio y al final de la ventana.
+    prices[:, :3] = 0
+    prices[:, 61:] = 0
+    measures = ag.window_measures(prices, 36)
+    close = prices[..., 3]
+    torch.testing.assert_close(measures["momentum"], close[:, 60] - close[:, 3], rtol=0, atol=0)
+    assert measures["valid"]["momentum"].all()
+
+
+def test_the_minimum_counts_exactly_its_observations():
+    prices, _ = sectors(rows=4)
+    # Con 37 sesiones presentes hay 36 rendimientos, 36 pares con rango y 36 pasos cubiertos.
+    prices[:, :27] = 0
+    exact = ag.window_measures(prices, 36)["valid"]
+    above = ag.window_measures(prices, 37)["valid"]
+    for family in ag.FAMILIES:
+        assert exact[family].all(), family
+        assert not above[family].any(), family
+
+
+def constant_returns(steps, dtype):
+    close = torch.tensor(steps, dtype=torch.float64)[:, None] * torch.arange(SESSIONS)
+    return window(close).to(dtype)
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+def test_a_market_without_variance_gives_no_beta_or_correlation(dtype):
+    # Cada fila sube lo mismo cada día: el mercado es constante salvo por el redondeo.
+    measures = ag.window_measures(constant_returns([0.0013, 0.0027, 0.0071, -0.0049], dtype), 36)
+    assert measures["valid"]["volatility"].all()
+    assert not measures["valid"]["beta"].any() and not measures["valid"]["correlation"].any()
+    assert torch.count_nonzero(measures["beta"]) == 0
+    assert torch.count_nonzero(measures["residual"]) == 0
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.float32])
+def test_a_row_with_constant_returns_has_no_correlation_group(dtype):
+    prices, _ = sectors(rows=6)
+    prices[0] = constant_returns([0.002], torch.float64)[0]
+    measures = ag.window_measures(prices.to(dtype), 36)
+    # Su beta es nula y válida, pero su residuo es redondeo y no tiene dirección.
+    assert measures["valid"]["beta"].all() and abs(measures["beta"][0].item()) < 1e-6
+    assert measures["valid"]["correlation"].tolist() == [False] + [True] * 5
+    assert torch.count_nonzero(measures["residual"][0]) == 0
+
+
+def test_the_residual_removes_the_session_market_with_its_beta():
+    prices, _ = sectors(rows=8)
+    measures = ag.window_measures(prices, 36)
+    returns = np.diff(prices[..., 3].numpy(), axis=1)
+    market = returns.mean(axis=0)
+    for row in range(8):
+        slope, intercept = np.polyfit(market, returns[row], 1)
+        residual = returns[row] - slope * market - intercept
+        np.testing.assert_allclose(
+            measures["residual"][row].numpy(),
+            residual / np.linalg.norm(residual),
+            rtol=0,
+            atol=1e-10,
+        )
+
+
 def test_midranks_match_the_average_ranks_and_ignore_invalid_rows():
-    values = torch.tensor([0.3, 0.1, 0.3, 0.7, 0.2, 9.0], dtype=torch.float64)
-    valid = torch.tensor([True, True, True, True, True, False])
+    # Las filas no válidas son menores que todas o empatan con una válida, así que contarían.
+    values = torch.tensor([0.3, 0.1, 0.3, 0.7, 0.2, -9.0, 0.3], dtype=torch.float64)
+    valid = torch.tensor([True, True, True, True, True, False, False])
     ranks = ag.midranks(values, valid)
     expected = (stats.rankdata(values[:5].numpy(), method="average") - 0.5) / 5
     np.testing.assert_allclose(ranks[:5].numpy(), expected, rtol=0, atol=1e-15)
-    assert ranks[5] == 0
+    assert ranks[5:].tolist() == [0, 0]
     assert (
         ag.midranks(torch.ones(4, dtype=torch.float64), torch.ones(4, dtype=bool)).tolist()
         == [0.5] * 4
@@ -190,6 +255,9 @@ def test_farthest_first_starts_far_from_the_mean_and_skips_invalid_rows():
     centers = ag.farthest_first(points, valid, 3)
     # La media válida es (−0,25, 0,75): el más lejano es (0, 3), luego (−2, 0) y luego (1, 0).
     assert centers.tolist() == [[0.0, 3.0], [-2.0, 0.0], [1.0, 0.0]]
+    # Tras trasladar los puntos, el más alejado del origen sería (−12, 0) y no cambia nada.
+    offset = torch.tensor([-10.0, 0.0], dtype=torch.float64)
+    assert torch.equal(ag.farthest_first(points + offset, valid, 3), centers + offset)
 
 
 def test_fuzzy_clusters_recover_separated_sectors():
@@ -244,6 +312,44 @@ def test_the_embedding_distance_follows_the_reconstructed_residual_correlation()
     embedded = points.numpy()
     distances = ((embedded[:, None, :] - embedded[None, :, :]) ** 2).sum(-1)
     np.testing.assert_allclose(distances, 2 * (1 - correlation), rtol=0, atol=1e-10)
+
+
+def test_each_iteration_follows_the_fuzzy_c_means_update():
+    generator = torch.Generator().manual_seed(4)
+    points = torch.randn(9, 3, generator=generator, dtype=torch.float64)
+    points = points / points.norm(dim=1, keepdim=True)
+    # Una fila no válida lejana no puede mover los centros.
+    points[8] = 50
+    valid = torch.ones(9, dtype=torch.bool)
+    valid[8] = False
+    membership = ag.fuzzy_clusters(points, valid, 3, 2)
+    data = points.numpy()[:8]
+    centers = ag.farthest_first(points, valid, 3).numpy()
+
+    def weights(centers):
+        # Los centros iniciales son puntos de los datos: la distancia nula se acota como en H4.
+        squared = ((data[:, None, :] - centers[None, :, :]) ** 2).sum(-1)
+        inverse = 1 / np.maximum(squared, 1e-12)
+        return inverse / inverse.sum(1, keepdims=True)
+
+    for _ in range(2):
+        squared = weights(centers) ** 2
+        centers = (squared.T @ data) / squared.sum(0)[:, None]
+    np.testing.assert_allclose(membership[:8].numpy(), weights(centers), rtol=0, atol=1e-12)
+    assert torch.count_nonzero(membership[8]) == 0
+
+
+def test_the_embedding_ignores_the_values_of_invalid_rows():
+    prices, _ = sectors(rows=10)
+    measures = ag.window_measures(prices, 36)
+    residual, valid = measures["residual"].clone(), measures["valid"]["correlation"].clone()
+    expected, _ = ag.correlation_embedding(residual[1:], valid[1:], 4)
+    valid[0] = False
+    residual[0] = torch.linspace(-1, 1, residual.shape[1], dtype=torch.float64)
+    points, kept = ag.correlation_embedding(residual, valid, 4)
+    assert not kept[0] and torch.count_nonzero(points[0]) == 0
+    # Las componentes solo se definen hasta el signo: se comparan las distancias.
+    torch.testing.assert_close(torch.cdist(points[1:], points[1:]), torch.cdist(expected, expected))
 
 
 def test_memberships_follow_a_permutation_of_the_rows():
