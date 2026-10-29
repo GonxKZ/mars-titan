@@ -18,6 +18,7 @@ PROTOCOL_MEASURES = (
     "online_arbiters_cost",
     "regional_variants_cost",
     "nested_equal_depth_cost",
+    "three_factor_bridge_cost",
 )
 
 
