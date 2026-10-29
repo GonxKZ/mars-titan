@@ -59,10 +59,11 @@ def test_the_comparison_finds_each_kind_of_mismatch():
     assert all(all(value.values()) for value in result["modes"].values())
     assert result["same_predictions_across_modes"] and result["same_gradients_across_modes"]
     assert result["cost_ratio_of_medians"] == 1.0
+    # La repetición distinta va en el segundo proceso y la otra huella en el primero.
     within = record(["p", "q"], ["g", "g"])
     across = record(["q", "q"], ["g", "g"], seconds=(4.0, 4.0))
     result = cost.compare(
-        {cost.DEFAULT: [within, same], determinism.TORCH_DETERMINISTIC: [across, same]}
+        {cost.DEFAULT: [same, within], determinism.TORCH_DETERMINISTIC: [across, same]}
     )
     assert result["modes"][cost.DEFAULT] == dict(within_process=False, across_processes=True)
     assert result["modes"][determinism.TORCH_DETERMINISTIC] == dict(
@@ -113,7 +114,12 @@ def test_the_command_refuses_options_outside_its_budget(arguments, message):
         cost.main(arguments)
 
 
-def test_the_command_needs_a_new_receipt_and_a_new_result(tmp_path):
+def test_the_command_needs_a_new_receipt_and_a_new_result(monkeypatch, tmp_path):
+    def unexpected(*args, **kwargs):
+        raise AssertionError("La orden no debe medir sobre un archivo existente")
+
+    monkeypatch.setattr(cost, "launch", unexpected)
+    monkeypatch.setattr(cost, "worker", unexpected)
     existing = tmp_path / "receipt.json"
     existing.write_text("{}", encoding="utf-8")
     with pytest.raises(SystemExit, match="recibo nuevo"):

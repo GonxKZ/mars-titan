@@ -144,6 +144,13 @@ def test_the_identity_names_only_the_declared_policy():
             determinism.determinism_identity(policy)
 
 
+def test_the_identity_needs_the_workspace_too(monkeypatch):
+    determinism.apply_determinism(POLICY)
+    monkeypatch.delenv(determinism.WORKSPACE_VARIABLE)
+    with pytest.raises(ValueError, match="CUBLAS_WORKSPACE_CONFIG=:4096:8"):
+        determinism.determinism_identity(POLICY)
+
+
 def test_a_changed_workspace_changes_the_identity(monkeypatch):
     identity = determinism.apply_determinism(POLICY)
     monkeypatch.setenv(determinism.WORKSPACE_VARIABLE, ":16:8")
