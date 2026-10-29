@@ -8,6 +8,8 @@ import json
 
 import pytest
 
+from mars_titan.calibration.regime_weighted_conformal import WEIGHTINGS
+
 # Medidas cuya orden separa el protocolo, sin --run, de la medida.
 PROTOCOL_MEASURES = (
     "cross_asset_attention_cost",
@@ -69,6 +71,67 @@ def test_a_receipt_with_nan_is_refused_without_leaving_a_file(name, monkeypatch,
     module, _ = measure(name, monkeypatch, dict(value=float("nan")))
     output = tmp_path / "cost.json"
     monkeypatch.setattr("sys.argv", [name, "--run", "--output", str(output)])
+    with pytest.raises(ValueError):
+        module.main()
+    assert not list(tmp_path.iterdir())
+
+
+# Medidas que escribían el recibo en línea. Cada una lleva los argumentos obligatorios además de
+# --output y un recibo con las claves que lee su resumen impreso.
+INLINE_MEASURES = {
+    "asof_ledger_audit_cost": ([], dict(cases=dict(c=dict(audit=dict(median_s=1.5))))),
+    "calibrated_quantile_rule_cost": ([], dict(cases=dict(c=dict(compare=dict(median_s=1.5))))),
+    "output_stage_cost": ([], dict(cases=dict(c=dict(emit_with_four_controls=1.5)))),
+    "predictive_ability_cost": ([], dict(median_elapsed_s=1.5, days=3)),
+    "regime_weighted_conformal_cost": (
+        [],
+        dict(
+            cases=dict(c={weighting: dict(replay=dict(median_s=1.5)) for weighting in WEIGHTINGS})
+        ),
+    ),
+    "pit_region_gate_cost": ([], dict(cases=dict(c=dict(fit=1.5)))),
+    "output_self_edit_cost": ([], dict(cases=dict(c=dict(full_cycle=1.5)))),
+    "online_conformal_cost": ([], dict(cases=dict(c=dict(online_replay=1.5)))),
+    "regime_routing_cost": (
+        ["--core-rows-per-second", "100"],
+        dict(cases=dict(c=dict(event_p50_ms=1.5, share_of_core_event=0.25))),
+    ),
+    "associative_memory_cost": ([], dict(cases=dict(c=dict(write=dict(p50_ms=1.5, p95_ms=2.5))))),
+}
+
+
+@pytest.mark.parametrize("name", INLINE_MEASURES)
+def test_an_inline_measure_refuses_an_existing_destination(name, monkeypatch, tmp_path):
+    extra, receipt = INLINE_MEASURES[name]
+    module, calls = measure(name, monkeypatch, receipt)
+    existing = tmp_path / "cost.json"
+    existing.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr("sys.argv", [name, *extra, "--output", str(existing)])
+    with pytest.raises(SystemExit, match="destino nuevo"):
+        module.main()
+    assert not calls and existing.read_text(encoding="utf-8") == "{}"
+
+
+@pytest.mark.parametrize("name", INLINE_MEASURES)
+def test_an_inline_measure_writes_its_receipt_in_a_new_folder(name, monkeypatch, tmp_path, capsys):
+    extra, receipt = INLINE_MEASURES[name]
+    module, calls = measure(name, monkeypatch, receipt)
+    output = tmp_path / "new" / "folder" / "cost.json"
+    monkeypatch.setattr("sys.argv", [name, *extra, "--output", str(output)])
+    module.main()
+    # La medida recibe los argumentos ya leídos, con el destino de la orden.
+    assert len(calls) == 1 and calls[0][0].output == output
+    assert json.loads(output.read_text(encoding="utf-8")) == receipt
+    assert [path.name for path in output.parent.iterdir()] == ["cost.json"]
+    assert "1.5" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("name", INLINE_MEASURES)
+def test_an_inline_receipt_with_nan_leaves_no_file(name, monkeypatch, tmp_path):
+    extra, receipt = INLINE_MEASURES[name]
+    module, _ = measure(name, monkeypatch, dict(receipt, value=float("nan")))
+    output = tmp_path / "cost.json"
+    monkeypatch.setattr("sys.argv", [name, *extra, "--output", str(output)])
     with pytest.raises(ValueError):
         module.main()
     assert not list(tmp_path.iterdir())
