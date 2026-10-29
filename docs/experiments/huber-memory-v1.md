@@ -81,7 +81,15 @@ La medida CUDA y otra con la máquina libre quedan pendientes.
 
 ## Comprobación
 
-Pendiente de la verificación final.
+El [recibo](../../reports/engineering/core-variants-20261028/verification.json) reúne la verificación conjunta de R1, U1 y U2 sobre `912d543f8`, ya fusionado con develop.
+
+- 883 casos dirigidos con cobertura de ramas, 881 en verde y 2 omitidos porque necesitan una protección que permita aprender. Incluyen la medida de lesiones, los cuatro módulos con dobles de la identidad y las pruebas de la señal madura de #791 que llegaron con develop.
+- `huber_memory.py` cubre 24/24 sentencias y 2/2 ramas, con CRAP máximo 4. De las 228 líneas cambiadas frente a develop se ejecutan 212. Las 16 restantes son de la medida de coste: el calentamiento, la comprobación de un gradiente no finito y la orden de línea de comandos.
+- La regresión de los módulos que importan el código cambiado, sobre `60f044142`, ejecutó 1.925 casos de `tests/training` y 6.651 del resto. Nueve de sus diez fallos eran dobles de configuración sin el campo `mature_reliability` de #791 y el décimo era el plazo de la medida de lesiones de #803. Los dos arreglos llegaron con develop y esas pruebas pasan en la verificación fusionada. De las omisiones, 125 son de la protección del aprendizaje, una espera a que se levante y 39 necesitan binarios nativos de simulación y de PPO sin compilar.
+- Las 87 mutaciones dirigidas, 14 de ellas en `huber_memory.py`, se detectan con las pruebas en verde antes y después de cada una. Las cuatro de la medida de coste se repitieron con el directorio de Git declarado, porque la copia aislada no es un repositorio y la medida registra su commit.
+- El CRAP de `FinancialConfig.__post_init__` (2.010) es una deuda previa recogida en #801.
+
+No hay entrenamiento ni pasos de optimizador en ninguna de estas comprobaciones.
 
 ## Referencias
 
