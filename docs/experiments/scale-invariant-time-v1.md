@@ -54,7 +54,7 @@ Sin declarar la pieza, la identidad y el cálculo no cambian. Al declararla, la 
 
 ## Coste
 
-U2 no añade parámetros ni operaciones. Su medida en CPU con `benchmarks/core_variants_cost.py` está pendiente.
+U2 no añade parámetros ni operaciones, solo cambia el valor inicial del bias de α. Medido en CPU con `benchmarks/core_variants_cost.py` sobre el commit 60f044142, sin pasos de optimizador y con su [recibo](../../reports/engineering/core-variants-20261028/cost-cpu.json): 256 filas, 8 instantes, 10 repeticiones y 2 hilos en FP32 estricto, en un AMD Ryzen 9 8945HS. La máquina compartía la CPU con otras baterías, con una carga media de 12 a 20. Frente a la referencia, su mediana del forward con grafo es 1,121 veces la suya, la del backward 1,015 y la de la inferencia 0,999. Como el cálculo es el mismo, ese 12 % mide el ruido de la máquina compartida y sirve de cota para leer las otras dos piezas.
 
 ## Comprobación
 

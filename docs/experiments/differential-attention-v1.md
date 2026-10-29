@@ -58,7 +58,9 @@ Con el recorte global de gradientes del recorrido, la norma total incluye el gra
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/core_variants_cost.py`, sin pasos de optimizador. La medida CUDA queda para cuando la GPU esté libre.
+Medido en CPU con `benchmarks/core_variants_cost.py` sobre el commit 60f044142, sin pasos de optimizador y con su [recibo](../../reports/engineering/core-variants-20261028/cost-cpu.json): 256 filas, 8 instantes, 10 repeticiones y 2 hilos en FP32 estricto, en un AMD Ryzen 9 8945HS. La máquina compartía la CPU con otras baterías, con una carga media de 12 a 20. Frente a la referencia, la mediana del forward con grafo es 0,996 veces la suya, la del backward 1,006 y la de la inferencia 0,937. U2, que no añade ninguna operación, quedó en 1,121 en el forward, así que estas diferencias son ruido de la máquina compartida. Con seis posiciones, el segundo mapa es pequeño frente a la escritura de la memoria. Añade 8.196 parámetros.
+
+La medida CUDA y otra con la máquina libre quedan pendientes.
 
 ## Comprobación
 

@@ -68,12 +68,16 @@ El recorte global de gradientes del recorrido calcula la norma de todos los par�
 
 - La parametrización del umbral es propia. MIRAS lo proyecta desde la entrada con una proyección de rango bajo y aquí la dependencia es de rango uno, más un desplazamiento por canal.
 - El umbral usa la escala del valor y no una escala absoluta. En una sesión en la que crecen a la vez el valor y el error relativo se mantiene, el canal no se recorta.
-- κ₀ = 1 es una elección previa sin datos. Con las entradas sintéticas de la medida de coste, la fracción de canales fuera del umbral al empezar figura en su recibo.
+- κ₀ = 1 es una elección previa sin datos. Con las entradas sintéticas de la medida de coste y los pesos iniciales, el 95,5 % de los canales empieza fuera del umbral.
 - La pérdida no reproduce los resultados de MIRAS. Su ablación en modelado de lenguaje no compara Yaad con una memoria L2 como la de Titans.
 
 ## Coste
 
-Pendiente de la medida en CPU con `benchmarks/core_variants_cost.py`, sin pasos de optimizador. La medida CUDA queda para cuando la GPU esté libre.
+Medido en CPU con `benchmarks/core_variants_cost.py` sobre el commit 60f044142, sin pasos de optimizador y con su [recibo](../../reports/engineering/core-variants-20261028/cost-cpu.json): 256 filas, 8 instantes, 10 repeticiones y 2 hilos en FP32 estricto, en un AMD Ryzen 9 8945HS. La máquina compartía la CPU con otras baterías, con una carga media de 12 a 20. Frente a la referencia, la mediana del forward con grafo es 1,035 veces la suya, la del backward 0,974 y la de la inferencia 0,929. U2, que no añade ninguna operación, quedó en 1,121 en el forward, así que diferencias de ese tamaño son ruido de la máquina compartida y R1 no tiene un coste medible a esta precisión. Añade 128 parámetros.
+
+Con esas entradas y los pesos iniciales, el 95,5 % de los canales queda fuera del umbral al empezar. La LayerNorm residual da a la lectura de la memoria una escala cercana a uno, mayor que la del valor, y R1 empieza escribiendo con el residuo recortado en casi todos los canales. Es una escritura acotada, próxima a la de signo, que pasa a la de L2 en cada canal cuyo error baja de κρ. κ₀ = 1 se mantiene como valor declarado, porque elegirlo con entradas sintéticas no diría nada de los datos reales. El análisis deberá registrar el κ aprendido y la fracción recortada durante el ajuste.
+
+La medida CUDA y otra con la máquina libre quedan pendientes.
 
 ## Comprobación
 
