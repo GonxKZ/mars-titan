@@ -15,6 +15,7 @@ aplicaciones que ya existan, así que los percentiles son descriptivos. La salid
 
 import argparse
 import json
+import os
 import platform
 import statistics
 import sys
@@ -190,6 +191,7 @@ def run(device):
         for shape in SHAPES
     }
     records = []
+    load_start = os.getloadavg()
     try:
         for order in (MODES, tuple(reversed(MODES))):
             for shape in SHAPES:
@@ -203,6 +205,7 @@ def run(device):
                         )
     finally:
         guard.remove()
+    load_end = os.getloadavg()
     summary = []
     for mode in MODES:
         for rows, sessions in SHAPES:
@@ -234,6 +237,7 @@ def run(device):
             threads=torch.get_num_threads(),
             gpu=torch.cuda.get_device_name(0) if device.startswith("cuda") else None,
         ),
+        load_average=dict(start=list(load_start), end=list(load_end)),
         parameters={
             mode: sum(value.numel() for value in modules[mode].parameters()) for mode in MODES
         },

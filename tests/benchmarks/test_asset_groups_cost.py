@@ -70,6 +70,7 @@ def test_a_small_run_covers_every_mode_and_keeps_the_optimizer_closed(monkeypatc
     assert len(result["records"]) == 2 * len(expected)
     # Los tres modos tienen los mismos parámetros.
     assert len(set(result["parameters"].values())) == 1
+    assert {len(values) for values in result["load_average"].values()} == {3}
     with pytest.raises(RuntimeError, match="optimizador"):
         cost.forbid_optimizer_steps(None, (), {})
 
