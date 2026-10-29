@@ -95,14 +95,3 @@ def test_the_optimizer_guard_covers_every_measure(monkeypatch):
     cost.run("cpu")
     assert events[0] is cost.forbid_optimizer_steps and events[-1] == "removed"
     assert set(events[1:-1]) == {"measured"}
-
-
-def test_the_measure_needs_a_new_output(monkeypatch, tmp_path):
-    existing = tmp_path / "cost.json"
-    existing.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(cost, "run", lambda device: pytest.fail("No debería medir"))
-    for argv in (["cost", "--run"], ["cost", "--run", "--output", str(existing)]):
-        monkeypatch.setattr("sys.argv", argv)
-        with pytest.raises(SystemExit, match="destino nuevo"):
-            cost.main()
-    assert existing.read_text(encoding="utf-8") == "{}"

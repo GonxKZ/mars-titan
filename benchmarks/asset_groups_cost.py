@@ -23,6 +23,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data.storage import atomic_json
+
 MODES = ("past_window", "shuffled_rows", "current_sector")
 # (filas, sesiones): una sesión de 64 o 256 activos y cuatro sesiones de 256.
 SHAPES = ((64, 1), (256, 1), (1024, 4))
@@ -257,8 +259,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
-    result = run(arguments.device)
-    arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(arguments.output, run(arguments.device))
 
 
 if __name__ == "__main__":
