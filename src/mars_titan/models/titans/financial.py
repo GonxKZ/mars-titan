@@ -63,6 +63,11 @@ from .financial_inputs import (
     DecisionBatch,
     FinancialInputSpec,
 )
+from .fractal_shared_operator import (
+    FractalSharedOperator,
+    FractalSharedOperatorConfig,
+    parse_fractal_shared_operator,
+)
 from .holographic_network import (
     HolographicNetwork,
     HolographicNetworkConfig,
@@ -192,6 +197,9 @@ class FinancialConfig:
     # C2 de #751: atención axial en el tiempo de cada flujo y entre sus regiones, con un
     # historial de bloques en el estado. Sin declararla, la identidad y el cálculo no cambian.
     axial_time_region: AxialTimeRegionConfig | None = None
+    # C3 de #751: el mismo operador recorre mercado, sectores estadísticos, activos y hojas de
+    # cada sesión antes de la fusión. Sin declararlo, la identidad y el cálculo no cambian.
+    fractal_shared_operator: FractalSharedOperatorConfig | None = None
     # F4 de #749: entradas en rangos gaussianos por sesión y pérdida de IC por sesión con
     # cabeza de escala. Sin declararlas, la identidad y el cálculo no cambian.
     session_rank_inputs: str | None = None
@@ -393,6 +401,7 @@ class FinancialConfig:
                 masked=masked_inputs(self.inputs.input_policy),
             )
         self._check_axial_time_region()
+        self._check_fractal_shared_operator()
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
             if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
@@ -421,6 +430,9 @@ class FinancialConfig:
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
+        # C3 y C5 mezclan los activos de la sesión y su combinación sería otro contraste.
+        if self.fractal_shared_operator is not None and self.cross_asset_attention is not None:
+            raise ValueError("C3 no se combina con la atención entre activos de C5")
         if isinstance(self.auxiliary_horizons, dict):
             if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
                 raise ValueError(
@@ -446,12 +458,13 @@ class FinancialConfig:
                 raise ValueError(
                     "Las cabezas auxiliares con fusión regional necesitan otro contraste"
                 )
-            # Las operaciones por sesión y la atención entre activos de C5 usan todas las filas
-            # emitidas de la sesión, que el cálculo fila a fila de F5 no reproduce.
+            # Las operaciones por sesión, C3 y la atención entre activos de C5 usan todas las
+            # filas emitidas de la sesión, que el cálculo fila a fila de F5 no reproduce.
             if (
                 self.session_rank_inputs is not None
                 or self.session_ic_objective is not None
                 or self.cross_asset_attention is not None
+                or self.fractal_shared_operator is not None
             ):
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
@@ -501,6 +514,27 @@ class FinancialConfig:
             raise ValueError(
                 "C2 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
                 "combina con el operador regional, C1, C6, PT6 ni la red holográfica"
+            )
+
+    def _check_fractal_shared_operator(self):
+        """C3 sobre mac_online, sin el operador regional, C1, C2, C6, PT6 ni la red holográfica."""
+        object.__setattr__(
+            self,
+            "fractal_shared_operator",
+            parse_fractal_shared_operator(self.fractal_shared_operator),
+        )
+        if self.fractal_shared_operator is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.axial_time_region is not None
+            or self.presence_modulation is not None
+            or self.holographic_network is not None
+        ):
+            raise ValueError(
+                "C3 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
+                "combina con el operador regional, C1, C2, C6, PT6 ni la red holográfica"
             )
 
     def _check_core_variants(self):
@@ -597,6 +631,8 @@ class FinancialConfig:
             result.update(holographic_network=self.holographic_network.identity())
         if self.axial_time_region is not None:
             result.update(axial_time_region=self.axial_time_region.identity())
+        if self.fractal_shared_operator is not None:
+            result.update(fractal_shared_operator=self.fractal_shared_operator.identity())
         if self.memory_bank_readout is not None:
             result.update(memory_bank_readout=self.memory_bank_readout.identity())
         if self.session_rank_inputs is not None:
@@ -817,6 +853,14 @@ class FinancialPredictor(nn.Module):
             if config.axial_time_region is not None
             else None
         )
+        # C3 tampoco consume el generador global: su semilla deriva de la del predictor.
+        self.fractal_shared_operator = (
+            FractalSharedOperator(
+                config.hidden_size, config.fractal_shared_operator, seed=config.seed, dtype=dtype
+            )
+            if config.fractal_shared_operator is not None
+            else None
+        )
         # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
         self.session_context = (
             SessionContext(
@@ -908,6 +952,7 @@ class FinancialPredictor(nn.Module):
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
+            or self.fractal_shared_operator is not None
             or (objective is not None and objective.session_level)
         )
 
@@ -961,6 +1006,7 @@ class FinancialPredictor(nn.Module):
         self._regional_variant_component()
         self._holographic_component()
         self._axial_component()
+        self._fractal_component()
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(execution.state_dict(), "")
@@ -1016,6 +1062,22 @@ class FinancialPredictor(nn.Module):
             or module.time_out.weight.dtype != self.head.weight.dtype
         ):
             raise ValueError("C2 no corresponde a la configuración declarada")
+        return module
+
+    def _fractal_component(self):
+        declared, module = self.config.fractal_shared_operator, self.fractal_shared_operator
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not FractalSharedOperator
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.seed != self.config.seed
+            or module.reference.device != self.head.weight.device
+            or module.reference.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("C3 no corresponde a la configuración declarada")
         return module
 
     def _parameter_digest(self):
@@ -1543,6 +1605,28 @@ class FinancialPredictor(nn.Module):
         )
         return token, following
 
+    def _fractal_fuse(self, price, batch, prices):
+        """Token fusionado con C3 sobre las sesiones del bloque.
+
+        `prices` es la ventana recibida, antes de los rangos de F4, porque los sectores
+        estadísticos se forman con sus rendimientos diarios.
+        """
+
+        def modulation(blocks, presence):
+            return self.fractal_shared_operator(
+                blocks, presence, batch.flow_ids, batch.prediction_at, prices
+            )
+
+        return fuse_modalities(
+            price,
+            batch.inputs,
+            self.encoders,
+            self.fusion,
+            batch.presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+
     def fused_tokens(self, inputs, presence):
         """Tokens fusionados de filas independientes, sin MAC ni estado de flujo.
 
@@ -1557,6 +1641,8 @@ class FinancialPredictor(nn.Module):
             raise ValueError("La fusión regional no se calcula fila a fila")
         if self.axial_time_region is not None:
             raise ValueError("C2 necesita el historial de cada flujo y no se calcula fila a fila")
+        if self.fractal_shared_operator is not None:
+            raise ValueError("C3 necesita todas las filas de la sesión y no se calcula fila a fila")
         price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
         for value, message in checks:
             require_finite(value, message)
@@ -1694,6 +1780,9 @@ class FinancialPredictor(nn.Module):
                 token, next_regions = self._axial_fuse(
                     price, batch.inputs, batch.presence, state.regions
                 )
+                next_context = context
+            elif self.fractal_shared_operator is not None:
+                token = self._fractal_fuse(price, batch, received.inputs["prices"])
                 next_context = context
             else:
                 token = self._fuse(price, batch.inputs, batch.presence)
