@@ -157,8 +157,8 @@ class Ladder:
         else:
             common = submission.defined & self.best.defined
             _require(
-                int(common.sum()) >= 2,
-                f"{submission.identity} y el mejor anterior no comparten sesiones",
+                bool(common.any()),
+                f"{submission.identity} y el mejor anterior no comparten ninguna sesión",
             )
             differences = (submission.values - self.best.values)[common]
             error = standard_error(

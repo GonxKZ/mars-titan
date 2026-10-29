@@ -41,6 +41,17 @@ def test_the_standard_error_is_the_spread_of_the_block_bootstrap_means():
     assert error == pytest.approx(means.std(ddof=1), rel=1e-12)
 
 
+def test_the_sessions_of_one_utc_day_are_resampled_together():
+    # Días con una y con tres sesiones: el bootstrap sortea días, cada día arrastra todas sus
+    # sesiones y la media de cada réplica se pondera por las sesiones que entran.
+    day = np.repeat(np.arange(SESSIONS // 2), np.tile([1, 3], SESSIONS // 4))
+    differences = noise(17)
+    error = rh.standard_error(differences, day, block_days=8, replicates=500, seed=7)
+    counts = circular_block_counts(np.random.default_rng(7), 500, SESSIONS // 2, 8)[:, day]
+    means = counts @ differences / counts.sum(axis=1)
+    assert error == pytest.approx(means.std(ddof=1), rel=1e-12)
+
+
 def test_with_one_day_blocks_the_error_is_the_one_of_the_article():
     # Con sesiones independientes y bloques de un día, el bootstrap da std/√n.
     differences = noise(2)
@@ -101,13 +112,14 @@ def test_the_difference_uses_the_common_sessions_and_the_score_its_own():
     ladder.submit(series("base", base))
     defined = np.ones(SESSIONS, dtype=bool)
     defined[:40] = False
-    values = base + 0.05
+    values = base + 0.05 + noise(18, scale=0.01)
     values[:40] = -5.0
     public, sealed = ladder.submit(series("partial", values, defined))
     assert (
         sealed["common_sessions"] == SESSIONS - 40 and sealed["defined_sessions"] == SESSIONS - 40
     )
-    assert sealed["paired_mean_difference"] == pytest.approx(0.05)
+    expected = (values - base)[40:].mean()
+    assert sealed["paired_mean_difference"] == pytest.approx(expected, rel=1e-12)
     assert sealed["score"] == pytest.approx(values[40:].mean())
     assert public["improved"]
 
@@ -126,6 +138,21 @@ def test_an_initial_best_is_published_and_beaten_like_any_other():
     assert [item["improved"] for item in board] == [False, True]
     assert board[0]["released"] == initial["released"]
     assert [item["best_before"] for item in result["sealed"]] == ["first_wave", "first_wave"]
+
+
+def test_the_ladder_groups_the_decisions_by_utc_day_with_the_declared_bootstrap():
+    # Dos decisiones por día, a las 13:30 y a las 20:00 UTC.
+    day = np.repeat(np.arange(SESSIONS // 2), 2)
+    hour = 3_600_000_000
+    times = day * rh.DAY_MICROSECONDS + np.tile([27 * hour // 2, 20 * hour], SESSIONS // 2)
+    base, other = series("base", noise(19)), series("other", noise(20, mean=0.01))
+    result = rh.run_ladder(
+        dict(resolution=0.001, block_days=8, replicates=500, seed=7), times, [base, other]
+    )
+    expected = rh.standard_error(
+        other.values - base.values, day, block_days=8, replicates=500, seed=7
+    )
+    assert result["sealed"][1]["standard_error"] == pytest.approx(expected, rel=1e-12)
 
 
 def test_the_public_board_reveals_only_the_declared_fields():
@@ -212,8 +239,13 @@ def test_a_comparison_needs_shared_sessions_and_more_days_than_a_block():
     first = np.zeros(SESSIONS, dtype=bool)
     first[:120] = True
     ladder.submit(series("first", noise(1), first))
-    with pytest.raises(ValueError, match="no comparten sesiones"):
+    with pytest.raises(ValueError, match="no comparten ninguna sesión"):
         ladder.submit(series("second", noise(2), ~first))
+    # Con una sola sesión común, un solo día no admite ningún bloque.
+    one = ~first
+    one[0] = True
+    with pytest.raises(ValueError, match="longitud del bloque"):
+        ladder.submit(series("third", noise(3), one))
     short = rh.Ladder(DAYS, **(OPTIONS | dict(block_days=SESSIONS)))
     short.submit(series("a", noise(3)))
     with pytest.raises(ValueError, match="longitud del bloque"):

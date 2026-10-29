@@ -72,14 +72,16 @@ siguientes modelos.
 
 Las pruebas de `tests/evaluation/test_reusable_holdout.py` comprueban que el valor publicado es
 el múltiplo más cercano de la resolución, que el error típico es la dispersión de las medias del
-bootstrap con los sorteos de `circular_block_counts`, que con bloques de un día se acerca a
-$\operatorname{std}/\sqrt n$, que un envío peor o con una mejora menor que su error típico deja
-el tablero como estaba y conserva el mejor, que un empate exacto no cuenta como mejora, que la
-diferencia usa solo las sesiones comunes, que el mejor inicial se publica y se compara como los
-demás, que la parte pública solo trae los campos declarados y que dos ejecuciones iguales dan el
-mismo tablero. También rechazan envíos sin nombre, con máscaras de otra forma o tipo, valores no
-finitos en sesiones definidas, nombres repetidos, días desordenados, opciones fuera de su tipo y
-declaraciones que no describen este mecanismo.
+bootstrap con los sorteos de `circular_block_counts`, que las sesiones de un mismo día UTC se
+sortean juntas, también cuando `run_ladder` agrupa los instantes de decisión, que con bloques de
+un día se acerca a $\operatorname{std}/\sqrt n$, que un envío peor o con una mejora menor que su
+error típico deja el tablero como estaba y conserva el mejor, que un empate exacto no cuenta
+como mejora, que la diferencia usa solo las sesiones comunes, que el mejor inicial se publica y
+se compara como los demás, que la parte pública solo trae los campos declarados y que dos
+ejecuciones iguales dan el mismo tablero. También rechazan envíos sin nombre, con máscaras de
+otra forma o tipo, valores no finitos en sesiones definidas, nombres repetidos, días
+desordenados, envíos sin ninguna sesión común con el mejor o con un solo día común, opciones
+fuera de su tipo y declaraciones que no describen este mecanismo.
 
 ## Referencia
 
