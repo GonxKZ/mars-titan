@@ -269,8 +269,8 @@ def test_the_checkpoint_and_the_code_identity_follow_the_declared_signal(shared,
         with pytest.raises(ValueError, match="señal de fiabilidad"):
             target._restore(saved)
     assert engine._restore(payload).reliability is None
-    for name in (
-        "mars_titan.memory.mature_reliability",
-        "mars_titan.models.titans.reliability_gates",
-    ):
-        assert name in engine._code() and name not in control._code()
+    # Las puertas están en la implementación de todo predictor, porque `financial` importa
+    # siempre su configuración. El acumulador de la señal solo entra cuando se declara.
+    assert "mars_titan.models.titans.reliability_gates" in control._code()
+    assert "mars_titan.memory.mature_reliability" in engine._code()
+    assert "mars_titan.memory.mature_reliability" not in control._code()

@@ -1051,13 +1051,11 @@ class ChronologicalTrainer(ChronologicalInference):
             module = importlib.import_module("mars_titan.models.titans.holographic_network")
             own[module.__name__] = sha256(Path(module.__file__))
             own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
-        # #791 añade sus puertas y el acumulador de su señal.
+        # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
+        # porque `financial` importa siempre su configuración.
         if self.predictor.config.mature_reliability is not None:
-            for name in (
-                "mars_titan.models.titans.reliability_gates",
-                "mars_titan.memory.mature_reliability",
-            ):
-                own[name] = sha256(Path(importlib.import_module(name).__file__))
+            name = "mars_titan.memory.mature_reliability"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         for option, name in _WEIGHT_MODULES.items():
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:
