@@ -784,6 +784,7 @@ def test_the_source_and_its_catalog_enter_the_trainer_identity_only_when_active(
                 temporal_encoder=None,
                 regional_variant=None,
                 cross_asset_attention=None,
+                axial_time_region=None,
                 asset_groups=None,
                 holographic_network=config,
                 mature_reliability=None,

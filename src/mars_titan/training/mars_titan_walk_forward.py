@@ -208,6 +208,10 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado aún no registra la red holográfica de #783",
     )
     _require(
+        changes.get("axial_time_region", predictor.get("axial_time_region")) is None,
+        "El consumidor congelado aún no registra el historial de regiones de C2",
+    )
+    _require(
         changes.get("asset_groups", predictor.get("asset_groups")) is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
     )
@@ -235,6 +239,10 @@ def _frozen_parent(
     _require(
         options.get("holographic_network") is None,
         "El consumidor congelado aún no registra la red holográfica de #783",
+    )
+    _require(
+        options.get("axial_time_region") is None,
+        "El consumidor congelado aún no registra el historial de regiones de C2",
     )
     _require(
         options.get("asset_groups") is None,

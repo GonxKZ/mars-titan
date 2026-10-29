@@ -1,0 +1,460 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 802,
+ "scope": "atomic_receipts_of_fifteen_cost_measures",
+ "implementation_commit": "6247eb00a162f7604d256089f3df5cb7bbb891a1",
+ "base_commit": "0a805e762bf775b00815090f57c74d2600fce40e",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas sustituyen la función que mide por otra que devuelve un recibo pequeño, así que no ejecutan ningún modelo. Las mutaciones registran un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "command_lines_with_coverage",
+   "tests": 56,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "fc09f685c2a64fba2c33471060aa1b271638c370a2f61df15d99a89cf2e3088f",
+   "note": "Las líneas de órdenes de las quince medidas con la medida sustituida, y las pruebas propias de las medidas holográfica y de los árbitros, con cobertura de ramas sobre implementation_commit."
+  },
+  {
+   "name": "regression_of_tests_benchmarks",
+   "tests": 105,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a66c46a29e0b9b285bb70a500d9c7b5d713d70bbb26b73fb3360873a0db12da3",
+   "note": "Todo tests/benchmarks con tres procesos sobre implementation_commit."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1225,
+   "covered_statements": 657,
+   "branches": 240,
+   "covered_branches": 109
+  },
+  "files": [
+   {
+    "path": "benchmarks/asof_ledger_audit_cost.py",
+    "source_sha256": "ce37213c9626f177a1a07ccc133c10476e61cde11dad1927b8efc796968596e9",
+    "statements": 58,
+    "covered_statements": 34,
+    "branches": 4,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/associative_memory_cost.py",
+    "source_sha256": "5d1eff8a6e3d2f9fc0446733730f398a1643700fbc38b740cbef13ac0f2bb659",
+    "statements": 68,
+    "covered_statements": 33,
+    "branches": 18,
+    "covered_branches": 6
+   },
+   {
+    "path": "benchmarks/calibrated_quantile_rule_cost.py",
+    "source_sha256": "b919aae0cabbebaf47479a672cd9c51c8152668fc565688f93cc8f2737d2f2c6",
+    "statements": 56,
+    "covered_statements": 31,
+    "branches": 6,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/cross_asset_attention_cost.py",
+    "source_sha256": "d1812969560b546351447d58bc4231c050b22edb01543711b0e5d0f9e56e1448",
+    "statements": 88,
+    "covered_statements": 32,
+    "branches": 30,
+    "covered_branches": 5
+   },
+   {
+    "path": "benchmarks/holographic_network_cost.py",
+    "source_sha256": "69a2a75dfbe2e54bb9104750585a6363440e86e8fb7e0a9b7e037ff4925a7626",
+    "statements": 125,
+    "covered_statements": 119,
+    "branches": 38,
+    "covered_branches": 33
+   },
+   {
+    "path": "benchmarks/nested_equal_depth_cost.py",
+    "source_sha256": "b324c5afe6cae89c7c88b6bb62647873d7ccc153e94b0234bb98cc45c1b134a6",
+    "statements": 99,
+    "covered_statements": 36,
+    "branches": 22,
+    "covered_branches": 5
+   },
+   {
+    "path": "benchmarks/online_arbiters_cost.py",
+    "source_sha256": "e1b4f4a7923323cc38dd49be9932274b84f32e9575f6cc4c360b5bf44aa8ccdc",
+    "statements": 89,
+    "covered_statements": 83,
+    "branches": 28,
+    "covered_branches": 26
+   },
+   {
+    "path": "benchmarks/online_conformal_cost.py",
+    "source_sha256": "c0dc152020675a27d638330ad3cf655e2baf7e06e3274b597395260668c3878f",
+    "statements": 98,
+    "covered_statements": 43,
+    "branches": 8,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/output_self_edit_cost.py",
+    "source_sha256": "803edbbae5a6e2d2e9051afb16dcd3a471b8c8c9791e46798d6ba87fe50fdac9",
+    "statements": 70,
+    "covered_statements": 39,
+    "branches": 6,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/output_stage_cost.py",
+    "source_sha256": "e68ad21118aaa6c6b34b835d2371c7e70b1c5de77a0230544be5d25103b64a71",
+    "statements": 80,
+    "covered_statements": 38,
+    "branches": 6,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/pit_region_gate_cost.py",
+    "source_sha256": "6afa5e69d34e2b313d59cf0e4d55aa27cd2ee8818b189fbf84fda861b402397f",
+    "statements": 60,
+    "covered_statements": 29,
+    "branches": 4,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/predictive_ability_cost.py",
+    "source_sha256": "90dbc0d9dc12f76097a6db80f08b31d664936ee897f92e5cca22ca475b657395",
+    "statements": 106,
+    "covered_statements": 42,
+    "branches": 16,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/regime_routing_cost.py",
+    "source_sha256": "d3a8c86b59d888c7b6bb9b433dccec8687a60d9af8c2ac1f6d5bbca0e6fddd11",
+    "statements": 92,
+    "covered_statements": 37,
+    "branches": 18,
+    "covered_branches": 5
+   },
+   {
+    "path": "benchmarks/regime_weighted_conformal_cost.py",
+    "source_sha256": "462395ce8cc11e2f29404daa811a59efe5628709e20cad54b33e63af8a831050",
+    "statements": 51,
+    "covered_statements": 29,
+    "branches": 6,
+    "covered_branches": 3
+   },
+   {
+    "path": "benchmarks/regional_variants_cost.py",
+    "source_sha256": "0a76902820d06a7089fea41ce007b8c76dc3fc5897fd1d9c82d7ddc2e7067440",
+    "statements": 85,
+    "covered_statements": 32,
+    "branches": 30,
+    "covered_branches": 5
+   }
+  ],
+  "max_crap": 462.0,
+  "quality_sha256": "1abf1f7be838a92bf0abc9712055b8d0906eb465c4ace7d5d85088e6b11b0966",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "0a805e762bf775b00815090f57c74d2600fce40e",
+  "head": "6247eb00a162f7604d256089f3df5cb7bbb891a1",
+  "functions": 25,
+  "max_crap": 56.0,
+  "changed_executable_lines": 124,
+  "changed_covered_lines": 114,
+  "highest": [
+   {
+    "path": "benchmarks/associative_memory_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 7,
+    "crap": 56.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     146
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/regime_routing_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 5,
+    "crap": 30.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     169
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/asof_ledger_audit_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     136
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/calibrated_quantile_rule_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     113
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/online_conformal_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     203
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/associative_memory_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 7,
+    "crap": 56.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     146
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/regime_routing_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 5,
+    "crap": 30.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     169
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/asof_ledger_audit_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     136
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/calibrated_quantile_rule_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     113
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/online_conformal_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     203
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/output_self_edit_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     162
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/output_stage_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     190
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/pit_region_gate_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     149
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/predictive_ability_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     211
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/regime_weighted_conformal_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 3,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     126
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "unmeasured": [],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. Las funciones run de las diez medidas que escribían en línea son el cuerpo anterior de main, movido sin cambios salvo el return del recibo. Las pruebas de la línea de órdenes las sustituyen para no medir, así que siguen sin cubrir como antes del cambio, y de ahí los CRAP de 12 a 56. Las funciones main nuevas tienen CRAP de 2 a 4.",
+  "changed_sha256": "f6efa076042221d378fd8cfd377ee181701d59c6cb73fb850aeb521b7865cab0"
+ },
+ "mutations": {
+  "tree_commit": "6247eb00a162f7604d256089f3df5cb7bbb891a1",
+  "planned": 60,
+  "killed": 60,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "1a207816a8634da661234c4e21a4a190685f6edb277c55690b1e91a442599ee0",
+  "executor_sha256": "a2ddaed83501fe51583c42c82327980c5e27eb0c0e0daa54fc0498226e10c7a3",
+  "source_sha256": {
+   "benchmarks/nested_equal_depth_cost.py": "b324c5afe6cae89c7c88b6bb62647873d7ccc153e94b0234bb98cc45c1b134a6",
+   "benchmarks/calibrated_quantile_rule_cost.py": "b919aae0cabbebaf47479a672cd9c51c8152668fc565688f93cc8f2737d2f2c6",
+   "benchmarks/pit_region_gate_cost.py": "6afa5e69d34e2b313d59cf0e4d55aa27cd2ee8818b189fbf84fda861b402397f",
+   "benchmarks/output_self_edit_cost.py": "803edbbae5a6e2d2e9051afb16dcd3a471b8c8c9791e46798d6ba87fe50fdac9",
+   "benchmarks/asof_ledger_audit_cost.py": "ce37213c9626f177a1a07ccc133c10476e61cde11dad1927b8efc796968596e9",
+   "benchmarks/regime_weighted_conformal_cost.py": "462395ce8cc11e2f29404daa811a59efe5628709e20cad54b33e63af8a831050",
+   "benchmarks/online_arbiters_cost.py": "e1b4f4a7923323cc38dd49be9932274b84f32e9575f6cc4c360b5bf44aa8ccdc",
+   "benchmarks/online_conformal_cost.py": "c0dc152020675a27d638330ad3cf655e2baf7e06e3274b597395260668c3878f",
+   "benchmarks/output_stage_cost.py": "e68ad21118aaa6c6b34b835d2371c7e70b1c5de77a0230544be5d25103b64a71",
+   "benchmarks/predictive_ability_cost.py": "90dbc0d9dc12f76097a6db80f08b31d664936ee897f92e5cca22ca475b657395",
+   "benchmarks/regime_routing_cost.py": "d3a8c86b59d888c7b6bb9b433dccec8687a60d9af8c2ac1f6d5bbca0e6fddd11",
+   "benchmarks/cross_asset_attention_cost.py": "d1812969560b546351447d58bc4231c050b22edb01543711b0e5d0f9e56e1448",
+   "benchmarks/associative_memory_cost.py": "5d1eff8a6e3d2f9fc0446733730f398a1643700fbc38b740cbef13ac0f2bb659",
+   "benchmarks/holographic_network_cost.py": "69a2a75dfbe2e54bb9104750585a6363440e86e8fb7e0a9b7e037ff4925a7626",
+   "benchmarks/regional_variants_cost.py": "0a76902820d06a7089fea41ce007b8c76dc3fc5897fd1d9c82d7ddc2e7067440"
+  },
+  "cases": [
+   "cross_asset_attention_cost__destination_overwritten",
+   "cross_asset_attention_cost__measured_before_refusal",
+   "cross_asset_attention_cost__nan_written",
+   "cross_asset_attention_cost__folder_not_created",
+   "holographic_network_cost__destination_overwritten",
+   "holographic_network_cost__measured_before_refusal",
+   "holographic_network_cost__nan_written",
+   "holographic_network_cost__folder_not_created",
+   "online_arbiters_cost__destination_overwritten",
+   "online_arbiters_cost__measured_before_refusal",
+   "online_arbiters_cost__nan_written",
+   "online_arbiters_cost__folder_not_created",
+   "regional_variants_cost__destination_overwritten",
+   "regional_variants_cost__measured_before_refusal",
+   "regional_variants_cost__nan_written",
+   "regional_variants_cost__folder_not_created",
+   "nested_equal_depth_cost__destination_overwritten",
+   "nested_equal_depth_cost__measured_before_refusal",
+   "nested_equal_depth_cost__nan_written",
+   "nested_equal_depth_cost__folder_not_created",
+   "asof_ledger_audit_cost__destination_overwritten",
+   "asof_ledger_audit_cost__measured_before_refusal",
+   "asof_ledger_audit_cost__nan_written",
+   "asof_ledger_audit_cost__folder_not_created",
+   "calibrated_quantile_rule_cost__destination_overwritten",
+   "calibrated_quantile_rule_cost__measured_before_refusal",
+   "calibrated_quantile_rule_cost__nan_written",
+   "calibrated_quantile_rule_cost__folder_not_created",
+   "output_stage_cost__destination_overwritten",
+   "output_stage_cost__measured_before_refusal",
+   "output_stage_cost__nan_written",
+   "output_stage_cost__folder_not_created",
+   "predictive_ability_cost__destination_overwritten",
+   "predictive_ability_cost__measured_before_refusal",
+   "predictive_ability_cost__nan_written",
+   "predictive_ability_cost__folder_not_created",
+   "regime_weighted_conformal_cost__destination_overwritten",
+   "regime_weighted_conformal_cost__measured_before_refusal",
+   "regime_weighted_conformal_cost__nan_written",
+   "regime_weighted_conformal_cost__folder_not_created",
+   "pit_region_gate_cost__destination_overwritten",
+   "pit_region_gate_cost__measured_before_refusal",
+   "pit_region_gate_cost__nan_written",
+   "pit_region_gate_cost__folder_not_created",
+   "output_self_edit_cost__destination_overwritten",
+   "output_self_edit_cost__measured_before_refusal",
+   "output_self_edit_cost__nan_written",
+   "output_self_edit_cost__folder_not_created",
+   "online_conformal_cost__destination_overwritten",
+   "online_conformal_cost__measured_before_refusal",
+   "online_conformal_cost__nan_written",
+   "online_conformal_cost__folder_not_created",
+   "regime_routing_cost__destination_overwritten",
+   "regime_routing_cost__measured_before_refusal",
+   "regime_routing_cost__nan_written",
+   "regime_routing_cost__folder_not_created",
+   "associative_memory_cost__destination_overwritten",
+   "associative_memory_cost__measured_before_refusal",
+   "associative_memory_cost__nan_written",
+   "associative_memory_cost__folder_not_created"
+  ],
+  "summary_sha256": "d28a3460a4123ee251a593bb0ed10257bddca0d1a8b72886879aad1f7356f449",
+  "scope": "Sesenta defectos dirigidos, cuatro por medida: quitar la comprobación de que el destino es nuevo, medir antes de rechazarlo, escribir un recibo con NaN sin rechazarlo y escribir sin crear la carpeta. Cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global."
+ }
+}
