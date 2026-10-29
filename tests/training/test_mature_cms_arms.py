@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from mars_titan.memory.mars_titan_variant import check_components, load_declaration
 from mars_titan.training.mars_titan_correction import (
     arm_components,
@@ -47,3 +49,18 @@ def test_declared_models_are_executable_and_only_r2_names_its_periods():
                 assert "write_periods" not in multiscale
     every = identities["mature_cms"] + identities["same_frequency"]
     assert len(every) == len(set(every)) == 2 * len(identities["mature_cms"])
+
+
+def test_a_multiscale_declaration_with_missing_or_unknown_fields_is_refused():
+    study = json.loads(STUDY.read_text())
+    arm = study["arms"]["mature_cms"]
+    recipe = load_correction_recipe(arm["recipe"])
+    case = next(iter(recipe["walk_forward"]["search_cases"]))
+    components = arm_components(arm["components"], case_values(recipe, case))
+    multiscale = components["associative_memory"]["multiscale"]
+    missing = {key: value for key, value in multiscale.items() if key != "half_lives_days"}
+    for changed in (missing, dict(multiscale, write_period="week")):
+        broken = json.loads(json.dumps(components))
+        broken["associative_memory"]["multiscale"] = changed
+        with pytest.raises(ValueError, match="E1 declara half_lives_days"):
+            check_components(load_declaration(), broken)
