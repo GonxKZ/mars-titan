@@ -8,6 +8,7 @@ from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import MACConfig, require_identity
+from .differential_attention import DifferentialMap
 from .key_competition import competitive_normalize
 from .neural_memory import NeuralMemory
 from .state import (
@@ -49,6 +50,12 @@ class TitansMAC(nn.Module):
                 self.query_convolution = CausalDepthwiseConvolution(
                     dim, config.memory.qkv_convolution, dtype=dtype
                 )
+        # U1 de #786 sortea sus proyecciones con una semilla derivada, fuera del generador global.
+        self.differential = (
+            DifferentialMap(dim, config.heads, seed=config.parameter_seed, dtype=dtype)
+            if config.differential_attention is not None
+            else None
+        )
         self.to(device=device)
 
     def initial_state(self, batch_size: int, *, differentiable: bool = False) -> MACState:
@@ -87,9 +94,18 @@ class TitansMAC(nn.Module):
         )
 
     def forward(
-        self, segment: Tensor, state: MACState, *, differentiable: bool = False
+        self,
+        segment: Tensor,
+        state: MACState,
+        *,
+        differentiable: bool = False,
+        gate_shift: dict | None = None,
+        surprise: list | None = None,
     ) -> tuple[Tensor, MACState]:
+        """`gate_shift` y `surprise` llegan a la escritura de la memoria, que solo existe online."""
         check_differentiable(differentiable)
+        if (gate_shift is not None or surprise is not None) and self.config.memory_mode != "online":
+            raise ValueError("Las puertas moduladas necesitan la memoria online")
         self._validate_state(state)
         self.memory.validate_input(segment, state.memory)
         batch, length, _ = segment.shape
@@ -97,7 +113,11 @@ class TitansMAC(nn.Module):
             raise ValueError("El segmento supera el presupuesto de tokens de MAC")
         enabled = self.config.memory_mode != "disabled"
         packed_length = 2 * length + self.config.persistent_tokens if enabled else length
-        if batch * self.config.heads * packed_length**2 > self.config.max_attention_elements:
+        elements = batch * self.config.heads * packed_length**2
+        if self.differential is not None:
+            # El segundo mapa de U1 solo tiene las filas de las consultas del segmento.
+            elements += batch * self.config.heads * length * packed_length
+        if elements > self.config.max_attention_elements:
             raise ValueError("La atención supera el presupuesto de elementos")
         windows = state.convolution
         with torch.set_grad_enabled(differentiable):
@@ -127,10 +147,20 @@ class TitansMAC(nn.Module):
                 packed = packed.transpose(0, 1).contiguous().transpose(0, 1)
             attended, _ = self.attention(packed, packed, packed, attn_mask=mask, need_weights=False)
             observed = attended[:, -length:]
+            if self.differential is not None:
+                # U1 resta el segundo mapa con los valores de la MHA. Con λ nulo resta cero.
+                values_weight = self.attention.in_proj_weight[2 * self.config.memory.dim :]
+                observed = observed - self.differential(
+                    packed, values_weight, self.attention.out_proj, mask, length
+                )
             check_finite(observed, "La salida de atención")
             if self.config.memory_mode == "online":
                 next_memory = self.memory.update(
-                    observed, state.memory, differentiable=differentiable
+                    observed,
+                    state.memory,
+                    differentiable=differentiable,
+                    gate_shift=gate_shift,
+                    surprise=surprise,
                 )
             else:
                 next_memory = copy_state(state.memory, differentiable=differentiable)

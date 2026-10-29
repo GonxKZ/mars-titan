@@ -96,5 +96,60 @@
       4
     ],
     "verification_date": "2026-10-09"
+  },
+  {
+    "id": "kapoor2024reforms",
+    "title": "REFORMS: Consensus-based Recommendations for Machine-learning-based Science",
+    "authors": [
+      "Sayash Kapoor",
+      "Emily M. Cantrell",
+      "Kenny Peng",
+      "Thanh Hien Pham",
+      "Christopher A. Bail",
+      "Odd Erik Gundersen",
+      "Jake M. Hofman",
+      "Jessica Hullman",
+      "Michael A. Lones",
+      "Momin M. Malik",
+      "Priyanka Nanayakkara",
+      "Russell A. Poldrack",
+      "Inioluwa Deborah Raji",
+      "Michael Roberts",
+      "Matthew J. Salganik",
+      "Marta Serra-Garcia",
+      "Brandon M. Stewart",
+      "Gilles Vandewiele",
+      "Arvind Narayanan"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1126/sciadv.adk3452",
+    "pdf_url": null,
+    "access": "Texto completo en PubMed Central (PMC11092361) consultado el 29 de octubre de 2026, con la tabla 1 de la lista. Sus 32 puntos se resumen con palabras propias.",
+    "redistribution": "CC BY-NC 4.0 según la ficha de PubMed Central.",
+    "relevance": "Lista de 32 puntos para informar estudios científicos con aprendizaje automático. Ordena la revisión de reproducibilidad, fugas y límites del estudio y no acredita por sí misma que sea correcto.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "blum2015ladder",
+    "title": "The Ladder: A Reliable Leaderboard for Machine Learning Competitions",
+    "authors": [
+      "Avrim Blum",
+      "Moritz Hardt"
+    ],
+    "year": 2015,
+    "url": "https://proceedings.mlr.press/v37/blum15.html",
+    "pdf_url": "https://proceedings.mlr.press/v37/blum15.pdf",
+    "access": "Ficha de PMLR y versión v1 de arXiv (1502.04585) consultadas el 29 de octubre de 2026. Leídas las figuras 1 y 2, el teorema 3.1 y la sección 4.",
+    "redistribution": "unknown",
+    "relevance": "Escalera que solo publica un resultado nuevo de un conjunto reutilizado cuando mejora al mejor anterior por un margen. Fundamenta la reutilización de S en la segunda ola, sin garantizar el tamaño del contraste con envíos adaptativos.",
+    "phase": [
+      4,
+      5
+    ],
+    "verification_date": "2026-10-29"
   }
 ]

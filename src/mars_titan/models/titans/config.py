@@ -6,8 +6,12 @@ import math
 from dataclasses import asdict, dataclass
 
 from .bank_readout import BankReadoutConfig
+from .differential_attention import DIFFERENTIAL_ATTENTION
+from .differential_attention import identity as differential_identity
+from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
 from .plasticity_config import MemoryPlasticity
+from .scale_invariant_time import ScaleInvariantTime
 
 ATTENTION_LAYOUTS = ("batch_first_v1", "sequence_contiguous_v1")
 
@@ -344,6 +348,9 @@ class MemoryConfig(FingerprintOnce):
     plasticity: MemoryPlasticity | None = None
     key_competition: KeyCompetition | None = None
     bank_readout: BankReadoutConfig | None = None
+    # R1 y U2 de #786. Sin declararlas, la identidad y el cálculo no cambian.
+    huber: HuberMemory | None = None
+    time_scales: ScaleInvariantTime | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
@@ -405,6 +412,13 @@ class MemoryConfig(FingerprintOnce):
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias o None")
             self.gate_bias.logits(self.theta_max, self.stability)
+        if self.huber is not None and type(self.huber) is not HuberMemory:
+            raise ValueError("huber debe ser HuberMemory o None")
+        if self.time_scales is not None:
+            if type(self.time_scales) is not ScaleInvariantTime or self.gate_bias is None:
+                raise ValueError("time_scales necesita ScaleInvariantTime y gate_bias")
+            # Falla al declarar si alguna semivida queda fuera de GateBias o de la caja de PT1.
+            self.time_scales.alpha_logits(self.gate_bias, self.dim, self.theta_max, self.stability)
 
     @property
     def hidden_levels(self) -> int:
@@ -447,6 +461,8 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("plasticity")
         fields.pop("key_competition")
         fields.pop("bank_readout")
+        fields.pop("huber")
+        fields.pop("time_scales")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -495,6 +511,10 @@ class MemoryConfig(FingerprintOnce):
             extension["plasticity"] = self.plasticity.identity()
         if self.key_competition is not None:
             extension["key_competition"] = self.key_competition.identity()
+        if self.huber is not None:
+            extension["associative_loss"] = self.huber.identity()
+        if self.time_scales is not None:
+            extension["alpha_time_scales"] = self.time_scales.identity()
         return {
             **fields,
             **extension,
@@ -524,6 +544,8 @@ class MACConfig(FingerprintOnce):
     max_attention_elements: int = 8 * 1024 * 1024
     parameter_seed: int = 43
     attention_layout: str = "batch_first_v1"
+    # U1 de #786. Sin declararla, la identidad y el cálculo no cambian.
+    differential_attention: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.memory, MemoryConfig):
@@ -539,6 +561,8 @@ class MACConfig(FingerprintOnce):
             raise ValueError("memory_mode debe ser online, frozen o disabled")
         if self.attention_layout not in ATTENTION_LAYOUTS:
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
+        if self.differential_attention not in (None, DIFFERENTIAL_ATTENTION):
+            raise ValueError(f"differential_attention admite {DIFFERENTIAL_ATTENTION} o None")
 
     def identity(self) -> dict:
         result = {
@@ -556,4 +580,8 @@ class MACConfig(FingerprintOnce):
         }
         if self.attention_layout == "batch_first_v1":
             result.pop("attention_layout")
+        if self.differential_attention is None:
+            result.pop("differential_attention")
+        else:
+            result["differential_attention"] = differential_identity()
         return result
