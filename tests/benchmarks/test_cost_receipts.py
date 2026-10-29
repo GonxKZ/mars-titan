@@ -12,6 +12,7 @@ from mars_titan.calibration.regime_weighted_conformal import WEIGHTINGS
 
 # Medidas cuya orden separa el protocolo, sin --run, de la medida.
 PROTOCOL_MEASURES = (
+    "axial_time_region_cost",
     "cross_asset_attention_cost",
     "holographic_network_cost",
     "online_arbiters_cost",
