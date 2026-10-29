@@ -9,7 +9,7 @@ from torch import nn
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import masked_inputs
-from mars_titan.data.price_windows import gate_price_window
+from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, gate_price_window
 from mars_titan.data.sector_map import SectorMap
 from mars_titan.models.baselines.multimodal import (
     HEADS,
@@ -23,6 +23,12 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .asset_groups import (
+    CURRENT_SECTOR,
+    AssetGroupMembership,
+    AssetGroupsConfig,
+    parse_asset_groups,
+)
 from .auxiliary_horizons import AuxiliaryHeads, AuxiliaryHorizons
 from .bank_readout import BankReadoutConfig
 from .config import (
@@ -183,6 +189,10 @@ class FinancialConfig:
     # C5 de #751: atención entre los activos de la misma sesión tras MAC. Sin declararla, la
     # identidad y el cálculo no cambian.
     cross_asset_attention: CrossAssetAttentionConfig | None = None
+    # H4 de #783: grupos de activos de la sesión con la ventana pasada, tras MAC. Su control
+    # de fuga lee el sector actual de sector_map. Sin declararla, la identidad y el cálculo
+    # no cambian.
+    asset_groups: AssetGroupsConfig | None = None
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -287,10 +297,18 @@ class FinancialConfig:
             raise ValueError(
                 "session_context admite market_memory_v1 o sector_mean_v1 con mac_online"
             )
-        if (self.session_context == SECTOR_MEAN) != isinstance(self.sector_map, SectorMap) or (
+        object.__setattr__(self, "asset_groups", parse_asset_groups(self.asset_groups))
+        sectors = self.session_context == SECTOR_MEAN or (
+            self.asset_groups is not None and self.asset_groups.mode == CURRENT_SECTOR
+        )
+        if sectors != isinstance(self.sector_map, SectorMap) or (
             self.sector_map is not None and not isinstance(self.sector_map, SectorMap)
         ):
-            raise ValueError("sector_map acompaña solo y siempre al control sectorial")
+            raise ValueError("sector_map acompaña solo y siempre a los controles sectoriales")
+        if self.asset_groups is not None and self.inputs.dimensions["prices"] != len(
+            PRICE_WINDOW_CHANNELS
+        ):
+            raise ValueError("H4 necesita la ventana de precios de la v3.1 con el bit de presencia")
         if self.presence_modulation is not None and (
             not isinstance(self.presence_modulation, str)
             or self.presence_modulation not in PRESENCE_MODULATIONS
@@ -396,6 +414,9 @@ class FinancialConfig:
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
+        # H4 y C5 son dos formas de mezclar los activos de la sesión y se comparan entre sí.
+        if self.asset_groups is not None and self.cross_asset_attention is not None:
+            raise ValueError("H4 y C5 son alternativas y no se combinan")
         if isinstance(self.auxiliary_horizons, dict):
             if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
                 raise ValueError(
@@ -425,6 +446,7 @@ class FinancialConfig:
                 self.session_rank_inputs is not None
                 or self.session_ic_objective is not None
                 or self.cross_asset_attention is not None
+                or self.asset_groups is not None
             ):
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
@@ -517,6 +539,12 @@ class FinancialConfig:
         result.update(objective_identity(self))
         if self.cross_asset_attention is not None:
             result.update(cross_asset_attention=self.cross_asset_attention.identity())
+        if self.asset_groups is not None:
+            groups = self.asset_groups.identity()
+            # El control sectorial guarda la huella del reparto que lee.
+            if self.asset_groups.mode == CURRENT_SECTOR:
+                groups.update(sectors=self.sector_map.identity())
+            result.update(asset_groups=groups)
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -763,6 +791,19 @@ class FinancialPredictor(nn.Module):
             if config.cross_asset_attention is not None
             else None
         )
+        self.asset_groups = (
+            AssetGroupMembership(
+                config.hidden_size,
+                config.asset_groups,
+                seed=config.seed,
+                sector_map=config.sector_map
+                if config.asset_groups.mode == CURRENT_SECTOR
+                else None,
+                dtype=dtype,
+            )
+            if config.asset_groups is not None
+            else None
+        )
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -782,6 +823,7 @@ class FinancialPredictor(nn.Module):
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
+            or self.asset_groups is not None
             or (objective is not None and objective.session_level)
         )
 
@@ -1532,6 +1574,15 @@ class FinancialPredictor(nn.Module):
             if self.cross_asset_attention is not None:
                 # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
                 encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
+            if self.asset_groups is not None:
+                # Los grupos salen de la ventana recibida, sin los rangos de F4.
+                encoded = self.asset_groups(
+                    encoded,
+                    received.inputs["prices"],
+                    batch.flow_ids,
+                    markets,
+                    batch.prediction_at,
+                )
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,

@@ -91,6 +91,7 @@ class FinancialDustAdapter:
             "regional_variant",
             "holographic_network",
             "cross_asset_attention",
+            "asset_groups",
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -118,6 +119,7 @@ class FinancialDustAdapter:
                     "presence_modulation",
                     "fusion_branch",
                     "cross_asset_attention",
+                    "asset_groups",
                     "output_objective",
                     "auxiliary_heads",
                 )

@@ -363,6 +363,9 @@ class FrozenFinancialConsumer:
         # Tampoco registra la red holográfica de #783.
         if predictor.holographic_network is not None:
             raise ValueError("El consumidor congelado aún no registra la red holográfica")
+        # Ni los grupos de activos de H4, que como C5 mezclan las filas de la sesión.
+        if predictor.asset_groups is not None:
+            raise ValueError("El consumidor congelado aún no registra los grupos de activos")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

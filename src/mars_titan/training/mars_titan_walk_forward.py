@@ -207,6 +207,10 @@ def _parent(folder, view, seed, control=None):
         changes.get("holographic_network", predictor.get("holographic_network")) is None,
         "El consumidor congelado aún no registra la red holográfica de #783",
     )
+    _require(
+        changes.get("asset_groups", predictor.get("asset_groups")) is None,
+        "El consumidor congelado aún no registra los grupos de activos de H4",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -231,6 +235,10 @@ def _frozen_parent(
     _require(
         options.get("holographic_network") is None,
         "El consumidor congelado aún no registra la red holográfica de #783",
+    )
+    _require(
+        options.get("asset_groups") is None,
+        "El consumidor congelado aún no registra los grupos de activos de H4",
     )
     _require(
         allow_context or options.get("session_context") is None,
