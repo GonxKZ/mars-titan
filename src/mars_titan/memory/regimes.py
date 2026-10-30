@@ -105,6 +105,8 @@ class RegimeRule:
     min_assets: int = 20
     recent_returns: int = 21
     min_returns: int = 42
+    # Una ruta por mercado. Las fuentes de B3 en `role_sources.py` dan una ruta a cada fila.
+    per_row = False
 
     def __post_init__(self):
         if self.name not in RULES:
@@ -184,12 +186,13 @@ class RegimeRule:
             route = 1 + (0 if trend > 0 else 1) + (2 if recent_rms > earlier_rms else 0)
         return MarketState(market, route, assets, returns, recent_rms, earlier_rms, trend)
 
-    def routes(self, prices, flow_ids, at):
+    def routes(self, prices, flow_ids, at, presence=None):
         """Ruta de cada fila de un evento completo y el estado de cada mercado.
 
         `prices` son todas las ventanas del evento en el orden de `flow_ids`, y `at` el corte
         común en microsegundos UTC. Cada mercado se resume con todas sus filas, así que el
-        resultado no depende de cómo se reparta el evento en bloques.
+        resultado no depende de cómo se reparta el evento en bloques. `presence` forma parte
+        de la llamada común con las fuentes de B3, pero el régimen solo lee los precios.
         """
         prices = np.asarray(prices)
         if type(at) is not int or len(flow_ids) != len(prices) or not len(prices):

@@ -1,14 +1,17 @@
 """Recetas no canónicas de B3 comprobadas antes de abrir datos."""
 
+import hashlib
 import json
 from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
+from mars_titan.data import correlation_regions
+from mars_titan.memory import regimes, role_binding, role_sources
 from mars_titan.memory.mars_titan_variant import check_components, load_declaration
 from mars_titan.memory.role_binding import RoleBindingConfig
-from mars_titan.training.mars_titan_correction import arm_components
+from mars_titan.training.mars_titan_correction import _code, arm_components
 
 
 def test_role_factor_is_connected_to_the_window_and_normalized():
@@ -27,7 +30,7 @@ def test_role_factor_is_connected_to_the_window_and_normalized():
     "role",
     [
         {},
-        {"source": "sector", "mode": "bipolar", "seed": 0},
+        {"source": "current_sector", "mode": "bipolar", "seed": 0},
         {"source": "regime", "mode": "bipolar", "seed": 0, "guarantee": True},
     ],
 )
@@ -50,4 +53,11 @@ def test_all_role_arms_have_distinct_identities_and_common_recipe():
             load_declaration(), arm_components(arm["components"], dict(rate=0.05, forgetting=0.01))
         )
         identities.append(json.dumps(correction.identity(), sort_keys=True))
-    assert len(identities) == len(set(identities)) == 8
+    assert len(identities) == len(set(identities)) == 12
+
+
+def test_the_correction_window_pins_the_code_of_every_role_source():
+    code = _code()
+    for module in (role_binding, regimes, role_sources, correlation_regions):
+        digest = hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
+        assert code[module.__name__] == digest

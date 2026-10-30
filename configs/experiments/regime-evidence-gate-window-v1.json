@@ -31,9 +31,8 @@
   "pending": [
     "Las ventanas están integradas en CPU con fixtures, sin una comparación científica ejecutada.",
     "El valor cusum se convierte en RegimeGateConfig y se pasa por el argumento regime_gate. El control emparejado se construye con matched_control a partir del run.json de la ventana cusum.",
-    "La puerta solo admite la corrección proximal simple. Delta, kalman, E1 y las áreas B2 quedan fuera hasta tener su propia regla de tasa.",
+    "La puerta solo admite la corrección proximal simple. Delta, kalman, E1, las áreas B1 con o sin el puente B2 y las claves ligadas a roles de B3 quedan fuera hasta tener su propia regla de tasa.",
     "Umbral, deriva, suelo de puerta y semivida son valores de desarrollo sin ajuste ni validación predictiva.",
-    "FinancialSession aún no admite E4. Su publicación por generación nativa queda pendiente.",
     "Las rutas CUDA siguen pendientes de admisión."
   ]
 }

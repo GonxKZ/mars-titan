@@ -51,6 +51,90 @@
         }
       }
     },
+    "bound_market": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "role_binding": {
+            "source": "market",
+            "mode": "bipolar",
+            "seed": 0
+          }
+        }
+      }
+    },
+    "bound_modality": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "role_binding": {
+            "source": "modality",
+            "mode": "bipolar",
+            "seed": 0
+          }
+        }
+      }
+    },
+    "bound_sector": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "role_binding": {
+            "source": "sector",
+            "mode": "bipolar",
+            "seed": 0
+          }
+        }
+      }
+    },
+    "permuted_sector": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "role_binding": {
+            "source": "permuted_sector",
+            "mode": "bipolar",
+            "seed": 0
+          }
+        }
+      }
+    },
     "constant_role": {
       "recipe": "configs/titans/mature-correction-historical-masked.json",
       "components": {
@@ -197,12 +281,28 @@
     {
       "variant": "bridge_bound",
       "control": "bridge_no_binding"
+    },
+    {
+      "variant": "bound_modality",
+      "control": "constant_role"
+    },
+    {
+      "variant": "bound_sector",
+      "control": "permuted_sector"
+    },
+    {
+      "variant": "bound_sector",
+      "control": "constant_role"
+    },
+    {
+      "variant": "bound_market",
+      "control": "constant_role"
     }
   ],
   "memory_reads": 1,
   "pending": [
     "No hay comparación predictiva ejecutada.",
-    "El sector actual no acredita sector histórico. Mercado, modalidad y sector no están integrados como fuentes de B3.",
+    "Con un solo mercado el rol de mercado es constante y solo cambia el código frente a constant_role. bound_market solo informa con EE. UU. y China.",
     "La inversa exacta solo corresponde al producto bipolar antes de DPFP. El control proyectado no es invertible."
   ]
 }

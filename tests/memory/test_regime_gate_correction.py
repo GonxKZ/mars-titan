@@ -21,8 +21,14 @@ from test_mars_titan_correction_parity import (
 from test_mars_titan_session_parity import events
 from test_multiscale_session import BASE
 
-from mars_titan.memory.associative_memory import AssociativeMemory, MatureFeedback
+from mars_titan.memory.associative_memory import (
+    AssociativeMemory,
+    AssociativeMemoryConfig,
+    MatureCorrection,
+    MatureFeedback,
+)
 from mars_titan.memory.regime_evidence_gate import RegimeEvidenceGate, RegimeGateConfig
+from mars_titan.memory.role_binding import RoleBindingConfig
 from mars_titan.training.mars_titan_correction import CorrectionInference
 from mars_titan.training.regime_gate_inference import (
     RegimeGateCorrectionInference,
@@ -31,6 +37,8 @@ from mars_titan.training.regime_gate_inference import (
 )
 
 GATE = RegimeGateConfig(threshold=1.0, drift=0.0, floor_gate=0.25, min_history=1)
+# Con roles de B3, A va envuelta y una escritura con otra tasa perdería la envoltura.
+ROLES = MatureCorrection(AssociativeMemoryConfig("proximal"), role_binding=RoleBindingConfig())
 
 
 def inference(source, config=GATE, correction=PROXIMAL):
@@ -77,8 +85,6 @@ def test_each_write_uses_the_rate_times_the_gate_of_its_market(four_flow_source)
 
 def test_mixed_markets_weight_rows_by_their_gate():
     import math
-
-    from mars_titan.memory.associative_memory import AssociativeMemoryConfig
 
     config = AssociativeMemoryConfig("proximal", key_size=2, rate=0.5)
     memory = AssociativeMemory(config)
@@ -149,7 +155,7 @@ def test_repeating_a_phase_resets_the_gate(four_flow_source):
     assert not gated._gate_rows and gated._gates is None
 
 
-@pytest.mark.parametrize("correction", [DELTA, BASE, AREAS])
+@pytest.mark.parametrize("correction", [DELTA, BASE, AREAS, ROLES])
 def test_unsupported_correctors_are_rejected(four_flow_source, correction):
     with pytest.raises(ValueError, match="E4"):
         inference(four_flow_source, correction=correction)
