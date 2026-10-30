@@ -115,6 +115,7 @@ _PREDICTOR_MODULES = dict(
     cross_asset_attention="mars_titan.models.titans.cross_asset_attention",
     axial_time_region="mars_titan.models.titans.axial_time_region",
     fractal_shared_operator="mars_titan.models.titans.fractal_shared_operator",
+    asset_groups="mars_titan.models.titans.asset_groups",
 )
 
 
@@ -1086,6 +1087,10 @@ class ChronologicalTrainer(ChronologicalInference):
         # C3 agrupa sus sectores con el módulo común de C4, que también entra en la identidad.
         if self.predictor.config.fractal_shared_operator is not None:
             name = "mars_titan.data.correlation_regions"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H4 de #783 añade también el módulo de las medidas de la ventana.
+        if self.predictor.config.asset_groups is not None:
+            name = "mars_titan.data.asset_groups"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
         # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
         # porque `financial` importa siempre su configuración.
