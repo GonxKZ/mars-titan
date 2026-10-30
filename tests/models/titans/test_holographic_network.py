@@ -181,8 +181,11 @@ def single_encoders(encoders):
     return copy.deepcopy(encoders).float()
 
 
-def reference(net, blocks, presence, inputs, encoders):
-    """Las ecuaciones del módulo fila a fila, nodo a nodo y bloque a bloque."""
+def reference(net, blocks, presence, inputs, encoders, final=None):
+    """Las ecuaciones del módulo fila a fila, nodo a nodo y bloque a bloque.
+
+    Con una lista en `final`, añade el estado final y la presencia de las áreas de cada fila.
+    """
     config, layout, width = net.config, net.layout, net.hidden_size
     areas, slots = config.catalog_areas, config.hidden_groups
     owners = [b for b, members in enumerate(layout.members) for _ in members]
@@ -257,6 +260,8 @@ def reference(net, blocks, presence, inputs, encoders):
                 update = net.summary_update(net.summary_norm(summary) + pooled)
                 summary = summary + config.summary_gain * update
                 context = net.summary_to_local(summary)
+        if final is not None:
+            final.append((local[:areas], alive[:areas]))
         change = [after - before for after, before in zip(local, initial, strict=True)]
         for m, modality in enumerate(MODALITIES):
             if not presence[r, m]:

@@ -134,6 +134,9 @@ class HolographicNetworkConfig:
     local_gain: float = 0.25
     summary_gain: float = 0.25
     levels: int = 1
+    # Peso de la pérdida propia de cada área. None no crea las predicciones por área y con
+    # 0.0 las áreas votan en la salida, pero solo aprenden a través de ella.
+    area_predictions: float | None = None
 
     def __post_init__(self):
         if type(self.kind) is not str or self.kind not in KINDS:
@@ -169,6 +172,14 @@ class HolographicNetworkConfig:
                 "Los niveles 2 y 3 necesitan los grupos de activos de H4 y el estado de "
                 "régimen, que todavía no existen"
             )
+        if self.area_predictions is not None:
+            if self.kind == HIDDEN_GROUPS_ONLY:
+                raise ValueError("H3 no tiene áreas del catálogo que puedan predecir")
+            weight = self.area_predictions
+            if type(weight) is not float or not 0 <= weight <= 4:
+                raise ValueError(
+                    "El peso de las predicciones por área debe ser un decimal entre 0 y 4"
+                )
 
     @property
     def catalog_areas(self):
@@ -184,9 +195,20 @@ class HolographicNetworkConfig:
             membership = "softmax_over_areas_of_catalog_log_weights"
             if self.kind == HOLOGRAPHIC_NETWORK:
                 membership += "_plus_learned_delta_from_zero"
+        fields = asdict(self)
+        # El campo opcional solo aparece declarado, así que las identidades anteriores no cambian.
+        if self.area_predictions is None:
+            fields.pop("area_predictions")
+        else:
+            fields.update(
+                area_votes="linear_head_per_area_on_the_normalized_final_area_state_up_from_zero",
+                area_readout="learned_softmax_over_present_areas_from_equal_weights",
+                area_output="reference_point_plus_the_weighted_mean_of_the_area_votes",
+                area_loss="weight_times_mean_point_loss_of_each_present_area_with_detached_reference",
+            )
         return dict(
             schema_version=1,
-            **asdict(self),
+            **fields,
             seed_family=_SEED_FAMILY,
             family_blocks="modality_encoder_applied_to_the_family_columns_only",
             membership=membership,
@@ -213,7 +235,9 @@ def parse_holographic_network(raw):
     if type(raw) is HolographicNetworkConfig:
         raw.__post_init__()
         return raw
-    if isinstance(raw, dict) and set(raw) == set(HolographicNetworkConfig.__dataclass_fields__):
+    fields = set(HolographicNetworkConfig.__dataclass_fields__)
+    # Las declaraciones anteriores no nombran el campo opcional de las predicciones por área.
+    if isinstance(raw, dict) and set(raw) in (fields, fields - {"area_predictions"}):
         return HolographicNetworkConfig(**raw)
     raise ValueError("holographic_network debe declarar toda su configuración o ser None")
 
@@ -346,6 +370,16 @@ def node_edges(config):
     return edges
 
 
+@dataclass(frozen=True)
+class AreaVotes:
+    """Votos de las áreas de una llamada: desplazamiento [R], votos, presencia y pesos [R, A]."""
+
+    shift: torch.Tensor
+    votes: torch.Tensor
+    alive: torch.Tensor
+    weights: torch.Tensor
+
+
 class HolographicNetwork(nn.Module):
     """Transformar [B,5,H] leyendo cada bloque desde varias áreas a la vez."""
 
@@ -394,6 +428,13 @@ class HolographicNetwork(nn.Module):
                 self.area_norm = nn.LayerNorm(hidden_size)
                 if config.kind == HOLOGRAPHIC_NETWORK:
                     self.membership_delta = nn.Parameter(torch.zeros(areas, blocks))
+            # Los votos por área empiezan en cero y la lectura con pesos iguales, así que la
+            # salida coincide al construirse con la de H1 sin predicciones por área.
+            if config.area_predictions is not None:
+                self.area_vote_norm = nn.LayerNorm(hidden_size)
+                self.area_vote_weight = nn.Parameter(torch.zeros(areas, hidden_size))
+                self.area_vote_bias = nn.Parameter(torch.zeros(areas))
+                self.area_vote_logits = nn.Parameter(torch.zeros(areas))
         nn.init.zeros_(self.readout.weight)
         # La estructura deriva de la configuración y de la disposición, que fija la identidad,
         # así que sus buffers no viajan en el checkpoint.
@@ -439,10 +480,14 @@ class HolographicNetwork(nn.Module):
         """Evaluaciones de nodos y resúmenes del puente, incluidas las filas enmascaradas."""
         bounded_integer(rows, "filas del trabajo holográfico", 0, MAX_BLOCK_ROWS)
         config = self.config
-        return dict(
+        counts = dict(
             holographic_node_evaluations=rows * config.nodes * config.cycles * config.local_steps,
             holographic_summary_evaluations=rows * config.cycles if config.summary else 0,
         )
+        # Solo con las predicciones por área, para no cambiar los recuentos anteriores.
+        if config.area_predictions is not None:
+            counts["holographic_area_votes"] = rows * config.areas
+        return counts
 
     def _checked(self, blocks, presence, inputs, encoders):
         reference = self.qkv.weight
@@ -504,6 +549,39 @@ class HolographicNetwork(nn.Module):
         return torch.cat(parts, dim=1)
 
     def forward(self, blocks, presence, inputs=None, encoders=None):
+        return self._run(blocks, presence, inputs, encoders)[0]
+
+    def forward_with_votes(self, blocks, presence, inputs=None, encoders=None):
+        """Salida de la red y votos de sus áreas, solo con las predicciones por área."""
+        if self.config.area_predictions is None:
+            raise ValueError("La red holográfica no declara predicciones por área")
+        result, states, alive = self._run(blocks, presence, inputs, encoders)
+        return result, self.area_votes(states, alive)
+
+    def area_votes(self, states, alive):
+        """Voto de cada área presente y su media con la lectura aprendida.
+
+        Con s_ra el estado final del área a en la fila r,
+
+            δ_ra = w_a · LayerNorm(s_ra) + c_a,   ω_ra = softmax_a(ℓ_a) sobre las presentes,
+
+        y la salida se desplaza en Σ_a ω_ra δ_ra. w, c y ℓ empiezan en cero. Un área ausente
+        no vota y una fila sin áreas presentes no se desplaza.
+        """
+        votes = (
+            torch.einsum("rah,ah->ra", self.area_vote_norm(states), self.area_vote_weight)
+            + self.area_vote_bias
+        )
+        votes = torch.where(alive, votes, 0)
+        present = alive.any(1, keepdim=True)
+        # Una fila sin áreas reparte entre todas y se anula después. Así la softmax no recibe
+        # solo -inf, que daría NaN también en el gradiente.
+        allowed = alive | ~present
+        logits = self.area_vote_logits.expand_as(votes).masked_fill(~allowed, -math.inf)
+        weights = torch.softmax(logits, dim=1) * present
+        return AreaVotes((weights * votes).sum(1), votes, alive, weights)
+
+    def _run(self, blocks, presence, inputs, encoders):
         presence = self._checked(blocks, presence, inputs, encoders)
         if torch.is_autocast_enabled(blocks.device.type):
             raise ValueError("La red holográfica exige FP32 o FP64 explícitos, sin autocast")
@@ -582,4 +660,6 @@ class HolographicNetwork(nn.Module):
             # comprueba cada paso. En CPU, las ocho comprobaciones de dos ciclos eran el
             # 15 % del forward.
             check_finite(result, "La salida de la red holográfica")
-        return result
+        if not areas:
+            return result, None, None
+        return result, local[:, :areas], alive[:, :areas]

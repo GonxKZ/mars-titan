@@ -75,6 +75,7 @@ from .fractal_shared_operator import (
     parse_fractal_shared_operator,
 )
 from .holographic_network import (
+    AreaVotes,
     HolographicNetwork,
     HolographicNetworkConfig,
     area_layout,
@@ -86,7 +87,12 @@ from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .opponent_heads import OpponentHeads
-from .output_objectives import build_objective, check_objectives, objective_identity
+from .output_objectives import (
+    build_objective,
+    check_objectives,
+    declared_objective,
+    objective_identity,
+)
 from .presence_modulation import (
     FILM,
     PRESENCE_MODULATIONS,
@@ -445,6 +451,18 @@ class FinancialConfig:
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
             )
         check_objectives(self)
+        # Los votos de las áreas desplazan el punto de la cabeza escalar y cada área aprende con
+        # la pérdida puntual de la receta. Los cuantiles y los objetivos de #749 serían otro
+        # contraste.
+        network = self.holographic_network
+        if (
+            network is not None
+            and network.area_predictions is not None
+            and (self.head == QUANTILE_HEAD or declared_objective(self) is not None)
+        ):
+            raise ValueError(
+                "Las predicciones por área de H1 usan la cabeza escalar sin objetivo de salida"
+            )
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
@@ -741,6 +759,10 @@ class PreparedDecisions:
     outputs: torch.Tensor | None = None
     # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
     surprise: torch.Tensor | None = None
+    # Solo con las predicciones por área de H1: [flujos, áreas] predicción de cada área, la
+    # referencia sin grafo más su voto, y los votos con su presencia y sus pesos.
+    area_predictions: torch.Tensor | None = None
+    area_votes: AreaVotes | None = None
 
 
 @dataclass(frozen=True)
@@ -875,6 +897,11 @@ class FinancialPredictor(nn.Module):
             )
             if config.holographic_network is not None
             else None
+        )
+        # Con las predicciones por área, la fusión devuelve también los votos de las áreas.
+        self.votes_by_area = (
+            config.holographic_network is not None
+            and config.holographic_network.area_predictions is not None
         )
         # C2 deriva su semilla de la del predictor y no consume el generador global.
         self.axial_time_region = (
@@ -1630,6 +1657,28 @@ class FinancialPredictor(nn.Module):
             branch=self.fusion_branch,
         )
 
+    def _voting_fuse(self, price, inputs, presence):
+        """Token fusionado con H1 y los votos de sus áreas."""
+        votes = None
+
+        def modulation(blocks, presence):
+            nonlocal votes
+            modulated, votes = self.holographic_network.forward_with_votes(
+                blocks, presence, inputs, self.encoders
+            )
+            return modulated
+
+        token = fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+        return token, votes
+
     def _axial_fuse(self, price, inputs, presence, history):
         """Token fusionado con C2 y el historial que deja la emisión."""
         following = None
@@ -1816,7 +1865,7 @@ class FinancialPredictor(nn.Module):
             )
             for value, message in encoder_checks:
                 require_finite(value, message)
-            next_regions = None
+            next_regions = votes = None
             if self.regional_execution is not None:
                 token, next_context, regional_trace = self._program_fusion(
                     price, batch, context, context_selection
@@ -1828,6 +1877,9 @@ class FinancialPredictor(nn.Module):
                 next_context = context
             elif self.fractal_shared_operator is not None:
                 token = self._fractal_fuse(price, batch, received.inputs["prices"])
+                next_context = context
+            elif self.votes_by_area:
+                token, votes = self._voting_fuse(price, batch.inputs, batch.presence)
                 next_context = context
             else:
                 token = self._fuse(price, batch.inputs, batch.presence)
@@ -1890,7 +1942,7 @@ class FinancialPredictor(nn.Module):
                     context_id=control_context_id,
                     differentiable=differentiable,
                 )
-            quantiles = outputs = None
+            quantiles = outputs = area_predictions = None
             if self.config.head == QUANTILE_HEAD:
                 quantiles = self.head(encoded)
                 check_finite(quantiles, "Los cuantiles")
@@ -1900,6 +1952,11 @@ class FinancialPredictor(nn.Module):
                 if self.output_objective is not None:
                     outputs, point = self.output_objective(point, encoded, markets)
                     check_finite(outputs, "Las salidas del objetivo")
+                if votes is not None:
+                    # Cada área predice la referencia sin grafo más su voto, y la salida suma
+                    # la media de los votos con la lectura aprendida.
+                    area_predictions = point.detach().unsqueeze(-1) + votes.votes
+                    point = point + votes.shift
             check_finite(point, "La predicción")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
@@ -1925,6 +1982,8 @@ class FinancialPredictor(nn.Module):
             next_context,
             outputs,
             surprise=None if sink is None else sink[0],
+            area_predictions=area_predictions,
+            area_votes=votes,
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
