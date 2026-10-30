@@ -70,6 +70,7 @@ def test_trainers_inherit_the_real_precomputed_source_without_initializing_train
             temporal_encoder=kind,
             regional_variant=None,
             cross_asset_attention=None,
+            asset_groups=None,
             holographic_network=None,
             axial_time_region=None,
             mature_reliability=None,

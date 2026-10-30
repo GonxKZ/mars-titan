@@ -379,5 +379,46 @@
     ],
     "verification_date": "2026-09-21",
     "revision": "d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e"
+  },
+  {
+    "id": "abdi2017simple",
+    "title": "A Simple Estimation of Bid-Ask Spreads from Daily Close, High, and Low Prices",
+    "authors": [
+      "Farshid Abdi",
+      "Angelo Ranaldo"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.1093/rfs/hhx084",
+    "doi": "10.1093/rfs/hhx084",
+    "pdf_url": "https://www.alexandria.unisg.ch/server/api/core/bitstreams/dfb85399-5bcf-465c-8b63-9bfc97ad2ee0/content",
+    "venue": "The Review of Financial Studies",
+    "volume": "30",
+    "issue": "12",
+    "pages": "4437-4480",
+    "access": "Metadatos contrastados en Crossref. Versión de autor de 61 páginas, de julio de 2017, en acceso abierto en el repositorio de la Universidad de St. Gallen, sin la maquetación de la revista. Leídos la definición del rango medio (página 11 del PDF), las versiones corregidas mensual y por dos días (páginas 14 y 15), los meses de 21 días de las simulaciones (página 17), el descarte de los pares con un día sin negociación o sin rango en las simulaciones (página 18) y el procedimiento empírico, que arrastra los precios del día anterior y descarta los meses con menos de 12 días aplicables (páginas 20 y 21). No se han reproducido sus resultados.",
+    "read_version": {
+      "type": "author_version",
+      "date": "2017-07-30",
+      "url": "https://www.alexandria.unisg.ch/249656",
+      "sha256": "a40450b1036e9fd941c8adeca935e6e59c984897f1bb9c804c6f80a009e7666b",
+      "passages": [
+        "Página 11 del PDF: definición del rango medio",
+        "Páginas 14 y 15: versiones corregidas mensual y por dos días, ecuaciones (10) y (11)",
+        "Página 17: simulaciones con meses de 21 días",
+        "Página 18: descarte de los pares con un día sin negociación o sin rango",
+        "Páginas 20 y 21: procedimiento empírico y mínimo de 12 días aplicables por mes"
+      ]
+    },
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1093/rfs/hhx084",
+      "https://www.alexandria.unisg.ch/249656"
+    ],
+    "relevance": "Fuente del diferencial CHL corregido por dos días con que H4 mide la liquidez de cada activo en su ventana de 64 sesiones. H4 descarta los pares sin rango como en las simulaciones del artículo y no arrastra precios.",
+    "redistribution": "Versión de autor en acceso abierto. No se redistribuye el PDF.",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
   }
 ]

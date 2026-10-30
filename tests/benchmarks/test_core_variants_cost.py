@@ -71,3 +71,86 @@ def test_a_measure_that_changes_a_parameter_is_refused(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="modificado parámetros"):
         cost.measure(output, rows=4, instants=2, repetitions=1, warmup=0, threads=1)
     assert not output.exists()
+
+
+def test_the_warmup_runs_every_model_before_the_measured_passes(monkeypatch, tmp_path):
+    calls, graph, plain = [], cost.graph_pass, cost.inference
+
+    def graphed(model, inputs, targets):
+        calls.append(("graph", model))
+        return graph(model, inputs, targets)
+
+    def inferred(model, inputs):
+        calls.append(("inference", model))
+        return plain(model, inputs)
+
+    monkeypatch.setattr(cost, "graph_pass", graphed)
+    monkeypatch.setattr(cost, "inference", inferred)
+    cost.measure(tmp_path / "cost.json", rows=4, instants=2, repetitions=2, warmup=1, threads=1)
+    models = list(dict.fromkeys(model for _, model in calls))
+    passes = [(kind, model) for model in models for kind in ("graph", "inference")]
+    assert len(models) == len(cost.arms())
+    # Un calentamiento con grafo y sin grafo de cada modelo en el orden declarado, después la
+    # primera repetición en ese orden y la segunda empezando por el segundo modelo. La pasada
+    # final sin grafo es la de la fracción de Huber.
+    assert calls[: len(passes)] == passes and calls[len(passes) : 2 * len(passes)] == passes
+    assert calls[2 * len(passes) : 3 * len(passes)] == passes[2:] + passes[:2]
+    assert calls[3 * len(passes) :] == [("inference", models[1])]
+
+
+def test_a_non_finite_gradient_in_one_parameter_stops_the_measure(monkeypatch, tmp_path):
+    original = cost.graph_pass
+
+    def poisoned(model, inputs, targets):
+        # Solo el primer gradiente que llega queda en NaN, así que el resto sigue finito.
+        hit = []
+
+        def hook(grad):
+            if hit:
+                return grad
+            hit.append(True)
+            return torch.full_like(grad, float("nan"))
+
+        handles = [p.register_hook(hook) for p in model.parameters() if p.requires_grad]
+        try:
+            return original(model, inputs, targets)
+        finally:
+            for handle in handles:
+                handle.remove()
+
+    monkeypatch.setattr(cost, "graph_pass", poisoned)
+    output = tmp_path / "cost.json"
+    with pytest.raises(ValueError, match="gradiente no finito"):
+        cost.measure(output, rows=4, instants=2, repetitions=1, warmup=0, threads=1)
+    assert not output.exists()
+
+
+def test_the_command_line_passes_its_shape_and_prints_each_ratio(monkeypatch, tmp_path, capsys):
+    calls = []
+
+    def measured(output, **shape):
+        calls.append((output, shape))
+        return dict(
+            models=dict(reference=dict(relative_to_control=dict(inference_seconds=1.0))),
+            huber_clipped_fraction_at_start=dict(huber_memory=0.25),
+        )
+
+    monkeypatch.setattr(cost, "measure", measured)
+    output = tmp_path / "cost.json"
+    shape = ["--rows", "8", "--instants", "3", "--repetitions", "4", "--warmup", "1"]
+    for arguments in (
+        ["--output", str(output)],
+        ["--output", str(output), *shape, "--threads", "1"],
+    ):
+        monkeypatch.setattr("sys.argv", ["core_variants_cost.py", *arguments])
+        cost.main()
+    assert calls == [
+        (output, dict(rows=256, instants=8, repetitions=10, warmup=2, threads=2)),
+        (output, dict(rows=8, instants=3, repetitions=4, warmup=1, threads=1)),
+    ]
+    printed = ['reference {"inference_seconds": 1.0}', 'huber {"huber_memory": 0.25}']
+    assert capsys.readouterr().out.splitlines() == printed * 2
+    monkeypatch.setattr("sys.argv", ["core_variants_cost.py"])
+    with pytest.raises(SystemExit):
+        cost.main()
+    assert len(calls) == 2
