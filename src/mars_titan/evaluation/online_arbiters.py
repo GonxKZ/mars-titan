@@ -52,7 +52,8 @@ ADANORMALHEDGE = "adanormalhedge_v1"
 VERSION_ARBITER = "version_arbiter_v1"
 MODEL_COMBINATION = "model_combination_v1"
 DECLARATION_KIND = "online_arbiter_variants"
-MAX_OPTIONS = 64
+# La combinación de modelos mezcla unos ochenta modelos de la criba.
+MAX_OPTIONS = 128
 MAX_WINDOW = 252
 
 
@@ -133,8 +134,20 @@ class AdaNormalHedge:
             and (prior > 0).all(),
             f"El prior necesita de 1 a {MAX_OPTIONS} pesos positivos y finitos",
         )
+        with np.errstate(over="ignore"):
+            total = prior.sum()
+        if np.isfinite(total):
+            normalized = prior / total
+        else:
+            # La suma no cabe en FP64. Dividir por el máximo conserva las proporciones.
+            scaled = prior / prior.max()
+            normalized = scaled / scaled.sum()
+        _require(
+            np.isfinite(normalized).all() and (normalized > 0).all(),
+            "No se puede representar el prior normalizado con pesos positivos en FP64",
+        )
         zeros = np.zeros(prior.size)
-        return cls(prior / prior.sum(), zeros, zeros.copy())
+        return cls(normalized, zeros, zeros.copy())
 
     @property
     def options(self):
@@ -466,13 +479,8 @@ def uniform_mixture(panel, predictions):
     return np.mean(columns, axis=0)
 
 
-def stage_options(document, identity):
-    """Parámetros declarados de una etapa, comprobados antes de abrir ningún dato.
-
-    Devuelve la ventana de fiabilidad, el margen de abstención, los activos mínimos por
-    sesión y la semilla del control desordenado. `version_arbiter_v1` necesita un margen
-    finito y ese control. `model_combination_v1` no se abstiene y solo tiene la media simple.
-    """
+def _declared_stage(document, identity):
+    """Etapa `identity` de una declaración con AdaNormalHedge.TV, desactivada y sin test final."""
     core = document.get("core", {}) if isinstance(document, dict) else {}
     _require(
         isinstance(document, dict)
@@ -489,9 +497,60 @@ def stage_options(document, identity):
         identity in (VERSION_ARBITER, MODEL_COMBINATION) and isinstance(stage, dict),
         f"{identity} no está declarada",
     )
+    return stage
+
+
+def _version_controls(margin, controls, analysis):
+    """Semilla del control desordenado y comparación con las medias de pesos en el tiempo."""
+    shuffled = controls.get("shuffled_outcomes", {})
+    seed = shuffled.get("seed") if isinstance(shuffled, dict) else None
+    _require(
+        type(margin) in (int, float)
+        and math.isfinite(margin)
+        and set(controls) == {"common_epoch", "uniform_mixture", "shuffled_outcomes"}
+        and type(seed) is int
+        and seed >= 0,
+        "El árbitro de versiones declara un margen finito y sus tres controles",
+    )
+    _require(
+        analysis.get("required") == ["uniform_mixture", "shuffled_outcomes"],
+        "El árbitro de versiones exige superar la media uniforme y el control desordenado",
+    )
+    averaging = analysis.get("time_averaging")
+    averaging = averaging if isinstance(averaging, dict) else {}
+    compared = averaging.get("compared_with")
+    _require(
+        isinstance(averaging.get("arbiter_of"), str)
+        and isinstance(compared, list)
+        and compared
+        and all(isinstance(name, str) and "/" in name for name in compared)
+        and len(set(compared)) == len(compared)
+        and averaging.get("family") == "reported_together_outside_every_decision",
+        "El árbitro de versiones declara su comparación con las medias de pesos, fuera de "
+        "toda decisión",
+    )
+    return seed, dict(arbiter_of=averaging["arbiter_of"], compared_with=compared)
+
+
+def stage_options(document, identity):
+    """Parámetros declarados de una etapa, comprobados antes de abrir ningún dato.
+
+    Devuelve la ventana de fiabilidad, el margen de abstención, los activos mínimos por
+    sesión, la semilla del control desordenado, la métrica de su análisis y la comparación
+    con las medias de pesos en el tiempo. `version_arbiter_v1` necesita un margen finito, ese
+    control y esa comparación. `model_combination_v1` no se abstiene y solo tiene la media
+    simple.
+    """
+    stage = _declared_stage(document, identity)
     window, margin = stage.get("reliability_window_sessions"), stage.get("abstention_margin")
     min_assets, controls = stage.get("min_assets"), stage.get("controls")
     _require(isinstance(controls, dict), f"{identity} declara sus controles")
+    analysis = stage.get("analysis")
+    # La pérdida de los árbitros es (1 − IC)/2, así que su análisis se mide con el IC.
+    _require(
+        isinstance(analysis, dict) and analysis.get("metric") == "session_ic",
+        f"{identity} se analiza con el IC por sesión",
+    )
     _require(
         type(window) is int
         and 1 <= window <= MAX_WINDOW
@@ -499,21 +558,19 @@ def stage_options(document, identity):
         and min_assets >= 3,
         f"{identity} necesita una ventana de 1 a {MAX_WINDOW} sesiones y al menos tres activos",
     )
-    seed = None
     if identity == VERSION_ARBITER:
-        shuffled = controls.get("shuffled_outcomes", {})
-        seed = shuffled.get("seed") if isinstance(shuffled, dict) else None
-        _require(
-            type(margin) in (int, float)
-            and math.isfinite(margin)
-            and set(controls) == {"common_epoch", "uniform_mixture", "shuffled_outcomes"}
-            and type(seed) is int
-            and seed >= 0,
-            "El árbitro de versiones declara un margen finito y sus tres controles",
-        )
+        seed, averaging = _version_controls(margin, controls, analysis)
     else:
         _require(
             margin is None and set(controls) == {"simple_mean"},
             "La combinación de modelos no se abstiene y su control es la media simple",
         )
-    return dict(window=window, margin=margin, min_assets=min_assets, seed=seed)
+        seed = averaging = None
+    return dict(
+        window=window,
+        margin=margin,
+        min_assets=min_assets,
+        seed=seed,
+        metric=analysis["metric"],
+        time_averaging=averaging,
+    )

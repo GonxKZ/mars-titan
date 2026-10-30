@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **386 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **391 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -86,6 +86,8 @@ y Winkler, Klawonn y Kruse (2011), en el catálogo de la variante ampliada, dan 
 c-medias difusas, su inicialización, la normalización de la inmersión, la partición
 difusa de los cubos y el límite de las c-medias en dimensión alta. Cada ficha dice
 si se leyó el texto o solo se contrastaron sus metadatos.
+
+El 30 de octubre se incorporan cinco fuentes de los [árbitros en línea](../experiments/online-arbiters-v1.md): Luo y Schapire (2015), Daw et al. (2005), Bates y Granger (1969), Stock y Watson (2004) y Smith y Wallis (2009). La ficha de AdaNormalHedge distingue el preprint leído de la versión publicada y su numeración. Las otras cuatro fichas identifican la consulta de resúmenes y metadatos, sin atribuir lectura completa.
 
 ## Contenido
 

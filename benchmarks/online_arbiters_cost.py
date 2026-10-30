@@ -4,7 +4,9 @@ Sin --run imprime el protocolo. Con --run construye paneles ficticios con dos me
 128 activos por sesión y la madurez de cada etiqueta cinco sesiones después de decidir, y
 mide `online_mixture` y `uniform_mixture` en FP64. Con cinco opciones (la época común y
 cuatro versiones) mide el árbitro de versiones, su control desordenado y la media uniforme.
-Con 32 opciones mide la combinación de modelos y su media simple.
+Con 32 y 80 opciones mide la combinación de modelos y su media simple. La criba compara 78
+modelos con predicciones propias de calibración y S, que son 67 opciones sin los trabajos
+repetidos.
 
 Las dos pasadas invierten el orden de los modos y comparten equipo con las cargas que ya
 existan, así que los percentiles son descriptivos. La memoria es el pico de tracemalloc en
@@ -27,10 +29,11 @@ from mars_titan.data.storage import atomic_json
 DAY_US = 86_400_000_000
 MARKETS, ASSETS, LAG_SESSIONS, WINDOW, MIN_ASSETS, SEED = ("US", "CN"), 128, 5, 21, 3, 20261028
 # (sesiones por mercado, opciones). 320 sesiones son la calibración y un año de S.
-SHAPES = ((64, 5), (320, 5), (320, 32))
+SHAPES = ((64, 5), (320, 5), (320, 32), (320, 80))
 MODES = {
     5: ("version_arbiter", "shuffled_control", "uniform_mixture"),
     32: ("model_combination", "simple_mean"),
+    80: ("model_combination", "simple_mean"),
 }
 WARMUP, REPETITIONS = 1, 5
 
