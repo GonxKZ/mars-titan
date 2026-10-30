@@ -3580,5 +3580,42 @@
       6
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "seitzer2022pitfalls",
+    "title": "On the Pitfalls of Heteroscedastic Uncertainty Estimation with Probabilistic Neural Networks",
+    "authors": [
+      "Maximilian Seitzer",
+      "Arash Tavakoli",
+      "Dimitrije Antić",
+      "Georg Martius"
+    ],
+    "year": 2022,
+    "url": "https://arxiv.org/abs/2203.09168v2",
+    "doi": "10.48550/arXiv.2203.09168",
+    "pdf_url": "https://arxiv.org/pdf/2203.09168v2",
+    "venue": "International Conference on Learning Representations (ICLR 2022)",
+    "access": "Leído en el PDF de arXiv v2, del 1 de abril de 2022, que su página describe como versión final de ICLR 2022. Leídas la NLL gaussiana de la ecuación (2) en la página 3 y la sección 4.1 de la página 5, con la β-NLL de la ecuación (7), el peso sg(σ^{2β}) y los gradientes de las ecuaciones (8) y (9). No se ha consultado la ficha de las actas ni se reproducen sus experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2022-04-01",
+      "url": "https://arxiv.org/pdf/2203.09168v2",
+      "sha256": "3590083e3529772877aa6f0920c1902ac1adf503492ebb20da180ea7f2883ab7",
+      "passages": [
+        "Página 3: NLL gaussiana de la ecuación (2)",
+        "Sección 4.1, página 5: β-NLL de la ecuación (7), con el peso sin gradiente sg(σ^{2β}), y gradientes de las ecuaciones (8) y (9)"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2203.09168v2"
+    ],
+    "relevance": "Fuente de la ponderación sin gradiente de F1 (#749) y L2 (#787). El artículo la plantea para la gaussiana. Las dos adaptaciones usan como peso la escala de su distribución, el que quita a μ el factor de la escala de cada fila.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-30"
   }
 ]
