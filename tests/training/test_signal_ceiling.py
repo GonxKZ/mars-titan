@@ -7,6 +7,7 @@ LightGBM se sustituyen por dobles de predicción fija, así que ninguna prueba e
 
 import copy
 import dataclasses
+import importlib
 import json
 from pathlib import Path
 
@@ -535,6 +536,47 @@ def test_an_origin_measures_both_models_with_both_targets_and_reuses_its_report(
     assert len(doubled_models["ridge"]) == 2 and len(doubled_models["lightgbm"]) == 4
     with pytest.raises(ValueError, match="petición del origen ha cambiado"):
         sc.run_origin(view, ORIGIN, declaration(seeds=[42]), output)
+
+
+def test_a_cached_origin_is_refused_after_a_change_in_its_data_or_time_helpers(
+    view, tmp_path, technical_origin, doubled_models, monkeypatch
+):
+    document = declaration(seeds=[42])
+    output = tmp_path / "ceiling"
+    report = sc.run_origin(view, ORIGIN, document, output)
+    calls = {name: len(values) for name, values in doubled_models.items()}
+
+    def refuse_reopening(*args, **kwargs):
+        raise AssertionError("Un origen confirmado no debe reabrir el corpus")
+
+    monkeypatch.setattr(sc, "CorpusDataset", refuse_reopening)
+    assert sc.run_origin(view, ORIGIN, document, output) == report
+    sources = (
+        "mars_titan.training.corpus_inputs",
+        "mars_titan.training.candidate_walk_forward",
+        "mars_titan.training.temporal_contract",
+        "mars_titan.training.walk_forward_phases",
+        "mars_titan.training.screening_cohorts",
+        "mars_titan.data.batches",
+        "mars_titan.data.cohort_files",
+        "mars_titan.data.input_policy",
+        "mars_titan.data.storage",
+        "mars_titan.environments.cohorts",
+        "mars_titan.evaluation.forecast_panel",
+        "mars_titan.models.titans.config",
+    )
+    for name in sources:
+        path = Path(importlib.import_module(name).__file__)
+
+        def changed(candidate, *, source=path):
+            return "f" * 64 if Path(candidate) == source else sha256(candidate)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(sc, "sha256", changed)
+            with pytest.raises(ValueError, match="petición del origen ha cambiado"):
+                sc.run_origin(view, ORIGIN, document, output)
+    assert {name: len(values) for name, values in doubled_models.items()} == calls
+    assert json.loads((output / "origin-2023.json").read_text()) == report
 
 
 def test_an_origin_refuses_another_window_an_undeclared_origin_or_an_output_inside_the_view(

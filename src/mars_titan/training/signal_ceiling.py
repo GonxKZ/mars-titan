@@ -67,6 +67,18 @@ _CODE = (
     "mars_titan.models.baselines.session_ridge",
     "mars_titan.evaluation.scale_diagnostics",
     "mars_titan.training.selection",
+    "mars_titan.training.corpus_inputs",
+    "mars_titan.training.candidate_walk_forward",
+    "mars_titan.training.temporal_contract",
+    "mars_titan.training.walk_forward_phases",
+    "mars_titan.training.screening_cohorts",
+    "mars_titan.data.batches",
+    "mars_titan.data.cohort_files",
+    "mars_titan.data.input_policy",
+    "mars_titan.data.storage",
+    "mars_titan.environments.cohorts",
+    "mars_titan.evaluation.forecast_panel",
+    "mars_titan.models.titans.config",
 )
 
 
