@@ -241,7 +241,7 @@ def doubled_fit(monkeypatch, learning_doubles):
     """
     calls, score = [], lightgbm_control.predict
 
-    def fit(train, validation, config, seed, *, min_assets):
+    def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         calls.append(dict(train=train, validation=validation, config=config, seed=seed))
         booster = Booster(seed, train.features.shape[1])
         series = [
@@ -393,6 +393,31 @@ def test_a_paused_tabular_window_keeps_its_fitted_seeds_and_fits_only_the_rest(
     assert {seed: member["sha256"] for seed, member in whole["seeds"].items()} == {
         seed: member["sha256"] for seed, member in resumed["seeds"].items()
     }
+
+
+def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
+    view, tmp_path, doubled_fit, monkeypatch
+):
+    manifest, protocol = view
+    output = tmp_path / "tabular"
+    original = lightgbm_control.fit
+    stop = types.SimpleNamespace(requested=False)
+
+    def interrupted(train, validation, config, seed, *, min_assets, check_stop=None):
+        if seed == 43:
+            stop.requested = True
+            if check_stop is not None:
+                check_stop()
+        return original(train, validation, config, seed, min_assets=min_assets)
+
+    monkeypatch.setattr(lightgbm_control, "fit", interrupted)
+    paused = tabular(manifest, protocol, output, stop=stop)
+    assert paused["status"] == "paused" and sorted(paused["fits"]) == ["42"]
+    assert not (output / "fits" / "seed-43.json").exists()
+    monkeypatch.setattr(lightgbm_control, "fit", original)
+    resumed = tabular(manifest, protocol, output)
+    assert resumed["status"] == "completed"
+    assert [call["seed"] for call in doubled_fit] == [42, 43, 44]
 
 
 def test_a_changed_saved_fit_is_refused_when_the_window_resumes(view, tmp_path, doubled_fit):

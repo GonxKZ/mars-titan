@@ -304,14 +304,18 @@ def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, re
     pasar a la siguiente, con el informe actualizado.
     """
     fits, saved = [], report.setdefault("fits", {})
+
+    def check_stop():
+        if stop is not None and stop.requested:
+            raise Stopped
+
     for seed in seeds:
+        check_stop()
         if str(seed) in saved:
             fits.append(_loaded_fit(output, seed, saved[str(seed)]))
             continue
-        if stop is not None and stop.requested:
-            raise Stopped
         booster, scored = lightgbm_control.fit(
-            train, validation, config, seed, min_assets=min_assets
+            train, validation, config, seed, min_assets=min_assets, check_stop=check_stop
         )
         saved[str(seed)] = _saved_fit(output, seed, booster, scored)
         atomic_json(output / "run.json", report)
