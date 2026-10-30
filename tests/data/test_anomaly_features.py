@@ -215,6 +215,13 @@ def test_infinite_inputs_are_refused_instead_of_becoming_missing_features(positi
         af.asset_features(*values, [])
 
 
+def test_all_missing_series_preserve_explicit_missing_features():
+    missing = np.full(300, np.nan)
+    features = af.asset_features(missing, missing, missing, [])
+    assert features.shape == (300, len(af.FEATURES))
+    assert np.isnan(features).all()
+
+
 def test_the_log1p_volume_signal_is_not_invariant_to_a_common_adjustment():
     close, volume, market = series(300)
     volume[:] = 1
