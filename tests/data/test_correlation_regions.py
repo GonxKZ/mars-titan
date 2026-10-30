@@ -105,3 +105,17 @@ def test_the_permutation_keeps_labels_and_sizes_and_leaves_region_zero_alone():
     assert sorted(permuted.values()) == sorted(variant.values()) and permuted != variant
     assert permuted["Z"] == "0" and permuted == regions.permuted_regions(variant, [7, 0])
     assert regions.permuted_regions(variant, [8, 0]) != permuted
+
+
+def test_window_returns_skip_the_returns_that_touch_an_absent_session():
+    closes = np.cumsum(np.arange(1, 129, dtype=np.float64).reshape(2, 64) / 1e3, axis=1)
+    window = np.zeros((2, 64, 6), dtype=np.float32)
+    window[:, :, regions.CLOSE], window[:, :, 5] = closes, 1.0
+    window[:, 10, :] = 0.0
+    returns, valid = regions.window_returns(window)
+    expected = np.diff(window[:, :, regions.CLOSE].astype(np.float64), axis=1)
+    assert returns.dtype == np.float64 and np.array_equal(returns, expected)
+    assert valid.shape == (2, 63) and not valid[:, 9:11].any() and valid.sum() == 2 * 61
+    # Sin canal de presencia la ventana no tiene huecos.
+    returns, valid = regions.window_returns(window[:, :, :5])
+    assert np.array_equal(returns, expected) and valid.all()
