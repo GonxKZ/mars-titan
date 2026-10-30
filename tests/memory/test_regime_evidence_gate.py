@@ -6,8 +6,14 @@ import random
 from dataclasses import replace
 
 import pytest
+import torch
 
 from mars_titan.memory import regime_evidence_gate as e4
+from mars_titan.memory.associative_memory import (
+    AssociativeMemory,
+    AssociativeMemoryConfig,
+    MatureFeedback,
+)
 from mars_titan.memory.regime_evidence_gate import RegimeEvidenceGate, RegimeGateConfig
 
 CONFIG = RegimeGateConfig(threshold=2.0, drift=0.5, floor_gate=0.25, half_life=1.0, min_history=2)
@@ -92,6 +98,39 @@ def test_mean_gate_weights_each_written_row():
     expected = (3 * first.by_market()["US"] + second.by_market()["US"]) / 4
     assert gate.mean_gate() == pytest.approx(expected)
     assert RegimeEvidenceGate(CONFIG).mean_gate() is None
+
+
+MEMORY = AssociativeMemoryConfig("proximal", key_size=2, rate=0.5)
+
+
+def feedback():
+    """Dos resultados maduros de un evento con pesos proximales uniformes."""
+    return MatureFeedback(
+        ids=torch.tensor([1, 2]),
+        decision_at=torch.tensor([1, 1]),
+        available_at=torch.tensor([2, 2]),
+        keys=torch.tensor([[1.0, 0.0], [0.6, 0.8]], dtype=torch.float64),
+        values=torch.tensor([[1.0], [-2.0]], dtype=torch.float64),
+        weights=torch.full((2,), 0.5, dtype=torch.float64),
+    )
+
+
+def test_a_single_gate_writes_with_the_rate_times_the_gate_and_keeps_the_memory_config():
+    written = e4.gated_write(AssociativeMemory(MEMORY), feedback(), [0.25, 0.25], cutoff=2)
+    slower = AssociativeMemory(replace(MEMORY, rate=0.125)).write(feedback(), cutoff=2)
+    assert torch.equal(written.matrix, slower.matrix) and written.cursor == slower.cursor
+    assert written.config == MEMORY and written.writes == slower.writes == 2
+
+
+def test_a_gated_write_needs_a_simple_memory_and_one_gate_per_row():
+    with pytest.raises(ValueError, match="una puerta por fila"):
+        e4.gated_write(AssociativeMemory(MEMORY), feedback(), [1.0], cutoff=2)
+
+    class Wrapped(AssociativeMemory):
+        pass
+
+    with pytest.raises(ValueError, match="memoria proximal simple"):
+        e4.gated_write(Wrapped(MEMORY), feedback(), [1.0, 1.0], cutoff=2)
 
 
 def test_empty_publications_advance_the_clock_without_changing_statistics():

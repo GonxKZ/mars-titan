@@ -32,9 +32,12 @@ publicación devuelve otro estado sin modificar el anterior.
 """
 
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from types import MappingProxyType
 
+import torch
+
+from .associative_memory import AssociativeMemory, MatureCorrection
 from .salience_budget import MAX_COUNT, MAX_ROWS, MAX_TIME, _digest, _finite, _integer
 
 KIND = "regime_evidence_gate_v1"
@@ -101,6 +104,49 @@ class RegimeGateConfig:
             scale="exponential_mean_square_of_issued_errors_before_the_cohort",
             target="rate_of_the_proximal_mature_writes_of_the_market",
         )
+
+
+def check_correction(config, correction):
+    """E4 pondera escrituras proximales de A, sin escalas, áreas, roles ni regla kalman.
+
+    Con roles de B3 la memoria va envuelta y una escritura con otra tasa perdería esa
+    envoltura, así que la combinación se rechaza igual que las demás.
+    """
+    if (
+        type(config) is not RegimeGateConfig
+        or type(correction) is not MatureCorrection
+        or correction.memory.rule != "proximal"
+        or correction.multiscale is not None
+        or correction.areas is not None
+        or correction.role_binding is not None
+    ):
+        raise ValueError("La puerta E4 necesita su configuración y un corrector proximal simple")
+    return config
+
+
+def gated_write(memory, feedback, gates, *, cutoff):
+    """Escribir A con la tasa η·g de cada fila, sin cambiar su configuración.
+
+    La regla proximal exige pesos que sumen uno. Con una sola puerta la tasa es η·g. Con
+    varias es η·ḡ, con ḡ la media ponderada de las puertas, y los pesos pasan a w·g/ḡ, que por
+    fila equivale a η·w·g. La retención y la tasa de las escrituras siguientes no cambian.
+    """
+    if type(memory) is not AssociativeMemory or len(gates) != len(feedback.values):
+        raise ValueError("E4 escribe una memoria proximal simple con una puerta por fila")
+    if len(set(gates)) == 1:
+        scale, gated = gates[0], feedback
+    else:
+        weights = feedback.weights * torch.tensor(gates, dtype=feedback.weights.dtype)
+        scale = float(weights.sum())
+        gated = replace(feedback, weights=weights / scale)
+    config = memory.config
+    written = AssociativeMemory(
+        replace(config, rate=config.rate * scale),
+        memory.matrix,
+        writes=memory.writes,
+        cursor=memory.cursor,
+    ).write(gated, cutoff=cutoff)
+    return AssociativeMemory(config, written.matrix, writes=written.writes, cursor=written.cursor)
 
 
 @dataclass(frozen=True)
