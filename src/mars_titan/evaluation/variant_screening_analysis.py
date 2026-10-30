@@ -81,6 +81,8 @@ class Origin:
     canónico de esos paneles. `sectors` asigna a cada activo el sector de las fichas actuales,
     o None si no lo tiene, y solo lo lee el control sectorial de C4. `combine(modelo,
     réplica)` devuelve la calibración y la evaluación de una réplica de una media de semillas.
+    `versions(job_id)` devuelve la calibración y la evaluación de cada época declarada en
+    `selection.versions` de un ajuste, salvo su época común, y solo la leen los árbitros.
     """
 
     year: int
@@ -90,6 +92,7 @@ class Origin:
     sectors: dict | None = None
     combine: Callable | None = None
     stages: dict = field(default_factory=dict)
+    versions: Callable | None = None
 
     def _checked(self, panels, names, owner):
         for name in names:
@@ -111,6 +114,14 @@ class Origin:
         _require(self.combine is not None, "El origen no recibe las medias de semillas")
         owner = f"La réplica {list(replicate)} de {'/'.join(label)}"
         return self._checked(self.combine(label, replicate), PARTITIONS[1:], owner)
+
+    def epoch_versions(self, job_id):
+        """Calibración y evaluación de cada versión de un ajuste, sin su época común."""
+        _require(self.versions is not None, "El origen no recibe las versiones de los ajustes")
+        return {
+            epoch: self._checked(panels, PARTITIONS[1:], f"La época {epoch} de {job_id}")
+            for epoch, panels in sorted(self.versions(job_id).items())
+        }
 
     def history(self, panels):
         """Etiquetas de los tres tramos con su activo, mercado y madurez."""
@@ -182,14 +193,15 @@ def choose_case(origin, candidates, *, min_assets):
             mae[jobs[position]["id"]] = float(
                 np.mean(sd.session_mae(validation, validation.prediction))
             )
-        values, defined = _average(items)
+        values, defined = seed_average(items)
         _require(defined.any(), "Un caso no define el IC de validación en ninguna sesión común")
         scores.append(float(values[defined].mean()))
     best = max(range(len(scores)), key=lambda position: (scores[position], -position))
     return best, dict(zip(names[0], scores, strict=True)), mae
 
 
-def _model(protocol, origin, index, label, seed, cases):
+def chosen_job(protocol, origin, index, label, seed, cases):
+    """Trabajo de un modelo en un origen y una semilla, con el caso común elegido en validación."""
     key = ("case", label)
     if key not in origin.stages:
         candidates = [index.get((label, origin.year, other)) for other in protocol["seeds"]]
@@ -215,7 +227,11 @@ def _model(protocol, origin, index, label, seed, cases):
             )
     jobs = index.get((label, origin.year, seed))
     _require(bool(jobs), f"No hay trabajos de {'/'.join(label)} en {origin.year}")
-    return origin.panels(jobs[origin.stages[key]]["id"])
+    return jobs[origin.stages[key]]
+
+
+def _model(protocol, origin, index, label, seed, cases):
+    return origin.panels(chosen_job(protocol, origin, index, label, seed, cases)["id"])
 
 
 def _abstention(protocol, origin, index, seed, cases):
@@ -401,7 +417,7 @@ def session_metric(emission, metric, *, min_assets):
     return sd.session_mae(panel, prediction), np.ones(panel.sessions, dtype=bool)
 
 
-def _average(items):
+def seed_average(items):
     """Media de las semillas en cada sesión. Una sesión cuenta si todas la definen."""
     defined = np.logical_and.reduce([defined for _, defined in items])
     values = np.mean([values for values, _ in items], axis=0)
@@ -520,14 +536,23 @@ def _needed(protocol, rows):
     return needed
 
 
+def has_emission(protocol, arms, origin, label):
+    """Una continuación no tiene padre ni emisión en el primer origen del estudio."""
+    arm = arms.get(label)
+    return not (
+        origin.year == protocol["origins"][0]["year"]
+        and arm is not None
+        and "continues" in arm.definition
+    )
+
+
 def _origin_series(protocol, arms, index, origin, needed, cases):
     """Instantes de S y serie de cada modelo y métrica en un origen, media de sus semillas."""
     min_assets = protocol["contrast"]["primary"]["minimum_assets"]
     reference = _model(protocol, origin, index, SOURCE, protocol["seeds"][0], cases)["evaluation"]
-    first = origin.year == protocol["origins"][0]["year"]
     items = {}
     for label, metrics in needed.items():
-        if first and label in arms and "continues" in arms[label].definition:
+        if not has_emission(protocol, arms, origin, label):
             # Sin padre anterior, la continuación no define sesiones en el primer origen.
             for metric in metrics:
                 items[label, metric] = [
@@ -541,7 +566,7 @@ def _origin_series(protocol, arms, index, origin, needed, cases):
                     session_metric(output, metric, min_assets=min_assets)
                 )
     origin.stages.clear()
-    series = {key: _average(values) for key, values in items.items()}
+    series = {key: seed_average(values) for key, values in items.items()}
     return np.asarray(reference.session_time), series
 
 
@@ -786,7 +811,7 @@ def _measured(epochs, members, mask):
         values = np.asarray(record["session_ic_values"], dtype=np.float64)
         defined = np.asarray(record["session_ic_defined"], dtype=bool) & mask
         items.append((values, defined))
-    values, defined = _average(items)
+    values, defined = seed_average(items)
     _require(defined.any(), "La comprobación no tiene sesiones medidas definidas")
     return float(values[defined].mean())
 

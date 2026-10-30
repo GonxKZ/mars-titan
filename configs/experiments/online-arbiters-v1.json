@@ -39,10 +39,28 @@
           "seed": 20261028,
           "rule": "state_rebuilt_at_each_decision_from_the_mature_sessions_in_a_fixed_random_order"
         }
+      },
+      "analysis": {
+        "metric": "session_ic",
+        "family": "one_primary_contrast_per_versioned_model_against_its_common_epoch_apart_from_the_first_wave_family",
+        "required": ["uniform_mixture", "shuffled_outcomes"],
+        "decision": "screening_rule_with_16_day_blocks_and_every_required_contrast_favourable_at_5_percent",
+        "time_averaging": {
+          "arbiter_of": "references/quantile_reference",
+          "compared_with": ["F2/weight_ema_fast", "F2/weight_ema_slow", "F3/schedule_free"],
+          "family": "reported_together_outside_every_decision"
+        }
       }
     },
     "model_combination_v1": {
-      "options": "every_compared_model_of_the_same_origin_and_seed",
+      "options": "every_compared_model_with_its_own_calibration_and_evaluation_predictions_in_each_seed",
+      "excluded": [
+        "common_zero_control",
+        "output_stages_fitted_on_the_calibration",
+        "seed_means_that_already_combine_seeds",
+        "textual_references_that_repeat_their_parent"
+      ],
+      "repeated_job": "models_that_share_a_job_are_one_option",
       "partitions": ["calibration", "evaluation"],
       "measured_on": "evaluation",
       "reliability_window_sessions": 21,
@@ -50,6 +68,10 @@
       "min_assets": 3,
       "controls": {
         "simple_mean": "mean_of_the_standardized_models"
+      },
+      "analysis": {
+        "metric": "session_ic",
+        "family": "reported_alone_outside_every_decision"
       },
       "attribution": "reported_apart_and_never_attributed_to_mars_titan"
     }
@@ -60,10 +82,13 @@
     "per_market": "Las sesiones de dos mercados pueden decidirse en el mismo instante. Un estado por mercado mantiene instantes de decisión únicos y no mezcla calendarios",
     "abstention_scoring": "Contar una sesión abstenida como IC cero evita medir el árbitro solo en las sesiones que elige",
     "repeated_epoch": "Si la época común coincide con una versión, contarla dos veces le daría el doble de prior sin aportar otra predicción",
-    "amplitude": "La mezcla de predicciones tipificadas no tiene escala propia. El λ de cada mercado se elige con la salida del árbitro en calibración y se aplica sin cambios en S, como en el resto de la criba"
+    "amplitude": "La mezcla de predicciones tipificadas no tiene escala propia. El λ de cada mercado se elige con la salida del árbitro en calibración y se aplica sin cambios en S, como en el resto de la criba",
+    "combination_options": "Las etapas de salida no tienen predicciones propias de calibración, porque se ajustan con ella, y la media de semillas y la referencia textual repetirían predicciones de otros modelos",
+    "own_family": "La familia declarada de la criba reúne los contrastes principales de todas sus entradas. Añadir el árbitro cambiaría la corrección de las demás variantes, así que tiene su propia familia",
+    "time_averaging": "F2 y F3 ya promedian pesos en el tiempo. El árbitro sobre las versiones de la referencia se compara con sus variantes en lugar de aplicarse encima, y la comparación se informa aparte porque no es un control del árbitro"
   },
   "pending": [
-    "La etapa del análisis que lee las versiones de la criba y su entrada en el protocolo de la segunda ola",
+    "Su entrada en el protocolo y en la orden única de la segunda ola de #794",
     "fractal_arbiter_v1, que necesita los niveles de H1 de #783",
     "tool_arbiter_v1, que necesita las predicciones de cada acción registrada"
   ]

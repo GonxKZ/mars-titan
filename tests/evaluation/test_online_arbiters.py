@@ -72,6 +72,24 @@ def run(prior, losses, awake):
     return state, mixtures, bounds
 
 
+@pytest.mark.parametrize("algorithm", [arbiters.AdaNormalHedge, arbiters.AdaNormalHedgeTV])
+def test_a_large_finite_prior_keeps_the_same_normalized_mixtures(algorithm):
+    expected = algorithm.start([1.0, 1.0])
+    actual = algorithm.start([1e308, 1e308])
+    awake = np.ones(2, dtype=bool)
+    np.testing.assert_array_equal(actual.prior, expected.prior)
+    for losses in ([0.1, 0.9], [0.3, 0.7], [0.8, 0.2]):
+        np.testing.assert_allclose(actual.distribution(awake), expected.distribution(awake))
+        assert actual.update(losses, awake) == pytest.approx(expected.update(losses, awake))
+    assert np.isfinite(actual.regret).all() and np.isfinite(actual.magnitude).all()
+
+
+@pytest.mark.parametrize("algorithm", [arbiters.AdaNormalHedge, arbiters.AdaNormalHedgeTV])
+def test_a_positive_prior_that_normalizes_to_zero_is_refused(algorithm):
+    with pytest.raises(ValueError, match="representar.*prior"):
+        algorithm.start([np.nextafter(0.0, 1.0), 1e308])
+
+
 def test_the_weight_is_the_difference_of_potentials_of_the_article():
     for regret, magnitude in [(0.0, 0.0), (0.4, 1.0), (-0.5, 2.0), (3.0, 5.0), (12.0, 40.0)]:
         expected = 0.5 * (
@@ -583,9 +601,22 @@ DECLARATION = json.loads(Path("configs/experiments/online-arbiters-v1.json").rea
 
 def test_the_declared_stages_fix_their_options_before_any_data():
     version = arbiters.stage_options(DECLARATION, arbiters.VERSION_ARBITER)
-    assert version == dict(window=21, margin=0.0, min_assets=3, seed=20261028)
+    averaging = dict(
+        arbiter_of="references/quantile_reference",
+        compared_with=["F2/weight_ema_fast", "F2/weight_ema_slow", "F3/schedule_free"],
+    )
+    assert version == dict(
+        window=21,
+        margin=0.0,
+        min_assets=3,
+        seed=20261028,
+        metric="session_ic",
+        time_averaging=averaging,
+    )
     combination = arbiters.stage_options(DECLARATION, arbiters.MODEL_COMBINATION)
-    assert combination == dict(window=21, margin=None, min_assets=3, seed=None)
+    assert combination == dict(
+        window=21, margin=None, min_assets=3, seed=None, metric="session_ic", time_averaging=None
+    )
 
 
 def changed(path, value):
@@ -618,6 +649,42 @@ def changed(path, value):
             "ventana",
         ),
         (arbiters.VERSION_ARBITER, ("stages", "version_arbiter_v1", "min_assets"), 2, "tres"),
+        (
+            arbiters.MODEL_COMBINATION,
+            ("stages", "model_combination_v1", "analysis", "metric"),
+            "session_mae_calibrated",
+            "IC por sesión",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "required"),
+            ["uniform_mixture"],
+            "control desordenado",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging"),
+            "F2",
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "compared_with"),
+            ["F2/weight_ema_fast", "F2/weight_ema_fast"],
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "compared_with"),
+            [],
+            "medias de pesos",
+        ),
+        (
+            arbiters.VERSION_ARBITER,
+            ("stages", "version_arbiter_v1", "analysis", "time_averaging", "family"),
+            "declared_family",
+            "fuera de toda decisión",
+        ),
         (
             arbiters.VERSION_ARBITER,
             ("stages", "version_arbiter_v1", "abstention_margin"),

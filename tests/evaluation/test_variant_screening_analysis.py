@@ -131,6 +131,12 @@ def screened():
     return protocol, jobs, report, arrays
 
 
+def test_adding_epoch_versions_preserves_the_existing_positional_cache_argument():
+    cache = {"previous": object()}
+    origin = analysis.Origin(2019, lambda _: None, {}, {}, None, None, cache)
+    assert origin.stages is cache and origin.versions is None
+
+
 def brute_force_stepdown(estimate, draws):
     """Definición directa del paso descendente, hipótesis a hipótesis."""
     spread = draws.std(axis=0, ddof=1)
@@ -534,7 +540,7 @@ def test_the_seed_mean_takes_the_place_of_the_seeds_with_its_replicates():
             items.append(
                 sd.session_correlations(evaluation, evaluation.prediction, min_assets=min_assets)
             )
-        parts.append(analysis._average(items))
+        parts.append(analysis.seed_average(items))
     values, defined = arrays["merged"][(label, "session_ic")]
     assert np.array_equal(defined, np.concatenate([mask for _, mask in parts]))
     assert np.array_equal(values, np.concatenate([value for value, _ in parts]))
