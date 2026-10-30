@@ -2,7 +2,7 @@
 
 `salience_write_budget_v1` implementa un selector de candidatos maduros y su estado recuperable. La [declaración del núcleo](../../configs/experiments/salience-write-budget-v1.json) conserva tres controles opcionales. Su [integración por ventanas](../../configs/experiments/salience-correction-window-v1.json) conecta E3 con las emisiones reales del recorrido de corrección y dispone de comprobaciones CPU con fixtures. La sesión durable `FinancialSession` también admite E3 desde el 28 de octubre, y desde el 30 de octubre su cupo es por mercado e instante de publicación, como en las ventanas. No se modifican los parámetros compartidos del predictor ni los índices M0–M3. No hay una comparación predictiva ejecutada.
 
-El cupo del núcleo es por mercado y cohorte completa de publicación. Las ventanas y la sesión durable forman esa cohorte con todos los resultados de un instante, así que el cupo es por instante en los dos recorridos. Que un instante equivalga a una sesión del calendario depende de cómo se publiquen los eventos. Dividir un evento en varios cortes para renovar el cupo cambiaría el experimento.
+El cupo del núcleo es por mercado y cohorte completa de publicación. Las ventanas agrupan los resultados de un instante en una cohorte. La sesión durable puede recibirlos en varias generaciones, que comparten el límite de escrituras de ese instante. Cuando llegan repartidos, la selección es voraz y puede diferir de la que elegiría la cohorte completa. Que un instante equivalga a una sesión del calendario depende de cómo se publiquen los eventos. Dividir un evento en varios cortes para renovar el cupo cambiaría el experimento.
 
 ## Error, escala y selección
 
@@ -17,7 +17,7 @@ r_{a,<t}=\sqrt{\frac{1}{n_{a,<t}}\sum_{j<t}e_{a,j}^2},
 
 Durante el arranque, con menos de cuatro resultados anteriores, se usa la escala inicial 0,01. El suelo es \(10^{-8}\). El cupo inicial es 64. Son valores de desarrollo declarados, sin ajuste ni validación predictiva. La API permite otros valores acotados y conserva su identidad.
 
-La cohorte completa se puntúa con el mismo prefijo previo. Después, todos sus errores actualizan las estadísticas, incluidos los candidatos descartados. Varias filas del mismo activo en una cohorte tampoco adelantan su escala de puntuación. La actualización numérica evita formar cuadrados potencialmente desbordantes:
+Cada cohorte recibida se puntúa con el mismo prefijo previo. Después, todos sus errores actualizan las estadísticas, incluidos los candidatos descartados. Varias filas del mismo activo en una cohorte tampoco adelantan su escala de puntuación. En la sesión, cada generación recibe su propia cohorte. Una generación posterior del mismo instante ve las escalas actualizadas por la anterior, aunque comparte su cupo. La actualización numérica evita formar cuadrados potencialmente desbordantes:
 
 \[
 r_{n+1}=\operatorname{hypot}\!\left(r_n\sqrt{\frac{n}{n+1}},\frac{e_{n+1}}{\sqrt{n+1}}\right).
@@ -62,7 +62,7 @@ Los [costes registrados](../../reports/engineering/salience-budget-20261027/cost
 
 El proceso interno dura 8,404 s y registra 53.252 KiB de RSS absoluto. El estado serializado con 8.192 activos ocupa de 362.735 a 362.746 bytes, según la longitud del identificador de regla. Las selecciones y los estados recuperados coinciden en todas las repeticiones. No se interpreta la diferencia entre reglas como una aceleración de MARS-TITAN ni se estima una latencia p95/p99 estable con siete muestras. El coste de acumular y verificar las emisiones reales permanece fuera de esta medida.
 
-La integración durable posterior deberá comprobar correspondencia con las sesiones del calendario, etiquetas parciales o tardías, publicación conjunta y recuperación de la siguiente transición. La comparación científica debe mantener filas, presupuesto y controles, declarar el protocolo antes de ejecutarse y contabilizar errores y coste. La implementación no acredita reducir el sobreajuste o mejorar la predicción.
+La integración durable y sus comprobaciones de etiquetas parciales o tardías, publicación conjunta y recuperación se detallan más adelante. Sigue pendiente acreditar la correspondencia con sesiones del calendario para cada protocolo. La comparación científica debe mantener filas, presupuesto y controles, declarar el protocolo antes de ejecutarse y contabilizar errores y coste. La implementación no acredita reducir el sobreajuste o mejorar la predicción.
 
 ## Integración en la inferencia y las ventanas
 
