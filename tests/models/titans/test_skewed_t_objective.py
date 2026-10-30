@@ -168,13 +168,17 @@ def test_the_parameters_stay_inside_their_declared_ranges():
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 @pytest.mark.parametrize("floor", [2.0, 3.25])
 @pytest.mark.parametrize("logit", [-40.0, -1000.0])
-def test_degrees_of_freedom_stay_strictly_above_the_floor_after_rounding(dtype, floor, logit):
+@pytest.mark.parametrize("device", ["cpu", pytest.param("cuda:0", marks=pytest.mark.cuda)])
+def test_degrees_of_freedom_stay_strictly_above_the_floor_after_rounding(
+    dtype, floor, logit, device
+):
     config = SkewedTObjective(dof_floor=floor)
-    module = SkewedT(4, config, dtype=dtype)
+    module = SkewedT(4, config, dtype=dtype).to(device)
     with torch.no_grad():
         module.bias[2].fill_(logit)
-    _, _, dof = module.parameters_of(torch.ones(3, 4, dtype=dtype))
+    _, _, dof = module.parameters_of(torch.ones(3, 4, dtype=dtype, device=device))
     assert dof.dtype == dtype
+    assert dof.device == torch.device(device)
     assert (dof > floor).all()
     assert torch.isfinite(dof / (dof - 2)).all()
 
