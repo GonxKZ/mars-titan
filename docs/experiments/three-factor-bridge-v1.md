@@ -16,7 +16,7 @@ $$
 \ell_{ij}=\frac{q_i\cdot k_j}{\sqrt H}+w_{m,ij}\quad\text{si }(i,j)\in E,
 $$
 
-y el resto de pares permitidos por la máscara de H1 conserva su logit. La red recibe los pesos de cada fila como un tensor [filas, aristas] sin grafo y construye la máscara real `torch.where(máscara, peso, −∞)`. Con pesos nulos esa máscara da en SDPA la misma atención que la booleana, así que el predictor emite H1 bit a bit en FP32 y en FP64.
+y el resto de pares permitidos por la máscara de H1 conserva su logit. La red recibe los pesos de cada fila como un tensor [filas, aristas] sin grafo y construye la máscara real `torch.where(máscara, peso, −∞)`. En las comprobaciones CPU, con pesos nulos esa máscara da en SDPA la misma atención que la booleana y el predictor emite H1 bit a bit en FP32 y en FP64. La paridad CUDA sigue pendiente.
 
 La traza de elegibilidad de cada fila es la media de las probabilidades de atención realizadas en los $C$ ciclos y $L$ pasos locales,
 
@@ -106,6 +106,8 @@ P1 se declara sobre H1 o H2, que tienen áreas del catálogo, y la ablación H3,
 - La regla es discreta, un paso por evento de maduración, y no continua en el tiempo.
 - Los pesos no se consolidan entre recorridos. Eso corresponde a P2.
 - No reproduce ningún resultado publicado.
+
+La regla puede aumentar el error incluso con un tercer factor positivo. En una atención escalar de dos claves, con probabilidades $(4/5,1/5)$ y valores $(1,-1)$, la salida es $3/5$. Si el objetivo es $1/2$ y la expectativa de error es $1/5$, el error absoluto es $1/10$ y $\delta=1/2$. Con $\eta=1/20$, la primera conexión plástica recibe un sesgo $1/50$ y la segunda, fija, conserva cero. Las odds pasan de $4$ a $4\exp(1/50)$, así que la salida sube y el error aumenta. La suma de sesgos sigue por debajo de $B=1$ y la normalización no interviene. Es un contraejemplo algebraico a una garantía de descenso, no una evaluación predictiva de MARS-TITAN.
 
 ## Comprobación técnica
 
