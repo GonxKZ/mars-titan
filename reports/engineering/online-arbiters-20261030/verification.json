@@ -1,0 +1,407 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 789,
+ "status": "technical_verification_in_progress",
+ "implementation_commit": "be67bacb8b3fc14a67d45d9c6a22edd41d164a39",
+ "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "screening_predictions_read": false,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "device": "cpu",
+ "cuda_scope": "Etapa de análisis de tablas y núcleo NumPy FP64, sin un predictor CUDA.",
+ "suites": [
+  {
+   "name": "merged_helper_before_fix",
+   "tests": 1,
+   "failures": 0,
+   "errors": 1,
+   "skipped": 0,
+   "xml_sha256": "0ee78dd9152bda0b08bf28bc5e64af738b27b28342924b850cae5f5fccdd5726",
+   "note": "La integración deja una llamada al nombre anterior del promedio. Se conserva el NameError observado."
+  },
+  {
+   "name": "first_integration_with_old_fixture",
+   "tests": 149,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "5b547ff7333b62cc3a4ca7960a56e69d74685005a6967faf5004672628a9021e",
+   "note": "148 aprobados y un fallo del doble que no recibía el argumento label de run_panels."
+  },
+  {
+   "name": "availability_before_fix",
+   "tests": 3,
+   "failures": 3,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "bcaf7dc7432e47b686cf5e01d6e6b3227893dfa047b70d3f5d800c1bfdab5d86",
+   "note": "Tres casos nuevos fallan por omitir los controles comunes o intentar leer continuaciones sin emisión en el primer origen."
+  },
+  {
+   "name": "availability_after_fix",
+   "tests": 76,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a93562ab43c591b080a44a7146eef1c55c6e2961b59877e59662c30fec52bcd1",
+   "note": "76 casos de etapa, análisis y motor tras corregir esas rutas y el doble."
+  },
+  {
+   "name": "versions_initial_fixture",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "fec3fb7635f6c51d041850c43e0385a51ea8f6ac01de69b4f6a9e56c14974608",
+   "note": "El primer fixture incluía F2 con solo dos semillas y se rechazó antes de comprobar la continuidad."
+  },
+  {
+   "name": "versions_corrected_fixture_before_fix",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "42cc2cdc63ed22c0049adc8277783879de057acdd3848ceea1ec0df034636102",
+   "note": "Con el fixture válido se reproduce la lectura de una continuación con versiones en el primer origen."
+  },
+  {
+   "name": "versions_after_fix",
+   "tests": 37,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "d945aa0881fcb53c13cd93b8ca7f7454bffd4043254ec0b87b2f5bb9d9072c86",
+   "note": "37 casos de etapa y análisis tras mantener explícitas esas ausencias."
+  },
+  {
+   "name": "prior_before_fix",
+   "tests": 4,
+   "failures": 4,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "dc15e310b35593345240ac5397bf22a6411841a5c675e8f77344e8ac390405e4",
+   "note": "Cuatro casos reproducen el desbordamiento de la suma y la pérdida de una proporción positiva a cero."
+  },
+  {
+   "name": "prior_after_fix",
+   "tests": 80,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "0c35b48cc409d02bc2aae065606f28c75da1c4f98b9813d887dec0ec4a546acf",
+   "note": "80 casos del núcleo AdaNormalHedge y TV, con los límites numéricos nuevos."
+  },
+  {
+   "name": "positional_before_fix",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "4760fafe3e4609abdb473855cab12bad12bbb83bb3119f2bf17db6f4dd9138fe",
+   "note": "El campo versions desplazaba el argumento posicional anterior de la caché."
+  },
+  {
+   "name": "integrated_targeted",
+   "tests": 344,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7c8050538376f4a336d6b3663c6f5bce56a891395fe5fa7ebe038f0fa4526f7d",
+   "note": "344 casos CPU sin omisiones. Incluye núcleo, etapa, análisis, motor, coste de fixture, guardas y validador."
+  },
+  {
+   "name": "remaining_importer",
+   "tests": 9,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "cf2d97ed055212b892d796af56be482a8e62eb1d49cdf5778259bec91181ad00",
+   "note": "Nueve casos adicionales del único importador estático que faltaba en la selección."
+  },
+  {
+   "name": "new_test_coverage",
+   "tests": 10,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a96669d6df8170faee841d9f6a7335e74908deb60c05750bcd6d21afad64f836",
+   "note": "Diez casos nuevos o reforzados, con cobertura de su código de prueba. Se solapan con la selección integrada."
+  }
+ ],
+ "suite_counts": "Las selecciones se solapan y no se suman como casos distintos.",
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1507,
+   "covered_statements": 1483,
+   "branches": 334,
+   "covered_branches": 322
+  },
+  "files": [
+   {
+    "path": "benchmarks/online_arbiters_cost.py",
+    "source_sha256": "ccb07a1dc0bfabe135b6a425d09b21b28b48d649782c1263c7dc5ab19c3e73e2",
+    "statements": 89,
+    "covered_statements": 73,
+    "branches": 28,
+    "covered_branches": 22
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "f6fd4de7b5b47c81c19e027d7739f0e9af51e87ed8592bbda26119260c164600",
+    "statements": 584,
+    "covered_statements": 576,
+    "branches": 126,
+    "covered_branches": 120
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "source_sha256": "a4f0da88667c6e4473c4f7253c7b3dd866442bf56179c2758e944f408e55be80",
+    "statements": 175,
+    "covered_statements": 175,
+    "branches": 44,
+    "covered_branches": 44
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "source_sha256": "345f8a69e57dace3514b6c9d378ad5248fba9ad6d2194796d4b0749845ace920",
+    "statements": 258,
+    "covered_statements": 258,
+    "branches": 44,
+    "covered_branches": 44
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "489c4903cccc1d0478b5b021488a4619b1a204641aaed558c731d2b3df6bb09a",
+    "statements": 401,
+    "covered_statements": 401,
+    "branches": 92,
+    "covered_branches": 92
+   }
+  ],
+  "max_crap": 26.0,
+  "quality_sha256": "32ca30395864ed07016eb877fc427a78efd51ea1ca6dcad2ca6ccd384b057155",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+  "head": "be67bacb8b3fc14a67d45d9c6a22edd41d164a39",
+  "functions": 38,
+  "max_crap": 20.0,
+  "changed_executable_lines": 247,
+  "changed_covered_lines": 247,
+  "highest": [
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "_series",
+    "cyclomatic_complexity": 20,
+    "crap": 20.0,
+    "changed_executable_lines": 33,
+    "changed_covered_lines": 33,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "families",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 14,
+    "changed_covered_lines": 14,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "function": "_version_controls",
+    "cyclomatic_complexity": 14,
+    "crap": 14.0,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "mixed",
+    "cyclomatic_complexity": 9,
+    "crap": 9.0,
+    "changed_executable_lines": 18,
+    "changed_covered_lines": 18,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "function": "_declared_stage",
+    "cyclomatic_complexity": 9,
+    "crap": 9.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "38 funciones de producción cambiadas frente a develop. Complejidad de radon y cobertura de coverage.py, con las convenciones registradas. La selección no demuestra todas las combinaciones de estado.",
+  "changed_sha256": "be7810a09a5e73356fb093d354ff363ab3168988dccb1a1ba78d75394b2eb3e6"
+ },
+ "test_quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "functions": [
+   {
+    "path": "tests/tooling/test_variant_screening_study.py",
+    "function": "test_the_arbiters_write_their_report_with_the_declaration_and_what_they_read",
+    "start_line": 690,
+    "end_line": 743,
+    "cyclomatic_complexity": 12,
+    "statements": 31,
+    "covered_statements": 31,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 12.0
+   },
+   {
+    "path": "tests/evaluation/test_arbiter_analysis.py",
+    "function": "test_versioned_continuations_keep_the_first_origin_explicitly_unavailable",
+    "start_line": 582,
+    "end_line": 609,
+    "cyclomatic_complexity": 8,
+    "statements": 18,
+    "covered_statements": 18,
+    "coverage_fraction": 1.0,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 8.0
+   },
+   {
+    "path": "tests/evaluation/test_arbiter_analysis.py",
+    "function": "test_a_missing_first_origin_is_undefined_in_a_time_averaging_comparison",
+    "start_line": 550,
+    "end_line": 579,
+    "cyclomatic_complexity": 7,
+    "statements": 15,
+    "covered_statements": 15,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 7.0
+   },
+   {
+    "path": "tests/evaluation/test_arbiter_analysis.py",
+    "function": "test_a_combination_reads_continuations_only_after_the_first_origin",
+    "start_line": 526,
+    "end_line": 547,
+    "cyclomatic_complexity": 6,
+    "statements": 13,
+    "covered_statements": 13,
+    "coverage_fraction": 1.0,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 6.0
+   },
+   {
+    "path": "tests/evaluation/test_online_arbiters.py",
+    "function": "test_a_large_finite_prior_keeps_the_same_normalized_mixtures",
+    "start_line": 76,
+    "end_line": 84,
+    "cyclomatic_complexity": 4,
+    "statements": 8,
+    "covered_statements": 8,
+    "coverage_fraction": 1.0,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 4.0
+   },
+   {
+    "path": "tests/evaluation/test_arbiter_analysis.py",
+    "function": "test_the_combination_includes_the_common_models_with_their_own_predictions",
+    "start_line": 520,
+    "end_line": 523,
+    "cyclomatic_complexity": 2,
+    "statements": 3,
+    "covered_statements": 3,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "tests/evaluation/test_variant_screening_analysis.py",
+    "function": "test_adding_epoch_versions_preserves_the_existing_positional_cache_argument",
+    "start_line": 134,
+    "end_line": 137,
+    "cyclomatic_complexity": 2,
+    "statements": 3,
+    "covered_statements": 3,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "tests/evaluation/test_online_arbiters.py",
+    "function": "test_a_positive_prior_that_normalizes_to_zero_is_refused",
+    "start_line": 88,
+    "end_line": 90,
+    "cyclomatic_complexity": 1,
+    "statements": 2,
+    "covered_statements": 2,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   }
+  ],
+  "note": "Se miden las ocho funciones de prueba nuevas o reforzadas. No se usa el CRAP de las funciones ajenas a esa selección para describir la calidad del código de producción."
+ },
+ "checks": {
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "repository": "passed"
+ },
+ "current_mutations": {
+  "planned": 64,
+  "recipes_sha256": "d87316dab08a35691ee5fb6f3c52c2b250bb967b0842bad42a912917657eb5fd",
+  "compiled": true,
+  "status": "running",
+  "note": "52 recetas históricas y doce de la integración o de los límites numéricos. Una receta de semilla conserva su significado con la indentación del código refactorizado. Aún no hay resultado final."
+ },
+ "importer_audit": {
+  "test_modules": 6,
+  "covered_by_targeted_suite": 5,
+  "additional_modules": 1,
+  "additional_tests": 9,
+  "tool_sha256": "3571d9c0de7cee2954cf669dab33f34d1c41045c39018076c1104f2b2928ef93",
+  "list_sha256": "c272072620f6db2d0857adbd0ac5556dff8a184a712ca1fce0654f43364df254",
+  "note": "Grafo inverso de importaciones estáticas, complementado con la lectura de los consumidores. No garantiza detectar toda importación dinámica."
+ },
+ "source_audit": {
+  "receipt": "reports/engineering/online-arbiters-20261030/source-audit.json",
+  "sha256": "2df9b7821ca251e478cfc9c713ba495554d41b65da84df2cf9e2ac96eb157f9e"
+ },
+ "limits": [
+  "Falta terminar las 64 mutaciones actuales.",
+  "No se ha ejecutado la etapa con predicciones reales de la criba.",
+  "Fractal_arbiter y tool_arbiter siguen pendientes en #789.",
+  "No hay mejora predictiva medida. El aprendizaje y el test final permanecen bloqueados."
+ ]
+}

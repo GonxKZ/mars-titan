@@ -12,14 +12,16 @@ El árbitro fractal y el de herramientas registradas quedan pendientes, como se 
 
 ## Núcleo AdaNormalHedge
 
-AdaNormalHedge ([Luo y Schapire, 2015](https://arxiv.org/abs/1502.05934)) no tiene parámetros que ajustar. Con N opciones, prior q, pérdidas $\ell_{t,i}\in[0,1]$ e indicadores de disponibilidad $I_{t,i}$, el algoritmo 1 del artículo usa el potencial y el peso de su ecuación (3),
+La numeración de ecuaciones, teoremas y lemas sigue [arXiv v1](https://arxiv.org/pdf/1502.05934v1). El lema 2 de esa versión aparece como lema 6 en el [PDF publicado en PMLR](https://proceedings.mlr.press/v40/Luo15.pdf). La ficha bibliográfica conserva ambas huellas.
+
+AdaNormalHedge ([Luo y Schapire, 2015](https://arxiv.org/abs/1502.05934v1)) no tiene parámetros que ajustar. Con N opciones, prior q, pérdidas $\ell_{t,i}\in[0,1]$ e indicadores de disponibilidad $I_{t,i}$, el algoritmo 1 del artículo usa el potencial y el peso definidos en su sección 3,
 
 $$
 \Phi(R,C)=\exp\!\left(\frac{[R]_+^2}{3C}\right),\quad \Phi(0,0)=1,\qquad
 w(R,C)=\tfrac12\bigl(\Phi(R+1,C+1)-\Phi(R-1,C+1)\bigr),
 $$
 
-y en cada ronda
+y, con los indicadores de disponibilidad de la ecuación (3), en cada ronda
 
 $$
 p_{t,i}\propto q_i\,I_{t,i}\,w(R_{t-1,i},C_{t-1,i}),\qquad
@@ -45,6 +47,8 @@ $$
 
 donde $R_{[\tau,t-1],i}$ y $C_{[\tau,t-1],i}$ suman desde la ronda τ. Así la cota vale para cualquier intervalo de rondas, y el horizonte completo es el caso de la mejor opción fija. Cada ronda cuesta O(N t). En una secuencia construida en la que la mejor opción cambia en la ronda 100, la forma TV supera un peso de 0,9 en la nueva opción en la ronda 143 y la forma fija no lo hace hasta la 217. Los dos árbitros usan la forma TV.
 
+La normalización del prior en FP64 conserva el cálculo anterior cuando la suma cabe en ese tipo. Si desborda con pesos finitos, primero se divide por el máximo y después se normaliza. Si alguna proporción positiva se pierde a cero, se rechaza el prior con un error explícito. No se recortan pesos ni se promete la garantía matemática con una distribución que la aritmética no representa.
+
 ## Rondas maduras
 
 Cada sesión es una ronda. La pérdida de la opción i en la sesión s es $\ell_{s,i}=(1-\mathrm{IC}_{s,i})/2$, con el IC de Pearson entre su predicción y el objetivo de los activos de la sesión. La issue pide el IC negativo. Restar el mismo valor a todas las opciones no cambia el arrepentimiento instantáneo, porque la mezcla suma uno, y el factor 1/2 lleva la pérdida al intervalo [0, 1] que exige el algoritmo. Puntúa una sesión con al menos tres activos y objetivo no constante. Una opción constante en una sesión que puntúa tiene IC 0.
@@ -67,7 +71,7 @@ El árbitro frente a la época común mide si repartir la confianza mejora la or
 
 ## Combinación de modelos
 
-`model_combination_v1` usa el mismo `online_mixture` sin margen, de modo que nunca se abstiene. En cada origen y semilla mezcla los modelos comparados que emiten sus propias predicciones de calibración y de S, que son 78 de los 96 que aparecen en los contrastes. Quedan fuera el control cero, las 16 etapas de salida, que se ajustan con la calibración, y la referencia textual de B1, que repite la emisión de su padre. La media de semillas de F2 es una de esas etapas y además ya combina semillas. Los modelos que comparten trabajo cuentan como una sola opción. Eso incluye los que eligen caso en validación, porque los mismos candidatos llevan al mismo caso. Con el protocolo actual quedan 67 opciones por origen y semilla. Su control es la media simple de los modelos tipificados. El resultado se informa aparte y no cuenta como una variante de MARS-TITAN.
+`model_combination_v1` usa el mismo `online_mixture` sin margen, de modo que nunca se abstiene. En cada origen y semilla mezcla los modelos comparados que emiten sus propias predicciones de calibración y de S. Incluye la regla de momentum y reversión y LightGBM de los controles comunes. Quedan fuera el control cero, las 16 etapas de salida, que se ajustan con la calibración, y la referencia textual de B1, que repite la emisión de su padre. La media de semillas de F2 es una de esas etapas y además ya combina semillas. Los modelos que comparten trabajo cuentan como una sola opción. Eso incluye los que eligen caso en validación, porque los mismos candidatos llevan al mismo caso. Las continuaciones no tienen emisión en el primer origen y no se leen ni se incorporan allí. El número de opciones depende del catálogo y de esa disponibilidad, y el informe enumera sus miembros por origen y semilla. Su control es la media simple de los modelos tipificados. El resultado se informa aparte y no cuenta como una variante de MARS-TITAN.
 
 ## Declaración
 
@@ -75,11 +79,11 @@ El árbitro frente a la época común mide si repartir la confianza mejora la or
 
 ## Etapa del análisis
 
-`arbiter_analysis.analyze` aplica las dos etapas a una criba terminada y no ajusta ningún parámetro. Antes de leer predicciones comprueba la declaración y exige los cuatro orígenes, los activos mínimos y la métrica principal de la criba.
+`arbiter_analysis.analyze` aplica las dos etapas a una criba terminada sin reentrenar sus predictores. Solo actualiza el estado de arrepentimiento y magnitud del árbitro al llegar resultados maduros y recalcula su mezcla. Antes de leer predicciones comprueba la declaración y exige los cuatro orígenes, los activos mínimos y la métrica principal de la criba.
 
 - **Opciones del árbitro.** Para cada uno de los cinco modelos de `selection.versions`, la emisión de su época común y las versiones de las épocas 3, 6, 9 y 12 del mismo trabajo, con el caso elegido en validación. Si la época común es una de ellas, el motor no la emite como versión y cuenta una vez. Se rechaza un trabajo al que le falte otra versión o cuyas versiones predigan otras filas.
 - **Un estado para calibración y S.** `joined` une la calibración y S de las opciones en un panel en orden canónico, así que el estado TV de cada mercado recorre la calibración y después S. `mixed` vuelve a separar la salida. Su parte de calibración fija el λ de cada mercado, que se aplica sin cambios en S. Al pasar de la calibración a S, cada sesión sigue usando solo las etiquetas maduras al decidirla.
-- **Abstención.** `stage_metric` cuenta como IC 0 cada sesión abstenida que puntúa, es decir, con al menos tres activos y objetivo no constante. Las métricas de error no necesitan esa regla, porque la predicción de una sesión abstenida ya es cero. El informe da la cobertura de cada salida.
+- **Abstención.** `stage_metric` cuenta como IC 0 cada sesión abstenida que puntúa, es decir, con al menos tres activos y objetivo no constante. Las métricas de error no necesitan esa regla, porque la predicción de una sesión abstenida ya es cero. El informe da la cobertura de cada salida como media de sus fracciones por origen y semilla, con el mismo peso para cada grupo. No es una fracción global ponderada por el número de sesiones de cada origen. Una continuación sin emisión en el primer origen conserva allí valores auxiliares nulos con la máscara de métrica sin definir y cobertura cero. No se fabrica una predicción ni se atribuye a abstención esa ausencia. La misma regla se usa en versiones, comparaciones con medias de pesos y combinación de modelos.
 - **Series.** Las semillas se promedian sesión a sesión con `seed_average` y los cuatro orígenes forman una única serie de 2019 a 2022, como en el análisis de la criba. Se miden el IC por sesión y las métricas secundarias de la criba, salvo el MAE menos el del control cero, porque el cero no es una opción.
 
 Cada modelo con versiones tiene un contraste principal, el árbitro frente a su época común, y dos exigidos, frente a la media uniforme y frente al control desordenado. Los cinco contrastes principales forman la familia propia del árbitro, con el mismo bootstrap circular por bloques de días y el mismo paso descendente de Romano y Wolf que la criba. Esa familia no se mezcla con la declarada de la primera ola, porque añadirle contrastes cambiaría la corrección de todas sus variantes. Un modelo pasa con la regla de la criba y bloques de 16 días. Su contraste principal tiene que pasar el paso descendente y los dos exigidos tienen que ser favorables con un valor p marginal por debajo del 5 %. Holm y los bloques de 8 y 32 días se informan como robustez.
@@ -93,7 +97,7 @@ uv run python -m benchmarks.variant_screening_study arbiters --work "${MARS_SCRE
   --output "${MARS_ARBITERS_ANALYSIS:?}"
 ```
 
-La combinación mantiene a la vez las 67 opciones de un origen y una semilla. Su memoria depende del tamaño real de las cohortes y no se ha medido sobre la criba.
+La combinación mantiene a la vez las opciones disponibles de un origen y una semilla. Su memoria depende del tamaño real de las cohortes y no se ha medido sobre la criba.
 
 ## Correspondencia con el código y las pruebas
 
@@ -101,7 +105,7 @@ Las pruebas del núcleo y de la declaración están en `tests/evaluation/test_on
 
 | Elemento | Código | Pruebas |
 | --- | --- | --- |
-| Φ y w, ecuación (3) | `potential`, `weights` | `test_the_weight_is_the_difference_of_potentials_of_the_article` |
+| Φ y w, sección 3 | `potential`, `weights` | `test_the_weight_is_the_difference_of_potentials_of_the_article` |
 | Algoritmo 1 | `AdaNormalHedge.distribution`, `update` | `test_the_rounds_match_a_reference_written_option_by_option` |
 | Lema 2 | `AdaNormalHedge.potential_bound` | `test_the_potential_respects_the_bound_of_lemma_2_after_every_round` |
 | Teorema 1, cotas (1) y (2) | estado tras la secuencia | `test_the_regret_to_any_fixed_mixture_respects_theorem_1` |
@@ -150,6 +154,12 @@ La etapa del análisis y la orden `arbiters` se comprobaron el mismo día sobre 
 
 El [recibo de verificación](../../reports/engineering/online-arbiters-20261028/verification.json) del núcleo y el [de la etapa del análisis](../../reports/engineering/online-arbiters-20261028/analysis-verification.json) conservan los recuentos y las huellas de los informes JUnit, de la cobertura, de las mutaciones y de la medida de coste.
 
+La [verificación de la integración del 30 de octubre](../../reports/engineering/online-arbiters-20261030/verification.json) registra 344 pruebas CPU aprobadas sin omisiones. Los seis módulos importadores estáticos quedan cubiertos, cinco en esa selección y uno con nueve casos adicionales aprobados. Las selecciones de depuración se solapan y no se suman. La cobertura de cinco módulos suma 1.483/1.507 sentencias y 322/334 ramas. Se midieron las 38 funciones de producción cambiadas, con CRAP máximo 20. Ruff, formato y el comprobador del repositorio pasan.
+
+Las nuevas pruebas reprodujeron la lectura de continuaciones sin emisión, la exclusión de los controles comunes, el desplazamiento del argumento posicional de caché y cuatro límites numéricos del prior. Después de corregir, las ausencias mantienen su máscara, los controles con predicciones propias participan y los priors conservan sus proporciones o se rechazan si no son representables. Las ocho funciones de prueba nuevas o reforzadas tienen su diagnóstico de cobertura y CRAP separado del de producción.
+
+Las 64 recetas actuales compilan y su ejecución está en curso. El recibo se mantiene incompleto hasta comprobar su resultado. La [revisión de fuentes](../../reports/engineering/online-arbiters-20261030/source-audit.json) distingue las secciones leídas de AdaNormalHedge de los resúmenes y metadatos de las otras cuatro referencias. No se ha ejecutado Lean ni una comparación predictiva. Los costes siguientes conservan sus fuentes y tamaños originales, anteriores a esta integración.
+
 ## Coste
 
 La medida CPU del 28 de octubre llama a `online_mixture` y `uniform_mixture` en FP64 sobre paneles ficticios con dos mercados, 128 activos por sesión y la madurez de cada etiqueta cinco sesiones después de decidir. Con cinco opciones (la época común y cuatro versiones) mide el árbitro de versiones, su control desordenado y la media uniforme. Con 32 y 80 opciones mide la combinación de modelos y su media simple, y 80 queda por encima de las 67 opciones que tiene la combinación con el protocolo actual. Se usó un hilo de BLAS, un calentamiento y cinco repeticiones en cada uno de los dos órdenes de los modos. El equipo tenía otras cargas, entre ellas las comprobaciones de C2 y de los controles comunes, con una media de carga de un minuto de 10,7 al empezar y al terminar, así que los percentiles son descriptivos. La memoria es el pico de tracemalloc en una llamada aparte. El [recibo](../../reports/engineering/online-arbiters-20261028/cost-cpu-screening.json) conserva todas las muestras. Sustituye a la [primera medida](../../reports/engineering/online-arbiters-20261028/cost-cpu.json), que no tenía la forma de 80 opciones y sigue unida al recibo del núcleo.
@@ -167,7 +177,7 @@ La medida CPU del 28 de octubre llama a `online_mixture` y `uniform_mixture` en 
 | 320 | 80 | Combinación de modelos | 13,90 s | 17,86 s | 104,9 MB |
 | 320 | 80 | Media simple | 2,31 s | 6,66 s | 105,5 MB |
 
-Las 320 sesiones corresponden a la calibración y un año de S. El control desordenado reconstruye el estado en cada decisión, y como cada ronda TV cuesta O(N t), su coste crece como O(N T³) con T sesiones por mercado. Con cinco modelos con versiones, cinco semillas y cuatro orígenes son 100 ajustes, unos 43 minutos de CPU con la mediana medida. La combinación, con 80 opciones en cada uno de sus 20 orígenes y semillas, añade unos 5 minutos. Todo ello es poco frente a las más de 150 horas de GPU de la criba. No se ha optimizado. Cubrir los intervalos con una familia geométrica reduciría el número de copias, pero cambiaría el algoritmo declarado. En la combinación, la mayor parte del tiempo se va en el IC de cada sesión y opción, que reutiliza `scale_diagnostics.session_correlations` para medir igual que el resto de la criba. El pico de memoria crece de forma lineal con las opciones, unos 1,3 MB por opción con 320 sesiones. No se han medido la energía ni el coste en GPU, porque los árbitros solo usan CPU.
+Las 320 sesiones corresponden a la calibración y un año de S. El control desordenado reconstruye el estado en cada decisión, y como cada ronda TV cuesta O(N t), su coste crece como O(N T³) con T sesiones por mercado. Con cinco modelos con versiones, cinco semillas y cuatro orígenes son 100 ajustes, unos 43 minutos de CPU con la mediana medida. La combinación, con 80 opciones en cada uno de sus 20 orígenes y semillas, añade unos 5 minutos. Estas extrapolaciones corresponden a los tamaños del recibo anterior, no al catálogo ampliado ni a su coste actual. No se ha optimizado. Cubrir los intervalos con una familia geométrica reduciría el número de copias, pero cambiaría el algoritmo declarado. En la combinación, la mayor parte del tiempo se va en el IC de cada sesión y opción, que reutiliza `scale_diagnostics.session_correlations` para medir igual que el resto de la criba. El pico de memoria crece de forma lineal con las opciones, unos 1,3 MB por opción con 320 sesiones. No se han medido la energía ni el coste en GPU, porque los árbitros solo usan CPU.
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=1 uv run python -m benchmarks.online_arbiters_cost --run \
