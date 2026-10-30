@@ -287,6 +287,43 @@ def test_a_published_state_that_does_not_match_its_generation_is_rejected(
         assert state.observed == snapshot["applied"] == 4
 
 
+def more_publications(markets, publications):
+    return markets, publications + 1
+
+
+def more_errors(markets, publications):
+    return {
+        market: (values[0] + 1, *values[1:]) for market, values in markets.items()
+    }, publications
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [(more_publications, "generación"), (more_errors, "aplicados")],
+    ids=["publications", "errors"],
+)
+def test_resume_rejects_an_e4_state_that_does_not_reconcile(
+    shared_native, four_flow_source, frozen_consumer, tmp_path, monkeypatch, change, message
+):
+    args = (shared_native, four_flow_source, frozen_consumer, tmp_path / "tampered")
+    with session(*args, CUSUM) as run:
+        walk(run, four_flow_source, shared_native, steps=(125, 126))
+    original = regime_gate_session.restore
+
+    def tampered(run, bundle):
+        # Cada cambio rompe una sola de las dos conciliaciones de la carga.
+        state = original(run, bundle)
+        markets, publications = change(state.export()["markets"], state.publications)
+        return RegimeEvidenceGate(
+            state.config, markets=markets, cursor=state.cursor, publications=publications
+        )
+
+    monkeypatch.setattr(regime_gate_session, "restore", tampered)
+    with pytest.raises(ValueError, match=message):
+        session(*args, CUSUM, resume=True)
+
+
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 @pytest.mark.parametrize(
     ("gate", "correction", "extra"),
