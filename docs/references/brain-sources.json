@@ -565,5 +565,33 @@
       6
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "daw2005uncertainty",
+    "title": "Uncertainty-based competition between prefrontal and dorsolateral striatal systems for behavioral control",
+    "authors": [
+      "Nathaniel D Daw",
+      "Yael Niv",
+      "Peter Dayan"
+    ],
+    "year": 2005,
+    "url": "https://doi.org/10.1038/nn1560",
+    "doi": "10.1038/nn1560",
+    "pdf_url": null,
+    "venue": "Nature Neuroscience",
+    "volume": "8",
+    "issue": "12",
+    "pages": "1704-1711",
+    "access": "Metadatos de Crossref y Nature comprobados y resumen consultado en PubMed. La ficha de Nature no se pudo abrir. No se consultó el texto completo.",
+    "redistribution": "Se conserva el enlace. No se redistribuye el texto.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-30",
+    "verification_sources": [
+      "https://pubmed.ncbi.nlm.nih.gov/16286932/",
+      "https://www.nature.com/articles/nn1560"
+    ],
+    "relevance": "Motivación del arbitraje según incertidumbre. El árbitro financiero usa IC maduro, no reproduce el modelo cerebral."
   }
 ]
