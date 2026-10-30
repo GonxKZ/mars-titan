@@ -113,6 +113,16 @@ Los procesos completos duraron 24,68 y 24,73 segundos. El pico externo fue de 74
 
 La [evidencia técnica](../../reports/engineering/role-bound-keys-20261026/verification.json), las [mutaciones](../../reports/engineering/role-bound-keys-20261026/mutations.json), la [cobertura y CRAP](../../reports/engineering/role-bound-keys-20261026/quality.json), la [primera medida](../../reports/engineering/role-bound-keys-20261026/benchmark-1.json), la [segunda medida](../../reports/engineering/role-bound-keys-20261026/benchmark-2.json) y la [fuente consultada](../../reports/engineering/role-bound-keys-20261026/source-audit.json) conservan su procedencia. El [esquema](../diagrams/variants/b3-role-bound-keys.png) tiene nueve comprobaciones de composición, cuatro tamaños de navegador y revisión visual de la imagen exportada y de la captura oscura de mayor tamaño. El HTML local conserva los controles del visor en inglés.
 
+## Comprobaciones del 30 de octubre de 2026
+
+La [verificación de las fuentes por fila y E4](../../reports/engineering/role-sources-20261030/verification.json) conserva 525 pruebas CPU aprobadas sin omisiones sobre la integración con `develop`. Comprueban rutas por fila, ausencias, orden de activos, identidad, gradientes, recuperación, paridad de las variantes desactivadas y consumidores compartidos. Una pasada anterior independiente también aprobó 525 casos. Son selecciones solapadas y no se suman.
+
+Las 48 mutaciones de B3 se repitieron después de incorporar E4. En esa repetición, tres casos de coste quedaron inconclusos porque la copia aislada no podía consultar el commit. Al repetir solo esos tres con metadatos Git reales de solo lectura, todos dieron referencias verdes antes y después y el fallo esperado al mutar. El total final sigue siendo 48 identificadores distintos, más 28 propios de E4, sin intentos de optimizador. Esta muestra dirigida no es una puntuación de mutación de todo el proyecto.
+
+La cobertura de doce módulos suma 2.345/2.719 sentencias y 781/1.048 ramas. Se midieron las 40 funciones cambiadas, con CRAP máximo 145,94 en `FinancialSession.__init__`. La selección no recorre todas las rutas previas de esa clase. Ruff, formato y el comprobador del repositorio pasan. La regresión histórica de importadores registró 2.041 aprobados y 42 omitidos en training, y 7.128 aprobados, 206 omitidos y un fallo de aislamiento del fixture de determinismo en el resto. Ese fallo se corrigió en #819 y su módulo pasa en la selección integrada. No se presenta la regresión histórica completa como repetida ni libre de omisiones.
+
+Las comprobaciones CUDA siguen en #816. Los costes de rutas publicados no miden el predictor completo ni el error sobre datos reales. El aprendizaje y el test final permanecen bloqueados y no hay mejora predictiva medida.
+
 Para repetir la medida en el entorno del proyecto:
 
 ```bash
