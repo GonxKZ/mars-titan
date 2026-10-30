@@ -188,6 +188,16 @@ def test_the_labels_are_the_qlib_cross_sectional_zscore_of_the_residual():
             labels[start : start + 5], (target - target.mean()) / target.std(ddof=1), rtol=1e-12
         )
     assert np.all(labels[~kept] == 0.0)
+
+
+@pytest.mark.parametrize("target", [(-1e308, 1e308), (1e308, 1e308)])
+def test_label_normalization_refuses_statistics_that_overflow(target):
+    base = panel(1, 2)
+    data = ForecastPanel.from_columns(
+        base.row_id, np.array(["US", "US"]), base.prediction_at, np.array(target), np.zeros(2)
+    )
+    with pytest.raises(ValueError, match="normalización.*finitas"):
+        control.session_labels(data)
     single = panel(3, 1)
     labels, kept = control.session_labels(single)
     assert not kept.any() and np.all(labels == 0.0)

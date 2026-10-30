@@ -139,14 +139,18 @@ def session_labels(panel):
     """
     labels = np.zeros(panel.rows)
     kept = np.zeros(panel.rows, dtype=bool)
-    for start, count in zip(panel.session_starts, panel.session_samples, strict=True):
-        target = panel.target[start : start + count]
-        if count < 2:
-            continue
-        spread = np.std(target, ddof=1)
-        if spread > 0:
-            labels[start : start + count] = (target - target.mean()) / spread
-            kept[start : start + count] = True
+    try:
+        with np.errstate(over="raise", invalid="raise"):
+            for start, count in zip(panel.session_starts, panel.session_samples, strict=True):
+                target = panel.target[start : start + count]
+                if count < 2:
+                    continue
+                spread = np.std(target, ddof=1)
+                if spread > 0:
+                    labels[start : start + count] = (target - target.mean()) / spread
+                    kept[start : start + count] = True
+    except FloatingPointError as error:
+        raise ValueError("La normalización por sesión necesita estadísticas finitas") from error
     return labels, kept
 
 
