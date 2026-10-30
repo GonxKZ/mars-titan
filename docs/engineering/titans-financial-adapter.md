@@ -2,6 +2,24 @@
 
 `models.titans.financial` compone el Transformer de precios, las proyecciones multimodales, la fusión, la cabeza escalar y el núcleo MAC existentes. Prepara una decisión por activo y devuelve una propuesta de estado. No confirma una sesión ni recorre el corpus. Es la primera pieza de integración financiera y no representa todavía MARS-TITAN con sus ampliaciones completas.
 
+## Validación por componentes
+
+`FinancialConfig.__post_init__` conserva el orden de las comprobaciones y delega sus bloques en métodos privados de la misma clase. La entrada, la cabeza y la disposición se comprueban antes de las puertas. La estabilidad se normaliza antes de calcular los logits iniciales de `gate_bias`. La captura depende de la cascada ya declarada. Después se comprueban contexto, grupos, modulación y operadores regionales, seguidos por lectores, objetivos, mezclas de sesión, cabezas auxiliares, fiabilidad y límites. Las exclusiones permanecen en la posición que determina qué error aparece primero.
+
+El [recibo del 31 de octubre](../../reports/engineering/config-validation-20261031/verification.json) compara la misma selección de 1.284 casos CPU antes y después, sin omisiones ni pasos de optimizador. La complejidad de `__post_init__` pasa de 132 a 1 y los 18 métodos nuevos tienen un máximo de 15. El CRAP máximo de los métodos de la clase pasa de 198,7389 a 33,0317. El máximo posterior pertenece a `identity`, que mantiene su cuerpo y su complejidad 33. Las condiciones de validación no se han eliminado y estas cifras no miden rendimiento ni calidad predictiva. El recibo registra las convenciones de coverage.py y radon.
+
+La expansión de las llamadas recupera el AST de las sentencias anteriores y comprueba que los locales permanecen dentro de sus bloques. Una matriz de 712 casos conserva 162 configuraciones aceptadas y 550 rechazos con sus tipos y mensajes. Es una comparación acotada, no una prueba para toda entrada posible. Los fixtures de los cuatro controles con dos políticas de entrada conservan pesos, identidades, salidas y estados bit a bit en CPU y FP64. Cada configuración recorre tres grupos de dos flujos y recupera su estado antes del siguiente grupo. No se ha utilizado el corpus real ni se ha ajustado el predictor.
+
+Los 63 casos de contratos y componentes pasan y las 33 mutaciones dirigidas se detectan con G1 verde, M1 rojo y G2 verde, sin optimizador. Las selecciones se solapan y no se suman como casos distintos. Estas mutaciones comprueban conexión, precedencia, normalización, límites y exclusiones. No son una puntuación de mutación global. Los campos, sus valores por defecto y las identidades comprobadas se conservan. El código mantiene su procedencia nueva y los manifiestos no deben reutilizar huellas de otra ejecución.
+
+La regresión completa de modelos y consumidores está encolada detrás de H1. La unión de 349 módulos importadores y 120 módulos de modelos contiene 393 archivos, sin duplicarlos. La nueva organización solo cambia validación Python y no acredita una comprobación nueva de los operadores CUDA. La verificación general de CUDA continúa separada en #816. El aprendizaje y el test final siguen bloqueados.
+
+```bash
+uv --no-cache run --no-sync pytest -q -p no:cacheprovider \
+  tests/models/titans/test_financial_config_validation.py \
+  tests/models/titans/test_financial_config_components.py
+```
+
 ## Token y controles
 
 La ventana cercana de precios pertenece al Transformer común y conserva el contexto declarado por el corpus. En la edición histórica son 64 sesiones. La fusión produce un token por nueva decisión y MAC recibe `C=1`. Recodificar ventanas solapadas no vuelve a escribir sus 64 observaciones en la memoria neuronal.
