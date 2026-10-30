@@ -1,0 +1,41 @@
+{
+  "kind": "scale_invariant_time_variants",
+  "schema_version": 1,
+  "issue": 786,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "estimated_gpu_hours_per_arm_with_five_seeds": 4.4,
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "scale_invariant_time": {
+      "role": "variant",
+      "predictor_changes": {
+        "memory_time_scales": {
+          "octaves": 6.0
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "geometric_against_equal_half_lives",
+      "variant": "scale_invariant_time",
+      "control": "reference"
+    }
+  ],
+  "reasons": {
+    "octaves": "six_octaves_on_each_side_of_the_control_half_life_of_256_sessions_from_4_to_16384",
+    "center": "the_geometric_mean_equals_the_half_life_of_the_control",
+    "requires": "gate_bias_of_the_base_recipe_without_the_gate_box_of_pt1",
+    "gpu_hours": "one_fit_definition_of_the_screening_with_its_cost_reference_and_a_measured_cpu_ratio_near_one"
+  }
+}

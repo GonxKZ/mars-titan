@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "familiarity_gate_variants",
+  "variant": "mars_titan_extensions_v1",
+  "variant_id": "familiarity_gate_v1",
+  "issue": 786,
+  "epic": 782,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "parent": "quantile_reference",
+  "recipe": "configs/titans/episodic-readout-historical-masked.json",
+  "window": "src/mars_titan/training/mars_titan_walk_forward.py:run_mars_titan_window",
+  "arms": {
+    "familiarity_gate": {
+      "role": "Lector M1 con K = 1 cuya puerta 2σ(a·f + b) escala el cambio de cada refinamiento según la familiaridad de su lectura",
+      "components": {"episodic_bank": "m1"},
+      "recipe_changes": {"familiarity_gate": "familiarity"}
+    },
+    "constant_gate": {
+      "role": "El mismo lector con la misma puerta sin el término de familiaridad, 2σ(b)",
+      "components": {"episodic_bank": "m1"},
+      "recipe_changes": {"familiarity_gate": "constant"}
+    }
+  },
+  "contrasts": [
+    {"variant": "familiarity_gate", "control": "constant_gate", "factor": "familiarity"},
+    {"variant": "constant_gate", "control": "reader_reference", "factor": "gate_scale"}
+  ],
+  "pending": [
+    "La familiaridad es el coseno medio entre la consulta y los episodios de la lectura, con los pesos de su atención y sin gradiente.",
+    "Las filas sin episodios usan el paso del lector de referencia en los dos modelos.",
+    "El análisis informa de a y b aprendidos y de los cuantiles de la puerta en S, calculados sin pasos de optimizador.",
+    "No se presupone una mejora predictiva. Con a = 0 los dos modelos coinciden."
+  ]
+}

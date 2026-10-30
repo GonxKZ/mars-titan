@@ -32,9 +32,11 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.memory.mature_reliability import ReliabilitySignal
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
+from mars_titan.models.titans.axial_time_region import join_history_rows, map_history_rows
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import (
@@ -60,6 +62,11 @@ from .checkpoints import (
     save_training_state,
 )
 from .common_epoch import chosen_state
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    valid_determinism,
+)
 from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
@@ -101,6 +108,14 @@ _WEIGHT_MODULES = dict(
     weight_average="mars_titan.training.weight_averaging",
     schedule_free="mars_titan.training.schedule_free",
     shrink_perturb="mars_titan.training.shrink_perturb",
+)
+# Variantes de #751 cuyo código solo entra en la identidad cuando el predictor las declara.
+_PREDICTOR_MODULES = dict(
+    regional_variant="mars_titan.models.titans.regional_variants",
+    cross_asset_attention="mars_titan.models.titans.cross_asset_attention",
+    axial_time_region="mars_titan.models.titans.axial_time_region",
+    fractal_shared_operator="mars_titan.models.titans.fractal_shared_operator",
+    asset_groups="mars_titan.models.titans.asset_groups",
 )
 
 
@@ -154,6 +169,10 @@ class ChronologicalRecipe:
     # None empieza con los pesos recibidos. Un objeto declara la contracción y el ruido de
     # F3 (#749), aplicados una vez antes del primer paso de una ejecución nueva.
     shrink_perturb: dict | None = None
+    # None conserva el determinismo del proceso. `torch_deterministic_algorithms_v1` activa el
+    # modo determinista de PyTorch y de cuDNN al construir el recorrido y entra en su
+    # identidad (#794).
+    determinism: str | None = None
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
@@ -190,6 +209,8 @@ class ChronologicalRecipe:
             raise ValueError(
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
         self.weight_options()
 
     def weight_options(self):
@@ -225,6 +246,8 @@ class ChronologicalRecipe:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
         if fields["distillation_weight"] is None:
@@ -308,7 +331,11 @@ def _detached(state, parameter_id=None):
     if mac is not None:
         # Todos los tensores del estado MAC, también las ventanas de la convolución causal.
         mac = map_mac_rows(mac, lambda value: value.detach())
-    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac)
+    regions = state.regions
+    if regions is not None:
+        # El historial de C2 corta su grafo en el mismo punto que MAC.
+        regions = map_history_rows(regions, lambda value: value.detach())
+    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac, regions=regions)
 
 
 class FlowStates:
@@ -387,13 +414,19 @@ class FlowStates:
             else:
                 runs.append([block, row, row + 1])
 
-        state, mac = first.state, None
+        state, mac, regions = first.state, None, None
         if state.mac is not None:
             parts = [
                 map_mac_rows(block.state.mac, lambda value, a=start, b=stop: value[a:b])
                 for block, start, stop in runs
             ]
             mac = parts[0] if len(parts) == 1 else join_mac_rows(parts)
+        if state.regions is not None:
+            pieces = [
+                map_history_rows(block.state.regions, lambda value, a=start, b=stop: value[a:b])
+                for block, start, stop in runs
+            ]
+            regions = pieces[0] if len(pieces) == 1 else join_history_rows(pieces)
         return FinancialState(
             state.config_id,
             state.parameter_id,
@@ -402,6 +435,7 @@ class FlowStates:
             tuple(block.state.last_prediction_at[row] for block, row in entries),
             torch.tensor([block.steps[row] for block, row in entries], dtype=torch.int64),
             mac,
+            regions,
         )
 
 
@@ -446,9 +480,9 @@ class _Pass:
     targets: list = field(default_factory=list)
     used: list = field(default_factory=list)
     instants: int = 0
-    # Con acumulación: lotes del tramo en orden, con el plan de C de su evento, y estado de
-    # cada flujo al empezarlo. None indica un flujo nuevo dentro del tramo. Se vacían en
-    # cada actualización.
+    # Con acumulación: lotes del tramo en orden, con el plan de C de su evento y la señal
+    # de #791 que leyeron, y estado de cada flujo al empezarlo. None indica un flujo nuevo
+    # dentro del tramo. Se vacían en cada actualización.
     segment: list = field(default_factory=list)
     starts: dict = field(default_factory=dict)
     # Con la penalización C, un elemento por grupo lógico medido del tramo: su término con
@@ -458,6 +492,8 @@ class _Pass:
     context: object = None
     # Con F5, el registro de etiquetas auxiliares del recorrido de ajuste.
     horizons: object = None
+    # Con #791, la señal de fiabilidad madura del recorrido.
+    reliability: object = None
 
 
 class ChronologicalInference:
@@ -502,6 +538,8 @@ class ChronologicalInference:
         self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
         # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
         self.horizons = predictor.config.auxiliary_horizons
+        # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
+        self.reliability = predictor.config.mature_reliability
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -514,8 +552,16 @@ class ChronologicalInference:
             raise ValueError("El recorrido admite cpu o cuda:0 explícitos")
         self.predictor, self.recipe = predictor, recipe
         self.audit = [] if audit else None
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
+
+    def _signal(self, run):
+        """Señal de #791 del recorrido, creada al usarla por primera vez, o None."""
+        if self.reliability is not None and run.reliability is None:
+            run.reliability = ReliabilitySignal(self.reliability)
+        return run.reliability
 
     def _observe(self, run, source, event, *, differentiable, blocks=None):
         """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados.
@@ -551,6 +597,7 @@ class ChronologicalInference:
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=grad)
         context = dict(context=run.context) if self.uses_context else {}
+        signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
         # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
         # checkpoints o cierra recibos. Así no se espera a la GPU tras cada bloque.
@@ -559,6 +606,14 @@ class ChronologicalInference:
                 batch = DecisionBatch.from_validated(
                     cpu, device=self.device, dtype=predictor.head.weight.dtype
                 )
+                options = dict(plan)
+                if signal is not None:
+                    # Todos los bloques del evento leen la misma señal, la de sus etiquetas.
+                    options["reliability"] = torch.tensor(
+                        signal.values(batch.flow_ids),
+                        dtype=predictor.head.weight.dtype,
+                        device=self.device,
+                    )
                 new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
                 if new:
                     run.flows.put(predictor.initial_state(new, differentiable=grad))
@@ -567,7 +622,7 @@ class ChronologicalInference:
                         if flow not in run.starts:
                             # La repetición parte del estado sin grafo de cada flujo al empezar.
                             run.starts[flow] = None if flow in new else run.flows.handle(flow)
-                    run.segment.append((batch, plan, complete))
+                    run.segment.append((batch, options, complete))
                 state = run.flows.gather(batch.flow_ids)
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
                     prepared = predictor.prepare(
@@ -575,7 +630,7 @@ class ChronologicalInference:
                         state,
                         differentiable=grad,
                         session_complete=complete,
-                        **plan,
+                        **options,
                         **context,
                     )
                 if self.uses_context:
@@ -601,6 +656,8 @@ class ChronologicalInference:
                     ):
                         run.graphs[key] = _REPLAY if accumulate else graphs[row]
                 emitted.append((batch, prepared))
+                if prepared.surprise is not None:
+                    surprises.append((batch.flow_ids, prepared.surprise))
                 run.counters["predictions"] += size
                 if ledger is not None:
                     ledger.remember(cpu)
@@ -610,6 +667,10 @@ class ChronologicalInference:
                     run.context = predictor.commit_context(context["context"], differentiable=grad)
             with nvtx_ranges.phase("titans.emit"):
                 self._emit(run, source, emitted)
+            if surprises:
+                # El control de sorpresa la registra al emitir y la leen los eventos siguientes.
+                losses = torch.cat([loss for _, loss in surprises]).tolist()
+                signal.observe([flow for flows, _ in surprises for flow in flows], losses)
             if measured:
                 with nvtx_ranges.phase("titans.penalty"):
                     self._penalty(run, measured, keep=grad, replay=accumulate)
@@ -714,12 +775,14 @@ class ChronologicalInference:
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
-        markets, moments, errors = [], [], []
+        markets, moments, errors, matured = [], [], [], []
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
                 raise ValueError("El label no tiene una predicción emitida pendiente")
             issued = run.pending.pop(key)
+            if self.reliability is not None:
+                matured.append((flow, issued, value))
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             markets.append(flow.split("/", 1)[0])
@@ -740,6 +803,9 @@ class ChronologicalInference:
             run.predictions.append(graph)
             run.targets.append(value)
             run.used.append((flow, decision_at, event.at))
+        signal = self._signal(run)
+        if signal is not None:
+            signal.settle(matured)
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -752,6 +818,7 @@ class ChronologicalInference:
         run.flows.clear()
         run.context = None
         run.horizons = None
+        run.reliability = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -901,7 +968,8 @@ class ChronologicalTrainer(ChronologicalInference):
         if posttraining is not None and any(option is not None for option in options.values()):
             raise ValueError("F2 y F3 no tienen todavía un postentrenamiento declarado")
         if self.shrink is not None and (
-            predictor.local_control is not None or self.shrink.seed == predictor.config.seed
+            predictor.local_control is not None
+            or self.shrink.fresh_seed(predictor.config.seed) == predictor.config.seed
         ):
             raise ValueError("F3 contrae sin control local y con θ₀ de otra semilla")
         self.roles = parameter_roles(predictor)
@@ -969,6 +1037,8 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         control = predictor.local_control
         if control is not None:
             # Sin control local, la identidad conserva literalmente su forma anterior.
@@ -1007,17 +1077,35 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        if self.predictor.config.regional_variant is not None:
-            name = "mars_titan.models.titans.regional_variants"
+        for option, name in _PREDICTOR_MODULES.items():
+            if getattr(self.predictor.config, option) is not None:
+                own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H1 de #783 también, con el catálogo macro del que salen sus familias.
+        if self.predictor.config.holographic_network is not None:
+            module = importlib.import_module("mars_titan.models.titans.holographic_network")
+            own[module.__name__] = sha256(Path(module.__file__))
+            own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
+        # C3 agrupa sus sectores con el módulo común de C4, que también entra en la identidad.
+        if self.predictor.config.fractal_shared_operator is not None:
+            name = "mars_titan.data.correlation_regions"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
-        # C5 solo entra en la identidad cuando está activa, igual que las variantes regionales.
-        if self.predictor.config.cross_asset_attention is not None:
-            name = "mars_titan.models.titans.cross_asset_attention"
+        # H4 de #783 añade también el módulo de las medidas de la ventana.
+        if self.predictor.config.asset_groups is not None:
+            name = "mars_titan.data.asset_groups"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
+        # porque `financial` importa siempre su configuración.
+        if self.predictor.config.mature_reliability is not None:
+            name = "mars_titan.memory.mature_reliability"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
         for option, name in _WEIGHT_MODULES.items():
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:
                 own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # El determinismo de #794 también, con el módulo que lo activa y lo comprueba.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
@@ -1134,6 +1222,8 @@ class ChronologicalTrainer(ChronologicalInference):
                     # Solo la selección de todas las filas de un instante completo lo sigue siendo.
                     complete = whole and len(rows) == len(batch.flow_ids)
                     batch = batch.select(rows)
+                    if "reliability" in plan:
+                        plan = dict(plan, reliability=plan["reliability"][rows])
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
@@ -1379,6 +1469,11 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.horizons is not None
                 else {}
             ),
+            **(
+                dict(reliability=None if run.reliability is None else run.reliability.export())
+                if self.reliability is not None
+                else {}
+            ),
         )
 
     def _restore(self, payload):
@@ -1386,6 +1481,8 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El recorrido guardado no corresponde al contexto del predictor")
         if (self.horizons is not None) != ("horizons" in payload):
             raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
+        if (self.reliability is not None) != ("reliability" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1405,6 +1502,8 @@ class ChronologicalTrainer(ChronologicalInference):
             run.context = self.predictor.restore_context(payload["context"])
         if self.horizons is not None and payload["horizons"] is not None:
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
+        if self.reliability is not None and payload["reliability"] is not None:
+            run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
         return run
 
     def _emission(self):
@@ -1446,8 +1545,9 @@ class ChronologicalTrainer(ChronologicalInference):
         """Aplicar F3 a una ejecución nueva y crear o recuperar la sombra de F2."""
         if state is None and self.shrink is not None:
             before = self.predictor._parameter_id
+            seed = self.shrink.fresh_seed(self.predictor.config.seed)
             fresh = type(self.predictor)(
-                replace(self.predictor.config, seed=self.shrink.seed),
+                replace(self.predictor.config, seed=seed),
                 device=self.device,
                 dtype=self.predictor.head.weight.dtype,
             )
@@ -1455,6 +1555,7 @@ class ChronologicalTrainer(ChronologicalInference):
             self.predictor._seal_parameters()
             report["shrink_perturb"] = dict(
                 configuration=self.shrink.identity(),
+                fresh_seed=seed,
                 parameters_before_sha256=before,
                 fresh_parameters_sha256=fresh._parameter_id,
                 parameters_after_sha256=self.predictor._parameter_id,

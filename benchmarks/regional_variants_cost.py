@@ -21,6 +21,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data.storage import atomic_json
+
 VARIANTS = ("regional_fusion", "c1_mixing", "c1_control", "c6_competition", "c6_dense")
 ROWS = (64, 256)
 HIDDEN, SEED, WARMUP, REPETITIONS = 64, 42, 3, 20
@@ -165,8 +167,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
-    result = run(arguments.device)
-    arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(arguments.output, run(arguments.device))
 
 
 if __name__ == "__main__":

@@ -42,18 +42,18 @@ La variante se descarta si no mejora al control permutado en el contraste princi
 
 ## Correspondencia entre ecuaciones, módulo y pruebas
 
-Las pruebas están en `tests/evaluation/test_pit_region_gate.py`. El historial sintético tiene doce activos y dos factores latentes, de modo que los grupos correctos se conocen de antemano.
+Las pruebas están en `tests/evaluation/test_pit_region_gate.py`. El historial sintético tiene doce activos y dos factores latentes, de modo que los grupos correctos se conocen de antemano. La correlación, el agrupamiento y la permutación están en `src/mars_titan/data/correlation_regions.py`, que también usa C3 para sus sectores estadísticos, y sus pruebas propias en `tests/data/test_correlation_regions.py`.
 
 | Elemento | Código | Prueba |
 | --- | --- | --- |
-| $\rho_{ab}$ con madureces comunes y mínimo m | `correlation` | `test_correlation_matches_pearson_when_fully_observed_and_ignores_thin_pairs` |
+| $\rho_{ab}$ con madureces comunes y mínimo m | `correlation_regions.correlation` | `test_correlation_matches_pearson_when_fully_observed_and_ignores_thin_pairs`, en las pruebas del módulo común |
 | Clústeres numerados por su menor activo | `residual_regions` | `test_planted_groups_are_recovered_and_numbered_by_their_first_asset` |
 | Solo madureces $\le t_G$ | `residual_regions` | `test_regions_only_read_labels_matured_by_the_cutoff` |
 | Región 0 | `residual_regions` | `test_short_or_constant_histories_go_to_region_zero` |
 | $\lambda_{g,r}$ con los pesos de A1 | `fit` | `test_each_region_gets_the_a1_factor_of_its_own_rows` |
 | $\hat y_i$ y factor del mercado | `apply` | `test_application_scales_each_row_and_unseen_assets_use_the_market_factor` |
 | Paridad con A1 | `fit` y `apply` | `test_the_market_control_reproduces_a1_bit_for_bit` |
-| Control permutado | `permuted_regions` | `test_the_permuted_control_keeps_sizes_and_changes_the_assignment` |
+| Control permutado | `correlation_regions.permuted_regions` | `test_the_permuted_control_keeps_sizes_and_changes_the_assignment` |
 | Control sectorial | `sector_regions` | `test_the_current_sector_control_is_the_only_mode_that_reads_sectors` |
 
 ## Causalidad, estado y paridad

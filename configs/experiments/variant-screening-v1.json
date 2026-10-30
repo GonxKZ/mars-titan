@@ -468,8 +468,20 @@
       "declaration": "configs/experiments/schedule-free-shrink-perturb-v1.json",
       "metric": "session_ic",
       "primary": ["schedule_free", "adamw_reference"],
-      "pending_arms": ["continuation_control", "shrink_perturb", "shrink_only", "perturb_only"],
-      "note": "La contracción necesita una etapa que continúe el ajuste desde el estado elegido del origen anterior, que el motor aún no tiene"
+      "continuation": {
+        "parent": "adamw_reference",
+        "primary": [
+          ["shrink_perturb", "continuation_control"],
+          ["shrink_only", "continuation_control"],
+          ["perturb_only", "continuation_control"]
+        ],
+        "reported": [
+          ["continuation_control", "adamw_reference"],
+          ["shrink_perturb", "adamw_reference"]
+        ],
+        "date": "2026-10-28",
+        "note": "Enmienda registrada antes de abrir S. Cada continuación del origen k empieza en el estado que adamw_reference, el mismo trabajo que quantile_reference, eligió en el origen k − 1 con la misma semilla, así que 2019 no tiene continuaciones. Los tres contrastes con la continuación directa forman una familia propia sobre las sesiones de 2020 a 2022, fuera de la familia declarada y de sus sensibilidades. Los dos contrastes con el ajuste desde cero solo se publican"
+      }
     },
     "F4": {
       "identity": "session_rank_inputs_v1_and_session_ic_objective_v1",

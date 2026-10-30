@@ -1,5 +1,6 @@
 """Contracción y ruido de F3 con valores literales, sin optimizador."""
 
+import numpy as np
 import pytest
 import torch
 
@@ -65,3 +66,21 @@ def test_identity_names_the_noise_source():
     identity = ShrinkPerturb().identity()
     assert identity["name"] == SHRINK_PERTURB and identity["shrink"] == 0.6
     assert identity["noise_source"].startswith("same_parameter_of_a_fresh")
+    assert identity["fresh_seed"] == "seed_sequence_of_the_declared_seed_and_the_fit_seed"
+
+
+def test_each_fit_seed_receives_its_own_reproducible_fresh_seed():
+    config = ShrinkPerturb(seed=1)
+    seeds = [config.fresh_seed(seed) for seed in (42, 43, 44, 45, 46)]
+    assert len(set(seeds)) == 5 and seeds == [config.fresh_seed(s) for s in (42, 43, 44, 45, 46)]
+    assert all(type(seed) is int and 0 <= seed < 2**32 for seed in seeds)
+    # Es la primera palabra de la SeedSequence de la semilla declarada y la del ajuste.
+    expected = int(np.random.SeedSequence([1, 42]).generate_state(1)[0])
+    assert seeds[0] == expected
+    assert ShrinkPerturb(seed=2).fresh_seed(42) != expected
+
+
+@pytest.mark.parametrize("fit_seed", [-1, 2**32, 1.0, True])
+def test_an_invalid_fit_seed_is_rejected(fit_seed):
+    with pytest.raises(ValueError, match="semilla del ajuste"):
+        ShrinkPerturb().fresh_seed(fit_seed)

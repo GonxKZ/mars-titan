@@ -22,18 +22,18 @@ región sin factor, usa el factor de su mercado, y un mercado sin factor predice
   Mide cuánto aportaría una etiqueta con fuga, nunca una evaluación válida por sí misma.
 - `market`: una sola región por mercado, que reproduce A1.
 
-La correlación usa cada serie estandarizada con sus propias etiquetas de la ventana y se
-calcula sobre las madureces comunes a cada par. Un par con menos de `min_labels` madureces
-comunes no aporta evidencia y su correlación vale cero.
+La correlación y el agrupamiento son los de `data/correlation_regions.py`, que comparte C3.
+Cada serie se estandariza con sus propias etiquetas de la ventana y la correlación se calcula
+sobre las madureces comunes a cada par. Un par con menos de `min_labels` madureces comunes no
+aporta evidencia y su correlación vale cero.
 """
 
 import hashlib
 import json
 
 import numpy as np
-from scipy.cluster.hierarchy import fcluster, linkage
-from scipy.spatial.distance import squareform
 
+from mars_titan.data.correlation_regions import NO_HISTORY, correlation_regions, permuted_regions
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import scale_diagnostics
 from mars_titan.evaluation.forecast_panel import ForecastPanel
@@ -41,7 +41,6 @@ from mars_titan.evaluation.forecast_panel import ForecastPanel
 IDENTITY = "pit_region_gate_v1"
 SCHEMA_VERSION = 1
 REGIONS = ("residual_correlation", "permuted", "current_sector", "market")
-NO_HISTORY = "0"
 # Unas 126 sesiones son los seis meses de la validación de G que preceden a la calibración.
 DEFAULT = dict(
     regions="residual_correlation",
@@ -137,25 +136,6 @@ def panel_assets(panel):
     return np.asarray(result, dtype=str)
 
 
-def correlation(series, mask, *, min_labels):
-    """Correlación por pares sobre las madureces comunes de series ya estandarizadas.
-
-    `series` es [activos, instantes] con ceros donde `mask` es falso. Un par con menos de
-    `min_labels` instantes comunes vale cero.
-    """
-    values = np.where(mask, series, 0.0)
-    present = mask.astype(np.float64)
-    numerator = values @ values.T
-    squares = (values * values) @ present.T
-    denominator = np.sqrt(squares * squares.T)
-    common = present @ present.T
-    with np.errstate(invalid="ignore", divide="ignore"):
-        result = np.where(denominator > 0, numerator / denominator, 0.0)
-    result = np.where(common >= min_labels, np.clip(result, -1.0, 1.0), 0.0)
-    np.fill_diagonal(result, 1.0)
-    return result
-
-
 def residual_regions(assets, history, cutoff, *, clusters, window, min_labels):
     """Región de cada activo con las etiquetas que han madurado en `cutoff` o antes.
 
@@ -188,39 +168,7 @@ def residual_regions(assets, history, cutoff, *, clusters, window, min_labels):
     series = np.zeros((len(assets), len(instants)))
     mask = np.zeros_like(series, dtype=bool)
     series[row, column], mask[row, column] = target, True
-    counts = mask.sum(axis=1)
-    mean = np.divide(series.sum(axis=1), counts, out=np.zeros(len(assets)), where=counts > 0)
-    centered = np.where(mask, series - mean[:, None], 0.0)
-    spread = np.sqrt(
-        np.divide((centered**2).sum(axis=1), counts, out=np.zeros(len(assets)), where=counts > 0)
-    )
-    usable = (counts >= min_labels) & (spread > 0)
-    result = dict.fromkeys(assets, NO_HISTORY)
-    chosen = np.flatnonzero(usable)
-    if len(chosen) == 0:
-        return result
-    if len(chosen) == 1:
-        result[assets[chosen[0]]] = "1"
-        return result
-    standardized = centered[chosen] / spread[chosen, None]
-    rho = correlation(standardized, mask[chosen], min_labels=min_labels)
-    distance = squareform(1.0 - rho, checks=False)
-    groups = fcluster(linkage(distance, method="average"), t=clusters, criterion="maxclust")
-    first = {}
-    for position, group in zip(chosen, groups, strict=True):
-        first.setdefault(int(group), assets[position])
-    order = {group: str(rank + 1) for rank, group in enumerate(sorted(first, key=first.get))}
-    for position, group in zip(chosen, groups, strict=True):
-        result[assets[position]] = order[int(group)]
-    return result
-
-
-def permuted_regions(regions, seed):
-    """Las mismas etiquetas y tamaños repartidos al azar entre los activos con historia."""
-    names = sorted(name for name, region in regions.items() if region != NO_HISTORY)
-    generator = np.random.default_rng(np.random.SeedSequence(seed))
-    shuffled = [regions[names[index]] for index in generator.permutation(len(names))]
-    return {**regions, **dict(zip(names, shuffled, strict=True))}
+    return correlation_regions(assets, series, mask, clusters=clusters, min_observations=min_labels)
 
 
 def sector_regions(assets, sectors):

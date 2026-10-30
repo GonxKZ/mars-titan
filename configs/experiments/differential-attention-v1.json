@@ -1,0 +1,39 @@
+{
+  "kind": "differential_attention_variants",
+  "schema_version": 1,
+  "issue": 786,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "estimated_gpu_hours_per_arm_with_five_seeds": 4.4,
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "differential_attention": {
+      "role": "variant",
+      "predictor_changes": {
+        "differential_attention": "differential_attention_v1"
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "differential_against_standard_attention",
+      "variant": "differential_attention",
+      "control": "reference"
+    }
+  ],
+  "reasons": {
+    "start": "lambda_per_head_at_zero_so_the_first_output_is_the_mac_attention",
+    "context": "persistent_tokens_memory_read_and_one_segment_token_six_positions_with_the_base_recipe",
+    "parameters": "two_dim_by_dim_projections_and_one_lambda_per_head",
+    "gpu_hours": "one_fit_definition_of_the_screening_with_its_cost_reference_and_a_measured_cpu_ratio_near_one"
+  }
+}
