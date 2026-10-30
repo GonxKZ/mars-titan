@@ -1012,7 +1012,8 @@ class ChronologicalTrainer(ChronologicalInference):
         if posttraining is not None and any(option is not None for option in options.values()):
             raise ValueError("F2 y F3 no tienen todavía un postentrenamiento declarado")
         if self.shrink is not None and (
-            predictor.local_control is not None or self.shrink.seed == predictor.config.seed
+            predictor.local_control is not None
+            or self.shrink.fresh_seed(predictor.config.seed) == predictor.config.seed
         ):
             raise ValueError("F3 contrae sin control local y con θ₀ de otra semilla")
         self.roles = parameter_roles(predictor)
@@ -1594,8 +1595,9 @@ class ChronologicalTrainer(ChronologicalInference):
         """Aplicar F3 a una ejecución nueva y crear o recuperar la sombra de F2."""
         if state is None and self.shrink is not None:
             before = self.predictor._parameter_id
+            seed = self.shrink.fresh_seed(self.predictor.config.seed)
             fresh = type(self.predictor)(
-                replace(self.predictor.config, seed=self.shrink.seed),
+                replace(self.predictor.config, seed=seed),
                 device=self.device,
                 dtype=self.predictor.head.weight.dtype,
             )
@@ -1603,6 +1605,7 @@ class ChronologicalTrainer(ChronologicalInference):
             self.predictor._seal_parameters()
             report["shrink_perturb"] = dict(
                 configuration=self.shrink.identity(),
+                fresh_seed=seed,
                 parameters_before_sha256=before,
                 fresh_parameters_sha256=fresh._parameter_id,
                 parameters_after_sha256=self.predictor._parameter_id,

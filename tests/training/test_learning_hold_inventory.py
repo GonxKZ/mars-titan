@@ -1,9 +1,9 @@
 """Todo sitio que ajusta parámetros pasa por una guarda inventariada y con prueba de rechazo.
 
 El grafo de llamadas recorre `src/mars_titan` y `scripts`. Un punto de entrada nuevo que
-llegue a un paso de optimizador, a un `fit`, a `xgboost.train` o a una solución cerrada sin
-pasar por `require_learning_allowed` hace fallar la primera prueba. Una guarda nueva,
-retirada o duplicada cambia el inventario y hace fallar la tercera.
+llegue a un paso de optimizador, a un `fit`, a `xgboost.train`, a `lightgbm.train` o a una
+solución cerrada sin pasar por `require_learning_allowed` hace fallar la primera prueba. Una
+guarda nueva, retirada o duplicada cambia el inventario y hace fallar la tercera.
 """
 
 import ast
