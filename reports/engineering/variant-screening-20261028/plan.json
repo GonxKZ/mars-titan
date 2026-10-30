@@ -1,13 +1,13 @@
 {
- "protocol_sha256": "325e75fc3a4866c2dea3ea8bb4cc97f321dd8668714c954b72343b513ebd57ee",
- "jobs": 1988,
+ "protocol_sha256": "332f7769dbe69b63cf5050d7b451ce2c83af8d524f12dc4a22eb7a9fbd55e09c",
+ "jobs": 2048,
  "cost": {
-  "jobs": 1988,
-  "hours": 160.15174897861127,
+  "jobs": 2048,
+  "hours": 173.1978426283293,
   "hours_by_runner": {
    "correction": 10.335751405239122,
    "correction_profile": 1.9876445010075292,
-   "fit": 111.45057529458565,
+   "fit": 124.49666894430581,
    "reader": 16.977777777777778,
    "rule": 0.6666666666666666,
    "spaced": 12.733333333333333,
@@ -31,26 +31,6 @@
    "status": "pending_implementation"
   },
   {
-   "entry": "F3",
-   "arm": "continuation_control",
-   "status": "pending_arm"
-  },
-  {
-   "entry": "F3",
-   "arm": "shrink_perturb",
-   "status": "pending_arm"
-  },
-  {
-   "entry": "F3",
-   "arm": "shrink_only",
-   "status": "pending_arm"
-  },
-  {
-   "entry": "F3",
-   "arm": "perturb_only",
-   "status": "pending_arm"
-  },
-  {
    "entry": "G1",
    "status": "after_the_screening_needs_its_own_approval"
   },
@@ -63,5 +43,5 @@
    "status": "validity_check_outside_the_family"
   }
  ],
- "contrasts": 73
+ "contrasts": 78
 }

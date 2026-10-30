@@ -528,6 +528,8 @@ def _dispatch(work, receipt, job, budget):
     output = work / "runs" / job["id"]
     indices = work / "indices" / str(job["origin"])
     parent = work / "runs" / job["parent"] if job["parent"] else None
+    # Una continuación de F3 empieza en el estado elegido de su trabajo del origen anterior.
+    initial = work / "runs" / job["continues"] if job["continues"] else None
     common = (
         common_options(work, receipt, job, files)
         if runner in variant_screening.EPOCH_RUNNERS
@@ -549,6 +551,7 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             search_case=definition["search_case"],
             predictor_changes=definition["predictor_changes"] or None,
+            initial=initial,
             **common,
         )
     if runner in ("correction", "correction_profile"):
@@ -1023,8 +1026,10 @@ def analyze(work, output, descriptions):
     output.mkdir(parents=True)
     atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
     atomic_json(output / "analysis.json", report)
+    continuation = report["continuation"] or {"decisions": {}}
     return dict(
         decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
+        continuation={name: row["passes"] for name, row in continuation["decisions"].items()},
         sessions=report["sessions"],
         analysis_sha256=sha256(output / "analysis.json"),
     )

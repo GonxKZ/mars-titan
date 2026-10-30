@@ -1012,5 +1012,502 @@
       6
     ],
     "verification_date": "2026-10-04"
+  },
+  {
+    "id": "puigcerver2024soft",
+    "title": "From Sparse to Soft Mixtures of Experts",
+    "authors": [
+      "Joan Puigcerver",
+      "Carlos Riquelme",
+      "Basil Mustafa",
+      "Neil Houlsby"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2308.00951v2",
+    "doi": "10.48550/arXiv.2308.00951",
+    "pdf_url": "https://arxiv.org/pdf/2308.00951v2",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v2 del 27 de mayo de 2024, con la nota de publicación en ICLR 2024. Ficha y PDF abiertos. Leídas la sección 2.1 de la página 2, que define los pesos de despacho como un softmax por columnas y los de combinación como un softmax por filas de los mismos logits, y el apéndice E de la página 18, sobre la normalización de las entradas del softmax según la dimensión.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2024-05-27",
+      "url": "https://arxiv.org/pdf/2308.00951v2",
+      "passages": [
+        "Sección 2.1, página 2: pesos de despacho y de combinación, ecuaciones (1) y (2)",
+        "Apéndice E, página 18: normalización de las entradas del softmax"
+      ]
+    },
+    "latest_publication": {
+      "title": "From Sparse to Soft Mixtures of Experts",
+      "authors": [
+        "Joan Puigcerver",
+        "Carlos Riquelme",
+        "Basil Mustafa",
+        "Neil Houlsby"
+      ],
+      "year": 2024,
+      "venue": "International Conference on Learning Representations (ICLR 2024)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=jxpsAj7ltE",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, con la presentación destacada de ICLR 2024.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=jxpsAj7ltE"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2308.00951v2",
+      "https://openreview.net/forum?id=jxpsAj7ltE"
+    ],
+    "relevance": "Fuente del despacho y la combinación de las ranuras ocultas de H1. Sus resultados son de reconocimiento visual y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "tan2025magnet",
+    "title": "MaGNet: A Mamba Dual-Hypergraph Network for Stock Prediction via Temporal-Causal and Global Relational Learning",
+    "authors": [
+      "Peilin Tan",
+      "Chuanqi Shi",
+      "Dian Tu",
+      "Liang Xie"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.00085v1",
+    "doi": "10.48550/arXiv.2511.00085",
+    "pdf_url": "https://arxiv.org/pdf/2511.00085v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 29 de octubre de 2025. Ficha y PDF abiertos. Leídos el resumen y la sección 3.5.2 de la página 5, que construye el hipergrafo probabilístico global con asignaciones blandas a hiperaristas y pondera cada hiperarista por su divergencia de Jensen-Shannon media. La ficha no indica una publicación revisada y el DOI identifica el preprint. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2025-10-29",
+      "url": "https://arxiv.org/pdf/2511.00085v1",
+      "passages": [
+        "Resumen, página 1",
+        "Sección 3.5.2, página 5: hipergrafo probabilístico global y ponderación por divergencia de Jensen-Shannon"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/2511.00085v1"
+    ],
+    "relevance": "Antecedente financiero de la pertenencia blanda de H1 a grupos de activos. H1 parte en cambio de las familias del catálogo, fijadas antes de ver datos, y su ablación H2 mide la corrección aprendida.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "bezdek1981pattern",
+    "title": "Pattern Recognition with Fuzzy Objective Function Algorithms",
+    "authors": [
+      "James C. Bezdek"
+    ],
+    "year": 1981,
+    "url": "https://doi.org/10.1007/978-1-4757-0450-1",
+    "doi": "10.1007/978-1-4757-0450-1",
+    "pdf_url": null,
+    "venue": "Plenum Press",
+    "volume": null,
+    "pages": null,
+    "access": "Metadatos contrastados en Crossref, que registra la edición digital de Springer US. No se ha consultado el libro. Se cita como origen de las c-medias difusas, cuyas ecuaciones con m = 2 comprueban las pruebas de H4.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1007/978-1-4757-0450-1"
+    ],
+    "relevance": "Algoritmo de las c-medias difusas con que H4 reparte la inmersión de los residuos en grupos de correlación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "gonzalez1985clustering",
+    "title": "Clustering to Minimize the Maximum Intercluster Distance",
+    "authors": [
+      "Teofilo F. Gonzalez"
+    ],
+    "year": 1985,
+    "url": "https://doi.org/10.1016/0304-3975(85)90224-5",
+    "doi": "10.1016/0304-3975(85)90224-5",
+    "pdf_url": null,
+    "venue": "Theoretical Computer Science",
+    "volume": "38",
+    "pages": "293-306",
+    "access": "Metadatos contrastados en Crossref. No se ha consultado el texto. Se cita como origen del recorrido más lejano con que H4 elige los centros iniciales.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1016/0304-3975(85)90224-5"
+    ],
+    "relevance": "Inicialización determinista de las c-medias difusas de H4 con centros separados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "ng2001spectral",
+    "title": "On Spectral Clustering: Analysis and an algorithm",
+    "authors": [
+      "Andrew Y. Ng",
+      "Michael I. Jordan",
+      "Yair Weiss"
+    ],
+    "year": 2001,
+    "url": "https://proceedings.neurips.cc/paper/2001/hash/801272ee79cfde7fa5960571fee36b9b-Abstract.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2001/file/801272ee79cfde7fa5960571fee36b9b-Paper.pdf",
+    "venue": "Advances in Neural Information Processing Systems 14",
+    "volume": "14",
+    "pages": null,
+    "access": "Ficha y PDF abiertos en las actas de NeurIPS, cuya referencia BibTeX da el año 2001, los editores y MIT Press. Leída la sección 2 de la página 2, con los seis pasos del algoritmo. La ficha no indica páginas. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "proceedings",
+      "date": "2001",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2001/file/801272ee79cfde7fa5960571fee36b9b-Paper.pdf",
+      "passages": [
+        "Sección 2, página 2: algoritmo con la normalización por filas del paso 4"
+      ]
+    },
+    "verification_sources": [
+      "https://proceedings.neurips.cc/paper/2001/hash/801272ee79cfde7fa5960571fee36b9b-Abstract.html"
+    ],
+    "relevance": "Normalización por filas de la inmersión espectral que H4 aplica a las componentes principales de los residuos. H4 parte de la correlación de los residuos y no de una afinidad gaussiana normalizada por el grado.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "ruspini1969new",
+    "title": "A new approach to clustering",
+    "authors": [
+      "Enrique H. Ruspini"
+    ],
+    "year": 1969,
+    "url": "https://doi.org/10.1016/S0019-9958(69)90591-9",
+    "doi": "10.1016/S0019-9958(69)90591-9",
+    "pdf_url": null,
+    "venue": "Information and Control",
+    "volume": "15",
+    "issue": "1",
+    "pages": "22-32",
+    "access": "Metadatos contrastados en Crossref. No se ha consultado el texto. Se cita como origen de la partición difusa, en la que las pertenencias de cada punto suman uno.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1016/S0019-9958(69)90591-9"
+    ],
+    "relevance": "Definición de la partición difusa que siguen los cubos de H4 sobre los rangos medios de la sesión.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "winkler2011fuzzy",
+    "title": "Fuzzy C-Means in High Dimensional Spaces",
+    "authors": [
+      "Roland Winkler",
+      "Frank Klawonn",
+      "Rudolf Kruse"
+    ],
+    "year": 2011,
+    "url": "https://doi.org/10.4018/ijfsa.2011010101",
+    "doi": "10.4018/ijfsa.2011010101",
+    "pdf_url": null,
+    "venue": "International Journal of Fuzzy System Applications",
+    "volume": "1",
+    "issue": "1",
+    "pages": "1-16",
+    "access": "Metadatos y resumen contrastados en Crossref. No se ha consultado el texto. El resumen afirma que en dimensión alta los prototipos de las c-medias difusas acaban en el centro de gravedad de los datos y que solo funcionan si se inicializan muy cerca de los centros de los grupos.",
+    "verification_sources": [
+      "https://api.crossref.org/works/10.4018/ijfsa.2011010101"
+    ],
+    "relevance": "Motivo para que H4 agrupe una inmersión de dimensión K y no las 63 sesiones de los residuos.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
+  },
+  {
+    "id": "ho2019axial",
+    "title": "Axial Attention in Multidimensional Transformers",
+    "authors": [
+      "Jonathan Ho",
+      "Nal Kalchbrenner",
+      "Dirk Weissenborn",
+      "Tim Salimans"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1912.12180v1",
+    "doi": "10.48550/arXiv.1912.12180",
+    "pdf_url": "https://arxiv.org/pdf/1912.12180v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 20 de diciembre de 2019. Ficha y PDF abiertos. Leída la sección 3.1 de la página 4, que define la atención axial, su versión enmascarada y el campo receptivo de dos capas sobre ejes distintos. La ficha no indica una publicación revisada y el DOI identifica el preprint.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2019-12-20",
+      "url": "https://arxiv.org/pdf/1912.12180v1",
+      "passages": [
+        "Sección 3.1, página 4: atención axial y atención axial enmascarada"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/1912.12180v1"
+    ],
+    "relevance": "Fuente de la atención axial de C2, que atiende primero al tiempo de cada fuente y después entre fuentes. Sus resultados son de modelado generativo de imágenes y vídeo y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "lan2020albert",
+    "title": "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations",
+    "authors": [
+      "Zhenzhong Lan",
+      "Mingda Chen",
+      "Sebastian Goodman",
+      "Kevin Gimpel",
+      "Piyush Sharma",
+      "Radu Soricut"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/1909.11942v6",
+    "doi": "10.48550/arXiv.1909.11942",
+    "pdf_url": "https://arxiv.org/pdf/1909.11942v6",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v6 del 9 de febrero de 2020. Ficha y PDF abiertos. Leídas la sección 3.1 de la página 4, que propone compartir parámetros entre capas y fija como opción por defecto compartirlos todos, y la sección 4.5 con la tabla 4 de la página 7, que compara compartir todo, solo la atención, solo la red feed-forward o nada. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v6",
+      "date": "2020-02-09",
+      "url": "https://arxiv.org/pdf/1909.11942v6",
+      "passages": [
+        "Sección 3.1, página 4: reparto de parámetros entre capas",
+        "Sección 4.5 y tabla 4, página 7: estrategias de reparto"
+      ]
+    },
+    "latest_publication": {
+      "title": "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations",
+      "authors": [
+        "Zhenzhong Lan",
+        "Mingda Chen",
+        "Sebastian Goodman",
+        "Kevin Gimpel",
+        "Piyush Sharma",
+        "Radu Soricut"
+      ],
+      "year": 2020,
+      "venue": "International Conference on Learning Representations (ICLR 2020)",
+      "volume": null,
+      "pages": null,
+      "url": "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html",
+      "doi": null,
+      "status": "Publicación confirmada en la página del póster de ICLR 2020.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/1909.11942v6",
+      "https://iclr.cc/virtual_2020/poster_H1eA7AEtvS.html"
+    ],
+    "relevance": "Antecedente del reparto de un mismo operador entre niveles de C3. Con ALBERT-base, compartir solo la atención apenas cambia la media de sus tareas de lenguaje, mientras que compartir también la red feed-forward la reduce. No valida la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "bae2025relaxed",
+    "title": "Relaxed Recursive Transformers: Effective Parameter Sharing with Layer-wise LoRA",
+    "authors": [
+      "Sangmin Bae",
+      "Adam Fisch",
+      "Hrayr Harutyunyan",
+      "Ziwei Ji",
+      "Seungyeon Kim",
+      "Tal Schuster"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2410.20672v3",
+    "doi": "10.48550/arXiv.2410.20672",
+    "pdf_url": "https://arxiv.org/pdf/2410.20672v3",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v3 del 28 de febrero de 2025, con la nota de publicación en ICLR 2025. Ficha abierta. Leído el resumen, que relaja el reparto de capas con módulos LoRA por profundidad. No se han leído el método ni los experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v3",
+      "date": "2025-02-28",
+      "url": "https://arxiv.org/pdf/2410.20672v3",
+      "passages": [
+        "Resumen: Transformers recursivos relajados con LoRA por profundidad"
+      ]
+    },
+    "latest_publication": {
+      "title": "Relaxed Recursive Transformers: Effective Parameter Sharing with Layer-wise LoRA",
+      "authors": [
+        "Sangmin Bae",
+        "Adam Fisch",
+        "Hrayr Harutyunyan",
+        "Ziwei Ji",
+        "Seungyeon Kim",
+        "Tal Schuster"
+      ],
+      "year": 2025,
+      "venue": "International Conference on Learning Representations (ICLR 2025)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=WwpYSOkkCt",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, como póster de ICLR 2025.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=WwpYSOkkCt"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2410.20672v3",
+      "https://openreview.net/forum?id=WwpYSOkkCt"
+    ],
+    "relevance": "Fuente de la LoRA por nivel sobre un operador compartido de C3. Sus resultados son de modelos de lenguaje convertidos desde un modelo preentrenado y no validan la predicción de residuos financieros.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "saunshi2025reasoning",
+    "title": "Reasoning with Latent Thoughts: On the Power of Looped Transformers",
+    "authors": [
+      "Nikunj Saunshi",
+      "Nishanth Dikkala",
+      "Zhiyuan Li",
+      "Sanjiv Kumar",
+      "Sashank J. Reddi"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2502.17416v1",
+    "doi": "10.48550/arXiv.2502.17416",
+    "pdf_url": "https://arxiv.org/pdf/2502.17416v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 24 de febrero de 2025, con la nota de publicación en ICLR 2025. Ficha abierta. Leído el resumen, según el cual un Transformer de k capas repetido L veces casi iguala a uno de kL capas sin repetir en problemas sintéticos de razonamiento. No se han leído las demostraciones ni los experimentos.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2025-02-24",
+      "url": "https://arxiv.org/pdf/2502.17416v1",
+      "passages": [
+        "Resumen: modelos en bucle frente a modelos profundos sin repetir"
+      ]
+    },
+    "latest_publication": {
+      "title": "Reasoning with Latent Thoughts: On the Power of Looped Transformers",
+      "authors": [
+        "Nikunj Saunshi",
+        "Nishanth Dikkala",
+        "Zhiyuan Li",
+        "Sanjiv Kumar",
+        "Sashank J. Reddi"
+      ],
+      "year": 2025,
+      "venue": "International Conference on Learning Representations (ICLR 2025)",
+      "volume": null,
+      "pages": null,
+      "url": "https://openreview.net/forum?id=din0lGfZFd",
+      "doi": null,
+      "status": "Publicación confirmada en la ficha de OpenReview, consultada mediante su API, como póster de ICLR 2025.",
+      "full_text_read": false,
+      "verification_sources": [
+        "https://openreview.net/forum?id=din0lGfZFd"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2502.17416v1",
+      "https://openreview.net/forum?id=din0lGfZFd"
+    ],
+    "relevance": "Antecedente de que repetir un mismo bloque puede aproximar la profundidad sin multiplicar los parámetros, que C3 contrasta con su control de pesos por nivel. Sus resultados son de razonamiento sintético y de lenguaje.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "kakushadze2016statistical",
+    "title": "Statistical Industry Classification",
+    "authors": [
+      "Zura Kakushadze",
+      "Willie Yu"
+    ],
+    "year": 2016,
+    "url": "https://arxiv.org/abs/1607.04883v4",
+    "doi": "10.48550/arXiv.1607.04883",
+    "pdf_url": "https://arxiv.org/pdf/1607.04883v4",
+    "venue": "Journal of Risk & Control",
+    "volume": "3",
+    "number": "1",
+    "pages": "17–65",
+    "access": "Preprint v4 del 29 de diciembre de 2018. Ficha abierta. Leído el resumen, que construye clasificaciones industriales estadísticas de varios niveles, responde que no conviene agrupar ni las correlaciones ni los rendimientos y señala que sus backtests cambian bastante con esos detalles. La referencia de revista es la que declara la ficha de arXiv. El registro editorial no se ha corroborado.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v4",
+      "date": "2018-12-29",
+      "url": "https://arxiv.org/abs/1607.04883v4",
+      "passages": [
+        "Resumen: qué agrupar en una clasificación industrial estadística"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/1607.04883v4"
+    ],
+    "relevance": "Objeción a los sectores estadísticos de C3, que agrupan correlaciones de rendimientos con la regla de C4. El control random_partition mide si ese reparto aporta algo frente a sectores aleatorios de los mismos tamaños.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-28"
   }
 ]

@@ -217,7 +217,7 @@ def test_a_fit_runs_with_its_sealed_files_and_is_charged_once(prepared, runners)
     )
     assert options["seed"] == 43 and options["search_case"] == "lr1e-3"
     assert options["predictor_changes"] is None and options["device"] == "cuda:0"
-    assert options["output"] == work / "runs" / item["id"]
+    assert options["output"] == work / "runs" / item["id"] and options["initial"] is None
     attempts = [json.loads(p.read_text()) for p in (work / "attempts").glob("*.json")]
     (attempt,) = [a for a in attempts if a["job"] == item["id"]]
     assert attempt["closure_confirmed"] is True and attempt["status"] == "completed"
@@ -372,6 +372,25 @@ def test_the_e3_profile_reaches_the_correction_as_its_salience_budget(prepared, 
     options = runners[-1][2]
     assert options["salience"] == SalienceBudgetConfig(**item["definition"]["value"])
     assert options["search_case"] == "eta5e-2" and "regime_gate" not in options
+
+
+def test_a_continuation_waits_for_its_previous_origin_and_starts_from_it(prepared, runners):
+    work, receipt = prepared
+    item = job(receipt, "F3/shrink_perturb", origin=2022, seed=43)
+    parent = next(other for other in receipt["jobs"] if other["id"] == item["continues"])
+    assert (parent["origin"], parent["seed"]) == (2021, 43)
+    assert "F3/adamw_reference" in parent["used_by"]
+    assert study._completed(work, parent["id"]) is None
+    with pytest.raises(ValueError, match="necesita antes"):
+        study.run_job(work, item["id"])
+    assert runners == []
+    study.run_job(work, parent["id"])
+    study.run_job(work, item["id"])
+    (_, _, first), (_, args, options) = runners
+    assert first["initial"] is None and options["initial"] == work / "runs" / parent["id"]
+    assert args[2] == "fold-017" and options["seed"] == 43
+    recipe = json.loads((work / item["files"]["recipe"]).read_text())
+    assert recipe["recipe"]["shrink_perturb"] == dict(shrink=0.6, noise=0.01, seed=1)
 
 
 def test_readers_and_spaced_windows_receive_their_parent(prepared, runners):
@@ -575,13 +594,18 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
         origins[2020].load("job-a")
         origins[2021].load("job-a")
         values, defined = np.array([0.1, 0.2, 0.3]), np.array([True, True, False])
-        report = dict(decisions=dict(B1=dict(passes=False)), sessions=3)
+        report = dict(
+            decisions=dict(B1=dict(passes=False)),
+            continuation=dict(decisions={"F3/continuation/x": dict(passes=True)}),
+            sessions=3,
+        )
         merged = {(("B1", "area_memory"), "session_ic"): (values, defined)}
         return report, dict(session_time=np.array([1, 2, 3]), merged=merged)
 
     monkeypatch.setattr(study.variant_screening_analysis, "analyze", analyze)
     result = study.analyze(work, tmp_path / "analysis", tmp_path)
     assert result["decisions"] == {"B1": False} and result["sessions"] == 3
+    assert result["continuation"] == {"F3/continuation/x": True}
     assert seen["protocol"] == receipt["protocol"] and seen["jobs"] == receipt["jobs"]
     assert sorted(seen["origins"]) == sorted(screening_cohorts.ORIGIN_FOLDS)
     assert all(len(origin.sectors) == 256 for origin in seen["origins"].values())
@@ -888,6 +912,11 @@ def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
         study.combination_epoch(tmp_path, jobs[:3], arm, protocol)
     with pytest.raises(ValueError, match="todas sus épocas"):
         study.combination_epoch(tmp_path, jobs, arm, dict(protocol, fit=dict(epochs=5)))
+    # Una semilla que valida otros objetivos no se promedia con las demás.
+    shifted = dict(jobs[-1], id="2019-45-shifted")
+    write_epochs(tmp_path, shifted["id"], [target] * 4, target + 1.0, times)
+    with pytest.raises(ValueError, match="mismas filas"):
+        study.combination_epoch(tmp_path, [*jobs[:3], shifted], arm, protocol)
     (tmp_path / "runs" / jobs[0]["id"] / "epochs" / "validation-epoch-0002.parquet").write_bytes(
         b"PAR1 x PAR1"
     )
@@ -1092,6 +1121,11 @@ def test_each_replicate_of_the_seed_mean_reads_the_epoch_of_its_combination(tmp_
     version.write_bytes(b"PAR1 x PAR1")
     with pytest.raises(ValueError, match="Ha cambiado"):
         study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
+    # Una fuente con dos casos de búsqueda en una semilla no tiene una sola tabla que promediar.
+    searched = dict(jobs[1], id="2019-43-other-case", definition=dict(runner="fit", search_case=1))
+    receipt = dict(receipt, jobs=[*jobs, searched])
+    with pytest.raises(ValueError, match="un solo caso"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (43, 45, 46))
 
 
 def test_the_rule_check_reads_every_group_and_writes_its_report(

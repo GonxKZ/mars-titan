@@ -1,0 +1,158 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 794,
+ "scope": "determinism_cost_test_isolation",
+ "implementation_commit": "41fca3875cd6aa363e09dc573c2123a0133aece1",
+ "base_commit": "71c617d3c880575b5f59b19e133dda8f0d4913c7",
+ "sources_sha256": {
+  "tests/benchmarks/test_determinism_cost.py": "b2119552a7aed0ce8f1981962631eaed6e72b5e4066297ab4e515150ef2c6d6c",
+  "benchmarks/determinism_cost.py": "447c99e692222f7df13eddd829d9581ec5a2c50eace413e02c257bc5a72e7945"
+ },
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "suites": [
+  {
+   "name": "inherited_determinism_before_the_fix",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "1e8e2d35792f1c98c9f295437414e5e04d9ce35aebf70873f9cab58a9626eb1f",
+   "note": "El caso falla con determinismo activado antes de iniciar pytest."
+  },
+  {
+   "name": "cost_module_after_the_fix",
+   "tests": 17,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "54a81875e7bd97d0bbf9a2fac23921ea3ea4eeba1d0f6e24ae79b2dbbe451352",
+   "note": "Módulo completo con los dos controles del estado heredado, también warn_only."
+  },
+  {
+   "name": "develop_integration",
+   "tests": 119,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "84eaac7d86a1bd1a088e44671a818effb0735f5b3ba1a0b28e726f92f234a04b",
+   "note": "Determinismo del coste, recetas, escritura de recibos y política de precisión. Las suites se solapan y no se suman como casos distintos."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "functions": [
+   {
+    "path": "tests/benchmarks/test_determinism_cost.py",
+    "function": "test_the_default_worker_keeps_inherited_determinism",
+    "start_line": 58,
+    "end_line": 66,
+    "cyclomatic_complexity": 6,
+    "statements": 8,
+    "covered_statements": 8,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 6.0
+   },
+   {
+    "path": "tests/benchmarks/test_determinism_cost.py",
+    "function": "restore_flags",
+    "start_line": 18,
+    "end_line": 33,
+    "cyclomatic_complexity": 1,
+    "statements": 8,
+    "covered_statements": 8,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   }
+  ],
+  "quality_sha256": "82069f292ff3cacf4fed01408396254942cf1e19edfe67460e6584062dd5776a",
+  "note": "Solo las dos funciones de prueba cambiadas. Cobertura y complejidad no demuestran ausencia de errores."
+ },
+ "mutation": {
+  "schema_version": 1,
+  "recipes_sha256": "d59fbbeaee0cb0856dc994c0321adda37b9189558a6111a63535e40e6b2823d1",
+  "executor_sha256": "7ffe1f5647ac0215040949e15123525f98f52e7d76691cfcde91c53fb70401f9",
+  "source_sha256": {
+   "tests/benchmarks/test_determinism_cost.py": "b2119552a7aed0ce8f1981962631eaed6e72b5e4066297ab4e515150ef2c6d6c"
+  },
+  "planned": 1,
+  "killed": 1,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "cases": [
+   {
+    "id": "determinism_fixture_inherits_previous_mode",
+    "path": "tests/benchmarks/test_determinism_cost.py",
+    "status": "killed_with_green_controls",
+    "phases": [
+     {
+      "phase": "G1",
+      "nodeid": "tests/benchmarks/test_determinism_cost.py::test_each_mode_repeats_its_digests_and_leaves_the_parameters_unchanged",
+      "exit_code": 0,
+      "elapsed_s": 9.78,
+      "xml_counts": {
+       "total": 1,
+       "failure": 0,
+       "error": 0,
+       "skipped": 0
+      },
+      "optimizer_attempts": 0,
+      "expected_text_found": false
+     },
+     {
+      "phase": "M1",
+      "nodeid": "tests/benchmarks/test_determinism_cost.py::test_each_mode_repeats_its_digests_and_leaves_the_parameters_unchanged",
+      "exit_code": 1,
+      "elapsed_s": 9.48,
+      "xml_counts": {
+       "total": 1,
+       "failure": 1,
+       "error": 0,
+       "skipped": 0
+      },
+      "optimizer_attempts": 0,
+      "expected_text_found": true
+     },
+     {
+      "phase": "G2",
+      "nodeid": "tests/benchmarks/test_determinism_cost.py::test_each_mode_repeats_its_digests_and_leaves_the_parameters_unchanged",
+      "exit_code": 0,
+      "elapsed_s": 9.36,
+      "xml_counts": {
+       "total": 1,
+       "failure": 0,
+       "error": 0,
+       "skipped": 0
+      },
+      "optimizer_attempts": 0,
+      "expected_text_found": false
+     }
+    ]
+   }
+  ],
+  "tree_commit": "1b28f9ba371d9ede2e235f8a525a67f4eb64026a",
+  "summary_sha256": "0cdb56a5b5f64744c85109545cfb63aafd13b06740e14f1c106c6404baca41ff",
+  "note": "La copia de la mutación parte de la integración B3. El archivo de pruebas y su benchmark coinciden byte a byte con esta corrección separada. El gancho activa determinismo antes de las pruebas y rechaza cualquier paso de optimizador."
+ },
+ "behavior": "El fixture fija una situación inicial conocida y después restaura lo recibido. El worker sin política declarada conserva el determinismo que hereda. No cambia el código de producción ni una política numérica.",
+ "limits": [
+  "Selección de 119 casos CPU. No es la batería completa del repositorio.",
+  "No se modifica una ruta CUDA ni se mide su coste. Las comprobaciones GPU de #816 siguen pendientes."
+ ]
+}

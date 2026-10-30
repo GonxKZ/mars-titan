@@ -187,10 +187,13 @@ def _associative(value, component):
         binding = RoleBindingConfig(**binding)
     multiscale = value.get("multiscale")
     if multiscale is not None:
-        if not isinstance(multiscale, dict) or set(multiscale) != {
-            f.name for f in fields_of(MultiscaleMixtureConfig)
-        }:
-            raise ValueError("E1 declara half_lives_days, weighting, weight_rate y loss_scale")
+        # E1 declara todos sus campos. Los periodos de escritura de R2 (#786) son opcionales.
+        required = {f.name for f in fields_of(MultiscaleMixtureConfig)} - {"write_periods"}
+        if not isinstance(multiscale, dict) or set(multiscale) - {"write_periods"} != required:
+            raise ValueError(
+                "E1 declara half_lives_days, weighting, weight_rate y loss_scale, y R2 además "
+                "write_periods"
+            )
         multiscale = MultiscaleMixtureConfig(**multiscale)
     return MatureCorrection(
         memory,
@@ -220,7 +223,11 @@ def _normalized(correction):
     if correction.role_binding is not None:
         normalized["role_binding"] = asdict(correction.role_binding)
     if correction.multiscale is not None:
-        normalized["multiscale"] = asdict(correction.multiscale)
+        multiscale = asdict(correction.multiscale)
+        # Sin los periodos de R2 la identidad normalizada de E1 no cambia.
+        if multiscale["write_periods"] is None:
+            multiscale.pop("write_periods")
+        normalized["multiscale"] = multiscale
     return normalized
 
 

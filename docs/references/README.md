@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **376 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **394 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -62,6 +62,39 @@ la rotación de Datar et al. (1998), el máximo de 52 semanas de George y Hwang
 (2004), la deriva posterior a los resultados de Bernard y Thomas (1989), la
 regresión ridge de Hoerl y Kennard (1970) y la importancia por permutación de
 Breiman (2001).
+
+El mismo día se añadieron dos fuentes de la
+[red de redes holográfica H1](../experiments/holographic-network-v1.md):
+Puigcerver et al. (2024), cuyo despacho y combinación usan sus ranuras ocultas, y
+Tan et al. (2025), la pertenencia blanda de MaGNet de la que se aparta su partida
+desde el catálogo.
+También se añadió Ho et al. (2019), la fuente de la atención axial de la
+[variante C2](../experiments/axial-time-region-v1.md), que atiende al tiempo de
+cada fuente y después entre fuentes. Al catálogo posterior a Titans se sumó el
+Transformer diferencial de Ye et al. (2025), fuente de la
+[atención diferencial U1](../experiments/differential-attention-v1.md).
+
+También se añadieron cuatro fuentes del
+[operador fractal C3](../experiments/fractal-shared-operator-v1.md): Lan et al.
+(2020) sobre el reparto de parámetros entre capas de ALBERT, Bae et al. (2025) sobre
+la LoRA por profundidad que relaja ese reparto, Saunshi et al. (2025) sobre los
+modelos que repiten un mismo bloque y Kakushadze y Yu (2016), cuyo resumen desaconseja
+agrupar directamente correlaciones o rendimientos.
+
+El 29 de octubre se añadieron al catálogo adversarial la lista REFORMS de Kapoor et
+al. (2024), que ordena la [revisión del estudio](../research/reforms-checklist.md)
+por puntos de reproducibilidad, fugas y límites, y la escalera de Blum y Hardt
+(2015), en la que se basa la [reutilización de S](../experiments/reusable-holdout-v1.md)
+en la segunda ola.
+
+El mismo día se añadieron seis fuentes de los
+[grupos de activos de H4](../experiments/asset-group-membership-v1.md). Abdi y
+Ranaldo (2017), en el catálogo financiero, dan el diferencial con que se mide la
+liquidez. Bezdek (1981), Gonzalez (1985), Ng, Jordan y Weiss (2001), Ruspini (1969)
+y Winkler, Klawonn y Kruse (2011), en el catálogo de la variante ampliada, dan las
+c-medias difusas, su inicialización, la normalización de la inmersión, la partición
+difusa de los cubos y el límite de las c-medias en dimensión alta. Cada ficha dice
+si se leyó el texto o solo se contrastaron sus metadatos.
 
 ## Contenido
 

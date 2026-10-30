@@ -165,7 +165,7 @@ def _records(output, report):
 
 
 def _start(output, request, kind):
-    """Informe de la ventana: el terminado se verifica y se devuelve, el resto se repite."""
+    """Preparar el informe. La salida nueva solo se publica tras validar la vista."""
     safe_destination(output)
     path = output / "run.json"
     if path.exists():
@@ -187,7 +187,6 @@ def _start(output, request, kind):
         started_at_utc=datetime.now(UTC).isoformat(),
         final_test_opened=False,
     )
-    atomic_json(path, report)
     return report
 
 
@@ -247,6 +246,7 @@ def run_rule_window(view, protocol, window, *, output, config, stop=None):
     if report["status"] == "completed":
         return report
     dataset, _ = _open(view, document, window, output)
+    atomic_json(output / "run.json", report)
     predictions = {}
     for name in PREDICTED:
         if stop is not None and stop.requested:
@@ -305,13 +305,19 @@ def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, re
     pasar a la siguiente, con el informe actualizado.
     """
     fits, saved = [], report.setdefault("fits", {})
+
+    def check_stop():
+        if stop is not None and stop.requested:
+            raise Stopped
+
     for seed in seeds:
+        check_stop()
         if str(seed) in saved:
             fits.append(_loaded_fit(output, seed, saved[str(seed)]))
             continue
-        if stop is not None and stop.requested:
-            raise Stopped
-        booster, scored = qlib_lightgbm.fit(train, validation, config, seed, min_assets=min_assets)
+        booster, scored = qlib_lightgbm.fit(
+            train, validation, config, seed, min_assets=min_assets, check_stop=check_stop
+        )
         saved[str(seed)] = _saved_fit(output, seed, booster, scored)
         atomic_json(output / "run.json", report)
         fits.append((booster, scored))
@@ -350,6 +356,7 @@ def run_tabular_window(
             shutil.rmtree(output / "fits")
         return report
     dataset, fold = _open(view, document, window, output)
+    atomic_json(output / "run.json", report)
     since = window_phases(fold, 0, fit_months)["train"].decision_start
     train = partition_rows(dataset, "train", with_features=True, since=since)
     predicted = {name: partition_rows(dataset, name, with_features=True) for name in PREDICTED}

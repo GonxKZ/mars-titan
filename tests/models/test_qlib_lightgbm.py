@@ -138,7 +138,7 @@ class Booster:
 @pytest.fixture
 def lightgbm(monkeypatch, learning_doubles):
     """Módulo `lightgbm` doble que registra lo que recibe y nunca ajusta."""
-    calls = dict(datasets=[], trains=[])
+    calls = dict(datasets=[], trains=[], iterations=[])
     module = types.ModuleType("lightgbm")
 
     def dataset(values, label=None, free_raw_data=True):
@@ -150,6 +150,7 @@ def lightgbm(monkeypatch, learning_doubles):
         booster = Booster(weights)
         calls["trains"].append((params, data, num_boost_round, booster))
         for iteration in range(num_boost_round):
+            calls["iterations"].append(iteration)
             for callback in callbacks:
                 callback(types.SimpleNamespace(model=booster, iteration=iteration))
         return booster
@@ -235,3 +236,50 @@ def test_a_prediction_that_is_not_finite_or_misses_rows_is_refused():
 
     with pytest.raises(ValueError, match="predicción finita por fila"):
         qlib.predict(Short(None), values, 10)
+
+
+@pytest.mark.parametrize("target", [(-1e308, 1e308), (1e308, 1e308)])
+def test_label_normalization_refuses_statistics_that_overflow(target):
+    base = panel(1, 2)
+    data = ForecastPanel.from_columns(
+        base.row_id, np.array(["US", "US"]), base.prediction_at, np.array(target), np.zeros(2)
+    )
+    with pytest.raises(ValueError, match="normalización.*finitas"):
+        qlib.session_labels(data)
+
+
+def test_the_fit_checks_its_budget_before_the_dataset_and_after_each_round(lightgbm):
+    calls = []
+
+    def check_stop():
+        calls.append(lightgbm["iterations"][-1] if lightgbm["iterations"] else None)
+        if len(calls) == 4:
+            raise RuntimeError("parada técnica")
+
+    with pytest.raises(RuntimeError, match="parada técnica"):
+        qlib.fit(
+            Rows(panel(4, 6), 1),
+            Rows(panel(4, 6, seed=2), 2),
+            declared(),
+            42,
+            min_assets=3,
+            check_stop=check_stop,
+        )
+    assert calls == [None, 0, 1, 2] and len(lightgbm["trains"]) == 1
+    assert lightgbm["trains"][0][3].calls == []
+
+
+def test_an_expired_budget_prevents_constructing_the_dataset(lightgbm):
+    def check_stop():
+        raise RuntimeError("presupuesto agotado")
+
+    with pytest.raises(RuntimeError, match="presupuesto agotado"):
+        qlib.fit(
+            Rows(panel(4, 6), 1),
+            Rows(panel(4, 6, seed=2), 2),
+            declared(),
+            42,
+            min_assets=3,
+            check_stop=check_stop,
+        )
+    assert not lightgbm["datasets"] and not lightgbm["trains"]

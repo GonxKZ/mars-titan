@@ -45,6 +45,10 @@ _TITANS_MODULES = (
     "bank_readout",
     "laplace_scale",
     "opponent_heads",
+    "reliability_gates",
+    "huber_memory",
+    "scale_invariant_time",
+    "differential_attention",
     "session_context",
     "local_control",
     "episodic_readout",
@@ -360,6 +364,21 @@ class FrozenFinancialConsumer:
         # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
         if predictor.cross_asset_attention is not None:
             raise ValueError("El consumidor congelado aún no registra la atención entre activos")
+        # Tampoco registra la red holográfica de #783.
+        if predictor.holographic_network is not None:
+            raise ValueError("El consumidor congelado aún no registra la red holográfica")
+        # Tampoco el historial de regiones de C2 en el estado de cada flujo.
+        if predictor.axial_time_region is not None:
+            raise ValueError("El consumidor congelado aún no registra el historial de C2")
+        # Ni la fuente ni los sectores por sesión de C3.
+        if predictor.fractal_shared_operator is not None:
+            raise ValueError("El consumidor congelado aún no registra el operador fractal de C3")
+        # Ni los grupos de activos de H4, que como C5 mezclan las filas de la sesión.
+        if predictor.asset_groups is not None:
+            raise ValueError("El consumidor congelado aún no registra los grupos de activos")
+        # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
+        if predictor.reliability_gates is not None:
+            raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

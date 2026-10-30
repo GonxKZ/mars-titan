@@ -5,6 +5,7 @@ función fija de las características y de las rondas, así que ninguna prueba e
 """
 
 import json
+import shutil
 import types
 
 import numpy as np
@@ -240,7 +241,7 @@ def doubled_fit(monkeypatch, learning_doubles):
     """
     calls, score = [], qlib_lightgbm.predict
 
-    def fit(train, validation, config, seed, *, min_assets):
+    def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         calls.append(dict(train=train, validation=validation, config=config, seed=seed))
         booster = Booster(seed, train.features.shape[1])
         series = [
@@ -263,6 +264,28 @@ def tabular(manifest, protocol, output, **changes):
     return windows.run_tabular_window(
         manifest, protocol, "fold-000", output=output, **(options | changes)
     )
+
+
+@pytest.mark.parametrize("runner", ["rule", "tabular"])
+@pytest.mark.parametrize("source", ["view", "prices"])
+def test_source_outputs_are_refused_before_creating_a_window_record(
+    view, tmp_path, doubled_fit, runner, source
+):
+    manifest, protocol = view
+    root = manifest.parent if source == "view" else next(iter(dataset(manifest).roots.values()))
+    output = root / f"rejected-{tmp_path.name}-{runner}"
+    assert not output.exists()
+    try:
+        with pytest.raises(ValueError, match="fuera del directorio de origen"):
+            if runner == "rule":
+                windows.run_rule_window(manifest, protocol, "fold-000", output=output, config=RULE)
+            else:
+                tabular(manifest, protocol, output)
+        assert not output.exists()
+        assert doubled_fit == []
+    finally:
+        if output.exists():
+            shutil.rmtree(output)
 
 
 def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_path, doubled_fit):
@@ -370,6 +393,31 @@ def test_a_paused_tabular_window_keeps_its_fitted_seeds_and_fits_only_the_rest(
     assert {seed: member["sha256"] for seed, member in whole["seeds"].items()} == {
         seed: member["sha256"] for seed, member in resumed["seeds"].items()
     }
+
+
+def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
+    view, tmp_path, doubled_fit, monkeypatch
+):
+    manifest, protocol = view
+    output = tmp_path / "tabular"
+    original = qlib_lightgbm.fit
+    stop = types.SimpleNamespace(requested=False)
+
+    def interrupted(train, validation, config, seed, *, min_assets, check_stop=None):
+        if seed == 43:
+            stop.requested = True
+            if check_stop is not None:
+                check_stop()
+        return original(train, validation, config, seed, min_assets=min_assets)
+
+    monkeypatch.setattr(qlib_lightgbm, "fit", interrupted)
+    paused = tabular(manifest, protocol, output, stop=stop)
+    assert paused["status"] == "paused" and sorted(paused["fits"]) == ["42"]
+    assert not (output / "fits" / "seed-43.json").exists()
+    monkeypatch.setattr(qlib_lightgbm, "fit", original)
+    resumed = tabular(manifest, protocol, output)
+    assert resumed["status"] == "completed"
+    assert [call["seed"] for call in doubled_fit] == [42, 43, 44]
 
 
 def test_a_changed_saved_fit_is_refused_when_the_window_resumes(view, tmp_path, doubled_fit):

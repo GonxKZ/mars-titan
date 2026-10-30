@@ -107,28 +107,35 @@ def session_labels(panel):
     """
     labels = np.zeros(panel.rows)
     kept = np.zeros(panel.rows, dtype=bool)
-    for start, count in zip(panel.session_starts, panel.session_samples, strict=True):
-        target = panel.target[start : start + count]
-        if count < 2:
-            continue
-        spread = np.std(target, ddof=1)
-        if spread > 0:
-            labels[start : start + count] = (target - target.mean()) / spread
-            kept[start : start + count] = True
+    try:
+        with np.errstate(over="raise", invalid="raise"):
+            for start, count in zip(panel.session_starts, panel.session_samples, strict=True):
+                target = panel.target[start : start + count]
+                if count < 2:
+                    continue
+                spread = np.std(target, ddof=1)
+                if spread > 0:
+                    labels[start : start + count] = (target - target.mean()) / spread
+                    kept[start : start + count] = True
+    except FloatingPointError as error:
+        raise ValueError("La normalización por sesión necesita estadísticas finitas") from error
     return labels, kept
 
 
-def fit(train, validation, config, seed, *, min_assets):
+def fit(train, validation, config, seed, *, min_assets, check_stop=None):
     """Ajustar con una semilla y puntuar la validación en cada punto de control.
 
     `train` y `validation` llevan su panel con el objetivo en orden canónico y sus
     características en el mismo orden. Devuelve el booster y la serie de pares (valores,
     definidas) del IC por sesión de cada punto. La predicción puntuada es la misma que emitirá
-    `predict` con ese número de rondas.
+    `predict` con ese número de rondas. `check_stop` puede interrumpir antes de construir el
+    conjunto y al volver de cada ronda, sin devolver un booster parcial.
     """
     require_learning_allowed("un control LightGBM con los parámetros de Qlib")
     config = _checked_training(config)
     _require(type(seed) is int and 0 <= seed < 2**31, "La semilla de LightGBM no es válida")
+    if check_stop is not None:
+        check_stop()
     import lightgbm
 
     labels, kept = session_labels(train.panel)
@@ -137,6 +144,8 @@ def fit(train, validation, config, seed, *, min_assets):
     step, series = config["checkpoint_rounds"], []
 
     def score(environment):
+        if check_stop is not None:
+            check_stop()
         rounds = environment.iteration + 1
         if rounds % step == 0:
             prediction = predict(environment.model, validation.features, rounds)
