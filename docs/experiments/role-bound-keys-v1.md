@@ -54,13 +54,37 @@ El sector de las fichas actuales (`SectorMap`) no se usa como fuente. Declara `p
 
 Las fuentes por fila comparten el recorrido de las anteriores. La ruta de cada fila se calcula una vez con todo el evento, se guarda al emitir y se reutiliza al madurar la etiqueta. La ventana y `FinancialSession` pasan además los bits de presencia de cada fila. La sesión incluye en su identidad de código el módulo de las fuentes y el de las regiones por correlación cuando B3 está activo. También incluye ahora la regla de régimen con cualquier clave enrutada de B6, que antes solo entraba con B3.
 
+### Coste de las fuentes por fila
+
+La [medida del 30 de octubre](../../reports/engineering/role-sources-20261030/cost-cpu.json), en `0849e9b65`, calcula la ruta del evento completo con ventanas sintéticas `[filas, 64, 6]` en FP32, los cinco bits de presencia y flujos del mercado US. La semilla de las ventanas es `20261030 + filas`. Usa tres calentamientos y veinte repeticiones, alternando las seis fuentes con orden rotatorio. No modifica parámetros ni mide error predictivo. Cada celda da la mediana en milisegundos y, entre paréntesis, el percentil 95 descriptivo:
+
+| Fuente | 64 filas | 256 filas | 1.024 filas |
+| --- | ---: | ---: | ---: |
+| Régimen | 0,268 (0,293) | 1,183 (1,641) | 2,688 (4,932) |
+| Calendario | 0,212 (0,270) | 0,988 (1,374) | 2,523 (4,689) |
+| Mercado | 0,038 (0,039) | 0,175 (0,260) | 0,417 (0,801) |
+| Modalidad | 0,035 (0,041) | 0,163 (0,247) | 0,417 (0,905) |
+| Sector estadístico | 0,647 (0,697) | 7,863 (11,127) | 62,358 (109,631) |
+| Sector permutado | 0,698 (0,755) | 8,250 (11,927) | 65,911 (115,370) |
+
+La agrupación por correlación domina este coste con 1.024 filas. La tabla mide el cálculo de rutas, que ocurre una vez por evento, y no el ciclo posterior de claves, lectura y escritura ni el predictor completo. Tampoco informa de una ventaja del rol de mercado: con todos los flujos en US es constante. Las ventanas tienen todas sus sesiones presentes y no representan todas las ausencias del corpus.
+
+El tramo medido dura 4,382 s en un Ryzen 9 8945HS, con NumPy 2.5.3, SciPy 1.18.1, Python 3.12.14 y dos hilos declarados. La carga media del equipo estaba entre 6,7 y 8,2. No se midieron el tiempo total del proceso, los picos de RAM o VRAM ni la energía. Veinte repeticiones no acreditan una cola p95 estable. El recibo conserva cada muestra, las ocupaciones y las huellas de las fuentes, sin atribuir una aceleración a B3.
+
+```bash
+PYTHONPATH=src:. uv run --no-sync python -m benchmarks.role_sources_cost \
+  --sizes 64 256 1024 --warmup 3 --repetitions 20 --output build/role-sources-cost.json
+```
+
+El destino debe ser nuevo.
+
 ## Hipótesis y límites
 
 La hipótesis es que una clave sensible al régimen reduce interferencias entre asociaciones de contextos diferentes. Puede perder transferencia útil entre regímenes, generar fragmentación o empeorar el error. El control de calendario permite detectar un beneficio explicado por el reparto, mientras que el rol constante ayuda a detectar un beneficio debido al cambio de proyección.
 
 No hay nuevos parámetros compartidos, optimizador ni pasos adicionales de Titans. El operador trabaja en CPU FP64, como la corrección que amplía. Las claves conservan gradientes respecto a su entrada cuando esta los tiene. Las escrituras se desacoplan del grafo mediante el backend existente. No se ha implementado un kernel nativo adicional, porque falta evidencia de un cuello de botella que lo justifique.
 
-La verificación técnica usa fixtures identificados. No constituye entrenamiento ni demuestra mejora predictiva, reproducción del cerebro, ausencia de interferencias o superioridad sobre otras arquitecturas. Las comparaciones reales, la interoperabilidad CUDA y los roles pendientes deben resolverse antes de dar por completado el estudio B3.
+La verificación técnica usa fixtures identificados. No constituye entrenamiento ni demuestra mejora predictiva, reproducción del cerebro, ausencia de interferencias o superioridad sobre otras arquitecturas. Las comparaciones reales y la interoperabilidad CUDA deben resolverse antes de dar por completado el estudio B3.
 
 ## Comprobaciones y coste del 26 de octubre de 2026
 
