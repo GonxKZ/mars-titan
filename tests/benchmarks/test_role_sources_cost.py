@@ -10,7 +10,7 @@ from mars_titan.memory.role_binding import SOURCES
 
 def test_a_small_measure_covers_every_source_with_its_own_routes(tmp_path):
     output = tmp_path / "cost.json"
-    cost.measure(output, sizes=(12, 20), warmup=0, repetitions=2)
+    cost.measure(output, sizes=(12, 20), warmup=1, repetitions=2)
     receipt = json.loads(output.read_text())
     assert receipt["issue"] == 750 and receipt["kind"] == "role_source_cost"
     assert receipt["optimizer_steps"] == 0 and receipt["training_runs"] == 0

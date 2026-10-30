@@ -284,6 +284,25 @@ def test_the_session_emits_what_the_window_emits_with_routes_and_recovery(
 
 
 @pytest.mark.native_binding
+def test_the_session_pins_the_regime_rule_of_a_routed_key(
+    shared_native, four_flow_source, frozen_consumer, tmp_path, monkeypatch
+):
+    from mars_titan.memory import regimes
+    from mars_titan.memory.financial_session import FinancialSession
+
+    settings = options(
+        shared_native, four_flow_source, frozen_consumer, associative=routed("codec_by_regime")
+    )
+    with FinancialSession(tmp_path / "first", **settings) as session:
+        before = session.model_id
+    changed = tmp_path / "other.py"
+    changed.write_text("# Regla diferente.\n")
+    monkeypatch.setattr(regimes, "__file__", str(changed))
+    with FinancialSession(tmp_path / "second", **settings) as session:
+        assert session.model_id != before
+
+
+@pytest.mark.native_binding
 def test_the_session_rejects_pending_routes_that_do_not_match_its_key(
     shared_native, four_flow_source, frozen_consumer, tmp_path, monkeypatch
 ):
