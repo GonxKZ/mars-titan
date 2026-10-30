@@ -35,7 +35,7 @@ import os
 import time
 from contextlib import contextmanager
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import numpy as np
@@ -61,7 +61,7 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 from .candidate_walk_forward import check_view_rows
-from .checkpoints import StopRequest, release_recovery_states
+from .checkpoints import StopRequest, load_training_state, release_recovery_states
 from .common_epoch import (
     VERSIONED,
     EpochValidation,
@@ -307,13 +307,15 @@ def _request(
     stopping=None,
     predictor_changes=None,
     epoch_scoring=None,
+    initial=None,
 ):
     """Construye una petición verificable sin abrir la vista, con huellas de archivos y código.
 
     El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide,
     la regla de parada solo si la campaña declara una parada temprana, los cambios del
-    predictor solo si el modelo los declara y la puntuación por época solo con la época
-    común, de modo que las demás peticiones conservan su forma anterior.
+    predictor solo si el modelo los declara, la puntuación por época solo con la época
+    común y el padre solo en una continuación, de modo que las demás peticiones conservan su
+    forma anterior.
     """
     request = dict(
         view_sha256=sha256(Path(view)),
@@ -335,6 +337,8 @@ def _request(
         request[CHANGES] = checked_predictor_changes(predictor_changes)
     if epoch_scoring is not None:
         request["epoch_scoring"] = dict(epoch_scoring)
+    if initial is not None:
+        request["initial"] = dict(initial)
     return request
 
 
@@ -409,6 +413,43 @@ def _verify(output, report):
         )
 
 
+def _parent_window(initial, fold, seed):
+    """Informe de la ventana padre de una continuación, comprobado antes de abrir la vista.
+
+    El padre es una ventana de Titans-MAC completada con la misma semilla y sin abrir el test
+    final. Su validación es la última información que pudo influir en su estado elegido, así
+    que tiene que acabar antes de que empiece la validación de esta ventana.
+    """
+    report, _ = read_manifest(initial / "run.json", 16 * 1024**2)
+    _require(
+        report.get("kind") == KIND
+        and report.get("status") == "completed"
+        and report.get("final_test_opened") is False
+        and isinstance(report.get("checkpoint"), dict),
+        "El padre de la continuación no es una ventana de Titans-MAC completada",
+    )
+    _require(report["request"]["seed"] == seed, "La continuación parte del padre de su semilla")
+    parent = report["identity"]["window"]
+    _require(
+        date.fromisoformat(parent["validation"][1]) <= date.fromisoformat(fold["validation"][0]),
+        "La validación del padre no acaba antes de la validación de la continuación",
+    )
+    return report
+
+
+def _parent_state(initial, report):
+    """Pesos del estado elegido del padre, con la identidad de su ajuste y su huella."""
+    _verify(initial, report)
+    fit, _ = read_manifest(initial / "fit/run.json", 16 * 1024**2)
+    state = load_training_state(
+        initial / "fit/checkpoints",
+        expected_identity=fit["identity"],
+        selection="best",
+        expected_sha256=report["checkpoint"]["sha256"],
+    )
+    return state["model"]
+
+
 def run_titans_window(
     view,
     protocol,
@@ -431,6 +472,7 @@ def run_titans_window(
     versions=None,
     traces=None,
     trace_family="titans_mac",
+    initial=None,
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
@@ -448,7 +490,11 @@ def run_titans_window(
     es la época común del grupo. `versions` son otras épocas cuya calibración y evaluación
     se emiten también. `traces` declara las trazas de #448 (cadencia y presupuesto), que se
     escriben en `output/traces` sin entrar en la identidad, y `trace_family` su familia (los
-    núcleos de CM-v1 usan `cm_v1_core`).
+    núcleos de CM-v1 usan `cm_v1_core`). `initial` es la carpeta de una ventana completada de
+    la misma variante y semilla en un origen anterior. El ajuste empieza entonces con su
+    estado elegido en lugar de una inicialización nueva, como las continuaciones de F3
+    (#749), y la petición guarda su ejecución y la huella de ese estado. La contracción de F3
+    solo se admite en una continuación.
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -469,6 +515,18 @@ def run_titans_window(
         versions is None or (scoring is not None and joint_epoch is not None),
         "Las versiones llegan junto con la época común",
     )
+    _require(
+        initial is not None or chronological.shrink_perturb is None,
+        "La contracción de F3 solo se aplica a una continuación desde su padre",
+    )
+    parent = None
+    if initial is not None:
+        initial = Path(initial)
+        _require(
+            local_control is None and variant == document["pairing_source"],
+            "La continuación parte de su padre sin control local ni emparejamiento",
+        )
+        parent = _parent_window(initial, fold, seed)
     request = _request(
         view,
         protocol_sha,
@@ -482,6 +540,9 @@ def run_titans_window(
         stopping,
         predictor_changes,
         scoring,
+        None
+        if parent is None
+        else dict(run_id=parent["run_id"], checkpoint_sha256=parent["checkpoint"]["sha256"]),
     )
     safe_destination(output)
     report_path = output / "run.json"
@@ -520,6 +581,9 @@ def run_titans_window(
         request.get("local_control"),
         request.get(CHANGES),
     )
+    if parent is not None:
+        # Solo cambian las huellas de la entrada. La arquitectura y la semilla son las del padre.
+        _carried_parameters(_parent_state(initial, parent), predictor)
     trainer = ChronologicalTrainer(
         predictor,
         chronological,
