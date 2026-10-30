@@ -21,10 +21,10 @@
     {"id": "free", "type": "backend", "label": "AdamW sin calendario", "sublabel": "schedulefree 1.4.1, z e y", "pos": [300, 40], "size": [180, 72]},
     {"id": "point", "type": "frontend", "label": "Punto promediado x", "sublabel": "valida, elige y se emite", "pos": [560, 40], "size": [180, 72]},
     {"id": "adamw", "type": "security", "label": "Control AdamW", "sublabel": "misma tasa y pasos", "pos": [820, 40], "size": [180, 72]},
-    {"id": "parent", "type": "database", "label": "Padre de la etapa", "sublabel": "pesos elegidos en k − 1", "pos": [300, 420], "size": [180, 72]},
-    {"id": "shrink", "type": "backend", "label": "θ ← λθ + sθ₀", "sublabel": "θ₀ de otra semilla, una vez", "pos": [560, 420], "size": [180, 72]},
+    {"id": "parent", "type": "database", "label": "Padre de la etapa", "sublabel": "estado elegido en k − 1", "pos": [300, 420], "size": [180, 72]},
+    {"id": "shrink", "type": "backend", "label": "θ ← λθ + sθ₀", "sublabel": "θ₀ propio de cada semilla", "pos": [560, 420], "size": [180, 72]},
     {"id": "direct", "type": "security", "label": "Continuación directa", "sublabel": "λ = 1 y s = 0", "pos": [820, 420], "size": [180, 72]},
-    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "MAE por sesión", "pos": [1080, 230], "size": [180, 72]}
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "IC por sesión", "pos": [1080, 230], "size": [180, 72]}
   ],
   "connections": [
     {"id": "inputs-free", "from": "inputs", "to": "free"},
@@ -54,7 +54,11 @@
     {
       "dot": "amber",
       "title": "Estado",
-      "items": ["Implementado y comprobado en CPU, sin entrenar ni evaluar", "λ = 0,6 y s = 0,01, valores del ejemplo en línea del artículo"]
+      "items": [
+        "Implementado y comprobado en CPU, sin entrenar ni evaluar",
+        "λ = 0,6 y s = 0,01, valores del ejemplo en línea del artículo",
+        "Continuaciones de 2020 a 2022 en una familia propia de la criba"
+      ]
     }
   ]
 }

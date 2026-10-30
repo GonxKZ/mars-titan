@@ -5,7 +5,8 @@
   catálogo de trabajos a partir de las cohortes verificadas de `screening_cohorts`.
 - `run` ejecuta un trabajo sellado. Comprueba la protección del aprendizaje antes de leer
   nada, exige que sus requisitos hayan terminado, cobra el intento contra el presupuesto y
-  usa una GPU exclusiva. Un trabajo interrumpido se reanuda desde su carpeta.
+  usa una GPU exclusiva, salvo la regla y LightGBM, que van en CPU. Un trabajo interrumpido
+  se reanuda desde su carpeta.
 - `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Un ajuste o un
   lector recorre su presupuesto y espera a las demás semillas de su grupo. Cuando todas
   esperan, la cola fija la época común del grupo (`decide_group`) y las reanuda para que
@@ -18,8 +19,9 @@
 - `analyze` comprueba la protección, exige todos los trabajos terminados, verifica la huella
   de cada archivo de predicciones y escribe los contrastes, las familias y la decisión.
 
-Las etapas de salida (A1, A2, A3, C4 y la media de semillas) no son trabajos. Se calculan
-en el análisis sobre las predicciones guardadas de su fuente.
+Las etapas de salida (A1, A2, A3, C4 y la media de semillas) y los controles cero y de
+mediana pasada no son trabajos. Se calculan en el análisis sobre las predicciones guardadas
+de su fuente.
 """
 
 import argparse
@@ -46,7 +48,7 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import scale_diagnostics as sd
-from mars_titan.evaluation import variant_screening_analysis
+from mars_titan.evaluation import seed_ensemble, variant_screening_analysis
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import stopping_rule
 from mars_titan.training import screening_cohorts, selection, variant_screening
@@ -341,26 +343,35 @@ def _epoch_panels(work, job, epochs):
 
 
 def combination_epoch(work, members, arm, protocol):
-    """Época de una combinación de semillas con el IC por sesión de la propia combinación."""
-    seeds = arm["definition"].get("seeds", protocol["seeds"])
-    chosen = [job for job in members if job["seed"] in seeds]
-    _require(len(chosen) == len(seeds) >= 2, f"{arm['label']} no tiene todas sus semillas")
-    epochs = _budget(protocol, chosen[0])
-    panels = [_epoch_panels(work, job, epochs) for job in chosen]
+    """Época de una media de semillas con el IC por sesión de sus réplicas en validación.
+
+    Cada réplica promedia por fila la predicción de validación de sus semillas con la suma
+    ordenada de `seed_ensemble`. En cada época se promedian las réplicas en las sesiones que
+    todas definen, como las semillas de un grupo, y la época sale de `common_epoch` con el
+    mismo radio. Es una sola época para todas las réplicas del origen.
+    """
+    replicates = arm["definition"]["replicates"]
+    by_seed = {job["seed"]: job for job in members}
+    needed = sorted({seed for replicate in replicates for seed in replicate})
+    _require(set(needed) <= set(by_seed), f"{arm['label']} no tiene todas sus semillas")
+    epochs = _budget(protocol, members[0])
+    panels = {seed: _epoch_panels(work, by_seed[seed], epochs) for seed in needed}
     minimum = protocol["contrast"]["primary"]["minimum_assets"]
-    scores = []
-    for epoch in range(epochs):
-        items = [seed_panels[epoch] for seed_panels in panels]
-        _require(
-            len({panel.cohort_sha256 for panel in items}) == 1,
-            "Las semillas de la combinación no predicen las mismas filas",
-        )
-        mean = np.mean([panel.prediction for panel in items], axis=0)
-        values, defined = sd.session_correlations(items[0], mean, min_assets=minimum)
-        _require(defined.any(), f"La combinación no define el IC en la época {epoch + 1}")
-        scores.append(float(values[defined].mean()))
-    result = selection.common_epoch(scores, radius=protocol["selection"]["smoothing_radius"])
-    return dict(result, model=arm["label"], seeds=sorted(seeds))
+    series = []
+    for replicate in replicates:
+        scored = []
+        for epoch in range(epochs):
+            items = [panels[seed][epoch] for seed in replicate]
+            _require(
+                len({panel.cohort_sha256 for panel in items}) == 1,
+                "Las semillas de la combinación no predicen las mismas filas",
+            )
+            mean = seed_ensemble.ordered_mean([panel.prediction for panel in items])
+            scored.append(sd.session_correlations(items[0], mean, min_assets=minimum))
+        series.append(scored)
+    radius = protocol["selection"]["smoothing_radius"]
+    result = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)
+    return dict(result, model=arm["label"], replicates=replicates)
 
 
 def decide_group(work, receipt, group):
@@ -517,6 +528,8 @@ def _dispatch(work, receipt, job, budget):
     output = work / "runs" / job["id"]
     indices = work / "indices" / str(job["origin"])
     parent = work / "runs" / job["parent"] if job["parent"] else None
+    # Una continuación de F3 empieza en el estado elegido de su trabajo del origen anterior.
+    initial = work / "runs" / job["continues"] if job["continues"] else None
     common = (
         common_options(work, receipt, job, files)
         if runner in variant_screening.EPOCH_RUNNERS
@@ -538,6 +551,7 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             search_case=definition["search_case"],
             predictor_changes=definition["predictor_changes"] or None,
+            initial=initial,
             **common,
         )
     if runner in ("correction", "correction_profile"):
@@ -575,6 +589,8 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             **common,
         )
+    if runner in variant_screening.ORIGIN_RUNNERS:
+        return _common_control(receipt["protocol"], job, files, output, budget)
     from mars_titan.training.spaced_window import run_spaced_window
 
     return run_spaced_window(
@@ -586,6 +602,29 @@ def _dispatch(work, receipt, job, budget):
         output=output,
         device="cuda:0",
         indices=indices,
+        stop=budget,
+    )
+
+
+def _common_control(protocol, job, files, output, budget):
+    """La regla o LightGBM de un origen, con la vista y el protocolo sellados del origen."""
+    from mars_titan.training import common_control_windows
+
+    config = job["definition"]["config"]
+    if job["definition"]["runner"] == "rule":
+        return common_control_windows.run_rule_window(
+            files["view"], files["protocol"], job["fold"], output=output, config=config, stop=budget
+        )
+    return common_control_windows.run_tabular_window(
+        files["view"],
+        files["protocol"],
+        job["fold"],
+        seeds=job["seeds"],
+        fit_months=protocol["fit"]["fit_months"],
+        output=output,
+        config=config,
+        radius=protocol["selection"]["smoothing_radius"],
+        min_assets=protocol["contrast"]["primary"]["minimum_assets"],
         stop=budget,
     )
 
@@ -636,12 +675,15 @@ def _run(work, receipt, job):
         from mars_titan.training.experiment_resources import GpuLease
         from mars_titan.training.titans_walk_forward import unfused_attention
 
-        # La ventana E2 toma su propia GPU exclusiva y no admite un segundo cerrojo.
-        if job["definition"]["runner"] != "spaced":
+        # La ventana E2 toma su propia GPU exclusiva y no admite un segundo cerrojo. La regla
+        # y LightGBM no usan la GPU.
+        runner = job["definition"]["runner"]
+        if runner != "spaced" and runner not in variant_screening.CPU_RUNNERS:
             lease = GpuLease(max_ram=6 * GIB, max_vram=6 * GIB)
             lease.__enter__()
             record["admission"] = dict(lease.record)
-        torch.cuda.set_device("cuda:0")
+        if runner not in variant_screening.CPU_RUNNERS:
+            torch.cuda.set_device("cuda:0")
         budget = Budget(
             dict(
                 max_job_seconds=record["attempt_limit_seconds"],
@@ -768,28 +810,109 @@ def status(work):
     )
 
 
-def run_panels(folder, reads):
-    """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo.
+def _panel(table):
+    """Panel de una tabla de predicciones. `quantile_0025` es el nivel 0,025."""
+    columns = sorted(c for c in table.column_names if c.startswith(QUANTILE_PREFIX))
+    return ForecastPanel.from_arrow(
+        table,
+        quantile_columns=columns or None,
+        levels=tuple(int(c.removeprefix(QUANTILE_PREFIX)) / 1000 for c in columns) or None,
+    )
 
-    Los niveles de cuantiles salen del nombre de sus columnas, `quantile_0025` es 0,025.
+
+def _tables(folder, records, names, reads, label=None):
+    """Tablas confirmadas de unos tramos, con la huella de cada archivo.
+
+    `label` nombra la carpeta en las lecturas. Por defecto es la del trabajo.
+    """
+    label = label or folder.name
+    tables = {}
+    for name in names:
+        path = folder / records[name]["path"]
+        digest = sha256(path)
+        _require(digest == records[name]["sha256"], f"Ha cambiado {label}/{path.name}")
+        tables[name] = pq.read_table(path)
+        reads[f"{label}/{path.name}"] = digest
+    return tables
+
+
+def job_panels(work, job_id, reads):
+    """Paneles de un trabajo terminado o de una semilla de LightGBM (`trabajo/seed-s`).
+
+    El informe de una semilla tiene que conservar la huella que registró su trabajo.
+    """
+    job, _, member = job_id.partition("/")
+    if member:
+        report = _completed(work, job)
+        _require(report is not None, f"El trabajo {job} no ha terminado")
+        record = report["seeds"].get(member.removeprefix("seed-"))
+        _require(record is not None, f"El trabajo {job} no emite {member}")
+        path = Path(work) / "runs" / job / record["path"]
+        _require(sha256(path) == record["sha256"], f"Ha cambiado {member} de {job}")
+    return run_panels(Path(work) / "runs" / job_id, reads, label=job_id)
+
+
+def run_panels(folder, reads, label=None):
+    """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo."""
+    report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
+    _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
+    names = variant_screening_analysis.PARTITIONS
+    tables = _tables(folder, report["predictions"], names, reads, label)
+    return {name: _panel(table) for name, table in tables.items()}
+
+
+def epoch_tables(folder, epoch, reads):
+    """Calibración y evaluación de un trabajo terminado con el estado de `epoch`.
+
+    La época común está en sus predicciones principales y cualquier otra, en sus versiones.
     """
     report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
     _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
-    panels = {}
-    for name in variant_screening_analysis.PARTITIONS:
-        record = report["predictions"][name]
-        path = folder / record["path"]
-        digest = sha256(path)
-        _require(digest == record["sha256"], f"Ha cambiado {folder.name}/{path.name}")
-        table = pq.read_table(path)
-        columns = sorted(c for c in table.column_names if c.startswith(QUANTILE_PREFIX))
-        panels[name] = ForecastPanel.from_arrow(
-            table,
-            quantile_columns=columns or None,
-            levels=tuple(int(c.removeprefix(QUANTILE_PREFIX)) / 1000 for c in columns) or None,
+    if epoch == report["fit"]["joint_stop_epoch"]:
+        records = report["predictions"]
+    else:
+        records = report.get("versions", {}).get("predictions", {}).get(str(epoch))
+        _require(records is not None, f"El trabajo {folder.name} no emite la época {epoch}")
+    return _tables(folder, records, ("calibration", "evaluation"), reads)
+
+
+def combination_panels(work, receipt, year, reads):
+    """Paneles de cada réplica de una media de semillas en un origen, para el análisis.
+
+    `combine(modelo, réplica)` lee la época que fijó la decisión del grupo de la fuente,
+    promedia con `seed_mean` las tablas de las semillas de la réplica y devuelve sus paneles
+    de calibración y evaluación. Las tablas de cada semilla se leen una vez por origen.
+    """
+    arms = variant_screening.all_arms(receipt["protocol"], ROOT)
+    index = variant_screening_analysis.job_index(receipt["jobs"])
+    # Una entrada por semilla: todas las réplicas de un origen leen la misma época.
+    load = functools.lru_cache(maxsize=len(receipt["protocol"]["seeds"]))(
+        lambda job_id, epoch: epoch_tables(work / "runs" / job_id, epoch, reads)
+    )
+
+    def combine(label, replicate):
+        arm = arms[label]
+        source = (label[0], arm.definition["source"])
+        jobs = {seed: index[(source, year, seed)] for seed in replicate}
+        _require(
+            all(len(items) == 1 for items in jobs.values()),
+            "La fuente de una media de semillas tiene un solo caso",
         )
-        reads[f"{folder.name}/{path.name}"] = digest
-    return panels
+        decision = _decision(work, jobs[replicate[0]][0]["common_group"])
+        _require(decision is not None, f"El grupo de {'/'.join(source)} no ha decidido")
+        found = [item for item in decision["combinations"] if item["model"] == "/".join(label)]
+        _require(
+            len(found) == 1 and found[0]["replicates"] == arm.definition["replicates"],
+            f"La decisión del grupo no combina las réplicas declaradas de {'/'.join(label)}",
+        )
+        epoch = found[0]["epoch"]
+        tables = {seed: load(items[0]["id"], epoch) for seed, items in jobs.items()}
+        return {
+            name: _panel(seed_ensemble.seed_mean({s: tables[s][name] for s in replicate})[0])
+            for name in ("calibration", "evaluation")
+        }
+
+    return combine
 
 
 def current_sectors(descriptions, assets):
@@ -871,9 +994,7 @@ def analyze(work, output, descriptions):
             )
     protocol, reads, origins = receipt["protocol"], {}, {}
     # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
-    load = functools.lru_cache(maxsize=CACHED_RUNS)(
-        lambda job_id: run_panels(work / "runs" / job_id, reads)
-    )
+    load = functools.lru_cache(maxsize=CACHED_RUNS)(lambda job_id: job_panels(work, job_id, reads))
     for year in screening_cohorts.ORIGIN_FOLDS:
         view = work / "origins" / str(year) / "view-x1.json"
         assets = [
@@ -886,6 +1007,7 @@ def analyze(work, output, descriptions):
             cohorts=cohorts,
             maturity=maturity,
             sectors=current_sectors(descriptions, assets),
+            combine=combination_panels(work, receipt, year, reads),
         )
     report, arrays = variant_screening_analysis.analyze(protocol, receipt["jobs"], origins, ROOT)
     report.update(
@@ -904,8 +1026,10 @@ def analyze(work, output, descriptions):
     output.mkdir(parents=True)
     atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
     atomic_json(output / "analysis.json", report)
+    continuation = report["continuation"] or {"decisions": {}}
     return dict(
         decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
+        continuation={name: row["passes"] for name, row in continuation["decisions"].items()},
         sessions=report["sessions"],
         analysis_sha256=sha256(output / "analysis.json"),
     )

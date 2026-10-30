@@ -1065,6 +1065,20 @@ wheels = [
 ]
 
 [[package]]
+name = "lightgbm"
+version = "4.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "narwhals" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/63/8e/4db5e29290d7e619c307fdb8dab0a0514090af2ce3ec483050e024ec6126/lightgbm-4.7.0.tar.gz", hash = "sha256:f8e20f682c9aabd000bcf4a7ed8aa6f473c1adfecccae34ec24e823d156f4af0", size = 1792896, upload-time = "2026-07-18T21:00:56.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/eb/837ea3b40cc36e22eeebb9785c01e42b2c255d033eea1d2d9ee8e2540e55/lightgbm-4.7.0-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d23e922acd891e77212e4d0fbcee9ba973c96dee479491341d05ba595357ebb7", size = 3476028, upload-time = "2026-07-18T21:00:39.331Z" },
+]
+
+[[package]]
 name = "linkify-it-py"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1170,6 +1184,7 @@ dependencies = [
 [package.optional-dependencies]
 boosting = [
     { name = "cupy-cuda13x" },
+    { name = "lightgbm" },
     { name = "xgboost" },
 ]
 cuda = [
@@ -1243,6 +1258,7 @@ requires-dist = [
     { name = "ijson", specifier = ">=3.3,<4" },
     { name = "ipykernel", marker = "extra == 'notebooks'", specifier = ">=6,<8" },
     { name = "jupyterlab", marker = "extra == 'notebooks'", specifier = ">=4.6.4,<5" },
+    { name = "lightgbm", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'boosting'", specifier = "==4.7.0" },
     { name = "lxml", marker = "extra == 'data'", specifier = ">=6,<7" },
     { name = "matplotlib", marker = "extra == 'research'", specifier = ">=3.9,<4" },
     { name = "numpy", specifier = ">=2,<3" },
