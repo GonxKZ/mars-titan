@@ -632,6 +632,130 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     assert not (tmp_path / "again").exists()
 
 
+def test_the_versions_of_a_fit_are_read_without_its_common_epoch(tmp_path):
+    folder = tmp_path / "runs" / "2019-42-abc"
+    folder.mkdir(parents=True)
+
+    def written(name, offset):
+        path = folder / f"{name}.parquet"
+        pq.write_table(prediction_table(1_546_000_000_000_000 + offset * DAY), path)
+        return dict(path=path.name, sha256=sha256(path))
+
+    partitions = dict(validation=0, calibration=10, evaluation=20)
+    predictions = {name: written(name, offset) for name, offset in partitions.items()}
+    versions = {
+        str(epoch): {name: written(f"{name}-{epoch}", partitions[name]) for name in partitions}
+        for epoch in (3, 9, 12)
+    }
+    report = dict(
+        status="completed",
+        fit=dict(joint_stop_epoch=6),
+        predictions=predictions,
+        versions=dict(epochs=[3, 9, 12], predictions=versions),
+    )
+    atomic_json(folder / "run.json", report)
+    receipt = dict(protocol=dict(selection=dict(versions=dict(epochs=[3, 6, 9, 12]))))
+    reads = {}
+    result = study.version_panels(tmp_path, receipt, reads)("2019-42-abc")
+    # La época común, la 6, está en las predicciones principales y no se lee como versión.
+    assert sorted(result) == [3, 9, 12]
+    assert all(sorted(panels) == ["calibration", "evaluation"] for panels in result.values())
+    assert sorted(reads) == sorted(
+        f"2019-42-abc/{name}-{epoch}.parquet"
+        for epoch in (3, 9, 12)
+        for name in ("calibration", "evaluation")
+    )
+    pq.write_table(prediction_table(1_546_000_000_000_000), folder / "evaluation-9.parquet")
+    with pytest.raises(ValueError, match="Ha cambiado"):
+        study.version_panels(tmp_path, receipt, {})("2019-42-abc")
+    del report["versions"]["predictions"]["9"]
+    atomic_json(folder / "run.json", report)
+    with pytest.raises(ValueError, match="no emite la época 9"):
+        study.version_panels(tmp_path, receipt, {})("2019-42-abc")
+
+
+def test_the_arbiters_check_the_hold_before_reading_the_preparation(
+    prepared, learning_hold, monkeypatch, tmp_path
+):
+    work, _ = prepared
+    learning_hold(False)
+    monkeypatch.setattr(
+        study, "verify_prepared", lambda *_: pytest.fail("Se leyó la criba bajo la protección")
+    )
+    with pytest.raises(LearningHoldError):
+        study.analyze_arbiters(work, tmp_path / "arbiters")
+    assert not (tmp_path / "arbiters").exists()
+
+
+def test_the_arbiters_write_their_report_with_the_declaration_and_what_they_read(
+    prepared, runners, monkeypatch, tmp_path
+):
+    work, receipt = prepared
+    finished = dict(status="completed", fit=dict(joint_stop_epoch=4), versions=dict(epochs=[3]))
+    monkeypatch.setattr(study, "_completed", lambda *_: finished)
+    monkeypatch.setattr(study, "_decision", lambda *_: dict(epoch=4, versions=[3]))
+    monkeypatch.setattr(study, "origin_maturity", lambda view, policy: ({}, {}))
+    monkeypatch.setattr(
+        study, "current_sectors", lambda *_: pytest.fail("Los árbitros no leen los sectores")
+    )
+
+    def panels(folder, reads, *, label):
+        reads[f"{label}/evaluation-predictions.parquet"] = "a" * 64
+        return {}
+
+    monkeypatch.setattr(study, "run_panels", panels)
+    seen = {}
+    model = "references/quantile_reference"
+
+    def analyze(protocol, declaration, jobs, origins, root):
+        seen.update(protocol=protocol, declaration=declaration, jobs=jobs, origins=origins)
+        origins[2019].load("job-b")
+        merged = {
+            (("version_arbiter", model, "arbiter"), "session_ic"): (
+                np.array([0.2, 0.0]),
+                np.array([True, True]),
+            )
+        }
+        report = dict(decisions={model: dict(passes=True)}, sessions=2)
+        return report, dict(session_time=np.array([1, 2]), merged=merged)
+
+    monkeypatch.setattr(study.arbiter_analysis, "analyze", analyze)
+    result = study.analyze_arbiters(work, tmp_path / "arbiters")
+    assert result["decisions"] == {model: True} and result["sessions"] == 2
+    assert seen["protocol"] == receipt["protocol"] and seen["jobs"] == receipt["jobs"]
+    assert seen["declaration"] == json.loads(study.ARBITERS.read_text(encoding="utf-8"))
+    assert sorted(seen["origins"]) == sorted(screening_cohorts.ORIGIN_FOLDS)
+    assert all(
+        origin.sectors is None and callable(origin.versions) for origin in seen["origins"].values()
+    )
+    report = json.loads((tmp_path / "arbiters" / "arbiters.json").read_text())
+    assert report["declaration_sha256"] == sha256(study.ARBITERS)
+    assert report["final_test_access"] is False and report["optimizer_steps"] == 0
+    assert report["prepared_sha256"] == sha256(work / "prepared.json")
+    assert report["predictions_sha256"] == {"job-b/evaluation-predictions.parquet": "a" * 64}
+    series = pq.read_table(tmp_path / "arbiters" / "series.parquet")
+    assert series["model"].to_pylist() == [f"version_arbiter/{model}/arbiter"] * 2
+    with pytest.raises(ValueError, match="directorio nuevo"):
+        study.analyze_arbiters(work, tmp_path / "arbiters")
+    monkeypatch.setattr(study, "_decision", lambda *_: None)
+    with pytest.raises(ValueError, match="no emite la época común"):
+        study.analyze_arbiters(work, tmp_path / "again")
+    assert not (tmp_path / "again").exists()
+
+
+def test_the_command_line_runs_the_arbiters(prepared, monkeypatch, capsys):
+    work, _ = prepared
+    calls = []
+    monkeypatch.setattr(
+        study, "analyze_arbiters", lambda *args: calls.append(args) or dict(sessions=0)
+    )
+    command = ["variant_screening_study", "arbiters", "--work", str(work), "--output", "out"]
+    monkeypatch.setattr("sys.argv", command)
+    study.main()
+    assert json.loads(capsys.readouterr().out) == dict(sessions=0)
+    assert calls == [(work, Path("out"))]
+
+
 def test_the_queue_runs_pending_jobs_in_sealed_order_up_to_its_limit(prepared, runners):
     work, receipt = prepared
     pending = [job["id"] for job in receipt["jobs"] if study._completed(work, job["id"]) is None]

@@ -1587,5 +1587,43 @@
       4
     ],
     "verification_date": "2026-10-30"
+  },
+  {
+    "id": "luo2015adanormalhedge",
+    "title": "Achieving All with No Parameters: AdaNormalHedge",
+    "authors": [
+      "Haipeng Luo",
+      "Robert E. Schapire"
+    ],
+    "year": 2015,
+    "url": "https://proceedings.mlr.press/v40/Luo15.html",
+    "pdf_url": "https://proceedings.mlr.press/v40/Luo15.pdf",
+    "venue": "Proceedings of Machine Learning Research",
+    "volume": "40",
+    "pages": "1286-1304",
+    "access": "Metadatos de PMLR comprobados. Contrastadas la ecuación (3), el teorema 1, el teorema 3, la sección 5.1 y el apéndice A de arXiv v1. Revisadas visualmente sus páginas 5, 8 y 16. No se afirma una lectura completa.",
+    "read_version": {
+      "type": "preprint",
+      "version": "arXiv:1502.05934v1",
+      "date": "2015-02-20",
+      "url": "https://arxiv.org/pdf/1502.05934v1",
+      "sha256": "b010afd2e35bf268e952c19b6f61fb888d40498e0bb7c6675d132de060fca554",
+      "passages": [
+        "Ecuación (3), teoremas 1 y 3",
+        "Sección 5.1, página 8: expertos por inicio y prior proporcional a 1/t²",
+        "Apéndice A, página 16: lema 2 de la suma de potenciales"
+      ]
+    },
+    "published_version": {
+      "url": "https://proceedings.mlr.press/v40/Luo15.pdf",
+      "sha256": "af789ab04e42ea9c276c7a93dd31433214c7788dc2877558c33c265e5d5ad9d0",
+      "note": "El lema 2 de arXiv v1 se numera como lema 6 en este PDF."
+    },
+    "redistribution": "Se conservan enlaces y huellas. No se redistribuyen los PDF.",
+    "relevance": "Fuente del núcleo AdaNormalHedge, opciones que duermen y forma TV. La maduración financiera y la abstención son adaptaciones propias.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-30"
   }
 ]

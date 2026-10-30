@@ -501,5 +501,83 @@
       4
     ],
     "verification_date": "2026-10-29"
+  },
+  {
+    "id": "bates1969combination",
+    "title": "The Combination of Forecasts",
+    "authors": [
+      "J. M. Bates",
+      "C. W. J. Granger"
+    ],
+    "year": 1969,
+    "url": "https://doi.org/10.1057/jors.1969.103",
+    "doi": "10.1057/jors.1969.103",
+    "pdf_url": null,
+    "venue": "Journal of the Operational Research Society",
+    "volume": "20",
+    "issue": "4",
+    "pages": "451-468",
+    "access": "Metadatos de Crossref y resumen editorial de Taylor & Francis consultados. No se consultó el texto completo.",
+    "redistribution": "Se conserva el enlace. No se redistribuye el texto.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-30",
+    "verification_sources": [
+      "https://www.tandfonline.com/doi/abs/10.1057/jors.1969.103"
+    ],
+    "relevance": "Antecedente de combinación de previsiones con pesos según errores previos. No acredita mejora de MARS-TITAN."
+  },
+  {
+    "id": "stock2004combination",
+    "title": "Combination forecasts of output growth in a seven‐country data set",
+    "authors": [
+      "James H. Stock",
+      "Mark W. Watson"
+    ],
+    "year": 2004,
+    "url": "https://doi.org/10.1002/for.928",
+    "doi": "10.1002/for.928",
+    "pdf_url": null,
+    "venue": "Journal of Forecasting",
+    "volume": "23",
+    "issue": "6",
+    "pages": "405-430",
+    "access": "Metadatos de Crossref comprobados. Resumen consultado en la ficha editorial. No se consultó el texto completo.",
+    "redistribution": "Se conserva el enlace. No se redistribuye el texto.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-30",
+    "verification_sources": [
+      "https://onlinelibrary.wiley.com/doi/10.1002/for.928"
+    ],
+    "relevance": "El resumen respalda usar combinaciones simples como control frente a ponderaciones sensibles al rendimiento reciente."
+  },
+  {
+    "id": "smith2009puzzle",
+    "title": "A Simple Explanation of the Forecast Combination Puzzle",
+    "authors": [
+      "Jeremy Smith",
+      "Kenneth F. Wallis"
+    ],
+    "year": 2009,
+    "url": "https://doi.org/10.1111/j.1468-0084.2008.00541.x",
+    "doi": "10.1111/j.1468-0084.2008.00541.x",
+    "pdf_url": null,
+    "venue": "Oxford Bulletin of Economics and Statistics",
+    "volume": "71",
+    "issue": "3",
+    "pages": "331-355",
+    "access": "Metadatos de Crossref comprobados. Resumen consultado en la ficha editorial. No se consultó el texto completo.",
+    "redistribution": "Se conserva el enlace. No se redistribuye el texto.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-30",
+    "verification_sources": [
+      "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1468-0084.2008.00541.x"
+    ],
+    "relevance": "El resumen atribuye el enigma de combinación al error finito al estimar pesos y motiva el control de media simple."
   }
 ]

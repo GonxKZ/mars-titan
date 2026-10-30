@@ -1,0 +1,78 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "scope": "primary_sources_of_the_online_arbiters",
+ "sources": [
+  {
+   "id": "luo2015adanormalhedge",
+   "published_url": "https://proceedings.mlr.press/v40/Luo15.html",
+   "published_pdf": {
+    "url": "https://proceedings.mlr.press/v40/Luo15.pdf",
+    "sha256": "af789ab04e42ea9c276c7a93dd31433214c7788dc2877558c33c265e5d5ad9d0"
+   },
+   "read_pdf": {
+    "url": "https://arxiv.org/pdf/1502.05934v1",
+    "sha256": "b010afd2e35bf268e952c19b6f61fb888d40498e0bb7c6675d132de060fca554",
+    "version": "v1",
+    "date": "2015-02-20"
+   },
+   "inspected": [
+    "Sección 3 y algoritmo 1: R, C, Φ y w",
+    "Teorema 1, página 5, revisada visualmente",
+    "Sección 4 y teorema 3: indicadores de disponibilidad y ecuación (3)",
+    "Sección 5.1, página 8, revisada visualmente",
+    "Apéndice A, lema 2, página 16, revisada visualmente"
+   ],
+   "numbering": "La numeración de la implementación y sus pruebas sigue arXiv v1. Su lema 2 es el lema 6 del PDF de PMLR. Φ y w están definidos en la sección 3. La ecuación (3) corresponde a la mezcla con indicadores.",
+   "full_paper_read": false
+  },
+  {
+   "id": "daw2005uncertainty",
+   "doi": "10.1038/nn1560",
+   "url": "https://www.nature.com/articles/nn1560",
+   "abstract_url": "https://pubmed.ncbi.nlm.nih.gov/16286932/",
+   "checked": "Metadatos de Crossref y resumen de PubMed. La página de Nature no se pudo abrir.",
+   "full_text_read": false
+  },
+  {
+   "id": "bates1969combination",
+   "doi": "10.1057/jors.1969.103",
+   "url": "https://www.tandfonline.com/doi/abs/10.1057/jors.1969.103",
+   "checked": "Metadatos de Crossref y resumen editorial recuperado en la búsqueda. La apertura directa respondió 403.",
+   "full_text_read": false
+  },
+  {
+   "id": "stock2004combination",
+   "doi": "10.1002/for.928",
+   "url": "https://onlinelibrary.wiley.com/doi/10.1002/for.928",
+   "checked": "Metadatos de Crossref y resumen editorial.",
+   "full_text_read": false
+  },
+  {
+   "id": "smith2009puzzle",
+   "doi": "10.1111/j.1468-0084.2008.00541.x",
+   "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1468-0084.2008.00541.x",
+   "checked": "Metadatos de Crossref y resumen editorial.",
+   "full_text_read": false
+  }
+ ],
+ "assumptions": [
+  "Pérdidas de las opciones disponibles en [0,1].",
+  "Prior normalizado con pesos positivos.",
+  "La implementación usa disponibilidad booleana, un caso del indicador del artículo."
+ ],
+ "project_adaptations": [
+  "El estado se actualiza al madurar resultados financieros. La cota se interpreta sobre la secuencia de rondas maduras con su mezcla vigente, no como garantía para la mezcla emitida antes.",
+  "La pérdida lineal de expertos no es el IC de la predicción financiera mezclada.",
+  "El margen de abstención y la fiabilidad de 21 sesiones son políticas propias.",
+  "La protección numérica del prior pertenece a esta implementación FP64."
+ ],
+ "verification": {
+  "primary_passages_inspected": true,
+  "formal_lean_check": false,
+  "numerical_tests": "Secuencias construidas, sin certificado de toda aritmética ni de cualquier horizonte.",
+  "scientific_experiments": 0,
+  "financial_improvement_observed": false
+ },
+ "redistribution": "Se publican referencias, huellas y el alcance. Los PDF originales se conservan fuera del repositorio."
+}
