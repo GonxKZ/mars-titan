@@ -1,4 +1,4 @@
-"""Medir en CPU el coste de las variantes de objetivo y cabezas de #749 (F4 y A4), sin optimizador.
+"""Medir en CPU el coste de los objetivos de salida de #749 y #787, sin optimizador.
 
 Las entradas son sintéticas con las formas reales de la edición v3.1: ventana de 64 sesiones
 con cinco canales y presencia, 384 de noticias, 512 de gráficos, 78 de fundamentales y 420 de
@@ -33,9 +33,11 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.financial_inputs import DecisionBatch, FinancialInputSpec
+from mars_titan.models.titans.laplace_scale import LaplaceScaleHead
 from mars_titan.models.titans.opponent_heads import OpponentHeads
 from mars_titan.models.titans.session_ic_objective import SessionICObjective
 from mars_titan.models.titans.session_ranks import SESSION_RANK_INPUTS
+from mars_titan.models.titans.skewed_t_objective import SkewedTObjective
 from mars_titan.training.kernel_policy import FP32_STRICT, apply_kernel_policy
 
 START = 1_609_459_200_000_000
@@ -68,6 +70,9 @@ MODELS = {
     "opponent_heads_quantile_control": dict(
         opponent_heads=asdict(OpponentHeads(family="quantile", level=0.5))
     ),
+    # L2 de #787 y F1, su control con otra distribución y la misma ponderación de las filas.
+    "laplace_scale_head_v1": dict(laplace_scale_head=asdict(LaplaceScaleHead())),
+    "skewed_t_objective_v1": dict(skewed_t_objective=asdict(SkewedTObjective())),
 }
 
 
@@ -316,7 +321,7 @@ def _measure(
     receipt = dict(
         schema_version=1,
         kind="objective_variants_cost",
-        issue=749,
+        issues=[749, 787],
         recorded_at_utc=datetime.now(UTC).isoformat(),
         commit=_commit(),
         scope=(
@@ -337,6 +342,8 @@ def _measure(
                 Path("src/mars_titan/models/titans/session_ranks.py"),
                 Path("src/mars_titan/models/titans/session_ic_objective.py"),
                 Path("src/mars_titan/models/titans/opponent_heads.py"),
+                Path("src/mars_titan/models/titans/laplace_scale.py"),
+                Path("src/mars_titan/models/titans/skewed_t_objective.py"),
                 Path("src/mars_titan/models/titans/output_objectives.py"),
                 Path("src/mars_titan/models/titans/financial.py"),
             )

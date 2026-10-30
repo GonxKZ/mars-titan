@@ -26,6 +26,7 @@ from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
 from .session_ic_objective import SessionScale
+from .skewed_t_objective import SkewedT
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -62,6 +63,7 @@ _TITANS_MODULES = (
     "regional_episode_readout",
     "session_ranks",
     "session_ic_objective",
+    "skewed_t_objective",
     "output_objectives",
     "frozen_financial",
 )
@@ -175,7 +177,7 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
-    elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
+    elif type(module) in (SessionScale, LaplaceScale, OpponentSpread, SkewedT):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")

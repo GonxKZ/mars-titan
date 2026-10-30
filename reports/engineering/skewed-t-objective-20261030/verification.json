@@ -1,0 +1,472 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 787,
+ "scope": "skewed_t_objective",
+ "implementation_commit": "202175bb2aff2091b15e23b442e347b93de91d3c",
+ "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+ "verification_test_commit": "fbfebafa1a8b717a78a6e0f96146afff3774d134",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "suite_counts": "Las selecciones históricas, dirigidas y ampliadas se solapan. No se suman como casos distintos.",
+ "device": "cpu",
+ "cuda_verified": false,
+ "cuda_deselected_in_targeted_suite": 33,
+ "cuda_followup_issue": 816,
+ "cuda_pending_collected": 41,
+ "cuda_new_floor_cases_prepared": 8,
+ "cuda_collection_sha256": "e5c7a391c3f794c3a8be4781aaae59992c18712a668393a42affb1cccf79b3d4",
+ "test_change_quality": {
+  "path": "tests/models/titans/test_skewed_t_objective.py",
+  "function": "test_degrees_of_freedom_stay_strictly_above_the_floor_after_rounding",
+  "start_line": 172,
+  "end_line": 183,
+  "cyclomatic_complexity": 5,
+  "statements": 9,
+  "covered_statements": 9,
+  "coverage_fraction": 1.0,
+  "branches": 0,
+  "covered_branches": 0,
+  "crap": 5.0,
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "note": "Medida de los ocho casos CPU de la regresión nueva. Los ocho casos del mismo extremo en cuda:0 están recogidos pero no ejecutados. El recuento de ramas del código de la prueba no mide la ruta CUDA."
+ },
+ "numerical_fix": {
+  "trigger": "Con preactivaciones negativas finitas, softplus y la suma redondeaban los grados de libertad al suelo, incluido ν=2.",
+  "rule": "max(dof_floor + softplus(a), dof_floor * (1 + finfo(dtype).eps))",
+  "identity_field": "dof_rounding=strict_floor_via_dtype_epsilon",
+  "tested_dtypes": [
+   "float32",
+   "float64"
+  ],
+  "tested_floors": [
+   2.0,
+   3.25
+  ],
+  "tested_logits": [
+   -40.0,
+   -1000.0
+  ],
+  "red_cases": 8,
+  "note": "La inicialización y los parámetros se conservan. La protección se declara en la identidad y modifica el extremo numérico. No se trata como una mejora predictiva."
+ },
+ "source_check": {
+  "url": "https://arxiv.org/html/2508.18921v2",
+  "version": "v2",
+  "date": "2025-08-30",
+  "inspected_sections": [
+   "3.2",
+   "3.3",
+   "3.4"
+  ],
+  "scope": "Densidad, momentos, NLL y capa de salida. La protección numérica y la ponderación β-NLL son adaptaciones propias. No se reproducen sus resultados."
+ },
+ "post_coverage_docstrings": {
+  "old_sha256": "4e9ddd75330528266e301ac10ecc69587de0679d7a2c2d0f5850af3189ba53ba",
+  "new_sha256": "580fa640387e3c0077cf0dcb2c91dee43ec735f0783133d11e8ba5fb6773ab0a",
+  "executable_ast_and_positions_unchanged": true,
+  "note": "Después de los 510 casos solo se ajustó la prosa del docstring. Se cotejó el AST ejecutable con posiciones y se volvió a ejecutar el módulo. La cobertura acumulada conserva las mismas líneas ejecutables."
+ },
+ "checks": {
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "repository": "passed"
+ },
+ "initial_quality_check": "La primera pasada de ruff detectó una línea de docstring de 103 caracteres. Se ajustó la prosa y se repitieron las comprobaciones con resultado correcto.",
+ "historical_regression_failure": {
+  "test": "tests/benchmarks/test_determinism_cost.py::test_each_mode_repeats_its_digests_and_leaves_the_parameters_unchanged",
+  "fix_pr": 819,
+  "note": "El fixture heredaba el modo determinista global. Su módulo está incluido en los 510 casos de la integración. No se repite ni se declara verde la regresión histórica completa."
+ },
+ "mutation_limits": "Las 52 recetas históricas se conservan con sus fuentes. Se repiten dos afectadas por develop y se añaden dos propias de la protección numérica. La eliminación redundante en Dust sobrevive y se declara equivalente bajo el contrato admitido. No es una puntuación global de mutación.",
+ "cost_concurrent_work": "Regresión CPU del proyecto y otras aplicaciones activas. La medida registra carga media y rotación entre modelos. No se atribuye una aceleración a diferencias entre pasadas.",
+ "external_cost_process": {
+  "wall_seconds": 144.84,
+  "peak_rss_kib": 1850544,
+  "tool": "GNU time -v",
+  "scope": "Proceso completo, incluidos uv y el control local de recursos. No es una diferencia de memoria entre modelos."
+ },
+ "profiler_note": "El perfilador CPU consultó CUDA y registró el código 100 con CUDA ocultada explícitamente. El proceso terminó con código 0, recogió eventos CPU y comprobó parámetros intactos. Esto no comprueba ninguna ruta GPU.",
+ "limits": "Faltan CUDA, su coste de sincronización, el registro en la criba y cualquier comparación predictiva. La campaña y el test final permanecen bloqueados.",
+ "suites": [
+  {
+   "name": "historical_targeted",
+   "tests": 435,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6dc27b82fb6a51636b2040d4952a591133383afacc29780013acfa31291493c9",
+   "note": "En 929308dab, 435 casos CPU. Los 33 CUDA se deseleccionaron."
+  },
+  {
+   "name": "historical_importers_training",
+   "tests": 2093,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 42,
+   "xml_sha256": "05bdbcb17e8a3aedc8041d648801fb9fbdb59f921030a6a447e81f4308421ffb",
+   "note": "Regresión anterior a la integración con develop. Conserva las omisiones de la protección y dependencias auxiliares."
+  },
+  {
+   "name": "historical_importers_other",
+   "tests": 5997,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 124,
+   "xml_sha256": "a6e5a7e00d6cd37924b371be7ef1e3d7017ac6defa1fdc59b47cbc76a3d3f304",
+   "note": "Conserva el fallo de aislamiento de la prueba de determinismo y sus omisiones. No es un resultado del arreglo numérico."
+  },
+  {
+   "name": "floor_before_fix",
+   "tests": 8,
+   "failures": 8,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "d3d4461d2965bb96b3fea38c22b962dcec0046ee4f422ef5acf33a7ffe1c0eda",
+   "note": "Ocho casos nuevos reproducen ν igual al suelo antes de corregir, en ambas precisiones."
+  },
+  {
+   "name": "floor_module_after_fix",
+   "tests": 46,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "175f2e4599e0019cbd6806a5f2f737488a24e28ee0e1a79bdfcc3d11a32852c5",
+   "note": "45 casos CPU aprobados y una omisión CUDA antes de ajustar la prosa del docstring."
+  },
+  {
+   "name": "integrated_targeted",
+   "tests": 510,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "2707a642bfaded742610f5b07e6d5b089d5e4eb1d073c47d28903b0bdb2e7f2b",
+   "note": "510 casos CPU aprobados sin omisiones, 33 CUDA deseleccionados. Incluye consumidores de F1 y L2, gradientes, recuperación, registros, ventanas y el módulo de determinismo."
+  },
+  {
+   "name": "module_after_docstring_revision",
+   "tests": 45,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "09d7445d47e286d71924c5187ebc7a5164ae486f67fa06d43635fce9ea41ddb8",
+   "note": "45 casos CPU aprobados y un caso CUDA deseleccionado después de ajustar solo el docstring, con AST ejecutable y posiciones idénticos."
+  },
+  {
+   "name": "module_after_cuda_case_declaration",
+   "tests": 45,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "8f3809a1e9f0ea3ed829f7278dea4268cb4f7f64563aaa1d92b8d5674e041a7a",
+   "note": "45 casos CPU aprobados y nueve CUDA deseleccionados. Se añaden ocho casos CUDA para los grados saturados. La fuente de producción no cambia."
+  },
+  {
+   "name": "new_test_coverage",
+   "tests": 8,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "b03307cd024ddf11f74d0c157bd3b8d83091e5d905e6d940ac71375738e0404f",
+   "note": "Los ocho casos CPU de la regresión nueva, con cobertura del código de la prueba. No se ejecuta CUDA."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3097,
+   "covered_statements": 2087,
+   "branches": 1266,
+   "covered_branches": 690
+  },
+  "files": [
+   {
+    "path": "benchmarks/objective_variants_cost.py",
+    "source_sha256": "55e54a285f1cf1b6161a8fb1665720a73492fae6bd20e7092f9f09006197d9bc",
+    "statements": 180,
+    "covered_statements": 162,
+    "branches": 42,
+    "covered_branches": 34
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "e5d29850e7cc0ad05dfefe8a883c52a3beabd9047655fd46a731fe8e6944972d",
+    "statements": 929,
+    "covered_statements": 590,
+    "branches": 472,
+    "covered_branches": 229
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "2b0649a3bd8ec113ea092be8daf722da7dcd3df7cb9a795a6c771316a8bd9f84",
+    "statements": 222,
+    "covered_statements": 179,
+    "branches": 122,
+    "covered_branches": 86
+   },
+   {
+    "path": "src/mars_titan/models/titans/output_objectives.py",
+    "source_sha256": "9a8367fc0c4a69759723d36e1a7a3009994300e15afb62ab2f39733c786b6f55",
+    "statements": 39,
+    "covered_statements": 39,
+    "branches": 20,
+    "covered_branches": 20
+   },
+   {
+    "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+    "source_sha256": "580fa640387e3c0077cf0dcb2c91dee43ec735f0783133d11e8ba5fb6773ab0a",
+    "statements": 98,
+    "covered_statements": 98,
+    "branches": 20,
+    "covered_branches": 20
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "e14a94a018bf45682cbe99e140ade0e729b38caaec2791a64a7dab36686df9f0",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "4bf5a2eb4139d3bb36b64fe1900f74cd330e71981e1db30c178671783417ee0d",
+    "statements": 963,
+    "covered_statements": 682,
+    "branches": 406,
+    "covered_branches": 228
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "b1a3bcde3534637cfe90e3f58cff3819964963e2603d5545cf95ee69e9d5d58e",
+    "statements": 28,
+    "covered_statements": 14,
+    "branches": 14,
+    "covered_branches": 4
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "296b4a3c5914fd401a02ad5e2aefcdd71e58eefc701480c127cb43687dd88aff",
+    "statements": 397,
+    "covered_statements": 100,
+    "branches": 86,
+    "covered_branches": 5
+   }
+  ],
+  "max_crap": 2636.19436345967,
+  "quality_sha256": "116aa9b14218e9de584a8450b403b9e8e104c31e1edb8ce78cde0ac9fb9d5881",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+  "head": "202175bb2aff2091b15e23b442e347b93de91d3c",
+  "functions": 20,
+  "max_crap": 32.624768,
+  "changed_executable_lines": 77,
+  "changed_covered_lines": 77,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "_module_settings",
+    "cyclomatic_complexity": 22,
+    "crap": 32.624768,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalInference.__init__",
+    "cyclomatic_complexity": 22,
+    "crap": 28.14859259259259,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "function": "FinancialDustAdapter.__init__",
+    "cyclomatic_complexity": 20,
+    "crap": 20.34553503941259,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/objective_variants_cost.py",
+    "function": "_measure",
+    "cyclomatic_complexity": 17,
+    "crap": 17.47058823529412,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+    "function": "_checked",
+    "cyclomatic_complexity": 10,
+    "crap": 10.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "20 funciones de producción cambiadas frente a develop 09fe1e459. Radon mide complejidad ciclomática y coverage.py mide sentencias y ramas. La selección no cubre todas las rutas previas de los módulos compartidos.",
+  "changed_sha256": "a2d847d08939546cb1d3fa6d636acf0a41b56b3d9cb0cf5bb04b44f118866e6d"
+ },
+ "mutations": {
+  "tree_commit": "929308dab90bb40df0c30da42182ddf2f6f4c723",
+  "planned": 52,
+  "killed": 52,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "771990ac74f73f32525840c6affbace461b8fba33fd571bf958f8c139f058ad3",
+  "executor_sha256": "41726da6a40d4e6e222a669ed3f4b6e00ef136a1c3c5e8d0a8d30cc54ccc4721",
+  "source_sha256": {
+   "src/mars_titan/training/financial_run.py": "05b24b564c9f00e2f1f8edadcc187321b94b8d357fb46737067dbd782e090639",
+   "src/mars_titan/training/search_cases.py": "b1a3bcde3534637cfe90e3f58cff3819964963e2603d5545cf95ee69e9d5d58e",
+   "src/mars_titan/models/titans/output_objectives.py": "9a8367fc0c4a69759723d36e1a7a3009994300e15afb62ab2f39733c786b6f55",
+   "src/mars_titan/models/titans/skewed_t_objective.py": "fe70b965681a81d60b93467cc95aed8001da6910c9386d0e0a46af8af7429ed3",
+   "src/mars_titan/training/titans_walk_forward.py": "a09373873a804ec26ac134be9ff1853643826044635fe7fce7bf9ae4bd77eacc",
+   "benchmarks/objective_variants_cost.py": "55e54a285f1cf1b6161a8fb1665720a73492fae6bd20e7092f9f09006197d9bc",
+   "src/mars_titan/models/titans/frozen_financial.py": "2b0649a3bd8ec113ea092be8daf722da7dcd3df7cb9a795a6c771316a8bd9f84"
+  },
+  "cases": [
+   "booleans_accepted",
+   "floor_lower_bound",
+   "floor_upper_bound",
+   "scale_ratio",
+   "scale_upper_bound",
+   "dof_floor_lower_bound",
+   "dof_strict_order",
+   "dof_upper_bound",
+   "skew_strict_lower",
+   "skew_upper_bound",
+   "identity_without_point",
+   "build_ignores_dtype",
+   "inverse_softplus_dropped",
+   "skew_bias_not_zero",
+   "bias_order_swapped",
+   "weights_not_zero",
+   "scale_without_floor",
+   "skew_without_bound",
+   "dof_with_other_floor",
+   "emits_the_mode",
+   "median_at_another_level",
+   "declares_scalar_point",
+   "not_row_decomposable",
+   "session_level",
+   "levels_reversed",
+   "dtype_check_dropped",
+   "empty_check_dropped",
+   "shape_check_dropped",
+   "sides_swapped",
+   "log_two_dropped",
+   "pi_dropped",
+   "kernel_without_dof",
+   "gamma_shifted",
+   "weight_not_detached",
+   "weighted_sum",
+   "below_times_skew",
+   "above_over_skew",
+   "above_level_without_skew",
+   "branch_at_the_middle",
+   "gradient_check_dropped",
+   "finite_check_dropped",
+   "dtype_not_restored",
+   "registry_without_l2",
+   "frozen_signature_without_l2",
+   "frozen_sources_without_l2",
+   "predictor_changes_without_l2",
+   "walk_forward_code_without_l2",
+   "posttraining_accepts_l2",
+   "cost_without_l2",
+   "cost_receipt_issue",
+   "cost_without_source",
+   "cost_measures_l1_for_all"
+  ],
+  "summary_sha256": "0a6ba84fcf7b541cbc083e2dfcd6e856baabbda9ef7139fb0d1df40f987fd08b",
+  "scope": "52 defectos dirigidos de la implementación inicial, con fuentes cotejadas contra el commit histórico. G1 y G2 verdes y fallo esperado de M1.",
+  "first_pass_killed": 52,
+  "reruns": [
+   {
+    "tree_commit": "202175bb2aff2091b15e23b442e347b93de91d3c",
+    "cases": [
+     "posttraining_accepts_l2",
+     "walk_forward_code_without_l2"
+    ],
+    "killed": 2,
+    "recipes_sha256": "c60dda9c8b6d6d3667546bf3407b4a550b1cc5223cd04fd73a2afc61d628ecba",
+    "source_sha256": {
+     "src/mars_titan/training/financial_run.py": "4bf5a2eb4139d3bb36b64fe1900f74cd330e71981e1db30c178671783417ee0d",
+     "src/mars_titan/training/titans_walk_forward.py": "296b4a3c5914fd401a02ad5e2aefcdd71e58eefc701480c127cb43687dd88aff"
+    },
+    "summary_sha256": "d9a8de7bf360b07aef9980dfc3e9604388d3acfd4c38a5cb8abf37e68f9b32c9",
+    "reason": "La integración modifica financial_run.py y titans_walk_forward.py por F3. Se repiten sobre la fuente actual las dos recetas L2 que actúan en ellos. Sustituyen sus resultados históricos, sin sumar identificadores."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "202175bb2aff2091b15e23b442e347b93de91d3c",
+    "planned": 3,
+    "killed": 2,
+    "recipes_sha256": "d0763b64a27e1647a8e6c3b8fb1f7f229cddfd4d09c57de706b3ea4782b4975c",
+    "executor_sha256": "0bed3e4ab02e9ea0a75f13617eb99644bed94404d9e8f38493601c202ca11757",
+    "source_sha256": {
+     "src/mars_titan/training/dust/financial.py": "e14a94a018bf45682cbe99e140ade0e729b38caaec2791a64a7dab36686df9f0",
+     "src/mars_titan/models/titans/skewed_t_objective.py": "4e9ddd75330528266e301ac10ecc69587de0679d7a2c2d0f5850af3189ba53ba"
+    },
+    "cases": [
+     "dof_rounds_to_floor",
+     "dust_optional_l2_guard_redundant",
+     "rounding_rule_not_identified"
+    ],
+    "summary_sha256": "3361aecc65feb4feb672a03deb0ee9967fd4dc5419191c55fa7b0a883678d260",
+    "scope": "Dos defectos de la cota numérica y su identidad se detectan. La eliminación redundante de la guarda opcional de Dust sobrevive. La fuente solo difiere del commit en el docstring, con AST ejecutable y posiciones cotejados."
+   }
+  ],
+  "equivalent": [
+   {
+    "id": "dust_optional_l2_guard_redundant",
+    "reason": "Para FinancialPredictor construido conforme a su contrato, declarar skewed_t_objective crea output_objective. Dust sigue rechazando ese módulo en su segunda guarda aunque se retire el nombre de la lista opcional. Las tres fases de la selección de modelos no admitidos pasan. No se generaliza a objetos manipulados al margen del contrato."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c9919e27180d95073aa8a93846057e649d",
+  "scope": "Enlace existente para pruebas de consumidores CPU. No acredita ejecutar CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": [
+  {
+   "receipt": "reports/engineering/skewed-t-objective-20261030/cost-cpu.json",
+   "sha256": "1e26c4bc9f1537a74fbc3bd2340e725f031a3e80c114bda90f7e459fa616e603"
+  },
+  {
+   "receipt": "reports/engineering/skewed-t-objective-20261030/cost-cpu-numerical-floor.json",
+   "sha256": "f48ae92997b6daafe160f24ddf5646992c17e29fd40a57e365db0c65983d752e"
+  }
+ ]
+}

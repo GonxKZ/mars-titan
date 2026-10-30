@@ -1,0 +1,2569 @@
+{
+  "schema_version": 1,
+  "recipes_sha256": "771990ac74f73f32525840c6affbace461b8fba33fd571bf958f8c139f058ad3",
+  "executor_sha256": "41726da6a40d4e6e222a669ed3f4b6e00ef136a1c3c5e8d0a8d30cc54ccc4721",
+  "source_sha256": {
+    "src/mars_titan/training/financial_run.py": "05b24b564c9f00e2f1f8edadcc187321b94b8d357fb46737067dbd782e090639",
+    "src/mars_titan/training/search_cases.py": "b1a3bcde3534637cfe90e3f58cff3819964963e2603d5545cf95ee69e9d5d58e",
+    "src/mars_titan/models/titans/output_objectives.py": "9a8367fc0c4a69759723d36e1a7a3009994300e15afb62ab2f39733c786b6f55",
+    "src/mars_titan/models/titans/skewed_t_objective.py": "fe70b965681a81d60b93467cc95aed8001da6910c9386d0e0a46af8af7429ed3",
+    "src/mars_titan/training/titans_walk_forward.py": "a09373873a804ec26ac134be9ff1853643826044635fe7fce7bf9ae4bd77eacc",
+    "benchmarks/objective_variants_cost.py": "55e54a285f1cf1b6161a8fb1665720a73492fae6bd20e7092f9f09006197d9bc",
+    "src/mars_titan/models/titans/frozen_financial.py": "2b0649a3bd8ec113ea092be8daf722da7dcd3df7cb9a795a6c771316a8bd9f84"
+  },
+  "planned": 52,
+  "only": null,
+  "killed": 52,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "cases": [
+    {
+      "id": "booleans_accepted",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.53,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.88,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.61,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "floor_lower_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.48,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.61,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.28,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "floor_upper_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.16,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.56,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.42,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "scale_ratio",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.1,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.4,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.34,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "scale_upper_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.24,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.37,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.09,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dof_floor_lower_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.28,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.47,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.3,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dof_strict_order",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.23,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.28,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.2,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dof_upper_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.1,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.18,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 6.92,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "skew_strict_lower",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 7.01,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 7.2,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 6.99,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "skew_upper_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 6.78,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 1,
+          "elapsed_s": 6.84,
+          "xml_counts": {
+            "total": 13,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_invalid_configurations_are_refused",
+          "exit_code": 0,
+          "elapsed_s": 6.82,
+          "xml_counts": {
+            "total": 13,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "identity_without_point",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 0,
+          "elapsed_s": 6.18,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 1,
+          "elapsed_s": 7.03,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 0,
+          "elapsed_s": 6.78,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "build_ignores_dtype",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 0,
+          "elapsed_s": 6.59,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 1,
+          "elapsed_s": 6.83,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_identity_records_every_declared_value_and_choice",
+          "exit_code": 0,
+          "elapsed_s": 6.58,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "inverse_softplus_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 8.15,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 8.43,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 9.75,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "skew_bias_not_zero",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 10.37,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 10.54,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 10.69,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "bias_order_swapped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 10.65,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 11.06,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 10.97,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "weights_not_zero",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 11.27,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 10.08,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 15.02,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "scale_without_floor",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 22.11,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 26.87,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 27.05,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "skew_without_bound",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_parameters_stay_inside_their_declared_ranges",
+          "exit_code": 0,
+          "elapsed_s": 25.53,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_parameters_stay_inside_their_declared_ranges",
+          "exit_code": 1,
+          "elapsed_s": 26.03,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_parameters_stay_inside_their_declared_ranges",
+          "exit_code": 0,
+          "elapsed_s": 29.68,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dof_with_other_floor",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 30.2,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 30.82,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 36.24,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "emits_the_mode",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 0,
+          "elapsed_s": 27.57,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 1,
+          "elapsed_s": 24.66,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 0,
+          "elapsed_s": 23.23,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "median_at_another_level",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 0,
+          "elapsed_s": 21.78,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 1,
+          "elapsed_s": 24.7,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_emitted_point_is_the_median_of_the_fitted_distribution",
+          "exit_code": 0,
+          "elapsed_s": 24.31,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "declares_scalar_point",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 24.77,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 1,
+          "elapsed_s": 24.03,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 22.73,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "not_row_decomposable",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 27.02,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 23.97,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 25.49,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "session_level",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 26.7,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 22.94,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 24.77,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "levels_reversed",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 24.08,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 1,
+          "elapsed_s": 30.02,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_parameters_start_at_their_declared_values_without_global_rng",
+          "exit_code": 0,
+          "elapsed_s": 29.54,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dtype_check_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 23.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 1,
+          "elapsed_s": 23.13,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 23.4,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "empty_check_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 23.53,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 1,
+          "elapsed_s": 23.33,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 23.82,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "shape_check_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 24.51,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 1,
+          "elapsed_s": 24.93,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_loss_rejects_malformed_outputs",
+          "exit_code": 0,
+          "elapsed_s": 24.28,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "sides_swapped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 22.41,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 1,
+          "elapsed_s": 22.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 21.95,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "log_two_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 24.85,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 1,
+          "elapsed_s": 25.41,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 25.06,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "pi_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 24.22,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 1,
+          "elapsed_s": 23.12,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 22.8,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "kernel_without_dof",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 23.88,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 1,
+          "elapsed_s": 25.07,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 24.34,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "gamma_shifted",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 24.77,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 1,
+          "elapsed_s": 24.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_nll_is_the_negative_log_density_of_equation_seven",
+          "exit_code": 0,
+          "elapsed_s": 23.2,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "weight_not_detached",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 0,
+          "elapsed_s": 18.91,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 1,
+          "elapsed_s": 13.61,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 0,
+          "elapsed_s": 11.21,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "weighted_sum",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 0,
+          "elapsed_s": 14.35,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 1,
+          "elapsed_s": 15.75,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_beta_nll_holds_the_scale_weight_fixed",
+          "exit_code": 0,
+          "elapsed_s": 13.12,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "below_times_skew",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 13.39,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 1,
+          "elapsed_s": 15.19,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 16.11,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "above_over_skew",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 16.92,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 1,
+          "elapsed_s": 16.76,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 17.2,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "above_level_without_skew",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 19.27,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 1,
+          "elapsed_s": 19.58,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 18.8,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "branch_at_the_middle",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 19.35,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 1,
+          "elapsed_s": 14.91,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_invert_the_distribution_function",
+          "exit_code": 0,
+          "elapsed_s": 21.18,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "gradient_check_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 0,
+          "elapsed_s": 23.59,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 1,
+          "elapsed_s": 18.4,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 0,
+          "elapsed_s": 20.06,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "finite_check_dropped",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 0,
+          "elapsed_s": 21.06,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 1,
+          "elapsed_s": 20.85,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_quantiles_need_detached_finite_outputs",
+          "exit_code": 0,
+          "elapsed_s": 22.39,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "dtype_not_restored",
+      "path": "src/mars_titan/models/titans/skewed_t_objective.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_float32_outputs_keep_their_dtype",
+          "exit_code": 0,
+          "elapsed_s": 22.78,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_float32_outputs_keep_their_dtype",
+          "exit_code": 1,
+          "elapsed_s": 23.92,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_float32_outputs_keep_their_dtype",
+          "exit_code": 0,
+          "elapsed_s": 21.9,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "registry_without_l2",
+      "path": "src/mars_titan/models/titans/output_objectives.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 24.84,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 1,
+          "elapsed_s": 26.1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 24.44,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "frozen_signature_without_l2",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_frozen_consumer_emits_the_median_and_refuses_the_reader",
+          "exit_code": 0,
+          "elapsed_s": 26.05,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_frozen_consumer_emits_the_median_and_refuses_the_reader",
+          "exit_code": 1,
+          "elapsed_s": 22.59,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_the_frozen_consumer_emits_the_median_and_refuses_the_reader",
+          "exit_code": 0,
+          "elapsed_s": 24.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "frozen_sources_without_l2",
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 0,
+          "elapsed_s": 28.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 1,
+          "elapsed_s": 32.42,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 0,
+          "elapsed_s": 29.41,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "predictor_changes_without_l2",
+      "path": "src/mars_titan/training/search_cases.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 23.58,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 1,
+          "elapsed_s": 23.85,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_skewed_t_objective.py::test_declaration_travels_as_a_predictor_change_with_its_own_identity",
+          "exit_code": 0,
+          "elapsed_s": 23.16,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "walk_forward_code_without_l2",
+      "path": "src/mars_titan/training/titans_walk_forward.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 0,
+          "elapsed_s": 21.35,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 1,
+          "elapsed_s": 19.78,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/models/titans/test_output_objective_registry.py::test_every_output_objective_is_declarable_and_enters_the_code_identities",
+          "exit_code": 0,
+          "elapsed_s": 26.71,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "posttraining_accepts_l2",
+      "path": "src/mars_titan/training/financial_run.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_financial_run_skewed_t.py::test_posttraining_is_refused_until_it_is_declared",
+          "exit_code": 0,
+          "elapsed_s": 28.86,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_financial_run_skewed_t.py::test_posttraining_is_refused_until_it_is_declared",
+          "exit_code": 1,
+          "elapsed_s": 26.51,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_financial_run_skewed_t.py::test_posttraining_is_refused_until_it_is_declared",
+          "exit_code": 0,
+          "elapsed_s": 26.79,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "cost_without_l2",
+      "path": "benchmarks/objective_variants_cost.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 25.63,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 1,
+          "elapsed_s": 12.36,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 12.98,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "cost_receipt_issue",
+      "path": "benchmarks/objective_variants_cost.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 12.57,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 1,
+          "elapsed_s": 11.02,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 11.12,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "cost_without_source",
+      "path": "benchmarks/objective_variants_cost.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 10.9,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 1,
+          "elapsed_s": 10.71,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_a_small_measure_covers_f1_and_l2_and_keeps_the_parameters",
+          "exit_code": 0,
+          "elapsed_s": 10.92,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "cost_measures_l1_for_all",
+      "path": "benchmarks/objective_variants_cost.py",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_each_model_is_measured_with_its_own_loss",
+          "exit_code": 0,
+          "elapsed_s": 7.12,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_each_model_is_measured_with_its_own_loss",
+          "exit_code": 1,
+          "elapsed_s": 6.97,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/benchmarks/test_objective_variants_cost.py::test_each_model_is_measured_with_its_own_loss",
+          "exit_code": 0,
+          "elapsed_s": 6.88,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    }
+  ]
+}

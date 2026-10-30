@@ -528,13 +528,14 @@ class ChronologicalInference:
             recipe.loss != "mae" or recipe.distillation_weight is not None
         ):
             raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
-        # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
+        # F1, A4 y L2 son otros objetivos de salida. Solo se distinguen para rechazar el
         # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
         self.undeclared_posttraining = (
             predictor.config.laplace_scale_head is not None
             or predictor.config.opponent_heads is not None
+            or predictor.config.skewed_t_objective is not None
         )
-        # Las filas emitidas llevan cinco niveles con la cabeza de cuantiles o con F1.
+        # Las filas emitidas llevan cinco niveles con la cabeza de cuantiles, F1 o L2.
         self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
         # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
         self.horizons = predictor.config.auxiliary_horizons

@@ -501,5 +501,42 @@
       4
     ],
     "verification_date": "2026-10-29"
+  },
+  {
+    "id": "michankow2025forecasting",
+    "title": "Forecasting Probability Distributions of Financial Returns with Deep Neural Networks",
+    "authors": [
+      "Jakub Michańków"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2508.18921v2",
+    "doi": "10.48550/arXiv.2508.18921",
+    "pdf_url": "https://arxiv.org/pdf/2508.18921v2",
+    "venue": "arXiv (q-fin.RM)",
+    "access": "Preprint v2 del 30 de agosto de 2025, sin publicación revisada indicada en arXiv. Leídas en el PDF las secciones 3.2 a 3.6 (páginas 2 a 5): la densidad de la t asimétrica de la ecuación (7) con la transformación de Fernández y Steel, la observación de que la asimetría separa la media de la moda junto a los momentos (9) y (10), la NLL de la ecuación (16), las capas densas de salida de la sección 3.4, que no declaran activaciones, y el VaR de la ecuación (22). No se han reproducido sus resultados.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2025-08-30",
+      "url": "https://arxiv.org/pdf/2508.18921v2",
+      "sha256": "95afd71c4a92505ad0a8b595dd62c4b3155c41f9fdf7523fc71e7d0e78d1f0d2",
+      "passages": [
+        "Sección 3.2, páginas 2 y 3: densidades (5) a (7), función de Heaviside (8) y momentos (9) y (10)",
+        "Sección 3.3, páginas 3 y 4: NLL general (12) y NLL de la t asimétrica (16)",
+        "Sección 3.4, página 4: capas densas con tantas salidas como parámetros, sin activaciones declaradas",
+        "Secciones 3.5 y 3.6, páginas 4 y 5: LPS, CRPS, PIT y VaR de la ecuación (22)"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2508.18921v2",
+      "https://doi.org/10.48550/arXiv.2508.18921"
+    ],
+    "relevance": "Fuente de L2 (`skewed_t_objective_v1`, #787): la densidad (7) y la NLL (16) que ajusta el objetivo. El artículo no fija las activaciones de salida, el suelo de los grados de libertad ni el punto emitido, que son decisiones propias declaradas en el documento de L2.",
+    "redistribution": "Licencia CC BY-NC-ND 4.0 indicada en arXiv. No se redistribuye el PDF.",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-30"
   }
 ]

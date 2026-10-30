@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "skewed_t_objective_variants",
+  "issue": 787,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "posttraining": "not_declared",
+    "episodic_readout": "not_declared"
+  },
+  "arms": {
+    "absolute_error_control": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "laplace_scale_head": {
+      "role": "control",
+      "predictor_changes": {
+        "laplace_scale_head": {
+          "floor": 1e-06,
+          "initial_scale": 0.01
+        }
+      }
+    },
+    "skewed_t_objective": {
+      "role": "variant",
+      "control": "laplace_scale_head",
+      "predictor_changes": {
+        "skewed_t_objective": {
+          "floor": 1e-06,
+          "initial_scale": 0.01,
+          "dof_floor": 2.0,
+          "initial_dof": 5.0,
+          "max_skew": 3.0
+        }
+      }
+    }
+  },
+  "level_reference": {
+    "source": "quantile_reference",
+    "head": "quantile_head_v1",
+    "loss": "pinball",
+    "use": "emitted_levels_only"
+  }
+}

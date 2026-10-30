@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "kind": "objective_variants_cost",
+  "issues": [
+    749,
+    787
+  ],
+  "recorded_at_utc": "2026-10-30T18:57:29.667055+00:00",
+  "commit": "202175bb2aff2091b15e23b442e347b93de91d3c",
+  "scope": "Forward con grafo de T instantes, p\u00e9rdida de cada objetivo frente a etiquetas sint\u00e9ticas y backward, m\u00e1s inferencia sin grafo. Entradas sint\u00e9ticas con las formas de la edici\u00f3n v3.1. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32",
+  "kernel_policy": {
+    "schema_version": 1,
+    "precision": "fp32_strict",
+    "matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "float32_matmul_precision": "highest",
+    "retired_native_overrides": [
+      "bmm"
+    ],
+    "native_overrides": [
+      "_foreach_mm/CUDA/native",
+      "linalg_polar.out/CUDA/native",
+      "linalg_polar/CUDA/native"
+    ]
+  },
+  "sdpa_backend": "MATH",
+  "source_sha256": {
+    "benchmarks/objective_variants_cost.py": "55e54a285f1cf1b6161a8fb1665720a73492fae6bd20e7092f9f09006197d9bc",
+    "src/mars_titan/models/titans/session_ranks.py": "14a0fc9a3abbfffa745d81c66332e160aebca80294e106a2062a8409732f5a5e",
+    "src/mars_titan/models/titans/session_ic_objective.py": "72b74555a37e20a72eeefe379a661884d525bdb212bd2f7fd22a2058584e292a",
+    "src/mars_titan/models/titans/opponent_heads.py": "ca501a8b0dc943bf038fc985ca1529a71ef8385ec6b1b1e98f6e2a16d2f11b44",
+    "src/mars_titan/models/titans/laplace_scale.py": "9fd9220d23dba266d76ccbf7a70ac35fc2ac6e0bf9ba67d4a246d1d3273bb26c",
+    "src/mars_titan/models/titans/skewed_t_objective.py": "580fa640387e3c0077cf0dcb2c91dee43ec735f0783133d11e8ba5fb6773ab0a",
+    "src/mars_titan/models/titans/output_objectives.py": "9a8367fc0c4a69759723d36e1a7a3009994300e15afb62ab2f39733c786b6f55",
+    "src/mars_titan/models/titans/financial.py": "e5d29850e7cc0ad05dfefe8a883c52a3beabd9047655fd46a731fe8e6944972d"
+  },
+  "threads": 2,
+  "shapes": {
+    "rows": 256,
+    "instants": 8,
+    "hidden_size": 64,
+    "news": 384,
+    "charts": 512,
+    "concepts": 26,
+    "indicators": 140
+  },
+  "base_predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728,
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "repetitions": 7,
+  "warmup": 1,
+  "order": "repeticiones alternadas entre modelos con orden rotatorio",
+  "memory": "pico neto del asignador de ATen en CPU con el perfilador, una pasada con grafo",
+  "models": {
+    "reference_mae": {
+      "predictor_changes": {},
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 2.0933583602309227,
+        "minimum": 1.3419128239620477,
+        "maximum": 2.6656571838539094,
+        "samples": [
+          1.5153184190858155,
+          2.0933583602309227,
+          1.3419128239620477,
+          1.7307369410991669,
+          2.187310504959896,
+          2.6656571838539094,
+          2.2637926989700645
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.9068192471750081,
+        "minimum": 0.6484241872094572,
+        "maximum": 1.2001343960873783,
+        "samples": [
+          0.793384816031903,
+          1.0496641860809177,
+          0.6484241872094572,
+          0.8026772749144584,
+          0.9068192471750081,
+          1.2001343960873783,
+          1.154459228971973
+        ]
+      },
+      "inference_seconds": {
+        "median": 1.8670584938954562,
+        "minimum": 1.6380009818822145,
+        "maximum": 2.2417026159819216,
+        "samples": [
+          1.6530815579462796,
+          1.8670584938954562,
+          1.6380009818822145,
+          1.7322696768678725,
+          2.1567417739424855,
+          2.2417026159819216,
+          1.9396012811921537
+        ]
+      },
+      "allocated_peak_bytes": 504923500,
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0,
+        "backward_seconds": 1.0,
+        "inference_seconds": 1.0,
+        "allocated_peak_bytes": 1.0
+      }
+    },
+    "laplace_scale_head_v1": {
+      "predictor_changes": {
+        "laplace_scale_head": {
+          "floor": 1e-06,
+          "initial_scale": 0.01
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 1.9361418860498816,
+        "minimum": 1.4679604971315712,
+        "maximum": 2.5245805489830673,
+        "samples": [
+          1.4679604971315712,
+          1.9170289600733668,
+          1.5820453811902553,
+          1.9361418860498816,
+          2.3254123779479414,
+          2.5245805489830673,
+          2.343342118896544
+        ]
+      },
+      "backward_seconds": {
+        "median": 1.011106224032119,
+        "minimum": 0.6926182759925723,
+        "maximum": 1.2859971409197897,
+        "samples": [
+          0.6926182759925723,
+          1.090353034902364,
+          0.7348486948758364,
+          1.011106224032119,
+          1.2859971409197897,
+          0.9719727209303528,
+          1.2065329609904438
+        ]
+      },
+      "inference_seconds": {
+        "median": 1.5963488600682467,
+        "minimum": 1.3399846029933542,
+        "maximum": 2.54480043402873,
+        "samples": [
+          1.3399846029933542,
+          1.4992585740983486,
+          1.4704196660313755,
+          1.5963488600682467,
+          1.832810641033575,
+          1.9732222508173436,
+          2.54480043402873
+        ]
+      },
+      "allocated_peak_bytes": 504955504,
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 0.9248974866569438,
+        "backward_seconds": 1.1150030473900874,
+        "inference_seconds": 0.8550074169007972,
+        "allocated_peak_bytes": 1.000063383859139
+      }
+    },
+    "skewed_t_objective_v1": {
+      "predictor_changes": {
+        "skewed_t_objective": {
+          "floor": 1e-06,
+          "initial_scale": 0.01,
+          "dof_floor": 2.0,
+          "initial_dof": 5.0,
+          "max_skew": 3.0
+        }
+      },
+      "total_parameters": 186054,
+      "forward_with_graph_seconds": {
+        "median": 1.9447500209789723,
+        "minimum": 1.6635164918843657,
+        "maximum": 2.3447630181908607,
+        "samples": [
+          1.6635164918843657,
+          2.220784285105765,
+          1.8109251861460507,
+          1.8528571920469403,
+          1.9447500209789723,
+          2.3447630181908607,
+          2.0345926240552217
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.9945549431722611,
+        "minimum": 0.6687101619318128,
+        "maximum": 1.1795556859578937,
+        "samples": [
+          0.9945549431722611,
+          1.0714417591225356,
+          0.6687101619318128,
+          0.7685241838917136,
+          0.7827278450131416,
+          1.1795556859578937,
+          1.1693406261038035
+        ]
+      },
+      "inference_seconds": {
+        "median": 1.8374613369815052,
+        "minimum": 1.7044339580461383,
+        "maximum": 2.379143918165937,
+        "samples": [
+          1.8254662579856813,
+          1.8374613369815052,
+          1.7044339580461383,
+          1.7658650989178568,
+          2.096831009024754,
+          2.379143918165937,
+          2.3441451580729336
+        ]
+      },
+      "allocated_peak_bytes": 505024688,
+      "parameters_unchanged": true,
+      "added_parameters": 195,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 0.9290096038618265,
+        "backward_seconds": 1.0967510297896454,
+        "inference_seconds": 0.9841477077388191,
+        "allocated_peak_bytes": 1.0002004026352507
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "total_wall_seconds": 135.53615349298343,
+  "process_peak_ram_bytes": 1807495168,
+  "load_average_start": [
+    10.4326171875,
+    9.4765625,
+    8.13916015625
+  ],
+  "load_average_end": [
+    17.73779296875,
+    12.62548828125,
+    9.48974609375
+  ]
+}

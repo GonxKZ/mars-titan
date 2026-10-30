@@ -126,6 +126,7 @@ from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from .session_ranks import identity as session_rank_identity
+from .skewed_t_objective import SkewedTObjective
 from .state import (
     MACState,
     check_differentiable,
@@ -223,6 +224,8 @@ class FinancialConfig:
     auxiliary_horizons: AuxiliaryHorizons | None = None
     # A4 de #749: cabezas oponentes con integrador neutral, otro objetivo de salida.
     opponent_heads: OpponentHeads | None = None
+    # L2 de #787: t de Student asimétrica, otro objetivo de salida excluyente con los demás.
+    skewed_t_objective: SkewedTObjective | None = None
     # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
     # declararla, la identidad y el cálculo no cambian.
     mature_reliability: MatureReliability | None = None
