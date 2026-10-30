@@ -8,6 +8,7 @@ y semilla aunque varias entradas la usen como control. No importa PyTorch ni lee
 """
 
 import hashlib
+import itertools
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,12 +32,20 @@ METRICS = ("session_ic", "session_mae_calibrated")
 MAX_FIT_MONTHS = 12
 # Controles comunes que no necesitan ningún ajuste.
 COMMON = ("zero", "past_median")
-# Trabajos que deben haber terminado antes: el padre congelado y la variante emparejada.
-REQUIRES = ("parent", "after")
+# Trabajos que deben haber terminado antes: el padre congelado, la variante emparejada y el
+# trabajo del origen anterior desde cuyo estado elegido empieza una continuación.
+REQUIRES = ("parent", "after", "continues")
+# Modelos de una declaración que solo existen como etapa que continúa desde su padre (F3).
+CONTINUATION = "walk_forward_stage_started_from_its_parent"
+# Papeles de los contrastes de continuación. Solo tienen sesiones desde el segundo origen y
+# forman su propia familia, fuera de la declarada y de sus sensibilidades.
+CONTINUATION_ROLES = ("continuation", "continuation_reported")
 # Enmienda de la selección registrada el 28 de octubre antes de abrir S. Los ajustes y los
 # lectores emiten la época común de sus semillas, elegida con el IC medio de validación.
 SELECTION_RULE = "common_epoch_session_ic_v1"
 EPOCH_RUNNERS = ("fit", "reader")
+# Réplicas de una media de semillas: todos los subconjuntos del tamaño declarado.
+EVERY_SUBSET = "every_subset_of_the_screening_seeds"
 
 
 def _require(condition, message):
@@ -241,10 +250,64 @@ def _fit(entry, document, name, value):
         and 1 <= definition["updates_multiplier"] <= 4,
         f"{name} multiplica las actualizaciones por un entero entre 1 y 4",
     )
-    if "combine" in value:
-        # La media de semillas no se ajusta: combina las emisiones de su fuente en el análisis.
-        return dict(runner="output", source=value["control"], combine=value["combine"])
     return definition
+
+
+def _combination(entry, declared, name, value, seeds):
+    """Media de semillas de una entrada, con su fuente y sus réplicas sobre las semillas.
+
+    La media no se ajusta: el análisis combina las emisiones de su fuente. Cada réplica
+    promedia `size` semillas de la criba y se toman todos los subconjuntos, así que cada
+    semilla aparece el mismo número de veces y el resultado no depende de su orden. La media
+    de las réplicas estima el IC esperado de un conjunto de `size` semillas. Su control
+    multiplica las actualizaciones por `size`, como declara F2.
+    """
+    combination = entry.get("combinations", {}).get(name)
+    _require(
+        isinstance(combination, dict)
+        and set(combination) == {"source", "size", "replicates"}
+        and combination["replicates"] == EVERY_SUBSET,
+        f"{name} combina semillas y declara su fuente, su tamaño y sus réplicas",
+    )
+    source, size = combination["source"], combination["size"]
+    _require(
+        source in declared and source != name and "combine" not in declared[source],
+        f"La fuente de {name} es otro modelo ajustado de su entrada",
+    )
+    control = declared.get(value.get("control"), {})
+    _require(
+        type(size) is int
+        and 2 <= size <= len(seeds)
+        and size == len(value.get("seeds", ()))
+        and control.get("updates_multiplier") == size,
+        f"{name} promedia las semillas que declara y su control multiplica por ellas las "
+        "actualizaciones",
+    )
+    replicates = [list(group) for group in itertools.combinations(sorted(seeds), size)]
+    return dict(runner="output", source=source, combine=value["combine"], replicates=replicates)
+
+
+def _continued(name, entry, declared, excluded):
+    """Padre de las continuaciones de una entrada, o None si no declara ninguna ejecutable.
+
+    El padre es un modelo ajustado de la misma entrada que no continúa a su vez. Cada
+    continuación del origen k empieza en el estado que ese padre eligió en el origen k − 1
+    con la misma semilla.
+    """
+    arms = {arm for arm, value in declared.items() if value.get("applies_to") == CONTINUATION}
+    continuation = entry.get("continuation")
+    if not arms - excluded:
+        _require(continuation is None, f"{name} declara una continuación sin modelos que continúen")
+        return None
+    _require(
+        isinstance(continuation, dict)
+        and set(continuation) == {"parent", "primary", "reported", "date", "note"}
+        and continuation["parent"] in declared
+        and continuation["parent"] not in arms | excluded
+        and "combine" not in declared[continuation["parent"]],
+        f"{name} continúa desde un padre ajustado de la entrada que no continúa",
+    )
+    return continuation["parent"]
 
 
 def _parented(entry, references, runner):
@@ -268,9 +331,17 @@ def entry_arms(protocol, name, root=ROOT):
     elif runner == "fit":
         declared = entry.get("arms") or document.get("arms")
         excluded = set(entry.get("pending_arms", ()))
+        parent = _continued(name, entry, declared, excluded)
         for arm, value in declared.items():
-            if arm not in excluded:
-                arms[arm] = _fit(entry, document, arm, value)
+            if arm in excluded:
+                continue
+            arms[arm] = (
+                _combination(entry, declared, arm, value, protocol["seeds"])
+                if "combine" in value
+                else _fit(entry, document, arm, value)
+            )
+            if value.get("applies_to") == CONTINUATION:
+                arms[arm]["continues"] = parent
     elif runner == "correction":
         parent = _parented(entry, references, runner)
         sources = dict(document["arms"])
@@ -359,7 +430,12 @@ def resolve(protocol, name, endpoint, root=ROOT):
 
 
 def contrasts(protocol, root=ROOT):
-    """Contrastes declarados con su papel: principal, exigido o solo publicado."""
+    """Contrastes declarados con su papel: principal, exigido o solo publicado.
+
+    Los de una continuación llevan los papeles de `CONTINUATION_ROLES`. Sus contrastes
+    principales comparan dos continuaciones, así que los dos extremos empiezan en el mismo
+    origen, y cada contraste publicado incluye al menos una.
+    """
     rows = []
     for name, entry in protocol["catalog"].items():
         if "status" in entry:
@@ -367,16 +443,33 @@ def contrasts(protocol, root=ROOT):
         pairs = [("primary", entry["primary"])]
         pairs += [("required", pair) for pair in entry.get("required", ())]
         pairs += [("reported", pair) for pair in entry.get("reported", ())]
-        for role, (variant, control) in pairs:
-            rows.append(
-                dict(
-                    entry=name,
-                    role=role,
-                    metric=entry["metric"],
-                    variant=resolve(protocol, name, variant, root),
-                    control=resolve(protocol, name, control, root),
-                )
+        continuation = entry.get("continuation")
+        if continuation is not None:
+            _require(
+                continuation["primary"] and all(len(pair) == 2 for pair in continuation["primary"]),
+                f"{name} contrasta sus continuaciones con al menos un par",
             )
+            pairs += [(CONTINUATION_ROLES[0], pair) for pair in continuation["primary"]]
+            pairs += [(CONTINUATION_ROLES[1], pair) for pair in continuation["reported"]]
+        arms = entry_arms(protocol, name, root)
+        for role, (variant, control) in pairs:
+            row = dict(
+                entry=name,
+                role=role,
+                metric=entry["metric"],
+                variant=resolve(protocol, name, variant, root),
+                control=resolve(protocol, name, control, root),
+            )
+            if role in CONTINUATION_ROLES:
+                continued = [
+                    side[0] == name and "continues" in arms[side[1]].definition
+                    for side in (row["variant"], row["control"])
+                ]
+                _require(
+                    all(continued) if role == CONTINUATION_ROLES[0] else any(continued),
+                    f"{name} compara en su familia de continuación modelos que no continúan",
+                )
+            rows.append(row)
     return rows
 
 
@@ -406,12 +499,18 @@ def _definitions(protocol, arms, arm, root):
     """Definiciones de trabajo de un modelo, una por caso, con la huella de su padre.
 
     Un control emparejado guarda en su valor la huella de la ventana de su variante en el
-    mismo caso, que tiene que terminar antes.
+    mismo caso, que tiene que terminar antes. Una continuación guarda la huella del modelo
+    desde cuyo estado elegido empieza.
     """
     parent = None
     if "parent" in arm.definition:
         (parent,) = _definitions(
             protocol, arms, arms[("references", arm.definition["parent"])], root
+        )
+    continues = None
+    if "continues" in arm.definition:
+        (continues,) = _definitions(
+            protocol, arms, arms[(arm.entry, arm.definition["continues"])], root
         )
     value = arm.definition.get("value")
     matched = None
@@ -428,6 +527,8 @@ def _definitions(protocol, arms, arm, root):
             definition["search_case"] = case
         if parent is not None:
             definition["parent"] = parent[0]
+        if continues is not None:
+            definition["continues"] = continues[0]
         if matched is not None:
             definition["value"] = dict(value, matched_to=matched[case])
         result.append((_digest(definition), definition))
@@ -435,7 +536,7 @@ def _definitions(protocol, arms, arm, root):
 
 
 def combination_sources(arms):
-    """Modelos cuyas semillas combina una etapa de salida, con las semillas que combina.
+    """Modelos cuyas semillas combina una etapa de salida, con las etapas que los combinan.
 
     La época de una combinación se elige con el IC de la propia combinación en validación,
     así que los trabajos de su fuente guardan la predicción puntual de cada época.
@@ -454,7 +555,8 @@ def screening_jobs(protocol, root=ROOT):
 
     Los ajustes y los lectores llevan además su grupo de semillas (`common_group`), las
     épocas que emiten como versiones (`versions`) y si guardan la predicción de cada época
-    de validación porque una combinación los usa (`epoch_predictions`).
+    de validación porque una combinación los usa (`epoch_predictions`). Una continuación
+    lleva en `continues` el trabajo del origen anterior con la misma semilla.
     """
     arms = all_arms(protocol, root)
     combined = {"/".join(label) for label in combination_sources(arms)}
@@ -465,7 +567,11 @@ def screening_jobs(protocol, root=ROOT):
         if arm.runner not in JOB_RUNNERS:
             continue
         for key, definition in _definitions(protocol, arms, arm, root):
-            for origin in protocol["origins"]:
+            for position, origin in enumerate(protocol["origins"]):
+                # Una continuación empieza en el estado elegido del origen anterior, así que el
+                # primer origen no tiene trabajo de continuación.
+                if "continues" in definition and position == 0:
+                    continue
                 for seed in protocol["seeds"]:
                     job_id = f"{origin['year']}-{seed}-{key[:16]}"
                     job = jobs.setdefault(
@@ -479,6 +585,7 @@ def screening_jobs(protocol, root=ROOT):
                             definition=definition,
                             parent=None,
                             after=None,
+                            continues=None,
                             used_by=[],
                         ),
                     )
@@ -491,6 +598,9 @@ def screening_jobs(protocol, root=ROOT):
                         and "matched_to" in definition["value"]
                     ):
                         job["after"] = f"{prefix}-{definition['value']['matched_to'][:16]}"
+                    if "continues" in definition:
+                        previous = protocol["origins"][position - 1]["year"]
+                        job["continues"] = f"{previous}-{seed}-{definition['continues'][:16]}"
                     job["used_by"].append("/".join(label))
     for job in jobs.values():
         job["used_by"].sort()

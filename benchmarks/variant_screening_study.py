@@ -46,7 +46,7 @@ from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import scale_diagnostics as sd
-from mars_titan.evaluation import variant_screening_analysis
+from mars_titan.evaluation import seed_ensemble, variant_screening_analysis
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import stopping_rule
 from mars_titan.training import screening_cohorts, selection, variant_screening
@@ -341,26 +341,35 @@ def _epoch_panels(work, job, epochs):
 
 
 def combination_epoch(work, members, arm, protocol):
-    """Época de una combinación de semillas con el IC por sesión de la propia combinación."""
-    seeds = arm["definition"].get("seeds", protocol["seeds"])
-    chosen = [job for job in members if job["seed"] in seeds]
-    _require(len(chosen) == len(seeds) >= 2, f"{arm['label']} no tiene todas sus semillas")
-    epochs = _budget(protocol, chosen[0])
-    panels = [_epoch_panels(work, job, epochs) for job in chosen]
+    """Época de una media de semillas con el IC por sesión de sus réplicas en validación.
+
+    Cada réplica promedia por fila la predicción de validación de sus semillas con la suma
+    ordenada de `seed_ensemble`. En cada época se promedian las réplicas en las sesiones que
+    todas definen, como las semillas de un grupo, y la época sale de `common_epoch` con el
+    mismo radio. Es una sola época para todas las réplicas del origen.
+    """
+    replicates = arm["definition"]["replicates"]
+    by_seed = {job["seed"]: job for job in members}
+    needed = sorted({seed for replicate in replicates for seed in replicate})
+    _require(set(needed) <= set(by_seed), f"{arm['label']} no tiene todas sus semillas")
+    epochs = _budget(protocol, members[0])
+    panels = {seed: _epoch_panels(work, by_seed[seed], epochs) for seed in needed}
     minimum = protocol["contrast"]["primary"]["minimum_assets"]
-    scores = []
-    for epoch in range(epochs):
-        items = [seed_panels[epoch] for seed_panels in panels]
-        _require(
-            len({panel.cohort_sha256 for panel in items}) == 1,
-            "Las semillas de la combinación no predicen las mismas filas",
-        )
-        mean = np.mean([panel.prediction for panel in items], axis=0)
-        values, defined = sd.session_correlations(items[0], mean, min_assets=minimum)
-        _require(defined.any(), f"La combinación no define el IC en la época {epoch + 1}")
-        scores.append(float(values[defined].mean()))
-    result = selection.common_epoch(scores, radius=protocol["selection"]["smoothing_radius"])
-    return dict(result, model=arm["label"], seeds=sorted(seeds))
+    series = []
+    for replicate in replicates:
+        scored = []
+        for epoch in range(epochs):
+            items = [panels[seed][epoch] for seed in replicate]
+            _require(
+                len({panel.cohort_sha256 for panel in items}) == 1,
+                "Las semillas de la combinación no predicen las mismas filas",
+            )
+            mean = seed_ensemble.ordered_mean([panel.prediction for panel in items])
+            scored.append(sd.session_correlations(items[0], mean, min_assets=minimum))
+        series.append(scored)
+    radius = protocol["selection"]["smoothing_radius"]
+    result = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)
+    return dict(result, model=arm["label"], replicates=replicates)
 
 
 def decide_group(work, receipt, group):
@@ -517,6 +526,8 @@ def _dispatch(work, receipt, job, budget):
     output = work / "runs" / job["id"]
     indices = work / "indices" / str(job["origin"])
     parent = work / "runs" / job["parent"] if job["parent"] else None
+    # Una continuación de F3 empieza en el estado elegido de su trabajo del origen anterior.
+    initial = work / "runs" / job["continues"] if job["continues"] else None
     common = (
         common_options(work, receipt, job, files)
         if runner in variant_screening.EPOCH_RUNNERS
@@ -538,6 +549,7 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             search_case=definition["search_case"],
             predictor_changes=definition["predictor_changes"] or None,
+            initial=initial,
             **common,
         )
     if runner in ("correction", "correction_profile"):
@@ -768,28 +780,88 @@ def status(work):
     )
 
 
-def run_panels(folder, reads):
-    """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo.
+def _panel(table):
+    """Panel de una tabla de predicciones. `quantile_0025` es el nivel 0,025."""
+    columns = sorted(c for c in table.column_names if c.startswith(QUANTILE_PREFIX))
+    return ForecastPanel.from_arrow(
+        table,
+        quantile_columns=columns or None,
+        levels=tuple(int(c.removeprefix(QUANTILE_PREFIX)) / 1000 for c in columns) or None,
+    )
 
-    Los niveles de cuantiles salen del nombre de sus columnas, `quantile_0025` es 0,025.
+
+def _tables(folder, records, names, reads):
+    """Tablas confirmadas de unos tramos, con la huella de cada archivo."""
+    tables = {}
+    for name in names:
+        path = folder / records[name]["path"]
+        digest = sha256(path)
+        _require(digest == records[name]["sha256"], f"Ha cambiado {folder.name}/{path.name}")
+        tables[name] = pq.read_table(path)
+        reads[f"{folder.name}/{path.name}"] = digest
+    return tables
+
+
+def run_panels(folder, reads):
+    """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo."""
+    report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
+    _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
+    tables = _tables(folder, report["predictions"], variant_screening_analysis.PARTITIONS, reads)
+    return {name: _panel(table) for name, table in tables.items()}
+
+
+def epoch_tables(folder, epoch, reads):
+    """Calibración y evaluación de un trabajo terminado con el estado de `epoch`.
+
+    La época común está en sus predicciones principales y cualquier otra, en sus versiones.
     """
     report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
     _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
-    panels = {}
-    for name in variant_screening_analysis.PARTITIONS:
-        record = report["predictions"][name]
-        path = folder / record["path"]
-        digest = sha256(path)
-        _require(digest == record["sha256"], f"Ha cambiado {folder.name}/{path.name}")
-        table = pq.read_table(path)
-        columns = sorted(c for c in table.column_names if c.startswith(QUANTILE_PREFIX))
-        panels[name] = ForecastPanel.from_arrow(
-            table,
-            quantile_columns=columns or None,
-            levels=tuple(int(c.removeprefix(QUANTILE_PREFIX)) / 1000 for c in columns) or None,
+    if epoch == report["fit"]["joint_stop_epoch"]:
+        records = report["predictions"]
+    else:
+        records = report.get("versions", {}).get("predictions", {}).get(str(epoch))
+        _require(records is not None, f"El trabajo {folder.name} no emite la época {epoch}")
+    return _tables(folder, records, ("calibration", "evaluation"), reads)
+
+
+def combination_panels(work, receipt, year, reads):
+    """Paneles de cada réplica de una media de semillas en un origen, para el análisis.
+
+    `combine(modelo, réplica)` lee la época que fijó la decisión del grupo de la fuente,
+    promedia con `seed_mean` las tablas de las semillas de la réplica y devuelve sus paneles
+    de calibración y evaluación. Las tablas de cada semilla se leen una vez por origen.
+    """
+    arms = variant_screening.all_arms(receipt["protocol"], ROOT)
+    index = variant_screening_analysis.job_index(receipt["jobs"])
+    # Una entrada por semilla: todas las réplicas de un origen leen la misma época.
+    load = functools.lru_cache(maxsize=len(receipt["protocol"]["seeds"]))(
+        lambda job_id, epoch: epoch_tables(work / "runs" / job_id, epoch, reads)
+    )
+
+    def combine(label, replicate):
+        arm = arms[label]
+        source = (label[0], arm.definition["source"])
+        jobs = {seed: index[(source, year, seed)] for seed in replicate}
+        _require(
+            all(len(items) == 1 for items in jobs.values()),
+            "La fuente de una media de semillas tiene un solo caso",
         )
-        reads[f"{folder.name}/{path.name}"] = digest
-    return panels
+        decision = _decision(work, jobs[replicate[0]][0]["common_group"])
+        _require(decision is not None, f"El grupo de {'/'.join(source)} no ha decidido")
+        found = [item for item in decision["combinations"] if item["model"] == "/".join(label)]
+        _require(
+            len(found) == 1 and found[0]["replicates"] == arm.definition["replicates"],
+            f"La decisión del grupo no combina las réplicas declaradas de {'/'.join(label)}",
+        )
+        epoch = found[0]["epoch"]
+        tables = {seed: load(items[0]["id"], epoch) for seed, items in jobs.items()}
+        return {
+            name: _panel(seed_ensemble.seed_mean({s: tables[s][name] for s in replicate})[0])
+            for name in ("calibration", "evaluation")
+        }
+
+    return combine
 
 
 def current_sectors(descriptions, assets):
@@ -886,6 +958,7 @@ def analyze(work, output, descriptions):
             cohorts=cohorts,
             maturity=maturity,
             sectors=current_sectors(descriptions, assets),
+            combine=combination_panels(work, receipt, year, reads),
         )
     report, arrays = variant_screening_analysis.analyze(protocol, receipt["jobs"], origins, ROOT)
     report.update(
@@ -904,8 +977,10 @@ def analyze(work, output, descriptions):
     output.mkdir(parents=True)
     atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
     atomic_json(output / "analysis.json", report)
+    continuation = report["continuation"] or {"decisions": {}}
     return dict(
         decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
+        continuation={name: row["passes"] for name, row in continuation["decisions"].items()},
         sessions=report["sessions"],
         analysis_sha256=sha256(output / "analysis.json"),
     )
