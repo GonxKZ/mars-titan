@@ -5,6 +5,7 @@ función fija de las características y de las rondas, así que ninguna prueba e
 """
 
 import json
+import shutil
 import types
 
 import numpy as np
@@ -263,6 +264,28 @@ def tabular(manifest, protocol, output, **changes):
     return windows.run_tabular_window(
         manifest, protocol, "fold-000", output=output, **(options | changes)
     )
+
+
+@pytest.mark.parametrize("runner", ["rule", "tabular"])
+@pytest.mark.parametrize("source", ["view", "prices"])
+def test_source_outputs_are_refused_before_creating_a_window_record(
+    view, tmp_path, doubled_fit, runner, source
+):
+    manifest, protocol = view
+    root = manifest.parent if source == "view" else next(iter(dataset(manifest).roots.values()))
+    output = root / f"rejected-{tmp_path.name}-{runner}"
+    assert not output.exists()
+    try:
+        with pytest.raises(ValueError, match="fuera del directorio de origen"):
+            if runner == "rule":
+                windows.run_rule_window(manifest, protocol, "fold-000", output=output, config=RULE)
+            else:
+                tabular(manifest, protocol, output)
+        assert not output.exists()
+        assert doubled_fit == []
+    finally:
+        if output.exists():
+            shutil.rmtree(output)
 
 
 def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_path, doubled_fit):
