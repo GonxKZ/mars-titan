@@ -525,6 +525,9 @@ class ChronologicalInference:
         self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
         # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
         self.horizons = predictor.config.auxiliary_horizons
+        # Las predicciones por área de H1 suman a la tarea la pérdida de cada área presente.
+        network = predictor.config.holographic_network
+        self.area_weight = None if network is None else network.area_predictions
         # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
         self.reliability = predictor.config.mature_reliability
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
@@ -663,12 +666,53 @@ class ChronologicalInference:
             run.instants += 1
 
     def _graphs(self, prepared):
-        """Salidas por fila que entran en la pérdida del tramo."""
+        """Salidas por fila que entran en la pérdida del tramo.
+
+        Con las predicciones por área, cada fila es [punto, predicción de cada área, presencia
+        de cada área] y `_split` la separa al calcular la pérdida.
+        """
         if self.quantiles:
             return prepared.quantiles
         if self.objective is not None:
             return prepared.outputs
+        if self.area_weight is not None:
+            areas = prepared.area_predictions
+            alive = prepared.area_votes.alive.to(areas.dtype)
+            return torch.cat([prepared.point_predictions.unsqueeze(-1), areas, alive], dim=1)
         return prepared.point_predictions
+
+    def _split(self, prediction):
+        """La salida de la tarea y, con predicciones por área, sus áreas y su presencia."""
+        if self.area_weight is None:
+            return prediction, None, None
+        areas = (prediction.shape[1] - 1) // 2
+        return prediction[:, 0], prediction[:, 1 : 1 + areas], prediction[:, 1 + areas :] > 0
+
+    def _area_loss(self, areas, alive, target):
+        """Media en las filas de la pérdida media de las áreas presentes de cada fila.
+
+        Una media por fila permite sumar bloques con la misma fracción de etiquetas que la
+        tarea. Un área ausente predice la referencia, pero su peso es cero y no recibe
+        gradiente. Con la cabeza escalar, que las áreas exigen, la receta solo admite mae, mse
+        y huber.
+        """
+        expanded = target.unsqueeze(1).expand_as(areas)
+        if self.recipe.loss == "mae":
+            elements = (areas - expanded).abs()
+        elif self.recipe.loss == "mse":
+            elements = (areas - expanded).square()
+        else:
+            elements = torch.nn.functional.huber_loss(
+                areas, expanded, reduction="none", delta=self.recipe.huber_delta
+            )
+        weights = alive.to(elements.dtype)
+        return ((elements * weights).sum(1) / weights.sum(1).clamp_min(1)).mean()
+
+    def _area_term(self, run, areas, alive, target, share=1.0):
+        """Término ponderado de las áreas, con su suma en los contadores del recorrido."""
+        term = self.area_weight * self._area_loss(areas, alive, target) * share
+        run.counters["area_loss_sum"] = run.counters.get("area_loss_sum", 0) + float(term.detach())
+        return term
 
     def _levels(self, prepared):
         if self.quantiles:
@@ -1135,11 +1179,13 @@ class ChronologicalTrainer(ChronologicalInference):
         C, el objetivo suma la media de los términos de los grupos medidos en el tramo. La
         pérdida devuelta sigue siendo la de la tarea.
         """
-        prediction = torch.stack(run.predictions)
+        prediction, areas, alive = self._split(torch.stack(run.predictions))
         target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
         keys = [(flow, at) for flow, at, _ in run.used]
         loss = self._task_loss(prediction, target, keys)
         objective = self._distilled(loss, prediction, keys)
+        if areas is not None:
+            objective = objective + self._area_term(run, areas, alive, target)
         if run.penalties:
             objective = objective + torch.stack(run.penalties).mean()
         if not torch.isfinite(objective).item():
@@ -1225,7 +1271,9 @@ class ChronologicalTrainer(ChronologicalInference):
                     raise ValueError("La repetición del tramo no reproduce sus predicciones")
                 terms = []
                 if keys:
-                    prediction = torch.stack([graphs[key] for key in keys])
+                    prediction, areas, alive = self._split(
+                        torch.stack([graphs[key] for key in keys])
+                    )
                     target = torch.tensor(
                         [targets[key] for key in keys],
                         dtype=prediction.dtype,
@@ -1238,6 +1286,8 @@ class ChronologicalTrainer(ChronologicalInference):
                     if self.teacher is not None:
                         loss = self._distilled(task, prediction, keys) * share
                     terms.append(loss)
+                    if areas is not None:
+                        terms.append(self._area_term(run, areas, alive, target, share))
                 if penalties:
                     terms.append(sum(penalties) / len(run.penalties))
                 objective = sum(terms[1:], terms[0])
