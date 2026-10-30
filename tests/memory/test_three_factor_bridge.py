@@ -37,6 +37,14 @@ def opening(plastic):
     plastic.settle([("US/A", 1, 0.5, -0.5), ("US/B", 1, 1.0, 4.0)])
 
 
+@pytest.mark.parametrize("invalid", [None, {}, "three_factor_bridge_v1", False])
+def test_the_state_requires_a_parsed_configuration(invalid):
+    parsed = ThreeFactorBridge()
+    assert BridgePlasticity(parsed, EDGES, 3).config is parsed
+    with pytest.raises(ValueError, match="necesita su configuración"):
+        BridgePlasticity(invalid, EDGES, 3)
+
+
 def test_the_first_event_only_sets_the_expectation():
     plastic = bridge()
     opening(plastic)
