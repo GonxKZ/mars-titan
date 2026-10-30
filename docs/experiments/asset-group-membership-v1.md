@@ -135,7 +135,15 @@ CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 uv run python -m benchmarks.asset_grou
 
 ## Comprobación técnica
 
-Pendiente de la verificación final.
+El [recibo de verificación](../../reports/engineering/asset-group-membership-20261029/verification.json) reúne la evidencia del último commit de la variante antes de fusionar, `2ad7700ef`, y del commit fusionado con develop, `bac08d6c4`. No hay entrenamiento ni pasos de optimizador, y el test final sigue cerrado.
+
+- Las 818 pruebas dirigidas de H4, de sus medidas de la ventana, de su integración en el predictor, el recorrido y el entrenador, y de la medida de coste pasan con cobertura de ramas en `2ad7700ef`. La omisión es la protección del aprendizaje.
+- La regresión de los módulos que importan los caminos cambiados reúne 7.327 pruebas, 1.891 de `tests/training` y 5.436 del resto, sin fallos. La mayoría de sus 166 omisiones son pruebas que el bloqueo del aprendizaje deja fuera o que necesitan binarios nativos que el árbol de verificación no compila.
+- Al fusionar develop con C2, la medida pasó a escribir su recibo con `atomic_json` y en `534f07dcc` pasan 1.297 pruebas. Al fusionar C3, R2 y R3, H4 rechaza combinarse con C3, porque los dos mezclan las filas de la sesión con su propia agrupación, igual que ya hacía con C5. En `bac08d6c4` pasan 1.554 pruebas de H4, C2, C3, R2, R3, las variantes del núcleo, la fiabilidad madura y los recibos de coste. En los dos casos, las omisiones son de la protección del aprendizaje.
+- Las 40 funciones con líneas cambiadas frente a develop tienen cubiertas 341 de sus 342 líneas ejecutables. La restante es la comprobación de `cuda:0` en la medida de coste. La función anidada `call` de la medida no tiene fila propia en el resumen de calidad, aunque las pruebas del calentamiento recorren sus tres tipos de llamada. El CRAP más alto es el de `FinancialConfig.__post_init__` (860), una deuda previa recogida en #801.
+- Las 88 mutaciones dirigidas de H4 y de su integración se detectaron con fases de control en verde antes y después. También se detectan las cuatro de la escritura atómica del recibo, las cinco del calentamiento y de cada tipo de llamada de la medida, y la que acepta H4 junto a C3. La receta que exigía un destino nuevo apuntaba a una prueba retirada al pasar a `atomic_json`, y la pasada atómica cubre el mismo defecto.
+
+CRAP y cobertura localizan complejidad poco comprobada, pero no demuestran que no haya errores.
 
 ## Pendiente
 
