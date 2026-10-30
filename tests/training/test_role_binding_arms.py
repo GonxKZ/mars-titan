@@ -50,4 +50,4 @@ def test_all_role_arms_have_distinct_identities_and_common_recipe():
             load_declaration(), arm_components(arm["components"], dict(rate=0.05, forgetting=0.01))
         )
         identities.append(json.dumps(correction.identity(), sort_keys=True))
-    assert len(identities) == len(set(identities)) == 8
+    assert len(identities) == len(set(identities)) == 12
