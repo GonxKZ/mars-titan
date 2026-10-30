@@ -1,4 +1,4 @@
-# Claves ligadas al régimen observable
+# Claves ligadas a roles observables
 
 `role_bound_keys_v1` (B3, [#750](https://github.com/GonxKZ/mars-titan/issues/750)) es un factor opcional de la corrección madura. Transforma la clave del codec antes de leer y escribir B6, B1 o B2. No cambia el padre Titans-MAC, su memoria neuronal ni el objetivo residual. Permanece desactivado en las configuraciones canónicas.
 
@@ -19,13 +19,13 @@ Como cᵣ ⊙ cᵣ = 1, aplicar dos veces el producto recupera los bits de una c
 
 El antecedente es el producto bipolar descrito por Kanerva (2009), páginas 147 y 156, que relaciona con HRR complejo restringido a los valores 1 y −1. Esta implementación no es un backend complejo FHRR general ni una implementación identificada como HLB. La fuente no demuestra un beneficio financiero. [Artículo y DOI](https://doi.org/10.1007/s12559-009-9009-8), [PDF consultado](https://rctn.org/vs265/kanerva09-hyperdimensional.pdf).
 
-Hay tres modos y ocho configuraciones declaradas:
+Hay tres modos y doce configuraciones declaradas:
 
 - `bipolar` utiliza el código de la ruta de cada observación.
 - `constant_role` utiliza siempre c₀. Permite separar el uso del régimen del cambio de rasgos introducido antes de DPFP.
 - `projected_concat` concatena `[x, cᵣ / 8]`, aplica una matriz fija de 128 × 64 signos escalada por 1/8 y normaliza el resultado en L2, o devuelve cero si la proyección es cero. Usa otro dominio PCG64, `[0xB3, 1, seed]`. No se declara una inversa para este control.
 
-Las configuraciones contrastan régimen frente a calendario, rol constante, concatenación y B1 sin ligadura. La referencia lineal usa el mismo factor sin áreas. La combinación B2+B3 se contrasta con B2 sin B3, conservando los mapas. Se igualan las dimensiones de las claves y los coeficientes de los backends pertinentes. La concatenación tiene una tabla adicional y otro coste, que deben informarse.
+Las configuraciones contrastan régimen frente a calendario, rol constante, concatenación y B1 sin ligadura. Las fuentes por fila se contrastan con el rol constante, y el sector también con su reparto permutado. La referencia lineal usa el mismo factor sin áreas. La combinación B2+B3 se contrasta con B2 sin B3, conservando los mapas. Se igualan las dimensiones de las claves y los coeficientes de los backends pertinentes. La concatenación tiene una tabla adicional y otro coste, que deben informarse.
 
 Una ligadura constante en una memoria lineal completa puede ser solo un cambio ortogonal de coordenadas. Antes de DPFP, incluso esa ligadura constante modifica los pares de signos que generan rasgos. Por eso no basta con compararla con B1 sin factor. La inversa exacta se refiere al producto anterior a DPFP. No recupera información perdida en la proyección, en una superposición de asociaciones o en las escrituras posteriores.
 
@@ -39,7 +39,20 @@ La ruta se guarda junto a la clave y la predicción del núcleo al emitir. Cuand
 
 Los pesos, el cursor y las colas conservan su productor anterior. El estado exportado de B3 incluye además la identidad del factor y los hashes de sus tablas fijas. La recuperación rechaza otra fuente, semilla, configuración, contador, cursor o huella. La sesión incorpora los módulos del operador y de su regla temporal a su identidad de código.
 
-La implementación actual admite régimen y calendario. No integra aún roles por mercado, modalidad o sector histórico. El `SectorMap` inspeccionado declara `point_in_time=False`, por lo que sus clasificaciones actuales no se utilizan como sectores históricos. Esto no establece que no existan otras fuentes adecuadas.
+## Fuentes por fila
+
+Desde el 30 de octubre de 2026 B3 admite cuatro fuentes más, que dan una ruta propia a cada fila del evento. Están en [role_sources.py](../../src/mars_titan/memory/role_sources.py) y ninguna ajusta parámetros con datos. Siguen la decisión 9 del estudio, que pide primero modalidad y mercado y después grupos por correlación de la ventana pasada ([C4](pit-region-gate-v1.md) la explica con más detalle).
+
+- `market` usa la ruta 1 para EE. UU. y la 2 para China, según el prefijo del flujo. En una población de un solo mercado, como la de la criba, todas las filas comparten ruta y el rol equivale al rol constante con otro código. Solo informa en una comparación con los dos mercados.
+- `modality` usa la ruta 1 + noticias + 2·fundamentales con los bits de presencia de la fila. Precios y gráficos son obligatorios y el macro está presente en todas las filas de la edición, así que no distinguen filas. Con la política estricta todas las filas van a la ruta 4.
+- `sector` es un sector estadístico en fecha. Los activos de cada mercado se agrupan por la correlación de sus rendimientos diarios en la ventana de 64 sesiones que termina en la decisión, con la regla común de C3 y C4 ([correlation_regions.py](../../src/mars_titan/data/correlation_regions.py)) cortada en cuatro grupos. Solo cuentan los rendimientos entre dos sesiones presentes. Los activos con menos de 42 rendimientos, el mínimo del régimen, o con la serie constante van a la ruta 0.
+- `permuted_sector` es el control del sector. Reparte las mismas rutas y tamaños al azar entre los activos con historia de cada mercado. El generador depende solo de la semilla y del mercado, así que con los mismos activos cada uno recibe siempre la ruta del mismo compañero. Conserva la ocupación de cada evento y retira la estructura de correlación.
+
+Los grupos del sector se numeran por el menor activo que contienen. Una partición estable conserva sus rutas, pero un cambio de miembros puede renumerarlas, y entonces el mismo código pasa a designar otro grupo. Por eso el informe del recorrido cuenta, con estas fuentes, los cambios de ruta de cada activo entre dos decisiones suyas, igual que cuenta los del mercado con el régimen. Además, con cuatro grupos fijos una cohorte con poca estructura se parte igualmente en cuatro por diferencias pequeñas de correlación. El contraste con el reparto permutado debe mostrar si la partición aporta algo más que su ocupación.
+
+El sector de las fichas actuales (`SectorMap`) no se usa como fuente. Declara `point_in_time=False` y tiene once sectores en EE. UU. y 31 en China, más un grupo desconocido en cada mercado, que no caben en los cuatro compartimentos clasificados de B3. C4 y H4 ya lo miden como control de fuga, el único uso que admite la decisión 9. Esto no establece que no existan otras fuentes sectoriales históricas adecuadas.
+
+Las fuentes por fila comparten el recorrido de las anteriores. La ruta de cada fila se calcula una vez con todo el evento, se guarda al emitir y se reutiliza al madurar la etiqueta. La ventana y `FinancialSession` pasan además los bits de presencia de cada fila. La sesión incluye en su identidad de código el módulo de las fuentes y el de las regiones por correlación cuando B3 está activo. También incluye ahora la regla de régimen con cualquier clave enrutada de B6, que antes solo entraba con B3.
 
 ## Hipótesis y límites
 
