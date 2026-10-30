@@ -100,6 +100,7 @@ def test_the_identity_records_every_declared_value_and_choice():
         scale="softplus_of_linear_on_encoded_plus_floor",
         skew="max_skew_to_the_power_tanh_of_linear_on_encoded",
         dof="dof_floor_plus_softplus_of_linear_on_encoded",
+        dof_rounding="strict_floor_via_dtype_epsilon",
         initial="zero_weights_constant_biases",
         loss="beta_nll_mean_of_detached_scale_times_full_nll",
         beta=1.0,
@@ -162,6 +163,20 @@ def test_the_parameters_stay_inside_their_declared_ranges():
     assert (scale > OBJECTIVE.floor).all()
     torch.testing.assert_close(skew, torch.full((3,), 1 / 2.5, dtype=torch.float64))
     torch.testing.assert_close(dof, torch.full((3,), 2.0, dtype=torch.float64))
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+@pytest.mark.parametrize("floor", [2.0, 3.25])
+@pytest.mark.parametrize("logit", [-40.0, -1000.0])
+def test_degrees_of_freedom_stay_strictly_above_the_floor_after_rounding(dtype, floor, logit):
+    config = SkewedTObjective(dof_floor=floor)
+    module = SkewedT(4, config, dtype=dtype)
+    with torch.no_grad():
+        module.bias[2].fill_(logit)
+    _, _, dof = module.parameters_of(torch.ones(3, 4, dtype=dtype))
+    assert dof.dtype == dtype
+    assert (dof > floor).all()
+    assert torch.isfinite(dof / (dof - 2)).all()
 
 
 def test_the_nll_is_the_negative_log_density_of_equation_seven():

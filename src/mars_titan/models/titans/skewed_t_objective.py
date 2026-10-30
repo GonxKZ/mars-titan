@@ -22,8 +22,8 @@ Con x = ξ z si z < 0 y x = z/ξ si z ≥ 0, el gradiente de μ en cada fila es
 
     ∂L/∂μ = −(1/N) · s · (ν + 1) x / (ν + x²),   s = ξ o 1/ξ según el lado,
 
-la puntuación acotada de la t, que no depende de la escala de la fila. La escala conserva su
-óptimo porque el peso sg(σ) es positivo y no tiene gradiente.
+la puntuación acotada de la t, que no depende de la escala de la fila. El peso positivo no
+cambia los ceros de la derivada por fila. No garantiza el mismo óptimo con parámetros compartidos.
 
 La predicción emitida es la mediana de la distribución ajustada, como la de la Laplace de F1
 y la de la cabeza de cuantiles, así que el contraste con F1 cambia la familia y no el
@@ -34,8 +34,9 @@ con la cuantílica de Student de SciPy, que PyTorch no ofrece. La pérdida solo 
 
 Desviaciones declaradas: el artículo no fija las activaciones de la capa de salida, así que
 σ_min, la cota ξ_max de la asimetría y el suelo ν_min de los grados de libertad son decisiones
-propias. Con ν_min = 2 la varianza siempre existe. El peso sg(σ) de la β-NLL tampoco está en
-el artículo. Se usa como en F1, para que la comparación entre las dos cabezas cambie la
+propias. En coma flotante, ν se acota además por ν_min·(1 + ε), con ε del tipo de cálculo,
+para evitar que softplus se pierda al sumar y ν redondee a 2. El peso sg(σ) de la β-NLL es
+otra adaptación. Se usa como en F1, para que la comparación entre las dos cabezas cambie la
 distribución y no la ponderación de las filas.
 
 Fuentes: Michańków, J. (2025). Forecasting Probability Distributions of Financial Returns with
@@ -120,6 +121,7 @@ class SkewedTObjective:
             scale="softplus_of_linear_on_encoded_plus_floor",
             skew="max_skew_to_the_power_tanh_of_linear_on_encoded",
             dof="dof_floor_plus_softplus_of_linear_on_encoded",
+            dof_rounding="strict_floor_via_dtype_epsilon",
             initial="zero_weights_constant_biases",
             loss="beta_nll_mean_of_detached_scale_times_full_nll",
             beta=1.0,
@@ -163,10 +165,12 @@ class SkewedT(nn.Module):
         """Escala, asimetría y grados de libertad [filas] del estado codificado."""
         scale, skew, dof = functional.linear(encoded, self.weight, self.bias).unbind(-1)
         config = self.config
+        # La suma puede redondear al suelo aunque softplus sea positiva en aritmética real.
+        minimum_dof = config.dof_floor * (1 + torch.finfo(dof.dtype).eps)
         return (
             functional.softplus(scale) + config.floor,
             torch.exp(math.log(config.max_skew) * torch.tanh(skew)),
-            functional.softplus(dof) + config.dof_floor,
+            (functional.softplus(dof) + config.dof_floor).clamp_min(minimum_dof),
         )
 
     def forward(self, point, encoded, markets):

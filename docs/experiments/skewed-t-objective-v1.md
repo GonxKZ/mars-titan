@@ -30,7 +30,7 @@ Por fila, antes de dividir por N, el gradiente de la posición es
 
 $$\frac{\partial\mathcal L}{\partial\mu}=-s\,\frac{(\nu+1)\,x}{\nu+x^2},\qquad s=\begin{cases}\xi, & z<0,\\ 1/\xi, & z\ge 0.\end{cases}$$
 
-Es la puntuación de la t, que no depende de la escala de la fila y está acotada por s(ν + 1)/(2√ν). Para errores pequeños crece como el del error cuadrático y para errores grandes decae como 1/x, así que una fila muy alejada influye menos en μ que con el error absoluto, cuyo gradiente es siempre ±1. Sin el peso sg(σ), el gradiente de μ llevaría un factor 1/σ que daría más peso a las filas con escala pequeña, que es lo que la β-NLL corrige. La escala conserva su óptimo porque el peso es positivo y no tiene gradiente.
+Es la puntuación de la t, que no depende de la escala de la fila y está acotada por s(ν + 1)/(2√ν). Para errores pequeños crece como el del error cuadrático y para errores grandes decae como 1/x, así que una fila muy alejada influye menos en μ que con el error absoluto, cuyo gradiente es siempre ±1. Sin el peso sg(σ), el gradiente de μ llevaría un factor 1/σ que daría más peso a las filas con escala pequeña, que es lo que la β-NLL corrige. Con las demás salidas fijas, el peso positivo no cambia los ceros de la derivada de escala por fila. Eso no garantiza el mismo óptimo de una red con parámetros compartidos.
 
 Los pesos W empiezan en cero y los sesgos en softplus⁻¹(`initial_scale` − σ_min), 0 y softplus⁻¹(`initial_dof` − ν_min), de modo que todas las filas empiezan con σ = `initial_scale`, ξ = 1 y ν = `initial_dof`. A diferencia de F1, el gradiente de μ ya difiere del control L1 en la inicialización, porque la puntuación de la t no es el signo del error. Con W = 0 el tronco solo recibe ese gradiente de μ. El de σ, ξ y ν le llega cuando W deja de ser cero. Las pruebas comprueban los dos casos.
 
@@ -50,7 +50,7 @@ La pérdida solo usa las salidas [μ, σ, ξ, ν], así que el punto emitido no 
 
 ## Desviaciones y límites
 
-- El artículo no declara las activaciones de su capa de salida (sección 3.4). softplus, tanh y las cotas σ_min, ξ_max y ν_min son decisiones propias. El artículo solo pide ν > 0. Aquí ν ≥ 2 para que exista la varianza, que en su ecuación (10) necesita ν > 2.
+- El artículo no declara las activaciones de su capa de salida (sección 3.4). softplus, tanh y las cotas σ_min, ξ_max y ν_min son decisiones propias. El artículo solo pide ν > 0. Aquí ν > 2 permite una varianza finita, como exige su ecuación (10). En coma flotante, la suma de softplus puede redondear al suelo. El resultado se acota además por ν_min·(1 + ε), con ε del tipo de cálculo. La identidad declara esta protección numérica y la inicialización conserva sus valores anteriores.
 - El artículo parametriza la escala con σ² y aquí con σ. La distribución es la misma.
 - La β-NLL no está en el artículo de Michańków. Seitzer et al. la plantean para la gaussiana con el peso sg(σ^{2β}). Aquí el peso es sg(σ), el que quita a μ el factor de la escala de cada fila, igual que sg(b) en F1. Es una adaptación propia.
 - La NLL conserva la constante −log 2 de la ecuación (16). No cambia ningún gradiente.
