@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import pytest
-from test_variant_screening_analysis import SyntheticOrigin, make_panel, protocol_of
+from test_variant_screening_analysis import ASSETS, SyntheticOrigin, make_panel, protocol_of
 
 from mars_titan.evaluation import arbiter_analysis as stage
 from mars_titan.evaluation import online_arbiters as arbiters
@@ -515,6 +515,98 @@ def test_shared_jobs_are_one_option_of_the_combination(analyzed):
         shared += len(compared) - len(members)
     # En el catálogo reducido hay modelos que comparten trabajo y cuentan una vez.
     assert shared > 0
+
+
+def test_the_combination_includes_the_common_models_with_their_own_predictions():
+    protocol = protocol_of(ENTRIES)
+    compared = stage.compared_models(protocol, variant_screening.all_arms(protocol))
+    assert {("common", "momentum_reversal"), ("common", "lightgbm")} <= set(compared)
+
+
+def test_a_combination_reads_continuations_only_after_the_first_origin():
+    protocol, jobs, sources = screening(("A1", "F3"))
+    arms = variant_screening.all_arms(protocol)
+    index = analysis.job_index(jobs)
+    compared = stage.compared_models(protocol, arms)
+    options = arbiters.stage_options(REAL_DECLARATION, arbiters.MODEL_COMBINATION)
+    first = protocol["origins"][0]["year"]
+    for year in sorted(sources):
+        origin = sources[year].origin()
+        members = {}
+        emitted = list(
+            stage._combination_emissions(
+                protocol, arms, index, origin, protocol["seeds"][0], [], options, compared, members
+            )
+        )
+        assert len(emitted) == 2 and all(item[1].panel.rows for item in emitted)
+        continuation = [
+            label
+            for label in members[f"{year}/{protocol['seeds'][0]}"]
+            if "continues" in arms[tuple(label.split("/", 1))].definition
+        ]
+        assert bool(continuation) is (year != first)
+
+
+def test_a_missing_first_origin_is_undefined_in_a_time_averaging_comparison():
+    protocol, jobs, sources = screening(("A1", "F3"))
+    declaration = copy.deepcopy(REAL_DECLARATION)
+    declaration["stages"][arbiters.VERSION_ARBITER]["analysis"]["time_averaging"][
+        "compared_with"
+    ] = ["F3/continuation_control"]
+    stages = stage._checked_stages(protocol, declaration)
+    arms = variant_screening.all_arms(protocol)
+    origins = {year: source.origin() for year, source in sources.items()}
+    times, merged, read = stage._series(
+        protocol,
+        arms,
+        analysis.job_index(jobs),
+        origins,
+        stages,
+        stage.compared_models(protocol, arms),
+    )
+    first = min(origins)
+    count = len(sources[first].times["evaluation"]) // len(ASSETS)
+    values, defined = merged[
+        ((stage.TIME_AVERAGING, "F3/continuation_control", "emission"), "session_ic")
+    ]
+    assert len(values) == len(times)
+    assert not defined[:count].any() and not values[:count].any()
+    assert defined[count:].all()
+    assert read["coverage"]["time_averaging/F3/continuation_control/emission"] == 0.75
+    assert all(
+        not sources[first].jobs[name.partition("/")[0]]["continues"]
+        for name in sources[first].loads
+    )
+
+
+def test_versioned_continuations_keep_the_first_origin_explicitly_unavailable():
+    protocol, jobs, sources = screening(("A1", "F3"))
+    protocol["selection"]["versions"]["models"] = [REFERENCE, "F3/continuation_control"]
+    jobs = variant_screening.screening_jobs(protocol)
+    epochs = protocol["selection"]["versions"]["epochs"]
+    sources = {year: VersionedOrigin(year, jobs, epochs) for year in sources}
+    arms = variant_screening.all_arms(protocol)
+    origins = {year: source.origin() for year, source in sources.items()}
+    declaration = copy.deepcopy(REAL_DECLARATION)
+    declaration["stages"][arbiters.VERSION_ARBITER]["analysis"]["time_averaging"][
+        "compared_with"
+    ] = ["F3/schedule_free"]
+    times, merged, read = stage._series(
+        protocol,
+        arms,
+        analysis.job_index(jobs),
+        origins,
+        stage._checked_stages(protocol, declaration),
+        stage.compared_models(protocol, arms),
+    )
+    count = len(sources[min(sources)].times["evaluation"]) // len(ASSETS)
+    for mode in ("common_epoch", "arbiter", "uniform_mixture", "shuffled_outcomes"):
+        label = (stage.VERSIONS, "F3/continuation_control", mode)
+        values, defined = merged[label, "session_ic"]
+        assert len(values) == len(times)
+        assert not defined[:count].any() and not values[:count].any()
+        assert defined[count:].any()
+        assert 0 <= read["coverage"]["/".join(label)] <= 0.75
 
 
 def test_missing_or_foreign_versions_are_refused():

@@ -24,6 +24,8 @@ import tracemalloc
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.data.storage import atomic_json
+
 DAY_US = 86_400_000_000
 MARKETS, ASSETS, LAG_SESSIONS, WINDOW, MIN_ASSETS, SEED = ("US", "CN"), 128, 5, 21, 3, 20261028
 # (sesiones por mercado, opciones). 320 sesiones son la calibración y un año de S.
@@ -182,8 +184,8 @@ def main():
         return
     if arguments.output is None or arguments.output.exists():
         raise SystemExit("La medida necesita --output con un destino nuevo")
-    result = run()
-    arguments.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(arguments.output, run())
 
 
 if __name__ == "__main__":

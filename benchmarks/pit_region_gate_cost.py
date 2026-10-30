@@ -29,6 +29,7 @@ from benchmarks.output_stage_cost import (
     synthetic,
     timed,
 )
+from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import pit_region_gate as gate
 from mars_titan.hardware.platform_identity import cpu_name
 
@@ -96,11 +97,8 @@ def measure_case(assets, sessions, repeats):
     )
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repeats", type=int, default=5)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args(argv)
+def run(args):
+    """Mide los casos con los argumentos de la orden y devuelve el recibo."""
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
@@ -112,6 +110,7 @@ def main(argv=None):
     sources = {
         path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
         for path in (
+            "src/mars_titan/data/correlation_regions.py",
             "src/mars_titan/evaluation/pit_region_gate.py",
             "src/mars_titan/evaluation/scale_diagnostics.py",
             "benchmarks/output_stage_cost.py",
@@ -148,9 +147,20 @@ def main(argv=None):
         ],
         cases=cases,
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(receipt, ensure_ascii=False, indent=1) + "\n")
-    print(json.dumps({name: case["fit"] for name, case in cases.items()}))
+    return receipt
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repeats", type=int, default=5)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(argv)
+    if args.output.exists():
+        raise SystemExit("La medida necesita un destino nuevo")
+    receipt = run(args)
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(args.output, receipt)
+    print(json.dumps({name: case["fit"] for name, case in receipt["cases"].items()}))
 
 
 if __name__ == "__main__":

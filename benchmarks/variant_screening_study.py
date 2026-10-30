@@ -5,7 +5,8 @@
   catálogo de trabajos a partir de las cohortes verificadas de `screening_cohorts`.
 - `run` ejecuta un trabajo sellado. Comprueba la protección del aprendizaje antes de leer
   nada, exige que sus requisitos hayan terminado, cobra el intento contra el presupuesto y
-  usa una GPU exclusiva. Un trabajo interrumpido se reanuda desde su carpeta.
+  usa una GPU exclusiva, salvo la regla y LightGBM, que van en CPU. Un trabajo interrumpido
+  se reanuda desde su carpeta.
 - `queue` ejecuta con `run`, en el orden sellado, los trabajos pendientes. Un ajuste o un
   lector recorre su presupuesto y espera a las demás semillas de su grupo. Cuando todas
   esperan, la cola fija la época común del grupo (`decide_group`) y las reanuda para que
@@ -20,8 +21,9 @@
 - `arbiters` hace las mismas comprobaciones y escribe los árbitros en línea de #789 sobre las
   versiones y los modelos de la criba, con su propia familia de contrastes.
 
-Las etapas de salida (A1, A2, A3, C4 y la media de semillas) no son trabajos. Se calculan
-en el análisis sobre las predicciones guardadas de su fuente.
+Las etapas de salida (A1, A2, A3, C4 y la media de semillas) y los controles cero y de
+mediana pasada no son trabajos. Se calculan en el análisis sobre las predicciones guardadas
+de su fuente.
 """
 
 import argparse
@@ -529,6 +531,8 @@ def _dispatch(work, receipt, job, budget):
     output = work / "runs" / job["id"]
     indices = work / "indices" / str(job["origin"])
     parent = work / "runs" / job["parent"] if job["parent"] else None
+    # Una continuación de F3 empieza en el estado elegido de su trabajo del origen anterior.
+    initial = work / "runs" / job["continues"] if job["continues"] else None
     common = (
         common_options(work, receipt, job, files)
         if runner in variant_screening.EPOCH_RUNNERS
@@ -550,6 +554,7 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             search_case=definition["search_case"],
             predictor_changes=definition["predictor_changes"] or None,
+            initial=initial,
             **common,
         )
     if runner in ("correction", "correction_profile"):
@@ -587,6 +592,8 @@ def _dispatch(work, receipt, job, budget):
             stop=budget,
             **common,
         )
+    if runner in variant_screening.ORIGIN_RUNNERS:
+        return _common_control(receipt["protocol"], job, files, output, budget)
     from mars_titan.training.spaced_window import run_spaced_window
 
     return run_spaced_window(
@@ -598,6 +605,29 @@ def _dispatch(work, receipt, job, budget):
         output=output,
         device="cuda:0",
         indices=indices,
+        stop=budget,
+    )
+
+
+def _common_control(protocol, job, files, output, budget):
+    """La regla o LightGBM de un origen, con la vista y el protocolo sellados del origen."""
+    from mars_titan.training import common_control_windows
+
+    config = job["definition"]["config"]
+    if job["definition"]["runner"] == "rule":
+        return common_control_windows.run_rule_window(
+            files["view"], files["protocol"], job["fold"], output=output, config=config, stop=budget
+        )
+    return common_control_windows.run_tabular_window(
+        files["view"],
+        files["protocol"],
+        job["fold"],
+        seeds=job["seeds"],
+        fit_months=protocol["fit"]["fit_months"],
+        output=output,
+        config=config,
+        radius=protocol["selection"]["smoothing_radius"],
+        min_assets=protocol["contrast"]["primary"]["minimum_assets"],
         stop=budget,
     )
 
@@ -648,12 +678,15 @@ def _run(work, receipt, job):
         from mars_titan.training.experiment_resources import GpuLease
         from mars_titan.training.titans_walk_forward import unfused_attention
 
-        # La ventana E2 toma su propia GPU exclusiva y no admite un segundo cerrojo.
-        if job["definition"]["runner"] != "spaced":
+        # La ventana E2 toma su propia GPU exclusiva y no admite un segundo cerrojo. La regla
+        # y LightGBM no usan la GPU.
+        runner = job["definition"]["runner"]
+        if runner != "spaced" and runner not in variant_screening.CPU_RUNNERS:
             lease = GpuLease(max_ram=6 * GIB, max_vram=6 * GIB)
             lease.__enter__()
             record["admission"] = dict(lease.record)
-        torch.cuda.set_device("cuda:0")
+        if runner not in variant_screening.CPU_RUNNERS:
+            torch.cuda.set_device("cuda:0")
         budget = Budget(
             dict(
                 max_job_seconds=record["attempt_limit_seconds"],
@@ -790,23 +823,44 @@ def _panel(table):
     )
 
 
-def _tables(folder, records, names, reads):
-    """Tablas confirmadas de unos tramos, con la huella de cada archivo."""
+def _tables(folder, records, names, reads, label=None):
+    """Tablas confirmadas de unos tramos, con la huella de cada archivo.
+
+    `label` nombra la carpeta en las lecturas. Por defecto es la del trabajo.
+    """
+    label = label or folder.name
     tables = {}
     for name in names:
         path = folder / records[name]["path"]
         digest = sha256(path)
-        _require(digest == records[name]["sha256"], f"Ha cambiado {folder.name}/{path.name}")
+        _require(digest == records[name]["sha256"], f"Ha cambiado {label}/{path.name}")
         tables[name] = pq.read_table(path)
-        reads[f"{folder.name}/{path.name}"] = digest
+        reads[f"{label}/{path.name}"] = digest
     return tables
 
 
-def run_panels(folder, reads):
+def job_panels(work, job_id, reads):
+    """Paneles de un trabajo terminado o de una semilla de LightGBM (`trabajo/seed-s`).
+
+    El informe de una semilla tiene que conservar la huella que registró su trabajo.
+    """
+    job, _, member = job_id.partition("/")
+    if member:
+        report = _completed(work, job)
+        _require(report is not None, f"El trabajo {job} no ha terminado")
+        record = report["seeds"].get(member.removeprefix("seed-"))
+        _require(record is not None, f"El trabajo {job} no emite {member}")
+        path = Path(work) / "runs" / job / record["path"]
+        _require(sha256(path) == record["sha256"], f"Ha cambiado {member} de {job}")
+    return run_panels(Path(work) / "runs" / job_id, reads, label=job_id)
+
+
+def run_panels(folder, reads, label=None):
     """Paneles de los tres tramos de un trabajo terminado, con la huella de cada archivo."""
     report = read_manifest(folder / "run.json", 16 * 1024**2)[0]
     _require(report.get("status") == "completed", f"El trabajo {folder.name} no ha terminado")
-    tables = _tables(folder, report["predictions"], variant_screening_analysis.PARTITIONS, reads)
+    names = variant_screening_analysis.PARTITIONS
+    tables = _tables(folder, report["predictions"], names, reads, label)
     return {name: _panel(table) for name, table in tables.items()}
 
 
@@ -973,9 +1027,7 @@ def _origins(work, receipt, reads, descriptions=None):
     """
     protocol, origins = receipt["protocol"], {}
     # Una sola caché para los cuatro orígenes. Los identificadores de trabajo llevan su año.
-    load = functools.lru_cache(maxsize=CACHED_RUNS)(
-        lambda job_id: run_panels(work / "runs" / job_id, reads)
-    )
+    load = functools.lru_cache(maxsize=CACHED_RUNS)(lambda job_id: job_panels(work, job_id, reads))
     for year in screening_cohorts.ORIGIN_FOLDS:
         view = work / "origins" / str(year) / "view-x1.json"
         cohorts, maturity = origin_maturity(view, protocol["population"]["input_policy"])
@@ -1029,8 +1081,10 @@ def analyze(work, output, descriptions):
     output.mkdir(parents=True)
     atomic_parquet_batches(output / "series.parquet", _series_table(arrays))
     atomic_json(output / "analysis.json", report)
+    continuation = report["continuation"] or {"decisions": {}}
     return dict(
         decisions={entry: row["passes"] for entry, row in report["decisions"].items()},
+        continuation={name: row["passes"] for name, row in continuation["decisions"].items()},
         sessions=report["sessions"],
         analysis_sha256=sha256(output / "analysis.json"),
     )

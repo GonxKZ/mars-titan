@@ -379,5 +379,127 @@
     ],
     "verification_date": "2026-09-21",
     "revision": "d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e"
+  },
+  {
+    "id": "lehmann1990fads",
+    "title": "Fads, Martingales, and Market Efficiency",
+    "authors": [
+      "Bruce N. Lehmann"
+    ],
+    "year": 1990,
+    "url": "https://doi.org/10.2307/2937816",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref y RePEc comprobados. La página editorial devuelve 403 a la consulta automática y el texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Reversión de corto plazo de los rendimientos semanales, base del componente de reversión de la regla común de la criba.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "jegadeesh1993returns",
+    "title": "Returns to Buying Winners and Selling Losers: Implications for Stock Market Efficiency",
+    "authors": [
+      "Narasimhan Jegadeesh",
+      "Sheridan Titman"
+    ],
+    "year": 1993,
+    "url": "https://doi.org/10.1111/j.1540-6261.1993.tb04702.x",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. La página editorial devuelve 403 a la consulta automática y el texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Momentum de varios meses que salta el periodo más reciente, base del componente de momentum de la regla común de la criba.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "ke2017lightgbm",
+    "title": "LightGBM: A Highly Efficient Gradient Boosting Decision Tree",
+    "authors": [
+      "Guolin Ke",
+      "Qi Meng",
+      "Thomas Finley",
+      "Taifeng Wang",
+      "Wei Chen",
+      "Weidong Ma",
+      "Qiwei Ye",
+      "Tie-Yan Liu"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.neurips.cc/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html",
+    "pdf_url": null,
+    "access": "Página de las actas de NeurIPS consultada con autores y título. Las actas en línea no muestran páginas.",
+    "redistribution": "unknown",
+    "relevance": "Algoritmo del control LightGBM de la criba, con LightGBM 4.7.0.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "yang2020qlib",
+    "title": "Qlib: An AI-oriented Quantitative Investment Platform",
+    "authors": [
+      "Xiao Yang",
+      "Weiqing Liu",
+      "Dong Zhou",
+      "Jiang Bian",
+      "Tie-Yan Liu"
+    ],
+    "year": 2020,
+    "url": "https://arxiv.org/abs/2009.11189",
+    "pdf_url": "https://arxiv.org/pdf/2009.11189",
+    "access": "Resumen de arXiv consultado. La configuración, el modelo y el manejador se leyeron en el commit 54355232463878d2eebb91fe0ee5fa7fa1f5976c de microsoft/qlib y sus huellas están en el protocolo de la criba.",
+    "redistribution": "Preprint de arXiv con licencia propia. El repositorio de Qlib usa la licencia MIT.",
+    "relevance": "Parámetros de LightGBM sobre Alpha158 y normalización por sesión de la etiqueta que reproduce el control común.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28",
+    "revision": "54355232463878d2eebb91fe0ee5fa7fa1f5976c"
+  },
+  {
+    "id": "abdi2017simple",
+    "title": "A Simple Estimation of Bid-Ask Spreads from Daily Close, High, and Low Prices",
+    "authors": [
+      "Farshid Abdi",
+      "Angelo Ranaldo"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.1093/rfs/hhx084",
+    "doi": "10.1093/rfs/hhx084",
+    "pdf_url": "https://www.alexandria.unisg.ch/server/api/core/bitstreams/dfb85399-5bcf-465c-8b63-9bfc97ad2ee0/content",
+    "venue": "The Review of Financial Studies",
+    "volume": "30",
+    "issue": "12",
+    "pages": "4437-4480",
+    "access": "Metadatos contrastados en Crossref. Versión de autor de 61 páginas, de julio de 2017, en acceso abierto en el repositorio de la Universidad de St. Gallen, sin la maquetación de la revista. Leídos la definición del rango medio (página 11 del PDF), las versiones corregidas mensual y por dos días (páginas 14 y 15), los meses de 21 días de las simulaciones (página 17), el descarte de los pares con un día sin negociación o sin rango en las simulaciones (página 18) y el procedimiento empírico, que arrastra los precios del día anterior y descarta los meses con menos de 12 días aplicables (páginas 20 y 21). No se han reproducido sus resultados.",
+    "read_version": {
+      "type": "author_version",
+      "date": "2017-07-30",
+      "url": "https://www.alexandria.unisg.ch/249656",
+      "sha256": "a40450b1036e9fd941c8adeca935e6e59c984897f1bb9c804c6f80a009e7666b",
+      "passages": [
+        "Página 11 del PDF: definición del rango medio",
+        "Páginas 14 y 15: versiones corregidas mensual y por dos días, ecuaciones (10) y (11)",
+        "Página 17: simulaciones con meses de 21 días",
+        "Página 18: descarte de los pares con un día sin negociación o sin rango",
+        "Páginas 20 y 21: procedimiento empírico y mínimo de 12 días aplicables por mes"
+      ]
+    },
+    "verification_sources": [
+      "https://api.crossref.org/works/10.1093/rfs/hhx084",
+      "https://www.alexandria.unisg.ch/249656"
+    ],
+    "relevance": "Fuente del diferencial CHL corregido por dos días con que H4 mide la liquidez de cada activo en su ventana de 64 sesiones. H4 descarta los pares sin rango como en las simulaciones del artículo y no arrastra precios.",
+    "redistribution": "Versión de autor en acceso abierto. No se redistribuye el PDF.",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-29"
   }
 ]

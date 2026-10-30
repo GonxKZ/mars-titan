@@ -4,7 +4,9 @@ El protocolo se registra en `configs/experiments/variant-screening-v1.json` ante
 S. Este módulo lo valida, resuelve los modelos de cada entrada del catálogo a partir de su
 declaración y enumera los trabajos por origen y semilla. Dos modelos con la misma
 definición son un solo trabajo, así que una referencia común se ajusta una vez por origen
-y semilla aunque varias entradas la usen como control. No importa PyTorch ni lee datos.
+y semilla aunque varias entradas la usen como control. Los controles comunes con trabajo, la
+regla de momentum y reversión y LightGBM, tienen uno por origen que vale para todas las
+semillas. No importa PyTorch ni lee datos.
 """
 
 import hashlib
@@ -12,6 +14,8 @@ import itertools
 import json
 from dataclasses import dataclass
 from pathlib import Path
+
+from mars_titan.models.baselines import momentum_reversal, same_inputs_lightgbm
 
 from .screening_cohorts import ORIGIN_FOLDS
 
@@ -30,10 +34,24 @@ RUNNERS = (*JOB_RUNNERS, "output", "diagnostic", "policy", "audit")
 METRICS = ("session_ic", "session_mae_calibrated")
 # Igual que walk_forward_phases.MAX_FIT_MONTHS, que no se importa porque arrastra PyTorch.
 MAX_FIT_MONTHS = 12
-# Controles comunes que no necesitan ningún ajuste.
-COMMON = ("zero", "past_median")
-# Trabajos que deben haber terminado antes: el padre congelado y la variante emparejada.
-REQUIRES = ("parent", "after")
+# Controles comunes. El cero y la mediana pasada se calculan en el análisis sobre las etiquetas
+# de la referencia B. La regla y LightGBM son trabajos de un origen.
+COMMON = ("zero", "past_median", "momentum_reversal", "lightgbm")
+COMMON_RUNNERS = ("analysis", "analysis", "rule", "tabular")
+PAST_MEDIAN = "past_median_v1"
+# Un trabajo de origen vale para las cinco semillas: la regla no tiene semilla y LightGBM
+# ajusta las cinco en el mismo trabajo para elegir sus rondas en común, con una carpeta por
+# semilla. Ninguno usa la GPU.
+ORIGIN_RUNNERS = ("rule", "tabular")
+SEED_FOLDERS = ("tabular",)
+CPU_RUNNERS = ORIGIN_RUNNERS
+# Dependencias: padre congelado, variante emparejada y padre del origen anterior.
+REQUIRES = ("parent", "after", "continues")
+# Modelos de una declaración que solo existen como etapa que continúa desde su padre (F3).
+CONTINUATION = "walk_forward_stage_started_from_its_parent"
+# Papeles de los contrastes de continuación. Solo tienen sesiones desde el segundo origen y
+# forman su propia familia, fuera de la declarada y de sus sensibilidades.
+CONTINUATION_ROLES = ("continuation", "continuation_reported")
 # Enmienda de la selección registrada el 28 de octubre antes de abrir S. Los ajustes y los
 # lectores emiten la época común de sus semillas, elegida con el IC medio de validación.
 SELECTION_RULE = "common_epoch_session_ic_v1"
@@ -107,6 +125,7 @@ def checked_protocol(document):
         "El ajuste necesita meses, épocas con la época común, caso de búsqueda y FP32",
     )
     checked_selection(document.get("selection"), fit["epochs"])
+    checked_common(document.get("common_controls"))
     partitions = document.get("partitions", {})
     _require(
         partitions.get("confirmation", {}).get("opened_by_the_screening") is False
@@ -213,6 +232,43 @@ def checked_selection(selection, epochs):
     )
 
 
+def checked_common(common):
+    """Validar los controles comunes y su familia, que se publica fuera de las decisiones."""
+    common = common if isinstance(common, dict) else {}
+    models = common.get("models")
+    _require(
+        common.get("registered_before_opening_s") is True
+        and isinstance(models, dict)
+        and tuple(models) == COMMON
+        and all(isinstance(value, dict) for value in models.values())
+        and tuple(value.get("runner") for value in models.values()) == COMMON_RUNNERS,
+        "Los controles comunes declaran el cero, la mediana pasada, la regla y LightGBM",
+    )
+    past = models["past_median"]
+    _require(
+        past.get("identity") == PAST_MEDIAN
+        and type(past.get("lag_sessions")) is int
+        and past["lag_sessions"] >= 1
+        and type(past.get("window")) is int
+        and type(past.get("min_labels")) is int
+        and 1 <= past["min_labels"] <= past["window"],
+        "La mediana pasada declara su retraso, su ventana y su mínimo de etiquetas",
+    )
+    momentum_reversal.checked_config(models["momentum_reversal"].get("config"))
+    same_inputs_lightgbm.checked_config(models["lightgbm"].get("config"))
+    family = common.get("family", {})
+    pairs = family.get("contrasts")
+    _require(
+        family.get("role") == "reported_outside_the_decisions"
+        and family.get("metric") in METRICS
+        and isinstance(pairs, list)
+        and pairs
+        and all(isinstance(pair, list) and len(pair) == 2 and pair[1] in COMMON for pair in pairs)
+        and len({tuple(pair) for pair in pairs}) == len(pairs),
+        "La familia de los controles comunes declara su métrica y contrastes frente a ellos",
+    )
+
+
 def load_protocol(root=ROOT):
     root = Path(root)
     return checked_protocol(json.loads((root / PROTOCOL).read_text()))
@@ -281,6 +337,29 @@ def _combination(entry, declared, name, value, seeds):
     return dict(runner="output", source=source, combine=value["combine"], replicates=replicates)
 
 
+def _continued(name, entry, declared, excluded):
+    """Padre de las continuaciones de una entrada, o None si no declara ninguna ejecutable.
+
+    El padre es un modelo ajustado de la misma entrada que no continúa a su vez. Cada
+    continuación del origen k empieza en el estado que ese padre eligió en el origen k − 1
+    con la misma semilla.
+    """
+    arms = {arm for arm, value in declared.items() if value.get("applies_to") == CONTINUATION}
+    continuation = entry.get("continuation")
+    if not arms - excluded:
+        _require(continuation is None, f"{name} declara una continuación sin modelos que continúen")
+        return None
+    _require(
+        isinstance(continuation, dict)
+        and set(continuation) == {"parent", "primary", "reported", "date", "note"}
+        and continuation["parent"] in declared
+        and continuation["parent"] not in arms | excluded
+        and "combine" not in declared[continuation["parent"]],
+        f"{name} continúa desde un padre ajustado de la entrada que no continúa",
+    )
+    return continuation["parent"]
+
+
 def _parented(entry, references, runner):
     parent = entry.get("parent")
     _require(parent in references, f"El ejecutor {runner} necesita una referencia como padre")
@@ -302,6 +381,7 @@ def entry_arms(protocol, name, root=ROOT):
     elif runner == "fit":
         declared = entry.get("arms") or document.get("arms")
         excluded = set(entry.get("pending_arms", ()))
+        parent = _continued(name, entry, declared, excluded)
         for arm, value in declared.items():
             if arm in excluded:
                 continue
@@ -310,6 +390,8 @@ def entry_arms(protocol, name, root=ROOT):
                 if "combine" in value
                 else _fit(entry, document, arm, value)
             )
+            if value.get("applies_to") == CONTINUATION:
+                arms[arm]["continues"] = parent
     elif runner == "correction":
         parent = _parented(entry, references, runner)
         sources = dict(document["arms"])
@@ -381,6 +463,16 @@ def reference_arms(protocol):
     return arms
 
 
+def common_arms(protocol):
+    """Controles comunes con trabajo, la regla y LightGBM, con su declaración."""
+    models = protocol["common_controls"]["models"]
+    return {
+        name: Arm("common", name, dict(runner=value["runner"], config=value["config"]))
+        for name, value in models.items()
+        if value["runner"] in ORIGIN_RUNNERS
+    }
+
+
 def resolve(protocol, name, endpoint, root=ROOT):
     """Modelo al que se refiere un extremo de un contraste de la entrada `name`."""
     _require(isinstance(endpoint, str) and endpoint, "Cada extremo es un nombre")
@@ -398,7 +490,12 @@ def resolve(protocol, name, endpoint, root=ROOT):
 
 
 def contrasts(protocol, root=ROOT):
-    """Contrastes declarados con su papel: principal, exigido o solo publicado."""
+    """Contrastes declarados con su papel: principal, exigido o solo publicado.
+
+    Los de una continuación llevan los papeles de `CONTINUATION_ROLES`. Sus contrastes
+    principales comparan dos continuaciones, así que los dos extremos empiezan en el mismo
+    origen, y cada contraste publicado incluye al menos una.
+    """
     rows = []
     for name, entry in protocol["catalog"].items():
         if "status" in entry:
@@ -406,21 +503,54 @@ def contrasts(protocol, root=ROOT):
         pairs = [("primary", entry["primary"])]
         pairs += [("required", pair) for pair in entry.get("required", ())]
         pairs += [("reported", pair) for pair in entry.get("reported", ())]
-        for role, (variant, control) in pairs:
-            rows.append(
-                dict(
-                    entry=name,
-                    role=role,
-                    metric=entry["metric"],
-                    variant=resolve(protocol, name, variant, root),
-                    control=resolve(protocol, name, control, root),
-                )
+        continuation = entry.get("continuation")
+        if continuation is not None:
+            _require(
+                continuation["primary"] and all(len(pair) == 2 for pair in continuation["primary"]),
+                f"{name} contrasta sus continuaciones con al menos un par",
             )
+            pairs += [(CONTINUATION_ROLES[0], pair) for pair in continuation["primary"]]
+            pairs += [(CONTINUATION_ROLES[1], pair) for pair in continuation["reported"]]
+        arms = entry_arms(protocol, name, root)
+        for role, (variant, control) in pairs:
+            row = dict(
+                entry=name,
+                role=role,
+                metric=entry["metric"],
+                variant=resolve(protocol, name, variant, root),
+                control=resolve(protocol, name, control, root),
+            )
+            if role in CONTINUATION_ROLES:
+                continued = [
+                    side[0] == name and "continues" in arms[side[1]].definition
+                    for side in (row["variant"], row["control"])
+                ]
+                _require(
+                    all(continued) if role == CONTINUATION_ROLES[0] else any(continued),
+                    f"{name} compara en su familia de continuación modelos que no continúan",
+                )
+            rows.append(row)
     return rows
+
+
+def common_contrasts(protocol, root=ROOT):
+    """Contrastes de la familia de los controles comunes, que no decide ninguna entrada."""
+    family = protocol["common_controls"]["family"]
+    return [
+        dict(
+            entry="common",
+            role="reported",
+            metric=family["metric"],
+            variant=resolve(protocol, "common", variant, root),
+            control=resolve(protocol, "common", control, root),
+        )
+        for variant, control in family["contrasts"]
+    ]
 
 
 def all_arms(protocol, root=ROOT):
     arms = {("references", name): arm for name, arm in reference_arms(protocol).items()}
+    arms |= {("common", name): arm for name, arm in common_arms(protocol).items()}
     for name in protocol["catalog"]:
         for arm_name, arm in entry_arms(protocol, name, root).items():
             arms[(name, arm_name)] = arm
@@ -433,7 +563,7 @@ def _cases(protocol, definition, root):
     runner = definition["runner"]
     if runner in ("fit", "reader"):
         return (protocol["fit"]["search_case"],)
-    if runner == "spaced":
+    if runner in ("spaced", *ORIGIN_RUNNERS):
         return (None,)
     recipe = json.loads((Path(root) / definition["recipe"]).read_text())
     cases = tuple(recipe.get("walk_forward", {}).get("search_cases", ()))
@@ -445,12 +575,18 @@ def _definitions(protocol, arms, arm, root):
     """Definiciones de trabajo de un modelo, una por caso, con la huella de su padre.
 
     Un control emparejado guarda en su valor la huella de la ventana de su variante en el
-    mismo caso, que tiene que terminar antes.
+    mismo caso, que tiene que terminar antes. Una continuación guarda la huella del modelo
+    desde cuyo estado elegido empieza.
     """
     parent = None
     if "parent" in arm.definition:
         (parent,) = _definitions(
             protocol, arms, arms[("references", arm.definition["parent"])], root
+        )
+    continues = None
+    if "continues" in arm.definition:
+        (continues,) = _definitions(
+            protocol, arms, arms[(arm.entry, arm.definition["continues"])], root
         )
     value = arm.definition.get("value")
     matched = None
@@ -467,6 +603,8 @@ def _definitions(protocol, arms, arm, root):
             definition["search_case"] = case
         if parent is not None:
             definition["parent"] = parent[0]
+        if continues is not None:
+            definition["continues"] = continues[0]
         if matched is not None:
             definition["value"] = dict(value, matched_to=matched[case])
         result.append((_digest(definition), definition))
@@ -493,7 +631,9 @@ def screening_jobs(protocol, root=ROOT):
 
     Los ajustes y los lectores llevan además su grupo de semillas (`common_group`), las
     épocas que emiten como versiones (`versions`) y si guardan la predicción de cada época
-    de validación porque una combinación los usa (`epoch_predictions`).
+    de validación porque una combinación los usa (`epoch_predictions`). Un trabajo de origen
+    no tiene semilla (`seed` es None) y declara las que cubre (`seeds`). Una continuación
+    lleva en `continues` el trabajo del origen anterior con la misma semilla.
     """
     arms = all_arms(protocol, root)
     combined = {"/".join(label) for label in combination_sources(arms)}
@@ -501,12 +641,17 @@ def screening_jobs(protocol, root=ROOT):
     epochs = protocol["selection"]["versions"]["epochs"]
     jobs = {}
     for label, arm in arms.items():
-        if arm.runner not in JOB_RUNNERS:
+        if arm.runner not in (*JOB_RUNNERS, *ORIGIN_RUNNERS):
             continue
+        seeds = (None,) if arm.runner in ORIGIN_RUNNERS else protocol["seeds"]
         for key, definition in _definitions(protocol, arms, arm, root):
-            for origin in protocol["origins"]:
-                for seed in protocol["seeds"]:
-                    job_id = f"{origin['year']}-{seed}-{key[:16]}"
+            for position, origin in enumerate(protocol["origins"]):
+                # El primer origen no tiene un estado anterior desde el que continuar.
+                if "continues" in definition and position == 0:
+                    continue
+                for seed in seeds:
+                    prefix = str(origin["year"]) if seed is None else f"{origin['year']}-{seed}"
+                    job_id = f"{prefix}-{key[:16]}"
                     job = jobs.setdefault(
                         job_id,
                         dict(
@@ -518,11 +663,11 @@ def screening_jobs(protocol, root=ROOT):
                             definition=definition,
                             parent=None,
                             after=None,
+                            continues=None,
                             used_by=[],
                         ),
                     )
                     _require(job["definition_sha256"] == key, "Dos definiciones comparten prefijo")
-                    prefix = f"{origin['year']}-{seed}"
                     if "parent" in definition:
                         job["parent"] = f"{prefix}-{definition['parent'][:16]}"
                     if (
@@ -530,9 +675,14 @@ def screening_jobs(protocol, root=ROOT):
                         and "matched_to" in definition["value"]
                     ):
                         job["after"] = f"{prefix}-{definition['value']['matched_to'][:16]}"
+                    if "continues" in definition:
+                        previous = protocol["origins"][position - 1]["year"]
+                        job["continues"] = f"{previous}-{seed}-{definition['continues'][:16]}"
                     job["used_by"].append("/".join(label))
     for job in jobs.values():
         job["used_by"].sort()
+        if job["seed"] is None:
+            job["seeds"] = list(protocol["seeds"])
         if job["definition"]["runner"] in EPOCH_RUNNERS:
             uses = set(job["used_by"])
             job.update(
@@ -566,7 +716,12 @@ def screening_jobs(protocol, root=ROOT):
     # el siguiente.
     return sorted(
         jobs.values(),
-        key=lambda job: (level(job["id"]), job["origin"], job["definition_sha256"], job["seed"]),
+        key=lambda job: (
+            level(job["id"]),
+            job["origin"],
+            job["definition_sha256"],
+            -1 if job["seed"] is None else job["seed"],
+        ),
     )
 
 
@@ -589,7 +744,9 @@ def cost_estimate(protocol, jobs, rows):
     la evaluación. Una corrección predice una vez los tres tramos medidos con su caso, y un
     lector cuesta lo que declara la medida de referencia. Cada versión de la época común
     predice otra vez la calibración y la evaluación, y la época de una combinación puede
-    añadir una más a cada semilla de su fuente.
+    añadir una más a cada semilla de su fuente. La regla y LightGBM cuestan por origen la
+    cota que declara la referencia, que no es una medida, y se cobran en el mismo presupuesto
+    aunque no usen la GPU.
     """
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
@@ -612,6 +769,8 @@ def cost_estimate(protocol, jobs, rows):
         elif definition["runner"] in ("correction", "correction_profile"):
             measured = counts["validation"] + counts["calibration"] + counts["evaluation"]
             cost = measured / reference["inference_rows_per_second"]
+        elif definition["runner"] in ORIGIN_RUNNERS:
+            cost = reference[f"{definition['runner']}_window_seconds"]
         else:
             cost = reference["reader_window_seconds"]
         if definition["runner"] in EPOCH_RUNNERS:

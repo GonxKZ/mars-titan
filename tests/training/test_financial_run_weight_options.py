@@ -12,6 +12,7 @@ import torch
 from mars_titan.training import weight_averaging
 from mars_titan.training.checkpoints import load_training_state
 from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
+from mars_titan.training.shrink_perturb import ShrinkPerturb
 from tests.training.test_financial_run import (
     SELECTION,
     RecordingOptimizer,
@@ -112,7 +113,7 @@ def test_partial_or_combined_options_are_rejected(options, message):
         ChronologicalRecipe(**options)
 
 
-def test_the_trainer_rejects_what_has_no_declared_contrast(shared, tmp_path):
+def test_the_trainer_rejects_what_has_no_declared_contrast(shared, tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="F2 y F3 no tienen"):
         ChronologicalTrainer(
             predictor(shared),
@@ -123,9 +124,12 @@ def test_the_trainer_rejects_what_has_no_declared_contrast(shared, tmp_path):
             optimizer_factory=RecordingOptimizer,
             posttraining=dict(kind="adapters"),
         )
-    same_seed = dict(shrink_perturb=dict(shrink=0.6, noise=0.01, seed=42))
-    with pytest.raises(ValueError, match="otra semilla"):
-        trainer(shared, tmp_path / "seed", **same_seed)
+    # La semilla derivada no coincide en la práctica con la del ajuste. Si coincidiera, θ₀
+    # sería la propia inicialización del ajuste y el recorrido lo rechaza.
+    with monkeypatch.context() as patch:
+        patch.setattr(ShrinkPerturb, "fresh_seed", lambda self, seed: seed)
+        with pytest.raises(ValueError, match="otra semilla"):
+            trainer(shared, tmp_path / "seed", **SHRINK)
     with pytest.raises(ValueError, match="declara la receta para F3"):
         trainer(shared, tmp_path / "adamw", factory=torch.optim.AdamW, **FREE)
 
@@ -254,7 +258,9 @@ def test_shrink_and_perturb_applies_once_with_a_fresh_initialization(shared, tmp
     engine._start_weights(report)
     # La inicialización nueva no consume el generador global del ajuste.
     assert torch.equal(torch.random.get_rng_state(), generator)
-    fresh = dict(predictor(shared, seed=7).named_parameters())
+    seed = ShrinkPerturb(**SHRINK["shrink_perturb"]).fresh_seed(engine.predictor.config.seed)
+    assert seed not in (7, engine.predictor.config.seed)
+    fresh = dict(predictor(shared, seed=seed).named_parameters())
     shrunk = own_weights(engine)
     for name, value in shrunk.items():
         expected = 0.6 * parent[name] + 0.01 * fresh[name].detach()
@@ -262,8 +268,8 @@ def test_shrink_and_perturb_applies_once_with_a_fresh_initialization(shared, tmp
     record = report["shrink_perturb"]
     assert record["parameters_before_sha256"] == engine.identity["initial_parameters_sha256"]
     assert record["parameters_after_sha256"] == engine.predictor._parameter_id
-    assert record["fresh_parameters_sha256"] == predictor(shared, seed=7)._parameter_id
-    assert record["configuration"]["shrink"] == 0.6
+    assert record["fresh_parameters_sha256"] == predictor(shared, seed=seed)._parameter_id
+    assert record["fresh_seed"] == seed and record["configuration"]["shrink"] == 0.6
     # Con un estado recuperado no se vuelve a contraer.
     engine._start_weights(report, state={})
     assert all(torch.equal(value, shrunk[name]) for name, value in own_weights(engine).items())
@@ -293,8 +299,11 @@ def test_declared_arms_build_their_recipes_and_pair_their_controls(path):
                 assert control["role"] == "control" or "seeds" in control, name
                 assert arm.get("applies_to") == control.get("applies_to"), name
             if options["shrink_perturb"] is not None:
-                # θ₀ nunca es la inicialización de una semilla de ajuste de los protocolos.
-                assert options["shrink_perturb"].seed not in (42, 43, 44)
+                # Cada semilla de la criba recibe su θ₀, que nunca es la inicialización de una
+                # semilla de ajuste.
+                seeds = (42, 43, 44, 45, 46)
+                fresh = {options["shrink_perturb"].fresh_seed(seed) for seed in seeds}
+                assert len(fresh) == len(seeds) and not fresh & set(seeds)
             if arm.get("combine") == "seed_mean_v1":
                 assert len(arm["seeds"]) >= 2
                 assert declaration["arms"][arm["control"]]["updates_multiplier"] == len(

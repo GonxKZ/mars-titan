@@ -1,0 +1,464 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 746,
+ "scope": "screening_common_controls",
+ "implementation_commit": "8098d21fe960a844420806e15d27de85bfa14ff9",
+ "base_commit": "691ad21a956e528896f2303cfc8eb88cdaaad2ca",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "screening_jobs_run": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "suite_counts": "Las suites históricas y las de la integración se solapan. Sus recuentos se informan por separado.",
+ "test_models": "LightGBM se sustituye por un modelo de predicción fija que recorre las rondas sin ajustar parámetros. Los recorridos usan fixtures y los ejecutores de aprendizaje están sustituidos. La protección sigue activa.",
+ "importer_audit": {
+  "base_commit": "691ad21a956e528896f2303cfc8eb88cdaaad2ca",
+  "changed_modules": [
+   "benchmarks/variant_screening_study.py",
+   "src/mars_titan/evaluation/variant_screening_analysis.py",
+   "src/mars_titan/models/baselines/momentum_reversal.py",
+   "src/mars_titan/models/baselines/same_inputs_lightgbm.py",
+   "src/mars_titan/training/common_control_windows.py",
+   "src/mars_titan/training/variant_screening.py"
+  ],
+  "test_modules": [
+   "tests/evaluation/test_variant_screening_analysis.py",
+   "tests/models/test_momentum_reversal.py",
+   "tests/models/test_same_inputs_lightgbm.py",
+   "tests/tooling/test_variant_screening_study.py",
+   "tests/training/test_common_control_windows.py",
+   "tests/training/test_familiarity_gate_arms.py",
+   "tests/training/test_learning_hold_guards.py",
+   "tests/training/test_learning_hold_inventory.py",
+   "tests/training/test_variant_screening.py"
+  ],
+  "tool_sha256": "4d119d0683bbc52d3f54fcf737436f0ca6389019437b3db738987299f8c36369",
+  "note": "Recorrido inverso de importaciones estáticas, complementado con búsqueda textual de las seis fuentes. Los nueve módulos importadores se ejecutaron. Los archivos auxiliares de las guardas se comprueban con su grafo y su inventario. No es una prueba de todas las importaciones dinámicas posibles."
+ },
+ "plan": {
+  "receipt": "reports/engineering/variant-screening-20261028/plan.json",
+  "sha256": "6f99db901aab008d2c3a9d3144fef8dff4d4c17071b5909c06349d7e249aca81",
+  "jobs": 2048,
+  "estimated_hours": 173.1978426283293,
+  "budget_hours": 150,
+  "within_budget": false,
+  "note": "Estimación del protocolo integrado, no coste observado de una ejecución. El bloqueo y el exceso de presupuesto impiden iniciar la criba."
+ },
+ "changed_functions_tool_sha256": "4f5986c4b29b6f4bbacbdbc0b0219d441cbc9c4bcda1e1d3456d23271342061d",
+ "corrected_behaviors": [
+  "Rechazar estadísticas de normalización que desbordan, antes de construir el conjunto de aprendizaje.",
+  "Comprobar las raíces de la vista y los precios antes de crear el informe de una ventana nueva. Una ventana completada sigue verificándose sin reabrir la vista."
+ ],
+ "source_audit": {
+  "receipt": "reports/engineering/common-controls-20261030/source-audit.json",
+  "sha256": "d88667343c9167c41d5c76c96f477d1a4f8f1b0945608b171cfee9dce9881f76",
+  "scope": "Las tres fuentes fijadas coinciden byte a byte. Se inspeccionan la configuración, el modelo, Alpha158 y la cadena de normalización en la misma revisión. La API de pandas confirma ddof=1. Esto no acredita ejecutar Qlib ni una mejora financiera."
+ },
+ "budget_cancellation": "Antes de construir el Dataset y después de cada ronda, un callback comprueba el presupuesto. Al interrumpir se descarta la semilla incompleta y se conservan las anteriores confirmadas. La cancelación es cooperativa, no interrumpe una operación nativa en curso.",
+ "suites": [
+  {
+   "name": "targeted_before_develop_merge",
+   "tests": 366,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "03673801ed45ddfebdf78b6a08c96a633ac61d5ab18ec64f8806b0fee79b7b3e",
+   "note": "En 81a0f8ddf. Modelos comunes, ventanas, protocolo, análisis, orden y guardas."
+  },
+  {
+   "name": "regression_before_develop_merge",
+   "tests": 3770,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 113,
+   "xml_sha256": "b2359055c1d96008370e56c6647deb498db70f970b651dc4a8041a3fb99aef18",
+   "note": "En 81a0f8ddf. Regresión anterior más amplia con 113 omisiones por la guarda y binarios auxiliares. No se presenta como una repetición del árbol integrado."
+  },
+  {
+   "name": "continuation_first_merge_pass",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f07acaa7f917f6fe1eeb8a81f39ccbe8d892b79c414e4ac0f4448197429476bd",
+   "note": "Al combinar controles y continuaciones, el helper anterior intentaba leer F3 en 2019, donde no existe un padre anterior. Se conservó la prueba y se corrigió la composición."
+  },
+  {
+   "name": "continuation_with_incomplete_seed_fixture",
+   "tests": 1,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f55507a5e9f238bb79489b3451f00b832fbebace78125bfe54c416347e0db42e",
+   "note": "La composición ya respetaba 2019, pero la comprobación de las lecturas del fixture no reconocía la carpeta por semilla de LightGBM. Se completó ese acceso al trabajo padre."
+  },
+  {
+   "name": "continuation_after_seed_fixture_fix",
+   "tests": 1,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "fc579b73c48e5259a7be3b6453c9a7846953a3d7f7d0e859d1f28b5f6d07bbb8",
+   "note": "La misma prueba tras completar el fixture. Verifica sesiones no definidas en 2019 y familias separadas."
+  },
+  {
+   "name": "merged_targeted_with_coverage",
+   "tests": 386,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "aff5d3d1cfabb9ebf67804d9ff6d9d4e0f968d409a94a863ad2905db88afe7c9",
+   "note": "En 169fe87c9. Los seis módulos de producción y las guardas, con controles y continuaciones combinados. 386 casos sin omisiones."
+  },
+  {
+   "name": "additional_importer_without_native_path",
+   "tests": 9,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "69e23f6c8809b8942414ffa6749cd5e7db754d6922c2abb039fe74a02ffaa7db",
+   "note": "Primera pasada del importador R3. La ruta nativa no estaba declarada y un caso se omitió. La repetición siguiente declara el enlace existente y ejecuta ese caso."
+  },
+  {
+   "name": "additional_importer_with_native_path",
+   "tests": 9,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "d7a27b3eb90f9ecb9b5447a58a825bdbdb5efc769770fc7f5299fbcd2e676905",
+   "note": "En 169fe87c9, nueve casos de las recetas R3 y su entrada en la criba. Completa los nueve módulos del recorrido estático de importadores. Sin omisiones."
+  },
+  {
+   "name": "adversarial_first_pass",
+   "tests": 6,
+   "failures": 6,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "c1fc11b09c42e89de5d9bfa92db5114b675b4d11385925af3804e73e6a1320ca",
+   "note": "En 169fe87c9 con seis casos nuevos. Dos reproducen estadísticas inválidas y cuatro prueban que se crea un archivo antes de rechazar una salida dentro de las fuentes. Corpus temporales y LightGBM sustituido."
+  },
+  {
+   "name": "adversarial_model_and_window_regression",
+   "tests": 48,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "cf14d4e888f5f8ec48d001455ba265354b297982fff3adc3833815a1073b30be",
+   "note": "Contenido confirmado en 462400596. Los 48 casos de modelos y ventanas pasan, incluidos los rechazos y la recuperación de estados completados sin leer de nuevo la vista."
+  },
+  {
+   "name": "corrected_merged_suite_with_importers",
+   "tests": 401,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "c92bd2002bc07d72c37f54e17fdd4ac9c72c958670bbc1ad692f232dd64f68e9",
+   "note": "Contenido confirmado en 462400596. 401 casos de diez módulos, que incluyen los nueve importadores estáticos y las guardas. Sin omisiones ni ajustes de LightGBM."
+  },
+  {
+   "name": "budget_first_pass",
+   "tests": 2,
+   "failures": 2,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "aa5430663a9251ad58898cfe70606559e393ded2c77bd66ff536617f136f0757",
+   "note": "Dos casos antes del callback de presupuesto. Faltaba la comprobación dentro de una semilla y el acceso de la API al callback."
+  },
+  {
+   "name": "budget_model_and_window_regression",
+   "tests": 50,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "c8fbca7be005a815e56406721ef6be16a2845de86f1e76c7c8dd6a9d057ecbae",
+   "note": "50 casos de los dos módulos tras conectar el callback. Sin aprendizaje real."
+  },
+  {
+   "name": "budget_merged_suite",
+   "tests": 404,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f328499ee1556b028910ab2cc97768b29bcf0c1e2ba5777063e6eddee5b248fe",
+   "note": "404 casos sobre la fuente de producción de 8098d21fe, sin omisiones. La traza de iteraciones del doble se reforzó después y se repite en la selección siguiente."
+  },
+  {
+   "name": "budget_exact_iteration_trace",
+   "tests": 29,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "aafb19084cb673f078fcda64de5070e5a11c0c63454f8eaa3cacc6c6fd6f3198",
+   "note": "29 casos con el doble reforzado. La comprobación inicial y las de las rondas 0, 1 y 2 se observan en orden, y un presupuesto agotado impide construir el Dataset."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1609,
+   "covered_statements": 1600,
+   "branches": 408,
+   "covered_branches": 401
+  },
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "cbbf91de374eecec2282a6a7d5c513fadd6e7a6ddd9fad3a72e2f49268f110c2",
+    "statements": 548,
+    "covered_statements": 540,
+    "branches": 122,
+    "covered_branches": 116
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "3fc2cc42b8bafe453288ef96355e722fe0618c3844debec82bc63a5730b87d81",
+    "statements": 393,
+    "covered_statements": 393,
+    "branches": 92,
+    "covered_branches": 92
+   },
+   {
+    "path": "src/mars_titan/models/baselines/momentum_reversal.py",
+    "source_sha256": "5572b3e57ef8c3a00a042da778f2e7a450edb61dc60b73610b3e35960a139d3f",
+    "statements": 43,
+    "covered_statements": 43,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/models/baselines/same_inputs_lightgbm.py",
+    "source_sha256": "0fc47999f6043135db60c8f6263a7d559739ca8e5fc12ac636c10660afda76a4",
+    "statements": 82,
+    "covered_statements": 82,
+    "branches": 16,
+    "covered_branches": 16
+   },
+   {
+    "path": "src/mars_titan/training/common_control_windows.py",
+    "source_sha256": "e8c16b610777b3f5351c78f59b28565cd32ed026ca7f4fc061cc58268328d5c9",
+    "statements": 203,
+    "covered_statements": 203,
+    "branches": 40,
+    "covered_branches": 40
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "179c73d5c3ab704ea75ad691071191f32ad9831f50fd88ee44a6aac9b05d174a",
+    "statements": 340,
+    "covered_statements": 339,
+    "branches": 130,
+    "covered_branches": 129
+   }
+  ],
+  "max_crap": 46.0,
+  "quality_sha256": "39e1cce4b1b33832b5aafac6f38c27dcc748b8a766f8406bbd7d21e5956ffc0a",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "691ad21a956e528896f2303cfc8eb88cdaaad2ca",
+  "head": "8098d21fe960a844420806e15d27de85bfa14ff9",
+  "functions": 56,
+  "max_crap": 46.0,
+  "changed_executable_lines": 424,
+  "changed_covered_lines": 424,
+  "highest": [
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "checked_protocol",
+    "cyclomatic_complexity": 46,
+    "crap": 46.0,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "screening_jobs",
+    "cyclomatic_complexity": 26,
+    "crap": 26.0,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 7,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "checked_common",
+    "cyclomatic_complexity": 22,
+    "crap": 22.0,
+    "changed_executable_lines": 11,
+    "changed_covered_lines": 11,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/baselines/same_inputs_lightgbm.py",
+    "function": "checked_config",
+    "cyclomatic_complexity": 13,
+    "crap": 13.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_run",
+    "cyclomatic_complexity": 11,
+    "crap": 11.016318548862927,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Funciones de producción cambiadas frente a develop 691ad21a9, con cobertura de la fuente de 8098d21fe. La cobertura no agota las combinaciones de condiciones y los recuentos por región pueden solaparse entre funciones anidadas.",
+  "changed_sha256": "2147e97ec697675e95c8006f0dc781b732f258c55444356fbf1c270890994d98"
+ },
+ "mutations": {
+  "tree_commit": "01bb224e575326bb2f1b40d310f48c83333f825d",
+  "planned": 53,
+  "killed": 53,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "5c376b5fd314ad2767e0df903a235b3f3e32372888142a0bed6d4e4511ec72ed",
+  "executor_sha256": "b1c26e761899aff95edbcaa9cff2e40f84422f3f513e07ac12bc5685cb30214c",
+  "source_sha256": {
+   "src/mars_titan/models/baselines/momentum_reversal.py": "5572b3e57ef8c3a00a042da778f2e7a450edb61dc60b73610b3e35960a139d3f",
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "f1fcf431b7a58bb307a5da95b5d905feadb7208129ac02fe08c70136994f2221",
+   "benchmarks/variant_screening_study.py": "831a5a85cbc861ba9a5a6931760419b9f9bbda51c7ed224b96682967f0cdeb1f",
+   "src/mars_titan/training/common_control_windows.py": "37f83059d29e15083497f151ced5eaa9d1b6a2aaff08c84b16d96e5e8e9fcd4d",
+   "tests/training/learning_hold_graph.py": "9265a75a515e1c59a85550759a1b52421d74d98811eb3ee29d3a9ba7f82b3b00",
+   "src/mars_titan/training/variant_screening.py": "36a3893991901c412d2c4dab5aa238d5dedd287b07674d961e66f063671f6baf",
+   "src/mars_titan/models/baselines/same_inputs_lightgbm.py": "8b12a8e91b0746640ea6f17eac5a3001ddb8fa3e82fe3df429c6895134bfb442"
+  },
+  "cases": [
+   "reversal_with_the_wrong_sign",
+   "reversal_one_session_short",
+   "reversal_without_the_lagged_presence",
+   "momentum_always_defined",
+   "ranks_not_centered",
+   "undefined_values_are_ranked",
+   "ranks_across_sessions",
+   "sum_instead_of_mean",
+   "mean_over_every_component",
+   "rule_accepts_zero_sessions",
+   "rule_accepts_any_presence",
+   "labels_with_population_deviation",
+   "fit_without_the_seed",
+   "fit_on_unlabelled_rows",
+   "checkpoint_one_round_early",
+   "checkpoint_scored_with_every_round",
+   "missing_checkpoints_accepted",
+   "parameter_types_unchecked",
+   "presence_first_in_the_features",
+   "fit_without_the_hold",
+   "non_finite_prediction_accepted",
+   "seed_without_upper_bound",
+   "saved_model_keeps_the_best_round",
+   "fit_rows_after_the_first_decision",
+   "assets_in_reading_order",
+   "view_with_the_final_test_opened",
+   "final_test_written",
+   "changed_request_accepted",
+   "completed_files_unchecked",
+   "seed_files_unchecked",
+   "foreign_output_accepted",
+   "rule_never_pauses",
+   "tabular_never_pauses",
+   "saved_fits_refitted",
+   "saved_fit_digest_unchecked",
+   "saved_fits_kept",
+   "fits_left_in_the_report",
+   "every_round_emitted",
+   "emission_not_compared",
+   "fit_on_the_whole_train",
+   "tabular_without_the_hold",
+   "common_runners_unchecked",
+   "past_median_window_unchecked",
+   "common_family_decides",
+   "repeated_common_contrasts",
+   "origin_jobs_per_seed",
+   "origin_cost_from_the_reader",
+   "past_median_maturity_unchecked",
+   "past_median_first_use_one_session_early",
+   "lightgbm_seeds_share_one_folder",
+   "common_controls_take_the_gpu",
+   "seed_record_unchecked",
+   "lightgbm_train_not_a_fitting_site"
+  ],
+  "summary_sha256": "d11c8d1f03d752170cbe132f88a6d36cbd2dc23e1ad6e920f3c8c36e891d89b8",
+  "scope": "53 defectos dirigidos del desarrollo de los controles, con sus fuentes históricas. Las fases G1 y G2 pasan y M1 falla con el defecto esperado. La repetición no mide todas las mutaciones posibles del proyecto.",
+  "additional": [
+   {
+    "tree_commit": "169fe87c92e8adff0a49873f023659035f91cf8d",
+    "planned": 2,
+    "killed": 2,
+    "recipes_sha256": "4e1de90313730ef5182cdf30cc4bb781a8da63f5664f66574aa36191c82625db",
+    "executor_sha256": "2d111169fa3998403edc1d13449c17e13e127fe82cc9d1c952450ba99d9c71cf",
+    "source_sha256": {
+     "src/mars_titan/evaluation/variant_screening_analysis.py": "3fc2cc42b8bafe453288ef96355e722fe0618c3844debec82bc63a5730b87d81",
+     "src/mars_titan/training/variant_screening.py": "179c73d5c3ab704ea75ad691071191f32ad9831f50fd88ee44a6aac9b05d174a"
+    },
+    "cases": [
+     "common_control_repeated_as_an_independent_seed_job",
+     "continuation_loaded_in_the_first_origin"
+    ],
+    "summary_sha256": "14e3345387566a361890de5d8f88f01dacf024c00eb84b433b98a3981ddae5f3",
+    "scope": "Dos defectos de la integración: cargar la continuación sin padre en el primer origen y repetir un control común como trabajo independiente por semilla. Ambos detectados con G1 y G2 verdes, M1 rojo y cero intentos de optimizador."
+   },
+   {
+    "tree_commit": "462400596c7ca9d4753941fc45bf163f86950365",
+    "planned": 2,
+    "killed": 2,
+    "recipes_sha256": "b57d74a24ba070ae79f2e4bc906bd7052a80c5e7d5e7a52eefc1a5890f2533d4",
+    "executor_sha256": "2d111169fa3998403edc1d13449c17e13e127fe82cc9d1c952450ba99d9c71cf",
+    "source_sha256": {
+     "src/mars_titan/models/baselines/same_inputs_lightgbm.py": "043272c59d08cbfa94ed9f2881ab61577c5551b064ee1a723550e79ad5654c4a",
+     "src/mars_titan/training/common_control_windows.py": "f32d94cea01e73c4e72291c7d8db31c0ba6ef3a7c4b1979f804361a5a13caabe"
+    },
+    "cases": [
+     "label_statistics_overflow_ignored",
+     "window_record_created_before_source_protection"
+    ],
+    "summary_sha256": "46c9920716f6c4007d817ef87abf87ab343e03763b937f535e78c970551f8a05",
+    "scope": "Dos defectos posteriores: ignorar el desbordamiento al normalizar y publicar el estado antes de comprobar las raíces protegidas. G1 y G2 pasan y M1 falla con los errores esperados. Sin intentos de optimizador."
+   },
+   {
+    "tree_commit": "8098d21fe960a844420806e15d27de85bfa14ff9",
+    "planned": 3,
+    "killed": 3,
+    "recipes_sha256": "d6a33e3484245d00f7b8a6fcc2f9863545ee42ca4914d7ee962dc065c8e87245",
+    "executor_sha256": "2d111169fa3998403edc1d13449c17e13e127fe82cc9d1c952450ba99d9c71cf",
+    "source_sha256": {
+     "src/mars_titan/training/common_control_windows.py": "e8c16b610777b3f5351c78f59b28565cd32ed026ca7f4fc061cc58268328d5c9",
+     "src/mars_titan/models/baselines/same_inputs_lightgbm.py": "0fc47999f6043135db60c8f6263a7d559739ca8e5fc12ac636c10660afda76a4"
+    },
+    "cases": [
+     "no_budget_check_after_each_round",
+     "no_budget_check_before_the_dataset",
+     "window_does_not_forward_the_iteration_stop_check"
+    ],
+    "summary_sha256": "68f4bf81b478f07bcbaba83c87ade99ec16ed313a073314870dd40a02da816c6",
+    "scope": "Tres defectos de presupuesto: omitir la comprobación previa al Dataset, omitir la de cada ronda y no propagarla desde la ventana. G1 y G2 verdes, M1 rojo, sin intentos de optimizador."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c9919e27180d95073aa8a93846057e649d",
+  "preset": "native-candidate-cuda",
+  "used_by": "regression_before_develop_merge, additional_importer_with_native_path",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}

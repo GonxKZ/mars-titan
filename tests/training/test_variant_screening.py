@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 
 import pytest
 
+from mars_titan.models.baselines import same_inputs_lightgbm
 from mars_titan.training import variant_screening as screening
 from mars_titan.training.screening_cohorts import ORIGIN_FOLDS
 
@@ -116,22 +117,107 @@ def test_identical_definitions_are_a_single_job(jobs):
     assert len({job["id"] for job in jobs}) == len(jobs)
 
 
+COMMON = ("common_controls",)
+MODELS = (*COMMON, "models")
+
+
+def test_the_registered_common_controls_are_those_of_their_modules(protocol):
+    models = protocol["common_controls"]["models"]
+    assert tuple(models) == screening.COMMON and protocol["common_controls"]["date"] == "2026-10-28"
+    assert models["lightgbm"]["config"]["parameters"] == same_inputs_lightgbm.PARAMETERS
+    assert models["lightgbm"]["config"]["source"] == same_inputs_lightgbm.QLIB_SOURCE
+    assert models["momentum_reversal"]["config"]["reversal_sessions"] == 5
+    family = protocol["common_controls"]["family"]
+    assert family["role"] == "reported_outside_the_decisions" and family["metric"] == "session_ic"
+    assert {control for _, control in family["contrasts"]} == {
+        "past_median",
+        "momentum_reversal",
+        "lightgbm",
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ((*COMMON, "registered_before_opening_s"), False, "el cero, la mediana pasada"),
+        ((*MODELS, "lightgbm", "runner"), "fit", "el cero, la mediana pasada"),
+        ((*MODELS, "zero"), "cero", "el cero, la mediana pasada"),
+        ((*MODELS, "past_median", "identity"), "past_mean_v1", "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "lag_sessions"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "window"), 60.0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 61, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "momentum_reversal", "config", "reversal_sessions"), 0, "sesiones de reversión"),
+        ((*MODELS, "lightgbm", "config", "max_rounds"), 500, "parámetros de Qlib"),
+        ((*MODELS, "lightgbm", "config", "checkpoint_rounds"), 7, "parámetros de Qlib"),
+        ((*COMMON, "family", "role"), "decision", "familia de los controles comunes"),
+        ((*COMMON, "family", "metric"), "sharpe", "familia de los controles comunes"),
+        ((*COMMON, "family", "contrasts"), [], "familia de los controles comunes"),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "scalar_reference"]],
+            "familia de los controles comunes",
+        ),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "lightgbm"]] * 2,
+            "familia de los controles comunes",
+        ),
+        ((*COMMON, "family", "contrasts"), [["quantile_reference"]], "familia de los controles"),
+    ],
+)
+def test_the_common_controls_keep_their_declaration_and_their_own_family(
+    protocol, path, value, message
+):
+    with pytest.raises(ValueError, match=message):
+        screening.checked_protocol(_changed(protocol, path, value))
+
+
 def test_every_definition_runs_once_per_origin_and_seed(protocol, jobs):
-    counts = Counter(job["definition_sha256"] for job in jobs)
-    assert set(counts.values()) == {len(protocol["origins"]) * len(protocol["seeds"])}
-    for job in jobs:
+    seeded = [job for job in jobs if job["seed"] is not None]
+    counts = Counter(job["definition_sha256"] for job in seeded)
+    continued = {job["definition_sha256"] for job in seeded if job["continues"] is not None}
+    origins, seeds = len(protocol["origins"]), len(protocol["seeds"])
+    assert {counts[key] for key in continued} == {(origins - 1) * seeds}
+    assert {count for key, count in counts.items() if key not in continued} == {origins * seeds}
+    for job in seeded:
         assert job["id"].startswith(f"{job['origin']}-{job['seed']}-")
-        assert job["fold"] == ORIGIN_FOLDS[job["origin"]]
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and "seeds" not in job
 
 
-def test_every_job_runs_after_its_parent_and_its_matched_variant(jobs):
+def test_each_common_control_with_a_job_runs_once_per_origin_for_every_seed(protocol, jobs):
+    origin = [job for job in jobs if job["seed"] is None]
+    assert Counter(job["definition"]["runner"] for job in origin) == {"rule": 4, "tabular": 4}
+    assert Counter(tuple(job["used_by"]) for job in origin) == {
+        ("common/momentum_reversal",): 4,
+        ("common/lightgbm",): 4,
+    }
+    models = protocol["common_controls"]["models"]
+    for job in origin:
+        name = job["used_by"][0].split("/")[1]
+        assert job["definition"] == dict(
+            runner=models[name]["runner"], config=models[name]["config"]
+        )
+        assert job["id"] == f"{job['origin']}-{job['definition_sha256'][:16]}"
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and job["seeds"] == protocol["seeds"]
+        assert job["parent"] is None and job["after"] is None and "common_group" not in job
+    assert {job["origin"] for job in origin} == set(ORIGIN_FOLDS)
+
+
+def test_every_job_runs_after_its_parent_and_its_matched_variant(protocol, jobs):
     position = {job["id"]: index for index, job in enumerate(jobs)}
+    previous = {
+        later["year"]: earlier["year"]
+        for earlier, later in zip(protocol["origins"], protocol["origins"][1:], strict=False)
+    }
     for job in jobs:
         for field in screening.REQUIRES:
             if job[field] is not None:
                 required = jobs[position[job[field]]]
                 assert position[job[field]] < position[job["id"]]
-                assert (required["origin"], required["seed"]) == (job["origin"], job["seed"])
+                # Una continuación parte del trabajo del origen anterior con su misma semilla.
+                origin = previous[job["origin"]] if field == "continues" else job["origin"]
+                assert (required["origin"], required["seed"]) == (origin, job["seed"])
 
 
 def test_the_seeds_of_each_common_group_run_one_after_another(protocol, jobs):
@@ -197,8 +283,8 @@ def test_output_stages_and_pending_entries_have_no_jobs(protocol, jobs):
     statuses = {row["entry"]: row["status"] for row in screening.pending(protocol)}
     assert statuses["C2"] == statuses["C3"] == "pending_implementation"
     assert statuses["G1"] == "after_the_screening_needs_its_own_approval"
-    # A4, C5 y F2 ya están integradas y de F3 solo quedan pendientes los modelos de contracción.
-    assert not statuses.keys() & {"A4", "C5", "F2"} and statuses["F3"] == "pending_arm"
+    # A4, C5, F2 y F3, también sus continuaciones, ya están integradas.
+    assert not statuses.keys() & {"A4", "C5", "F2", "F3"}
     arms = screening.entry_arms(protocol, "A2")
     assert all(arm.runner == "output" for arm in arms.values())
     assert arms["abstention"].definition["source"] == "quantile_reference"
@@ -213,8 +299,8 @@ def test_the_integrated_entries_reuse_the_references_of_the_protocol(jobs):
     quantile, scalar = uses["references/quantile_reference"], uses["references/scalar_reference"]
     assert uses["F2/single_seed_reference"] == uses["F3/adamw_reference"] == quantile
     assert uses["C5/reference"] == uses["A4/absolute_error_reference"] == scalar
-    pending = {"continuation_control", "shrink_perturb", "shrink_only", "perturb_only"}
-    assert not uses.keys() & ({f"F3/{arm}" for arm in pending} | {"F2/seed_mean"})
+    # La media de semillas es una etapa de salida sin trabajo propio.
+    assert "F2/seed_mean" not in uses
 
 
 def test_the_seed_mean_averages_every_triple_of_the_screening_seeds(protocol, jobs):
@@ -275,6 +361,35 @@ def test_the_control_of_a_seed_mean_multiplies_its_updates_by_the_size(protocol,
         screening.entry_arms(protocol, "F2")
 
 
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        # El tamaño y el control coinciden, pero la media declara dos semillas.
+        (lambda arms: arms["seed_mean"].update(seeds=[42, 43]), "multiplica"),
+        # Una segunda media que promediaría las réplicas de la primera.
+        (lambda arms: arms.update(seed_mean_of_means=copy.deepcopy(arms["seed_mean"])), "modelo"),
+    ],
+    ids=["seeds", "source"],
+)
+def test_a_seed_mean_averages_the_seeds_it_declares_from_a_fitted_model(
+    protocol, monkeypatch, change, message
+):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            change(document["arms"])
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    document = copy.deepcopy(protocol)
+    combinations = document["catalog"]["F2"]["combinations"]
+    combinations["seed_mean_of_means"] = dict(combinations["seed_mean"], source="seed_mean")
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(document, "F2")
+
+
 def test_the_adaptive_reader_reserves_the_depth_of_its_control(jobs):
     """D2 solo cambia la parada: la lectura adaptativa calcula J4 como su control."""
     definitions = {}
@@ -297,7 +412,7 @@ def test_every_contrast_endpoint_resolves(protocol):
     rows = screening.contrasts(protocol)
     assert rows
     for row in rows:
-        assert row["role"] in ("primary", "required", "reported")
+        assert row["role"] in ("primary", "required", "reported", *screening.CONTINUATION_ROLES)
         assert row["metric"] in screening.METRICS
     primary = {row["entry"]: row for row in rows if row["role"] == "primary"}
     assert primary["A1"]["control"] == ("common", "zero")
@@ -308,6 +423,120 @@ def test_every_contrast_endpoint_resolves(protocol):
     assert regional[0]["control"] == ("references", "regional_reference")
     entries = {row["entry"] for row in rows}
     assert entries == {name for name, entry in protocol["catalog"].items() if "status" not in entry}
+
+
+CONTINUED = ("continuation_control", "shrink_perturb", "shrink_only", "perturb_only")
+
+
+def test_the_continuations_start_from_the_reference_of_the_previous_origin(protocol, jobs):
+    index = {job["id"]: job for job in jobs}
+    continued = [job for job in jobs if job["continues"] is not None]
+    assert {label for job in continued for label in job["used_by"]} == {
+        f"F3/{arm}" for arm in CONTINUED
+    }
+    assert {job["origin"] for job in continued} == {2020, 2021, 2022}
+    # El control sin contracción es otra definición que la referencia: la distingue su padre.
+    assert len({job["definition_sha256"] for job in continued}) == len(CONTINUED)
+    for job in continued:
+        parent = index[job["continues"]]
+        assert {"F3/adamw_reference", "references/quantile_reference"} <= set(parent["used_by"])
+        assert job["definition"]["continues"] == parent["definition_sha256"]
+        assert parent["continues"] is None and job["parent"] is None
+        assert job["common_group"] == f"{job['origin']}-{job['definition_sha256'][:16]}"
+        if job["used_by"] == ["F3/continuation_control"]:
+            same = {key: value for key, value in job["definition"].items() if key != "continues"}
+            assert same == parent["definition"]
+    assert all(job["continues"] is None for job in jobs if job["origin"] == 2019)
+
+
+def test_the_continuation_contrasts_compare_continuations(protocol):
+    rows = [row for row in screening.contrasts(protocol) if row["entry"] == "F3"]
+    roles = Counter(row["role"] for row in rows)
+    assert roles == {"primary": 1, "continuation": 3, "continuation_reported": 2}
+    for row in rows:
+        if row["role"] == "continuation":
+            assert row["control"] == ("F3", "continuation_control")
+            assert row["variant"][1] in CONTINUED
+    reported = {row["control"] for row in rows if row["role"] == "continuation_reported"}
+    assert reported == {("F3", "adamw_reference")}
+
+
+def _continuation_change(protocol, change):
+    document = copy.deepcopy(protocol)
+    change(document["catalog"]["F3"])
+    return document
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda entry: entry.pop("continuation"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(parent="shrink_only"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(parent="unknown"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(extra=1), "padre ajustado"),
+        (lambda entry: entry.update(pending_arms=["adamw_reference"]), "padre ajustado"),
+        (lambda entry: entry.update(pending_arms=list(CONTINUED)), "sin modelos que continúen"),
+    ],
+)
+def test_a_continuation_declares_a_fitted_parent_that_does_not_continue(protocol, change, message):
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(_continuation_change(protocol, change), "F3")
+
+
+def test_a_pending_arm_is_left_out_and_the_others_keep_their_definition(protocol):
+    complete = screening.entry_arms(protocol, "F3")
+    pending = _continuation_change(
+        protocol, lambda entry: entry.update(pending_arms=["shrink_only"])
+    )
+    arms = screening.entry_arms(pending, "F3")
+    assert set(arms) == set(complete) - {"shrink_only"}
+    assert all(arms[arm] == complete[arm] for arm in arms)
+
+
+def test_the_parent_of_a_continuation_is_not_a_seed_mean(protocol, monkeypatch):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            document["arms"]["weight_ema_fast"]["applies_to"] = screening.CONTINUATION
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    document = copy.deepcopy(protocol)
+    document["catalog"]["F2"]["continuation"] = dict(
+        parent="seed_mean", primary=[], reported=[], date="2026-10-28", note="."
+    )
+    with pytest.raises(ValueError, match="padre ajustado"):
+        screening.entry_arms(document, "F2")
+    document["catalog"]["F2"]["continuation"]["parent"] = "single_seed_reference"
+    arms = screening.entry_arms(document, "F2")
+    assert arms["weight_ema_fast"].definition["continues"] == "single_seed_reference"
+    assert "continues" not in arms["single_seed_reference"].definition
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda c: c.update(primary=[]), "al menos un par"),
+        (lambda c: c.update(primary=[["shrink_perturb"]]), "al menos un par"),
+        (lambda c: c.update(primary=[["shrink_perturb", "adamw_reference"]]), "no continúan"),
+        (lambda c: c.update(primary=[["schedule_free", "shrink_only"]]), "no continúan"),
+        (lambda c: c.update(reported=[["schedule_free", "adamw_reference"]]), "no continúan"),
+        (lambda c: c.update(reported=[["shrink_perturb", "zero"]]), None),
+    ],
+)
+def test_the_continuation_family_only_compares_continuations(protocol, change, message):
+    document = _continuation_change(protocol, lambda entry: change(entry["continuation"]))
+    if message is None:
+        # Un contraste publicado puede comparar una continuación con un control común.
+        (row,) = [
+            row for row in screening.contrasts(document) if row["role"] == "continuation_reported"
+        ]
+        assert row["control"] == ("common", "zero")
+        return
+    with pytest.raises(ValueError, match=message):
+        screening.contrasts(document)
 
 
 def test_an_unknown_endpoint_is_rejected(protocol):
@@ -332,6 +561,9 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     reader = dict(
         id="c", origin=2019, definition=dict(runner="reader"), versions=[9], epoch_predictions=False
     )
+    # La regla y LightGBM cuestan su cota por origen, sin depender de las filas.
+    rule = dict(id="d", origin=2019, definition=dict(runner="rule"))
+    tabular = dict(id="e", origin=2019, definition=dict(runner="tabular"))
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
     inference = 1000 / reference["inference_rows_per_second"]
@@ -347,11 +579,15 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     )
     expected_correction = 1500 / reference["inference_rows_per_second"]
     expected_reader = reference["reader_window_seconds"] + inference
-    result = screening.cost_estimate(protocol, [fit, correction, reader], rows)
-    total = expected_fit + expected_correction + expected_reader
+    result = screening.cost_estimate(protocol, [fit, correction, reader, rule, tabular], rows)
+    bounds = reference["rule_window_seconds"] + reference["tabular_window_seconds"]
+    total = expected_fit + expected_correction + expected_reader + bounds
     assert result["hours"] == pytest.approx(total / 3600)
     assert result["hours_by_runner"]["fit"] == pytest.approx(expected_fit / 3600)
     assert result["hours_by_runner"]["reader"] == pytest.approx(expected_reader / 3600)
+    for runner in ("rule", "tabular"):
+        expected = reference[f"{runner}_window_seconds"] / 3600
+        assert result["hours_by_runner"][runner] == pytest.approx(expected)
     assert result["within_budget"] is (result["hours"] <= protocol["budget"]["max_total_gpu_hours"])
 
 

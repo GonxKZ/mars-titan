@@ -1,8 +1,9 @@
 """Análisis de la criba de #746 con paneles sintéticos de respuesta conocida, sin PyTorch.
 
 Las predicciones se generan en la prueba: la referencia B tiene señal y una amplitud tres
-veces mayor de la que le corresponde, la memoria por áreas de B1 tiene señal y el resto de
-modelos solo ruido. No se construye ningún modelo ni se ejecutan pasos de optimizador.
+veces mayor de la que le corresponde, la memoria por áreas de B1 y el control LightGBM tienen
+señal, LightGBM más que B, y el resto de modelos solo ruido. No se construye ningún modelo ni
+se ejecutan pasos de optimizador.
 """
 
 import copy
@@ -14,8 +15,8 @@ from datetime import UTC, datetime
 import numpy as np
 import pytest
 
+from mars_titan.evaluation import pit_region_gate, seed_ensemble
 from mars_titan.evaluation import scale_diagnostics as sd
-from mars_titan.evaluation import seed_ensemble
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.forecast_panel import DAY_MICROSECONDS, ForecastPanel
 from mars_titan.training import variant_screening
@@ -89,12 +90,17 @@ class SyntheticOrigin:
         if "B1/area_memory" in job["used_by"]:
             spread = 0.7 if job["definition"]["search_case"] == "eta5e-2" else 0.9
             return 0.5 * y + spread * noise, None
+        if "common/lightgbm" in job["used_by"]:
+            return 0.6 * y + 0.4 * noise, None
+        if "F3/shrink_perturb" in job["used_by"]:
+            return 0.5 * y + 0.7 * noise, None
         return 0.8 * noise, None
 
     def load(self, job_id):
         self.loads.append(job_id)
         if job_id not in self.cache:
-            job = self.jobs[job_id]
+            # Cada semilla de LightGBM es la carpeta `trabajo/seed-s` de su trabajo de origen.
+            job = dict(self.jobs[job_id.split("/")[0]], id=job_id)
             panels = {}
             for name, times in self.times.items():
                 point, quantiles = self.prediction(job, name)
@@ -123,6 +129,12 @@ def screened():
     origins = {year: source.origin() for year, source in sources.items()}
     report, arrays = analysis.analyze(protocol, jobs, origins)
     return protocol, jobs, report, arrays
+
+
+def test_adding_epoch_versions_preserves_the_existing_positional_cache_argument():
+    cache = {"previous": object()}
+    origin = analysis.Origin(2019, lambda _: None, {}, {}, None, None, cache)
+    assert origin.stages is cache and origin.versions is None
 
 
 def brute_force_stepdown(estimate, draws):
@@ -355,6 +367,129 @@ def test_every_model_reports_the_secondary_metrics_of_the_protocol(screened):
     assert parent["session_mae_calibrated"]["mean"] < parent["session_mae_raw"]["mean"]
 
 
+def test_the_common_family_is_reported_apart_from_the_decisions(screened):
+    _, _, report, arrays = screened
+    family = report["common_family"]
+    members = {row["name"]: row for row in family["members"]}
+    assert set(members) == {
+        f"common/reported/references.{reference}-common.{control}"
+        for reference in ("quantile_reference", "scalar_reference")
+        for control in ("past_median", "momentum_reversal", "lightgbm")
+    }
+    assert family["role"] == "reported_outside_the_decisions" and family["block_days"] == 16
+    quantile = "common/reported/references.quantile_reference-common."
+    # B tiene señal frente a la mediana pasada y a la regla, que solo ven ruido, y LightGBM
+    # tiene más señal que B.
+    assert members[quantile + "past_median"]["passes"]
+    assert members[quantile + "momentum_reversal"]["passes"]
+    assert members[quantile + "lightgbm"]["estimate"] < 0
+    assert not members[quantile + "lightgbm"]["passes"]
+    # Ningún contraste común entra en las familias del catálogo ni en sus decisiones.
+    assert not {row["name"] for row in report["contrasts"]} & set(members)
+    everything = report["sensitivity_families"]["all_contrasts"]["members"]
+    assert not {row["name"] for row in everything} & set(members)
+    assert set(report["decisions"]) == set(ENTRIES)
+    assert [row["name"] for row in arrays["common_contrasts"]] == [
+        row["name"] for row in family["members"]
+    ]
+    for name in ("past_median", "momentum_reversal", "lightgbm"):
+        assert set(report["models"][f"common/{name}"]) >= {
+            "session_ic",
+            "session_mae_calibrated",
+            "session_mae_minus_zero",
+        }
+
+
+def test_each_seed_reads_the_job_of_its_origin_control():
+    protocol = protocol_of(("A1",))
+    jobs = variant_screening.screening_jobs(protocol)
+    index = analysis.job_index(jobs)
+    for origin in protocol["origins"]:
+        year = origin["year"]
+        (rule,) = [
+            j for j in jobs if j["used_by"] == ["common/momentum_reversal"] and j["origin"] == year
+        ]
+        (tabular,) = [
+            j for j in jobs if j["used_by"] == ["common/lightgbm"] and j["origin"] == year
+        ]
+        for seed in protocol["seeds"]:
+            assert index[(("common", "momentum_reversal"), year, seed)] == [rule]
+            (member,) = index[(("common", "lightgbm"), year, seed)]
+            assert member == dict(tabular, id=f"{tabular['id']}/seed-{seed}")
+
+
+def concatenated(panels, field):
+    return np.concatenate([getattr(panels[name], field) for name in analysis.PARTITIONS])
+
+
+def written_past_median(panels, config):
+    """Mediana pasada escrita fila a fila sobre los tres tramos seguidos."""
+    assets = np.concatenate(
+        [pit_region_gate.panel_assets(panels[name]) for name in analysis.PARTITIONS]
+    )
+    times, target = concatenated(panels, "prediction_at"), concatenated(panels, "target")
+    session = {at: k for k, at in enumerate(np.unique(times))}
+    expected = np.zeros(len(times))
+    for asset in np.unique(assets):
+        rows = np.flatnonzero(assets == asset)
+        for row in rows:
+            past = [
+                target[other]
+                for other in rows
+                if session[times[other]] <= session[times[row]] - config["lag_sessions"]
+            ][-config["window"] :]
+            if len(past) >= config["min_labels"]:
+                expected[row] = np.median(past)
+    return expected
+
+
+def test_the_past_median_reads_mature_labels_of_the_three_partitions():
+    times = partition_times(2019)
+    rng = np.random.default_rng(5)
+    panels = {
+        name: make_panel(at, rng.standard_normal(len(at)), np.zeros(len(at)))
+        for name, at in times.items()
+    }
+    config = variant_screening.load_protocol()["common_controls"]["models"]["past_median"]
+    # Con un retraso de dos sesiones diarias, una etiqueta que madura en dos días llega justo.
+    maturity = {name: at + 2 * DAY_MICROSECONDS for name, at in times.items()}
+    result = analysis.past_median_predictions(config, panels, maturity)
+    assert list(result) == list(analysis.PARTITIONS)
+    assert [len(result[name]) for name in result] == [panels[name].rows for name in result]
+    joined = np.concatenate([result[name] for name in analysis.PARTITIONS])
+    np.testing.assert_array_equal(joined, written_past_median(panels, config))
+    # Con dos sesiones de retraso, la sesión s ve s − 1 etiquetas. Las 21 primeras no llegan a
+    # las 20 del mínimo y valen cero.
+    assert np.all(joined[: 21 * len(ASSETS)] == 0.0) and np.all(joined[21 * len(ASSETS) :] != 0.0)
+    late = {name: at + 3 * DAY_MICROSECONDS for name, at in times.items()}
+    with pytest.raises(ValueError, match="antes de que madure"):
+        analysis.past_median_predictions(config, panels, late)
+    with pytest.raises(ValueError, match="un instante en µs por fila"):
+        analysis.past_median_predictions(
+            config, panels, {name: at.astype(np.float64) for name, at in maturity.items()}
+        )
+
+
+def test_the_past_median_is_computed_once_per_origin_and_calibrated_like_a_model(screened):
+    protocol, jobs, _, _ = screened
+    arms = variant_screening.all_arms(protocol)
+    index = analysis.job_index(jobs)
+    source = SyntheticOrigin(2019, jobs)
+    origin = source.origin()
+    first = analysis.emission(protocol, arms, index, origin, analysis.PAST_MEDIAN, 42, [])
+    again = analysis.emission(protocol, arms, index, origin, analysis.PAST_MEDIAN, 43, [])
+    stage = origin.stages[analysis.PAST_MEDIAN]
+    assert first.prediction is again.prediction is stage["evaluation"]
+    np.testing.assert_array_equal(first.calibration.prediction, stage["calibration"])
+    reference = source.load(index[(analysis.SOURCE, 2019, 42)][0]["id"])
+    assert first.panel is reference["evaluation"]
+    assert first.calibration.cohort_sha256 == reference["calibration"].cohort_sha256
+    expected = analysis.past_median_predictions(
+        protocol["common_controls"]["models"]["past_median"], reference, origin.maturity
+    )
+    np.testing.assert_array_equal(stage["evaluation"], expected["evaluation"])
+
+
 def replicate_panels(source, index, replicate, *, shift=0.0):
     """Media de semillas de la fuente de F2 en un origen sintético, tramo a tramo."""
     result = {}
@@ -418,6 +553,65 @@ def test_the_seed_mean_takes_the_place_of_the_seeds_with_its_replicates():
     without = {year: replace(origin, combine=None) for year, origin in origins().items()}
     with pytest.raises(ValueError, match="no recibe las medias de semillas"):
         analysis.analyze(protocol, jobs, without)
+
+
+def test_the_continuations_form_their_own_family_without_the_first_origin():
+    protocol = protocol_of(("A1", "F3"))
+    jobs = variant_screening.screening_jobs(protocol)
+    sources = {o["year"]: SyntheticOrigin(o["year"], jobs) for o in protocol["origins"]}
+    origins = {year: source.origin() for year, source in sources.items()}
+    report, arrays = analysis.analyze(protocol, jobs, origins)
+    first, evaluation = protocol["origins"][0]["year"], SPANS["evaluation"]
+    # Ningún trabajo del primer origen es una continuación, ni se lee ninguna.
+    assert sources[first].loads and not any(
+        sources[first].jobs[name.partition("/")[0]]["continues"] for name in sources[first].loads
+    )
+    values, defined = arrays["merged"][(("F3", "shrink_perturb"), "session_ic")]
+    assert not defined[:evaluation].any() and not values[:evaluation].any()
+    assert defined[evaluation:].all()
+    continuation = report["continuation"]
+    names = [
+        f"F3/continuation/F3.{arm}-F3.continuation_control"
+        for arm in ("shrink_perturb", "shrink_only", "perturb_only")
+    ]
+    family = continuation["declared_family"]
+    assert sorted(family) == ["16", "32", "8"] and family["16"]["sessions"] == 3 * evaluation
+    assert [member["name"] for member in family["16"]["members"]] == names
+    decisions = continuation["decisions"]
+    assert list(decisions) == names
+    assert decisions[names[0]]["passes"] and decisions[names[0]]["entry"] == "F3"
+    assert not decisions[names[1]]["passes"] and not decisions[names[2]]["passes"]
+    assert set(decisions[names[0]]["robustness"]) == {
+        "blocks_16",
+        "blocks_8",
+        "blocks_32",
+        "holm",
+        "all_contrasts_family",
+    }
+    # La sensibilidad de la continuación incluye sus dos contrastes publicados.
+    assert len(continuation["all_contrasts"]["members"]) == 5
+    assert set(continuation["minimum_detectable_effect"]) == set(names)
+    # La familia declarada y sus sensibilidades conservan las sesiones de los cuatro orígenes.
+    assert report["declared_family"]["16"]["sessions"] == 4 * evaluation
+    everything = report["sensitivity_families"]["all_contrasts"]
+    assert everything["sessions"] == 4 * evaluation
+    assert not any("/continuation" in member["name"] for member in everything["members"])
+    assert set(report["decisions"]) == {"A1", "F3"} and not report["decisions"]["F3"]["passes"]
+    rows = {row["name"]: row for row in report["contrasts"]}
+    assert all(rows[name]["defined_sessions"] == 3 * evaluation for name in names)
+    assert rows["F3/primary/F3.schedule_free-F3.adamw_reference"]["defined_sessions"] == (
+        4 * evaluation
+    )
+    assert json.loads(json.dumps(report, allow_nan=False)) == report
+    # Sin contrastes de continuación no hay familia de continuación.
+    assert analysis.analyze(protocol_of(("A1",)), *_screened(("A1",)))[0]["continuation"] is None
+
+
+def _screened(entries):
+    protocol = protocol_of(entries)
+    jobs = variant_screening.screening_jobs(protocol)
+    origins = {o["year"]: SyntheticOrigin(o["year"], jobs).origin() for o in protocol["origins"]}
+    return jobs, origins
 
 
 def test_a_variant_fails_when_a_required_contrast_does_not_favour_it():

@@ -22,6 +22,7 @@ from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import (
+    common_control_windows,
     experiment_resources,
     mars_titan_correction,
     mars_titan_walk_forward,
@@ -86,6 +87,8 @@ def runners(monkeypatch, learning_doubles):
     monkeypatch.setattr(mars_titan_correction, "run_correction_window", runner("correction"))
     monkeypatch.setattr(mars_titan_walk_forward, "run_mars_titan_window", runner("reader"))
     monkeypatch.setattr(spaced_window, "run_spaced_window", runner("spaced"))
+    monkeypatch.setattr(common_control_windows, "run_rule_window", runner("rule"))
+    monkeypatch.setattr(common_control_windows, "run_tabular_window", runner("tabular"))
     monkeypatch.setattr(experiment_resources, "GpuLease", lambda **_: Lease())
     monkeypatch.setattr(torch.cuda, "set_device", lambda device: None)
     monkeypatch.setattr(titans_walk_forward, "unfused_attention", nullcontext)
@@ -214,7 +217,7 @@ def test_a_fit_runs_with_its_sealed_files_and_is_charged_once(prepared, runners)
     )
     assert options["seed"] == 43 and options["search_case"] == "lr1e-3"
     assert options["predictor_changes"] is None and options["device"] == "cuda:0"
-    assert options["output"] == work / "runs" / item["id"]
+    assert options["output"] == work / "runs" / item["id"] and options["initial"] is None
     attempts = [json.loads(p.read_text()) for p in (work / "attempts").glob("*.json")]
     (attempt,) = [a for a in attempts if a["job"] == item["id"]]
     assert attempt["closure_confirmed"] is True and attempt["status"] == "completed"
@@ -251,6 +254,81 @@ def test_no_job_starts_once_the_budget_is_spent(prepared, runners, monkeypatch):
     with pytest.raises(RuntimeError, match="presupuesto"):
         study.run_job(work, item["id"])
     assert runners == [] and set((work / "attempts").glob("*.json")) == before
+
+
+def test_the_common_controls_run_on_cpu_with_the_files_of_their_origin(
+    prepared, runners, monkeypatch
+):
+    work, receipt = prepared
+    protocol = receipt["protocol"]
+
+    def forbidden(*_, **__):
+        raise AssertionError("La regla y LightGBM no toman la GPU")
+
+    monkeypatch.setattr(experiment_resources, "GpuLease", forbidden)
+    monkeypatch.setattr(torch.cuda, "set_device", forbidden)
+    for label, runner in (("common/momentum_reversal", "rule"), ("common/lightgbm", "tabular")):
+        (item,) = [j for j in receipt["jobs"] if j["used_by"] == [label] and j["origin"] == 2020]
+        assert item["seed"] is None and item["seeds"] == protocol["seeds"]
+        assert study.run_job(work, item["id"])["status"] == "completed"
+        name, args, options = runners[-1]
+        assert name == runner
+        assert args == (work / item["files"]["view"], work / item["files"]["protocol"], "fold-015")
+        assert options["output"] == work / "runs" / item["id"]
+        assert options["config"] == item["definition"]["config"]
+        assert options["stop"] is not None and options["stop"].config["max_job_seconds"] > 0
+        if runner == "tabular":
+            assert options["seeds"] == protocol["seeds"] and options["fit_months"] == 12
+            assert options["radius"] == protocol["selection"]["smoothing_radius"]
+            assert options["min_assets"] == protocol["contrast"]["primary"]["minimum_assets"]
+        attempts = [json.loads(p.read_text()) for p in (work / "attempts").glob("*.json")]
+        (attempt,) = [a for a in attempts if a["job"] == item["id"]]
+        assert attempt["status"] == "completed" and "admission" not in attempt
+    assert item["files"]["view"] == "origins/2020/view-x1.json" and "recipe" not in item["files"]
+
+
+def write_run(folder, start):
+    folder.mkdir(parents=True)
+    predictions = {}
+    for k, name in enumerate(("validation", "calibration", "evaluation")):
+        path = folder / f"{name}-predictions.parquet"
+        pq.write_table(prediction_table(start + 10 * k * DAY), path)
+        predictions[name] = dict(path=path.name, sha256=sha256(path))
+    atomic_json(folder / "run.json", dict(status="completed", predictions=predictions))
+    return sha256(folder / "run.json")
+
+
+def test_each_seed_of_lightgbm_is_read_from_its_folder_with_its_recorded_hash(tmp_path):
+    job_id = "2019-abc"
+    folder = tmp_path / "runs" / job_id
+    seeds = {}
+    for k, seed in enumerate((42, 43)):
+        digest = write_run(folder / f"seed-{seed}", 1_546_000_000_000_000 + k * DAY)
+        seeds[str(seed)] = dict(path=f"seed-{seed}/run.json", sha256=digest)
+    atomic_json(folder / "run.json", dict(status="completed", seeds=seeds))
+    reads = {}
+    panels = study.job_panels(tmp_path, f"{job_id}/seed-43", reads)
+    assert panels["evaluation"].rows == 9
+    assert set(reads) == {
+        f"{job_id}/seed-43/{n}-predictions.parquet"
+        for n in study.variant_screening_analysis.PARTITIONS
+    }
+    with pytest.raises(ValueError, match="no emite seed-44"):
+        study.job_panels(tmp_path, f"{job_id}/seed-44", {})
+    record = folder / "seed-42" / "run.json"
+    record.write_text(record.read_text() + " ")
+    with pytest.raises(ValueError, match="Ha cambiado seed-42 de 2019-abc"):
+        study.job_panels(tmp_path, f"{job_id}/seed-42", {})
+    atomic_json(folder / "run.json", dict(status="paused", seeds=seeds))
+    with pytest.raises(ValueError, match="El trabajo 2019-abc no ha terminado"):
+        study.job_panels(tmp_path, f"{job_id}/seed-43", {})
+    plain = tmp_path / "runs" / "2019-42-def"
+    write_run(plain, 1_546_000_000_000_000)
+    reads = {}
+    study.job_panels(tmp_path, "2019-42-def", reads)
+    assert set(reads) == {
+        f"2019-42-def/{n}-predictions.parquet" for n in study.variant_screening_analysis.PARTITIONS
+    }
 
 
 def test_a_correction_waits_for_its_parent_and_receives_its_case(prepared, runners):
@@ -294,6 +372,25 @@ def test_the_e3_profile_reaches_the_correction_as_its_salience_budget(prepared, 
     options = runners[-1][2]
     assert options["salience"] == SalienceBudgetConfig(**item["definition"]["value"])
     assert options["search_case"] == "eta5e-2" and "regime_gate" not in options
+
+
+def test_a_continuation_waits_for_its_previous_origin_and_starts_from_it(prepared, runners):
+    work, receipt = prepared
+    item = job(receipt, "F3/shrink_perturb", origin=2022, seed=43)
+    parent = next(other for other in receipt["jobs"] if other["id"] == item["continues"])
+    assert (parent["origin"], parent["seed"]) == (2021, 43)
+    assert "F3/adamw_reference" in parent["used_by"]
+    assert study._completed(work, parent["id"]) is None
+    with pytest.raises(ValueError, match="necesita antes"):
+        study.run_job(work, item["id"])
+    assert runners == []
+    study.run_job(work, parent["id"])
+    study.run_job(work, item["id"])
+    (_, _, first), (_, args, options) = runners
+    assert first["initial"] is None and options["initial"] == work / "runs" / parent["id"]
+    assert args[2] == "fold-017" and options["seed"] == 43
+    recipe = json.loads((work / item["files"]["recipe"]).read_text())
+    assert recipe["recipe"]["shrink_perturb"] == dict(shrink=0.6, noise=0.01, seed=1)
 
 
 def test_readers_and_spaced_windows_receive_their_parent(prepared, runners):
@@ -484,9 +581,9 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
     monkeypatch.setattr(study, "current_sectors", lambda path, assets: dict.fromkeys(assets))
     read = []
 
-    def panels(folder, reads):
-        read.append(folder)
-        reads[f"{folder.name}/evaluation-predictions.parquet"] = "f" * 64
+    def panels(folder, reads, label=None):
+        read.append((folder, label))
+        reads[f"{label or folder.name}/evaluation-predictions.parquet"] = "f" * 64
         return {}
 
     monkeypatch.setattr(study, "run_panels", panels)
@@ -497,17 +594,23 @@ def test_the_analysis_writes_its_report_with_the_hashes_of_what_it_read(
         origins[2020].load("job-a")
         origins[2021].load("job-a")
         values, defined = np.array([0.1, 0.2, 0.3]), np.array([True, True, False])
-        report = dict(decisions=dict(B1=dict(passes=False)), sessions=3)
+        report = dict(
+            decisions=dict(B1=dict(passes=False)),
+            continuation=dict(decisions={"F3/continuation/x": dict(passes=True)}),
+            sessions=3,
+        )
         merged = {(("B1", "area_memory"), "session_ic"): (values, defined)}
         return report, dict(session_time=np.array([1, 2, 3]), merged=merged)
 
     monkeypatch.setattr(study.variant_screening_analysis, "analyze", analyze)
     result = study.analyze(work, tmp_path / "analysis", tmp_path)
     assert result["decisions"] == {"B1": False} and result["sessions"] == 3
+    assert result["continuation"] == {"F3/continuation/x": True}
     assert seen["protocol"] == receipt["protocol"] and seen["jobs"] == receipt["jobs"]
     assert sorted(seen["origins"]) == sorted(screening_cohorts.ORIGIN_FOLDS)
     assert all(len(origin.sectors) == 256 for origin in seen["origins"].values())
-    assert read == [work / "runs" / "job-a"]
+    # Las lecturas de un trabajo se nombran con su identificador.
+    assert read == [(work / "runs" / "job-a", "job-a")]
     report = json.loads((tmp_path / "analysis" / "analysis.json").read_text())
     assert report["final_test_access"] is False and report["optimizer_steps"] == 0
     assert report["prepared_sha256"] == sha256(work / "prepared.json")
@@ -596,8 +699,8 @@ def test_the_arbiters_write_their_report_with_the_declaration_and_what_they_read
         study, "current_sectors", lambda *_: pytest.fail("Los árbitros no leen los sectores")
     )
 
-    def panels(folder, reads):
-        reads[f"{folder.name}/evaluation-predictions.parquet"] = "a" * 64
+    def panels(folder, reads, *, label):
+        reads[f"{label}/evaluation-predictions.parquet"] = "a" * 64
         return {}
 
     monkeypatch.setattr(study, "run_panels", panels)
@@ -933,6 +1036,11 @@ def test_a_seed_combination_chooses_its_epoch_with_its_own_ic(tmp_path):
         study.combination_epoch(tmp_path, jobs[:3], arm, protocol)
     with pytest.raises(ValueError, match="todas sus épocas"):
         study.combination_epoch(tmp_path, jobs, arm, dict(protocol, fit=dict(epochs=5)))
+    # Una semilla que valida otros objetivos no se promedia con las demás.
+    shifted = dict(jobs[-1], id="2019-45-shifted")
+    write_epochs(tmp_path, shifted["id"], [target] * 4, target + 1.0, times)
+    with pytest.raises(ValueError, match="mismas filas"):
+        study.combination_epoch(tmp_path, [*jobs[:3], shifted], arm, protocol)
     (tmp_path / "runs" / jobs[0]["id"] / "epochs" / "validation-epoch-0002.parquet").write_bytes(
         b"PAR1 x PAR1"
     )
@@ -1137,6 +1245,11 @@ def test_each_replicate_of_the_seed_mean_reads_the_epoch_of_its_combination(tmp_
     version.write_bytes(b"PAR1 x PAR1")
     with pytest.raises(ValueError, match="Ha cambiado"):
         study.combination_panels(tmp_path, receipt, 2019, {})(label, (42, 43, 44))
+    # Una fuente con dos casos de búsqueda en una semilla no tiene una sola tabla que promediar.
+    searched = dict(jobs[1], id="2019-43-other-case", definition=dict(runner="fit", search_case=1))
+    receipt = dict(receipt, jobs=[*jobs, searched])
+    with pytest.raises(ValueError, match="un solo caso"):
+        study.combination_panels(tmp_path, receipt, 2019, {})(label, (43, 45, 46))
 
 
 def test_the_rule_check_reads_every_group_and_writes_its_report(

@@ -58,7 +58,7 @@ VERSION_CONTROLS = (
     ("shuffled_outcomes", "required"),
 )
 # Ejecutores cuya calibración y cuya S son las de su propio trabajo.
-OWN_RUNNERS = ("fit", "reader", "correction", "spaced", "correction_profile")
+OWN_RUNNERS = ("fit", "reader", "correction", "spaced", "correction_profile", "rule", "tabular")
 IC_METRICS = ("session_ic", "session_rank_ic")
 
 
@@ -166,7 +166,10 @@ def compared_models(protocol, arms, root=variant_screening.ROOT):
     """Modelos comparados con su propia calibración y su propia S, en orden de etiqueta."""
     used = {
         row[side]
-        for row in variant_screening.contrasts(protocol, root)
+        for row in (
+            *variant_screening.contrasts(protocol, root),
+            *variant_screening.common_contrasts(protocol, root),
+        )
         for side in ("variant", "control")
     }
     return sorted(label for label in used if label in arms and arms[label].runner in OWN_RUNNERS)
@@ -194,6 +197,8 @@ def _version_emissions(protocol, arms, index, origin, seed, cases, stage):
     """Emisiones de S del árbitro de versiones y de sus controles en un origen y una semilla."""
     for model in protocol["selection"]["versions"]["models"]:
         label = tuple(model.split("/", 1))
+        if not analysis.has_emission(protocol, arms, origin, label):
+            continue
         options = version_options(protocol, arms, index, origin, label, seed, cases)
         unchanged = np.zeros(options[0].panel.sessions, dtype=bool)
         yield (VERSIONS, model, "common_epoch"), options[0], unchanged
@@ -204,6 +209,8 @@ def _version_emissions(protocol, arms, index, origin, seed, cases, stage):
 def _averaging_emissions(protocol, arms, index, origin, seed, cases, names):
     """Emisiones de S de las variantes de F2 y F3 con las que se compara el árbitro."""
     for name in names:
+        if not analysis.has_emission(protocol, arms, origin, tuple(name.split("/", 1))):
+            continue
         emission = analysis.emission(
             protocol, arms, index, origin, tuple(name.split("/", 1)), seed, cases
         )
@@ -215,6 +222,8 @@ def _combination_emissions(protocol, arms, index, origin, seed, cases, stage, co
     # Dos modelos que comparten trabajo son la misma opción y cuentan una vez.
     chosen = {}
     for model in compared:
+        if not analysis.has_emission(protocol, arms, origin, model):
+            continue
         chosen.setdefault(
             analysis.chosen_job(protocol, origin, index, model, seed, cases)["id"], model
         )
@@ -343,6 +352,17 @@ def _series(protocol, arms, index, origins, stages, compared):
     cases, series, times, coverage, members = [], {}, [], {}, {}
     for year in sorted(origins):
         origin, per_origin = origins[year], {}
+        missing = [
+            (TIME_AVERAGING, name, "emission")
+            for name in averaging
+            if not analysis.has_emission(protocol, arms, origin, tuple(name.split("/", 1)))
+        ]
+        for model in protocol["selection"]["versions"]["models"]:
+            if not analysis.has_emission(protocol, arms, origin, tuple(model.split("/", 1))):
+                missing.extend(
+                    (VERSIONS, model, mode)
+                    for mode in ("common_epoch", *(mode for mode, _ in VERSION_MODES))
+                )
         for seed in protocol["seeds"]:
             emissions = (
                 *_version_emissions(protocol, arms, index, origin, seed, cases, stages[VERSIONS]),
@@ -364,6 +384,13 @@ def _series(protocol, arms, index, origins, stages, compared):
                     value = stage_metric(emission, abstained, name, min_assets=min_assets)
                     per_origin.setdefault((label, name), []).append(value)
                 coverage.setdefault("/".join(label), []).append(float(1.0 - abstained.mean()))
+            for label in missing:
+                sessions = emissions[0][1].panel.sessions
+                for metric in metrics:
+                    per_origin.setdefault((label, metric), []).append(
+                        (np.zeros(sessions), np.zeros(sessions, dtype=bool))
+                    )
+                coverage.setdefault("/".join(label), []).append(0.0)
         # Todas las emisiones de un origen comparten las sesiones de S.
         times.append(np.asarray(emissions[0][1].panel.session_time))
         for key, items in per_origin.items():

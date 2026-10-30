@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "kind": "backtest_overfitting_cost",
+  "issue": 794,
+  "measured_at": "2026-10-28T23:45:06+00:00",
+  "commit": "116ce47c8bb665f63857154330ad089bef533c93",
+  "sources_sha256": {
+    "src/mars_titan/evaluation/backtest_overfitting.py": "a0acd760019b2af7fe3625253b0586a62566954891f8fc4a111ca78df4b559a7",
+    "benchmarks/backtest_overfitting_cost.py": "53847a6acb3b1cc82fb30047f5c70e7949ab01e04d1a08624d19c57585ae2279",
+    "configs/evaluation/backtest-overfitting-v1.json": "e7d322a2c16e645bfe6c746ae616e422fb3e8cbf59742467cd92c01945e070a1"
+  },
+  "data": "rendimientos normales con semilla fija, solo para fijar formas. Nada se ajusta",
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "cpu_count": 16,
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "pyarrow": "25.0.1",
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    },
+    "load_average_at_start": [
+      18.35009765625,
+      16.18115234375,
+      16.9208984375
+    ],
+    "load_average_at_end": [
+      18.7197265625,
+      16.41162109375,
+      16.98193359375
+    ],
+    "concurrent_load": "otras sesiones comparten la m\u00e1quina, ver las cargas medias"
+  },
+  "not_measured": [
+    "GPU, porque el an\u00e1lisis es de CPU y no tiene tensores",
+    "informes reales de la cartera, bloqueados con la evaluaci\u00f3n cient\u00edfica",
+    "energ\u00eda, sin instrumento adecuado"
+  ],
+  "cscv": {
+    "strategies_8": {
+      "sessions": 1248,
+      "blocks": 16,
+      "strategies": 8,
+      "combinations": 12870,
+      "cscv": {
+        "median_s": 0.04066354501992464,
+        "min_s": 0.03958302806131542,
+        "repeats": 5
+      },
+      "traced_peak_bytes": 2474064,
+      "checked_halves": 40,
+      "max_relative_error_vs_rows": 1.6564527527407336e-13
+    },
+    "strategies_30": {
+      "sessions": 1248,
+      "blocks": 16,
+      "strategies": 30,
+      "combinations": 12870,
+      "cscv": {
+        "median_s": 0.056205923203378916,
+        "min_s": 0.054867290891706944,
+        "repeats": 5
+      },
+      "traced_peak_bytes": 2729824,
+      "checked_halves": 40,
+      "max_relative_error_vs_rows": 2.9976021664879227e-15
+    },
+    "strategies_128": {
+      "sessions": 1248,
+      "blocks": 16,
+      "strategies": 128,
+      "combinations": 12870,
+      "cscv": {
+        "median_s": 0.12919296114705503,
+        "min_s": 0.12703983206301928,
+        "repeats": 3
+      },
+      "traced_peak_bytes": 5455088,
+      "checked_halves": 40,
+      "max_relative_error_vs_rows": 2.2537527399890678e-14
+    },
+    "strategies_1024": {
+      "sessions": 1248,
+      "blocks": 16,
+      "strategies": 1024,
+      "combinations": 12870,
+      "cscv": {
+        "median_s": 0.8278796249069273,
+        "min_s": 0.8173707649111748,
+        "repeats": 3
+      },
+      "traced_peak_bytes": 31496408,
+      "checked_halves": 40,
+      "max_relative_error_vs_rows": 3.4416913763379853e-15
+    }
+  },
+  "analysis": {
+    "models_8": {
+      "models": 8,
+      "seeds": 3,
+      "markets": 2,
+      "costs": [
+        0,
+        10
+      ],
+      "session_rows": 60144,
+      "sessions_per_market": 1248,
+      "trimmed_earliest_sessions": 5,
+      "analysis": {
+        "median_s": 0.47931414493359625,
+        "min_s": 0.4677935850340873,
+        "repeats": 3
+      },
+      "traced_peak_bytes": 67327483
+    },
+    "models_23": {
+      "models": 23,
+      "seeds": 3,
+      "markets": 2,
+      "costs": [
+        0,
+        10
+      ],
+      "session_rows": 172914,
+      "sessions_per_market": 1248,
+      "trimmed_earliest_sessions": 5,
+      "analysis": {
+        "median_s": 1.0163954589515924,
+        "min_s": 0.9108910670038313,
+        "repeats": 3
+      },
+      "traced_peak_bytes": 67327484
+    }
+  }
+}

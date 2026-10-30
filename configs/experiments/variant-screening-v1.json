@@ -167,12 +167,67 @@
     "after": "Pasar la criba no confirma una mejora. La confirmación con 2023, 128 activos y China por separado necesita otra aprobación"
   },
   "common_controls": {
-    "zero": "predecir residuo cero",
-    "reference": "quantile_reference o scalar_reference según la cabeza del modelo",
-    "past_median": "mediana de las 60 últimas etiquetas maduras del activo con dos sesiones de retraso, como en la fase 0",
-    "momentum_reversal": "pendiente de implementar como regla sin aprendizaje",
-    "lightgbm": "pendiente de implementar con las mismas características",
-    "nadaraya_watson": "control de B1 en su declaración"
+    "registered_before_opening_s": true,
+    "date": "2026-10-28",
+    "models": {
+      "zero": {
+        "runner": "analysis",
+        "description": "Predice un residuo cero"
+      },
+      "past_median": {
+        "runner": "analysis",
+        "identity": "past_median_v1",
+        "lag_sessions": 2,
+        "window": 60,
+        "min_labels": 20,
+        "labels": "validation_calibration_and_evaluation_labels_of_quantile_reference_each_mature_before_its_first_use",
+        "description": "Mediana de las 60 últimas etiquetas del activo con dos sesiones de retraso, como en la fase 0. El análisis exige que cada etiqueta haya madurado antes de la primera decisión que la usa"
+      },
+      "momentum_reversal": {
+        "runner": "rule",
+        "config": {"identity": "momentum_reversal_v1", "reversal_sessions": 5, "combination": "mean_of_centered_session_ranks"},
+        "description": "Regla sin aprendizaje sobre la ventana de precios: media de los rangos centrados por sesión de la reversión de cinco sesiones y del momentum de la ventana sin esas sesiones"
+      },
+      "lightgbm": {
+        "runner": "tabular",
+        "config": {
+          "identity": "same_inputs_lightgbm_v1",
+          "source": {
+            "repository": "microsoft/qlib",
+            "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+            "workflow": "examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml",
+            "workflow_sha256": "0cbe1f729f43a2b8cd735759e6244c2e9f8db967555bfe24a7143fce4605d680",
+            "model": "qlib/contrib/model/gbdt.py",
+            "model_sha256": "a1afddb3bb965d108a916565b57e474cfddc55ce029f781765876e825623ad39",
+            "handler": "qlib/contrib/data/handler.py",
+            "handler_sha256": "b621481c6009c39066c67c71390fd2bea635f56daf9f2c4e38817eff268e3232"
+          },
+          "parameters": {"objective": "mse", "verbosity": -1, "colsample_bytree": 0.8879, "learning_rate": 0.2, "subsample": 0.8789, "lambda_l1": 205.6999, "lambda_l2": 580.9768, "max_depth": 8, "num_leaves": 210, "num_threads": 8, "deterministic": true, "force_col_wise": true},
+          "max_rounds": 1000,
+          "checkpoint_rounds": 10,
+          "features": "price_window_modalities_and_presence_v1",
+          "label": "session_zscore_of_the_residual"
+        },
+        "description": "LightGBM con los parámetros de Qlib sobre Alpha158 y las entradas de la criba. Ajusta las cinco semillas con las filas de los meses de ajuste, con el residuo normalizado en cada sesión como la etiqueta de Qlib, y elige sus rondas cada 10 con la época común del IC de validación"
+      }
+    },
+    "family": {
+      "role": "reported_outside_the_decisions",
+      "metric": "session_ic",
+      "contrasts": [
+        ["quantile_reference", "past_median"],
+        ["quantile_reference", "momentum_reversal"],
+        ["quantile_reference", "lightgbm"],
+        ["scalar_reference", "past_median"],
+        ["scalar_reference", "momentum_reversal"],
+        ["scalar_reference", "lightgbm"]
+      ],
+      "reason": "Sitúa las dos referencias frente a controles sencillos y frente a un modelo tabular con las mismas entradas. Se publica con su propio paso descendente y no cambia ninguna decisión del catálogo"
+    },
+    "other_controls": {
+      "reference": "quantile_reference o scalar_reference según la cabeza del modelo",
+      "nadaraya_watson": "control de B1 en su declaración"
+    }
   },
   "catalog": {
     "A1": {
@@ -413,8 +468,20 @@
       "declaration": "configs/experiments/schedule-free-shrink-perturb-v1.json",
       "metric": "session_ic",
       "primary": ["schedule_free", "adamw_reference"],
-      "pending_arms": ["continuation_control", "shrink_perturb", "shrink_only", "perturb_only"],
-      "note": "La contracción necesita una etapa que continúe el ajuste desde el estado elegido del origen anterior, que el motor aún no tiene"
+      "continuation": {
+        "parent": "adamw_reference",
+        "primary": [
+          ["shrink_perturb", "continuation_control"],
+          ["shrink_only", "continuation_control"],
+          ["perturb_only", "continuation_control"]
+        ],
+        "reported": [
+          ["continuation_control", "adamw_reference"],
+          ["shrink_perturb", "adamw_reference"]
+        ],
+        "date": "2026-10-28",
+        "note": "Enmienda registrada antes de abrir S. Cada continuación del origen k empieza en el estado que adamw_reference, el mismo trabajo que quantile_reference, eligió en el origen k − 1 con la misma semilla, así que 2019 no tiene continuaciones. Los tres contrastes con la continuación directa forman una familia propia sobre las sesiones de 2020 a 2022, fuera de la familia declarada y de sus sensibilidades. Los dos contrastes con el ajuste desde cero solo se publican"
+      }
     },
     "F4": {
       "identity": "session_rank_inputs_v1_and_session_ic_objective_v1",
@@ -465,6 +532,8 @@
     "validation_rows_per_second": 1980.0,
     "inference_rows_per_second": 3143.0,
     "reader_window_seconds": 382.0,
-    "note": "Medidas de pilotos con 64 y 256 activos y otra carga concurrente. Un ajuste usa el coste por fila y época del piloto de captura local, una corrección el caudal de inferencia de 256 activos en sus tres tramos y un lector la media de los lectores episódicos de la ronda de refinamientos. Es una estimación conservadora, no un coste medido de la criba"
+    "rule_window_seconds": 600.0,
+    "tabular_window_seconds": 5400.0,
+    "note": "Medidas de pilotos con 64 y 256 activos y otra carga concurrente. Un ajuste usa el coste por fila y época del piloto de captura local, una corrección el caudal de inferencia de 256 activos en sus tres tramos y un lector la media de los lectores episódicos de la ronda de refinamientos. La regla y LightGBM no tienen piloto: sus valores son cotas declaradas por origen, la de LightGBM igual al límite de un trabajo, porque su ajuste no puede medirse mientras rige el bloqueo. Es una estimación conservadora, no un coste medido de la criba"
   }
 }
