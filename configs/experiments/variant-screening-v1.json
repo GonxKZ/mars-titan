@@ -280,12 +280,24 @@
     "C2": {
       "identity": "axial_time_region_v1",
       "runner": "fit",
-      "status": "pending_implementation"
+      "declaration": "configs/experiments/axial-time-region-v1.json",
+      "metric": "session_ic",
+      "primary": ["axial_time_region", "time_only_control"],
+      "reported": [["time_only_control", "reference"], ["axial_time_region", "C1.talking_heads"]],
+      "note": "La declaración compara C2 con C1/talking_heads, que mezcla regiones sin eje temporal con el mismo presupuesto de ajuste"
     },
     "C3": {
       "identity": "fractal_shared_operator_v1",
       "runner": "fit",
-      "status": "pending_implementation"
+      "declaration": "configs/experiments/fractal-shared-operator-v1.json",
+      "metric": "session_ic",
+      "primary": ["fractal_shared_operator", "per_level"],
+      "required": [
+        ["fractal_shared_operator", "all_shared"],
+        ["fractal_shared_operator", "random_partition"],
+        ["fractal_shared_operator", "dense_block"]
+      ],
+      "note": "Como fija su documento, C3 solo pasa si supera a sus cuatro controles con la regla de la criba"
     },
     "C4": {
       "identity": "pit_region_gate_v1",

@@ -203,12 +203,11 @@ def test_the_matched_control_reads_the_variant_of_its_own_case(jobs):
 
 def test_output_stages_and_pending_entries_have_no_jobs(protocol, jobs):
     labels = {label.partition("/")[0] for job in jobs for label in job["used_by"]}
-    assert not labels & {"A1", "A2", "A3", "C4", "B4", "C2", "C3", "G1", "G2", "G3"}
+    assert not labels & {"A1", "A2", "A3", "C4", "B4", "G1", "G2", "G3"}
     statuses = {row["entry"]: row["status"] for row in screening.pending(protocol)}
-    assert statuses["C2"] == statuses["C3"] == "pending_implementation"
     assert statuses["G1"] == "after_the_screening_needs_its_own_approval"
-    # A4, C5, F2 y F3, también sus continuaciones, ya están integradas.
-    assert not statuses.keys() & {"A4", "C5", "F2", "F3"}
+    # A4, C2, C3, C5, F2 y F3, también las continuaciones de F3, ya están integradas.
+    assert not statuses.keys() & {"A4", "C2", "C3", "C5", "F2", "F3"}
     arms = screening.entry_arms(protocol, "A2")
     assert all(arm.runner == "output" for arm in arms.values())
     assert arms["abstention"].definition["source"] == "quantile_reference"
@@ -225,6 +224,28 @@ def test_the_integrated_entries_reuse_the_references_of_the_protocol(jobs):
     assert uses["C5/reference"] == uses["A4/absolute_error_reference"] == scalar
     # La media de semillas es una etapa de salida sin trabajo propio.
     assert "F2/seed_mean" not in uses
+
+
+def test_c2_and_c3_compare_with_their_controls_and_share_the_scalar_reference(protocol, jobs):
+    uses = by_use(jobs)
+    assert uses["C2/reference"] == uses["C3/reference"] == uses["references/scalar_reference"]
+    for label in ("C2/axial_time_region", "C2/time_only_control", "C3/fractal_shared_operator"):
+        assert len(uses[label]) == 1
+    # Los controles de C3 son modelos distintos de la variante y entre sí.
+    controls = [uses[f"C3/{arm}"] for arm in ("per_level", "all_shared", "random_partition")]
+    assert len(set().union(*controls, uses["C3/dense_block"])) == 4
+    rows = [row for row in screening.contrasts(protocol) if row["entry"] in ("C2", "C3")]
+    roles = Counter((row["entry"], row["role"]) for row in rows)
+    assert roles == {
+        ("C2", "primary"): 1,
+        ("C2", "reported"): 2,
+        ("C3", "primary"): 1,
+        ("C3", "required"): 3,
+    }
+    # C2 publica además su contraste con la mezcla entre regiones de C1.
+    assert ("C1", "talking_heads") in {row["control"] for row in rows if row["entry"] == "C2"}
+    required = {row["control"][1] for row in rows if row["role"] == "required"}
+    assert required == {"all_shared", "random_partition", "dense_block"}
 
 
 def test_the_seed_mean_averages_every_triple_of_the_screening_seeds(protocol, jobs):
