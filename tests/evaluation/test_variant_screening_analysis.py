@@ -25,6 +25,8 @@ ASSETS = tuple(f"US/A{i:02d}" for i in range(16))
 SPANS = dict(validation=60, calibration=70, evaluation=40)
 LEVELS = (0.025, 0.1, 0.5, 0.9, 0.975)
 NORMAL = np.array([-1.959964, -1.281552, 0.0, 1.281552, 1.959964])
+# Cuantiles de Laplace de F1 con b = 1: log(2τ) por debajo de la mediana y su simétrico encima.
+LAPLACE = np.array([np.log(0.05), np.log(0.2), 0.0, -np.log(0.2), -np.log(0.05)])
 SECTORS = {asset: f"S{i % 4}" for i, asset in enumerate(ASSETS)}
 
 
@@ -91,6 +93,9 @@ class SyntheticOrigin:
             return 0.5 * y + spread * noise, None
         if "F3/shrink_perturb" in job["used_by"]:
             return 0.5 * y + 0.7 * noise, None
+        if "F1/laplace_scale_head" in job["used_by"]:
+            point = 0.8 * noise
+            return point, point[:, None] + 0.5 * LAPLACE
         return 0.8 * noise, None
 
     def load(self, job_id):
@@ -564,3 +569,26 @@ def test_the_rule_check_compares_the_common_epoch_with_the_mae_rule_and_the_last
     assert summary["interval"][0] <= summary["mean_difference"] <= summary["interval"][1]
     with pytest.raises(ValueError, match="necesita grupos"):
         analysis.rule_check([], check, radius=1, replicates=10, seed=1, confidence=0.9)
+
+
+def test_a2_over_f1_abstains_on_the_laplace_quantiles_and_only_reports_its_contrasts(screened):
+    protocol, jobs, report, _ = screened
+    arms = variant_screening.all_arms(protocol)
+    index = analysis.job_index(jobs)
+    year, seed = protocol["origins"][0]["year"], protocol["seeds"][0]
+    origin = SyntheticOrigin(year, jobs).origin()
+
+    def emitted(*label):
+        return analysis.emission(protocol, arms, index, origin, label, seed, [])
+
+    laplace, median = emitted("F1", "laplace_scale_head"), emitted("A2", "laplace_median")
+    chosen, quantile = emitted("A2", "laplace_abstention"), emitted("A2", "abstention")
+    np.testing.assert_array_equal(median.prediction, laplace.prediction)
+    kept = chosen.prediction != 0
+    assert 0 < kept.sum() < kept.size
+    np.testing.assert_array_equal(chosen.prediction[kept], laplace.prediction[kept])
+    assert not np.array_equal(chosen.prediction, quantile.prediction)
+    rows = [row for row in report["contrasts"] if row["entry"] == "A2"]
+    assert {row["role"] for row in rows if "laplace" in row["name"]} == {"reported"}
+    assert sum("laplace" in row["name"] for row in rows) == 6
+    assert report["decisions"]["A2"]["contrast"] == "A2/primary/A2.abstention-A2.random"

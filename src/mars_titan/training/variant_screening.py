@@ -326,8 +326,18 @@ def entry_arms(protocol, name, root=ROOT):
     document = _declaration(root, entry["declaration"]) if "declaration" in entry else {}
     arms = {}
     if runner == "output":
+        _require(entry.get("source") in references, f"{name} parte de una referencia")
         for arm, value in entry["arms"].items():
-            arms[arm] = dict(runner="output", source=entry["source"], **value)
+            # Un modelo puede partir de otro ajustado, por ejemplo A2 sobre los cuantiles de F1.
+            source = value.get("source", entry["source"])
+            if source != entry["source"]:
+                origin, _, fitted = source.rpartition(".")
+                _require(
+                    protocol["catalog"].get(origin, {}).get("runner") == "fit"
+                    and fitted in entry_arms(protocol, origin, root),
+                    f"{name}.{arm} parte de un modelo ajustado de otra entrada",
+                )
+            arms[arm] = dict(value, runner="output", source=source)
     elif runner == "fit":
         declared = entry.get("arms") or document.get("arms")
         excluded = set(entry.get("pending_arms", ()))

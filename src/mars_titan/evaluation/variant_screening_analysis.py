@@ -196,12 +196,18 @@ def _model(protocol, origin, index, label, seed, cases):
     return origin.panels(jobs[origin.stages[key]]["id"])
 
 
-def _abstention(protocol, origin, index, seed, cases):
-    """Salidas de A2 y de sus controles con la misma cobertura, una vez por semilla."""
+def _source(definition):
+    """Modelo del que parte una etapa: una referencia o `entrada.modelo` ajustado."""
+    entry, _, arm = definition["source"].rpartition(".")
+    return (entry, arm) if entry else ("references", arm)
+
+
+def _abstention(protocol, origin, index, seed, cases, source=SOURCE):
+    """Salidas de A2 y de sus controles con la misma cobertura, una vez por fuente y semilla."""
     config = protocol["catalog"]["A2"]["arms"]["abstention"]["stage"][neutral_abstention.IDENTITY]
-    key = (neutral_abstention.IDENTITY, seed)
+    key = (neutral_abstention.IDENTITY, source, seed)
     if key not in origin.stages:
-        panels = _model(protocol, origin, index, SOURCE, seed, cases)
+        panels = _model(protocol, origin, index, source, seed, cases)
         evaluation = panels["evaluation"]
         record = neutral_abstention.fit(
             panels["calibration"], origin.maturity["calibration"], config
@@ -214,7 +220,7 @@ def _abstention(protocol, origin, index, seed, cases):
             min_labels=config["volatility_min_labels"],
         )
         seeds = [
-            _model(protocol, origin, index, SOURCE, other, cases)["evaluation"]
+            _model(protocol, origin, index, source, other, cases)["evaluation"]
             for other in protocol["seeds"]
         ]
         outputs, summary = neutral_abstention.emit(
@@ -230,7 +236,8 @@ def _abstention(protocol, origin, index, seed, cases):
 
 def _stage(protocol, origin, index, seed, entry, value, cases):
     """Predicción de S de una etapa de salida ajustada con la calibración de su fuente."""
-    panels = _model(protocol, origin, index, SOURCE, seed, cases)
+    source = _source(value)
+    panels = _model(protocol, origin, index, source, seed, cases)
     calibration, evaluation = panels["calibration"], panels["evaluation"]
     sd.ensure_before(calibration, evaluation)
     stage = value["stage"]
@@ -240,10 +247,12 @@ def _stage(protocol, origin, index, seed, entry, value, cases):
         factors = sd.market_shrinkage(calibration, calibration.prediction)
         return sd.apply_shrinkage(evaluation, evaluation.prediction, factors)
     if stage == "matched_control":
-        return _abstention(protocol, origin, index, seed, cases)[0][value["control"]]
+        return _abstention(protocol, origin, index, seed, cases, source)[0][value["control"]]
     ((identity, config),) = stage.items()
     if identity == neutral_abstention.IDENTITY:
-        return _abstention(protocol, origin, index, seed, cases)[0][identity]
+        abstention = protocol["catalog"]["A2"]["arms"]["abstention"]["stage"]
+        _require(stage == abstention, "Las abstenciones de A2 comparten su configuración")
+        return _abstention(protocol, origin, index, seed, cases, source)[0][identity]
     history = origin.history(panels)
     if identity == regime_weighted_conformal.IDENTITY:
         _require(value.get("then") == "A2.abstention", "A3 se mide a través de la abstención")
@@ -299,9 +308,9 @@ def emission(protocol, arms, index, origin, label, seed, cases):
         evaluation = panels["evaluation"]
         return Emission(evaluation, evaluation.prediction, panels["calibration"])
     if runner == "output":
-        _require(arm.definition["source"] == SOURCE[1], "Las etapas parten de la referencia B")
         prediction = _stage(protocol, origin, index, seed, label[0], arm.definition, cases)
-        evaluation = _model(protocol, origin, index, SOURCE, seed, cases)["evaluation"]
+        source = _source(arm.definition)
+        evaluation = _model(protocol, origin, index, source, seed, cases)["evaluation"]
         return Emission(evaluation, np.asarray(prediction, dtype=np.float64), None)
     if runner == "reference":
         label = ("references", arm.definition["reference"])

@@ -471,6 +471,27 @@ def test_an_exclusion_names_a_declared_arm_and_its_reason(protocol, excluded):
         screening.entry_arms(listed, "B3")
 
 
+def test_an_output_model_may_start_from_a_fitted_model_of_another_entry(protocol):
+    arms = screening.entry_arms(protocol, "A2")
+    assert arms["laplace_random"].definition["source"] == "F1.laplace_scale_head"
+    assert arms["random"].definition["source"] == "quantile_reference"
+
+
+@pytest.mark.parametrize(
+    "path,value",
+    (
+        (("catalog", "A2", "arms", "laplace_random", "source"), "scalar_reference"),
+        (("catalog", "A2", "arms", "laplace_random", "source"), "Z9.laplace_scale_head"),
+        (("catalog", "A2", "arms", "laplace_random", "source"), "A1.shrink"),
+        (("catalog", "A2", "arms", "laplace_random", "source"), "F1.missing"),
+        (("catalog", "A2", "source"), "F1.laplace_scale_head"),
+    ),
+)
+def test_an_output_source_is_a_reference_or_a_fitted_model(protocol, path, value):
+    with pytest.raises(ValueError, match="parte de"):
+        screening.entry_arms(_changed(protocol, path, value), "A2")
+
+
 def test_the_parent_of_a_continuation_is_not_a_seed_mean(protocol, monkeypatch):
     original = screening._declaration
 

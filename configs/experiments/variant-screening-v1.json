@@ -199,11 +199,18 @@
         "small_prediction": {"stage": "matched_control", "control": "small_prediction"},
         "past_volatility": {"stage": "matched_control", "control": "past_volatility"},
         "seed_disagreement": {"stage": "matched_control", "control": "seed_disagreement"},
-        "median": {"stage": "none"}
+        "median": {"stage": "none"},
+        "laplace_abstention": {"source": "F1.laplace_scale_head", "stage": {"neutral_abstention_v1": {"nominal": 0.8, "min_rows": 1000, "random_seed": 20261023, "volatility_window": 60, "volatility_min_labels": 20}}},
+        "laplace_random": {"source": "F1.laplace_scale_head", "stage": "matched_control", "control": "random"},
+        "laplace_small_prediction": {"source": "F1.laplace_scale_head", "stage": "matched_control", "control": "small_prediction"},
+        "laplace_past_volatility": {"source": "F1.laplace_scale_head", "stage": "matched_control", "control": "past_volatility"},
+        "laplace_seed_disagreement": {"source": "F1.laplace_scale_head", "stage": "matched_control", "control": "seed_disagreement"},
+        "laplace_median": {"source": "F1.laplace_scale_head", "stage": "none"}
       },
       "primary": ["abstention", "random"],
       "required": [["abstention", "small_prediction"], ["abstention", "past_volatility"], ["abstention", "seed_disagreement"]],
-      "reported": [["abstention", "median"], ["abstention", "zero"]]
+      "reported": [["abstention", "median"], ["abstention", "zero"], ["laplace_abstention", "laplace_random"], ["laplace_abstention", "laplace_small_prediction"], ["laplace_abstention", "laplace_past_volatility"], ["laplace_abstention", "laplace_seed_disagreement"], ["laplace_abstention", "laplace_median"], ["laplace_abstention", "abstention"]],
+      "note": "Los modelos laplace_* aplican la misma abstención y sus controles de igual cobertura a los cuantiles de la escala de Laplace de F1, que según #749 alimenta A2. Sus contrastes solo se publican y no entran en la familia ni en la decisión de A2. A1 sobre F1 coincide con el MAE calibrado que la criba ya publica de F1"
     },
     "A3": {
       "identity": "regime_weighted_conformal_v1",
