@@ -92,7 +92,15 @@ El contraste principal es L2 frente a F1, que comparten ponderación, recorrido 
 
 ## Coste medido
 
-Pendiente de la medida CPU con `objective_variants_cost`, que ya incluye F1 y L2.
+La medida CPU del 30 de octubre de 2026 recorrió 8 instantes de 256 activos con las formas de la edición v3.1, cuatro hilos, un calentamiento y siete repeticiones con el orden de los modelos rotado, sin optimizador. Al terminar, ningún parámetro había cambiado. La carga del equipo estuvo entre 9 y 15, con otras pruebas en marcha.
+
+| Modelo | Parámetros | Avance con grafo (s) | Retropropagación (s) | Inferencia (s) | Pico del asignador |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Control L1 | 185.859 | 0,783 | 0,481 | 0,741 | 504,9 MB |
+| F1 | 185.924 | 0,780 (×0,997) | 0,482 (×1,001) | 0,748 (×1,010) | +32 KB |
+| L2 | 186.054 | 0,775 (×0,990) | 0,489 (×1,016) | 0,756 (×1,021) | +94 KB |
+
+Son medianas. Las diferencias de tiempo frente al control no superan el 2,1 % y quedan dentro de la dispersión entre repeticiones (el avance del control osciló entre 0,749 y 0,854 s). L2 añade 195 parámetros, tres proyecciones de H = 64 a 1 con sus sesgos. El avance incluye la mediana calculada con SciPy. Los cuantiles de los niveles se calculan al escribir las predicciones y no entran en esta medida. El [recibo](../../reports/engineering/skewed-t-objective-20261030/cost-cpu.json) conserva las muestras, las versiones y la huella de las fuentes. Para repetirla:
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 uv run python -m benchmarks.objective_variants_cost \
@@ -103,7 +111,7 @@ CUDA_VISIBLE_DEVICES=-1 uv run python -m benchmarks.objective_variants_cost \
 
 ## Comprobación y trabajo pendiente
 
-Pendiente de la verificación completa.
+Las 52 [mutaciones dirigidas](../../reports/engineering/skewed-t-objective-20261030/mutations.json) se detectaron con referencias verdes antes y después de cada una, sin intentos de pasos de optimizador y con la retención intacta. Cubren los límites de la configuración, la identidad, los valores iniciales, la densidad y sus constantes, el peso detenido de la β-NLL, la inversión de la distribución por cada rama, el punto emitido, el registro en los consumidores y la medida de coste. No se ejecutó la mutación que quita L2 de la lista opcional de Dust, porque es equivalente: la segunda guarda de Dust ya rechaza cualquier objetivo de salida. El recibo final la declara como tal.
 
 Queda pendiente:
 
