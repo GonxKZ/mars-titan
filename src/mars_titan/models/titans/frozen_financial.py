@@ -374,6 +374,9 @@ class FrozenFinancialConsumer:
         # Ni la fuente ni los sectores por sesión de C3.
         if predictor.fractal_shared_operator is not None:
             raise ValueError("El consumidor congelado aún no registra el operador fractal de C3")
+        # Ni los grupos de activos de H4, que como C5 mezclan las filas de la sesión.
+        if predictor.asset_groups is not None:
+            raise ValueError("El consumidor congelado aún no registra los grupos de activos")
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")

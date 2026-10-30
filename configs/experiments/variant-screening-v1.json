@@ -227,8 +227,7 @@
       "metric": "session_ic",
       "primary": ["quantile_opponents", "quantile_symmetric_control"],
       "required": [],
-      "reported": [["expectile_opponents", "expectile_symmetric_control"], ["quantile_symmetric_control", "absolute_error_reference"]],
-      "status": "pending_merge_of_its_declaration"
+      "reported": [["expectile_opponents", "expectile_symmetric_control"], ["quantile_symmetric_control", "absolute_error_reference"]]
     },
     "B1": {
       "identity": "redundant_area_memory_v1",
@@ -309,8 +308,7 @@
       "declaration": "configs/experiments/cross-asset-attention-v1.json",
       "metric": "session_ic",
       "primary": ["cross_asset_attention", "self_only_control"],
-      "reported": [["self_only_control", "reference"]],
-      "status": "pending_merge_of_its_declaration"
+      "reported": [["self_only_control", "reference"]]
     },
     "C6": {
       "identity": "shared_workspace_v1",
@@ -337,7 +335,13 @@
     "D2": {
       "identity": "shared_evidence_bridge_adaptive_v1",
       "runner": "reader",
-      "status": "pending_declaration_of_the_matched_depth_control"
+      "declaration": "configs/experiments/adaptive-bridge-depth-v1.json",
+      "parent": "quantile_reference",
+      "recipe": "configs/titans/episodic-readout-historical-masked.json",
+      "metric": "session_ic",
+      "primary": ["adaptive_j4", "fixed_j4"],
+      "reported": [["fixed_j4", "fixed_j1"]],
+      "note": "fixed_j4 es el mismo modelo que D1/flat_k1_j4_final y comparte sus trabajos. La tolerancia se fija antes de abrir datos"
     },
     "E1": {
       "identity": "multiscale_mature_mixture_v1",
@@ -394,8 +398,14 @@
       "metric": "session_ic",
       "primary": ["weight_ema_fast", "single_seed_reference"],
       "reported": [["weight_ema_slow", "single_seed_reference"], ["seed_mean", "single_seed_matched_updates"]],
-      "status": "pending_merge_of_its_declaration",
-      "note": "Cada semilla de la criba hace de semilla única. La media de semillas usa las cinco de la criba y su control multiplica por tres las actualizaciones"
+      "combinations": {
+        "seed_mean": {
+          "source": "single_seed_reference",
+          "size": 3,
+          "replicates": "every_subset_of_the_screening_seeds"
+        }
+      },
+      "note": "Cada semilla de la criba hace de semilla única y single_seed_reference es el mismo ajuste que la referencia B. La media de semillas promedia las diez ternas de las cinco semillas de la criba y su control multiplica por tres las actualizaciones"
     },
     "F3": {
       "identity": "schedule_free_v1_and_shrink_perturb_v1",
@@ -403,9 +413,20 @@
       "declaration": "configs/experiments/schedule-free-shrink-perturb-v1.json",
       "metric": "session_ic",
       "primary": ["schedule_free", "adamw_reference"],
-      "pending_arms": ["continuation_control", "shrink_perturb", "shrink_only", "perturb_only"],
-      "status": "pending_merge_of_its_declaration",
-      "note": "La contracción necesita una etapa que continúe el ajuste desde el estado elegido del origen anterior, que el motor aún no tiene"
+      "continuation": {
+        "parent": "adamw_reference",
+        "primary": [
+          ["shrink_perturb", "continuation_control"],
+          ["shrink_only", "continuation_control"],
+          ["perturb_only", "continuation_control"]
+        ],
+        "reported": [
+          ["continuation_control", "adamw_reference"],
+          ["shrink_perturb", "adamw_reference"]
+        ],
+        "date": "2026-10-28",
+        "note": "Enmienda registrada antes de abrir S. Cada continuación del origen k empieza en el estado que adamw_reference, el mismo trabajo que quantile_reference, eligió en el origen k − 1 con la misma semilla, así que 2019 no tiene continuaciones. Los tres contrastes con la continuación directa forman una familia propia sobre las sesiones de 2020 a 2022, fuera de la familia declarada y de sus sensibilidades. Los dos contrastes con el ajuste desde cero solo se publican"
+      }
     },
     "F4": {
       "identity": "session_rank_inputs_v1_and_session_ic_objective_v1",

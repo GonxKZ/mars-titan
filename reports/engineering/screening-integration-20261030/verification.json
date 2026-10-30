@@ -1,0 +1,246 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 746,
+ "scope": "variant_screening_v1_integration_of_a4_c5_d2_f2_f3_and_the_f3_continuation",
+ "implementation_commit": "21f9637399730166aa381a4b16b2b62666b2cf6e",
+ "base_commit": "df2ad40d5bd8da14d19deccf5235ded0c01c3499",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "screening_jobs_run": 0,
+ "test_optimizers": "Las pruebas del motor usan ejecutores dobles que no construyen modelos ni ejecutan pasos de optimizador. Las mutaciones instalan un gancho de torch.optim que rechaza cualquier paso y cuentan cero intentos.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 660,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "b39829ed12a80e8134473896eb6e204773e69932d900bd50a6440b67a2f9cd4c",
+   "note": "La criba, su análisis, la media de semillas, la contracción de F3, la continuación de Titans-MAC, los núcleos y la protección del aprendizaje, en ede8744d0, con C2, C3, R2 y R3 ya fusionados desde develop."
+  },
+  {
+   "name": "regression_of_the_changed_paths_training",
+   "tests": 1627,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 27,
+   "xml_sha256": "a65240247623f81d563d02f792a2df463010113015b2da55d4acc3f13dcad780",
+   "note": "Los 76 módulos de tests/training que importan el código cambiado, en ede8744d0."
+  },
+  {
+   "name": "regression_of_the_changed_paths_other",
+   "tests": 3353,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 83,
+   "xml_sha256": "452cde027bcf0bb17b6ff0398affc5a94ea2f056d66e3a475b0cd24e53180377",
+   "note": "Los 160 módulos restantes que importan el código cambiado, en ede8744d0. Las omisiones son la protección del aprendizaje y los ejecutables nativos de PPO y de simulación, que no están compilados en este equipo."
+  },
+  {
+   "name": "after_merging_h4_and_the_deterministic_recipes",
+   "tests": 339,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "2df64f9bf84a427017ed5414ed52d6119c7b37d7fde31d43dbe69d251267959b",
+   "note": "En 21f963739, tras fusionar develop con H4 y el determinismo de las recetas: la criba, F3, la media de semillas y los archivos que cambiaron en los dos lados."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2596,
+   "covered_statements": 2372,
+   "branches": 834,
+   "covered_branches": 720
+  },
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "1eee06732309bcf4b9a73ce5dd1024d48f624e29581b343ed0d8e1d0b88a6cd9",
+    "statements": 526,
+    "covered_statements": 518,
+    "branches": 114,
+    "covered_branches": 108
+   },
+   {
+    "path": "src/mars_titan/evaluation/seed_ensemble.py",
+    "source_sha256": "5c27f3dfac9ca6da82c956104b24cff41711f3b406b2c226ed7e17bed3fe9315",
+    "statements": 37,
+    "covered_statements": 36,
+    "branches": 18,
+    "covered_branches": 17
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "802a3e180d5b172c3156effc38b39bdf7c06d465157bb862ad7427b5c054524a",
+    "statements": 342,
+    "covered_statements": 342,
+    "branches": 80,
+    "covered_branches": 80
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "1a68f7688f643d082bf505f0d75e62924d65cc1b2243fc085f9348bc26360a3e",
+    "statements": 948,
+    "covered_statements": 813,
+    "branches": 396,
+    "covered_branches": 308
+   },
+   {
+    "path": "src/mars_titan/training/shrink_perturb.py",
+    "source_sha256": "7dafdbee68d1da64195040b79aad26a7cbab4f0fef32e1657cd060ea5234b4b3",
+    "statements": 36,
+    "covered_statements": 36,
+    "branches": 14,
+    "covered_branches": 14
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "790863ebbb77ef0ed1457750f0d5916aae399e1ab90ff9b33e04dab0fed01139",
+    "statements": 397,
+    "covered_statements": 318,
+    "branches": 86,
+    "covered_branches": 68
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "2598e11ffdcb69c5f417f273f089ed6d89a7cf974d7c8b90b03761ccf621ad50",
+    "statements": 310,
+    "covered_statements": 309,
+    "branches": 126,
+    "covered_branches": 125
+   }
+  ],
+  "max_crap": 240.0,
+  "quality_sha256": "9b28230775e0dd0b9ef6cfdf01fa88e4f8f17a66b4372a9a15cd56133ff4f89c",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "bd4ab35dd8b5cc7d930eee8a8e847467bf7d12b7",
+  "head": "ede8744d0106a33d66c2209c2aa243cce2df2933",
+  "functions": 35,
+  "max_crap": 89.15345448300427,
+  "changed_executable_lines": 187,
+  "changed_covered_lines": 187,
+  "highest": [
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer.__init__",
+    "cyclomatic_complexity": 69,
+    "crap": 89.15345448300427,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "function": "run_titans_window",
+    "cyclomatic_complexity": 32,
+    "crap": 32.03029343477894,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "entry_arms",
+    "cyclomatic_complexity": 27,
+    "crap": 27.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "families",
+    "cyclomatic_complexity": 26,
+    "crap": 26.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/seed_ensemble.py",
+    "function": "seed_mean",
+    "cyclomatic_complexity": 24,
+    "crap": 24.036864,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "combination_panels.<locals>.combine"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop en ede8744d0, con su CRAP y la cobertura de esas líneas. El máximo es ChronologicalTrainer.__init__, una función anterior a la integración de la que esta solo toca líneas cubiertas. La función local combine de combination_panels no se puede medir por separado.",
+  "changed_sha256": "787ffdff93fb1e6450f4a2fb3b033b01fb8178b8bc09e65678004631b8128d44"
+ },
+ "mutations": {
+  "tree_commit": "ede8744d0106a33d66c2209c2aa243cce2df2933",
+  "planned": 21,
+  "killed": 21,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "49e9624695723346745d9d8e135ec91b300be5c641b78372ef7b060641d3154a",
+  "executor_sha256": "8e15e7ef12528d77e46e74996df04e580eb7d257f2aea397be91a162efd11312",
+  "source_sha256": {
+   "benchmarks/variant_screening_study.py": "1eee06732309bcf4b9a73ce5dd1024d48f624e29581b343ed0d8e1d0b88a6cd9",
+   "src/mars_titan/evaluation/seed_ensemble.py": "5c27f3dfac9ca6da82c956104b24cff41711f3b406b2c226ed7e17bed3fe9315",
+   "src/mars_titan/training/variant_screening.py": "2598e11ffdcb69c5f417f273f089ed6d89a7cf974d7c8b90b03761ccf621ad50",
+   "configs/experiments/adaptive-bridge-depth-v1.json": "763bd60e9bb229357b04b85de44f3a02c89b84bc779232bd57e985df40dc806e",
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "802a3e180d5b172c3156effc38b39bdf7c06d465157bb862ad7427b5c054524a",
+   "configs/experiments/variant-screening-v1.json": "508b0ef514813fe498d6b6dd519848053e92219d69755adca073f4743e845271"
+  },
+  "cases": [
+   "ordered_mean_aliases_its_first_input",
+   "ordered_mean_divides_by_one_less",
+   "combination_any_replicates",
+   "combination_source_combines",
+   "combination_size_without_its_seeds",
+   "combination_control_unchecked",
+   "combination_ordered_replicates",
+   "analysis_replicates_are_the_seeds",
+   "analysis_combination_as_stage",
+   "analysis_calibration_unchecked",
+   "analysis_combine_required",
+   "epoch_missing_seeds_accepted",
+   "epoch_other_rows_accepted",
+   "epoch_first_replicate_only",
+   "tables_always_the_common_epoch",
+   "panels_without_decision",
+   "panels_other_replicates_accepted",
+   "panels_several_cases_accepted",
+   "panels_first_seed_only",
+   "d2_other_tolerance",
+   "c5_still_pending"
+  ],
+  "summary_sha256": "f64a74b89d4aa0afbc9d0354a11bffeb1cdfe508126d7d0d6c1621f7c2de13e7",
+  "scope": "Veintiún defectos dirigidos de la media de semillas, la combinación del protocolo, el análisis, la época común del motor y las declaraciones de D2 y C5, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "targeted_with_coverage, regression_of_the_changed_paths_training, regression_of_the_changed_paths_other, after_merging_h4_and_the_deterministic_recipes",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}

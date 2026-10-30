@@ -6,7 +6,7 @@
 
 En la referencia `mac_online`, cada modalidad llega a la fusión como un único vector. Los fundamentales mezclan conceptos de balance con ratios de empresa y el macro reúne doce familias con calendarios y dinámicas distintas, de la inflación a las cadenas de suministro. H1 pregunta si leer cada familia por separado, desde varias áreas a la vez y con comunicación entre ellas, mejora la predicción frente a la referencia con los mismos parámetros compartidos.
 
-Este documento cubre el nivel de la fila. La issue declara un factorial de 1, 2 o 3 niveles por 5, 19 o 38 áreas. Los niveles 2 (grupos de activos de la sesión) y 3 (régimen en el tiempo) necesitan los grupos de H4 y un estado de régimen que todavía no existen, así que la configuración rechaza `levels` distinto de 1. Tampoco están implementadas las predicciones por área con supervisión profunda.
+Este documento cubre el nivel de la fila. La issue declara un factorial de 1, 2 o 3 niveles por 5, 19 o 38 áreas. Los niveles 2 (grupos de activos de la sesión) y 3 (régimen en el tiempo) necesitan los grupos de [H4](asset-group-membership-v1.md), ya implementados como variante propia, y un estado de régimen que todavía no existe. Mientras no se integren, la configuración rechaza `levels` distinto de 1. Tampoco están implementadas las predicciones por área con supervisión profunda.
 
 ## Bloques y áreas
 
@@ -157,4 +157,4 @@ CUDA_VISIBLE_DEVICES=-1 uv run python benchmarks/holographic_network_cost.py --r
 
 ## Pendiente
 
-Faltan los niveles 2 y 3, las predicciones por área, H4 a H7, `membership_embeddings_v1`, la medida CUDA, el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El aprendizaje sigue bloqueado y la variante no se activa por defecto.
+Faltan los niveles 2 y 3, las predicciones por área, H5 a H7, `membership_embeddings_v1`, la medida CUDA, el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El aprendizaje sigue bloqueado y la variante no se activa por defecto.

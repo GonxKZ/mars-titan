@@ -111,25 +111,37 @@ def test_identical_definitions_are_a_single_job(jobs):
     assert uses["B1/area_memory"] == uses["B2/no_bridge"] == uses["B3/no_binding"]
     assert uses["B1/linear_codec"] == uses["E1/historical_retention"] == uses["E3/baseline"]
     assert uses["E3/baseline"] == uses["E4/baseline"]
+    # El control de profundidad fija de D2 es la lectura de cuatro pasos de D1.
+    assert uses["D2/fixed_j4"] == uses["D1/flat_k1_j4_final"]
     assert len({job["id"] for job in jobs}) == len(jobs)
 
 
 def test_every_definition_runs_once_per_origin_and_seed(protocol, jobs):
     counts = Counter(job["definition_sha256"] for job in jobs)
-    assert set(counts.values()) == {len(protocol["origins"]) * len(protocol["seeds"])}
+    continued = {job["definition_sha256"] for job in jobs if job["continues"] is not None}
+    origins, seeds = len(protocol["origins"]), len(protocol["seeds"])
+    # Una continuación no tiene trabajo en el primer origen.
+    assert {counts[key] for key in continued} == {(origins - 1) * seeds}
+    assert {count for key, count in counts.items() if key not in continued} == {origins * seeds}
     for job in jobs:
         assert job["id"].startswith(f"{job['origin']}-{job['seed']}-")
         assert job["fold"] == ORIGIN_FOLDS[job["origin"]]
 
 
-def test_every_job_runs_after_its_parent_and_its_matched_variant(jobs):
+def test_every_job_runs_after_its_parent_and_its_matched_variant(protocol, jobs):
     position = {job["id"]: index for index, job in enumerate(jobs)}
+    previous = {
+        later["year"]: earlier["year"]
+        for earlier, later in zip(protocol["origins"], protocol["origins"][1:], strict=False)
+    }
     for job in jobs:
         for field in screening.REQUIRES:
             if job[field] is not None:
                 required = jobs[position[job[field]]]
                 assert position[job[field]] < position[job["id"]]
-                assert (required["origin"], required["seed"]) == (job["origin"], job["seed"])
+                # Una continuación parte del trabajo del origen anterior con su misma semilla.
+                origin = previous[job["origin"]] if field == "continues" else job["origin"]
+                assert (required["origin"], required["seed"]) == (origin, job["seed"])
 
 
 def test_the_seeds_of_each_common_group_run_one_after_another(protocol, jobs):
@@ -171,7 +183,7 @@ def test_the_parent_is_the_reference_fit_of_the_same_origin_and_seed(jobs):
     }
     for job in jobs:
         label = job["used_by"][0]
-        if label.startswith(("B1/", "E1/", "D1/")):
+        if label.startswith(("B1/", "E1/", "D1/", "D2/")):
             assert job["parent"] == reference[(job["origin"], job["seed"])]
         if label.startswith("E2/"):
             assert job["parent"] == reader[(job["origin"], job["seed"])]
@@ -191,20 +203,140 @@ def test_the_matched_control_reads_the_variant_of_its_own_case(jobs):
 
 def test_output_stages_and_pending_entries_have_no_jobs(protocol, jobs):
     labels = {label.partition("/")[0] for job in jobs for label in job["used_by"]}
-    assert not labels & {"A1", "A2", "A3", "C4", "B4", "C2", "C3", "D2", "G1", "G2", "G3"}
+    assert not labels & {"A1", "A2", "A3", "C4", "B4", "C2", "C3", "G1", "G2", "G3"}
     statuses = {row["entry"]: row["status"] for row in screening.pending(protocol)}
     assert statuses["C2"] == statuses["C3"] == "pending_implementation"
     assert statuses["G1"] == "after_the_screening_needs_its_own_approval"
+    # A4, C5, F2 y F3, también sus continuaciones, ya están integradas.
+    assert not statuses.keys() & {"A4", "C5", "F2", "F3"}
     arms = screening.entry_arms(protocol, "A2")
     assert all(arm.runner == "output" for arm in arms.values())
     assert arms["abstention"].definition["source"] == "quantile_reference"
+
+
+def test_the_integrated_entries_reuse_the_references_of_the_protocol(jobs):
+    uses = by_use(jobs)
+    for label in ("A4/quantile_opponents", "C5/cross_asset_attention", "F2/weight_ema_fast"):
+        assert len(uses[label]) == 1
+    assert uses["F3/schedule_free"]
+    # Las referencias de cada declaración son los mismos trabajos que las del protocolo.
+    quantile, scalar = uses["references/quantile_reference"], uses["references/scalar_reference"]
+    assert uses["F2/single_seed_reference"] == uses["F3/adamw_reference"] == quantile
+    assert uses["C5/reference"] == uses["A4/absolute_error_reference"] == scalar
+    # La media de semillas es una etapa de salida sin trabajo propio.
+    assert "F2/seed_mean" not in uses
+
+
+def test_the_seed_mean_averages_every_triple_of_the_screening_seeds(protocol, jobs):
+    arms = screening.entry_arms(protocol, "F2")
+    mean = arms["seed_mean"]
+    assert mean.runner == "output" and mean.definition["source"] == "single_seed_reference"
+    replicates = mean.definition["replicates"]
+    assert len(replicates) == 10 and all(len(item) == 3 for item in replicates)
+    assert replicates == sorted(replicates) and all(item == sorted(item) for item in replicates)
+    # Cada semilla aparece en seis ternas, así que ninguna pesa más que otra.
+    assert Counter(seed for item in replicates for seed in item) == dict.fromkeys(
+        protocol["seeds"], 6
+    )
+    assert arms["single_seed_matched_updates"].definition["updates_multiplier"] == 3
+    # Solo los trabajos de la fuente guardan la predicción de validación de cada época.
+    stored = {label for job in jobs if job.get("epoch_predictions") for label in job["used_by"]}
+    assert stored == {
+        "references/quantile_reference",
+        "F2/single_seed_reference",
+        "F3/adamw_reference",
+    }
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda entry: entry.pop("combinations"), "su fuente, su tamaño"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(extra=1), "su fuente, su tamaño"),
+        (
+            lambda entry: entry["combinations"]["seed_mean"].update(replicates="rolling"),
+            "su fuente, su tamaño",
+        ),
+        (lambda entry: entry["combinations"]["seed_mean"].update(source="seed_mean"), "modelo"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(source="unknown"), "modelo"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=2), "multiplica"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=3.0), "multiplica"),
+        (lambda entry: entry["combinations"]["seed_mean"].update(size=6), "multiplica"),
+    ],
+)
+def test_a_seed_mean_declares_its_source_its_size_and_its_replicates(protocol, change, message):
+    document = copy.deepcopy(protocol)
+    change(document["catalog"]["F2"])
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(document, "F2")
+
+
+def test_the_control_of_a_seed_mean_multiplies_its_updates_by_the_size(protocol, monkeypatch):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            document["arms"]["single_seed_matched_updates"]["updates_multiplier"] = 2
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    with pytest.raises(ValueError, match="multiplica"):
+        screening.entry_arms(protocol, "F2")
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        # El tamaño y el control coinciden, pero la media declara dos semillas.
+        (lambda arms: arms["seed_mean"].update(seeds=[42, 43]), "multiplica"),
+        # Una segunda media que promediaría las réplicas de la primera.
+        (lambda arms: arms.update(seed_mean_of_means=copy.deepcopy(arms["seed_mean"])), "modelo"),
+    ],
+    ids=["seeds", "source"],
+)
+def test_a_seed_mean_averages_the_seeds_it_declares_from_a_fitted_model(
+    protocol, monkeypatch, change, message
+):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            change(document["arms"])
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    document = copy.deepcopy(protocol)
+    combinations = document["catalog"]["F2"]["combinations"]
+    combinations["seed_mean_of_means"] = dict(combinations["seed_mean"], source="seed_mean")
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(document, "F2")
+
+
+def test_the_adaptive_reader_reserves_the_depth_of_its_control(jobs):
+    """D2 solo cambia la parada: la lectura adaptativa calcula J4 como su control."""
+    definitions = {}
+    for job in jobs:
+        for label in job["used_by"]:
+            definitions.setdefault(label, job["definition"])
+    adaptive = copy.deepcopy(definitions["D2/adaptive_j4"]["components"]["evidence_bridge"])
+    fixed = definitions["D2/fixed_j4"]["components"]["evidence_bridge"]
+    stopping = adaptive["recurrence"].pop("stopping")
+    assert stopping == dict(atol=0.0, rtol=0.05, backend="adaptive_reference_full")
+    assert adaptive == fixed and fixed["recurrence"]["steps"] == 4
+    shallow = definitions["D2/fixed_j1"]["components"]["evidence_bridge"]
+    assert shallow["recurrence"]["steps"] == 1
+    assert {key: value for key, value in shallow.items() if key != "recurrence"} == {
+        key: value for key, value in fixed.items() if key != "recurrence"
+    }
 
 
 def test_every_contrast_endpoint_resolves(protocol):
     rows = screening.contrasts(protocol)
     assert rows
     for row in rows:
-        assert row["role"] in ("primary", "required", "reported")
+        assert row["role"] in ("primary", "required", "reported", *screening.CONTINUATION_ROLES)
         assert row["metric"] in screening.METRICS
     primary = {row["entry"]: row for row in rows if row["role"] == "primary"}
     assert primary["A1"]["control"] == ("common", "zero")
@@ -215,6 +347,120 @@ def test_every_contrast_endpoint_resolves(protocol):
     assert regional[0]["control"] == ("references", "regional_reference")
     entries = {row["entry"] for row in rows}
     assert entries == {name for name, entry in protocol["catalog"].items() if "status" not in entry}
+
+
+CONTINUED = ("continuation_control", "shrink_perturb", "shrink_only", "perturb_only")
+
+
+def test_the_continuations_start_from_the_reference_of_the_previous_origin(protocol, jobs):
+    index = {job["id"]: job for job in jobs}
+    continued = [job for job in jobs if job["continues"] is not None]
+    assert {label for job in continued for label in job["used_by"]} == {
+        f"F3/{arm}" for arm in CONTINUED
+    }
+    assert {job["origin"] for job in continued} == {2020, 2021, 2022}
+    # El control sin contracción es otra definición que la referencia: la distingue su padre.
+    assert len({job["definition_sha256"] for job in continued}) == len(CONTINUED)
+    for job in continued:
+        parent = index[job["continues"]]
+        assert {"F3/adamw_reference", "references/quantile_reference"} <= set(parent["used_by"])
+        assert job["definition"]["continues"] == parent["definition_sha256"]
+        assert parent["continues"] is None and job["parent"] is None
+        assert job["common_group"] == f"{job['origin']}-{job['definition_sha256'][:16]}"
+        if job["used_by"] == ["F3/continuation_control"]:
+            same = {key: value for key, value in job["definition"].items() if key != "continues"}
+            assert same == parent["definition"]
+    assert all(job["continues"] is None for job in jobs if job["origin"] == 2019)
+
+
+def test_the_continuation_contrasts_compare_continuations(protocol):
+    rows = [row for row in screening.contrasts(protocol) if row["entry"] == "F3"]
+    roles = Counter(row["role"] for row in rows)
+    assert roles == {"primary": 1, "continuation": 3, "continuation_reported": 2}
+    for row in rows:
+        if row["role"] == "continuation":
+            assert row["control"] == ("F3", "continuation_control")
+            assert row["variant"][1] in CONTINUED
+    reported = {row["control"] for row in rows if row["role"] == "continuation_reported"}
+    assert reported == {("F3", "adamw_reference")}
+
+
+def _continuation_change(protocol, change):
+    document = copy.deepcopy(protocol)
+    change(document["catalog"]["F3"])
+    return document
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda entry: entry.pop("continuation"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(parent="shrink_only"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(parent="unknown"), "padre ajustado"),
+        (lambda entry: entry["continuation"].update(extra=1), "padre ajustado"),
+        (lambda entry: entry.update(pending_arms=["adamw_reference"]), "padre ajustado"),
+        (lambda entry: entry.update(pending_arms=list(CONTINUED)), "sin modelos que continúen"),
+    ],
+)
+def test_a_continuation_declares_a_fitted_parent_that_does_not_continue(protocol, change, message):
+    with pytest.raises(ValueError, match=message):
+        screening.entry_arms(_continuation_change(protocol, change), "F3")
+
+
+def test_a_pending_arm_is_left_out_and_the_others_keep_their_definition(protocol):
+    complete = screening.entry_arms(protocol, "F3")
+    pending = _continuation_change(
+        protocol, lambda entry: entry.update(pending_arms=["shrink_only"])
+    )
+    arms = screening.entry_arms(pending, "F3")
+    assert set(arms) == set(complete) - {"shrink_only"}
+    assert all(arms[arm] == complete[arm] for arm in arms)
+
+
+def test_the_parent_of_a_continuation_is_not_a_seed_mean(protocol, monkeypatch):
+    original = screening._declaration
+
+    def declaration(root, path):
+        document = copy.deepcopy(original(root, path))
+        if path.endswith("seed-ema-ensemble-v1.json"):
+            document["arms"]["weight_ema_fast"]["applies_to"] = screening.CONTINUATION
+        return document
+
+    monkeypatch.setattr(screening, "_declaration", declaration)
+    document = copy.deepcopy(protocol)
+    document["catalog"]["F2"]["continuation"] = dict(
+        parent="seed_mean", primary=[], reported=[], date="2026-10-28", note="."
+    )
+    with pytest.raises(ValueError, match="padre ajustado"):
+        screening.entry_arms(document, "F2")
+    document["catalog"]["F2"]["continuation"]["parent"] = "single_seed_reference"
+    arms = screening.entry_arms(document, "F2")
+    assert arms["weight_ema_fast"].definition["continues"] == "single_seed_reference"
+    assert "continues" not in arms["single_seed_reference"].definition
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda c: c.update(primary=[]), "al menos un par"),
+        (lambda c: c.update(primary=[["shrink_perturb"]]), "al menos un par"),
+        (lambda c: c.update(primary=[["shrink_perturb", "adamw_reference"]]), "no continúan"),
+        (lambda c: c.update(primary=[["schedule_free", "shrink_only"]]), "no continúan"),
+        (lambda c: c.update(reported=[["schedule_free", "adamw_reference"]]), "no continúan"),
+        (lambda c: c.update(reported=[["shrink_perturb", "zero"]]), None),
+    ],
+)
+def test_the_continuation_family_only_compares_continuations(protocol, change, message):
+    document = _continuation_change(protocol, lambda entry: change(entry["continuation"]))
+    if message is None:
+        # Un contraste publicado puede comparar una continuación con un control común.
+        (row,) = [
+            row for row in screening.contrasts(document) if row["role"] == "continuation_reported"
+        ]
+        assert row["control"] == ("common", "zero")
+        return
+    with pytest.raises(ValueError, match=message):
+        screening.contrasts(document)
 
 
 def test_an_unknown_endpoint_is_rejected(protocol):
