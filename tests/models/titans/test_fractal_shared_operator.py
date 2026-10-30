@@ -683,6 +683,7 @@ def test_the_source_and_its_regions_enter_the_trainer_identity_only_when_active(
                 temporal_encoder=None,
                 regional_variant=None,
                 cross_asset_attention=None,
+                asset_groups=None,
                 holographic_network=None,
                 axial_time_region=None,
                 fractal_shared_operator=config,

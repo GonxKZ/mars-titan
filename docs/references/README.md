@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **376 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **382 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -71,6 +71,15 @@ al. (2024), que ordena la [revisión del estudio](../research/reforms-checklist.
 por puntos de reproducibilidad, fugas y límites, y la escalera de Blum y Hardt
 (2015), en la que se basa la [reutilización de S](../experiments/reusable-holdout-v1.md)
 en la segunda ola.
+
+El mismo día se añadieron seis fuentes de los
+[grupos de activos de H4](../experiments/asset-group-membership-v1.md). Abdi y
+Ranaldo (2017), en el catálogo financiero, dan el diferencial con que se mide la
+liquidez. Bezdek (1981), Gonzalez (1985), Ng, Jordan y Weiss (2001), Ruspini (1969)
+y Winkler, Klawonn y Kruse (2011), en el catálogo de la variante ampliada, dan las
+c-medias difusas, su inicialización, la normalización de la inmersión, la partición
+difusa de los cubos y el límite de las c-medias en dimensión alta. Cada ficha dice
+si se leyó el texto o solo se contrastaron sus metadatos.
 
 ## Contenido
 
