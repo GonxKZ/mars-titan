@@ -1,0 +1,268 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 747,
+ "status": "technical_verification_in_progress",
+ "implementation_commit": "b5fe9245e7724464a436934293a76baa1a9bd7d0",
+ "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "device": "cpu",
+ "cuda_scope": "Los cambios de este estudio son NumPy, modelos tabulares CPU y su preparación. No se ejercita un predictor CUDA.",
+ "suites": [
+  {
+   "name": "refactor_before_checks",
+   "tests": 5,
+   "failures": 5,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e95e414cedc424bf9e92df5a94e9fcd363e33166a5e1c0c96e1f19c87fe2ad33",
+   "note": "Cinco casos reproducen las comprobaciones que se perderían al mover el algoritmo."
+  },
+  {
+   "name": "refactor_after_checks",
+   "tests": 61,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "885d2bec431f9ae62a941dd58cfcd812af985b058f5292f04ca73da7ef5bf6d5",
+   "note": "61 casos de LightGBM común, entradas y ventanas, sin aprendizaje real."
+  },
+  {
+   "name": "adversarial_before_fixes",
+   "tests": 8,
+   "failures": 7,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "b5df4123fc2789f74b689cb0c2a4ec9a8b6747bc9abcc9ae7049aac69e9341a3",
+   "note": "Siete fallos y un contraejemplo correcto antes de rechazar infinitos y ampliar la identidad."
+  },
+  {
+   "name": "adversarial_after_fixes",
+   "tests": 57,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "ff08ede9146ac1fdbb960c7df7b8d810aed209cb20d63ac5b1bb1064fc764b0b",
+   "note": "57 casos de características y ejecución con dobles de predicción fija."
+  },
+  {
+   "name": "integrated_targeted",
+   "tests": 451,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e2e67dd3402f9299aaa68944f660c6e3494edb247b1a4027eb823ce993643c9c",
+   "note": "451 casos CPU sin omisiones. Incluye las pruebas reforzadas de reutilización, las guardas y la validación del repositorio."
+  }
+ ],
+ "suite_counts": "Las selecciones se solapan y no se suman como casos distintos.",
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1852,
+   "covered_statements": 1544,
+   "branches": 616,
+   "covered_branches": 388
+  },
+  "files": [
+   {
+    "path": "scripts/check_repository.py",
+    "source_sha256": "51f96c75ba70126ab8342fb84cad13ec9fd7651bff9aa5ee5d209bb6e40f9a56",
+    "statements": 218,
+    "covered_statements": 172,
+    "branches": 126,
+    "covered_branches": 86
+   },
+   {
+    "path": "scripts/run_signal_ceiling.py",
+    "source_sha256": "60c270bc0682beccdbea14c790c430a134bfa232917e48c86da7d8968194eee3",
+    "statements": 36,
+    "covered_statements": 35,
+    "branches": 8,
+    "covered_branches": 7
+   },
+   {
+    "path": "src/mars_titan/data/anomaly_features.py",
+    "source_sha256": "59cc754ad16121dfbd41c7a642ad16b783572e7e98c42eae885ae4977e1bf622",
+    "statements": 100,
+    "covered_statements": 100,
+    "branches": 6,
+    "covered_branches": 6
+   },
+   {
+    "path": "src/mars_titan/evaluation/signal_ceiling_report.py",
+    "source_sha256": "0f549788009920a3447551bdc7b36fe86287e45c17284869647c08da3c12587f",
+    "statements": 62,
+    "covered_statements": 62,
+    "branches": 10,
+    "covered_branches": 10
+   },
+   {
+    "path": "src/mars_titan/models/baselines/qlib_lightgbm.py",
+    "source_sha256": "5771a6d13df0a7ca82f46f225cb40bac2f39c814177f33574f46fadbe7f570ae",
+    "statements": 66,
+    "covered_statements": 66,
+    "branches": 14,
+    "covered_branches": 14
+   },
+   {
+    "path": "src/mars_titan/models/baselines/same_inputs_lightgbm.py",
+    "source_sha256": "d5e3dbfef8508948dd0b8ca60e2bb042b875966e7b0e2d240c44a753675c6d79",
+    "statements": 29,
+    "covered_statements": 29,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "src/mars_titan/models/baselines/session_ridge.py",
+    "source_sha256": "b88f121e173d1f62f2afdc9b73ca9c94562022f244f3b4b12676a52edeb30610",
+    "statements": 38,
+    "covered_statements": 38,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "src/mars_titan/training/common_control_windows.py",
+    "source_sha256": "405f79dc880f96de60e5e98032ced645d6b018cf42da8adf0f0d5e2a818fce19",
+    "statements": 203,
+    "covered_statements": 203,
+    "branches": 40,
+    "covered_branches": 40
+   },
+   {
+    "path": "src/mars_titan/training/corpus_inputs.py",
+    "source_sha256": "14454d26d9867fcb3a72956c9f84fb31022a2544be5dbe974f471f19770c941f",
+    "statements": 845,
+    "covered_statements": 584,
+    "branches": 382,
+    "covered_branches": 195
+   },
+   {
+    "path": "src/mars_titan/training/signal_ceiling.py",
+    "source_sha256": "b1a3008e504a34202d8353250cce0af919942f960271ef56388ba2b9348beadc",
+    "statements": 255,
+    "covered_statements": 255,
+    "branches": 22,
+    "covered_branches": 22
+   }
+  ],
+  "max_crap": 600.0,
+  "quality_sha256": "122066e596c21baa8eb48487c0ff92c31f1732cbee72f03da2d18b2e67cd1b7e",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+  "head": "b5fe9245e7724464a436934293a76baa1a9bd7d0",
+  "functions": 72,
+  "max_crap": 59.11242905716422,
+  "changed_executable_lines": 482,
+  "changed_covered_lines": 482,
+  "highest": [
+   {
+    "path": "scripts/check_repository.py",
+    "function": "main",
+    "cyclomatic_complexity": 45,
+    "crap": 59.11242905716422,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/signal_ceiling.py",
+    "function": "_checked_screening",
+    "cyclomatic_complexity": 20,
+    "crap": 20.0,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/signal_ceiling.py",
+    "function": "checked_declaration",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/signal_ceiling_report.py",
+    "function": "pooled",
+    "cyclomatic_complexity": 15,
+    "crap": 15.0,
+    "changed_executable_lines": 13,
+    "changed_covered_lines": 13,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/baselines/session_ridge.py",
+    "function": "_declares_training",
+    "cyclomatic_complexity": 13,
+    "crap": 13.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "72 funciones de producción cambiadas frente a develop. CRAP y cobertura de la selección integrada, con las convenciones de radon y coverage.py. No es una prueba de todos los estados posibles.",
+  "changed_sha256": "0d9a7523cb1c2adce852980337c04aeb0c1f989bf425c488f450b4b950eb6740"
+ },
+ "checks": {
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "repository": "passed"
+ },
+ "historical_mutations": {
+  "tree_commit": "6e15412292d2d12fce9f387dcb41f44ce83e8f73",
+  "planned": 65,
+  "killed": 65,
+  "summary_sha256": "6f272e48b918785a3ed125e47dd65557b1e77a6e626078c7c0208e0f8cda35e1",
+  "note": "Muestra histórica, no una comprobación completa de la fuente actual."
+ },
+ "current_mutations": {
+  "planned": 83,
+  "recipes_sha256": "640a36a951eec8b045d87d036998bd1e2cc75d3ed9410cdb42d7400522c5638a",
+  "compilation": "83 recetas, cero problemas de sintaxis o anclas",
+  "status": "running",
+  "note": "65 recetas anteriores y 18 adicionales. Aún no hay resultado final de su ejecución."
+ },
+ "regression": {
+  "test_modules": 518,
+  "training_modules": 151,
+  "other_modules": 367,
+  "batch_modules": 8,
+  "workers": 2,
+  "status": "queued_after_e3_and_mutations",
+  "importer_tool_sha256": "3571d9c0de7cee2954cf669dab33f34d1c41045c39018076c1104f2b2928ef93",
+  "modules_sha256": "85cc344b925137ea106b53504f03ea7334c97c9c7841a55e594cdf1f0161f433",
+  "note": "Recorrido inverso de importaciones estáticas. La ejecución por lotes acota temporales y reinicia el estado de los procesos entre tandas. No reproduce todas las interacciones de una única sesión global."
+ },
+ "corrected_behaviors": [
+  "Conservar el rechazo de desbordamientos y la parada por presupuesto en el algoritmo LightGBM compartido.",
+  "Rechazar infinitos en cierres, volumen o factor, conservando NaN como ausencia.",
+  "Rechazar un informe confirmado si cambian sus auxiliares de datos o tiempo, antes de reabrir el corpus."
+ ],
+ "volume_limit": "log(1 + V) no es invariante a una escala común. El contraejemplo conserva log 2 frente a log(7/3). La fórmula declarada no cambia y no acredita una disponibilidad histórica perfecta del volumen ajustado.",
+ "limits": [
+  "Faltan las mutaciones actuales y la regresión amplia.",
+  "No hay ajustes reales de Ridge o LightGBM, ni techo de señal observado.",
+  "La campaña y el test final permanecen bloqueados."
+ ]
+}
