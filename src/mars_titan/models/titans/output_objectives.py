@@ -25,12 +25,14 @@ from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 from .laplace_scale import LaplaceScaleHead
 from .opponent_heads import OpponentHeads
 from .session_ic_objective import SessionICObjective
+from .skewed_t_objective import SkewedTObjective
 
-# F4, F1 y A4 de #749. Todos sustituyen la pérdida MAE de la cabeza escalar.
+# F4, F1 y A4 de #749 y L2 de #787. Todos sustituyen la pérdida MAE de la cabeza escalar.
 OBJECTIVES = {
     "session_ic_objective": SessionICObjective,
     "laplace_scale_head": LaplaceScaleHead,
     "opponent_heads": OpponentHeads,
+    "skewed_t_objective": SkewedTObjective,
 }
 
 

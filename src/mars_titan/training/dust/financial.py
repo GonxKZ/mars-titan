@@ -99,6 +99,7 @@ class FinancialDustAdapter:
             "session_rank_inputs",
             "session_ic_objective",
             "opponent_heads",
+            "skewed_t_objective",
             "mature_reliability",
             "memory_huber",
             "memory_time_scales",

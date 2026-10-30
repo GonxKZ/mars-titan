@@ -70,6 +70,7 @@ PREDICTOR_CHANGES = (
     "laplace_scale_head",
     "auxiliary_horizons",
     "opponent_heads",
+    "skewed_t_objective",
     "mature_reliability",
     "memory_huber",
     "memory_time_scales",
@@ -106,7 +107,7 @@ def checked_predictor_changes(changes):
             "regional_execution, memory_bank_readout, regional_variant, holographic_network, "
             "axial_time_region, fractal_shared_operator, session_ic_objective, "
             "cross_asset_attention, asset_groups, sector_map, laplace_scale_head, "
-            "auxiliary_horizons, opponent_heads, "
+            "auxiliary_horizons, opponent_heads, skewed_t_objective, "
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
             "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs y "
             "differential_attention como nombres no vacíos"

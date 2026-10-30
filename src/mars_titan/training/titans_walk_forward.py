@@ -101,6 +101,7 @@ _CODE = (
     "mars_titan.models.titans.output_objectives",
     "mars_titan.models.titans.laplace_scale",
     "mars_titan.models.titans.opponent_heads",
+    "mars_titan.models.titans.skewed_t_objective",
     "mars_titan.models.titans.auxiliary_horizons",
     "mars_titan.models.titans.reliability_gates",
     "mars_titan.memory.mature_reliability",
