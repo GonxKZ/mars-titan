@@ -35,7 +35,7 @@
     "Las ventanas están integradas en CPU con fixtures, sin una comparación científica ejecutada.",
     "Cada valor no nulo de arms se convierte en SalienceBudgetConfig y se pasa por el argumento salience.",
     "El cupo sigue siendo por publicación madura completa y mercado. No se equipara sin prueba a una sesión del calendario.",
-    "FinancialSession admite el factor con un cupo por generación nativa confirmada, comprobado con fixtures CPU. Su equivalencia con una sesión del calendario sigue sin demostrar.",
+    "FinancialSession admite el factor con el cupo de cada instante compartido por las generaciones confirmadas con ese corte, comprobado con fixtures CPU. Con todas las etiquetas del instante en una generación selecciona como la ventana.",
     "Las rutas CUDA están preparadas para comprobación explícita y siguen pendientes de admisión."
   ]
 }

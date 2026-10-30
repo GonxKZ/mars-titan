@@ -17,15 +17,59 @@ def budget(**options):
     return sb.CommittedWriteBudget(sb.SalienceBudgetConfig(**options))
 
 
-def test_two_confirmed_generations_may_share_the_same_cutoff():
+def test_generations_with_the_same_cutoff_share_the_quota_of_that_instant():
     _, prior = budget(writes_per_market=1).select((row(),), cutoff=3, generation=1)
     selection, following = prior.select(
-        (row("US/B", target=2.0), row("US/C")), cutoff=3, generation=2
+        (row("US/B", target=2.0), row("US/C"), row("CN/D")), cutoff=3, generation=2
     )
-    assert selection.selected == (("US/B", 1),)
-    assert following.statistics.observed == 3 and following.statistics.selected == 2
+    assert selection.selected == (("CN/D", 1),)
+    assert dict(following.instant_writes) == {"US": 1, "CN": 1}
+    assert following.statistics.observed == 4 and following.statistics.selected == 2
     assert following.generation == 2 and following.cutoff == 3
     assert prior.statistics.observed == 1 and prior.generation == 1
+    assert dict(prior.instant_writes) == {"US": 1}
+    selection, _ = following.select((row("US/E"),), cutoff=4, generation=3)
+    assert selection.selected == (("US/E", 1),)
+
+
+def test_an_instant_split_in_generations_uses_only_the_remaining_quota():
+    _, prior = budget(writes_per_market=2).select((row(target=0.5),), cutoff=3, generation=1)
+    _, empty = prior.select((), cutoff=3, generation=2)
+    assert dict(empty.instant_writes) == {"US": 1}
+    selection, following = empty.select(
+        (row("US/B", target=2.0), row("US/C", target=3.0)), cutoff=3, generation=3
+    )
+    assert selection.selected == (("US/C", 1),)
+    assert dict(following.instant_writes) == {"US": 2}
+    _, later = following.select((), cutoff=4, generation=4)
+    assert dict(later.instant_writes) == {}
+
+
+@pytest.mark.parametrize("rule", sb.RULES)
+def test_whole_instants_select_as_the_window_with_empty_generations_between(rule):
+    config = sb.SalienceBudgetConfig(rule=rule, writes_per_market=1, min_history=1)
+    window, committed, generation = sb.MatureWriteBudget(config), sb.CommittedWriteBudget(config), 0
+    instants = (
+        (2, (row(target=1.0), row("US/B", target=3.0), row("CN/C", target=2.0))),
+        (5, (row(at=3, available=4, target=4.0), row("US/B", 3, 5, target=2.5))),
+        (7, (row("CN/C", 5, 6, target=1.0), row("CN/D", 6, 7, target=-2.0))),
+    )
+    for cutoff, cohort in instants:
+        expected, window = window.select(cohort, cutoff=cutoff)
+        _, committed = committed.select((), cutoff=cutoff, generation=generation + 1)
+        selection, committed = committed.select(cohort, cutoff=cutoff, generation=generation + 2)
+        _, committed = committed.select((), cutoff=cutoff, generation=generation + 3)
+        generation += 3
+        assert selection == expected
+    assert committed.statistics.export() == window.export()
+
+
+def test_recovery_keeps_the_quota_already_spent_in_the_instant():
+    _, prior = budget(writes_per_market=1).select((row(), row("CN/B")), cutoff=3, generation=1)
+    restored = sb.CommittedWriteBudget.restore(prior.config, json.loads(json.dumps(prior.export())))
+    assert dict(restored.instant_writes) == {"US": 1, "CN": 1}
+    selection, _ = restored.select((row("US/C", target=9.0),), cutoff=3, generation=2)
+    assert selection.selected == ()
 
 
 def test_a_later_maturity_can_belong_to_an_earlier_decision():
@@ -126,5 +170,61 @@ def test_restore_rejects_changed_bytes_and_inconsistent_counters_with_a_new_hash
         payload["last"]["observed"] = 2
         if reseal:
             payload["sha256"] = sb._digest({k: v for k, v in payload.items() if k != "sha256"})
+        with pytest.raises(ValueError):
+            sb.CommittedWriteBudget.restore(prior.config, payload)
+
+
+def confirmed(publications):
+    _, state = budget(writes_per_market=1).select((row(),), cutoff=2, generation=1)
+    if publications == 2:
+        _, state = state.select((row("US/B", 2, 3),), cutoff=3, generation=2)
+    return state
+
+
+def rebuild(state, **changes):
+    fields = dict(
+        statistics=state.statistics,
+        generation=state.generation,
+        cutoff=state.cutoff,
+        last_observed=state.last_observed,
+        last_selected=state.last_selected,
+        instant_writes=dict(state.instant_writes),
+    )
+    return sb.CommittedWriteBudget(state.config, **(fields | changes))
+
+
+@pytest.mark.parametrize(
+    "publications,changes",
+    (
+        (1, dict(instant_writes={"US": 1, "CN": 1}, last_selected=())),
+        (2, dict(instant_writes={"UK": 1, "US": 1})),
+        (2, dict(instant_writes={"US": 1, "CN": 0})),
+        (2, dict(instant_writes={"US": 2})),
+        (2, dict(instant_writes={"US": True})),
+        (2, dict(instant_writes=["US"])),
+        (2, dict(instant_writes={}, last_selected=(("US/B", 2),))),
+    ),
+)
+def test_an_instant_quota_that_does_not_reconcile_is_rejected(publications, changes):
+    state = confirmed(publications)
+    assert rebuild(state).export() == state.export()
+    assert dict(state.instant_writes) == {"US": 1}
+    with pytest.raises(ValueError):
+        rebuild(state, **changes)
+    with pytest.raises(ValueError, match="concilian"):
+        sb.CommittedWriteBudget(state.config, instant_writes={"US": 1})
+
+
+def test_restore_rejects_a_resealed_instant_quota_and_the_previous_kind():
+    _, prior = budget(writes_per_market=1).select((row(),), cutoff=2, generation=1)
+    changes = (
+        lambda payload: payload.update(instant_writes={}),
+        lambda payload: payload.pop("instant_writes"),
+        lambda payload: payload.update(kind="salience_committed_publication_v1"),
+    )
+    for change in changes:
+        payload = prior.export()
+        change(payload)
+        payload["sha256"] = sb._digest({k: v for k, v in payload.items() if k != "sha256"})
         with pytest.raises(ValueError):
             sb.CommittedWriteBudget.restore(prior.config, payload)

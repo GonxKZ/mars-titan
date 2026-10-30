@@ -1,0 +1,206 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 750,
+ "scope": "salience_committed_publication_v2",
+ "implementation_commit": "7ed6b5cc0effb627d2ec54a81d44cb80704e80ab",
+ "integration_commit": "034674d2c0e0affb5b705f4c314f8e6979f7da00",
+ "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "device": "cpu",
+ "cuda_verified": false,
+ "cuda_followup_issue": 816,
+ "suite_counts": "La selección dirigida y las regresiones se solapan. Sus recuentos no se suman como casos distintos.",
+ "regression_omissions": {
+  "total": 111,
+  "learning_hold": 72,
+  "missing_dependencies": 39,
+  "note": "Se conservan los motivos del JUnit. Incluyen pruebas de campañas y ajustes nativos bloqueados y ejecutables o bibliotecas auxiliares ausentes. No se presentan como ejecutados ni como fallos de E3."
+ },
+ "quota": "per_market_and_publication_instant_shared_by_the_generations_of_that_cutoff",
+ "partial_publications": "Selección voraz con el cupo restante. Solo una cohorte que llega completa reproduce la selección de la ventana.",
+ "checks": {
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "repository": "passed",
+  "mutation_source_hashes": "matched_in_the_integrated_tree",
+  "hold": "unchanged",
+  "native_link": "same_sha256_before_and_after"
+ },
+ "importer_audit": {
+  "training_modules": 90,
+  "other_modules": 207,
+  "note": "Recorrido inverso de las importaciones estáticas de salience_budget y salience_session. No demuestra todas las importaciones dinámicas posibles."
+ },
+ "limits": "Quedan la interoperabilidad CUDA y la comparación predictiva. No hay entrenamientos ni mejora de error medida.",
+ "suites": [
+  {
+   "name": "targeted",
+   "tests": 105,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "fd9272c620a0f6ff17e99a6d055bca5102b81ea5463e789494672f8abe02f994",
+   "note": "105 casos CPU sin omisiones, con paridad de publicación completa, generaciones vacías, selección parcial voraz, recuperación y estados incompatibles."
+  },
+  {
+   "name": "importers_training",
+   "tests": 2014,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 28,
+   "xml_sha256": "2ef50d4f9db50d3f1dbf17a6851e08365b3b054c0d1544b9a27ba766895853dd",
+   "note": "1.986 aprobados y 28 omitidos, sin fallos ni errores. La protección de aprendizaje sigue activa."
+  },
+  {
+   "name": "importers_other",
+   "tests": 4232,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 83,
+   "xml_sha256": "0000692f25c8d9a4d59869fcd6dd5783d3a6e2a7a97bf9105c8ae20e25e870ad",
+   "note": "4.149 aprobados y 83 omitidos, sin fallos ni errores. Los motivos incluyen la protección y dependencias nativas auxiliares ausentes."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 262,
+   "covered_statements": 252,
+   "branches": 92,
+   "covered_branches": 82
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "source_sha256": "e3546723929a50fc2fab04e02321d87cc6b0fd6e2115adf0ed0a1cdbceeeecaf",
+    "statements": 227,
+    "covered_statements": 219,
+    "branches": 84,
+    "covered_branches": 76
+   },
+   {
+    "path": "src/mars_titan/memory/salience_session.py",
+    "source_sha256": "20b0dfd5927264e371c8f99aa2bbcb5c720715ded93b7fceabc0e16cb7ed1190",
+    "statements": 35,
+    "covered_statements": 33,
+    "branches": 8,
+    "covered_branches": 6
+   }
+  ],
+  "max_crap": 27.203884575785402,
+  "quality_sha256": "d66626b2fe7d452487aa3845802fc8bc1ecb8403dcab312c2195af7264751ae3",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+  "head": "034674d2c0e0affb5b705f4c314f8e6979f7da00",
+  "functions": 6,
+  "max_crap": 27.203884575785402,
+  "changed_executable_lines": 15,
+  "changed_covered_lines": 15,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "function": "CommittedWriteBudget.__init__",
+    "cyclomatic_complexity": 26,
+    "crap": 27.203884575785402,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 7,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "function": "CommittedWriteBudget.restore",
+    "cyclomatic_complexity": 13,
+    "crap": 13.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "function": "MatureWriteBudget._select",
+    "cyclomatic_complexity": 9,
+    "crap": 9.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "function": "CommittedWriteBudget.select",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/salience_budget.py",
+    "function": "CommittedWriteBudget.export",
+    "cyclomatic_complexity": 2,
+    "crap": 2.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Seis funciones de producción cambiadas frente a develop 09fe1e459, con cobertura de la selección dirigida. Radon y coverage.py con sus convenciones registradas. No agota todas las combinaciones de estados.",
+  "changed_sha256": "4ddb8e7ff273a8e19cf21cdb5c2100560d23dd951af06f73b19416e238d4328b"
+ },
+ "mutations": {
+  "tree_commit": "7ed6b5cc0effb627d2ec54a81d44cb80704e80ab",
+  "planned": 15,
+  "killed": 15,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "e19c9e5c8d10cf7a688dc769d30c8fcaa5604128c3f5fc28be4f290dfe39b4c8",
+  "executor_sha256": "55d0d6e6a43d5addc704bec98f226e549f0cfe2b4f69dba5d7656b301d8f81af",
+  "source_sha256": {
+   "src/mars_titan/memory/salience_budget.py": "e3546723929a50fc2fab04e02321d87cc6b0fd6e2115adf0ed0a1cdbceeeecaf",
+   "src/mars_titan/memory/salience_session.py": "20b0dfd5927264e371c8f99aa2bbcb5c720715ded93b7fceabc0e16cb7ed1190"
+  },
+  "cases": [
+   "spent_ignored",
+   "spent_ignored_in_the_session",
+   "quota_never_resets",
+   "quota_never_resets_against_the_window",
+   "spent_not_carried",
+   "selection_overwrites_the_count",
+   "restore_drops_the_instant",
+   "markets_unchecked",
+   "type_unchecked",
+   "zero_count_accepted",
+   "count_above_the_quota",
+   "sum_unchecked",
+   "last_selection_against_the_whole_quota",
+   "previous_kind",
+   "contract_without_the_quota"
+  ],
+  "summary_sha256": "1dec88a81a079e1ba59772a70bc27a09e9c80646649d26fc83fa4fdebd813f42",
+  "scope": "15 defectos dirigidos con G1 y G2 verdes y M1 detectado. Las huellas de las dos fuentes coinciden con la integración 034674d2c. No es una puntuación de mutación de todo el proyecto."
+ },
+ "native_link": {
+  "source_commit": "39abf2c9919e27180d95073aa8a93846057e649d",
+  "scope": "Enlace compilado existente para los casos CPU de sesión durable, sin ejecutar CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}
