@@ -100,6 +100,15 @@ def test_mean_gate_weights_each_written_row():
     assert RegimeEvidenceGate(CONFIG).mean_gate() is None
 
 
+def test_observed_counts_the_mature_errors_of_every_market():
+    rows = cohort((1.0, 2.0, 3.0), at=0, available=1) + cohort(
+        (5.0,), at=0, available=1, market="CN"
+    )
+    _, gate = RegimeEvidenceGate(CONFIG).step(rows, cutoff=1)
+    _, gate = gate.step((), cutoff=2)
+    assert gate.observed == 4 and RegimeEvidenceGate(CONFIG).observed == 0
+
+
 MEMORY = AssociativeMemoryConfig("proximal", key_size=2, rate=0.5)
 
 

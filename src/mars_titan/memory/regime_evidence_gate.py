@@ -272,6 +272,11 @@ class RegimeEvidenceGate:
         )
         return GateDecision(tuple(gates), tuple(statistics), tuple(rows)), following
 
+    @property
+    def observed(self):
+        """Errores maduros acumulados en todos los mercados."""
+        return sum(values[0] for values in self._markets.values())
+
     def mean_gate(self):
         """Puerta media por fila escrita, la que fija el control constante emparejado."""
         rows = sum(values[3] for values in self._markets.values())
