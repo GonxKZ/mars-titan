@@ -2,7 +2,7 @@
  "schema_version": 1,
  "date": "2026-10-30",
  "issue": 747,
- "status": "technical_verification_in_progress",
+ "status": "technical_verification_completed_with_omissions",
  "implementation_commit": "b5fe9245e7724464a436934293a76baa1a9bd7d0",
  "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
  "training_runs": 0,
@@ -66,6 +66,14 @@
    "skipped": 0,
    "xml_sha256": "f648f993017b59275209903de831f9437d00fd4afb321146161aa927464fb795",
    "note": "24 casos de características, incluida la historia totalmente ausente. Se solapan con la selección de 451 casos anterior."
+  },
+  {
+   "name": "current_develop_compatibility",
+   "tests": 121,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "5319a6d02b98aff0bd799ebab40ada17bed105a95c370254cc8f03c4bb29f69e"
   }
  ],
  "suite_counts": "Las selecciones se solapan y no se suman como casos distintos.",
@@ -170,8 +178,8 @@
   "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
  },
  "changed": {
-  "base": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
-  "head": "b5fe9245e7724464a436934293a76baa1a9bd7d0",
+  "base": "eb41f4c622afb29187c64ebf43bbaeb53d7ba9a1",
+  "head": "7f3a0464aa01f143b6259b27843aa7c30d785ae1",
   "functions": 72,
   "max_crap": 59.11242905716422,
   "changed_executable_lines": 482,
@@ -230,8 +238,8 @@
   ],
   "uncovered": [],
   "unmeasured": [],
-  "note": "72 funciones de producción cambiadas frente a develop. CRAP y cobertura de la selección integrada, con las convenciones de radon y coverage.py. No es una prueba de todos los estados posibles.",
-  "changed_sha256": "0d9a7523cb1c2adce852980337c04aeb0c1f989bf425c488f450b4b950eb6740"
+  "note": "Funciones de producción cambiadas frente a la base actual de develop. La cobertura de sus diez fuentes sigue siendo aplicable porque sus bytes se conservaron durante la integración.",
+  "changed_sha256": "bfc9f55014583ab09741a9f653133a81db592d17d5b92dde583b9c385e9da325"
  },
  "checks": {
   "ruff": "passed",
@@ -924,7 +932,6 @@
  ],
  "volume_limit": "log(1 + V) no es invariante a una escala común. El contraejemplo conserva log 2 frente a log(7/3). La fórmula declarada no cambia y no acredita una disponibilidad histórica perfecta del volumen ajustado.",
  "limits": [
-  "Falta revisar la integración con la base actual de develop antes de fusionar.",
   "La regresión omite 210 casos por el bloqueo, 153 por tres binarios nativos ausentes y seis por la edición sin ajustar y su listing-status no configurados.",
   "No hay ajustes reales de Ridge o LightGBM, ni techo de señal observado.",
   "La campaña y el test final permanecen bloqueados."
@@ -950,5 +957,19 @@
    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
   },
   "note": "La prueba nueva de ausencia total mide 4/4 sentencias y CRAP 3. El módulo completo repite 24 casos con cobertura de 200/200 sentencias y 14/14 ramas."
- }
+ },
+ "integration_commit": "7f3a0464aa01f143b6259b27843aa7c30d785ae1",
+ "integration_base_commit": "eb41f4c622afb29187c64ebf43bbaeb53d7ba9a1",
+ "unmodified_verified_sources_after_merge": [
+  "scripts/check_repository.py",
+  "scripts/run_signal_ceiling.py",
+  "src/mars_titan/data/anomaly_features.py",
+  "src/mars_titan/evaluation/signal_ceiling_report.py",
+  "src/mars_titan/models/baselines/qlib_lightgbm.py",
+  "src/mars_titan/models/baselines/same_inputs_lightgbm.py",
+  "src/mars_titan/models/baselines/session_ridge.py",
+  "src/mars_titan/training/common_control_windows.py",
+  "src/mars_titan/training/corpus_inputs.py",
+  "src/mars_titan/training/signal_ceiling.py"
+ ]
 }
