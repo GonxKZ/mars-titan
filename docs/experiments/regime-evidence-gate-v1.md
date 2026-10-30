@@ -1,6 +1,6 @@
 # Puerta E4 por evidencia de cambio de régimen
 
-`regime_evidence_gate_v1` regula cuánto escribe la memoria de corrección madura A de B6 en cada mercado. Cuando el error de las predicciones emitidas se mantiene en su escala habitual, A escribe con una fracción de su tasa η. Cuando ese error crece de forma sostenida, la puerta se abre y A se adapta más deprisa. La [declaración de ventanas](../../configs/experiments/regime-evidence-gate-window-v1.json) conecta la puerta al recorrido de corrección con su control emparejado. Hay comprobaciones CPU con fixtures y pesos fijados a mano, sin entrenar ni ejecutar una comparación predictiva. La sesión durable `FinancialSession` todavía no admite E4.
+`regime_evidence_gate_v1` regula cuánto escribe la memoria de corrección madura A de B6 en cada mercado. Cuando el error de las predicciones emitidas se mantiene en su escala habitual, A escribe con una fracción de su tasa η. Cuando ese error crece de forma sostenida, la puerta se abre y A se adapta más deprisa. La [declaración de ventanas](../../configs/experiments/regime-evidence-gate-window-v1.json) conecta la puerta al recorrido de corrección con su control emparejado. La sesión durable `FinancialSession` también admite la puerta y publica su estado en cada generación confirmada. Hay comprobaciones CPU con fixtures y pesos fijados a mano, sin entrenar ni ejecutar una comparación predictiva.
 
 ## Motivación y fuentes
 
@@ -38,7 +38,7 @@ La regla proximal de B6 resuelve \(A'=(I+\eta G)^{-1}(\rho_A A+\eta C)\), con \(
 
 El valor escrito sigue siendo etiqueta menos núcleo. La puerta solo cambia la tasa. La decisión se toma con los resultados que maduran en el evento y se aplica después de emitir todas sus predicciones, de modo que solo afecta a las predicciones siguientes. Las disponibilidades de la cohorte se comprueban antes de leer el primer valor financiero.
 
-E4 admite únicamente la corrección proximal simple. La regla delta tiene una cota de estabilidad en \(\eta\|k\|^2\), kalman no usa η, y la mezcla E1 y las áreas B2 escriben estados acoplados. Esas combinaciones quedan rechazadas hasta tener su propia regla de tasa. E3 y E4 tampoco se combinan, porque no existe una identidad ni un control conjuntos.
+E4 admite únicamente la corrección proximal simple. La regla delta tiene una cota de estabilidad en \(\eta\|k\|^2\), kalman no usa η, y la mezcla E1 y las áreas B1, con o sin su puente B2, escriben estados acoplados. Con las claves ligadas a roles de B3, A va envuelta en el operador de roles y una escritura con otra tasa perdía esa envoltura. La ventana aceptaba esa combinación hasta el 30 de octubre y el estado resultante no se podía recuperar. Ahora `check_correction` la rechaza igual que las demás, en la ventana y en la sesión. Esas combinaciones quedan rechazadas hasta tener su propia regla de tasa. E3 y E4 tampoco se combinan, porque no existe una identidad ni un control conjuntos.
 
 ## Control que la descarta
 
@@ -60,7 +60,17 @@ La puerta es por mercado. Un cambio que afecte solo a un sector se diluye en la 
 
 `RegimeGateCorrectionInference` extiende la inferencia de B6. Guarda el punto emitido de `run.pending` antes de que la resolución lo retire y sustituye solo la escritura de A. `run_correction_window` acepta `regime_gate=None` por defecto y mantiene entonces su identidad. Con una configuración válida registra la puerta y las huellas de sus fuentes en la petición, la identidad y `selected.json`. `carry_correction` la restaura del ancla y rechaza identidades contradictorias antes de abrir los tramos. Cada fase reinicia la escala y el CUSUM, como B6 reinicia A, y una fase interrumpida se repite desde su inicio.
 
+La comprobación de la corrección y la escritura con la tasa η·g de cada fila están en `regime_evidence_gate` (`check_correction` y `gated_write`). La ventana y la sesión llaman a las mismas funciones.
+
 E3 y E4 comparten el mismo punto de inserción. `WRITE_FACTORS` en `mars_titan_correction` declara para cada factor su módulo, su clase de inferencia y su política de memoria. Las ventanas, la identidad y el traslado tratan ambos factores con el mismo código. Las identidades de E3 no cambian.
+
+## Sesión durable
+
+`FinancialSession` acepta `regime_gate` sobre la misma corrección proximal simple. Cada generación nativa confirmada es una publicación E4, también la que no madura ningún resultado. La cohorte son los resultados que el ejecutor nativo acepta para predicciones pendientes ya emitidas, y el error se mide contra el punto final emitido, como en la ventana. La puerta de cada mercado escala la tasa de las escrituras de A en esa misma generación. El estado siguiente se prepara con la generación y se confirma con ella, así que un corte antes o después de confirmar se recupera con la misma puerta y la misma predicción siguiente. La sesión empieza sin estado, igual que cada fase de la ventana.
+
+Al cargar una generación, `regime_gate_session.verify` exige que el número de publicaciones coincida con la generación y el corte con el suyo. `verify_confirmed` exige que los errores acumulados coincidan con los resultados aplicados por el ejecutor. El código de `regime_gate_session` y de `regime_evidence_gate` forma parte de la identidad del modelo, y la configuración entra en el contrato. Cambiarla durante la sesión o al reanudar se rechaza. E3 y E4 tampoco se combinan aquí.
+
+La ventana solo publica en los eventos con etiquetas y la sesión en todas las generaciones, así que sus contadores de publicaciones y sus cortes difieren aunque las estadísticas coincidan. La [prueba de paridad](../../tests/memory/test_regime_gate_session.py) compara las 20 emisiones, la matriz A final y el estado de cada mercado de las dos implementaciones sobre los mismos seis eventos. Sin la puerta, las emisiones cambiarían desde el tercer evento.
 
 ## Comprobaciones
 
@@ -85,4 +95,4 @@ El coste añadido crece con las filas porque la puerta recorre los resultados en
 
 ## Pendiente
 
-Falta publicar el estado E4 en cada generación de `FinancialSession`, comprobar CUDA cuando haya admisión GPU y ejecutar la comparación con datos reales, que sigue bloqueada. Nada de lo anterior acredita que E4 reduzca el error.
+Falta comprobar CUDA cuando haya admisión GPU y ejecutar la comparación con datos reales, que sigue bloqueada. Nada de lo anterior acredita que E4 reduzca el error.
