@@ -1509,5 +1509,83 @@
       4
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "lee2015deeply",
+    "title": "Deeply-Supervised Nets",
+    "authors": [
+      "Chen-Yu Lee",
+      "Saining Xie",
+      "Patrick Gallagher",
+      "Zhengyou Zhang",
+      "Zhuowen Tu"
+    ],
+    "year": 2015,
+    "url": "https://proceedings.mlr.press/v38/lee15a.html",
+    "pdf_url": "https://proceedings.mlr.press/v38/lee15a.pdf",
+    "venue": "Proceedings of the Eighteenth International Conference on Artificial Intelligence and Statistics",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "38",
+    "pages": "562–570",
+    "access": "AISTATS 2015, actas revisadas por pares. Título, autores, editores, volumen y páginas comprobados en PMLR. Leídos en el PDF publicado el resumen y la introducción de la página 562, la motivación de la sección 2.1 en la página 563 y la formulación de la sección 2.2 en la página 564, con el objetivo total de las ecuaciones (3) y (4), los pesos α_m, el umbral γ y el decaimiento alternativo que anula las pérdidas de acompañamiento. No se han reproducido sus experimentos.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://proceedings.mlr.press/v38/lee15a.pdf",
+      "passages": [
+        "Resumen e introducción, página 562: funciones objetivo de acompañamiento en cada capa oculta",
+        "Sección 2.1, página 563: un clasificador por capa oculta y su efecto de regularización observado",
+        "Sección 2.2, página 564: objetivo total de las ecuaciones (3) y (4), pesos α_m, umbral γ y decaimiento"
+      ]
+    },
+    "verification_sources": [
+      "https://proceedings.mlr.press/v38/lee15a.html",
+      "https://arxiv.org/abs/1409.5185v2"
+    ],
+    "relevance": "Antecedente de supervisar representaciones intermedias con pérdidas propias. Las predicciones por área de H1 añaden una pérdida a cada área del mismo nivel, no a cada capa, y mantienen su peso fijo durante el ajuste en lugar de anularlo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-30"
+  },
+  {
+    "id": "clay2024thousand",
+    "title": "The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence",
+    "authors": [
+      "Viviane Clay",
+      "Niels Leadholm",
+      "Jeff Hawkins"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2412.18354v1",
+    "doi": "10.48550/arXiv.2412.18354",
+    "pdf_url": "https://arxiv.org/pdf/2412.18354v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 24 de diciembre de 2024, leído en la versión HTML de arXiv. Leídas las secciones 2.2 y 2.3, que presentan el voto entre módulos como principio y afirman que cada módulo puede aprender modelos completos, y la sección 3.5.2, donde los módulos de aprendizaje se envían por conexiones laterales sus hipótesis de objeto y de pose hasta llegar a un consenso. La ficha no indica una publicación revisada y no se ha evaluado Monty.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2024-12-24",
+      "url": "https://arxiv.org/html/2412.18354v1",
+      "passages": [
+        "Sección 2.2: el voto entre módulos como principio",
+        "Sección 2.3: cada módulo puede aprender modelos completos",
+        "Sección 3.5.2: voto por conexiones laterales hasta un consenso de objeto y pose"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/2412.18354v1"
+    ],
+    "relevance": "Inspiración del voto de las áreas de H1. En el proyecto, módulos sensoriomotores intercambian hipótesis de objeto y pose hasta un consenso. H1 solo combina correcciones escalares con una media ponderada aprendida y no reproduce ese mecanismo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4
+    ],
+    "verification_date": "2026-10-30"
   }
 ]

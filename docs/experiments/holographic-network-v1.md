@@ -6,7 +6,7 @@
 
 En la referencia `mac_online`, cada modalidad llega a la fusión como un único vector. Los fundamentales mezclan conceptos de balance con ratios de empresa y el macro reúne doce familias con calendarios y dinámicas distintas, de la inflación a las cadenas de suministro. H1 pregunta si leer cada familia por separado, desde varias áreas a la vez y con comunicación entre ellas, mejora la predicción frente a la referencia con los mismos parámetros compartidos.
 
-Este documento cubre el nivel de la fila. La issue declara un factorial de 1, 2 o 3 niveles por 5, 19 o 38 áreas. Los niveles 2 (grupos de activos de la sesión) y 3 (régimen en el tiempo) necesitan los grupos de [H4](asset-group-membership-v1.md), ya implementados como variante propia, y un estado de régimen que todavía no existe. Mientras no se integren, la configuración rechaza `levels` distinto de 1. Tampoco están implementadas las predicciones por área con supervisión profunda.
+Este documento cubre el nivel de la fila. La issue declara un factorial de 1, 2 o 3 niveles por 5, 19 o 38 áreas. Los niveles 2 (grupos de activos de la sesión) y 3 (régimen en el tiempo) necesitan los grupos de [H4](asset-group-membership-v1.md), ya implementados como variante propia, y un estado de régimen que todavía no existe. Mientras no se integren, la configuración rechaza `levels` distinto de 1. Las [predicciones por área](#predicciones-por-área) son un campo opcional de H1 con sus propios controles.
 
 ## Bloques y áreas
 
@@ -76,9 +76,46 @@ Ningún modelo iguala exactamente los parámetros de otro. Con H = 64, la red a�
 
 Si H1 supera a la referencia pero no a H3, la ganancia no se puede atribuir a las áreas del catálogo.
 
+## Predicciones por área
+
+Con `area_predictions` declarado, cada área vota a partir de su estado final $s_{ra}$ en la fila r, después de los J ciclos del puente. Con $P_r$ las áreas presentes de la fila,
+
+$$
+\delta_{ra}=w_a\cdot\operatorname{LayerNorm}(s_{ra})+c_a,
+\qquad
+\omega_{ra}=\frac{e^{\ell_a}}{\sum_{a'\in P_r}e^{\ell_{a'}}}\quad(a\in P_r).
+$$
+
+La predicción del área es $\hat y_{ra}=\operatorname{sg}(\hat y^{\text{ref}}_r)+\delta_{ra}$, donde $\hat y^{\text{ref}}$ es la cabeza escalar sobre la representación con H1 y $\operatorname{sg}$ corta el gradiente. La salida del predictor pasa a ser
+
+$$
+\hat y_r=\hat y^{\text{ref}}_r+\sum_{a\in P_r}\omega_{ra}\,\delta_{ra}.
+$$
+
+Un área sin bloques presentes no vota y una fila sin áreas presentes no se desplaza. $w$, $c$ y $\ell$ empiezan en cero, así que al construirse los votos son nulos, la lectura reparte por igual y el predictor emite exactamente lo mismo que H1 sin votos.
+
+El objetivo de cada tramo suma a la tarea el término
+
+$$
+\lambda\,\frac{1}{N}\sum_{r}\frac{1}{|P_r|}\sum_{a\in P_r}L\bigl(\hat y_{ra},y_r\bigr),
+$$
+
+con la misma pérdida puntual L de la receta (MAE, MSE o Huber) y $\lambda$ igual a `area_predictions`. Como la referencia entra sin grafo, la cabeza solo aprende de la tarea. Los estados de las áreas sí reciben el gradiente de su pérdida, que llega a los votos, al puente y a la pertenencia de H1 y a los codificadores de los bloques, pero no a la cabeza, a la fusión, a Titans-MAC ni a $W_o$. Es decir, el término cambia también las representaciones que comparte la tarea. La media por fila permite acumular el gradiente por bloques de flujos con la misma fracción de etiquetas que la tarea, y el contador `area_loss_sum` suma el término ponderado de cada tramo.
+
+El recorte de gradientes es global e incluye los parámetros de los votos. Con $\lambda=0$ y sin recorte, los gradientes compartidos coinciden bit a bit con los de H1. Con recorte pueden diferir en un factor positivo común a todo el paso, nunca en dirección. Las predicciones por área exigen la cabeza escalar sin objetivo de salida de #749, porque cada área aprende con la pérdida puntual de la receta, y H3 rechaza el campo porque no tiene áreas del catálogo.
+
+| Contraste | Variante | Control | Qué separa |
+| --- | --- | --- | --- |
+| Predicciones por área | H1 con 19 áreas y $\lambda=0{,}5$ | H1 con 19 áreas | Los votos con su pérdida frente a H1 |
+| Pérdida por área | H1 con 19 áreas y $\lambda=0{,}5$ | H1 con 19 áreas y $\lambda=0$ | La pérdida de cada área con la misma lectura y los mismos parámetros |
+
+El peso 0,5 se fijó antes de ejecutar y no se ajusta. Con $\lambda=0$ las áreas siguen votando y la lectura sigue aprendiendo, pero solo a través de la salida. Los votos añaden 1.382 parámetros con H = 64 y 19 áreas: la normalización, $w$, $c$ y $\ell$.
+
+El diseño combina dos antecedentes. En el [Thousand Brains Project](https://arxiv.org/abs/2412.18354) (Clay et al., 2024), cada módulo de aprendizaje puede reconocer objetos por sí solo y los módulos se envían por conexiones laterales sus hipótesis de objeto y pose hasta un consenso. En [Deeply-Supervised Nets](https://proceedings.mlr.press/v38/lee15a.html) (Lee et al., 2015), cada capa oculta tiene un clasificador con su propia pérdida de acompañamiento, que los autores interpretan como una regularización. La objeción principal la recogen [Du et al. (2018)](https://arxiv.org/abs/1812.02224): no siempre se sabe si una pérdida auxiliar ayuda a la tarea principal ni cuándo empieza a perjudicarla. Aquí no se adapta $\lambda$ durante el ajuste, y el contraste con $\lambda=0$ y con H1 mide si el término ayuda, perjudica o no cambia nada.
+
 ## Declaración
 
-La [configuración](../../configs/experiments/holographic-network-v1.json) parte de la receta histórica con secuencia, cabeza escalar y MAE, con `default_enabled` y `final_test_access` en falso. Declara cinco contrastes:
+La [configuración](../../configs/experiments/holographic-network-v1.json) parte de la receta histórica con secuencia, cabeza escalar y MAE, con `default_enabled` y `final_test_access` en falso. Declara siete contrastes:
 
 | Contraste | Variante | Control |
 | --- | --- | --- |
@@ -87,6 +124,8 @@ La [configuración](../../configs/experiments/holographic-network-v1.json) parte
 | Áreas partidas | H1 con 38 áreas | H1 con 19 áreas |
 | Pertenencia aprendida | H1 con 19 áreas | H2 con 19 áreas |
 | Áreas frente a grupos ocultos | H1 con 19 áreas | H3 con 23 ranuras |
+| Predicciones por área | H1 con 19 áreas y $\lambda=0{,}5$ | H1 con 19 áreas |
+| Pérdida por área | H1 con 19 áreas y $\lambda=0{,}5$ | H1 con 19 áreas y $\lambda=0$ |
 
 La topología es el anillo en todos los modelos. El mundo pequeño y la topología completa de las áreas existen como opciones, pero no se criban. El registro de estos modelos en la criba de la segunda ola queda para su protocolo.
 
@@ -104,6 +143,10 @@ La topología es el anillo en todos los modelos. El mundo pequeño y la topolog�
 | Gradientes hasta Δ, U, V, ranuras y puente | autograd | `test_gradients_reach_every_parameter_once_the_readout_moves` |
 | Topologías | `area_edges`, `node_edges` | `test_the_topologies_of_the_areas` |
 | Recuperación del estado | `get_extra_state` | `test_the_state_dict_round_trips_and_another_declaration_is_refused` |
+| Votos, lectura y fila sin áreas | `HolographicNetwork.area_votes` | `test_the_votes_follow_their_equation_row_by_row`, `test_a_row_without_present_areas_keeps_its_output_and_a_finite_gradient` |
+| Paridad al construirse y salida con los votos | `FinancialPredictor._voting_fuse` | `test_the_votes_start_at_zero_and_the_predictor_emits_as_h1`, `test_the_output_is_the_reference_plus_the_weighted_votes` |
+| Alcance de la pérdida por área | referencia sin grafo | `test_the_area_loss_reaches_the_areas_and_the_encoders_but_not_the_output_path` |
+| Pérdida en el entrenador, acumulación y recorte | `ChronologicalInference._area_loss`, `_area_term` | `tests/training/test_financial_run_area_predictions.py` |
 
 ## Desviaciones respecto a las fuentes
 
@@ -114,6 +157,8 @@ La topología es el anillo en todos los modelos. El mundo pequeño y la topolog�
 | Soft MoE aplica un experto MLP a cada ranura | Las ranuras son nodos del puente compartido | El cálculo por ranura es el del puente y no un experto propio |
 | LoRA suma $BA$ a los pesos de una capa | El ajuste $(I+U_aV_a^{\top})$ se compone tras el codificador compartido | El codificador de la referencia ya es el proyector $W_b$ de la issue y no se duplica |
 | La issue pide reutilizar el operador regional | Mismo calendario con una implementación propia para N nodos | `RegionalFusion` está fijada a cinco nodos y su fuente forma parte de identidades ya registradas |
+| En el Thousand Brains Project cada módulo puede aprender un modelo completo y los módulos votan hipótesis hasta un consenso | Cada área vota una corrección escalar sobre la referencia compartida, combinada con una media ponderada aprendida y sin iterar | La comunicación lateral ya la hace el puente, y una corrección parte de la escala del objetivo y conserva la paridad al construirse |
+| Deeply-Supervised Nets añade una pérdida por capa oculta, con pesos $\alpha_m$ y un umbral $\gamma$ o un decaimiento que la anula durante el ajuste | Una pérdida por área del mismo nivel con un peso $\lambda$ fijo | Con $\lambda$ fijo la comparación con $\lambda=0$ es limpia, y anular el término por umbral añadiría un hiperparámetro elegido con los datos |
 
 ## Comprobación técnica
 
@@ -157,4 +202,4 @@ CUDA_VISIBLE_DEVICES=-1 uv run python benchmarks/holographic_network_cost.py --r
 
 ## Pendiente
 
-Faltan los niveles 2 y 3, las predicciones por área, H5 a H7, `membership_embeddings_v1`, la medida CUDA, el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El aprendizaje sigue bloqueado y la variante no se activa por defecto.
+Faltan los niveles 2 y 3, H5 a H7, `membership_embeddings_v1`, la medida CUDA, el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El acuerdo entre áreas de #787 leerá las predicciones por área cuando se integre en la criba. El aprendizaje sigue bloqueado y la variante no se activa por defecto.
