@@ -111,7 +111,21 @@ CUDA_VISIBLE_DEVICES=-1 uv run python -m benchmarks.objective_variants_cost \
 
 ## Comprobación y trabajo pendiente
 
-Las 52 [mutaciones dirigidas](../../reports/engineering/skewed-t-objective-20261030/mutations.json) se detectaron con referencias verdes antes y después de cada una, sin intentos de pasos de optimizador y con la retención intacta. Cubren los límites de la configuración, la identidad, los valores iniciales, la densidad y sus constantes, el peso detenido de la β-NLL, la inversión de la distribución por cada rama, el punto emitido, el registro en los consumidores y la medida de coste. No se ejecutó la mutación que quita L2 de la lista opcional de Dust, porque es equivalente: la segunda guarda de Dust ya rechaza cualquier objetivo de salida. El recibo final la declara como tal.
+La [verificación integrada](../../reports/engineering/skewed-t-objective-20261030/verification.json) registra 510 casos CPU aprobados sin omisiones y 33 casos CUDA deseleccionados. Incluye ecuaciones, gradientes, filas emitidas, recuperación, consumidores, ventanas, el registro común y el módulo de determinismo. El módulo L2 cubre 98/98 sentencias y 20/20 ramas. Se midieron las 20 funciones cambiadas de producción, con CRAP máximo 32,62. Ruff, formato y el comprobador pasan. La regresión histórica conserva 2.051 aprobados y 42 omitidos en training, y 5.872 aprobados, 124 omitidos y un fallo del fixture de determinismo en el resto. Ese fallo se corrigió en #819 y su módulo pasa en la selección integrada. No se presenta la regresión completa como repetida.
+
+Ocho casos nuevos reprodujeron un redondeo de los grados de libertad al suelo, también a ν = 2, en FP32 y FP64. La protección ν_min·(1 + ε) corrige ese extremo y se declara en la identidad. La revisión de la ponderación limita la afirmación sobre los ceros de la derivada a cada fila con las demás salidas fijas. No se deduce de ella el mismo óptimo de los parámetros compartidos.
+
+Las 52 [mutaciones dirigidas iniciales](../../reports/engineering/skewed-t-objective-20261030/mutations.json) se detectaron con referencias verdes antes y después de cada una, sin intentos de optimizador y con la protección intacta. Cubren configuración, identidad, inicialización, densidad, peso detenido de la β-NLL, inversión de la distribución, punto emitido, consumidores y coste. Dos recetas que actúan en módulos modificados por `develop` se repitieron sobre la integración y sustituyen sus resultados anteriores. Otras dos detectan la retirada de la cota numérica o de su identidad. También se ejecutó la eliminación de L2 de la lista opcional de Dust. Sobrevive porque el módulo `output_objective` sigue activando la segunda guarda en los modelos admitidos. Se declara equivalente bajo ese contrato, sin contarla como detectada ni atribuir una puntuación global de mutación.
+
+La [medida posterior a la corrección](../../reports/engineering/skewed-t-objective-20261030/cost-cpu-numerical-floor.json), en `202175bb2`, mantiene 256 activos, ocho instantes y siete repeticiones, con un calentamiento y dos hilos. Las medianas en segundos para el recorrido completo son:
+
+| Modelo | Avance con grafo | Retropropagación | Inferencia |
+| --- | ---: | ---: | ---: |
+| Control L1 | 2,093 | 0,907 | 1,867 |
+| F1 | 1,936 | 1,011 | 1,596 |
+| L2 | 1,945 | 0,995 | 1,837 |
+
+El proceso completo duró 144,84 s y alcanzó 1.850.544 KiB de RSS. La medida interna dura 135,54 s e incluye los tres modelos y su preparación. La carga media pasó de 10,43 a 17,74 con la regresión CPU y otras aplicaciones activas. Cambian los hilos y la carga respecto a la primera pasada, así que los tiempos no acreditan una aceleración ni aíslan el coste de la cota. No son latencias de una predicción individual. Ningún parámetro cambió y no hubo optimizador. El perfilador consultó CUDA, ocultada para esta medida CPU, y registró el código 100. Recogió los eventos CPU y el proceso terminó correctamente. La ruta GPU sigue sin comprobarse.
 
 Queda pendiente:
 
