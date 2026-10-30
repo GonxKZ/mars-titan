@@ -24,6 +24,8 @@ def restore_flags():
         torch.backends.mha.get_fastpath_enabled(),
         torch.get_num_threads(),
     )
+    torch.use_deterministic_algorithms(False)
+    torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = False, False
     yield
     torch.use_deterministic_algorithms(flags[0], warn_only=flags[1])
     torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = flags[2:4]
@@ -50,6 +52,18 @@ def test_each_mode_repeats_its_digests_and_leaves_the_parameters_unchanged(monke
     assert fixed["determinism"] == determinism.determinism_identity(determinism.TORCH_DETERMINISTIC)
     assert fixed["numerics"]["deterministic"] is True
     assert fixed["digests"][0] == fixed["digests"][1]
+
+
+@pytest.mark.parametrize("warn_only", [False, True])
+def test_the_default_worker_keeps_inherited_determinism(warn_only):
+    torch.use_deterministic_algorithms(True, warn_only=warn_only)
+    torch.backends.cudnn.deterministic = True
+    result = cost.worker(cost.DEFAULT, "cpu", **TINY)
+    assert result["determinism"] is None
+    assert result["numerics"]["deterministic"] is True
+    assert result["numerics"]["cudnn_deterministic"] is True
+    assert torch.are_deterministic_algorithms_enabled()
+    assert torch.is_deterministic_algorithms_warn_only_enabled() is warn_only
 
 
 def test_the_comparison_finds_each_kind_of_mismatch():
