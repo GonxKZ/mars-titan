@@ -33,6 +33,7 @@ from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.mature_reliability import ReliabilitySignal
+from mars_titan.memory.three_factor_bridge import BridgePlasticity
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
@@ -45,6 +46,7 @@ from mars_titan.models.titans.financial_inputs import (
     validated_cpu_batches,
 )
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
+from mars_titan.models.titans.plastic_bridge import MATURE_DIRECTIONAL_HIT
 from mars_titan.models.titans.state import (
     deferred_checks,
     join_mac_rows,
@@ -494,6 +496,8 @@ class _Pass:
     horizons: object = None
     # Con #791, la señal de fiabilidad madura del recorrido.
     reliability: object = None
+    # Con P1 de #784, los pesos rápidos del puente y las trazas de las predicciones pendientes.
+    bridge: object = None
 
 
 class ChronologicalInference:
@@ -543,6 +547,8 @@ class ChronologicalInference:
         self.area_weight = None if network is None else network.area_predictions
         # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
         self.reliability = predictor.config.mature_reliability
+        # P1 de #784 también actúa en los dos recorridos y empieza desde cero en cada uno.
+        self.bridge = predictor.config.three_factor_bridge
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -565,6 +571,15 @@ class ChronologicalInference:
         if self.reliability is not None and run.reliability is None:
             run.reliability = ReliabilitySignal(self.reliability)
         return run.reliability
+
+    def _bridge(self, run):
+        """Pesos rápidos de P1 del recorrido, creados al usarlos por primera vez, o None."""
+        if self.bridge is not None and run.bridge is None:
+            network = self.predictor.holographic_network
+            run.bridge = BridgePlasticity(
+                self.bridge, network.plastic_edges, network.config.catalog_areas
+            )
+        return run.bridge
 
     def _observe(self, run, source, event, *, differentiable, blocks=None):
         """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados.
@@ -600,7 +615,7 @@ class ChronologicalInference:
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=grad)
         context = dict(context=run.context) if self.uses_context else {}
-        signal, surprises = self._signal(run), []
+        signal, surprises, bridge = self._signal(run), [], self._bridge(run)
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
         # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
         # checkpoints o cierra recibos. Así no se espera a la GPU tras cada bloque.
@@ -614,6 +629,13 @@ class ChronologicalInference:
                     # Todos los bloques del evento leen la misma señal, la de sus etiquetas.
                     options["reliability"] = torch.tensor(
                         signal.values(batch.flow_ids),
+                        dtype=predictor.head.weight.dtype,
+                        device=self.device,
+                    )
+                if bridge is not None:
+                    # Como la señal, los pesos solo cambian con etiquetas ya aplicadas.
+                    options["bridge_bias"] = torch.tensor(
+                        bridge.biases(batch.flow_ids),
                         dtype=predictor.head.weight.dtype,
                         device=self.device,
                     )
@@ -753,6 +775,10 @@ class ChronologicalInference:
             for batch, _ in emitted
             for key in zip(batch.flow_ids, batch.prediction_at, strict=True)
         ]
+        if run.bridge is not None:
+            # Cada traza espera con su predicción hasta que madure la etiqueta.
+            traces = torch.cat([prepared.bridge_traces for _, prepared in emitted])
+            run.bridge.hold(keys, traces.cpu().to(torch.float64).numpy())
         for index, (flow, at) in enumerate(keys):
             run.pending[flow, at] = values[index]
             if levels is not None:
@@ -819,7 +845,7 @@ class ChronologicalInference:
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
-        markets, moments, errors, matured = [], [], [], []
+        markets, moments, errors, matured, bridged = [], [], [], [], []
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -827,6 +853,8 @@ class ChronologicalInference:
             issued = run.pending.pop(key)
             if self.reliability is not None:
                 matured.append((flow, issued, value))
+            if self.bridge is not None:
+                bridged.append((flow, decision_at, issued, value))
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             markets.append(flow.split("/", 1)[0])
@@ -847,7 +875,14 @@ class ChronologicalInference:
             run.predictions.append(graph)
             run.targets.append(value)
             run.used.append((flow, decision_at, event.at))
-        signal = self._signal(run)
+        signal, bridge = self._signal(run), self._bridge(run)
+        if bridge is not None:
+            # Con la señal común, P1 lee el acierto esperado antes de que la señal reciba
+            # las etiquetas del evento.
+            expected = None
+            if self.bridge.source == MATURE_DIRECTIONAL_HIT:
+                expected = signal.expected_hits({flow.split("/", 1)[0] for flow, *_ in bridged})
+            bridge.settle(bridged, expected)
         if signal is not None:
             signal.settle(matured)
         for start in range(0, len(errors), 4096):
@@ -863,6 +898,7 @@ class ChronologicalInference:
         run.context = None
         run.horizons = None
         run.reliability = None
+        run.bridge = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1142,6 +1178,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.predictor.config.mature_reliability is not None:
             name = "mars_titan.memory.mature_reliability"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # P1 de #784 añade su regla. Su configuración también está en `_implementation`.
+        if self.predictor.config.three_factor_bridge is not None:
+            name = "mars_titan.memory.three_factor_bridge"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         for option, name in _WEIGHT_MODULES.items():
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:
@@ -1268,8 +1308,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     # Solo la selección de todas las filas de un instante completo lo sigue siendo.
                     complete = whole and len(rows) == len(batch.flow_ids)
                     batch = batch.select(rows)
-                    if "reliability" in plan:
-                        plan = dict(plan, reliability=plan["reliability"][rows])
+                    # La señal de #791 y los pesos de P1 se repiten con las filas del bloque.
+                    for name in ("reliability", "bridge_bias"):
+                        if name in plan:
+                            plan = dict(plan, **{name: plan[name][rows]})
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
@@ -1524,6 +1566,11 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.reliability is not None
                 else {}
             ),
+            **(
+                dict(bridge=None if run.bridge is None else run.bridge.export())
+                if self.bridge is not None
+                else {}
+            ),
         )
 
     def _restore(self, payload):
@@ -1533,6 +1580,8 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
         if (self.reliability is not None) != ("reliability" in payload):
             raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
+        if (self.bridge is not None) != ("bridge" in payload):
+            raise ValueError("El recorrido guardado no corresponde al puente de tres factores")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1554,6 +1603,19 @@ class ChronologicalTrainer(ChronologicalInference):
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         if self.reliability is not None and payload["reliability"] is not None:
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
+        if self.bridge is not None and payload["bridge"] is not None:
+            network = self.predictor.holographic_network
+            run.bridge = BridgePlasticity.restore(
+                self.bridge,
+                network.plastic_edges,
+                network.config.catalog_areas,
+                payload["bridge"],
+            )
+        # Cada predicción pendiente conserva su traza, y ninguna traza queda sin predicción.
+        if self.bridge is not None:
+            held = set() if run.bridge is None else set(run.bridge.keys())
+            if held != set(run.pending):
+                raise ValueError("Las trazas guardadas no son las de las predicciones pendientes")
         return run
 
     def _emission(self):

@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "kind": "three_factor_bridge_variants",
+  "issue": 784,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "estimated_gpu_hours_per_arm_with_three_seeds": 2.6,
+  "requirements": {
+    "holographic_network": "h1_or_h2_with_catalog_areas",
+    "common_source": "mature_reliability_with_the_shared_directional_hit_signal",
+    "refused_with": [
+      "auxiliary_horizons",
+      "local_control_c",
+      "frozen_consumer",
+      "dust"
+    ]
+  },
+  "arms": {
+    "h1_reference": {
+      "role": "reference",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    },
+    "error_gap": {
+      "role": "variant",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        },
+        "three_factor_bridge": {
+          "kind": "three_factor_bridge_v1",
+          "source": "relative_error_gap",
+          "learning_rate": 0.05,
+          "budget": 1.0,
+          "time_constant": 21
+        }
+      }
+    },
+    "error_gap_mean": {
+      "role": "control",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        },
+        "three_factor_bridge": {
+          "kind": "mean_third_factor_v1",
+          "source": "relative_error_gap",
+          "learning_rate": 0.05,
+          "budget": 1.0,
+          "time_constant": 21
+        }
+      }
+    },
+    "common_signal_reference": {
+      "role": "reference",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        },
+        "mature_reliability": {
+          "source": "mature_directional_hit",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        }
+      }
+    },
+    "common_signal": {
+      "role": "variant",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        },
+        "mature_reliability": {
+          "source": "mature_directional_hit",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        },
+        "three_factor_bridge": {
+          "kind": "three_factor_bridge_v1",
+          "source": "mature_directional_hit",
+          "learning_rate": 0.05,
+          "budget": 1.0,
+          "time_constant": null
+        }
+      }
+    },
+    "common_signal_mean": {
+      "role": "control",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        },
+        "mature_reliability": {
+          "source": "mature_directional_hit",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        },
+        "three_factor_bridge": {
+          "kind": "mean_third_factor_v1",
+          "source": "mature_directional_hit",
+          "learning_rate": 0.05,
+          "budget": 1.0,
+          "time_constant": null
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "three_factor_bridge",
+      "variant": "error_gap",
+      "control": "h1_reference"
+    },
+    {
+      "name": "credit_of_each_label",
+      "variant": "error_gap",
+      "control": "error_gap_mean"
+    },
+    {
+      "name": "bridge_as_consumer_of_the_common_signal",
+      "variant": "common_signal",
+      "control": "common_signal_reference"
+    },
+    {
+      "name": "credit_of_each_label_with_the_common_signal",
+      "variant": "common_signal",
+      "control": "common_signal_mean"
+    }
+  ],
+  "priority": {
+    "primary": [
+      "three_factor_bridge",
+      "credit_of_each_label"
+    ],
+    "common_thread": [
+      "bridge_as_consumer_of_the_common_signal",
+      "credit_of_each_label_with_the_common_signal"
+    ]
+  },
+  "reasons": {
+    "learning_rate": "a_full_trace_with_delta_one_moves_a_logit_by_at_most_0_05_per_event",
+    "budget": "one_logit_per_area_so_the_fast_weights_change_attention_odds_at_most_by_e",
+    "time_constant": "the_monthly_speed_of_the_common_signal_in_maturation_events",
+    "reference_h1": "the_19_area_ring_of_the_holographic_declaration_shared_with_issue_783"
+  }
+}

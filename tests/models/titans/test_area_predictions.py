@@ -75,6 +75,36 @@ def test_votes_need_the_declared_field():
         network(H1).forward_with_votes(*module_inputs())
 
 
+@pytest.mark.parametrize("weight", [0.0, 0.5])
+def test_area_predictions_and_p1_require_separate_controls(weight):
+    from mars_titan.models.titans.plastic_bridge import ThreeFactorBridge
+
+    bridge = ThreeFactorBridge()
+    setup(holographic_network=H1, three_factor_bridge=bridge)
+    setup(holographic_network=replace(H1, area_predictions=weight))
+    with pytest.raises(ValueError, match="predicciones por área.*P1"):
+        setup(
+            holographic_network=replace(H1, area_predictions=weight),
+            three_factor_bridge=bridge,
+        )
+
+
+def test_zero_auxiliary_weight_does_not_preserve_shared_gradients_after_votes_change():
+    plain, batch = setup(holographic_network=H1)
+    voting, _ = setup(holographic_network=replace(H1, area_predictions=0.0))
+    moved_votes(voting.holographic_network)
+    voting._seal_parameters()
+    gradients = []
+    for model in (plain, voting):
+        result = model.prepare(batch, model.initial_state(batch.flow_ids), differentiable=True)
+        (gradient,) = torch.autograd.grad(
+            result.point_predictions.square().mean(), model.holographic_network.qkv.weight
+        )
+        gradients.append(gradient)
+    assert torch.count_nonzero(gradients[1]) > 0
+    assert not torch.equal(*gradients)
+
+
 def test_the_votes_follow_their_equation_row_by_row():
     net = network(VOTING)
     moved_votes(net)

@@ -72,6 +72,29 @@ def test_markets_keep_separate_signals_and_events_without_labels_do_not_move_the
     assert after["markets"]["JP"][0]["updates"] == 1
 
 
+def test_the_expected_hit_is_the_slowest_speed_of_the_shared_channel():
+    for config in (MatureReliability(), MatureReliability(time_constants=(2, 9))):
+        signal = settled(config, EVENTS)
+        before = signal.export()
+        slowest = expected_average(SCORES, config)[-1]
+        assert signal.expected_hits({"US", "CN"}) == {"CN": 0.0, "US": slowest}
+        # Leer el acierto esperado no cambia la señal.
+        assert signal.export() == before
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        MatureReliability(independent=True),
+        MatureReliability(source="titans_surprise"),
+        MatureReliability(source="shuffled_in_time"),
+    ],
+)
+def test_only_the_shared_signal_of_hits_gives_an_expected_hit(config):
+    with pytest.raises(ValueError, match="Solo la señal compartida"):
+        ReliabilitySignal(config).expected_hits({"US"})
+
+
 def test_the_shuffled_control_draws_each_input_from_the_scores_seen_so_far():
     config = MatureReliability(source="shuffled_in_time", seed=3, time_constants=(1,))
     scores = [-1.0, -0.5, 0.0, 0.5, 1.0, 1 / 3, -1 / 3]
