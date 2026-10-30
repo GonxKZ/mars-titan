@@ -27,7 +27,7 @@ def test_role_factor_is_connected_to_the_window_and_normalized():
     "role",
     [
         {},
-        {"source": "sector", "mode": "bipolar", "seed": 0},
+        {"source": "current_sector", "mode": "bipolar", "seed": 0},
         {"source": "regime", "mode": "bipolar", "seed": 0, "guarantee": True},
     ],
 )

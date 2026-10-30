@@ -238,7 +238,7 @@ def test_an_unrouted_correction_keeps_its_metrics(parent):
 # Sesión frente a ventana con la ruta sustituida.
 
 
-def daily_routes(self, prices, flow_ids, at):
+def daily_routes(self, prices, flow_ids, at, presence=None):
     """Ruta por flujo y día: la etiqueta madura siempre en otro compartimento."""
     assert prices.shape == (len(flow_ids), 64, 5)
     day = at // 86_400_000_000

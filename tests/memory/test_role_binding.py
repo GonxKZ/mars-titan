@@ -7,7 +7,7 @@ import torch
 from mars_titan.memory.area_memory import AreaLayout
 from mars_titan.memory.area_query_bridge import AreaQueryBridgeConfig
 from mars_titan.memory.associative_memory import AssociativeMemoryConfig, MatureCorrection
-from mars_titan.memory.role_binding import RoleBindingConfig
+from mars_titan.memory.role_binding import SOURCES, RoleBindingConfig
 
 
 def sample():
@@ -62,7 +62,7 @@ def test_private_randomness_does_not_consume_numpy_or_torch_global_rng():
     assert torch.equal(before_torch, torch.get_rng_state())
 
 
-@pytest.mark.parametrize("source", ["regime", "calendar"])
+@pytest.mark.parametrize("source", list(SOURCES))
 @pytest.mark.parametrize(
     "areas,bridge", [(None, None), (AreaLayout(), None), (AreaLayout(), AreaQueryBridgeConfig())]
 )
@@ -113,7 +113,7 @@ def test_role_binding_requires_codec_and_a_delta_or_proximal_memory():
 @pytest.mark.parametrize(
     "changes",
     [
-        dict(source="sector"),
+        dict(source="current_sector"),
         dict(mode="FHRR"),
         dict(seed=True),
         dict(seed=-1),
