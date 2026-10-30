@@ -233,6 +233,31 @@ class FinancialConfig:
     differential_attention: str | None = None
 
     def __post_init__(self):
+        self._check_input_contract()
+        self._check_memory_gates()
+        self._check_memory_multiscale()
+        self._check_memory_plasticity()
+        self._check_key_competition()
+        self._check_session_context()
+        self._check_presence_modulation()
+        self._check_regional_fusion()
+        self._check_regional_execution()
+        self._check_regional_variant()
+        self._check_holographic_network()
+        self._check_axial_time_region()
+        self._check_fractal_shared_operator()
+        self._check_memory_bank_readout()
+        self._check_session_rank_inputs()
+        check_objectives(self)
+        self._check_session_mixers()
+        self._check_auxiliary_horizons()
+        self._check_mature_reliability()
+        self._check_core_variants()
+        self._check_memory_projections()
+        self._check_runtime_limits()
+
+    def _check_input_contract(self):
+        """Entrada, codificador, cabeza y disposición de atención."""
         if self.temporal_encoder is not None and (
             type(self.temporal_encoder) is not str
             or self.temporal_encoder not in _TEMPORAL_ENCODERS
@@ -254,6 +279,9 @@ class FinancialConfig:
             raise ValueError("La ruta de cuantiles necesita QuantileRouting y quantile_head_v1")
         if self.attention_layout not in ATTENTION_LAYOUTS:
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
+
+    def _check_memory_gates(self):
+        """Puertas y estabilidad antes de invertir sus tasas iniciales."""
         if isinstance(self.gate_bias, dict):
             # Las recetas JSON declaran los tres valores de forma explícita.
             if set(self.gate_bias) != {field.name for field in fields(GateBias)}:
@@ -275,6 +303,9 @@ class FinancialConfig:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
             self.gate_bias.logits(MemoryConfig.theta_max, self.memory_stability)
+
+    def _check_memory_multiscale(self):
+        """Forma y acoplamiento de la memoria multiescala."""
         if isinstance(self.memory_multiscale, dict):
             # Las recetas JSON declaran la forma y el acoplamiento de forma explícita.
             if set(self.memory_multiscale) != {field.name for field in fields(MemoryMultiscale)}:
@@ -286,6 +317,9 @@ class FinancialConfig:
             self.memory_multiscale, MemoryMultiscale
         ):
             raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
+
+    def _check_memory_plasticity(self):
+        """Plasticidad y su dependencia de la cascada."""
         if isinstance(self.memory_plasticity, dict):
             expected = {field.name for field in fields(MemoryPlasticity)}
             required = expected - {"gradient_contract", "capture_scope"}
@@ -301,6 +335,9 @@ class FinancialConfig:
                 self.memory_multiscale is None or self.memory_multiscale.form != "cascade"
             ):
                 raise ValueError("La captura neuronal necesita la cascada multiescala")
+
+    def _check_key_competition(self):
+        """Transformación de claves y capacidad retenida."""
         if isinstance(self.memory_key_competition, dict):
             if set(self.memory_key_competition) != {field.name for field in fields(KeyCompetition)}:
                 raise ValueError("memory_key_competition necesita center, retained y selection")
@@ -315,6 +352,9 @@ class FinancialConfig:
             retained = self.memory_key_competition.retained
             if retained is not None and retained > self.hidden_size:
                 raise ValueError("retained supera hidden_size")
+
+    def _check_session_context(self):
+        """Contexto, mapa sectorial y grupos de activos."""
         if isinstance(self.sector_map, dict):
             if set(self.sector_map) != {"source"}:
                 raise ValueError("sector_map declara solo la carpeta de las fichas en source")
@@ -341,6 +381,9 @@ class FinancialConfig:
             PRICE_WINDOW_CHANNELS
         ):
             raise ValueError("H4 necesita la ventana de precios de la v3.1 con el bit de presencia")
+
+    def _check_presence_modulation(self):
+        """Modulación de presencia con la política de máscaras."""
         if self.presence_modulation is not None and (
             not isinstance(self.presence_modulation, str)
             or self.presence_modulation not in PRESENCE_MODULATIONS
@@ -349,6 +392,9 @@ class FinancialConfig:
             raise ValueError(
                 "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
             )
+
+    def _check_regional_fusion(self):
+        """Declaración y exclusiones de la fusión regional."""
         if isinstance(self.regional_fusion, dict):
             if set(self.regional_fusion) != {field.name for field in fields(RegionalFusionConfig)}:
                 raise ValueError("regional_fusion debe declarar toda su configuración")
@@ -362,6 +408,9 @@ class FinancialConfig:
                 )
             if self.presence_modulation is not None:
                 raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
+
+    def _check_regional_execution(self):
+        """Ejecución regional y operador compatible."""
         if isinstance(self.regional_execution, dict):
             object.__setattr__(
                 self,
@@ -386,6 +435,9 @@ class FinancialConfig:
                 and self.session_context is None
             ):
                 raise ValueError("La selección contextual necesita un padre PT4 explícito")
+
+    def _check_regional_variant(self):
+        """Variantes regionales y sus exclusiones."""
         object.__setattr__(self, "regional_variant", parse_regional_variant(self.regional_variant))
         if self.regional_variant is not None and (
             self.variant != "mac_online"
@@ -397,6 +449,9 @@ class FinancialConfig:
                 "La variante regional se declara sobre mac_online, sustituye al operador "
                 "regional y no se combina con PT6"
             )
+
+    def _check_holographic_network(self):
+        """Red de áreas y familias que exige la representación."""
         object.__setattr__(
             self, "holographic_network", parse_holographic_network(self.holographic_network)
         )
@@ -418,8 +473,9 @@ class FinancialConfig:
                 self.inputs.representation,
                 masked=masked_inputs(self.inputs.input_policy),
             )
-        self._check_axial_time_region()
-        self._check_fractal_shared_operator()
+
+    def _check_memory_bank_readout(self):
+        """Lectura de los bancos y sus contrastes permitidos."""
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
             if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
@@ -436,6 +492,9 @@ class FinancialConfig:
                 raise ValueError("El lector necesita bancos EMA o réplicas identificados")
             if self.memory_plasticity is not None or self.memory_stability is not None:
                 raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
+
+    def _check_session_rank_inputs(self):
+        """Rangos por sesión bajo la política de máscaras."""
         if self.session_rank_inputs is not None and (
             type(self.session_rank_inputs) is not str
             or self.session_rank_inputs != SESSION_RANK_INPUTS
@@ -444,7 +503,9 @@ class FinancialConfig:
             raise ValueError(
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
             )
-        check_objectives(self)
+
+    def _check_session_mixers(self):
+        """Exclusiones entre los operadores que mezclan activos."""
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
@@ -457,6 +518,9 @@ class FinancialConfig:
         # H4 y C3 también mezclan las filas de la sesión, cada uno con su propia agrupación.
         if self.asset_groups is not None and self.fractal_shared_operator is not None:
             raise ValueError("H4 y C3 mezclan la sesión de dos formas y no se combinan")
+
+    def _check_auxiliary_horizons(self):
+        """Cabezas auxiliares y operaciones que impiden recalcular su token."""
         if isinstance(self.auxiliary_horizons, dict):
             if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
                 raise ValueError(
@@ -494,6 +558,9 @@ class FinancialConfig:
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
+
+    def _check_mature_reliability(self):
+        """Señal de fiabilidad y núcleo que la admite."""
         if isinstance(self.mature_reliability, dict):
             if set(self.mature_reliability) != {f.name for f in fields(MatureReliability)}:
                 raise ValueError("mature_reliability debe declarar todos sus campos")
@@ -504,13 +571,18 @@ class FinancialConfig:
             type(self.mature_reliability) is not MatureReliability or self.variant != "mac_online"
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
-        self._check_core_variants()
+
+    def _check_memory_projections(self):
+        """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
             self.memory_projections not in MEMORY_PROJECTIONS
         ):
             raise ValueError("memory_projections debe ser linear_v1 o " + PAPER_PROJECTIONS)
+
+    def _check_runtime_limits(self):
+        """Dimensiones, semilla, presupuesto y banco permitido."""
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
