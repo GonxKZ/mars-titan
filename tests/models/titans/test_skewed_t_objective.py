@@ -74,6 +74,9 @@ def cdf(y, point, scale, skew, dof):
         dict(max_skew=1.0),
         dict(max_skew=12.0),
         dict(floor=True),
+        # Un booleano en un campo donde 1,0 sería válido.
+        dict(initial_scale=True),
+        dict(floor=0.05, initial_scale=0.2),
         dict(initial_dof=float("nan")),
         dict(max_skew="3"),
     ],
@@ -81,6 +84,31 @@ def cdf(y, point, scale, skew, dof):
 def test_invalid_configurations_are_refused(options):
     with pytest.raises(ValueError):
         SkewedTObjective(**options)
+
+
+def test_the_identity_records_every_declared_value_and_choice():
+    assert OBJECTIVE.name == SKEWED_T_OBJECTIVE
+    assert OBJECTIVE.identity() == dict(
+        schema_version=1,
+        name="skewed_t_objective_v1",
+        floor=1e-6,
+        initial_scale=0.02,
+        dof_floor=2.0,
+        initial_dof=6.0,
+        max_skew=2.5,
+        distribution="fernandez_steel_skewed_student_t",
+        scale="softplus_of_linear_on_encoded_plus_floor",
+        skew="max_skew_to_the_power_tanh_of_linear_on_encoded",
+        dof="dof_floor_plus_softplus_of_linear_on_encoded",
+        initial="zero_weights_constant_biases",
+        loss="beta_nll_mean_of_detached_scale_times_full_nll",
+        beta=1.0,
+        point="median_of_the_fitted_distribution_with_scipy",
+        emitted_quantiles="exact_quantiles_at_quantile_head_levels_with_scipy",
+    )
+    built = OBJECTIVE.build(8, seed=0, dtype=torch.float64)
+    assert type(built) is SkewedT and built.config is OBJECTIVE
+    assert built.weight.dtype == torch.float64 and built.weight.shape == (3, 8)
 
 
 def test_parameters_start_at_their_declared_values_without_global_rng():
