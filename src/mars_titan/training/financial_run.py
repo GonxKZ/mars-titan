@@ -62,6 +62,11 @@ from .checkpoints import (
     save_training_state,
 )
 from .common_epoch import chosen_state
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    valid_determinism,
+)
 from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
@@ -164,6 +169,10 @@ class ChronologicalRecipe:
     # None empieza con los pesos recibidos. Un objeto declara la contracción y el ruido de
     # F3 (#749), aplicados una vez antes del primer paso de una ejecución nueva.
     shrink_perturb: dict | None = None
+    # None conserva el determinismo del proceso. `torch_deterministic_algorithms_v1` activa el
+    # modo determinista de PyTorch y de cuDNN al construir el recorrido y entra en su
+    # identidad (#794).
+    determinism: str | None = None
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
@@ -200,6 +209,8 @@ class ChronologicalRecipe:
             raise ValueError(
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
         self.weight_options()
 
     def weight_options(self):
@@ -235,6 +246,8 @@ class ChronologicalRecipe:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
         if fields["distillation_weight"] is None:
@@ -539,8 +552,10 @@ class ChronologicalInference:
             raise ValueError("El recorrido admite cpu o cuda:0 explícitos")
         self.predictor, self.recipe = predictor, recipe
         self.audit = [] if audit else None
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
 
     def _signal(self, run):
         """Señal de #791 del recorrido, creada al usarla por primera vez, o None."""
@@ -1021,6 +1036,8 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         control = predictor.local_control
         if control is not None:
             # Sin control local, la identidad conserva literalmente su forma anterior.
@@ -1084,6 +1101,10 @@ class ChronologicalTrainer(ChronologicalInference):
             # F2 y F3 solo añaden su código si la receta los declara.
             if getattr(self.recipe, option) is not None:
                 own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # El determinismo de #794 también, con el módulo que lo activa y lo comprueba.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
