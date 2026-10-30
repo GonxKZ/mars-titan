@@ -5,6 +5,7 @@
  "scope": "skewed_t_objective",
  "implementation_commit": "202175bb2aff2091b15e23b442e347b93de91d3c",
  "base_commit": "09fe1e45941704315c95608a2e7e8bb96fd3fdbd",
+ "verification_test_commit": "fbfebafa1a8b717a78a6e0f96146afff3774d134",
  "training_runs": 0,
  "real_optimizer_steps": 0,
  "scientific_experiments": 0,
@@ -15,6 +16,30 @@
  "cuda_verified": false,
  "cuda_deselected_in_targeted_suite": 33,
  "cuda_followup_issue": 816,
+ "cuda_pending_collected": 41,
+ "cuda_new_floor_cases_prepared": 8,
+ "cuda_collection_sha256": "e5c7a391c3f794c3a8be4781aaae59992c18712a668393a42affb1cccf79b3d4",
+ "test_change_quality": {
+  "path": "tests/models/titans/test_skewed_t_objective.py",
+  "function": "test_degrees_of_freedom_stay_strictly_above_the_floor_after_rounding",
+  "start_line": 172,
+  "end_line": 183,
+  "cyclomatic_complexity": 5,
+  "statements": 9,
+  "covered_statements": 9,
+  "coverage_fraction": 1.0,
+  "branches": 0,
+  "covered_branches": 0,
+  "crap": 5.0,
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "note": "Medida de los ocho casos CPU de la regresión nueva. Los ocho casos del mismo extremo en cuda:0 están recogidos pero no ejecutados. El recuento de ramas del código de la prueba no mide la ruta CUDA."
+ },
  "numerical_fix": {
   "trigger": "Con preactivaciones negativas finitas, softplus y la suma redondeaban los grados de libertad al suelo, incluido ν=2.",
   "rule": "max(dof_floor + softplus(a), dof_floor * (1 + finfo(dtype).eps))",
@@ -135,6 +160,24 @@
    "skipped": 0,
    "xml_sha256": "09d7445d47e286d71924c5187ebc7a5164ae486f67fa06d43635fce9ea41ddb8",
    "note": "45 casos CPU aprobados y un caso CUDA deseleccionado después de ajustar solo el docstring, con AST ejecutable y posiciones idénticos."
+  },
+  {
+   "name": "module_after_cuda_case_declaration",
+   "tests": 45,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "8f3809a1e9f0ea3ed829f7278dea4268cb4f7f64563aaa1d92b8d5674e041a7a",
+   "note": "45 casos CPU aprobados y nueve CUDA deseleccionados. Se añaden ocho casos CUDA para los grados saturados. La fuente de producción no cambia."
+  },
+  {
+   "name": "new_test_coverage",
+   "tests": 8,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "b03307cd024ddf11f74d0c157bd3b8d83091e5d905e6d940ac71375738e0404f",
+   "note": "Los ocho casos CPU de la regresión nueva, con cobertura del código de la prueba. No se ejecuta CUDA."
   }
  ],
  "quality": {
