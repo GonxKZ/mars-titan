@@ -201,7 +201,7 @@ def rebuild(state, **changes):
         (2, dict(instant_writes={"US": 1, "CN": 0})),
         (2, dict(instant_writes={"US": 2})),
         (2, dict(instant_writes={"US": True})),
-        (2, dict(instant_writes=[("US", 1)])),
+        (2, dict(instant_writes=["US"])),
         (2, dict(instant_writes={}, last_selected=(("US/B", 2),))),
     ),
 )
