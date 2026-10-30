@@ -206,6 +206,28 @@ def test_invalid_series_are_refused():
             af.asset_features(close, volume, market, filings)
 
 
+@pytest.mark.parametrize("position", [0, 1, 2])
+@pytest.mark.parametrize("value", [np.inf, -np.inf])
+def test_infinite_inputs_are_refused_instead_of_becoming_missing_features(position, value):
+    values = list(series(300))
+    values[position][-1] = value
+    with pytest.raises(ValueError, match="infinitos"):
+        af.asset_features(*values, [])
+
+
+def test_the_log1p_volume_signal_is_not_invariant_to_a_common_adjustment():
+    close, volume, market = series(300)
+    volume[:] = 1
+    volume[-1] = 3
+    before = af.asset_features(close, volume, market, [])
+    after = af.asset_features(close, 2 * volume, market, [])
+    original = feature(before, "volume_shock_20", -1)
+    adjusted = feature(after, "volume_shock_20", -1)
+    assert original == pytest.approx(math.log(2))
+    assert adjusted == pytest.approx(math.log(7 / 3))
+    assert abs(original - adjusted) > 0.1
+
+
 def test_session_ranks_map_each_cross_section_to_minus_one_one():
     values = np.full((4, 3, 2), np.nan)
     present = np.ones((4, 3), dtype=bool)

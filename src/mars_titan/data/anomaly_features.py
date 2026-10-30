@@ -27,9 +27,10 @@ Una ventana exige el 75 % de sus observaciones, y una característica sin ellas 
 
 La rotación no se divide entre las acciones en circulación. La edición distribuye precios y
 volúmenes con los ajustes retrospectivos de su fuente, y las acciones de cada presentación no
-los tienen. Mezclarlos introduciría desdoblamientos posteriores a la decisión. Las razones de
-precios o de volúmenes de una misma serie no cambian con un factor de ajuste común, así que
-todas las características son cocientes o diferencias de logaritmos de la propia serie.
+los tienen. Mezclarlos introduciría desdoblamientos posteriores a la decisión. Los cocientes
+de precios no cambian con un factor de ajuste común. Las diferencias de log(1 + V) admiten
+volumen cero, pero no son invariantes a ese factor. Se conserva esa fórmula como una
+aproximación declarada, sin atribuir disponibilidad histórica perfecta al volumen ajustado.
 
 Las sesiones son las del calendario declarado del mercado sin las ausentes en todo él, igual
 que las ventanas de precios de la edición. En cada sesión, `session_ranks` lleva cada
@@ -180,6 +181,10 @@ def asset_features(close, volume, market_close, filings):
     _require(
         close.ndim == 1 and close.shape == volume.shape == market_close.shape,
         "El cierre, el volumen y el mercado deben ser series de las mismas sesiones",
+    )
+    _require(
+        not any(np.isinf(values).any() for values in (close, volume, market_close)),
+        "Las series no admiten infinitos, las ausencias se representan con NaN",
     )
     _require(
         np.all(close[np.isfinite(close)] > 0)
