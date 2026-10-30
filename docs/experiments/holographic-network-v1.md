@@ -200,6 +200,19 @@ CUDA_VISIBLE_DEVICES=-1 uv run python benchmarks/holographic_network_cost.py --r
   --output "${MARS_HOLOGRAPHIC_COST:?}"
 ```
 
+La medida del 30 de octubre añade los dos modelos de 19 áreas que votan, con λ = 0,5 y con λ = 0. En esta medida hacen el mismo cálculo, porque λ solo entra en la pérdida del recorrido, así que la diferencia entre ellos mide el ruido. Los votos añaden 1.382 parámetros a los 53.379 de H1 con 19 áreas. Las condiciones son las de la medida anterior, con el [recibo](../../reports/engineering/area-predictions-20261030/cost-cpu.json) del commit `918100ca3`.
+
+| Pasada | Filas | H1 con 19 áreas | Votos con λ = 0,5 | Votos con λ = 0 |
+| --- | ---: | ---: | ---: | ---: |
+| Forward | 64 | 14,0 ms | 14,5 ms | 13,5 ms |
+| Forward | 256 | 56,1 ms | 53,6 ms | 44,4 ms |
+| Forward | 1.024 | 467,4 ms | 347,1 ms | 444,9 ms |
+| Backward | 64 | 37,7 ms | 44,0 ms | 38,9 ms |
+| Backward | 256 | 143,8 ms | 218,9 ms | 176,8 ms |
+| Backward | 1.024 | 664,1 ms | 489,1 ms | 692,8 ms |
+
+Son medianas. La media de carga del equipo estuvo entre 11 y 15 durante la medida. Las relaciones con H1 van de 0,74 a 1,52 según el tamaño y la pasada, cambian de signo entre tamaños y los dos modelos que calculan lo mismo difieren hasta un 30 %. Con ese ruido la medida no permite atribuir un coste a los votos. Por fila añaden una normalización de H componentes, un producto escalar por área presente y una softmax sobre las áreas presentes, poco frente a las rondas de la red. La medida se repetirá con la máquina libre.
+
 ## Pendiente
 
-Faltan los niveles 2 y 3, H5 a H7, `membership_embeddings_v1`, la medida CUDA, el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El acuerdo entre áreas de #787 leerá las predicciones por área cuando se integre en la criba. El aprendizaje sigue bloqueado y la variante no se activa por defecto.
+Faltan los niveles 2 y 3, H5 a H7, `membership_embeddings_v1`, la medida CPU de los votos con la máquina libre, la medida CUDA de [#816](https://github.com/GonxKZ/mars-titan/issues/816), el registro en el consumidor congelado y la comparación predictiva con las mismas filas, cortes y presupuesto. El acuerdo entre áreas de #787 leerá las predicciones por área cuando se integre en la criba. El aprendizaje sigue bloqueado y la variante no se activa por defecto.
