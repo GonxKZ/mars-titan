@@ -36,7 +36,7 @@ La predicción puntual sigue siendo μ. Con `rows` (inferencia de una partición
 
 $$q_\tau=\mu+b\log(2\tau)\ \ (\tau\le 1/2),\qquad q_\tau=\mu-b\log(2(1-\tau))\ \ (\tau>1/2).$$
 
-q₀,₅ es exactamente μ y los cinco valores son no decrecientes en coma flotante. `run_titans_window` los guarda en las columnas `quantile_*` del Parquet de predicciones, igual que la cabeza de cuantiles. A2 puede calibrarlos con CQR por mercado sin código nuevo. A1 usa μ. La escala se recupera como b = (q₀,₉ − q₀,₅)/log 5. El comparador de la criba todavía identifica las columnas de cuantiles por `output = quantile_head_v1`. Declarar estas columnas como cuantiles de Laplace queda para el protocolo de [#746](https://github.com/GonxKZ/mars-titan/issues/746).
+q₀,₅ es exactamente μ y los cinco valores son no decrecientes en coma flotante. `run_titans_window` los guarda en las columnas `quantile_*` del Parquet de predicciones, igual que la cabeza de cuantiles. A2 puede calibrarlos con CQR por mercado sin código nuevo. A1 usa μ. La escala se recupera como b = (q₀,₉ − q₀,₅)/log 5. La criba de [#746](https://github.com/GonxKZ/mars-titan/issues/746) lee las columnas `quantile_*` de cualquier tabla por su prefijo, sin mirar el tipo de cabeza, y aplica A2 sobre estos cuantiles con sus propios controles de igual cobertura.
 
 ## Desviaciones y límites
 
@@ -67,7 +67,7 @@ Sin declarar `laplace_scale_head`, `FinancialConfig.identity()` no cambia, el pr
 
 ## Controles
 
-La [declaración](../../configs/experiments/laplace-scale-head-v1.json) parte de la receta histórica con máscaras, con la cabeza escalar y la pérdida `mae`. El control es la misma receta sin cambios del predictor, es decir, el objetivo L1 con los mismos pasos. Las dos configuraciones son `mac_online`, están desactivadas por defecto y no acceden al test final. La variante se descarta si su MAE por sesión de μ no mejora al del control con el contraste de la criba. La utilidad de la escala para A2 se contrasta allí, frente a sus propios controles de igual cobertura.
+La [declaración](../../configs/experiments/laplace-scale-head-v1.json) parte de la receta histórica con máscaras, con la cabeza escalar y la pérdida `mae`. El control es la misma receta sin cambios del predictor, es decir, el objetivo L1 con los mismos pasos. Las dos configuraciones son `mac_online`, están desactivadas por defecto y no acceden al test final. En la criba, como el resto de variantes que pueden cambiar el orden dentro de una sesión, F1 se decide por el IC por sesión frente al control, y el MAE por sesión crudo y calibrado se publica como métrica secundaria. La utilidad de la escala para A2 se publica allí frente a sus propios controles de igual cobertura, sin entrar en la decisión.
 
 ## Coste medido
 
@@ -104,5 +104,4 @@ El [recibo de verificación](../../reports/engineering/scale-head-horizons-20261
 Queda pendiente:
 
 - La comprobación en `cuda:0`, que espera a que la GPU quede libre.
-- La declaración de los cuantiles de Laplace en el comparador de la criba de [#746](https://github.com/GonxKZ/mars-titan/issues/746).
 - Cualquier evaluación predictiva, que sigue bloqueada.
