@@ -35,7 +35,7 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import build_folds
-from mars_titan.models.baselines import momentum_reversal
+from mars_titan.models.baselines import momentum_reversal, qlib_lightgbm
 from mars_titan.models.baselines import same_inputs_lightgbm as lightgbm_control
 from mars_titan.models.titans.config import canonical
 
@@ -56,6 +56,7 @@ _CODE = (
     "mars_titan.training.common_control_windows",
     "mars_titan.models.baselines.momentum_reversal",
     "mars_titan.models.baselines.same_inputs_lightgbm",
+    "mars_titan.models.baselines.qlib_lightgbm",
     "mars_titan.training.corpus_inputs",
 )
 
@@ -276,7 +277,7 @@ def _saved_fit(output, seed, booster, scored):
         path,
         dict(
             seed=seed,
-            model=lightgbm_control.model_text(booster),
+            model=qlib_lightgbm.model_text(booster),
             series=[[values.tolist(), defined.tolist()] for values, defined in scored],
         ),
     )
@@ -294,7 +295,7 @@ def _loaded_fit(output, seed, record):
         (np.asarray(values, dtype=np.float64), np.asarray(defined, dtype=bool))
         for values, defined in document["series"]
     ]
-    return lightgbm_control.load(document["model"]), series
+    return qlib_lightgbm.load(document["model"]), series
 
 
 def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, report):
@@ -314,7 +315,7 @@ def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, re
         if str(seed) in saved:
             fits.append(_loaded_fit(output, seed, saved[str(seed)]))
             continue
-        booster, scored = lightgbm_control.fit(
+        booster, scored = qlib_lightgbm.fit(
             train, validation, config, seed, min_assets=min_assets, check_stop=check_stop
         )
         saved[str(seed)] = _saved_fit(output, seed, booster, scored)
@@ -381,7 +382,7 @@ def run_tabular_window(
     for seed, (booster, scored) in zip(seeds, fits, strict=True):
         folder = output / f"seed-{seed}"
         emitted = {
-            name: lightgbm_control.predict(booster, predicted[name].features, rounds)
+            name: qlib_lightgbm.predict(booster, predicted[name].features, rounds)
             for name in PREDICTED
         }
         # La validación emitida es la que eligió las rondas.
@@ -412,7 +413,7 @@ def run_tabular_window(
         output,
         report,
         selection=dict(chosen, rounds=rounds, checkpoint_rounds=config["checkpoint_rounds"]),
-        fit_rows=int(np.count_nonzero(lightgbm_control.session_labels(train.panel)[1])),
+        fit_rows=int(np.count_nonzero(qlib_lightgbm.session_labels(train.panel)[1])),
         train_rows=train.panel.rows,
         seeds=members,
     )

@@ -462,6 +462,152 @@
     "revision": "54355232463878d2eebb91fe0ee5fa7fa1f5976c"
   },
   {
+    "id": "jegadeesh1990evidence",
+    "title": "Evidence of Predictable Behavior of Security Returns",
+    "authors": [
+      "Narasimhan Jegadeesh"
+    ],
+    "year": 1990,
+    "url": "https://doi.org/10.1111/j.1540-6261.1990.tb05110.x",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Reversión de corto plazo de los rendimientos, antecedente de las características de reversión del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "ang2006volatility",
+    "title": "The Cross-Section of Volatility and Expected Returns",
+    "authors": [
+      "Andrew Ang",
+      "Robert J. Hodrick",
+      "Yuhang Xing",
+      "Xiaoyan Zhang"
+    ],
+    "year": 2006,
+    "url": "https://doi.org/10.1111/j.1540-6261.2006.00836.x",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Volatilidad idiosincrática medida con rendimientos diarios recientes, base de las características de volatilidad residual del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "gervais2001volume",
+    "title": "The High-Volume Return Premium",
+    "authors": [
+      "Simon Gervais",
+      "Ron Kaniel",
+      "Dan H. Mingelgrin"
+    ],
+    "year": 2001,
+    "url": "https://doi.org/10.1111/0022-1082.00349",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Prima de rentabilidad tras un volumen excepcional, base del choque de volumen del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "datar1998liquidity",
+    "title": "Liquidity and Stock Returns: An Alternative Test",
+    "authors": [
+      "Vinay T. Datar",
+      "Narayan Y. Naik",
+      "Robert Radcliffe"
+    ],
+    "year": 1998,
+    "url": "https://doi.org/10.1016/S1386-4181(97)00004-9",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Rotación como medida de liquidez, antecedente de la rotación relativa del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "george2004high",
+    "title": "The 52-Week High and Momentum Investing",
+    "authors": [
+      "Thomas J. George",
+      "Chuan-Yang Hwang"
+    ],
+    "year": 2004,
+    "url": "https://doi.org/10.1111/j.1540-6261.2004.00695.x",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Cercanía al máximo de 52 semanas, base de la distancia a ese máximo en el techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "bernard1989drift",
+    "title": "Post-Earnings-Announcement Drift: Delayed Price Response or Risk Premium?",
+    "authors": [
+      "Victor L. Bernard",
+      "Jacob K. Thomas"
+    ],
+    "year": 1989,
+    "url": "https://doi.org/10.2307/2491062",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref y OpenAlex comprobados. Ambos registran solo la primera página y el intervalo completo no se comprobó. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Deriva de los precios tras los anuncios de resultados, antecedente de las características de presentaciones del techo de señal, que solo aproximan la fecha del anuncio.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "hoerl1970ridge",
+    "title": "Ridge Regression: Biased Estimation for Nonorthogonal Problems",
+    "authors": [
+      "Arthur E. Hoerl",
+      "Robert W. Kennard"
+    ],
+    "year": 1970,
+    "url": "https://doi.org/10.1080/00401706.1970.10488634",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Regresión ridge, el modelo lineal del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
+    "id": "breiman2001forests",
+    "title": "Random Forests",
+    "authors": [
+      "Leo Breiman"
+    ],
+    "year": 2001,
+    "url": "https://doi.org/10.1023/A:1010933404324",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref comprobados. El texto completo no se consultó.",
+    "redistribution": "unknown",
+    "relevance": "Importancia de una variable como la pérdida al permutarla, base de la importancia por familias del techo de señal.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-28"
+  },
+  {
     "id": "abdi2017simple",
     "title": "A Simple Estimation of Bid-Ask Spreads from Daily Close, High, and Low Prices",
     "authors": [

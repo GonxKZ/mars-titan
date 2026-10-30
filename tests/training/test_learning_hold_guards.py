@@ -235,6 +235,13 @@ def _titans_window_script(tmp_path, monkeypatch):
     return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
 
 
+def _signal_ceiling_script(tmp_path, monkeypatch):
+    # Tras la guarda, el script lee primero su declaración.
+    main, double = _script("run_signal_ceiling.py", "read_declaration", monkeypatch)
+    arguments = ["--run", "--cohorts", str(tmp_path / "cohorts")]
+    return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
+
+
 ENTRY_POINTS = {
     "reference_run": _simple(
         "mars_titan.training.reference_run",
@@ -286,11 +293,25 @@ ENTRY_POINTS = {
             min_assets=3,
         ),
     ),
-    "same_inputs_lightgbm": _simple(
-        "mars_titan.models.baselines.same_inputs_lightgbm",
-        "checked_config",
+    "qlib_lightgbm": _simple(
+        "mars_titan.models.baselines.qlib_lightgbm",
+        "_checked_training",
         lambda m, out: m.fit(None, None, {}, 42, min_assets=3),
     ),
+    "session_ridge": _simple(
+        "mars_titan.models.baselines.session_ridge",
+        "_declares_training",
+        lambda m, out: m.fit(None, None, {}, min_assets=3),
+    ),
+    # Tras la guarda, el origen del techo comprueba primero su declaración.
+    "signal_ceiling": _simple(
+        "mars_titan.training.signal_ceiling",
+        "checked_declaration",
+        lambda m, out: m.run_origin(
+            out.with_name("v.json"), {"year": 2019, "fold": "fold-014"}, {}, out
+        ),
+    ),
+    "run_signal_ceiling": _signal_ceiling_script,
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",

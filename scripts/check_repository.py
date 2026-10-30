@@ -224,6 +224,13 @@ def main() -> int:
             errors.append(f"Referencia incompleta o fase inválida: {entry['id']}")
         if not entry["url"].startswith("https://"):
             errors.append(f"Referencia sin HTTPS: {entry['id']}")
+    # La portada de la biblioteca declara cuántas referencias reúnen los catálogos.
+    stated = re.findall(
+        r"\*\*(\d+) referencias bibliográficas\*\*",
+        (reference_dir / "README.md").read_text(encoding="utf-8"),
+    )
+    if stated != [str(len(entries))]:
+        errors.append(f"La biblioteca debe declarar una vez sus {len(entries)} referencias")
 
     plan = json.loads((ROOT / ".github/planning/issues.json").read_text(encoding="utf-8"))
     issues = {issue["id"]: issue for issue in plan["issues"]}

@@ -119,7 +119,8 @@ GUARDS = {
     ),
     "mars_titan.models.baselines.ridge:fit_ridge_blocks": ("fit_ridge_blocks",),
     "mars_titan.models.baselines.ridge:solve_ridge": ("solve_ridge",),
-    "mars_titan.models.baselines.same_inputs_lightgbm:fit": ("same_inputs_lightgbm",),
+    "mars_titan.models.baselines.qlib_lightgbm:fit": ("qlib_lightgbm",),
+    "mars_titan.models.baselines.session_ridge:fit": ("session_ridge",),
     # Corpus, búsquedas y campañas de referencia.
     "mars_titan.training.reference_run:run_reference_case": ("reference_run",),
     "mars_titan.training.reference_search:run_search": ("reference_search",),
@@ -129,6 +130,8 @@ GUARDS = {
     # Controles comunes de la criba de variantes (#746).
     "mars_titan.training.common_control_windows:run_rule_window": ("common_rule_window",),
     "mars_titan.training.common_control_windows:run_tabular_window": ("common_tabular_window",),
+    # Techo de señal con anomalías conocidas (#747).
+    "mars_titan.training.signal_ceiling:run_origin": ("signal_ceiling",),
     "mars_titan.training.tabular_search:run_tabular_search": ("tabular_search",),
     "mars_titan.training.external_corpus:run_external_reference": ("external_corpus",),
     "mars_titan.training.external_corpus:_execute": (
@@ -260,6 +263,7 @@ GUARDS = {
     "scripts.benchmark_adaptive_rl:main": ("benchmark_adaptive_rl",),
     "scripts.run_financial_comparators:main": ("run_financial_comparators",),
     "scripts.run_titans_walk_forward:main": ("run_titans_walk_forward",),
+    "scripts.run_signal_ceiling:main": ("run_signal_ceiling",),
 }
 
 # Funciones que registran un gancho de PyTorch que rechaza cualquier paso mientras miden. Solo

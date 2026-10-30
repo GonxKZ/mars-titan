@@ -360,10 +360,25 @@ DOUBLES = {
         "el ajuste que espera la época común, sin construir modelos ni ejecutar pasos de "
         "optimizador",
     ),
-    "tests/models/test_same_inputs_lightgbm.py": (
+    "tests/models/test_qlib_lightgbm.py": (
         1,
         "sustituye el módulo lightgbm por un doble que recorre las rondas y devuelve un booster "
         "de predicción fija, así que no estima ningún parámetro",
+    ),
+    "tests/models/test_session_ridge.py": (
+        1,
+        "sustituye `Ridge` de scikit-learn por un doble que predice una columna fija según su "
+        "alpha, así que no estima ningún coeficiente",
+    ),
+    "tests/training/test_signal_ceiling.py": (
+        1,
+        "Ridge y LightGBM son dobles de predicción fija sobre la vista corta del fixture, así "
+        "que el origen se recorre entero sin ajustar ningún modelo",
+    ),
+    "tests/training/test_signal_ceiling_cli.py": (
+        1,
+        "la verificación de las cohortes y cada origen son dobles que devuelven informes "
+        "sintéticos, así que el script solo une sus series",
     ),
     "tests/training/test_common_control_windows.py": (
         4,
