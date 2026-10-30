@@ -174,32 +174,45 @@ def test_restore_rejects_changed_bytes_and_inconsistent_counters_with_a_new_hash
             sb.CommittedWriteBudget.restore(prior.config, payload)
 
 
+def confirmed(publications):
+    _, state = budget(writes_per_market=1).select((row(),), cutoff=2, generation=1)
+    if publications == 2:
+        _, state = state.select((row("US/B", 2, 3),), cutoff=3, generation=2)
+    return state
+
+
+def rebuild(state, **changes):
+    fields = dict(
+        statistics=state.statistics,
+        generation=state.generation,
+        cutoff=state.cutoff,
+        last_observed=state.last_observed,
+        last_selected=state.last_selected,
+        instant_writes=dict(state.instant_writes),
+    )
+    return sb.CommittedWriteBudget(state.config, **(fields | changes))
+
+
 @pytest.mark.parametrize(
-    "instant_writes,last_selected",
+    "publications,changes",
     (
-        ({"UK": 1}, ()),
-        ({"US": 0}, ()),
-        ({"US": 2}, ()),
-        ({"US": True}, ()),
-        ([("US", 1)], ()),
-        ({"US": 1, "CN": 1}, ()),
-        ({}, (("US/A", 1),)),
+        (1, dict(instant_writes={"US": 1, "CN": 1}, last_selected=())),
+        (2, dict(instant_writes={"UK": 1, "US": 1})),
+        (2, dict(instant_writes={"US": 1, "CN": 0})),
+        (2, dict(instant_writes={"US": 2})),
+        (2, dict(instant_writes={"US": True})),
+        (2, dict(instant_writes=[("US", 1)])),
+        (2, dict(instant_writes={}, last_selected=(("US/B", 2),))),
     ),
 )
-def test_an_instant_quota_that_does_not_reconcile_is_rejected(instant_writes, last_selected):
-    _, prior = budget(writes_per_market=1).select((row(),), cutoff=2, generation=1)
+def test_an_instant_quota_that_does_not_reconcile_is_rejected(publications, changes):
+    state = confirmed(publications)
+    assert rebuild(state).export() == state.export()
+    assert dict(state.instant_writes) == {"US": 1}
     with pytest.raises(ValueError):
-        sb.CommittedWriteBudget(
-            prior.config,
-            statistics=prior.statistics,
-            generation=1,
-            cutoff=2,
-            last_observed=1,
-            last_selected=last_selected,
-            instant_writes=instant_writes,
-        )
+        rebuild(state, **changes)
     with pytest.raises(ValueError, match="concilian"):
-        sb.CommittedWriteBudget(prior.config, instant_writes={"US": 1})
+        sb.CommittedWriteBudget(state.config, instant_writes={"US": 1})
 
 
 def test_restore_rejects_a_resealed_instant_quota_and_the_previous_kind():

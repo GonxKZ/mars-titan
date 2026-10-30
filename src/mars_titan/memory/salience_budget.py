@@ -344,7 +344,6 @@ class CommittedWriteBudget:
             or (statistics.cursor is not None and statistics.cursor > cutoff)
             or not isinstance(last_selected, (list, tuple))
             or len(last_selected) > min(last_observed, statistics.selected)
-            or (generation == 0 and instant_writes)
             or sum(instant_writes.values()) > statistics.selected
         ):
             raise ValueError("La publicación y sus cuentas E3 no concilian")
