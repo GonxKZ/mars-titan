@@ -134,8 +134,20 @@ class AdaNormalHedge:
             and (prior > 0).all(),
             f"El prior necesita de 1 a {MAX_OPTIONS} pesos positivos y finitos",
         )
+        with np.errstate(over="ignore"):
+            total = prior.sum()
+        if np.isfinite(total):
+            normalized = prior / total
+        else:
+            # La suma no cabe en FP64. Dividir por el máximo conserva las proporciones.
+            scaled = prior / prior.max()
+            normalized = scaled / scaled.sum()
+        _require(
+            np.isfinite(normalized).all() and (normalized > 0).all(),
+            "No se puede representar el prior normalizado con pesos positivos en FP64",
+        )
         zeros = np.zeros(prior.size)
-        return cls(prior / prior.sum(), zeros, zeros.copy())
+        return cls(normalized, zeros, zeros.copy())
 
     @property
     def options(self):
