@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from mars_titan.data import correlation_regions
 from mars_titan.data.input_policy import MODALITIES
 from mars_titan.models.titans.config import bounded_integer
 from mars_titan.models.titans.financial_inputs import (
@@ -36,6 +37,7 @@ from . import (
     regional_session_work,
     regional_work,
     role_binding,
+    role_sources,
     salience_session,
     spaced_session,
     write_scores,
@@ -297,7 +299,9 @@ class FinancialSession(EpisodicSession):
                 (area_query_bridge, associative.query_bridge is not None),
                 (role_binding, associative.role_binding is not None),
                 (multiscale_mixture, associative.multiscale is not None),
-                (regimes, associative.role_binding is not None),
+                (regimes, associative.routing is not None),
+                (role_sources, associative.role_binding is not None),
+                (correlation_regions, associative.role_binding is not None),
                 (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
                 (
                     paired_proximal,
@@ -961,7 +965,7 @@ class FinancialSession(EpisodicSession):
                 else None
             )
             if not warmup:
-                # El régimen se calcula una vez con todas las filas del evento, como en la
+                # La ruta se calcula una vez con todas las filas del evento, como en la
                 # ventana. A de la generación anterior para todo el evento. Se emite núcleo más
                 # corrección.
                 routed = self.associative.routing is not None
@@ -969,6 +973,7 @@ class FinancialSession(EpisodicSession):
                     np.stack([r.inputs["prices"] for r in rows]) if routed else None,
                     [r.flow_id for r in rows],
                     cutoff,
+                    np.stack([r.presence for r in rows]) if routed else None,
                 )
                 keys = self.associative.keys(np.stack([r.key_inputs for r in rows]), event_routes)
                 if self.associative.multiscale is not None:

@@ -122,22 +122,25 @@ def run(parent, correction, sequence=None):
     return inference, metrics
 
 
-def oracle(parent, correction, inference, routes):
-    """Emisiones y A esperadas con la ruta de cada decisión guardada hasta su etiqueta."""
+def oracle(parent, correction, inference, routes, sequence=None):
+    """Emisiones y A esperadas con la ruta de cada decisión guardada hasta su etiqueta.
+
+    `routes` da para cada evento una ruta común o la de cada flujo.
+    """
     _, codec = parent
     core = {(f, at): value for kind, _, f, at, value in inference.audit if kind == "prediction"}
     memory, expected, pending, written = AssociativeMemory(correction.memory), {}, {}, 0
-    for event, route in zip(events(), routes, strict=True):
+    for event, route in zip(sequence or events(), routes, strict=True):
         staged = sorted(
             (at, flow, value - core[flow, at], *pending.pop((flow, at)))
             for flow, at, value in event.labels
         )
         inputs = np.array(codec.encode(validated_cpu_batch(event.inputs[0], SPEC)).key_inputs)
-        rows = np.full(len(FLOWS), route, dtype=np.int64)
+        rows = np.array(np.broadcast_to(np.asarray(route, dtype=np.int64), len(FLOWS)))
         reads = memory.read(correction.keys(inputs, rows))[:, 0].tolist()
-        for flow, key, read in zip(FLOWS, inputs, reads, strict=True):
+        for flow, key, read, own in zip(FLOWS, inputs, reads, rows.tolist(), strict=True):
             expected[flow, event.at] = core[flow, event.at] + read
-            pending[flow, event.at] = (key, route)
+            pending[flow, event.at] = (key, own)
         if staged:
             memory = memory.write(
                 correction.feedback(
