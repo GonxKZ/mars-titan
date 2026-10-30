@@ -107,6 +107,8 @@ _CODE = (
     "mars_titan.models.titans.huber_memory",
     "mars_titan.models.titans.scale_invariant_time",
     "mars_titan.models.titans.differential_attention",
+    "mars_titan.models.titans.plastic_bridge",
+    "mars_titan.memory.three_factor_bridge",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
 )
