@@ -151,7 +151,7 @@ def test_priority_uses_the_final_emission_and_the_write_value_still_uses_the_cor
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
-def test_partial_publications_at_one_cutoff_are_explicit_and_replays_are_rejected(
+def test_partial_publications_at_one_cutoff_share_its_quota_and_replays_are_rejected(
     shared_native, four_flow_source, frozen_consumer, tmp_path
 ):
     factor = SalienceBudgetConfig(writes_per_market=1)
@@ -164,7 +164,8 @@ def test_partial_publications_at_one_cutoff_are_explicit_and_replays_are_rejecte
         run.step([], labels[2:], kind="settlement", cutoff=moment(126))
         state, memory = details(run)
         assert state["generation"] == 3 and state["cutoff"] == moment(126)
-        assert state["statistics"]["selected"] == memory.writes == 2
+        assert state["statistics"]["selected"] == memory.writes == 1
+        assert state["instant_writes"] == {"US": 1} and state["last"]["selected"] == []
         assert run.snapshot()["applied"] == 4
         before = (run.output / "latest.json").read_bytes()
         with pytest.raises(ValueError):
