@@ -1,15 +1,17 @@
 {
- "protocol_sha256": "508b0ef514813fe498d6b6dd519848053e92219d69755adca073f4743e845271",
- "jobs": 2040,
+ "protocol_sha256": "332f7769dbe69b63cf5050d7b451ce2c83af8d524f12dc4a22eb7a9fbd55e09c",
+ "jobs": 2048,
  "cost": {
-  "jobs": 2040,
-  "hours": 166.53117596166254,
+  "jobs": 2048,
+  "hours": 173.1978426283293,
   "hours_by_runner": {
    "correction": 10.335751405239122,
    "correction_profile": 1.9876445010075292,
    "fit": 124.49666894430581,
    "reader": 16.977777777777778,
-   "spaced": 12.733333333333333
+   "rule": 0.6666666666666666,
+   "spaced": 12.733333333333333,
+   "tabular": 6.0
   },
   "budget_hours": 150,
   "within_budget": false,

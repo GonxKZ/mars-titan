@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 
 import pytest
 
+from mars_titan.models.baselines import same_inputs_lightgbm
 from mars_titan.training import variant_screening as screening
 from mars_titan.training.screening_cohorts import ORIGIN_FOLDS
 
@@ -116,16 +117,91 @@ def test_identical_definitions_are_a_single_job(jobs):
     assert len({job["id"] for job in jobs}) == len(jobs)
 
 
+COMMON = ("common_controls",)
+MODELS = (*COMMON, "models")
+
+
+def test_the_registered_common_controls_are_those_of_their_modules(protocol):
+    models = protocol["common_controls"]["models"]
+    assert tuple(models) == screening.COMMON and protocol["common_controls"]["date"] == "2026-10-28"
+    assert models["lightgbm"]["config"]["parameters"] == same_inputs_lightgbm.PARAMETERS
+    assert models["lightgbm"]["config"]["source"] == same_inputs_lightgbm.QLIB_SOURCE
+    assert models["momentum_reversal"]["config"]["reversal_sessions"] == 5
+    family = protocol["common_controls"]["family"]
+    assert family["role"] == "reported_outside_the_decisions" and family["metric"] == "session_ic"
+    assert {control for _, control in family["contrasts"]} == {
+        "past_median",
+        "momentum_reversal",
+        "lightgbm",
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ((*COMMON, "registered_before_opening_s"), False, "el cero, la mediana pasada"),
+        ((*MODELS, "lightgbm", "runner"), "fit", "el cero, la mediana pasada"),
+        ((*MODELS, "zero"), "cero", "el cero, la mediana pasada"),
+        ((*MODELS, "past_median", "identity"), "past_mean_v1", "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "lag_sessions"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "window"), 60.0, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 61, "mínimo de etiquetas"),
+        ((*MODELS, "past_median", "min_labels"), 0, "mínimo de etiquetas"),
+        ((*MODELS, "momentum_reversal", "config", "reversal_sessions"), 0, "sesiones de reversión"),
+        ((*MODELS, "lightgbm", "config", "max_rounds"), 500, "parámetros de Qlib"),
+        ((*MODELS, "lightgbm", "config", "checkpoint_rounds"), 7, "parámetros de Qlib"),
+        ((*COMMON, "family", "role"), "decision", "familia de los controles comunes"),
+        ((*COMMON, "family", "metric"), "sharpe", "familia de los controles comunes"),
+        ((*COMMON, "family", "contrasts"), [], "familia de los controles comunes"),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "scalar_reference"]],
+            "familia de los controles comunes",
+        ),
+        (
+            (*COMMON, "family", "contrasts"),
+            [["quantile_reference", "lightgbm"]] * 2,
+            "familia de los controles comunes",
+        ),
+        ((*COMMON, "family", "contrasts"), [["quantile_reference"]], "familia de los controles"),
+    ],
+)
+def test_the_common_controls_keep_their_declaration_and_their_own_family(
+    protocol, path, value, message
+):
+    with pytest.raises(ValueError, match=message):
+        screening.checked_protocol(_changed(protocol, path, value))
+
+
 def test_every_definition_runs_once_per_origin_and_seed(protocol, jobs):
-    counts = Counter(job["definition_sha256"] for job in jobs)
-    continued = {job["definition_sha256"] for job in jobs if job["continues"] is not None}
+    seeded = [job for job in jobs if job["seed"] is not None]
+    counts = Counter(job["definition_sha256"] for job in seeded)
+    continued = {job["definition_sha256"] for job in seeded if job["continues"] is not None}
     origins, seeds = len(protocol["origins"]), len(protocol["seeds"])
-    # Una continuación no tiene trabajo en el primer origen.
     assert {counts[key] for key in continued} == {(origins - 1) * seeds}
     assert {count for key, count in counts.items() if key not in continued} == {origins * seeds}
-    for job in jobs:
+    for job in seeded:
         assert job["id"].startswith(f"{job['origin']}-{job['seed']}-")
-        assert job["fold"] == ORIGIN_FOLDS[job["origin"]]
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and "seeds" not in job
+
+
+def test_each_common_control_with_a_job_runs_once_per_origin_for_every_seed(protocol, jobs):
+    origin = [job for job in jobs if job["seed"] is None]
+    assert Counter(job["definition"]["runner"] for job in origin) == {"rule": 4, "tabular": 4}
+    assert Counter(tuple(job["used_by"]) for job in origin) == {
+        ("common/momentum_reversal",): 4,
+        ("common/lightgbm",): 4,
+    }
+    models = protocol["common_controls"]["models"]
+    for job in origin:
+        name = job["used_by"][0].split("/")[1]
+        assert job["definition"] == dict(
+            runner=models[name]["runner"], config=models[name]["config"]
+        )
+        assert job["id"] == f"{job['origin']}-{job['definition_sha256'][:16]}"
+        assert job["fold"] == ORIGIN_FOLDS[job["origin"]] and job["seeds"] == protocol["seeds"]
+        assert job["parent"] is None and job["after"] is None and "common_group" not in job
+    assert {job["origin"] for job in origin} == set(ORIGIN_FOLDS)
 
 
 def test_every_job_runs_after_its_parent_and_its_matched_variant(protocol, jobs):
@@ -485,6 +561,9 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     reader = dict(
         id="c", origin=2019, definition=dict(runner="reader"), versions=[9], epoch_predictions=False
     )
+    # La regla y LightGBM cuestan su cota por origen, sin depender de las filas.
+    rule = dict(id="d", origin=2019, definition=dict(runner="rule"))
+    tabular = dict(id="e", origin=2019, definition=dict(runner="tabular"))
     reference = protocol["cost_reference"]
     epochs = protocol["fit"]["epochs"]
     inference = 1000 / reference["inference_rows_per_second"]
@@ -500,11 +579,15 @@ def test_the_cost_estimate_follows_its_formula(protocol):
     )
     expected_correction = 1500 / reference["inference_rows_per_second"]
     expected_reader = reference["reader_window_seconds"] + inference
-    result = screening.cost_estimate(protocol, [fit, correction, reader], rows)
-    total = expected_fit + expected_correction + expected_reader
+    result = screening.cost_estimate(protocol, [fit, correction, reader, rule, tabular], rows)
+    bounds = reference["rule_window_seconds"] + reference["tabular_window_seconds"]
+    total = expected_fit + expected_correction + expected_reader + bounds
     assert result["hours"] == pytest.approx(total / 3600)
     assert result["hours_by_runner"]["fit"] == pytest.approx(expected_fit / 3600)
     assert result["hours_by_runner"]["reader"] == pytest.approx(expected_reader / 3600)
+    for runner in ("rule", "tabular"):
+        expected = reference[f"{runner}_window_seconds"] / 3600
+        assert result["hours_by_runner"][runner] == pytest.approx(expected)
     assert result["within_budget"] is (result["hours"] <= protocol["budget"]["max_total_gpu_hours"])
 
 

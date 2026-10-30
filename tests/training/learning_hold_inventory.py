@@ -119,12 +119,16 @@ GUARDS = {
     ),
     "mars_titan.models.baselines.ridge:fit_ridge_blocks": ("fit_ridge_blocks",),
     "mars_titan.models.baselines.ridge:solve_ridge": ("solve_ridge",),
+    "mars_titan.models.baselines.same_inputs_lightgbm:fit": ("same_inputs_lightgbm",),
     # Corpus, búsquedas y campañas de referencia.
     "mars_titan.training.reference_run:run_reference_case": ("reference_run",),
     "mars_titan.training.reference_search:run_search": ("reference_search",),
     "mars_titan.training.temporal_search:run_temporal_search": ("temporal_search",),
     "mars_titan.training.reference_campaign:run_reference_campaign": ("reference_campaign",),
     "mars_titan.training.tabular_corpus:run_tabular_reference": ("tabular_corpus",),
+    # Controles comunes de la criba de variantes (#746).
+    "mars_titan.training.common_control_windows:run_rule_window": ("common_rule_window",),
+    "mars_titan.training.common_control_windows:run_tabular_window": ("common_tabular_window",),
     "mars_titan.training.tabular_search:run_tabular_search": ("tabular_search",),
     "mars_titan.training.external_corpus:run_external_reference": ("external_corpus",),
     "mars_titan.training.external_corpus:_execute": (
