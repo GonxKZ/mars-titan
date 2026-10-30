@@ -1,0 +1,576 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 783,
+ "status": "technical_verification_in_progress",
+ "implementation_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+ "parent_pr": 818,
+ "device": "cpu",
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "suites": [
+  {
+   "name": "compatibility_before_fix",
+   "tests": 3,
+   "failures": 2,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "d8e8ea4c9535a6708d1290a7a187c8ce0e250f0a294e43849dc852cc377ec3a3"
+  },
+  {
+   "name": "compatibility_after_fix",
+   "tests": 167,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7e66ff7dea45caaa07a335d7ac4428e889a5b9f578f59efc96f8919aa27e87c0"
+  },
+  {
+   "name": "integrated_cpu_with_coverage",
+   "tests": 899,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e544defaaf5e1b481495fe34fbb7a99ef3faaba8f5c6fe29ef25ae3f83e64830"
+  },
+  {
+   "name": "new_test_coverage",
+   "tests": 3,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7a2d8f0bd60d00e930ea5be99feb7142fec034bb6ffb0783227c46a18404c4ca"
+  },
+  {
+   "name": "device_tests_initial_fixture",
+   "tests": 6,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "158d454abd4a7b6048e22cd6095ec5e161c884a7f0c30e2af03fe07a1ed7eea1"
+  },
+  {
+   "name": "additional_cpu_tests",
+   "tests": 10,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "1a90266883ab3f1222ff6687aae4087501c0da9b4bfb306378b14cf3f7f3416b"
+  },
+  {
+   "name": "develop_merge",
+   "tests": 80,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "dbd96a9abd5602b950a024abba8d29232e0099fb0be23d60433380a4616a1865"
+  }
+ ],
+ "suite_counts": "Las selecciones se solapan y no se suman como casos distintos.",
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3911,
+   "covered_statements": 3156,
+   "branches": 1622,
+   "covered_branches": 1224
+  },
+  "files": [
+   {
+    "path": "benchmarks/holographic_network_cost.py",
+    "source_sha256": "b6416b1321bbfe052c4e256329b8ac25b40dbbafa3a6721670a2a45c1a6d8177",
+    "statements": 144,
+    "covered_statements": 127,
+    "branches": 50,
+    "covered_branches": 41
+   },
+   {
+    "path": "benchmarks/three_factor_bridge_cost.py",
+    "source_sha256": "9da7353adf10bff4f37d1b498e483bbae9145b1d41d6c9f14fe702bc882b26ef",
+    "statements": 141,
+    "covered_statements": 137,
+    "branches": 40,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/memory/mature_reliability.py",
+    "source_sha256": "dafd84f94cd9ae6f05860a9545924b788b1383d85aede5b95f8b2a5680c74ea9",
+    "statements": 123,
+    "covered_statements": 123,
+    "branches": 54,
+    "covered_branches": 54
+   },
+   {
+    "path": "src/mars_titan/memory/three_factor_bridge.py",
+    "source_sha256": "d7a8d1f5ef8050b492426bb2427d490ff5a34388ceb76b939bdabe12931966b3",
+    "statements": 159,
+    "covered_statements": 159,
+    "branches": 74,
+    "covered_branches": 74
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "2d91a2d41ede20dab23d9712925f3798f16cffe7ce3a6f7e47bcf6d172142ee5",
+    "statements": 980,
+    "covered_statements": 841,
+    "branches": 498,
+    "covered_branches": 376
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "9ff34336b5c88f4b0072b631929def9b34ba547f7410b7e628990049518b8802",
+    "statements": 221,
+    "covered_statements": 183,
+    "branches": 122,
+    "covered_branches": 87
+   },
+   {
+    "path": "src/mars_titan/models/titans/holographic_network.py",
+    "source_sha256": "536fb2a4fe02a807fa97193032f3429346a34db6bf6b235600d51bb8da226635",
+    "statements": 403,
+    "covered_statements": 403,
+    "branches": 142,
+    "covered_branches": 142
+   },
+   {
+    "path": "src/mars_titan/models/titans/plastic_bridge.py",
+    "source_sha256": "4c869993ef351774aaedd7c3c93c06b4c143e176163cdac6c55067c7b8a41212",
+    "statements": 48,
+    "covered_statements": 48,
+    "branches": 16,
+    "covered_branches": 16
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "25f824191a9a0b3a054933a4b409d3f009138e5bef00c9e1c099e6cd95145851",
+    "statements": 241,
+    "covered_statements": 53,
+    "branches": 84,
+    "covered_branches": 2
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "7c88f071c1933d42d08b879a5f3de7c34785e08bb0f944ed49dbaaa82a0fe789",
+    "statements": 1026,
+    "covered_statements": 950,
+    "branches": 442,
+    "covered_branches": 381
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "416fdb752a94d87f521ba02be848603089bc4d35f14de20233238ff66cbb229c",
+    "statements": 28,
+    "covered_statements": 19,
+    "branches": 14,
+    "covered_branches": 6
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "53cf9bffa2c4da23d41aa6b6d8fc0074499c26d709f70c2463e0b09eb389e46f",
+    "statements": 397,
+    "covered_statements": 113,
+    "branches": 86,
+    "covered_branches": 8
+   }
+  ],
+  "max_crap": 1056.0,
+  "quality_sha256": "92cd08e496834e26bb6222682dcf9c54e098588b6332371022a669d12d6a6484",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores.",
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C."
+ },
+ "changed": {
+  "base": "eb41f4c622afb29187c64ebf43bbaeb53d7ba9a1",
+  "head": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+  "functions": 76,
+  "max_crap": 942.1245780838999,
+  "changed_executable_lines": 547,
+  "changed_covered_lines": 544,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 139,
+    "crap": 942.1245780838999,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "function": "FinancialDustAdapter.__init__",
+    "cyclomatic_complexity": 20,
+    "crap": 196.91394017924625,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 63,
+    "crap": 90.61600976709241,
+    "changed_executable_lines": 12,
+    "changed_covered_lines": 12,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalInference._observe",
+    "cyclomatic_complexity": 44,
+    "crap": 44.242,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 40,
+    "crap": 41.02505227766616,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/three_factor_bridge_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 24,
+    "crap": 24.149793398379934,
+    "changed_executable_lines": 48,
+    "changed_covered_lines": 45,
+    "changed_missing_lines": [
+     222,
+     226,
+     227
+    ],
+    "changed_missing_branches": [
+     [
+      221,
+      222
+     ],
+     [
+      225,
+      226
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Diagnóstico de las funciones de producción cambiadas frente a la base fijada. Las convenciones de coverage.py y radon se conservan en el diagnóstico de calidad.",
+  "changed_sha256": "ffe78631633d4358569154db7ab6bd1f3757cfe88bbd72fed4c9a1a2d49183af"
+ },
+ "test_quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "functions": [
+   {
+    "path": "tests/models/titans/test_area_predictions.py",
+    "function": "test_zero_auxiliary_weight_does_not_preserve_shared_gradients_after_votes_change",
+    "start_line": 92,
+    "end_line": 105,
+    "cyclomatic_complexity": 4,
+    "statements": 11,
+    "covered_statements": 11,
+    "coverage_fraction": 1.0,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 4.0
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions.py",
+    "function": "test_area_predictions_and_p1_require_separate_controls",
+    "start_line": 79,
+    "end_line": 89,
+    "cyclomatic_complexity": 1,
+    "statements": 6,
+    "covered_statements": 6,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   }
+  ],
+  "scope": "Dos funciones nuevas de la revisión de compatibilidad, medidas por separado.",
+  "conventions": {
+   "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+   "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+   "crap_convention": "C² × (1 − cobertura de sentencias)³ + C."
+  }
+ },
+ "mutations": {
+  "tree_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+  "planned": 44,
+  "killed": 44,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "b50eb3b2024241963529ce8beb77ffcf749f14f212d9127e6fad0cf8383e2519",
+  "executor_sha256": "fba388e428eeaf0a820bc27f6eb32304fe51c9d2196535bff57f04d29dec5c92",
+  "source_sha256": {
+   "benchmarks/holographic_network_cost.py": "b6416b1321bbfe052c4e256329b8ac25b40dbbafa3a6721670a2a45c1a6d8177",
+   "src/mars_titan/training/financial_run.py": "7c88f071c1933d42d08b879a5f3de7c34785e08bb0f944ed49dbaaa82a0fe789",
+   "src/mars_titan/models/titans/financial.py": "2d91a2d41ede20dab23d9712925f3798f16cffe7ce3a6f7e47bcf6d172142ee5",
+   "src/mars_titan/models/titans/holographic_network.py": "536fb2a4fe02a807fa97193032f3429346a34db6bf6b235600d51bb8da226635"
+  },
+  "cases": [
+   "weight_upper_bound",
+   "weight_lower_bound",
+   "weight_type",
+   "h3_accepts_votes",
+   "identity_keeps_none",
+   "identity_without_loss",
+   "parse_refuses_old_declarations",
+   "vote_weight_not_zero",
+   "vote_bias_not_zero",
+   "vote_logits_not_equal",
+   "vote_counts_use_nodes",
+   "votes_without_declaration",
+   "vote_without_norm",
+   "vote_without_bias",
+   "absent_areas_vote",
+   "empty_rows_only_minus_infinity",
+   "empty_rows_keep_weights",
+   "readout_over_absent_areas",
+   "votes_read_initial_states",
+   "shift_is_plain_mean",
+   "config_accepts_quantiles",
+   "config_accepts_objectives",
+   "predictor_flag_inverted",
+   "reference_keeps_graph",
+   "area_predictions_use_shift",
+   "output_without_shift",
+   "trainer_ignores_weight",
+   "graph_order_swapped",
+   "split_counts_every_area",
+   "mae_squares",
+   "mse_absolute",
+   "huber_fixed_delta",
+   "empty_rows_divide_by_zero",
+   "pooled_mean_over_areas",
+   "term_without_share",
+   "counter_overwritten",
+   "backward_without_term",
+   "replay_without_term",
+   "cost_without_shift",
+   "cost_votes_differ_by_arm",
+   "cost_drops_the_output",
+   "cost_skips_the_votes",
+   "area_predictions_accept_p1",
+   "zero_area_weight_accepts_p1"
+  ],
+  "summary_sha256": "89e8a5110640e4e96d47ea2aa6da1b05d48408c391bc8fcf5191d828186f0606",
+  "scope": "42 defectos históricos de los votos por área y dos de su incompatibilidad con P1, con G1 verde, M1 rojo y G2 verde en copia aislada. No es una puntuación de mutación global.",
+  "additional": [
+   {
+    "tree_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "11c92abe109ae75e8e06b5ae30b919250eb29efb7004e3ed2fcdbff16e861c55",
+    "executor_sha256": "fba388e428eeaf0a820bc27f6eb32304fe51c9d2196535bff57f04d29dec5c92",
+    "source_sha256": {
+     "src/mars_titan/memory/three_factor_bridge.py": "d7a8d1f5ef8050b492426bb2427d490ff5a34388ceb76b939bdabe12931966b3"
+    },
+    "cases": [
+     "plasticity_accepts_unparsed_configuration"
+    ],
+    "summary_sha256": "efaa5e8be3a61b467bc3b5ef89abd4b9d456999de9c40cf28ae1cf677dadfd58",
+    "scope": "Un defecto adicional en la exigencia de configuración tipada de BridgePlasticity."
+   }
+  ],
+  "total_unique": 45
+ },
+ "checks": {
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "repository": "passed"
+ },
+ "importer_audit": {
+  "total": 394,
+  "covered_by_targeted_suite": 41,
+  "remaining": 353,
+  "training": 82,
+  "other": 271,
+  "status": "queued_after_issue_747",
+  "note": "Regresión por tandas y procesos nuevos entre ellas, después de #747. El grafo estático no acredita detectar toda importación dinámica.",
+  "source_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+  "source_manifest_sha256": "0b816e8fce89f9db8fd9d38ad9724f1037ad763db02af625c0e7d08402706b9a",
+  "batch_modules": 8,
+  "workers": 2,
+  "memory_limit_bytes": 6442450944
+ },
+ "limits": [
+  "Falta la regresión de los importadores no cubiertos por la selección dirigida.",
+  "Faltan las comprobaciones CUDA y el coste de esta revisión en CUDA, recogidos en #816.",
+  "La integración en develop depende de P1, PR #818.",
+  "Los niveles 2 y 3, H5 a H7 y los embeddings de pertenencia siguen pendientes en #783.",
+  "No hay una mejora predictiva medida. El aprendizaje y el test final permanecen bloqueados.",
+  "FinancialConfig.__post_init__ mantiene complejidad ciclomática 139 y CRAP 942,1246 en esta selección. Su separación por componentes sigue pendiente en #801."
+ ],
+ "device_test_mutations": {
+  "tree_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+  "planned": 2,
+  "killed": 2,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "67e087adca48d0c886bbbbb238130675e0e225960e5654511b460b6745a4519e",
+  "executor_sha256": "fba388e428eeaf0a820bc27f6eb32304fe51c9d2196535bff57f04d29dec5c92",
+  "source_sha256": {
+   "tests/models/titans/test_area_predictions_devices.py": "88980709d6db6a6a1727853dd50e10aa72c6aa6a08d40282be8fd7f7880fad75"
+  },
+  "cases": [
+   "recovery_is_not_loaded",
+   "recovery_only_exercises_zero_votes"
+  ],
+  "summary_sha256": "2fe8891578eb41238ebeec36eb29d783cfd8f7facfad2fe4d2e8f6d8aa447c88",
+  "scope": "Dos defectos en el código de prueba, para exigir recuperación y votos no nulos. Se informan aparte de las 45 mutaciones de producción."
+ },
+ "device_and_config_test_quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "functions": [
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "read_with_gradients",
+    "start_line": 47,
+    "end_line": 60,
+    "cyclomatic_complexity": 7,
+    "statements": 13,
+    "covered_statements": 13,
+    "coverage_fraction": 1.0,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 7.0
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "test_initial_votes_preserve_the_task_and_shared_gradients_on_the_device",
+    "start_line": 105,
+    "end_line": 121,
+    "cyclomatic_complexity": 5,
+    "statements": 15,
+    "covered_statements": 14,
+    "coverage_fraction": 0.9333333333333333,
+    "branches": 4,
+    "covered_branches": 3,
+    "crap": 5.007407407407407
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "test_nonzero_votes_and_gradients_survive_recovery_on_the_device",
+    "start_line": 65,
+    "end_line": 82,
+    "cyclomatic_complexity": 4,
+    "statements": 16,
+    "covered_statements": 16,
+    "coverage_fraction": 1.0,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 4.0
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "test_a_row_without_areas_has_zero_shift_and_finite_gradients_on_the_device",
+    "start_line": 86,
+    "end_line": 100,
+    "cyclomatic_complexity": 4,
+    "statements": 12,
+    "covered_statements": 12,
+    "coverage_fraction": 1.0,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 4.0
+   },
+   {
+    "path": "tests/memory/test_three_factor_bridge.py",
+    "function": "test_the_state_requires_a_parsed_configuration",
+    "start_line": 41,
+    "end_line": 45,
+    "cyclomatic_complexity": 2,
+    "statements": 4,
+    "covered_statements": 4,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "inputs_on",
+    "start_line": 37,
+    "end_line": 44,
+    "cyclomatic_complexity": 2,
+    "statements": 2,
+    "covered_statements": 2,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "tests/models/titans/test_area_predictions_devices.py",
+    "function": "strict_precision",
+    "start_line": 18,
+    "end_line": 34,
+    "cyclomatic_complexity": 1,
+    "statements": 10,
+    "covered_statements": 10,
+    "coverage_fraction": 1.0,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   }
+  ],
+  "limits": "Solo se han ejecutado los casos CPU. Seis casos CUDA quedan pendientes, con tolerancias fijadas antes de ejecutarlos.",
+  "conventions": {
+   "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+   "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+   "crap_convention": "C² × (1 − cobertura de sentencias)³ + C."
+  }
+ },
+ "runtime": {
+  "python": "3.12.14",
+  "pytorch": "2.14.0+cu130",
+  "system": "Linux",
+  "machine": "x86_64",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "ram_bytes": 32313376768,
+  "targeted_memory_limit_bytes": 3221225472,
+  "cuda_executed": false,
+  "precision": "Fixtures CPU en FP32 o FP64 según su prueba. La matriz nueva de dispositivos usa FP32 estricto.",
+  "timing_scope": "El tiempo JUnit corresponde a pruebas técnicas con otras aplicaciones activas, no a latencia del predictor."
+ },
+ "suite_reference_commit": "ba0e3d068f77ab07f9a090b33ee16d0ae07993a6",
+ "suite_source_note": "Las doce fuentes de producción mantienen sus huellas desde la selección de 899 casos hasta esta integración. Los diez casos adicionales se ejecutaron después, con seis de dispositivos y cuatro del constructor. Las selecciones de depuración y de la integración se solapan y se informan por separado.",
+ "additional_test_scope": {
+  "cpu_cases": 10,
+  "cuda_cases_not_executed": 6,
+  "initial_fixture_failure": "Un caso inicial de la prueba de fila sin áreas usaba getattr con el nombre de un parámetro anidado. Se conserva su fallo y se corrigió el acceso a named_parameters, sin cambiar el modelo."
+ }
+}

@@ -40,6 +40,7 @@ def source_reader(variant):
             axial_time_region=None,
             mature_reliability=None,
             fractal_shared_operator=None,
+            three_factor_bridge=None,
         )
     )
     # La receta decide si F2 y F3 añaden su código.

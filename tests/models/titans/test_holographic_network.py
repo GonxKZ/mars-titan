@@ -181,9 +181,12 @@ def single_encoders(encoders):
     return copy.deepcopy(encoders).float()
 
 
-def reference(net, blocks, presence, inputs, encoders):
-    """Las ecuaciones del módulo fila a fila, nodo a nodo y bloque a bloque."""
+def reference(net, blocks, presence, inputs, encoders, final=None, *, bias=None):
+    """Ecuaciones fila a fila, con estados finales opcionales y trazas cuando hay sesgo P1."""
     config, layout, width = net.config, net.layout, net.hidden_size
+    plastic = {edge: index for index, edge in enumerate(net.plastic_edges)}
+    traces = None if bias is None else blocks.new_zeros(len(blocks), len(plastic))
+    steps = config.cycles * config.local_steps
     areas, slots = config.catalog_areas, config.hidden_groups
     owners = [b for b, members in enumerate(layout.members) for _ in members]
     if areas:
@@ -246,9 +249,16 @@ def reference(net, blocks, presence, inputs, encoders):
                         updated.append(state)
                         continue
                     seen = [j for j in range(len(local)) if net.edges[i, j] and alive[j]]
-                    weights = torch.softmax(
-                        torch.stack([q[i] @ k[j] / math.sqrt(width) for j in seen]), 0
-                    )
+                    logits = []
+                    for j in seen:
+                        logit = q[i] @ k[j] / math.sqrt(width)
+                        if bias is not None and (i, j) in plastic:
+                            logit = logit + bias[r, plastic[i, j]]
+                        logits.append(logit)
+                    weights = torch.softmax(torch.stack(logits), 0)
+                    for w, j in zip(weights, seen, strict=True):
+                        if traces is not None and (i, j) in plastic:
+                            traces[r, plastic[i, j]] += w.detach() / steps
                     message = sum(w * v[j] for w, j in zip(weights, seen, strict=True))
                     updated.append(state + config.local_gain * net.local_out(message))
                 local = updated
@@ -257,6 +267,8 @@ def reference(net, blocks, presence, inputs, encoders):
                 update = net.summary_update(net.summary_norm(summary) + pooled)
                 summary = summary + config.summary_gain * update
                 context = net.summary_to_local(summary)
+        if final is not None:
+            final.append((local[:areas], alive[:areas]))
         change = [after - before for after, before in zip(local, initial, strict=True)]
         for m, modality in enumerate(MODALITIES):
             if not presence[r, m]:
@@ -271,7 +283,7 @@ def reference(net, blocks, presence, inputs, encoders):
                     delta = delta + combine[b][s] * change[areas + s]
                 total = total + delta
             result[r, m] = blocks[r, m] + net.readout(total / len(owned))
-    return result
+    return result if bias is None else (result, traces)
 
 
 # Variantes de la configuración que recorren las demás ramas del puente.
@@ -789,6 +801,7 @@ def test_the_source_and_its_catalog_enter_the_trainer_identity_only_when_active(
                 fractal_shared_operator=None,
                 holographic_network=config,
                 mature_reliability=None,
+                three_factor_bridge=None,
             )
         )
         code = trainer._code()
