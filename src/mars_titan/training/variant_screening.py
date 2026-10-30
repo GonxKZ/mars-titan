@@ -392,7 +392,18 @@ def entry_arms(protocol, name, root=ROOT):
         parent = _parented(entry, references, runner)
         for arm in document["arms"]:
             arms[arm] = dict(runner="spaced", study=entry["declaration"], arm=arm, parent=parent)
-    return {arm: Arm(name, arm, definition) for arm, definition in arms.items()}
+    # Un modelo declarado que la población de la criba no puede informar queda fuera, con su
+    # motivo. A diferencia de `pending_arms`, vale para cualquier ejecutor y no espera código.
+    excluded = entry.get("excluded_arms", {})
+    _require(
+        isinstance(excluded, dict)
+        and set(excluded) <= set(arms)
+        and all(isinstance(reason, str) and reason.strip() for reason in excluded.values()),
+        f"{name} solo excluye modelos que declara, cada uno con su motivo",
+    )
+    return {
+        arm: Arm(name, arm, definition) for arm, definition in arms.items() if arm not in excluded
+    }
 
 
 def reference_arms(protocol):
@@ -650,6 +661,15 @@ def pending(protocol):
         for arm in entry.get("pending_arms", ()):
             rows.append(dict(entry=name, arm=arm, status="pending_arm"))
     return rows
+
+
+def excluded(protocol):
+    """Modelos declarados que la criba deja fuera a propósito, con su motivo."""
+    return [
+        dict(entry=name, arm=arm, reason=reason)
+        for name, entry in protocol["catalog"].items()
+        for arm, reason in entry.get("excluded_arms", {}).items()
+    ]
 
 
 def cost_estimate(protocol, jobs, rows):

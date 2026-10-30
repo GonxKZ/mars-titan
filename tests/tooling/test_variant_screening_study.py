@@ -350,6 +350,7 @@ def test_plan_estimates_the_cost_from_the_cohorts(cohorts):
     assert result["jobs"] == result["cost"]["jobs"] > 0
     assert result["cost"]["estimate"] == "pilot_measurements_not_a_measured_screening_cost"
     assert {row["entry"] for row in result["pending"]} >= {"C2", "C3", "G1"}
+    assert result["excluded"] == variant_screening.excluded(variant_screening.load_protocol())
     approximate = study.plan()
     assert approximate["jobs"] == result["jobs"]
     assert study.origin_rows()[2019] == study.DEFAULT_ROWS

@@ -417,6 +417,39 @@ def test_a_pending_arm_is_left_out_and_the_others_keep_their_definition(protocol
     assert all(arms[arm] == complete[arm] for arm in arms)
 
 
+@pytest.mark.parametrize(("entry", "arm"), [("B3", "linear_bound"), ("C5", "reference")])
+def test_an_excluded_arm_is_left_out_with_its_reason_and_the_others_keep_their_jobs(
+    protocol, jobs, entry, arm
+):
+    complete = screening.entry_arms(protocol, entry)
+    changed = _changed(protocol, ("catalog", entry, "excluded_arms"), {arm: "Motivo de la prueba"})
+    arms = screening.entry_arms(changed, entry)
+    assert set(arms) == set(complete) - {arm} and all(arms[a] == complete[a] for a in arms)
+    assert screening.excluded(changed) == [dict(entry=entry, arm=arm, reason="Motivo de la prueba")]
+    assert screening.excluded(protocol) == [] and screening.pending(changed) == screening.pending(
+        protocol
+    )
+    labels = {label for job in screening.screening_jobs(changed) for label in job["used_by"]}
+    before = {label for job in jobs for label in job["used_by"]}
+    assert labels == before - {f"{entry}/{arm}"}
+    # Un contraste que nombra el modelo excluido no se puede resolver.
+    with pytest.raises(ValueError, match=arm):
+        screening.contrasts(changed)
+
+
+@pytest.mark.parametrize(
+    "excluded",
+    [{"unknown_arm": "motivo"}, {"linear_bound": ""}, {"linear_bound": "  "}, {"linear_bound": 1}],
+)
+def test_an_exclusion_names_a_declared_arm_and_its_reason(protocol, excluded):
+    changed = _changed(protocol, ("catalog", "B3", "excluded_arms"), excluded)
+    with pytest.raises(ValueError, match="excluye"):
+        screening.entry_arms(changed, "B3")
+    listed = _changed(protocol, ("catalog", "B3", "excluded_arms"), ["linear_bound"])
+    with pytest.raises(ValueError, match="excluye"):
+        screening.entry_arms(listed, "B3")
+
+
 def test_the_parent_of_a_continuation_is_not_a_seed_mean(protocol, monkeypatch):
     original = screening._declaration
 

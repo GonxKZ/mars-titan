@@ -105,6 +105,7 @@ def plan(cohorts=None):
         jobs=len(jobs),
         cost=variant_screening.cost_estimate(protocol, jobs, origin_rows(cohorts)),
         pending=variant_screening.pending(protocol),
+        excluded=variant_screening.excluded(protocol),
         contrasts=len(variant_screening.contrasts(protocol, ROOT)),
     )
 
