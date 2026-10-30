@@ -111,7 +111,17 @@ La regla puede aumentar el error incluso con un tercer factor positivo. En una a
 
 ## Comprobación técnica
 
-Pendiente de la verificación final.
+La comprobación del 30 de octubre en `64425c06f` terminó con 1.015 pruebas dirigidas aprobadas, dos omitidas y ocho casos CUDA fuera de la selección. Las regresiones de sus importadores dieron 1.847 aprobadas y 41 omitidas en `training`, y 5.412 aprobadas y 124 omitidas en los demás módulos. En este último grupo, 85 omisiones corresponden al bloqueo de aprendizaje, 30 al ejecutable PPO ausente y nueve a la biblioteca de simulación ausente. Las suites se solapan y sus recuentos no se suman como pruebas distintas.
+
+Después de fusionar H4 y el determinismo de las recetas desde `develop`, se completó un fixture de H4 al que faltaba el campo de P1. También se corrigió el desbordamiento de la suma de errores finitos cuando su media sí cabe en FP64. La selección final en `5f76a2ba9`, con el enlace episódico nativo declarado, dio 236 aprobadas y ninguna omisión. Comprueba la regla de memoria, la lectura y las trazas, el recorrido cronológico, H4, el determinismo y la composición de opciones. No se ha repetido toda la regresión anterior sobre este último commit.
+
+Las mutaciones históricas detectan 171 defectos dirigidos, tras repetir dos casos con pruebas reforzadas. Esas repeticiones sustituyen sus resultados iniciales y no añaden casos. La integración añade una mutación del registro condicional de fuentes H4 y otra que retira la corrección del desbordamiento. Ambas pasan G1 y G2, fallan en M1 con el defecto esperado y registran cero intentos de optimizador. Es una selección dirigida de defectos, no una puntuación de mutación de todo el proyecto.
+
+La cobertura y el CRAP principales corresponden al árbol `64425c06f`: 57 funciones cambiadas medidas, ninguna sin medir y un máximo de 1.934,23 en `FinancialConfig.__post_init__`. Esa función previa está parcialmente cubierta, aunque su única línea cambiada sí se ejecutó. CRAP usa complejidad de Radon y cobertura de sentencias por región de coverage.py. La comprobación posterior del módulo de memoria tiene 158 de 159 sentencias y 73 de 74 ramas cubiertas. La función `_update`, que contiene la corrección numérica, tiene sus 24 sentencias y seis ramas cubiertas, complejidad 10 y CRAP 10. Estas cifras localizan límites de las pruebas y no demuestran ausencia de errores. La separación de la validación de `FinancialConfig` sigue en [#801](https://github.com/GonxKZ/mars-titan/issues/801).
+
+La corrección numérica conserva `fsum(errores) / n` cuando la suma cabe. Si desborda, divide primero por el mayor error y calcula la media en esa escala. Para errores finitos no negativos, la media está entre cero y ese máximo. No se recortan los errores ni se sustituyen valores no finitos. Las pruebas incluyen cero, el mínimo subnormal, `1e308` y el mayor FP64 finito.
+
+El [recibo de verificación](../../reports/engineering/three-factor-bridge-20261030/verification.json) conserva commits, recuentos, omisiones, fases fallidas anteriores, huellas de fuentes y alcance de cada medida. Ruff, formato y comprobación del repositorio pasaron. No se ejecutaron entrenamientos, evaluaciones científicas ni pasos reales de optimizador. La protección del aprendizaje conserva su huella y el test final sigue cerrado. La ruta CUDA continúa pendiente en [#816](https://github.com/GonxKZ/mars-titan/issues/816).
 
 ## Coste
 
