@@ -225,7 +225,12 @@ class BridgePlasticity:
         factor = np.where(total > config.budget, config.budget / np.maximum(total, 1e-300), 1.0)
         state["weights"] = weights * factor[self._targets]
         if config.source != MATURE_DIRECTIONAL_HIT:
-            error = math.fsum(error for _, error, _, _ in labels) / count
+            try:
+                error = math.fsum(error for _, error, _, _ in labels) / count
+            except OverflowError:
+                # La media cabe aunque su suma no quepa. La ruta habitual conserva su redondeo.
+                scale = max(error for _, error, _, _ in labels)
+                error = (math.fsum(error / scale for _, error, _, _ in labels) / count) * scale
             if state["expected"] is None:
                 state["expected"] = error
             else:

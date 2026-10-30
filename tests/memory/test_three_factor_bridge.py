@@ -47,6 +47,22 @@ def test_the_first_event_only_sets_the_expectation():
     assert plastic.keys() == []
 
 
+@pytest.mark.parametrize(
+    "error", [0.0, math.ulp(0.0), 1e308, float.fromhex("0x1.fffffffffffffp+1023")]
+)
+def test_finite_errors_have_a_finite_mean_even_when_their_sum_overflows(error):
+    plastic = bridge()
+    flows = ("US/A", "US/B", "US/C")
+    held(plastic, [(flow, 1, FIRST) for flow in flows])
+    plastic.settle([(flow, 1, 0.0, error) for flow in flows])
+    state = plastic._markets["US"]
+    assert state["expected"] == error
+    assert math.isfinite(state["expected"])
+    assert not state["weights"].any()
+    assert state["delta_count"] == 3 and state["events"] == 1
+    assert plastic.keys() == []
+
+
 def test_a_later_event_follows_the_rule_written_by_hand():
     plastic = bridge(learning_rate=0.5)
     opening(plastic)
