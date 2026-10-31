@@ -71,4 +71,8 @@ El calentamiento puede actualizar la memoria neuronal con su contexto y no emite
 
 Las pruebas nativas utilizan cuatro activos ficticios, supervisión manual y escalas manuales en M3. Comprueban bloques de uno y cuatro activos, lectura de un banco no vacío, etiquetas maduras, recuperación, calentamiento y publicación interrumpida. Con ganancia inicial nula, la secuencia nativa conserva exactamente las predicciones de la referencia con el mismo tamaño de bloque. No son resultados predictivos reales.
 
+El [recibo de sesión](../../reports/engineering/dendritic-session-20261031/verification.json) conserva la regresión de 350 casos CPU sin omisiones, con 53 CUDA excluidos, y sus ampliaciones. Hay 352 identificadores de caso distintos entre las selecciones. Algunas pruebas se repiten o se amplían, por lo que sus recuentos no se suman como casos nuevos. Se detectaron catorce mutaciones adicionales con controles G1/M1/G2 verdes, sin intentos de optimizador.
+
+Los módulos `dendritic_context`, `dendritic_regime` y `dendritic_session` cubren, en conjunto, sus 206 sentencias y 56 ramas. Las 32 funciones cambiadas están medidas. La cobertura de los archivos existentes sigue siendo parcial y el CRAP máximo es 212,82 en el constructor del consumidor de mecanismos. El enlace nativo utilizado es el existente, identificado por su SHA-256. No se atribuye una compilación nueva ni una comprobación CUDA a esos resultados.
+
 Quedan el consumidor de mecanismos, E2 y otras composiciones aún no comprobadas, CUDA, el coste del recorrido completo y la integración en el estudio científico. El control local C sigue rechazándose porque necesita una comparación sobre el operador modulado real. No se cierra N2 ni la issue de N1, N2 y BDH. No hay mejora predictiva medida.

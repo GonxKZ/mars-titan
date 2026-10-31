@@ -1,0 +1,306 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "durable_m0_m3_cpu_verified_cuda_and_compositions_pending",
+ "implementation_commit": "78590012c532b97108281aa5a72b06c6214483a8",
+ "base_commit": "c5e45ce7d2bca4cd103e7e1d56638a5d68a68aba",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "device": "cpu",
+ "distinct_test_case_identifiers": 352,
+ "scope": "N2 con una asignación de toda la cohorte, vistas vinculadas a bloques CPU y metadatos publicados en el control nativo de la generación.",
+ "limits": [
+  "Las selecciones se solapan y algunas pruebas se ampliaron después de la pasada principal. No se suman sus recuentos como casos nuevos.",
+  "La selección principal excluye 53 casos CUDA. El caso CUDA nuevo también está preparado y excluido, sin ejecución GPU.",
+  "Los fixtures tienen cuatro activos, supervisión manual y escalas manuales en M3. No son datos ni resultados predictivos reales.",
+  "La paridad exacta de ganancia cero usa el mismo tamaño de bloque. La comparación de bloques 1/4 usa la tolerancia técnica FP64 de 1e-12.",
+  "No se midieron latencia integral, RAM/VRAM, energía ni mejora predictiva.",
+  "El consumidor de mecanismos, E2, otras composiciones y el contraste con C siguen pendientes y se rechazan cuando no están registrados.",
+  "La API de contexto devuelve solo la generación actual. No introduce un archivo histórico completo ni serializa vistas Python.",
+  "El contexto se prepara en CPU antes de transferir los bloques. No se afirma una aceleración sin medidas.",
+  "Las clases existentes conservan cobertura parcial. La cobertura completa de los módulos nuevos no garantiza ausencia de defectos."
+ ],
+ "suites": [
+  {
+   "name": "native_and_existing_financial_regression",
+   "tests": 350,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7a78339bc4117f783d430f4503a2e40e040ca3a505249f36d1fff0082f786c3c",
+   "note": "350 CPU aprobados sin omisiones. 53 casos CUDA excluidos. Incluye controles anteriores, GRU y mecanismos."
+  },
+  {
+   "name": "bound_context_and_native_extension",
+   "tests": 31,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "32ca5f03224401d5a4346d012c024afda04457dd84f357c94a798f1e3fb8514c",
+   "note": "31 CPU sin omisiones. Se solapa con la anterior y añade el caso de frontera de arrays."
+  },
+  {
+   "name": "regime_source_is_pinned",
+   "tests": 1,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a16eff4ade86fc09e01b1b5b5855450b05ee1944850588fd3a8e024897dffc81",
+   "note": "Un caso CPU adicional con archivo fuente real distinto y verificación fuerte."
+  },
+  {
+   "name": "bundle_trace_gate",
+   "tests": 1,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "55cd9a7c6db670125edda27b8cd36f6936cf7bf9250822b2d94f4ba25974eb40",
+   "note": "Repite el caso de traza con una comprobación de bundle ampliada. No es un caso nuevo."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2982,
+   "covered_statements": 2190,
+   "branches": 1376,
+   "covered_branches": 840
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/dendritic_session.py",
+    "source_sha256": "f46329305e249ac868c5ff5d3ae5a2b62adb776e7d7d463b1e74dab29a102560",
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/memory/financial_consumers.py",
+    "source_sha256": "53e74de6759ce17240b4da2db95ca00b75d21f3ff3a64563bcf5d6b24168cd76",
+    "statements": 257,
+    "covered_statements": 200,
+    "branches": 96,
+    "covered_branches": 56
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "source_sha256": "1328e2edbeb8d2ead5418a68860fe8484cba369c0f19aa1485ffecf6e5a060af",
+    "statements": 776,
+    "covered_statements": 474,
+    "branches": 386,
+    "covered_branches": 179
+   },
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "source_sha256": "96f587e15a329711017c438b5ec875c8282ed2c767b3247cc13953aee2149aee",
+    "statements": 167,
+    "covered_statements": 44,
+    "branches": 44,
+    "covered_branches": 0
+   },
+   {
+    "path": "src/mars_titan/models/titans/dendritic_context.py",
+    "source_sha256": "99ca0206156cf36d2a209ad61f6698d5835650b37a06c4e9f415512ef1eeeccd",
+    "statements": 87,
+    "covered_statements": 87,
+    "branches": 22,
+    "covered_branches": 22
+   },
+   {
+    "path": "src/mars_titan/models/titans/dendritic_regime.py",
+    "source_sha256": "6ac54625c54e4b4b0339a255bc55eaceb4300d2f32997919228fd2bf259d1258",
+    "statements": 100,
+    "covered_statements": 100,
+    "branches": 26,
+    "covered_branches": 26
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "7736beafdb36d4eaaee32425b3fd845c36bcf4ff4fded798ed689da745837dee",
+    "statements": 996,
+    "covered_statements": 789,
+    "branches": 488,
+    "covered_branches": 335
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "53deeb05cc412ce59cecdc925ce7b9a6c2ed395908764e068c7129c3565162b2",
+    "statements": 237,
+    "covered_statements": 191,
+    "branches": 134,
+    "covered_branches": 95
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "source_sha256": "dcbe00a73168c81d8e50f41fa6bdc6071bcfc3d75896446f38e6a894fc17b5d0",
+    "statements": 343,
+    "covered_statements": 286,
+    "branches": 172,
+    "covered_branches": 119
+   }
+  ],
+  "max_crap": 637.1136951414526,
+  "quality_sha256": "da2f2059b04d6b3b30290a91ecfab67971afc5fb3f4f46e2869effa96c1e533f",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "c5e45ce7d2bca4cd103e7e1d56638a5d68a68aba",
+  "head": "78590012c532b97108281aa5a72b06c6214483a8",
+  "functions": 32,
+  "max_crap": 212.82286047528797,
+  "changed_executable_lines": 142,
+  "changed_covered_lines": 139,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "function": "FrozenMechanismConsumer.__init__",
+    "cyclomatic_complexity": 56,
+    "crap": 212.82286047528797,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 65,
+    "crap": 138.6257176243459,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 7,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._verify_bundle",
+    "cyclomatic_complexity": 46,
+    "crap": 117.35648975876192,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_consumers.py",
+    "function": "TitansBinding.prepare_event",
+    "cyclomatic_complexity": 36,
+    "crap": 50.22222222222222,
+    "changed_executable_lines": 9,
+    "changed_covered_lines": 9,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "_execution_signature",
+    "cyclomatic_complexity": 39,
+    "crap": 40.412399704008934,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.__init__",
+    "cyclomatic_complexity": 22,
+    "crap": 38.390291064522685,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [
+     400
+    ],
+    "changed_missing_branches": [
+     [
+      399,
+      400
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.prepare",
+    "cyclomatic_complexity": 14,
+    "crap": 15.178061607813673,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [
+     499
+    ],
+    "changed_missing_branches": [
+     [
+      495,
+      499
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.session_level",
+    "cyclomatic_complexity": 2,
+    "crap": 6.0,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [
+     1106
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "unmeasured": [],
+  "note": "32 funciones cambiadas medidas, ninguna sin medir. Los tres módulos de contexto y sesión cubren 206 sentencias y 56 ramas.",
+  "changed_sha256": "939e84bdeb0c5a6f61125a327f5f7c655e3ce0fc190752f0115784f7425560b2"
+ },
+ "mutations": {
+  "tree_commit": "78590012c532b97108281aa5a72b06c6214483a8",
+  "planned": 14,
+  "killed": 14,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "928e1f2780a712f97ff11d86dfda3b05fb1633a565d2561cb850209a6ff2cf75",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/memory/dendritic_session.py": "f46329305e249ac868c5ff5d3ae5a2b62adb776e7d7d463b1e74dab29a102560",
+   "src/mars_titan/memory/financial_consumers.py": "53e74de6759ce17240b4da2db95ca00b75d21f3ff3a64563bcf5d6b24168cd76",
+   "src/mars_titan/models/titans/frozen_financial.py": "53deeb05cc412ce59cecdc925ce7b9a6c2ed395908764e068c7129c3565162b2",
+   "src/mars_titan/models/titans/financial.py": "7736beafdb36d4eaaee32425b3fd845c36bcf4ff4fded798ed689da745837dee",
+   "src/mars_titan/models/titans/dendritic_context.py": "99ca0206156cf36d2a209ad61f6698d5835650b37a06c4e9f415512ef1eeeccd",
+   "src/mars_titan/memory/financial_session.py": "1328e2edbeb8d2ead5418a68860fe8484cba369c0f19aa1485ffecf6e5a060af"
+  },
+  "cases": [
+   "view_accepts_other_input_digest",
+   "view_ignores_price_source_hash",
+   "view_accepts_another_snapshot",
+   "view_accepts_another_configuration",
+   "view_accepts_changed_routes",
+   "plan_entries_are_mutable",
+   "plan_record_ignores_a_changed_snapshot",
+   "plan_uses_only_the_first_physical_block",
+   "event_does_not_publish_the_context",
+   "bundle_skips_dendritic_trace_verification",
+   "trace_accepts_changed_routes_or_metadata",
+   "predictor_accepts_partial_groups_without_a_bound_context",
+   "consumer_does_not_bind_the_snapshot_id",
+   "regime_source_is_missing_from_strong_verification"
+  ],
+  "summary_sha256": "a232ab4cd2105e21e5a239814513293cd8fad00c411a6ee778acaa1466e5c521",
+  "scope": "Catorce defectos nuevos de fuente, bloque, contexto, configuración, inmutabilidad, publicación y verificación detectados con G1/M1/G2 verdes."
+ },
+ "native_link": {
+  "role": "Enlace existente utilizado en las pruebas nativas CPU. No es una compilación nueva ni evidencia CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}
