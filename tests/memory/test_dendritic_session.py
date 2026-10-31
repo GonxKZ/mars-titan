@@ -1,135 +1,22 @@
 """Contexto N2 común y publicación nativa con fixtures sin ajuste de etiquetas."""
 
-import numpy as np
 import pytest
 import torch
 from test_frozen_financial import frozen_backend as frozen_backend
 from test_native_episode_backend import native as native
 
-from mars_titan.data.price_windows import price_window_contract
-from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
-from mars_titan.memory.financial_session import FinancialPhase, FinancialSession
-from mars_titan.memory.retention_bank import RetentionConfig
-from mars_titan.memory.write_policy import CompositeScoreConfig, MatureErrorConfig
-from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
-from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
-from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
-from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+from tests.memory.dendritic_fixtures import build_source, engine, run
 from tests.memory.test_financial_session import moment
-from tests.memory.test_financial_session_controls import flow_source
 from tests.memory.test_financial_session_controls import (
     no_target_estimation as no_target_estimation,
 )
-from tests.memory.test_mars_titan_session_parity import SCALERS
 
 pytestmark = pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
 
 
 @pytest.fixture(scope="module")
 def source(tmp_path_factory):
-    base = flow_source(tmp_path_factory.mktemp("dendritic-source"))
-    old = base["spec"]
-    representation = old.representation
-    representation["price_window"] = price_window_contract(
-        {"US": dict(start="2021-01-01", end="2023-12-31", decisions_sha256="f" * 64)},
-        {"US": []},
-    )
-    spec = FinancialInputSpec(
-        source_sha256=old.source_sha256,
-        view_sha256=old.view_sha256,
-        representation=representation,
-        dimensions=old.dimensions | dict(prices=6),
-        input_policy=old.input_policy,
-    )
-    batches = {}
-    for at, blocks in base["batches"].items():
-        batches[at] = []
-        for block in blocks:
-            inputs = {name: np.array(value, copy=True) for name, value in block.inputs.items()}
-            inputs["prices"] = np.concatenate(
-                [inputs["prices"], np.ones((1, 64, 1), np.float32)], axis=-1
-            )
-            batches[at].append(
-                validated_cpu_batch(
-                    dict(
-                        inputs=inputs,
-                        presence=block.presence,
-                        sample_ids=block.sample_ids,
-                        prediction_at=np.array(block.prediction_at, dtype="datetime64[us]"),
-                        input_available_at=np.array(
-                            block.input_available_at, dtype="datetime64[us]"
-                        ),
-                    ),
-                    spec,
-                )
-            )
-    return dict(base, spec=spec, codec=FrozenEpisodeCodec(spec), batches=batches)
-
-
-def engine(source, mode, *, admission="m1", gain=1.0, device="cpu", dtype=torch.float64):
-    config = FinancialConfig(
-        source["spec"],
-        variant="mac_online",
-        hidden_size=32,
-        active_dendrites=None
-        if mode is None
-        else dict(mode=mode, segments=4, min_assets=2, recent_returns=21, min_returns=42),
-    )
-    model = FinancialPredictor(config, dtype=dtype, device=device)
-    if mode is not None:
-        with torch.no_grad():
-            model.active_dendrites.gain.fill_(gain)
-    model._seal_parameters()
-    readout = (
-        EpisodicReadout(
-            EpisodicReadoutConfig(
-                source["codec"].fingerprint(),
-                hidden_size=32,
-                mode="no_bank" if admission == "m0" else "bank",
-            ),
-            dtype=dtype,
-        )
-        .to(device=device)
-        .eval()
-        .requires_grad_(False)
-    )
-    return FrozenFinancialConsumer(model.eval().requires_grad_(False), readout=readout)
-
-
-def run(
-    native,
-    path,
-    source,
-    consumer,
-    *,
-    block_rows=1,
-    resume=False,
-    decision_start=125,
-    admission="m1",
-):
-    retention = (
-        MatureErrorConfig(capacity=8)
-        if admission == "m2"
-        else CompositeScoreConfig(SCALERS, capacity=8)
-        if admission == "m3"
-        else RetentionConfig(capacity=8, frontier=2, new_candidates=4)
-    )
-    return FinancialSession(
-        path,
-        native=native,
-        consumer=consumer,
-        codec=source["codec"],
-        prefixes=source["prefixes"],
-        retention=retention,
-        phase=FinancialPhase(
-            "validation", moment(125), moment(decision_start), moment(200), moment(201)
-        ),
-        admission=admission,
-        world="dendritic_fixture",
-        fold="0",
-        block_rows=block_rows,
-        resume=resume,
-    )
+    return build_source(tmp_path_factory.mktemp("dendritic-source"))
 
 
 @pytest.mark.parametrize("mode", ["observable", "shuffled_past_prefix", "constant"])

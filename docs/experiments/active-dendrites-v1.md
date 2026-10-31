@@ -76,3 +76,23 @@ El [recibo de sesión](../../reports/engineering/dendritic-session-20261031/veri
 Los módulos `dendritic_context`, `dendritic_regime` y `dendritic_session` cubren, en conjunto, sus 206 sentencias y 56 ramas. Las 32 funciones cambiadas están medidas. La cobertura de los archivos existentes sigue siendo parcial y el CRAP máximo es 212,82 en el constructor del consumidor de mecanismos. El enlace nativo utilizado es el existente, identificado por su SHA-256. No se atribuye una compilación nueva ni una comprobación CUDA a esos resultados.
 
 Quedan el consumidor de mecanismos, E2 y otras composiciones aún no comprobadas, CUDA, el coste del recorrido completo y la integración en el estudio científico. El control local C sigue rechazándose porque necesita una comparación sobre el operador modulado real. No se cierra N2 ni la issue de N1, N2 y BDH. No hay mejora predictiva medida.
+
+## Medidor técnico de coste
+
+`benchmarks.dendritic_session_cost` prepara un contraste con referencia sin N2, parámetro dendrítico `a=0`, observable con `a=1`, prefijo pasado con `a=1` y constante con `a=1`. Se fija el parámetro previo a `tanh`, sin ajustarlo a datos. No es una comparación de modelos entrenados. El medidor reutiliza los mismos fixtures que las pruebas de sesión.
+
+El protocolo de 64 y 256 activos usa un calentamiento excluido y tres repeticiones por modelo, con orden rotatorio. Son 40 casos, diez de calentamiento y treinta medidos. Se comparte fuente por tamaño, bloque de 64, CPU FP64, un hilo, H32, M1, capacidad episódica 64 y lector K1. La tercera decisión lee un banco no vacío. El intervalo de `step` incluye persistencia y comprobaciones. La recuperación mantiene el modelo congelado residente y se verifica la decisión siguiente. No incluye carga en frío de sus pesos ni codificación de noticias e imágenes originales.
+
+Se exige paridad de predicciones, tensores rápidos, contadores y episodios con procedencia entre la referencia y la ganancia cero. Se excluyen los identificadores del runtime, que dependen de la identidad del modelo. Cada fila registra el consumidor realmente utilizado. Los pesos y el RNG deben permanecer iguales. Las otras variantes no tienen que coincidir con la referencia, pero sí reproducirse entre sus repeticiones.
+
+El comando sin `--run` solo imprime el protocolo. Para ejecutarlo se necesita el enlace nativo verificado, un `TMPDIR` en disco y una salida nueva fuera del checkout. Los casos propios terminados se retiran tras cerrar sus sesiones. Se conservan fuentes, protocolo, mediciones y casos fallidos.
+
+```bash
+uv --no-cache run --no-sync python -m benchmarks.dendritic_session_cost \
+  --repository "$PWD" \
+  --native "${MARS_TITAN_EPISODIC_NATIVE:?}" \
+  --output "$(mktemp -d "${TMPDIR:?}/dendritic-cost.XXXXXX")/run" \
+  --sizes 64 256 --warmup 1 --repeats 3 --seconds 1800 --run
+```
+
+Las ejecuciones pequeñas y las instrumentadas con cobertura verifican el medidor y no se presentan como medidas representativas de latencia. El RSS del proceso es global, sin atribuir un pico a cada modelo. No se miden energía, VRAM ni transferencias CUDA. Tres repeticiones no permiten estimar colas fiables. La comparación 64/256 todavía no se presenta como completada.
