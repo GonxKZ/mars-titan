@@ -155,12 +155,12 @@ class SpacedTitansBinding(TitansBinding):
             allow_mixed_markets=True,
         )
         return SpacedPreparation(
-            prediction.point_predictions,
-            prepared.next_state,
-            prediction.readout,
-            prepared.local_control,
-            prediction.quantiles,
-            trace,
+            point_predictions=prediction.point_predictions,
+            next_state=prepared.next_state,
+            readout=prediction.readout,
+            local_control=prepared.local_control,
+            quantiles=prediction.quantiles,
+            utility=trace,
         )
 
     def record_block(self, session, batch, result, *, warmup):
