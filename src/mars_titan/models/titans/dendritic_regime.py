@@ -14,7 +14,7 @@ import torch
 from mars_titan.memory.regimes import REGIME_RULE, RegimeRule
 
 from .config import bounded_integer
-from .financial_inputs import DecisionBatch
+from .financial_inputs import FINAL_TEST_US, FLOW_ID, DecisionBatch
 
 MODES = ("observable", "shuffled_past_prefix", "constant")
 
@@ -107,8 +107,42 @@ def regime_context(config, batch, *, seed):
     if len(set(batch.prediction_at)) != 1 or max(batch.input_available_at) > at:
         raise ValueError("El contexto de N2 no puede consultar entradas posteriores al corte")
     prices = batch.inputs["prices"]
-    windows = prices.detach().cpu().numpy()
-    markets = np.array([flow.split("/", 1)[0] for flow in batch.flow_ids])
+    routes, slots, availability = context_arrays(
+        config,
+        prices.detach().cpu().numpy(),
+        batch.flow_ids,
+        batch.prediction_at,
+        batch.input_available_at,
+        seed=seed,
+    )
+    values = torch.as_tensor(np.eye(5)[list(routes), 1:], dtype=prices.dtype, device=prices.device)
+    return DendriticContext(values, routes, slots, at, availability)
+
+
+def context_arrays(config, windows, flows, moments, available_at, *, seed):
+    """Referencia CPU común al predictor y a la preparación del evento completo."""
+    if type(config) is not DendriticRegime:
+        raise ValueError("Falta la configuración de régimen N2")
+    config.__post_init__()
+    parameter_seed(seed)
+    count = len(flows)
+    if (
+        not isinstance(windows, np.ndarray)
+        or windows.shape != (count, 64, 6)
+        or windows.dtype not in (np.float32, np.float64)
+        or not 1 <= count <= 8192
+        or any(type(flow) is not str or FLOW_ID.fullmatch(flow) is None for flow in flows)
+        or len(set(flows)) != count
+        or len(moments) != count
+        or len(available_at) != count
+        or any(type(at) is not int or not 0 < at < FINAL_TEST_US for at in moments)
+        or len(set(moments)) != 1
+        or any(type(at) is not int or not 0 <= at <= moments[0] for at in available_at)
+        or not np.isfinite(windows).all()
+    ):
+        raise ValueError("El grupo de contexto N2 no conserva forma, corte y disponibilidad")
+    at = moments[0]
+    markets = np.array([flow.split("/", 1)[0] for flow in flows])
     routes = np.zeros(len(markets), dtype=np.int64)
     slots = np.full(len(markets), -1, dtype=np.int64)
     availability = [0] * len(markets)
@@ -133,10 +167,7 @@ def regime_context(config, batch, *, seed):
         elif config.mode == "constant" and route:
             route = 1
         routes[rows], slots[rows] = route, slot
-        available = max(batch.input_available_at[int(i)] for i in rows)
+        available = max(available_at[int(i)] for i in rows)
         for index in rows:
             availability[int(index)] = available
-    values = torch.as_tensor(np.eye(5)[routes, 1:], dtype=prices.dtype, device=prices.device)
-    return DendriticContext(
-        values, tuple(routes.tolist()), tuple(slots.tolist()), at, tuple(availability)
-    )
+    return tuple(routes.tolist()), tuple(slots.tolist()), tuple(availability)

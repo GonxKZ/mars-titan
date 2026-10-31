@@ -113,6 +113,24 @@ def test_builder_requires_its_real_configuration_and_verified_batch():
         regime_context(None, None, seed=42)
 
 
+def test_array_boundary_rejects_missing_configuration_and_incompatible_geometry():
+    from mars_titan.models.titans.dendritic_regime import context_arrays
+
+    model, batch = configured()
+    arguments = (
+        batch.inputs["prices"].numpy(),
+        batch.flow_ids,
+        batch.prediction_at,
+        batch.input_available_at,
+    )
+    with pytest.raises(ValueError):
+        context_arrays(None, *arguments, seed=42)
+    with pytest.raises(ValueError):
+        context_arrays(
+            model.config.active_dendrites, arguments[0][:, :, :5], *arguments[1:], seed=42
+        )
+
+
 def test_markets_use_their_own_regime_and_latest_input_availability():
     from tests.models.titans.test_financial_adapter import api
 

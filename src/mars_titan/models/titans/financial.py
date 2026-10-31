@@ -61,6 +61,7 @@ from .cross_asset_attention import (
     CrossAssetAttentionConfig,
     parse_cross_asset_attention,
 )
+from .dendritic_context import DendriticView
 from .dendritic_regime import (
     DendriticRegime,
     parameter_seed,
@@ -1102,13 +1103,15 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        return self.active_dendrites is not None or self._whole_session_operation()
+
+    def _whole_session_operation(self):
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
             or self.asset_groups is not None
             or self.fractal_shared_operator is not None
-            or self.active_dendrites is not None
             or (objective is not None and objective.session_level)
         )
 
@@ -1836,6 +1839,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        dendritic_context=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -1856,6 +1860,7 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                dendritic_context=dendritic_context,
             )
 
     def _prepare(
@@ -1870,6 +1875,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        dendritic_context=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1896,8 +1902,15 @@ class FinancialPredictor(nn.Module):
                 raise ValueError("Las entradas y los parámetros necesitan el mismo dispositivo")
         if any(value.dtype != self.head.weight.dtype for value in batch.inputs.values()):
             raise ValueError("Las entradas y los parámetros necesitan la misma precisión")
-        if self.session_level and session_complete is not True:
+        if session_complete is not True and (
+            self._whole_session_operation()
+            or (self.active_dendrites is not None and dendritic_context is None)
+        ):
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
+        if dendritic_context is not None:
+            if self.active_dendrites is None or type(dendritic_context) is not DendriticView:
+                raise ValueError("El predictor no admite esta vista de contexto N2")
+            dendritic_context.validate(batch, self.config.active_dendrites, self.config.seed)
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
         received = batch
         if self.config.session_rank_inputs is not None:
@@ -1986,10 +1999,16 @@ class FinancialPredictor(nn.Module):
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
             if self.active_dendrites is not None:
-                dendritic = regime_context(
-                    self.config.active_dendrites, received, seed=self.config.seed
+                values = (
+                    regime_context(
+                        self.config.active_dendrites, received, seed=self.config.seed
+                    ).values
+                    if dendritic_context is None
+                    else dendritic_context.tensor(
+                        received, self.config.active_dendrites, self.config.seed
+                    )
                 )
-                observed = self.active_dendrites(observed, dendritic.values)
+                observed = self.active_dendrites(observed, values)
             gates, sink = {}, None
             if self.reliability_gates is not None:
                 gates = dict(gate_shift=self.reliability_gates(reliability))

@@ -25,6 +25,7 @@ from . import (
     area_memory,
     area_query_bridge,
     associative_memory,
+    dendritic_session,
     episodic_session,
     financial_consumers,
     financial_state_artifacts,
@@ -671,6 +672,19 @@ class FinancialSession(EpisodicSession):
     def spaced_event(self):
         return spaced_session.inspect_state(self, event=True)
 
+    def dendritic_event(self):
+        """Contexto N2 de la última generación, o None si no tuvo observaciones."""
+        _check_callbacks(self)
+        if not dendritic_session.enabled(self):
+            raise ValueError("La sesión no declara contexto N2")
+        self.consumer.verify()
+        bundle = self._bundle(self.snapshot()["state"])
+        return (
+            None
+            if bundle is None
+            else self._read(bundle["control"], "control").get("dendritic_context")
+        )
+
     def mechanism_event(self, generation):
         _check_callbacks(self)
         if type(self._binding) is not MechanismBinding:
@@ -865,7 +879,7 @@ class FinancialSession(EpisodicSession):
         finally:
             self._inflight = self._proposal = None
 
-    def _decision_batch(self, rows):
+    def _decision_cpu_batch(self, rows):
         raw = dict(
             inputs={name: np.stack([r.inputs[name] for r in rows]) for name in MODALITIES},
             presence=np.stack([r.presence for r in rows]),
@@ -877,8 +891,11 @@ class FinancialSession(EpisodicSession):
         )
         if not self._binding.masked:
             raw.pop("presence")
+        return validated_cpu_batch(raw, self._input_spec)
+
+    def _decision_batch(self, rows):
         return DecisionBatch.from_validated(
-            validated_cpu_batch(raw, self._input_spec),
+            self._decision_cpu_batch(rows),
             device=self._binding.device,
             dtype=self._binding.dtype,
         )
@@ -1329,6 +1346,7 @@ class FinancialSession(EpisodicSession):
         return result
 
     def _verify_bundle(self, bundle, *, event_kind=None):
+        dendritic_rows = [] if dendritic_session.enabled(self) else None
         self._bank(bundle["bank"])
         fast = self._read(bundle["fast"], "fast")
         self._fast_store.verify(fast)
@@ -1375,6 +1393,8 @@ class FinancialSession(EpisodicSession):
                         "Las observaciones no corresponden al cursor rápido o a su presupuesto"
                     )
                 observed.append(row.flow_id)
+                if dendritic_rows is not None:
+                    dendritic_rows.append(row)
                 if mechanism_observations is not None:
                     mechanism_observations.append(row.metadata())
                 if regional_rows is not None:
@@ -1401,6 +1421,7 @@ class FinancialSession(EpisodicSession):
             or (seen and seen != set(observed))
         ):
             raise ValueError("Las evidencias y el control no concilian con las observaciones")
+        dendritic_session.verify(self, control, dendritic_rows or (), bundle["cutoff"])
         if self._regional_work is not None:
             regional_session_work.verify_bundle(
                 self, bundle, control, regional_rows, event_kind=event_kind

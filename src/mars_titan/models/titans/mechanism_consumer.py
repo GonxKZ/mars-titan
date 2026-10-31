@@ -128,6 +128,8 @@ class FrozenMechanismConsumer:
     ):
         if type(self) is not FrozenMechanismConsumer or type(predictor) is not FinancialPredictor:
             raise ValueError("El consumidor necesita un predictor financiero identificado")
+        if predictor.active_dendrites is not None:
+            raise ValueError("El consumidor de mecanismos todavía no registra el contexto N2")
         if policy is not None and action is not None:
             raise ValueError("La acción fija y el selector son modos excluyentes")
         action = MechanismAction() if action is None else action

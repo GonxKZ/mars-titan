@@ -12,8 +12,10 @@ import torch
 from mars_titan.models.quantile_head import QuantileHead
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .active_dendrites import ActiveDendrites
 from .bank_readout import BankReadout
 from .config import canonical
+from .dendritic_context import DendriticView
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
@@ -83,12 +85,20 @@ _KRON_MODULES = (
     "mars_titan.models.kronlstm.price_encoder",
     "mars_titan.models.kronlstm.precomputed",
 )
+_DENDRITIC_MODULES = (
+    "mars_titan.models.titans.active_dendrites",
+    "mars_titan.models.titans.dendritic_regime",
+    "mars_titan.models.titans.dendritic_context",
+    "mars_titan.memory.regimes",
+)
 
 
-def _implementation(*, hierarchy=False, kronlstm=False):
+def _implementation(*, hierarchy=False, kronlstm=False, dendrites=False):
     sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
     if kronlstm:
         sources += _KRON_MODULES
+    if dendrites:
+        sources += _DENDRITIC_MODULES
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -175,6 +185,8 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) is ActiveDendrites:
+        settings["active_dendrites"] = module.identity()
     elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
@@ -259,6 +271,11 @@ def _execution_signature(models):
         )
         else ()
     )
+    if any(
+        type(model) is FinancialPredictor and model.active_dendrites is not None
+        for _, model in models
+    ):
+        sources += _DENDRITIC_MODULES
     # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
     class_methods = {}
     for prefix, model in models:
@@ -379,8 +396,8 @@ class FrozenFinancialConsumer:
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
-        if predictor.active_dendrites is not None:
-            raise ValueError("El consumidor congelado aún no registra el contexto N2 por sesión")
+        if predictor.active_dendrites is not None and predictor._whole_session_operation():
+            raise ValueError("N2 con otras operaciones de sesión necesita su integración explícita")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
@@ -396,7 +413,10 @@ class FrozenFinancialConsumer:
         self._flags = _numerics()
         predictor.verify_parameter_identity()
         self._readout_id = self._readout_digest()
-        self._code = _implementation(kronlstm=predictor.config.temporal_encoder is not None)
+        self._code = _implementation(
+            kronlstm=predictor.config.temporal_encoder is not None,
+            dendrites=predictor.active_dendrites is not None,
+        )
         self._identity = dict(
             schema_version=1,
             recipe="frozen_financial_mac_then_episodic_v1",
@@ -445,7 +465,10 @@ class FrozenFinancialConsumer:
             self.predictor.verify_parameter_identity()
             if (
                 self._readout_digest() != self._readout_id
-                or _implementation(kronlstm=self.predictor.config.temporal_encoder is not None)
+                or _implementation(
+                    kronlstm=self.predictor.config.temporal_encoder is not None,
+                    dendrites=self.predictor.active_dendrites is not None,
+                )
                 != self._code
             ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")
@@ -460,6 +483,7 @@ class FrozenFinancialConsumer:
         warmup=False,
         selection=None,
         session_complete=False,
+        dendritic_context=None,
     ):
         self.verify(strong=False)
         if type(warmup) is not bool or len(set(batch.prediction_at)) != 1:
@@ -467,6 +491,19 @@ class FrozenFinancialConsumer:
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
         options = {}
+        if dendritic_context is not None:
+            if (
+                type(dendritic_context) is not DendriticView
+                or self.predictor.active_dendrites is None
+            ):
+                raise ValueError("El consumidor no admite esta vista N2")
+            dendritic_context.validate(
+                batch,
+                self.predictor.config.active_dendrites,
+                self.predictor.config.seed,
+                context_id=context_id,
+            )
+            options["dendritic_context"] = dendritic_context
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)
         elif selection is not None:

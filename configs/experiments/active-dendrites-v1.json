@@ -5,7 +5,7 @@
   "base_recipe": "configs/titans/chronological-training-historical-masked.json",
   "default_enabled": false,
   "final_test_access": false,
-  "implementation_scope": "financial_predictor_only_pending_durable_session",
+  "implementation_scope": "financial_predictor_and_durable_m0_m3_cpu_verified_cuda_pending",
   "arms": {
     "reference": {
       "role": "El mismo predictor sin N2",

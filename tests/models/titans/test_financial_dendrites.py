@@ -135,7 +135,7 @@ def test_configuration_and_module_changes_are_rejected_after_initialization():
         model.prepare(batch, state, session_complete=True)
 
 
-def test_training_registry_accepts_the_same_config_and_durable_consumption_fails_closed():
+def test_training_registry_and_frozen_consumer_register_the_same_context():
     from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
     from mars_titan.training.search_cases import checked_predictor_changes
 
@@ -149,8 +149,8 @@ def test_training_registry_accepts_the_same_config_and_durable_consumption_fails
     torch.backends.mha.set_fastpath_enabled(False)
     try:
         FrozenFinancialConsumer(reference.eval().requires_grad_(False))
-        with pytest.raises(ValueError, match="contexto N2"):
-            FrozenFinancialConsumer(model.eval().requires_grad_(False))
+        consumer = FrozenFinancialConsumer(model.eval().requires_grad_(False))
+        assert "mars_titan.models.titans.active_dendrites" in consumer.identity()["implementation"]
     finally:
         torch.backends.mha.set_fastpath_enabled(previous)
 

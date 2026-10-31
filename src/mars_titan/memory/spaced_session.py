@@ -41,6 +41,10 @@ class SpacedTitansBinding(TitansBinding):
     """Mismo recorrido por bloques, con lectura K1 y retención E2 explícitas."""
 
     def __init__(self, consumer, codec, retention, admission):
+        _require(
+            consumer.predictor.active_dendrites is None,
+            "La sesión E2 todavía no registra el contexto N2",
+        )
         _require(admission == "m1", "E2 solo admite M1 y conserva separados los índices M2/M3")
         reference = RetentionConfig(
             capacity=retention.capacity, seed=retention.seed, frontier=min(retention.capacity, 8)
