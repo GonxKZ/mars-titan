@@ -1,0 +1,290 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "candidate_cache_verified_paired_cost_in_progress",
+ "implementation_commit": "2d18bd63dfcca69f68eb407f9a1d88de3e25c54d",
+ "base_commit": "a25bb15c3",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "Caché optativa de una entrada decodificada durante el evento, con archivo verificado y copias independientes.",
+ "limits": [
+  "La caché está desactivada por defecto. Su beneficio todavía se está midiendo.",
+  "La selección de 270 casos y las 18 pruebas posteriores del arnés se solapan. No se suman como casos únicos.",
+  "La contabilidad usa sys.getsizeof de objetos retenidos. No mide RSS ni toda la memoria transitoria.",
+  "Cada acierto relee y verifica el archivo. La caché no se serializa y se descarta al salir del evento.",
+  "La medida emparejada 64/256 está en marcha y no se presenta como completada.",
+  "No hay mejora predictiva medida. El aprendizaje y el test final permanecen bloqueados."
+ ],
+ "suites": [
+  {
+   "name": "failure_context_ledger_session_and_cache",
+   "tests": 270,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6b00d7788e1c4f4ddfeb8d19ab6064b993b62a8ee2b8e9de6678e142716e5f32",
+   "note": "270 CPU sin omisiones. Incluye controles anteriores y diez casos de la caché."
+  },
+  {
+   "name": "updated_paired_cost_driver",
+   "tests": 18,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "1de8afd8a5af07abf82072632a92262d2342edea49d6edead6b3b523d5bfd89a",
+   "note": "18 CPU sin omisiones. Actualiza la comparación de presupuestos sobre la misma fuente. Se solapa con la selección anterior."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 681,
+   "covered_statements": 662,
+   "branches": 166,
+   "covered_branches": 152
+  },
+  "files": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "source_sha256": "89cbf22d07e581888c09dab34f52b105aa6769d68f8e5d3e875c2889dfe9b683",
+    "statements": 223,
+    "covered_statements": 212,
+    "branches": 48,
+    "covered_branches": 44
+   },
+   {
+    "path": "src/mars_titan/memory/failure_cache.py",
+    "source_sha256": "d0185fcfe2f6ff41b98d622251d3412e2247bd44db64d7f7ed754cb88ba9d523",
+    "statements": 75,
+    "covered_statements": 73,
+    "branches": 32,
+    "covered_branches": 29
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "source_sha256": "df14700199195e06ff45fb75773be492bdb76812edec74aa3ca9e172ab3fa5af",
+    "statements": 142,
+    "covered_statements": 137,
+    "branches": 62,
+    "covered_branches": 56
+   },
+   {
+    "path": "tests/benchmarks/test_failure_session_cost.py",
+    "source_sha256": "9c435c87bb58a1ba07ae86ed05bff564770c47f28cb8ce187419e77556fb5eeb",
+    "statements": 89,
+    "covered_statements": 89,
+    "branches": 10,
+    "covered_branches": 10
+   },
+   {
+    "path": "tests/memory/test_failure_cache.py",
+    "source_sha256": "ae2ea54c2d29ee151ac151b489f18facafd605d5e7e47955aebdcc0a43d375b3",
+    "statements": 152,
+    "covered_statements": 151,
+    "branches": 14,
+    "covered_branches": 13
+   }
+  ],
+  "max_crap": 30.3600524857851,
+  "quality_sha256": "ef694c9ff6174ac06fb447d2ccac2223ce09ad6c05ee65e90c4d89bf0d88b743",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "a25bb15c3caf537edd9830fc1a2cd8909a37afcf",
+  "head": "2d18bd63dfcca69f68eb407f9a1d88de3e25c54d",
+  "functions": 15,
+  "max_crap": 30.3600524857851,
+  "changed_executable_lines": 122,
+  "changed_covered_lines": 119,
+  "highest": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 30,
+    "crap": 30.3600524857851,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "restore",
+    "cyclomatic_complexity": 22,
+    "crap": 22.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 19,
+    "crap": 19.106962962962964,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 14,
+    "changed_missing_lines": [
+     105
+    ],
+    "changed_missing_branches": [
+     [
+      104,
+      105
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "study_protocol",
+    "cyclomatic_complexity": 17,
+    "crap": 17.0,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "_groups",
+    "cyclomatic_complexity": 14,
+    "crap": 14.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 19,
+    "crap": 19.106962962962964,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 14,
+    "changed_missing_lines": [
+     105
+    ],
+    "changed_missing_branches": [
+     [
+      104,
+      105
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_cache.py",
+    "function": "_key",
+    "cyclomatic_complexity": 6,
+    "crap": 7.333333333333334,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [
+     69
+    ],
+    "changed_missing_branches": [
+     [
+      64,
+      69
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_cache.py",
+    "function": "fork",
+    "cyclomatic_complexity": 5,
+    "crap": 5.018782870022539,
+    "changed_executable_lines": 22,
+    "changed_covered_lines": 21,
+    "changed_missing_lines": [
+     15
+    ],
+    "changed_missing_branches": [
+     [
+      14,
+      15
+     ],
+     [
+      19,
+      23
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_cache.py",
+    "function": "fork.emission",
+    "cyclomatic_complexity": 2,
+    "crap": 2.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      19,
+      23
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Quince funciones cambiadas medidas, ninguna sin medir. La cobertura excluye las líneas del arnés previo a su refactorización y usa los datos actuales de unidad y CLI.",
+  "changed_sha256": "cfa101220ca2ce635a130309094ab188e4de64e22f21f197d5a44d8ea9f8ea71"
+ },
+ "mutations": {
+  "tree_commit": "2d18bd63dfcca69f68eb407f9a1d88de3e25c54d",
+  "planned": 11,
+  "killed": 11,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "6350f5baf71db59e53003cc5bf749e352d8d2c5cf1badbed61bbe1d5838f7ce0",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_cache.py": "d0185fcfe2f6ff41b98d622251d3412e2247bd44db64d7f7ed754cb88ba9d523",
+   "src/mars_titan/memory/failure_session.py": "df14700199195e06ff45fb75773be492bdb76812edec74aa3ca9e172ab3fa5af"
+  },
+  "cases": [
+   "cached_file_is_not_reverified",
+   "cached_book_is_returned_directly",
+   "pending_map_is_shared",
+   "mature_failure_records_are_shared",
+   "context_objects_are_shared",
+   "last_prediction_map_is_shared",
+   "decode_budget_bounds_are_not_checked",
+   "different_artifact_reference_reuses_the_entry",
+   "retained_copy_and_reference_exceed_budget",
+   "cache_is_never_reused",
+   "cache_budget_is_not_identified"
+  ],
+  "summary_sha256": "16f3d6becfc1528d5357d8ceec734ff83e6550f84c0edc338658892df54967f7",
+  "scope": "Once defectos de integridad, aislamiento y presupuesto detectados con G1/M1/G2 verdes.",
+  "additional": [
+   {
+    "tree_commit": "2d18bd63dfcca69f68eb407f9a1d88de3e25c54d",
+    "planned": 2,
+    "killed": 2,
+    "recipes_sha256": "593fc1f99dc6d053af68708919d88bd9dc3f587991510736834e51ea459cad09",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "benchmarks/failure_session_cost.py": "89cbf22d07e581888c09dab34f52b105aa6769d68f8e5d3e875c2889dfe9b683"
+    },
+    "cases": [
+     "budget_levels_are_not_separated",
+     "reference_budget_is_missing_from_comparison"
+    ],
+    "summary_sha256": "bb69b624f91399bc2fdbea644e1d3dad06be96cbb02cb85cd0de18ec2d65be5f",
+    "scope": "Dos defectos de separación y presencia de ambos presupuestos, detectados con controles verdes."
+   }
+  ]
+ }
+}
