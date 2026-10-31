@@ -32,7 +32,7 @@ El registro congelado de H1 de #783 se incorpora como dependencia experimental d
 
 ## Productor desde el consumidor real
 
-`memory.failure_producer` obtiene el codec y el grafo del enlace financiero real. Admite los consumidores escalares de Titans, retención espaciada y GRU. Comprueba sus identidades, la congelación de pesos, el catálogo macro y su huella, la estructura del grafo y las cinco modalidades de `DecisionRow`. Recalcula la huella de las entradas antes de capturar el contexto. No conserva una referencia al modelo ni reejecuta el predictor o la proyección de clave.
+`memory.failure_producer` obtiene el codec y el grafo del enlace financiero real. Admite los consumidores escalares de Titans, retención espaciada y GRU, además del consumidor de mecanismos en modo de confianza. Comprueba sus identidades, la congelación de pesos, el catálogo macro y su huella, la estructura del grafo y las cinco modalidades de `DecisionRow`. Recalcula la huella de las entradas antes de capturar el contexto. No conserva una referencia al modelo ni reejecuta el predictor o la proyección de clave.
 
 El catálogo se lee con un límite de 2 MiB y 682 filas. Sus indicadores deben ser únicos y pertenecer a las doce familias admitidas. La actividad se contrasta con los buffers estructurales del consumidor H1/H2/H3 y sus áreas o ranuras. Las fechas macro individuales siguen desconocidas salvo que una fuente verificada las aporte. No se deducen del logaritmo de la edad.
 
@@ -50,7 +50,19 @@ Los buffers se transportan como tensores `uint8` CPU de almacenamiento propio y 
 
 La [verificación de sesión](../../reports/engineering/failure-session-20261031/verification.json) registra 188 casos CPU sin omisiones y tres controles financieros originales. Incluye los 163 anteriores, así que las selecciones no se suman como muestras independientes. Sus 16 defectos dirigidos se detectan con controles verdes. Se comprueban la recuperación de Titans y GRU, paridad sin atenuación, error del punto real, orden de activos, instantánea común, calentamiento, cierre y replay tras un fallo antes del commit. Las 23 funciones cambiadas están medidas. `_prepare_event` mantiene CRAP 548,09 por su complejidad y recorridos aún no cubiertos en esta selección. No se afirma que toda la clase esté comprobada.
 
-La atenuación combinada con B4 o E2 y el consumidor de mecanismos se rechazan hasta definir su composición sin romper diagnósticos, cuantiles ni mediana. Faltan las comprobaciones CUDA de esta ruta, la regresión amplia correspondiente, el coste completo y el estudio científico. No hay mejora predictiva medida y la variante no se activa por defecto.
+La atenuación combinada con B4, E2 o el consumidor de mecanismos se rechaza hasta definir su composición sin romper diagnósticos, cuantiles ni mediana. Faltan las comprobaciones CUDA de esta ruta, la regresión amplia correspondiente, el coste completo y el estudio científico. No hay mejora predictiva medida y la variante no se activa por defecto.
+
+## Confianza con acciones registradas
+
+`action_source="mechanism_trace_v1"` permite componer el libro con el consumidor de mecanismos en `confidence_only`. El valor por defecto, `fixed_predictor/no_external_tool`, conserva la configuración escalar anterior. Un origen que no corresponde al enlace real se rechaza antes de publicar. El origen forma parte de la identidad y no puede cambiar durante una sesión ni al recuperar su estado.
+
+`memory.failure_actions` concilia cada flujo, sus metadatos y su punto con la traza de emisión. La etiqueta identifica el modo de contexto, las rutas ejecutada y emitida y la calibración. La acción solicitada no sustituye a la aplicada cuando hubo un retorno a la referencia. Las filas se concilian por identidad, incluso si cambia su orden. Se rechazan trazas incompletas, duplicadas o ajenas, tipos incorrectos y puntos diferentes o no finitos.
+
+La propuesta de mecanismos conserva los campos auxiliares ya preparados y publica el libro en la misma generación. La confianza queda como diagnóstico, sin introducir un nuevo rasgo en el selector, cambiar acciones ni alterar puntos o cuantiles. La calibración en línea y la recogida de alternativas conservan sus contratos. Esta composición tampoco amplía por sí sola el registro de grafos del consumidor de mecanismos.
+
+El [recibo de la composición](../../reports/engineering/failure-mechanisms-20261031/verification.json) registra 245 casos CPU sin omisiones, incluidos 39 de acciones y los controles anteriores. Se detectaron 18 defectos nuevos y se repitieron los 16 de sesión con controles verdes. La función nueva tiene sus 17 sentencias y ocho ramas cubiertas, con CRAP 18. Las ocho funciones cambiadas están medidas. La preparación financiera mantiene CRAP 411,60 en esta selección, que no cubre toda la clase. No se compara ese valor con otras selecciones como una reducción de complejidad.
+
+Se comprobaron paridad de puntos y cuantiles, calibración en línea, orden de activos, error maduro de la emisión real, fallback, selector automático, colección de alternativas, recuperación de la siguiente predicción y rollback antes de publicar. Los coeficientes del selector de prueba son suministrados, no ajustados. La procedencia auditada de los ajustes, las atenuaciones indicadas, el coste completo, la regresión amplia y CUDA siguen pendientes. No hay una mejora predictiva medida.
 
 ## Exportación analítica implementada
 

@@ -1,0 +1,266 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "mechanism_confidence_cpu_verified_attenuation_provenance_cuda_and_study_pending",
+ "implementation_commit": "f35ade9dc3e1d07934ebb1bb9ef7f77aa71cf066",
+ "base_commit": "0567b6cc2",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "native_binary_sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046",
+ "scope": "Confianza S2 con acción aplicada del consumidor de mecanismos, cuantiles y calibración intactos.",
+ "limits": [
+  "La selección contiene 39 casos de la composición y los controles previos. Las selecciones de depuración se solapan y no se suman.",
+  "La repetición de 16 mutaciones de sesión no representa 16 defectos nuevos. Las 18 adicionales son las nuevas de esta composición.",
+  "La atenuación con mecanismos, B4 y E2 necesita sus composiciones y sigue rechazada.",
+  "El contexto de acción se obtiene del registro real. La confianza publicada aún no se introduce como rasgo del selector.",
+  "La fuente de ajuste y del umbral declara sus fronteras. Falta acreditar la procedencia fuera de muestra con artefactos auditados de ajuste y selección.",
+  "El selector de los fixtures tiene coeficientes suministrados y no ajustados. No hay utilidad predictiva medida.",
+  "Esta composición no amplía por sí sola el registro de grafos del consumidor de mecanismos.",
+  "El coste completo, la regresión amplia y las pruebas CUDA siguen pendientes. La RTX estaba ocupada con 771 MiB libres.",
+  "CRAP alto en la preparación financiera se conserva. La selección no cubre toda la clase."
+ ],
+ "suites": [
+  {
+   "name": "failure_memory_context_producer_session_export_and_mechanisms",
+   "tests": 245,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "94812533386967a94d611293eca306c970b1126053e8909effe592fdd2214bf0",
+   "note": "245 CPU sin omisiones, incluidos 39 de acciones. Orden, maduración, fallback, calibración, recuperación, rollback y colección de alternativas con fixtures."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1285,
+   "covered_statements": 980,
+   "branches": 528,
+   "covered_branches": 322
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/failure_actions.py",
+    "source_sha256": "ab527c74567f7f420c63e394aa993212a1dd7f9bb4980877e942630229ffbddf",
+    "statements": 17,
+    "covered_statements": 17,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/memory/failure_producer.py",
+    "source_sha256": "f161f484d97d82c11467354a8f2c63b4e6702b2d9bb52871d25863a38972769c",
+    "statements": 106,
+    "covered_statements": 98,
+    "branches": 36,
+    "covered_branches": 31
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "source_sha256": "b33bd981e8ea8d07adc4853330ee07981c6455e3e1a628308bd9ac29ac09aaa0",
+    "statements": 131,
+    "covered_statements": 126,
+    "branches": 56,
+    "covered_branches": 50
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "source_sha256": "f0cfe7e59da0dcead694ea7b5d2b233b6d634c98d72a7988317af1b07f321c86",
+    "statements": 789,
+    "covered_statements": 497,
+    "branches": 404,
+    "covered_branches": 209
+   },
+   {
+    "path": "tests/memory/test_failure_mechanisms.py",
+    "source_sha256": "897714e093ed37da1280d0306eb791c4a8d8a08c37635a979b407539eb8f7602",
+    "statements": 242,
+    "covered_statements": 242,
+    "branches": 24,
+    "covered_branches": 24
+   }
+  ],
+  "max_crap": 462.0,
+  "quality_sha256": "4c611edb10d8d9c1b58e03a7ed1f1d0beeea7923a0936167348fc311bf0d4d4f",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "0567b6cc2c37821de8fd924c8cfa463c0618129d",
+  "head": "f35ade9dc3e1d07934ebb1bb9ef7f77aa71cf066",
+  "functions": 8,
+  "max_crap": 411.6008906250001,
+  "changed_executable_lines": 27,
+  "changed_covered_lines": 27,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._prepare_event",
+    "cyclomatic_complexity": 67,
+    "crap": 411.6008906250001,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_actions.py",
+    "function": "emission_actions",
+    "cyclomatic_complexity": 18,
+    "crap": 18.0,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 15,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "prepare",
+    "cyclomatic_complexity": 12,
+    "crap": 12.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "configure",
+    "cyclomatic_complexity": 11,
+    "crap": 11.352769679300291,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "FailureSessionConfig.__post_init__",
+    "cyclomatic_complexity": 8,
+    "crap": 8.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Ocho funciones cambiadas medidas, ninguna sin medir. CRAP máximo 411,60 en FinancialSession._prepare_event. El nuevo conversor tiene CRAP 18 y sus 17 sentencias y ocho ramas cubiertas.",
+  "changed_sha256": "f8f71cd6328b1c1d76f3a6b2f27a0477dc7b5f71f01708ffab4a6ea73f8343e4"
+ },
+ "mutations": {
+  "tree_commit": "752e6766bc7e5d69fd9768a5acacc79788acee30",
+  "planned": 16,
+  "killed": 16,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "2370c9fc4f12b4c0a67805553a0a004b25de5e401884676a0b0eba058035bd2e",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf",
+   "src/mars_titan/memory/failure_session.py": "69c1841a02e586454086c18eaf54ce50dd413a636aff4e8e847f20d6d4533fc2",
+   "src/mars_titan/memory/financial_session.py": "23e34240d0c82d4369f957aaeccbc2378562477ad5e0fe546c6ea427d380fce4"
+  },
+  "cases": [
+   "session_source_provenance_is_not_checked",
+   "constant_control_bounds_are_not_checked",
+   "warmup_is_treated_as_an_emitted_decision",
+   "shrink_mode_never_changes_the_point",
+   "book_records_the_point_before_attenuation",
+   "mature_feedback_ignores_the_actual_emission",
+   "mature_results_are_not_resolved",
+   "finalized_predictions_remain_retrievable",
+   "wire_dtype_is_not_validated",
+   "wire_size_is_not_validated_before_copy",
+   "wire_encoding_is_not_validated",
+   "terminal_settlement_uses_a_prediction_clock",
+   "terminal_checkpoint_cannot_be_recovered",
+   "pruning_drops_the_confirmed_failure_book",
+   "constant_mode_uses_no_attenuation",
+   "warmup_advances_the_failure_clock"
+  ],
+  "summary_sha256": "9bfd78b04751a77a9164eb5c94c31d68cbd5cfe3a672c8c58b0fd2af9d9dea9e",
+  "scope": "Pasada histórica de los 16 defectos de sesión. La revisión actual los repite con las fuentes indicadas en reruns.",
+  "first_pass_killed": 16,
+  "reruns": [
+   {
+    "tree_commit": "f35ade9dc3e1d07934ebb1bb9ef7f77aa71cf066",
+    "cases": [
+     "book_records_the_point_before_attenuation",
+     "constant_control_bounds_are_not_checked",
+     "constant_mode_uses_no_attenuation",
+     "finalized_predictions_remain_retrievable",
+     "mature_feedback_ignores_the_actual_emission",
+     "mature_results_are_not_resolved",
+     "pruning_drops_the_confirmed_failure_book",
+     "session_source_provenance_is_not_checked",
+     "shrink_mode_never_changes_the_point",
+     "terminal_checkpoint_cannot_be_recovered",
+     "terminal_settlement_uses_a_prediction_clock",
+     "warmup_advances_the_failure_clock",
+     "warmup_is_treated_as_an_emitted_decision",
+     "wire_dtype_is_not_validated",
+     "wire_encoding_is_not_validated",
+     "wire_size_is_not_validated_before_copy"
+    ],
+    "killed": 16,
+    "recipes_sha256": "2370c9fc4f12b4c0a67805553a0a004b25de5e401884676a0b0eba058035bd2e",
+    "source_sha256": {
+     "src/mars_titan/memory/financial_session.py": "f0cfe7e59da0dcead694ea7b5d2b233b6d634c98d72a7988317af1b07f321c86",
+     "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf",
+     "src/mars_titan/memory/failure_session.py": "b33bd981e8ea8d07adc4853330ee07981c6455e3e1a628308bd9ac29ac09aaa0"
+    },
+    "summary_sha256": "470e9bdabcfba74f9e9a32e5d9243803e6a6897c96bf4b83d634a50c2e80e4b7",
+    "reason": "La composición añade origen de acción y conserva el libro dentro de la propuesta de mecanismos. Se repiten los 16 controles anteriores de sesión sin contarlos como nuevos."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "f35ade9dc3e1d07934ebb1bb9ef7f77aa71cf066",
+    "planned": 18,
+    "killed": 18,
+    "recipes_sha256": "d85c5b0d3fd06ca9c2edff2e2235a14ec6f45aebaa7070995233c0dd4148b8d2",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_actions.py": "ab527c74567f7f420c63e394aa993212a1dd7f9bb4980877e942630229ffbddf",
+     "src/mars_titan/memory/financial_session.py": "f0cfe7e59da0dcead694ea7b5d2b233b6d634c98d72a7988317af1b07f321c86",
+     "src/mars_titan/memory/failure_session.py": "b33bd981e8ea8d07adc4853330ee07981c6455e3e1a628308bd9ac29ac09aaa0",
+     "src/mars_titan/memory/failure_producer.py": "f161f484d97d82c11467354a8f2c63b4e6702b2d9bb52871d25863a38972769c"
+    },
+    "cases": [
+     "action_source_is_not_bound_to_the_real_consumer",
+     "boolean_point_is_accepted_as_float",
+     "emitted_route_is_replaced_by_executed_route",
+     "executed_route_is_replaced_by_emitted_route",
+     "failure_action_source_is_not_part_of_code_identity",
+     "infinite_point_is_accepted_when_it_matches",
+     "mechanism_attenuation_bypasses_quantile_composition",
+     "mechanism_proposal_discards_the_prepared_failure_book",
+     "mechanism_trace_is_not_passed_to_failure_capture",
+     "non_text_flow_reaches_the_lookup",
+     "producer_still_rejects_the_registered_mechanism_binding",
+     "requested_action_replaces_the_applied_action",
+     "runtime_identity_ignores_the_action_source",
+     "trace_flow_set_is_not_checked",
+     "trace_metadata_is_not_bound_to_the_input",
+     "trace_point_can_differ_from_the_actual_value",
+     "unregistered_action_source_is_accepted",
+     "warmup_generates_failure_emissions"
+    ],
+    "summary_sha256": "653f041eabeb55e1818a676c2f354703e49a1b0164debb168bbcae19a8f983e9",
+    "scope": "18 defectos nuevos de la composición con acciones, todos detectados con G1/M1/G2 verdes."
+   }
+  ]
+ }
+}
