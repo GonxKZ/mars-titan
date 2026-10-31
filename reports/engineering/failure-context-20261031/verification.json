@@ -1,0 +1,168 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "context_verified_ledger_and_session_pending",
+ "implementation_commit": "1d4da52f73eb80875bfa03e1ec1f6a986bd484fe",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "device": "cpu",
+ "scope": "Captura de contexto NumPy. No incluye todavía el libro ni su consumo en FinancialSession.",
+ "suites": [
+  {
+   "name": "context_targeted",
+   "tests": 46,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "da5d8771d8792cb36b46fed7fd7067ee54f01d8cfa7515bc71e964ac51b3a98b",
+   "note": "46 fixtures CPU, sin omisiones ni aprendizaje. Dos comprueban los límites matemáticos del control desordenado."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 287,
+   "covered_statements": 285,
+   "branches": 46,
+   "covered_branches": 46
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "source_sha256": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "statements": 147,
+    "covered_statements": 147,
+    "branches": 42,
+    "covered_branches": 42
+   },
+   {
+    "path": "tests/memory/test_failure_context.py",
+    "source_sha256": "0d61f000a895591f6af90479a3bc8f47b103216ecb97de1532e4b90e9b5bb581",
+    "statements": 121,
+    "covered_statements": 119,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "tests/memory/test_failure_context_math.py",
+    "source_sha256": "3b503d6e5e73210e11bc5994b7543ccf36aad035e26f8ec3f1efeb56c620e90e",
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 0,
+    "covered_branches": 0
+   }
+  ],
+  "max_crap": 16.0,
+  "quality_sha256": "609ffe6ef711e80512dd1546e175349cd75f5fa58f022fe7edc559ce33d1aa22",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "0f413df336b4e03ec3ace28cb43e1de8e7bfed82",
+  "head": "1d4da52f73eb80875bfa03e1ec1f6a986bd484fe",
+  "functions": 19,
+  "max_crap": 16.0,
+  "changed_executable_lines": 102,
+  "changed_covered_lines": 102,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "FailureContext.__init__",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 23,
+    "changed_covered_lines": 23,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "FailureContextLayout.__post_init__",
+    "cyclomatic_complexity": 14,
+    "crap": 14.0,
+    "changed_executable_lines": 14,
+    "changed_covered_lines": 14,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "FailureContext.restore",
+    "cyclomatic_complexity": 13,
+    "crap": 13.0,
+    "changed_executable_lines": 12,
+    "changed_covered_lines": 12,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "_names",
+    "cyclomatic_complexity": 8,
+    "crap": 8.0,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "_vector",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Funciones nuevas de producción. Las funciones de prueba se incluyen en quality y no en este subconjunto.",
+  "changed_sha256": "fabfad1ab0cb9b95e61fd39aadf25026bbba46d58eb4093d6b829bf2a1319a54"
+ },
+ "mutations": {
+  "tree_commit": "1d4da52f73eb80875bfa03e1ec1f6a986bd484fe",
+  "planned": 19,
+  "killed": 19,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "37ac9a400c526f690bb9f5133d10cebacde5b7441b241674f862e688436d9e07",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e"
+  },
+  "cases": [
+   "future_input_is_accepted",
+   "final_test_boundary_is_accepted",
+   "known_publication_ignores_the_input_cut",
+   "missing_concept_keeps_a_publication",
+   "unknown_publication_is_invented",
+   "norm_squares_large_values_first",
+   "macro_context_aliases_the_input",
+   "all_areas_follow_prices",
+   "shared_slots_are_inactive",
+   "modified_context_is_not_checked",
+   "restored_context_ignores_its_seal",
+   "restored_context_ignores_layout",
+   "restored_buffers_have_no_length_guard",
+   "financial_target_becomes_a_context_argument",
+   "duplicate_layout_names_are_accepted",
+   "eleven_macro_families_are_accepted",
+   "unknown_macro_family_is_accepted",
+   "unknown_area_modality_is_accepted",
+   "vector_dtype_is_not_checked"
+  ],
+  "summary_sha256": "92ae75833630826407ad099c3e2a07e8bd3781572a1d9364cdca689a7e74538d",
+  "scope": "19 defectos dirigidos del contexto, con G1/M1/G2 en copia aislada. La huella de producción coincide con la del commit."
+ }
+}
