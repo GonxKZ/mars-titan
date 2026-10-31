@@ -142,8 +142,17 @@ def test_training_registry_accepts_the_same_config_and_durable_consumption_fails
     change = {"active_dendrites": OPTIONS}
     assert checked_predictor_changes(change) == change
     model, _ = configured()
-    with pytest.raises(ValueError, match="contexto N2"):
-        FrozenFinancialConsumer(model)
+    reference = api().FinancialPredictor(
+        replace(model.config, active_dendrites=None), dtype=torch.float64
+    )
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        FrozenFinancialConsumer(reference.eval().requires_grad_(False))
+        with pytest.raises(ValueError, match="contexto N2"):
+            FrozenFinancialConsumer(model.eval().requires_grad_(False))
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
 
 
 def test_distinct_context_modes_cannot_reuse_each_others_state():
@@ -152,6 +161,27 @@ def test_distinct_context_modes_cannot_reuse_each_others_state():
     payload = first.export_state(first.initial_state(batch.flow_ids))
     with pytest.raises(ValueError):
         other.restore_state(payload)
+
+
+def test_the_observable_and_constant_contexts_change_the_composed_prediction():
+    observed, _ = configured()
+    constant, _ = configured("constant")
+    values = raw()
+    values["inputs"]["prices"][..., 3] *= -1
+    batch = api().DecisionBatch.from_corpus(values, observed.config.inputs, dtype=torch.float64)
+    predictions = []
+    for model in (observed, constant):
+        with torch.no_grad():
+            model.active_dendrites.gain.fill_(1.0)
+        model._seal_parameters()
+        predictions.append(
+            model.prepare(
+                batch, model.initial_state(batch.flow_ids), session_complete=True
+            ).point_predictions
+        )
+    assert not torch.equal(*predictions)
+    assert observed.config.active_dendrites.identity()["selection"] == "full_received_window"
+    assert constant.config.active_dendrites.identity()["selection"].startswith("fixed_first")
 
 
 def test_context_uses_received_prices_before_the_session_rank_transform():

@@ -45,7 +45,13 @@ class DendriticRegime:
             context="four_one_hot_routes_with_zero_for_unclassified",
             position="after_session_context_before_mac",
             seed="sha256_namespaces_of_the_predictor_seed",
-            selection="first_of_a_seeded_permutation_of_eligible_earlier_prefix_slots",
+            selection={
+                "observable": "full_received_window",
+                "constant": "fixed_first_known_route_with_the_same_unknown_mask",
+                "shuffled_past_prefix": (
+                    "first_of_a_seeded_permutation_of_eligible_earlier_prefix_slots"
+                ),
+            }[self.mode],
             unavailable_history="zero_context",
             state="none_recomputed_from_the_received_window",
             differentiation="no_gradient_through_discrete_regime_assignment",
