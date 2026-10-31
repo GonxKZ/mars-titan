@@ -22,6 +22,14 @@ La recuperación conserva pendientes, cursores por flujo, contadores, retención
 
 Capacidad, pendientes, flujos, bytes lógicos y tamaño de bloque de consulta tienen límites explícitos. La capacidad se denomina `capacity` en esta configuración y cuenta fallos, no lecturas K ni pesos rápidos de Titans. Los buffers de esta versión usan el orden de bytes del host. No se ha comprobado su recuperación en equipos con otro orden de bytes.
 
+## Claves nulas del candidato
+
+El codec GRU de 128 dimensiones admite claves nulas. El contexto puede conservarlas con `allow_zero_key=True`, una política identificada que no cambia la identidad del modo original. Se conservan la fila, la emisión y el error maduro. La clave nula no recibe una dirección inventada ni participa en la semejanza. Para una consulta nula, riesgo cero y confianza uno significan que S2 no atenúa, no que exista certeza predictiva.
+
+Los fallos sin clave direccional siguen sujetos a la capacidad y retención del libro. Pueden desplazar otros fallos, un coste que debe contrastarse. No se reserva una caché normalizada adicional para ellos. El [recibo de esta política](../../reports/engineering/failure-zero-keys-20261031/verification.json) registra 118 casos CPU sin omisiones, 14 defectos nuevos detectados y la repetición de los 57 anteriores. Las identidades y los bytes del contexto anterior se contrastan con referencias fijas. No se ha medido una mejora financiera.
+
+El productor en desarrollo detectó además que el consumidor congelado todavía rechaza H1. Ese registro pertenece a #783 y debe completarse antes de afirmar que se captura su actividad en una sesión real. El coste anterior del libro corresponde al código de la caché previo a esta política y no mide ese recorrido nuevo.
+
 ## Regla propuesta y control contrastable
 
 Sean q y c claves normalizadas, k(q,c) = exp(−‖q−c‖² / (2h²)), con h positivo. La regla max_e k(q,c_e) no cambia al permutar los mismos contextos. Por tanto, ese desorden no permite contrastar la correspondencia entre contexto y fallo.

@@ -1,0 +1,438 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "zero_policy_verified_producer_and_session_pending",
+ "implementation_commit": "7b24e0f87990e05332bfe77be80142b45916e3d6",
+ "reference_commit": "49daa6909e6ac4eb6dd69c0b512d547dc462a73b",
+ "base_commit": "0f413df336b4e03ec3ace28cb43e1de8e7bfed82",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "device": "cpu",
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "scope": "Contexto, libro, caché y política de claves nulas. No incluye productor ni FinancialSession.",
+ "review": "Comprobación de contratos y fallos adversariales en el desarrollo. No se declara una revisión independiente.",
+ "limits": [
+  "Se conserva la identidad del modo original. La admisión explícita de cero tiene identidad propia.",
+  "Una clave nula conserva su fila y error, pero no participa en semejanza. Confidence1 significa ausencia de atenuación, no certeza.",
+  "La retención puede conservar fallos de clave nula y desplazar otros por capacidad. No hay una mejora predictiva medida.",
+  "La integración del productor con H1 necesita registrar el módulo en FrozenFinancialConsumer, pendiente en #783.",
+  "El coste previo corresponde al código1b1c8582c, no a esta ampliación ni al productor."
+ ],
+ "suites": [
+  {
+   "name": "zero_policy_core",
+   "tests": 118,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "4b187dc0e2f5064a9ae2d2992f489550e88864a7e0ccc542948e69c3ff9a87a0",
+   "note": "118 casos CPU sin omisiones. Incluye identidad anterior, recuperación, elegibilidad geométrica y bytes de caché nula."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1109,
+   "covered_statements": 1103,
+   "branches": 218,
+   "covered_branches": 216
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "source_sha256": "d1da9dec492f609c35316a427f37fc1df8281e21c580e4e0bea0e2e719f70dab",
+    "statements": 156,
+    "covered_statements": 156,
+    "branches": 48,
+    "covered_branches": 48
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger.py",
+    "source_sha256": "39c96e74035865c49c69500edf9f0a1fde48e2848e0f03ced7f9e12b74668b1b",
+    "statements": 216,
+    "covered_statements": 215,
+    "branches": 60,
+    "covered_branches": 59
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger_state.py",
+    "source_sha256": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d",
+    "statements": 115,
+    "covered_statements": 115,
+    "branches": 48,
+    "covered_branches": 48
+   },
+   {
+    "path": "tests/memory/test_failure_context.py",
+    "source_sha256": "0d61f000a895591f6af90479a3bc8f47b103216ecb97de1532e4b90e9b5bb581",
+    "statements": 121,
+    "covered_statements": 119,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "tests/memory/test_failure_context_math.py",
+    "source_sha256": "3b503d6e5e73210e11bc5994b7543ccf36aad035e26f8ec3f1efeb56c620e90e",
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 0,
+    "covered_branches": 0
+   },
+   {
+    "path": "tests/memory/test_failure_ledger.py",
+    "source_sha256": "5eabd67d85712ee1695378cbe6e5e8e6c493c0ef9027416e74dc9feb8266dacb",
+    "statements": 379,
+    "covered_statements": 377,
+    "branches": 44,
+    "covered_branches": 44
+   },
+   {
+    "path": "tests/memory/test_failure_ledger_cache.py",
+    "source_sha256": "65f47fe3fb0225092d8da789f268d39fd5548abdeca5a41cd82b26cfea0fa63b",
+    "statements": 49,
+    "covered_statements": 48,
+    "branches": 8,
+    "covered_branches": 7
+   },
+   {
+    "path": "tests/memory/test_failure_zero_keys.py",
+    "source_sha256": "6c8cf0fabd693a288d5ce1ec30e588f89525c9f02bb564ed4afb59ea6a6d3703",
+    "statements": 54,
+    "covered_statements": 54,
+    "branches": 6,
+    "covered_branches": 6
+   }
+  ],
+  "max_crap": 16.0,
+  "quality_sha256": "f00e29a96fc002a9add386ccc3c89989ea132f9ffb699d6e667bb6e5713c7836",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "bb9963020f3b9a2ce42b94bc61bf0f686ff1d959",
+  "head": "7b24e0f87990e05332bfe77be80142b45916e3d6",
+  "functions": 9,
+  "max_crap": 16.0,
+  "changed_executable_lines": 17,
+  "changed_covered_lines": 17,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "FailureContext.__init__",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "FailureContextLayout.__post_init__",
+    "cyclomatic_complexity": 15,
+    "crap": 15.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger.py",
+    "function": "FailureLedger._geometry",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger.py",
+    "function": "FailureLedger.query",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "function": "normalized_key",
+    "cyclomatic_complexity": 5,
+    "crap": 5.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Cambios de producción de la política de claves nulas frente a bb9963020.",
+  "changed_sha256": "f71e929d1568153e130a9689bb2a45810e86ba6c61743ab8cf9dec33ac65c887"
+ },
+ "mutations": {
+  "tree_commit": "49daa6909e6ac4eb6dd69c0b512d547dc462a73b",
+  "planned": 30,
+  "killed": 30,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "ddf8f807c1c7b9c29e778a122f9dd2cd720480896339a4b477497c245c24f235",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_ledger.py": "b254adb7b483e5774ec766c56385ed6f4c3c76473490c2275e24de68e6919a2f",
+   "src/mars_titan/memory/failure_ledger_state.py": "d15513e0cc58a13a2aeccf44b6b61b2dcbe418d33a712d3cbf5d880bde50834f"
+  },
+  "cases": [
+   "reverse_clock_is_accepted",
+   "final_cut_is_accepted",
+   "g_and_source_may_include_the_decision",
+   "issue_is_not_atomic",
+   "resolve_is_not_atomic",
+   "future_results_are_accepted",
+   "numeric_decision_alias_is_accepted",
+   "error_ignores_the_issued_prediction",
+   "threshold_is_not_strict",
+   "same_cut_sees_new_failures",
+   "retention_keeps_oldest_failure",
+   "market_filter_is_removed",
+   "mechanism_filter_is_removed",
+   "shuffle_uses_global_rng",
+   "shuffled_control_is_identity",
+   "raw_query_key_is_used",
+   "gaussian_omits_two",
+   "severity_is_not_used",
+   "confidence_is_always_one",
+   "match_loses_error_provenance",
+   "pending_budget_ignores_earlier_batches",
+   "flow_budget_is_not_enforced",
+   "logical_byte_budget_is_removed",
+   "duplicate_decision_context_is_accepted",
+   "restored_failures_need_not_be_mature",
+   "restored_snapshot_can_include_current_results",
+   "restored_counters_do_not_conciliate",
+   "evicted_snapshot_failures_are_not_counted",
+   "unstarted_state_claims_completed_events",
+   "restored_snapshot_silently_becomes_retention"
+  ],
+  "summary_sha256": "7b55811356f54fe86e24bfb2f2101a14a2d94a08c865e551937fcbf2a0b4cef1",
+  "scope": "30 defectos dirigidos del libro de referencia.",
+  "first_pass_killed": 30,
+  "reruns": [
+   {
+    "tree_commit": "1b1c8582c92714961bd28dd3e3f2041ea428d84d",
+    "cases": [
+     "confidence_is_always_one",
+     "duplicate_decision_context_is_accepted",
+     "error_ignores_the_issued_prediction",
+     "evicted_snapshot_failures_are_not_counted",
+     "final_cut_is_accepted",
+     "flow_budget_is_not_enforced",
+     "future_results_are_accepted",
+     "g_and_source_may_include_the_decision",
+     "gaussian_omits_two",
+     "issue_is_not_atomic",
+     "logical_byte_budget_is_removed",
+     "market_filter_is_removed",
+     "match_loses_error_provenance",
+     "mechanism_filter_is_removed",
+     "numeric_decision_alias_is_accepted",
+     "pending_budget_ignores_earlier_batches",
+     "raw_query_key_is_used",
+     "resolve_is_not_atomic",
+     "restored_counters_do_not_conciliate",
+     "restored_failures_need_not_be_mature",
+     "restored_snapshot_can_include_current_results",
+     "restored_snapshot_silently_becomes_retention",
+     "retention_keeps_oldest_failure",
+     "reverse_clock_is_accepted",
+     "same_cut_sees_new_failures",
+     "severity_is_not_used",
+     "shuffle_uses_global_rng",
+     "shuffled_control_is_identity",
+     "threshold_is_not_strict",
+     "unstarted_state_claims_completed_events"
+    ],
+    "killed": 30,
+    "recipes_sha256": "ddf8f807c1c7b9c29e778a122f9dd2cd720480896339a4b477497c245c24f235",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d",
+     "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10"
+    },
+    "summary_sha256": "e3c5965d0b264249655766dacb30f1f717e9a6478f8ef4500ade471d0ee574ed",
+    "reason": "Repetir los mismos 30 casos tras añadir la caché, sin contarlos como defectos nuevos."
+   },
+   {
+    "tree_commit": "7b24e0f87990e05332bfe77be80142b45916e3d6",
+    "cases": [
+     "all_areas_follow_prices",
+     "cache_flag_accepts_an_implicit_string",
+     "cache_keeps_unnormalized_keys",
+     "cached_borrow_returns_a_mutable_copy",
+     "cached_keys_are_interpreted_as_float32",
+     "confidence_is_always_one",
+     "disabled_cache_still_occupies_key_bytes",
+     "duplicate_decision_context_is_accepted",
+     "duplicate_layout_names_are_accepted",
+     "eleven_macro_families_are_accepted",
+     "error_ignores_the_issued_prediction",
+     "evicted_snapshot_failures_are_not_counted",
+     "final_cut_is_accepted",
+     "final_test_boundary_is_accepted",
+     "financial_target_becomes_a_context_argument",
+     "flow_budget_is_not_enforced",
+     "future_input_is_accepted",
+     "future_results_are_accepted",
+     "g_and_source_may_include_the_decision",
+     "gaussian_omits_two",
+     "issue_is_not_atomic",
+     "key_cache_bytes_are_not_accounted",
+     "known_publication_ignores_the_input_cut",
+     "logical_byte_budget_is_removed",
+     "macro_context_aliases_the_input",
+     "market_filter_is_removed",
+     "match_loses_error_provenance",
+     "mechanism_filter_is_removed",
+     "missing_concept_keeps_a_publication",
+     "modified_context_is_not_checked",
+     "norm_squares_large_values_first",
+     "numeric_decision_alias_is_accepted",
+     "pending_budget_ignores_earlier_batches",
+     "query_recomputes_historical_normalization",
+     "raw_query_key_is_used",
+     "recovery_does_not_rebuild_the_cache",
+     "resolve_is_not_atomic",
+     "restored_buffers_have_no_length_guard",
+     "restored_context_ignores_its_seal",
+     "restored_context_ignores_layout",
+     "restored_counters_do_not_conciliate",
+     "restored_failures_need_not_be_mature",
+     "restored_snapshot_can_include_current_results",
+     "restored_snapshot_silently_becomes_retention",
+     "retention_keeps_oldest_failure",
+     "reverse_clock_is_accepted",
+     "same_cut_sees_new_failures",
+     "severity_is_not_used",
+     "shared_slots_are_inactive",
+     "shuffle_uses_global_rng",
+     "shuffled_control_is_identity",
+     "threshold_is_not_strict",
+     "unknown_area_modality_is_accepted",
+     "unknown_macro_family_is_accepted",
+     "unknown_publication_is_invented",
+     "unstarted_state_claims_completed_events",
+     "vector_dtype_is_not_checked"
+    ],
+    "killed": 57,
+    "recipes_sha256": "28a35684a183247da7555a9c26a165680b9e661227bcd5864318017ce6853bd2",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d",
+     "src/mars_titan/memory/failure_context.py": "d1da9dec492f609c35316a427f37fc1df8281e21c580e4e0bea0e2e719f70dab",
+     "src/mars_titan/memory/failure_ledger.py": "39c96e74035865c49c69500edf9f0a1fde48e2848e0f03ced7f9e12b74668b1b"
+    },
+    "summary_sha256": "297b89b6b5f956b8a71e30a22ecdc6176731daeb4a8dd2986e3726d14c457a27",
+    "reason": "Repetir los57 casos existentes después de admitir claves nulas. El caso de caché desactivada adapta su ancla a la nueva condición con has_key."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "1d4da52f73eb80875bfa03e1ec1f6a986bd484fe",
+    "planned": 19,
+    "killed": 19,
+    "recipes_sha256": "37ac9a400c526f690bb9f5133d10cebacde5b7441b241674f862e688436d9e07",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e"
+    },
+    "cases": [
+     "all_areas_follow_prices",
+     "duplicate_layout_names_are_accepted",
+     "eleven_macro_families_are_accepted",
+     "final_test_boundary_is_accepted",
+     "financial_target_becomes_a_context_argument",
+     "future_input_is_accepted",
+     "known_publication_ignores_the_input_cut",
+     "macro_context_aliases_the_input",
+     "missing_concept_keeps_a_publication",
+     "modified_context_is_not_checked",
+     "norm_squares_large_values_first",
+     "restored_buffers_have_no_length_guard",
+     "restored_context_ignores_its_seal",
+     "restored_context_ignores_layout",
+     "shared_slots_are_inactive",
+     "unknown_area_modality_is_accepted",
+     "unknown_macro_family_is_accepted",
+     "unknown_publication_is_invented",
+     "vector_dtype_is_not_checked"
+    ],
+    "summary_sha256": "92ae75833630826407ad099c3e2a07e8bd3781572a1d9364cdca689a7e74538d",
+    "scope": "19 defectos del contexto, con fuente idéntica."
+   },
+   {
+    "tree_commit": "1b1c8582c92714961bd28dd3e3f2041ea428d84d",
+    "planned": 8,
+    "killed": 8,
+    "recipes_sha256": "21b0103b6eb587266cc96c6d2d21b75de7da0340223f133a7c8e912a01189e73",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d",
+     "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10"
+    },
+    "cases": [
+     "cache_flag_accepts_an_implicit_string",
+     "cache_keeps_unnormalized_keys",
+     "cached_borrow_returns_a_mutable_copy",
+     "cached_keys_are_interpreted_as_float32",
+     "disabled_cache_still_occupies_key_bytes",
+     "key_cache_bytes_are_not_accounted",
+     "query_recomputes_historical_normalization",
+     "recovery_does_not_rebuild_the_cache"
+    ],
+    "summary_sha256": "7b1ce8fa71141b3d18ffd1b6d55b0367bb186e3dbf729ad10d46fa7b4711345a",
+    "scope": "Ocho defectos adicionales de caché, precisión, memoria, recuperación y recorrido de consulta."
+   },
+   {
+    "tree_commit": "7b24e0f87990e05332bfe77be80142b45916e3d6",
+    "planned": 14,
+    "killed": 14,
+    "recipes_sha256": "bebb869b85ce6b1451de7a1ec03d20de048db44b7f7409b86f90751dfd774ba7",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_context.py": "d1da9dec492f609c35316a427f37fc1df8281e21c580e4e0bea0e2e719f70dab",
+     "src/mars_titan/memory/failure_ledger.py": "39c96e74035865c49c69500edf9f0a1fde48e2848e0f03ced7f9e12b74668b1b"
+    },
+    "cases": [
+     "default_identity_changes_retroactively",
+     "original_contract_silently_accepts_zero",
+     "zero_cache_allocates_redundant_bytes",
+     "zero_cached_key_loses_its_shape",
+     "zero_emission_is_dropped",
+     "zero_flag_accepts_strings",
+     "zero_gets_a_fabricated_unit_direction",
+     "zero_history_enters_similarity",
+     "zero_mature_failure_is_dropped",
+     "zero_permission_also_accepts_nan",
+     "zero_permission_is_not_forwarded",
+     "zero_policy_loses_its_identity",
+     "zero_query_normalization_forgets_the_policy",
+     "zero_query_uses_gaussian_neighbors"
+    ],
+    "summary_sha256": "c14d361d6ac0d758556d081fe2856bc05158d136e1ce34ee3902eb433f748c8f",
+    "scope": "14 defectos nuevos de claves nulas, identidad, conservación de filas y elegibilidad."
+   }
+  ]
+ },
+ "cost": {
+  "receipt": "reports/engineering/failure-ledger-20261031/cost.json",
+  "sha256": "b2d28760bc2f1fa5183e958f5e9474aa99e42c610bde9539830fe78eba0bc18c"
+ }
+}
