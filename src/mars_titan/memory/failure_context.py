@@ -67,9 +67,11 @@ def _publication_times(values, macro, available_at, count):
     return dates
 
 
-def normalized_key(values):
+def normalized_key(values, *, allow_zero=False):
     """Norma L2 con escalado previo, sin elevar a cuadrado entradas de tamaño extremo."""
     scale = np.max(np.abs(values))
+    if allow_zero and scale == 0:
+        return values
     if not np.isfinite(values).all() or not scale > 0:
         raise ValueError("La clave de contexto debe ser finita y distinta de cero")
     scaled = values / scale
@@ -87,6 +89,7 @@ class FailureContextLayout(FingerprintOnce):
     area_names: tuple[str, ...] = ()
     area_modalities: tuple[str | None, ...] = ()
     key_width: int = 64
+    allow_zero_key: bool = False
 
     def __post_init__(self):
         for name in ("input_id", "codec_id", "macro_catalog_id"):
@@ -114,17 +117,25 @@ class FailureContextLayout(FingerprintOnce):
         object.__setattr__(self, "macro_families", tuple(categories))
         object.__setattr__(self, "area_modalities", tuple(owners))
         bounded_integer(self.key_width, "dimensión de contexto", 1, MAX_KEY_WIDTH)
+        if type(self.allow_zero_key) is not bool:
+            raise ValueError("La admisión de claves nulas necesita una opción booleana explícita")
 
     def identity(self):
+        values = asdict(self)
+        allow_zero = values.pop("allow_zero_key")
+        if allow_zero:
+            values["zero_key_policy"] = "keep_context_exclude_similarity_v1"
         return dict(
             schema_version=1,
             kind="mature_failure_context_v1",
-            **asdict(self),
+            **values,
             modalities=list(MODALITIES),
             macro_layout="values_observed_log_age",
             publication_dates="provided_or_unknown_never_inferred_from_rounded_age",
             area_activity="h1_alive_mask_from_block_presence_and_shared_slots",
-            key_geometry="scaled_l2_float64_v1",
+            key_geometry=(
+                "scaled_l2_zero_ineligible_float64_v2" if allow_zero else "scaled_l2_float64_v1"
+            ),
         )
 
     def activity(self, presence):
@@ -190,7 +201,7 @@ class FailureContext:
         ):
             raise ValueError("La clave de contexto no conserva su dimensión y tipo real")
         key = key_inputs.astype(np.float64, copy=False)
-        normalized_key(key)
+        normalized_key(key, allow_zero=layout.allow_zero_key)
         count = len(layout.macro_indicators)
         macro = _vector(macro, (3 * count,), np.dtype(np.float32), "El contexto macro")
         presence = _vector(presence, (len(MODALITIES),), np.dtype(np.bool_), "La presencia")
@@ -236,7 +247,7 @@ class FailureContext:
 
     def normalized_key(self):
         self.verify()
-        return normalized_key(self.key_inputs)
+        return normalized_key(self.key_inputs, allow_zero=True)
 
     @property
     def macro(self):

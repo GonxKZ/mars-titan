@@ -102,14 +102,16 @@ class _Emission:
     prediction: float
     cache_keys: bool
     _key_cache: bytes = field(init=False, repr=False)
+    has_key: bool = field(init=False)
 
     def __post_init__(self):
         # El contexto ya es inmutable. La caché se reconstruye desde él al recuperar.
-        raw = self.context.normalized_key().tobytes() if self.cache_keys else b""
+        object.__setattr__(self, "has_key", bool(np.any(self.context.key_inputs)))
+        raw = self.context.normalized_key().tobytes() if self.cache_keys and self.has_key else b""
         object.__setattr__(self, "_key_cache", raw)
 
     def normalized_key(self):
-        if self.cache_keys:
+        if self.cache_keys and self.has_key:
             return np.frombuffer(self._key_cache, dtype=np.float64)
         return self.context.normalized_key()
 
@@ -263,6 +265,7 @@ class FailureLedger:
             for r in self._snapshot
             if r.emission.context.flow_id.split("/", 1)[0] == market
             and r.emission.context.action == context.action
+            and r.emission.has_key
         )
         indices = np.arange(len(records))
         if self.configuration.geometry == "shuffled":
@@ -273,8 +276,10 @@ class FailureLedger:
 
     def query(self, context):
         self._context(context)
-        records, indices = self._geometry(context)
         query = context.normalized_key()
+        if not np.any(query):
+            return FailureScore(0.0, 1.0, None, 0, None)
+        records, indices = self._geometry(context)
         risk, match, failure = 0.0, None, None
         size, config = len(records), self.configuration
         for start in range(0, size, config.block_size):
