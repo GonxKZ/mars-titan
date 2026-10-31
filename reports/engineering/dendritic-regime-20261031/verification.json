@@ -1,0 +1,264 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "financial_predictor_cpu_verified_durable_integration_pending",
+ "implementation_commit": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+ "base_commit": "894739a44b6b168119de3ff73654f233360ac2b8",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "N2 en FinancialPredictor, régimen observable y dos controles. La sesión durable sigue rechazando la configuración.",
+ "effective_mutation_source_sha256": {
+  "src/mars_titan/models/titans/dendritic_regime.py": "e3ac7a4185b8d9d03055141aabf062e7aa62c4e49caa788a64467f3d7f732012",
+  "src/mars_titan/models/titans/frozen_financial.py": "16ad992e70d7c9bb8213a1ce17c6fa1fa9520b225855ff42684857708fd26704",
+  "src/mars_titan/models/titans/financial.py": "0f597efbc1ffdd5c576ed1e8ace17ca08954769f975e7c4ea39ac7a82f1b25b8",
+  "src/mars_titan/models/titans/active_dendrites.py": "3a712dd1bfa5b11b61b772088c27622ee3e9d75d1f9eb72196df697c837e6804"
+ },
+ "context_source_before_final_formatting_ast_equal": true,
+ "new_integration_mutations": 15,
+ "previous_operator_mutations_rechecked": 10,
+ "limits": [
+  "240 pruebas CPU sin omisiones en la selección y seis casos CUDA excluidos. No se atribuye verificación GPU.",
+  "No hay coste integral, ahorro de memoria ni mejora predictiva medidos.",
+  "El control de prefijos muestrea pasado y no conserva la distribución del contexto contemporáneo.",
+  "La asignación discreta no lleva gradientes hacia los precios a través de la clasificación.",
+  "La fuente de precios se copia a CPU desde CUDA para reutilizar RegimeRule. Las transferencias todavía no están medidas.",
+  "La sesión durable, el consumidor de mecanismos, otras composiciones y el contraste con C siguen pendientes.",
+  "Una mutación comprueba el diagnóstico explícito de N2. La lista de módulos también rechaza esa configuración, por lo que no prueba una aceptación insegura.",
+  "Las siete mutaciones de contexto se repitieron tras el formato final. La fuente anterior tiene el mismo AST. La repetición del diagnóstico usa una referencia congelada válida.",
+  "Los quince casos nuevos y las diez repeticiones del operador se identifican por separado. No son veinticinco defectos nuevos.",
+  "La cobertura global de los archivos seleccionados es parcial y el CRAP de _prepare sigue siendo alto. No se declara comprobado todo el predictor."
+ ],
+ "suites": [
+  {
+   "name": "financial_context_and_existing_controls",
+   "tests": 240,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6d233c896b8c281c8153d973b1ca6ccb1a44e20c13d4012261892e8bf3dfc431",
+   "note": "240 CPU, cero fallos, errores y omisiones. Seis CUDA excluidos. Incluye los 41 casos del operador anterior y controles existentes, sin sumarlos otra vez."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1383,
+   "covered_statements": 1075,
+   "branches": 660,
+   "covered_branches": 435
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "source_sha256": "3a712dd1bfa5b11b61b772088c27622ee3e9d75d1f9eb72196df697c837e6804",
+    "statements": 53,
+    "covered_statements": 53,
+    "branches": 16,
+    "covered_branches": 16
+   },
+   {
+    "path": "src/mars_titan/models/titans/dendritic_regime.py",
+    "source_sha256": "e3ac7a4185b8d9d03055141aabf062e7aa62c4e49caa788a64467f3d7f732012",
+    "statements": 90,
+    "covered_statements": 90,
+    "branches": 22,
+    "covered_branches": 22
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "0f597efbc1ffdd5c576ed1e8ace17ca08954769f975e7c4ea39ac7a82f1b25b8",
+    "statements": 989,
+    "covered_statements": 742,
+    "branches": 484,
+    "covered_branches": 310
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "16ad992e70d7c9bb8213a1ce17c6fa1fa9520b225855ff42684857708fd26704",
+    "statements": 223,
+    "covered_statements": 178,
+    "branches": 124,
+    "covered_branches": 85
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "d8b5111597cc12297d89fbee274d3b4bd1a669b33fa4e7921e490ef773747d82",
+    "statements": 28,
+    "covered_statements": 12,
+    "branches": 14,
+    "covered_branches": 2
+   }
+  ],
+  "max_crap": 342.0,
+  "quality_sha256": "33c1db32e4d033d4662acaa3945e0701733fe91b2f69edc49595960ce89c9500",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "894739a44b6b168119de3ff73654f233360ac2b8",
+  "head": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+  "functions": 19,
+  "max_crap": 272.2826732831703,
+  "changed_executable_lines": 94,
+  "changed_covered_lines": 94,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 59,
+    "crap": 272.2826732831703,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 41,
+    "crap": 68.62392941829495,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 34,
+    "crap": 46.97200786000937,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.__init__",
+    "cyclomatic_complexity": 21,
+    "crap": 32.22023203745165,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "function": "checked_predictor_changes",
+    "cyclomatic_complexity": 10,
+    "crap": 16.400000000000002,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Diecinueve funciones cambiadas medidas y ninguna sin medir. La selección no cubre todos los recorridos de las clases existentes.",
+  "changed_sha256": "1b7833f74b277d1821f5897e9187482a022843c32171f16a500a7dd90e5ef220"
+ },
+ "mutations": {
+  "tree_commit": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+  "planned": 15,
+  "killed": 15,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "7d3783f63687e38e5e3c54586d09f17a801f051409e8ff4796bcbd9bad5798b5",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/dendritic_regime.py": "8b1836f89b366fc1105264394228a636952d50078bc3537816a88c7549f4523f",
+   "src/mars_titan/models/titans/frozen_financial.py": "16ad992e70d7c9bb8213a1ce17c6fa1fa9520b225855ff42684857708fd26704",
+   "src/mars_titan/models/titans/financial.py": "0f597efbc1ffdd5c576ed1e8ace17ca08954769f975e7c4ea39ac7a82f1b25b8"
+  },
+  "cases": [
+   "financial_ignores_dendritic_modulation",
+   "direct_encoder_ignores_dendritic_observation",
+   "market_context_accepts_partial_sessions",
+   "configuration_omits_the_context_identity",
+   "runtime_accepts_changed_context_mode",
+   "regime_uses_rank_transformed_prices",
+   "context_accepts_future_input_dates",
+   "historical_control_uses_the_current_slot",
+   "unknown_regime_has_a_nonzero_context",
+   "market_routes_mix_all_assets",
+   "context_hides_numerical_overflow",
+   "aggregate_uses_the_earliest_availability",
+   "durable_consumer_accepts_unregistered_context",
+   "stability_control_silently_reuses_the_old_operator",
+   "constant_control_silently_uses_the_observed_regime"
+  ],
+  "summary_sha256": "11dab14c3ab397cea99d2b7f2076f44d9e730d51dba6523c7d852a6ba77b5760",
+  "scope": "Quince mutaciones de integración, disponibilidad, selección, identidad y diagnóstico específico.",
+  "first_pass_killed": 15,
+  "reruns": [
+   {
+    "tree_commit": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+    "cases": [
+     "aggregate_uses_the_earliest_availability",
+     "constant_control_silently_uses_the_observed_regime",
+     "context_accepts_future_input_dates",
+     "context_hides_numerical_overflow",
+     "historical_control_uses_the_current_slot",
+     "market_routes_mix_all_assets",
+     "unknown_regime_has_a_nonzero_context"
+    ],
+    "killed": 7,
+    "recipes_sha256": "417045fdf19c0b08ea0552d4f08459754a3910c5be79836b1c6735f79ea9611d",
+    "source_sha256": {
+     "src/mars_titan/models/titans/dendritic_regime.py": "e3ac7a4185b8d9d03055141aabf062e7aa62c4e49caa788a64467f3d7f732012"
+    },
+    "summary_sha256": "b096cb89ad50b54a11dae1002f13347ad1253592ee066a9877f33e9f59a9b90a",
+    "reason": "Repetir las siete mutaciones del productor sobre la fuente final, después de la corrección de formato."
+   },
+   {
+    "tree_commit": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+    "cases": [
+     "durable_consumer_accepts_unregistered_context"
+    ],
+    "killed": 1,
+    "recipes_sha256": "f1736b4c25898ac1c21f11413478cbd95d23fa0984f076a9a0823dfda8e24625",
+    "source_sha256": {
+     "src/mars_titan/models/titans/frozen_financial.py": "16ad992e70d7c9bb8213a1ce17c6fa1fa9520b225855ff42684857708fd26704"
+    },
+    "summary_sha256": "36aa361828282e897d0f2ea20824b6a7520655fdd560540d323b2d94c57623ea",
+    "reason": "Comprobar primero que la referencia congelada se construye. La mutación verifica el diagnóstico específico, no una aceptación insegura."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "99aaffe66b0851afa217cc087ed8eb7c265c9ea9",
+    "planned": 10,
+    "killed": 10,
+    "recipes_sha256": "39c2282078c3dc4c316593b9fcd2ff2b377a8390228c257eb66acc5131b28d2f",
+    "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+    "source_sha256": {
+     "src/mars_titan/models/titans/active_dendrites.py": "3a712dd1bfa5b11b61b772088c27622ee3e9d75d1f9eb72196df697c837e6804"
+    },
+    "cases": [
+     "gain_is_not_bounded",
+     "global_rng_is_advanced",
+     "initial_gain_breaks_reference_parity",
+     "overflow_is_hidden_by_saturation",
+     "positive_maximum_loses_negative_winners",
+     "response_budget_is_ignored",
+     "selected_sign_is_erased",
+     "selected_weights_are_detached",
+     "values_are_modified_in_place",
+     "zero_segments_block_the_initial_gain_gradient"
+    ],
+    "summary_sha256": "8bc1e48072743b1205580c374c1b9e8ba6c8b2b3252e238c7ca7b6ff6604268b",
+    "scope": "Repetición de los diez defectos del operador ya documentados, sobre su fuente actual. No son defectos nuevos de integración."
+   }
+  ]
+ }
+}

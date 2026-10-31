@@ -1,0 +1,230 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "spaced_composition_cpu_verified_cuda_pending",
+ "implementation_commit": "799ba14c35f9545951839fba96f3e7192bcc88b8",
+ "verification_test_commit": "d3abaee9f790d992da81a0efb0834ef2760dd6ec",
+ "base_commit": "d7fe937ae5456c0cf92961672280f46baa6425b6",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "device": "cpu",
+ "distinct_test_case_identifiers": 494,
+ "scope": "N2 en E2 ordinario y regional, con vistas vinculadas al evento, utilidad, cuantiles, maduración y recuperación independientes.",
+ "limits": [
+  "Las cuatro selecciones se solapan. Sus 530 ejecuciones corresponden a 494 identificadores distintos, no a 530 casos nuevos.",
+  "Los 53 y cuatro CUDA excluidos no se ejecutaron. La combinación N2/E2 todavía necesita su verificación CUDA.",
+  "Fixtures de cuatro activos ficticios y supervisión manual. No son datos ni resultados predictivos reales.",
+  "La admisión E2 sigue siendo M1 y el lector K1. El contraste con C y el consumidor de mecanismos con N2 siguen pendientes.",
+  "Las pruebas del control local C comprueban la ruta anterior sin N2. No habilitan C con N2.",
+  "La medida 64/256 anterior corresponde a la implementación sin E2. No se han medido latencia, RAM/VRAM, energía o calidad de esta composición.",
+  "Cobertura de archivos y preparación congelada parcial. CRAP no acredita ausencia de errores.",
+  "Se miden también las nueve sentencias del constructor con la guarda suprimida. El detector de líneas añadidas no localiza supresiones sin adiciones y se completa mediante comparación AST.",
+  "Las dos mutaciones de opciones de la pasada intermedia se repitieron con las comprobaciones reforzadas en el lote final de tres. No se suman de nuevo.",
+  "No se repitió la batería completa del repositorio. Se ejecutaron las selecciones relacionadas que se indican."
+ ],
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "a8d8f8b55cbf27e9218da4fbfa3d35935b9a86274543386d3e6504440bd8768f"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "ba17f4ddc493fe372ed64dab60ef802b7090b8eda6d06ea548634364be45276b"
+  }
+ ],
+ "suites": [
+  {
+   "name": "native_and_existing_financial_regression",
+   "tests": 382,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e4a953095b7830912fcc4d7f9cb54dfaeddb7bbc3156eafbf5cd94a06b80d143",
+   "note": "382 CPU sin omisiones y 53 CUDA excluidos. Controles existentes, GRU, mecanismos y E2 ordinario."
+  },
+  {
+   "name": "composition_extension",
+   "tests": 19,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "ab95f766dd201baab0d65d2c9f0366ca8ac1c0e349b59cf8a0a6ed650ff22ce6",
+   "note": "19 casos solapados. Añade rechazo de otro snapshot y recuperación con puentes en anillo y árbol."
+  },
+  {
+   "name": "regional_and_window_compatibility",
+   "tests": 125,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "9d785c8137ef37458c27d63b00d740b9091e3897ae9d3145e03cd1db2341ea69",
+   "note": "125 CPU sin omisiones y cuatro CUDA excluidos. Incluye los adaptadores E2 ordinarios y regionales existentes."
+  },
+  {
+   "name": "shared_options_guards_and_local_control",
+   "tests": 4,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "212f660903bce11c23cfcd8369e889a3745c90e68c4308f9adddcbf791ab05c3",
+   "note": "Cuatro CPU sin omisiones. La selección por nombre excluye ocho pruebas no solicitadas, no ocho CUDA. Comprueba el control C existente sin N2 y rechaza vistas y planes incompatibles."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 406,
+   "covered_statements": 368,
+   "branches": 178,
+   "covered_branches": 147
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "source_sha256": "f24be25f087a8007a99f954a7f9192659cc7f7cc4173d7fdb2051a6edccc739d",
+    "statements": 166,
+    "covered_statements": 164,
+    "branches": 44,
+    "covered_branches": 43
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "3e4c00afec4f4256f617d07dfe73a6c27a9f84fefb62256b99c477cf3c415ed7",
+    "statements": 240,
+    "covered_statements": 204,
+    "branches": 134,
+    "covered_branches": 104
+   }
+  ],
+  "max_crap": 40.412399704008934,
+  "quality_sha256": "9d167098418c557c6f37467722734382b9bb63dc40b45127e7c7224a1eb80fd1",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "d7fe937ae5456c0cf92961672280f46baa6425b6",
+  "head": "d3abaee9f790d992da81a0efb0834ef2760dd6ec",
+  "functions": 5,
+  "max_crap": 9.2949476558944,
+  "changed_executable_lines": 15,
+  "changed_covered_lines": 15,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.prepare",
+    "cyclomatic_complexity": 9,
+    "crap": 9.2949476558944,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "neural_options",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 12,
+    "changed_covered_lines": 12,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "function": "SpacedTitansBinding.prepare_block",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "function": "SpacedTitansBinding.__init__",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "function": "SpacedTitansBinding.code",
+    "cyclomatic_complexity": 3,
+    "crap": 3.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Se añade el constructor cuya guarda se suprime. El detector por líneas añadidas no lo incluye. La diferencia AST se verifica frente a la base y la cobertura procede del mismo informe.",
+  "changed_sha256": "07b921ba2599f35c94e617265900ba68f86e6549d172478b122a659d3f0b9f04"
+ },
+ "mutations": {
+  "tree_commit": "799ba14c35f9545951839fba96f3e7192bcc88b8",
+  "planned": 7,
+  "killed": 7,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "499587c2af37d38d65d4a65d87e636c479fd7765e491a8265385ed43f13fd079",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/frozen_financial.py": "3e4c00afec4f4256f617d07dfe73a6c27a9f84fefb62256b99c477cf3c415ed7",
+   "src/mars_titan/memory/spaced_session.py": "f24be25f087a8007a99f954a7f9192659cc7f7cc4173d7fdb2051a6edccc739d"
+  },
+  "cases": [
+   "shared_options_accept_another_snapshot",
+   "spaced_drops_bound_context",
+   "warmup_drops_bound_context",
+   "utility_is_not_forwarded",
+   "quantiles_are_overwritten_by_utility",
+   "spaced_forgets_inherited_source_pins",
+   "regional_spaced_uses_scalar_producer"
+  ],
+  "summary_sha256": "dfd963b4bccd6710198f2f83e51faa9d25fd5b5c8c6ad3be5bfa29db1d969860",
+  "scope": "Siete defectos de contexto, calentamiento, cuantiles, utilidad, fuentes y lectura regional, con controles G1 y G2 verdes y M1 rojo.",
+  "additional": [
+   {
+    "tree_commit": "d3abaee9f790d992da81a0efb0834ef2760dd6ec",
+    "planned": 3,
+    "killed": 3,
+    "recipes_sha256": "346194e9098ffe16a1f1b4fe7506f163c21a3bf521e861dc8dd42106e1d2702f",
+    "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+    "source_sha256": {
+     "src/mars_titan/models/titans/frozen_financial.py": "3e4c00afec4f4256f617d07dfe73a6c27a9f84fefb62256b99c477cf3c415ed7"
+    },
+    "cases": [
+     "shared_options_accept_selection_without_c",
+     "shared_options_accept_unregistered_views",
+     "shared_options_drop_local_control"
+    ],
+    "summary_sha256": "d1e8d28abf1b86e1c39d5c62a4a1be8fe3676036b83b2a6e4cdf77f2fe0f6f09",
+    "scope": "Tres defectos distintos de reenvío de C y rechazo de vistas o planes incompatibles, con G1 y G2 verdes y M1 rojo."
+   }
+  ]
+ },
+ "native_link": {
+  "role": "Enlace existente utilizado en las pruebas CPU. No se recompiló ni se comprobó CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}

@@ -1,0 +1,294 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "mechanism_composition_cpu_verified_cuda_pending",
+ "implementation_commit": "8ce5470ee983891111cb062e9e090f18b96aa609",
+ "verification_test_commit": "8ce5470ee983891111cb062e9e090f18b96aa609",
+ "base_commit": "c6e584e310a9aa24dca575081ab9e09b77b9dcc6",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "device": "cpu",
+ "dtype": "float64",
+ "distinct_test_case_identifiers": 426,
+ "scope": "Origen N2 común al evento, vistas verificadas por bloque, PT4, propuestas, selector con buffers manuales, puentes en anillo/árbol y recogida provisional. Archivo y recuperación nativos con admisión M1.",
+ "prepared_cuda_case": {
+  "nodeid": "tests/memory/test_dendritic_mechanisms.py::test_cuda_mechanisms_reproduce_the_next_fp32_prediction_after_resume",
+  "source_sha256": "fc649e8234c4036abcbf66a5e7f2ee8384740de189b6e1eb40a8ac40d7e9bfc4",
+  "collection_log_sha256": "efbd390ca94f9549174a5d21dbcb8231e243297366be3c4d45eba9f2953e64a8",
+  "collected": 1,
+  "executed": false,
+  "dtype": "float32",
+  "allow_tf32": false,
+  "tolerance": {
+   "rtol": 2e-05,
+   "atol": 2e-05,
+   "scope": "Fixture técnico FP32 N2. No se modifica la tolerancia del corpus."
+  },
+  "limit": "Prepara emisión, banco poblado y recuperación entre CPU FP32 y cuda:0. No se ha ejecutado ni acredita la recogida regional en CUDA."
+ },
+ "gpu_probe": {
+  "torch": "2.14.0+cu130",
+  "cuda_build": "13.0",
+  "cuda_available": true,
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "free_mib": 771,
+  "utilization_percent": 10,
+  "workload_executed": false,
+  "note": "Observación puntual con aplicaciones ajenas activas. No se liberó su memoria ni se detuvieron procesos."
+ },
+ "intermediate_checks": [
+  {
+   "kind": "expected_red_before_implementation",
+   "failures": 1,
+   "log_sha256": "1ea4e649f27f99391964c0a45daa9a774a30e4022c48fa6b59e784707f46ee06",
+   "note": "El consumidor todavía rechazaba N2 antes de implementar la integración."
+  },
+  {
+   "kind": "invalid_fixture_route_corrected",
+   "tests": 17,
+   "failures": 1,
+   "xml_sha256": "9495b459a3a082d0fdcd9f63b768ed6b26856d34456eb6566d4df7ba27efb63b",
+   "note": "El fixture nombraba una ruta inexistente. Se corrigió a k4cr sin cambiar producción. El caso pasó después y forma parte de la selección definitiva."
+  }
+ ],
+ "limits": [
+  "Las selecciones se solapan. Sus 448 ejecuciones corresponden a 426 identificadores distintos y no son 448 casos nuevos.",
+  "La selección principal excluye 102 CUDA anteriores. El nuevo caso CUDA solo se ha recogido, sin ejecutar. Queda pendiente la comprobación GPU de esta composición.",
+  "Los fixtures usan cuatro activos ficticios de US y supervisión manual. No acreditan resultados predictivos ni el comportamiento del corpus completo.",
+  "La comparación de paridad usa K1 y M1. K4 aparece como comprobación de composición con PT4, sin cambiar el contraste científico principal.",
+  "La ganancia N2 y los buffers del selector se fijan manualmente, sin ajustes ni pasos de optimizador. No se verifica aquí la procedencia de una política entrenada.",
+  "Se verifican anillo y árbol, sin una garantía sobre todas las topologías o el lector adaptativo. El método preexistente MechanismCollector._adaptive_call no se ejecutó en esta selección.",
+  "La cobertura de archivos es parcial y el CRAP máximo de las funciones cambiadas es 140,35 en MechanismCollector.add. No se presenta como ausencia de defectos.",
+  "No se midieron latencia integral, RAM/VRAM, energía ni calidad predictiva de esta composición. La medida 64/256 previa de N2 sin E2 ni mecanismos no se le atribuye.",
+  "Las propuestas y su origen son transitorios. La publicación y el archivo de la traza corresponden a FinancialSession.",
+  "No se repitió toda la batería del repositorio. Se conservan las selecciones y sus exclusiones explícitas.",
+  "El contraste con C y otras operaciones globales sin integración propia permanecen pendientes.",
+  "E2 y los mecanismos tienen integraciones separadas. Esta evidencia no habilita todos sus cruces ni una sesión E2 con consumidor de mecanismos."
+ ],
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "f04080918f0f154620770e787a0ddb6adf22c2f960868daf56ae3aaa51a6dc81"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "b4440f8e7ef6c414ac4224081bb6331acf49c6830dcc8fad3e8a0b82f1dd2226"
+  }
+ ],
+ "suites": [
+  {
+   "name": "mechanisms_and_existing_consumers",
+   "tests": 422,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a16dc9dc0f90c810c809318b1658776408f0cee187e4787eb22df731d5cf9f07",
+   "note": "422 CPU sin omisiones. Excluye 102 CUDA. Incluye propuestas, rutas, recogida, selectores con fixtures, sesión y controles N2/E2 anteriores."
+  },
+  {
+   "name": "regional_and_standalone_extension",
+   "tests": 24,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "db5f1af4bd8238282f912966f779e1aad71d2abd379f120681a4b70ac129ef6b",
+   "note": "24 CPU sin omisiones. Repite casos y añade anillo, árbol y colector directo con banco no vacío. No se suman como casos nuevos."
+  },
+  {
+   "name": "stronger_source_and_trace_checks",
+   "tests": 2,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "bbf786a043f9d85f0bde72536dde0b3ba424150272fd82137248fa16aa87235e",
+   "note": "Dos casos repetidos con comprobaciones reforzadas: origen alterado sin cambiar su contexto y verificación directa de la traza además del bundle."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1105,
+   "covered_statements": 970,
+   "branches": 484,
+   "covered_branches": 370
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/dendritic_session.py",
+    "source_sha256": "40d51eb5d03edd41b65a7bf7f3517775be659497b7fa9642406f1bbe5ccae638",
+    "statements": 20,
+    "covered_statements": 20,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/memory/financial_mechanisms.py",
+    "source_sha256": "e3546595d137ce72e23c022a71b80c4c811bc45affa434a87161cdc75cf4e6a8",
+    "statements": 324,
+    "covered_statements": 290,
+    "branches": 160,
+    "covered_branches": 127
+   },
+   {
+    "path": "src/mars_titan/memory/mechanism_collection.py",
+    "source_sha256": "06460e07d3b3ad24b693d7c6ddbadadf1941fdcb025781bc7f8b1f975c91cec2",
+    "statements": 270,
+    "covered_statements": 208,
+    "branches": 114,
+    "covered_branches": 72
+   },
+   {
+    "path": "src/mars_titan/models/titans/dendritic_context.py",
+    "source_sha256": "7c17f9f6cec805ebc5782874493061c7ef8e75363a470cb2e41f1c6467674a87",
+    "statements": 92,
+    "covered_statements": 92,
+    "branches": 24,
+    "covered_branches": 24
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "source_sha256": "ff4d7341474cb809dbb9f15980cda04ad32cf5866a200a17d49024f237ee3e80",
+    "statements": 351,
+    "covered_statements": 312,
+    "branches": 178,
+    "covered_branches": 139
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_event.py",
+    "source_sha256": "0f4aa81e81cd48816de4c8d4e08b9e2abf6e069c7cf77e1609fcfd6fe43b0920",
+    "statements": 48,
+    "covered_statements": 48,
+    "branches": 0,
+    "covered_branches": 0
+   }
+  ],
+  "max_crap": 420.0,
+  "quality_sha256": "13dfa3844fd57b76b15353e4f2575f4cc0397c8e36d0601ad9c6418f6dd870d0",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "c6e584e310a9aa24dca575081ab9e09b77b9dcc6",
+  "head": "8ce5470ee983891111cb062e9e090f18b96aa609",
+  "functions": 14,
+  "max_crap": 140.34980374787114,
+  "changed_executable_lines": 53,
+  "changed_covered_lines": 53,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/mechanism_collection.py",
+    "function": "MechanismCollector.add",
+    "cyclomatic_complexity": 60,
+    "crap": 140.34980374787114,
+    "changed_executable_lines": 9,
+    "changed_covered_lines": 9,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "function": "FrozenMechanismConsumer.__init__",
+    "cyclomatic_complexity": 55,
+    "crap": 94.94545454545454,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "function": "FrozenMechanismConsumer.begin",
+    "cyclomatic_complexity": 61,
+    "crap": 63.58864511732338,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 7,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_mechanisms.py",
+    "function": "MechanismBinding.prepare_event",
+    "cyclomatic_complexity": 42,
+    "crap": 42.0,
+    "changed_executable_lines": 13,
+    "changed_covered_lines": 13,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "function": "FrozenMechanismConsumer.verify",
+    "cyclomatic_complexity": 27,
+    "crap": 40.28546435340429,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Catorce funciones modificadas medidas, ninguna sin medir. El nuevo validador cubre sus cuatro sentencias y dos ramas. Las condiciones compuestas se comprueban además con casos y mutaciones específicos.",
+  "changed_sha256": "f2c5c3832182f75a8eb31f6f372b9d88dc3a52cdd5b220ddde5fe61c13fccabd"
+ },
+ "mutations": {
+  "tree_commit": "8ce5470ee983891111cb062e9e090f18b96aa609",
+  "planned": 21,
+  "killed": 21,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "3b8ccf300f35341c2203496dcc8070b29c1c82ca55e33f68d499bfd94494b80d",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/mechanism_consumer.py": "ff4d7341474cb809dbb9f15980cda04ad32cf5866a200a17d49024f237ee3e80",
+   "src/mars_titan/memory/mechanism_collection.py": "06460e07d3b3ad24b693d7c6ddbadadf1941fdcb025781bc7f8b1f975c91cec2",
+   "src/mars_titan/memory/dendritic_session.py": "40d51eb5d03edd41b65a7bf7f3517775be659497b7fa9642406f1bbe5ccae638",
+   "src/mars_titan/memory/financial_mechanisms.py": "e3546595d137ce72e23c022a71b80c4c811bc45affa434a87161cdc75cf4e6a8",
+   "src/mars_titan/models/titans/dendritic_context.py": "7c17f9f6cec805ebc5782874493061c7ef8e75363a470cb2e41f1c6467674a87"
+  },
+  "cases": [
+   "source_accepts_seed",
+   "source_accepts_contract",
+   "source_accepts_context",
+   "source_accepts_partial",
+   "source_accepts_cutoff",
+   "mechanisms_forget_dendritic_code_pins",
+   "event_drops_whole_source_identity",
+   "view_from_another_whole_cohort_is_accepted",
+   "consumer_drops_dendritic_view",
+   "binding_drops_whole_source",
+   "binding_drops_block_view",
+   "history_omits_dendritic_trace",
+   "collector_drops_dendritic_view",
+   "market_context_discards_dendrites_in_consumer",
+   "market_context_discards_dendrites_in_collection",
+   "mechanisms_are_not_recognized_by_dendritic_verification",
+   "empty_dendritic_trace_is_allowed_for_plain_models",
+   "collector_accepts_another_whole_source",
+   "standalone_collector_omits_whole_source",
+   "native_verification_trusts_changed_routes",
+   "event_accepts_a_source_changed_after_sealing"
+  ],
+  "summary_sha256": "96a21ee4431ab0b72d1a029ed50c918de89250cf896692f054809a53439093e0",
+  "scope": "Veintiún defectos distintos de origen, configuración, contrato, contexto, campos, vistas, publicación, recogida y verificación detectados con G1 y G2 verdes y M1 rojo. Sin intentos de optimizador."
+ },
+ "native_link": {
+  "role": "Enlace existente utilizado en las pruebas CPU. No se recompiló ni se ejercitó su ruta CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}

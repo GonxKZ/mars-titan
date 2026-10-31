@@ -1,0 +1,172 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "neural_operator_cpu_verified_temporal_integration_pending",
+ "implementation_commit": "c625f82475250838d2079e2670ab94aada1e5e00",
+ "base_commit": "5d7f554067a91a42e1f94a5c578b6116fd109e25",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "Operador neuronal N2 aislado, con modulación contextual y paridad inicial. No es la variante financiera completa.",
+ "limits": [
+  "Productor temporal, control con contexto barajado, configuración, conexión financiera y recuperación de sesión pendientes.",
+  "No se implementan kWTA ni conexiones dispersas del artículo. La ganancia residual es una adaptación propia.",
+  "Una prueba CUDA quedó fuera de la selección CPU porque la GPU estaba ocupada. No se atribuye verificación CUDA.",
+  "No hay coste integral, ahorro de memoria, reducción de olvido ni mejora predictiva medidos.",
+  "La cota puntual de amplitud no limita el Jacobiano completo cuando el contexto depende de la representación.",
+  "La primera pasada detectó nueve de diez mutaciones. Se reforzó el caso de ganancias grandes y la repetición detectó la restante."
+ ],
+ "sources": [
+  {
+   "url": "https://www.frontiersin.org/journals/neurorobotics/articles/10.3389/fnbot.2022.846219/full",
+   "doi": "10.3389/fnbot.2022.846219",
+   "title": "Avoiding Catastrophe: Active Dendrites Enable Multi-Task Learning in Dynamic Environments",
+   "inspected_sections": [
+    "3",
+    "6.3"
+   ],
+   "read_completely": false,
+   "download_sha256": "e27e8c9b53ed825cfe5e61020b8626d14f5080248160f1fe2828e675b4f3131b",
+   "checked_on": "2026-10-31"
+  }
+ ],
+ "coverage_execution": "PyTorch se importó antes de iniciar coverage.py, tras un fallo de su inicialización al instrumentarla. El operador no estaba importado al comenzar la cobertura.",
+ "suites": [
+  {
+   "name": "active_dendritic_operator",
+   "tests": 41,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "452e31b24855b6571601e6a5c267095548e71f6972dc24cd3cfcb67f4a5d0c10",
+   "note": "41 casos CPU, cero omisiones. Una prueba CUDA excluida explícitamente. No se ejecutaron pasos de optimizador."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 53,
+   "covered_statements": 53,
+   "branches": 16,
+   "covered_branches": 16
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "source_sha256": "941de385c4f98884a29dae3d5527661c439eee65c79f47a7eb155c9667a0f77b",
+    "statements": 53,
+    "covered_statements": 53,
+    "branches": 16,
+    "covered_branches": 16
+   }
+  ],
+  "max_crap": 16.0,
+  "quality_sha256": "4a2fe6cedf36addd85672fda8030a528baec7fe0c77bf03f44ecec0dc17c95d6",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "5d7f554067a91a42e1f94a5c578b6116fd109e25",
+  "head": "c625f82475250838d2079e2670ab94aada1e5e00",
+  "functions": 4,
+  "max_crap": 16.0,
+  "changed_executable_lines": 45,
+  "changed_covered_lines": 45,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "function": "ActiveDendrites._validate",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 17,
+    "changed_covered_lines": 17,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "function": "ActiveDendrites.__init__",
+    "cyclomatic_complexity": 3,
+    "crap": 3.0,
+    "changed_executable_lines": 17,
+    "changed_covered_lines": 17,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "function": "ActiveDendrites.identity",
+    "cyclomatic_complexity": 1,
+    "crap": 1.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/active_dendrites.py",
+    "function": "ActiveDendrites.forward",
+    "cyclomatic_complexity": 1,
+    "crap": 1.0,
+    "changed_executable_lines": 9,
+    "changed_covered_lines": 9,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Cuatro funciones nuevas medidas. Cobertura de sentencias y ramas, sin garantía sobre todos los operandos booleanos.",
+  "changed_sha256": "1a986152cbe7b157dc1548b67d123df888ff27b6d464beb92b6a1011c523a091"
+ },
+ "mutations": {
+  "tree_commit": "c625f82475250838d2079e2670ab94aada1e5e00",
+  "planned": 10,
+  "killed": 10,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "73d2efb69000e72bc523dd862896462aa91e96d41a08a69ebcbfa4dc48069836",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/active_dendrites.py": "941de385c4f98884a29dae3d5527661c439eee65c79f47a7eb155c9667a0f77b"
+  },
+  "cases": [
+   "positive_maximum_loses_negative_winners",
+   "selected_sign_is_erased",
+   "initial_gain_breaks_reference_parity",
+   "zero_segments_block_the_initial_gain_gradient",
+   "global_rng_is_advanced",
+   "response_budget_is_ignored",
+   "overflow_is_hidden_by_saturation",
+   "gain_is_not_bounded",
+   "selected_weights_are_detached",
+   "values_are_modified_in_place"
+  ],
+  "summary_sha256": "ecd1802a84c63fbf2226331eb4caa96cba4c9516ada45aec8fd6bea17f1669b9",
+  "scope": "Diez defectos dirigidos de selección, paridad, RNG, gradientes, memoria y desbordamientos.",
+  "first_pass_killed": 9,
+  "reruns": [
+   {
+    "tree_commit": "c625f82475250838d2079e2670ab94aada1e5e00",
+    "cases": [
+     "gain_is_not_bounded"
+    ],
+    "killed": 1,
+    "recipes_sha256": "97f1957d2f183769b7cd1f1f9cfebd8ef3cf82c15edbfc9f952ee5bce73d0684",
+    "source_sha256": {
+     "src/mars_titan/models/titans/active_dendrites.py": "941de385c4f98884a29dae3d5527661c439eee65c79f47a7eb155c9667a0f77b"
+    },
+    "summary_sha256": "61664f31476e4ee4cba95ef27db6fa9c232509ccfd76c38c5cfb680eb90b93f4",
+    "reason": "Se reforzó la prueba de ganancias grandes porque el primer caso no activaba una unidad con ganancia suficiente para detectar la eliminación de tanh."
+   }
+  ]
+ }
+}

@@ -23,6 +23,7 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .active_dendrites import ActiveDendrites
 from .asset_groups import (
     CURRENT_SECTOR,
     AssetGroupMembership,
@@ -59,6 +60,13 @@ from .cross_asset_attention import (
     CrossAssetAttention,
     CrossAssetAttentionConfig,
     parse_cross_asset_attention,
+)
+from .dendritic_context import DendriticView
+from .dendritic_regime import (
+    DendriticRegime,
+    parameter_seed,
+    parse_dendritic_regime,
+    regime_context,
 )
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
@@ -231,6 +239,7 @@ class FinancialConfig:
     memory_huber: HuberMemory | None = None
     memory_time_scales: ScaleInvariantTime | None = None
     differential_attention: str | None = None
+    active_dendrites: DendriticRegime | None = None
 
     def __post_init__(self):
         self._check_input_contract()
@@ -253,8 +262,18 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_core_variants()
+        self._check_active_dendrites()
         self._check_memory_projections()
         self._check_runtime_limits()
+
+    def _check_active_dendrites(self):
+        object.__setattr__(self, "active_dendrites", parse_dendritic_regime(self.active_dendrites))
+        if self.active_dendrites is not None and (
+            self.inputs.context != 64
+            or self.inputs.dimensions["prices"] != len(PRICE_WINDOW_CHANNELS)
+            or "price_window" not in self.inputs.representation
+        ):
+            raise ValueError("N2 necesita el contrato de ventanas por sesión de 64 pasos")
 
     def _check_input_contract(self):
         """Entrada, codificador, cabeza y disposición de atención."""
@@ -753,6 +772,8 @@ class FinancialConfig:
             result.update(memory_time_scales=self.memory_time_scales.identity())
         if self.differential_attention is not None:
             result.update(differential_attention=differential_identity())
+        if self.active_dendrites is not None:
+            result.update(active_dendrites=self.active_dendrites.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -847,6 +868,8 @@ class FinancialPredictor(nn.Module):
         # C vuelve a calcular la escritura de MAC sin la señal de #791.
         if local_control is not None and config.mature_reliability is not None:
             raise ValueError("La fiabilidad madura no se combina con el control local")
+        if local_control is not None and config.active_dendrites is not None:
+            raise ValueError("N2 necesita un contraste propio con el control local de C")
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1043,6 +1066,22 @@ class FinancialPredictor(nn.Module):
             if config.asset_groups is not None
             else None
         )
+        self.active_dendrites = (
+            ActiveDendrites(
+                config.hidden_size,
+                4,
+                segments=config.active_dendrites.segments,
+                seed=parameter_seed(config.seed),
+                dtype=dtype,
+            )
+            if config.active_dendrites is not None
+            else None
+        )
+        self._dendritic_id = (
+            canonical(config.active_dendrites.identity())
+            if config.active_dendrites is not None
+            else None
+        )
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1064,6 +1103,9 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        return self.active_dendrites is not None or self._whole_session_operation()
+
+    def _whole_session_operation(self):
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
@@ -1115,6 +1157,7 @@ class FinancialPredictor(nn.Module):
 
     def _seal_parameters(self):
         self._check_temporal_encoder()
+        self._dendritic_component()
         if self.head.weight.dtype not in (torch.float32, torch.float64):
             raise ValueError("El predictor admite float32 y float64")
         regional = self._regional_component()
@@ -1133,6 +1176,22 @@ class FinancialPredictor(nn.Module):
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
         self._regional_program_signature = self._program_signature()
+
+    def _dendritic_component(self):
+        declared, module = self.config.active_dendrites, self.active_dendrites
+        if declared is None and module is None and self._dendritic_id is None:
+            return None
+        if (
+            type(declared) is not DendriticRegime
+            or type(module) is not ActiveDendrites
+            or canonical(declared.identity()) != self._dendritic_id
+            or (module.hidden_size, module.context_size, module.segments, module.seed)
+            != (self.config.hidden_size, 4, declared.segments, parameter_seed(self.config.seed))
+            or module.segment_weights.dtype != self.head.weight.dtype
+            or module.segment_weights.device != self.head.weight.device
+        ):
+            raise ValueError("El contexto o el operador N2 cambió fuera de su configuración")
+        return module
 
     def _regional_variant_component(self):
         declared, module = self.config.regional_variant, self.regional_variant
@@ -1269,6 +1328,7 @@ class FinancialPredictor(nn.Module):
 
     def _check_parameters(self):
         self._check_temporal_encoder()
+        self._dendritic_component()
         if self._program_signature() != self._regional_program_signature:
             raise ValueError("El programa regional cambió fuera de una carga identificada")
         if self._signature() != self._parameter_signature:
@@ -1779,6 +1839,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        dendritic_context=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -1799,6 +1860,7 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                dendritic_context=dendritic_context,
             )
 
     def _prepare(
@@ -1813,6 +1875,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        dendritic_context=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1839,8 +1902,15 @@ class FinancialPredictor(nn.Module):
                 raise ValueError("Las entradas y los parámetros necesitan el mismo dispositivo")
         if any(value.dtype != self.head.weight.dtype for value in batch.inputs.values()):
             raise ValueError("Las entradas y los parámetros necesitan la misma precisión")
-        if self.session_level and session_complete is not True:
+        if session_complete is not True and (
+            self._whole_session_operation()
+            or (self.active_dendrites is not None and dendritic_context is None)
+        ):
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
+        if dendritic_context is not None:
+            if self.active_dendrites is None or type(dendritic_context) is not DendriticView:
+                raise ValueError("El predictor no admite esta vista de contexto N2")
+            dendritic_context.validate(batch, self.config.active_dendrites, self.config.seed)
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
         received = batch
         if self.config.session_rank_inputs is not None:
@@ -1928,6 +1998,17 @@ class FinancialPredictor(nn.Module):
                     extra = torch.zeros_like(token).index_copy(0, positions, part)
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
+            if self.active_dendrites is not None:
+                values = (
+                    regime_context(
+                        self.config.active_dendrites, received, seed=self.config.seed
+                    ).values
+                    if dendritic_context is None
+                    else dendritic_context.tensor(
+                        received, self.config.active_dendrites, self.config.seed
+                    )
+                )
+                observed = self.active_dendrites(observed, values)
             gates, sink = {}, None
             if self.reliability_gates is not None:
                 gates = dict(gate_shift=self.reliability_gates(reliability))
@@ -1938,7 +2019,7 @@ class FinancialPredictor(nn.Module):
                     observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
                 )
             else:
-                encoded, next_mac = token, None
+                encoded, next_mac = observed, None
             if self.cross_asset_attention is not None:
                 # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
                 encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)

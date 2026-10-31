@@ -34,6 +34,7 @@ class MechanismEvent:
     rows: tuple = ()
     selection_json: str | None = None
     availability: tuple = ()
+    dendritic_source_id: str | None = None
 
 
 @dataclass(frozen=True)

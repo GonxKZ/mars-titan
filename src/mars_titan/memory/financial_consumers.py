@@ -15,9 +15,17 @@ from mars_titan.data.input_policy import masked_inputs
 from mars_titan.models.candidate.episode_codec import FrozenCandidateCodec
 from mars_titan.models.candidate.frozen_consumer import FrozenCandidateConsumer
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
+from mars_titan.models.titans.financial_inputs import DecisionBatch
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import candidate_bank, flow_cursors, regional_episode_trace, write_policy, write_scores
+from . import (
+    candidate_bank,
+    dendritic_session,
+    flow_cursors,
+    regional_episode_trace,
+    write_policy,
+    write_scores,
+)
 from .candidate_bank import CandidateBankConfig, CandidateEpisodeBank, CandidateEpisodes
 from .episodic_codec import FrozenEpisodeCodec
 from .financial_state_artifacts import FinancialStateArtifacts
@@ -151,14 +159,20 @@ class TitansBinding:
             raise ValueError(SOURCE_ERROR)
 
     def code(self):
+        extension = (
+            {"dendritic_session": _file_digest(dendritic_session)}
+            if self.consumer.predictor.active_dendrites is not None
+            else {}
+        )
         if self.admission == "m2":
-            return {"write_policy": _file_digest(write_policy)}
+            return {"write_policy": _file_digest(write_policy), **extension}
         if self.admission == "m3":
             return {
                 "write_policy": _file_digest(write_policy),
                 "write_scores": _file_digest(write_scores),
+                **extension,
             }
-        return {}
+        return extension
 
     def bank(self, native, retention, **scope):
         return episodic_bank(native, retention, self.admission, **scope)
@@ -201,6 +215,11 @@ class TitansBinding:
 
     def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
         model = self.consumer.predictor
+        dendritic = (
+            dendritic_session.prepare(session, rows, context_id)
+            if model.active_dendrites is not None
+            else None
+        )
         trace = None
         if regional_episode_trace.enabled(self.consumer.readout) and not warmup:
             trace = regional_episode_trace.begin(
@@ -224,7 +243,13 @@ class TitansBinding:
         values, measurements = [], []
         for start in range(0, len(rows), batch_rows):
             block = rows[start : start + batch_rows]
-            batch = session._decision_batch(block)
+            options = {}
+            if dendritic is None:
+                batch = session._decision_batch(block)
+            else:
+                cpu = session._decision_cpu_batch(block)
+                options["dendritic_context"] = dendritic.view(cpu)
+                batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
             initial = model.initial_state(unknown) if unknown else None
             previous = session._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
@@ -236,6 +261,7 @@ class TitansBinding:
                 snapshot=snapshot,
                 warmup=warmup,
                 selection=selection,
+                **options,
             )
             self.record_block(session, batch, result, warmup=warmup)
             fast = session._fast_store.replace(fast, previous, result.next_state)
@@ -271,6 +297,8 @@ class TitansBinding:
             group_estimated_bytes=selection.estimated_bytes if selection else 0,
         )
         control.update(model.operation_counts(len(rows)))
+        if dendritic is not None:
+            control["dendritic_context"] = dendritic.record()
         if trace is not None:
             control["regional_reads"] = trace
             reader = self.consumer.readout
