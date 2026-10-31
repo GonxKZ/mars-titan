@@ -129,6 +129,12 @@ def test_constructor_requires_the_typed_configuration(config):
         api().DualNeuromodulation(config)
 
 
+@pytest.mark.parametrize("field", ["write_expected", "bound"])
+def test_oversized_integer_coefficients_raise_the_configuration_error(field):
+    with pytest.raises(ValueError):
+        api().DualNeuromodulationConfig(**{field: 1 << 2048})
+
+
 @pytest.mark.cuda
 def test_cuda_fp32_shifts_match_the_cpu_reference():
     module = api().DualNeuromodulation(api().DualNeuromodulationConfig())

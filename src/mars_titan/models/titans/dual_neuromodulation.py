@@ -26,8 +26,8 @@ class DualNeuromodulationConfig:
         for name, value in asdict(self).items():
             if (
                 type(value) not in (int, float)
-                or not math.isfinite(value)
                 or not 0 <= value <= 4
+                or not math.isfinite(value)
                 or (name == "bound" and value == 0)
             ):
                 raise ValueError("N1 requiere coeficientes en [0, 4] y una cota en (0, 4]")
