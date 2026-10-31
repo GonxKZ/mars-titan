@@ -1095,5 +1095,18 @@
   "La nueva organización no elimina condiciones ni acredita una mejora de velocidad o predicción.",
   "El código conserva su procedencia nueva. La equivalencia de las identidades comprobadas no autoriza a cambiar las huellas de ejecuciones históricas.",
   "El aprendizaje y el test final permanecen bloqueados."
- ]
+ ],
+ "develop_integration": {
+  "base": "0f413df336b4e03ec3ace28cb43e1de8e7bfed82",
+  "head": "4b4d1e1151470219859851e04f59c7f843fcb8fa",
+  "configuration_source_unchanged": true,
+  "tests": {
+   "tests": 63,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0
+  },
+  "xml_sha256": "dcafe49c8aa7dbf468b680da7c70365ebfa790a3fc5d425bf6a822c5e6e4c2a4",
+  "note": "La fuente de configuración y las mutaciones anteriores se conservan. Se verifican63 contratos después de incorporar develop, sin atribuir la regresión anterior a código diferente."
+ }
 }
