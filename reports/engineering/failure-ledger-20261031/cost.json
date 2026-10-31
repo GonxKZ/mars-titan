@@ -1,0 +1,1175 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "scope": "Coste técnico del libro aislado con fixtures. No es latencia del predictor completo ni evaluación científica.",
+ "benchmark_sha256": "d13102dd98f6bc41894abfe7142f22d6c3bb272842a981171dfcf3c3309b3603",
+ "cpu": [
+  {
+   "field": "Architecture:",
+   "data": "x86_64"
+  },
+  {
+   "field": "CPU(s):",
+   "data": "16"
+  },
+  {
+   "field": "Model name:",
+   "data": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics"
+  }
+ ],
+ "thread_limits": {
+  "OMP_NUM_THREADS": 1,
+  "MKL_NUM_THREADS": 1,
+  "OPENBLAS_NUM_THREADS": 1
+ },
+ "concurrent_load": "Regresión H1 con dos procesos y mutaciones dirigidas en CPU. Perfil power-saver. No se detuvieron aplicaciones ajenas.",
+ "order": [
+  "reference,cached",
+  "cached,reference",
+  "reference,cached"
+ ],
+ "samples": [
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 0.2554201539605856,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 2.60087,
+    "p95_ms": 2.86736445,
+    "p99_ms": 3.2042334299999986,
+    "mean_ms": 2.6290797200000005,
+    "std_ms": 0.16210242346788528
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 2.107131,
+    "p95_ms": 5.675771599999999,
+    "p99_ms": 6.38285752,
+    "mean_ms": 2.9839342,
+    "std_ms": 1.7881682023131271
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 21.764297,
+    "p95_ms": 23.5287677,
+    "p99_ms": 23.68560954,
+    "mean_ms": 22.182027,
+    "std_ms": 1.1284909315420606
+   },
+   "build_seconds": 0.01859663799405098,
+   "logical_bytes": 233846,
+   "peak_process_rss_kib": 579076,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "reference",
+   "raw_sha256": "324dabfc3dfa7524f792f9c6da8d0f529e32ce8d30dbeb1844fa8e360db846d3",
+   "process_wall_seconds": 3.18
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.11238399194553494,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 0.28081900000000004,
+    "p95_ms": 0.30818629999999997,
+    "p99_ms": 0.31893533,
+    "mean_ms": 0.2813002,
+    "std_ms": 0.014628093875826746
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 1.759364,
+    "p95_ms": 4.7953866,
+    "p99_ms": 5.39561172,
+    "mean_ms": 2.5126818,
+    "std_ms": 1.5166907292941958
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 20.35453,
+    "p95_ms": 21.1575469,
+    "p99_ms": 21.22892618,
+    "mean_ms": 19.870374333333334,
+    "std_ms": 1.3651043279604023
+   },
+   "build_seconds": 0.019637740217149258,
+   "logical_bytes": 266614,
+   "peak_process_rss_kib": 578772,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "cached",
+   "raw_sha256": "fff0e20c9f239a5f79e4de0ba0d3ed26e901b3c2f9fc43cf1e03231f8f1a0f60",
+   "process_wall_seconds": 3.17
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 1.511590411188081,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 18.758517,
+    "p95_ms": 20.502286299999998,
+    "p99_ms": 21.07160326,
+    "mean_ms": 17.12787814,
+    "std_ms": 2.960762611508657
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 15.469595,
+    "p95_ms": 18.036162400000002,
+    "p99_ms": 18.541681280000002,
+    "mean_ms": 14.931108600000002,
+    "std_ms": 2.3223780711374804
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 128.013541,
+    "p95_ms": 139.7586022,
+    "p99_ms": 140.80260764000002,
+    "mean_ms": 129.24939000000003,
+    "std_ms": 9.183409047255859
+   },
+   "build_seconds": 0.09359154105186462,
+   "logical_bytes": 1871250,
+   "peak_process_rss_kib": 585172,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "reference",
+   "raw_sha256": "2294afbe52b018e06f3ea36de1396663ef5e26d9b48aed41353eb7d38672e56d",
+   "process_wall_seconds": 4.28
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.49541178601793945,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 1.0545365,
+    "p95_ms": 1.1990633499999999,
+    "p99_ms": 1.20653033,
+    "mean_ms": 1.05157692,
+    "std_ms": 0.1037623362570138
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 8.856655,
+    "p95_ms": 11.8028306,
+    "p99_ms": 12.35326452,
+    "mean_ms": 9.603206199999999,
+    "std_ms": 1.4467604381550392
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 93.078959,
+    "p95_ms": 96.8779337,
+    "p99_ms": 97.21562034,
+    "mean_ms": 94.06150333333333,
+    "std_ms": 2.3482643586624214
+   },
+   "build_seconds": 0.09338188916444778,
+   "logical_bytes": 2133394,
+   "peak_process_rss_kib": 586128,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "cached",
+   "raw_sha256": "8914892fb083a6deff380231e3a1749ac9e5aa59f3afa9797df25ad86c1388ba",
+   "process_wall_seconds": 3.63
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 12.35129906795919,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 130.17933499999998,
+    "p95_ms": 164.76964959999998,
+    "p99_ms": 170.16328769,
+    "mean_ms": 130.39436452,
+    "std_ms": 20.922422256469172
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 107.322408,
+    "p95_ms": 170.464822,
+    "p99_ms": 181.8632436,
+    "mean_ms": 118.8649944,
+    "std_ms": 33.75891790392918
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1084.155287,
+    "p95_ms": 1279.6875518,
+    "p99_ms": 1297.0681975599998,
+    "mean_ms": 1095.8232603333333,
+    "std_ms": 163.30872702264887
+   },
+   "build_seconds": 1.1119841490872204,
+   "logical_bytes": 14973866,
+   "peak_process_rss_kib": 640512,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "reference",
+   "raw_sha256": "c702dc86b1df226b9e987c73977c4ae8c0b22add7d1f5355474f856d142ae461",
+   "process_wall_seconds": 14.89
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 7.6441246850881726,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 13.408362,
+    "p95_ms": 14.22167835,
+    "p99_ms": 14.812962859999997,
+    "mean_ms": 13.43609662,
+    "std_ms": 0.5185034564240777
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 158.244569,
+    "p95_ms": 268.9132756,
+    "p99_ms": 290.70564792000005,
+    "mean_ms": 182.264169,
+    "std_ms": 57.145025751953284
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1517.558132,
+    "p95_ms": 1704.1744613,
+    "p99_ms": 1720.76257946,
+    "mean_ms": 1582.4110516666667,
+    "std_ms": 100.89695251432808
+   },
+   "build_seconds": 1.0828832751139998,
+   "logical_bytes": 17071018,
+   "peak_process_rss_kib": 647248,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 1,
+   "mode": "cached",
+   "raw_sha256": "4ccd6598fd4901a2157a84baaf151108b48a831db88725c45af482db602c1ba0",
+   "process_wall_seconds": 10.56
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 0.24522287817671895,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 2.4740355000000003,
+    "p95_ms": 3.7512714499999995,
+    "p99_ms": 3.97669704,
+    "mean_ms": 2.6180839,
+    "std_ms": 0.38379913449601477
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 2.04899,
+    "p95_ms": 5.371335199999999,
+    "p99_ms": 6.02667504,
+    "mean_ms": 2.8777548,
+    "std_ms": 1.6565674740289211
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 20.184789,
+    "p95_ms": 20.3075283,
+    "p99_ms": 20.318438460000003,
+    "mean_ms": 20.140726,
+    "std_ms": 0.16822776086603647
+   },
+   "build_seconds": 0.019268742995336652,
+   "logical_bytes": 233846,
+   "peak_process_rss_kib": 578504,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "reference",
+   "raw_sha256": "60e042e691de31fce690a5f5f1f062182b251041e64923e6e86b83e6ea9b2b47",
+   "process_wall_seconds": 4.46
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.12269009998999536,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 0.2831635,
+    "p95_ms": 0.3243094499999999,
+    "p99_ms": 0.3660946299999999,
+    "mean_ms": 0.28634322000000006,
+    "std_ms": 0.02438877419083624
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 2.908639,
+    "p95_ms": 6.0106236,
+    "p99_ms": 6.62741592,
+    "mean_ms": 3.3964014,
+    "std_ms": 1.7256543851490773
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 23.024328,
+    "p95_ms": 23.2636038,
+    "p99_ms": 23.28487276,
+    "mean_ms": 22.316752666666662,
+    "std_ms": 1.1936005305744284
+   },
+   "build_seconds": 0.017183546908199787,
+   "logical_bytes": 266614,
+   "peak_process_rss_kib": 578760,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "cached",
+   "raw_sha256": "181957e6ebea6ff921061e1466506e01f3fb9bd5e084f442084150eeaff8b093",
+   "process_wall_seconds": 3.88
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 1.9487388760317117,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 20.9476085,
+    "p95_ms": 25.27564985,
+    "p99_ms": 28.69947676999999,
+    "mean_ms": 21.573154260000003,
+    "std_ms": 2.316865088857794
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 18.950633,
+    "p95_ms": 23.7792806,
+    "p99_ms": 24.26581772,
+    "mean_ms": 19.6000538,
+    "std_ms": 2.956589561323885
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 163.538843,
+    "p95_ms": 180.8067623,
+    "p99_ms": 182.34168846,
+    "mean_ms": 168.38672700000004,
+    "std_ms": 10.314642532183498
+   },
+   "build_seconds": 0.11548708286136389,
+   "logical_bytes": 1871250,
+   "peak_process_rss_kib": 584952,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "reference",
+   "raw_sha256": "bfc46d694e4361057267daf9c9d6ac4a78d84a55a0fece1c1bb0d7f9f544b118",
+   "process_wall_seconds": 5.14
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.8646234329789877,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 1.6652965,
+    "p95_ms": 2.2220201499999996,
+    "p99_ms": 2.4357911299999997,
+    "mean_ms": 1.6628004200000002,
+    "std_ms": 0.2555737123629181
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 17.297129,
+    "p95_ms": 22.28927,
+    "p99_ms": 23.0800732,
+    "mean_ms": 18.303033600000003,
+    "std_ms": 2.5990877654165203
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 173.446484,
+    "p95_ms": 175.59475519999998,
+    "p99_ms": 175.78571263999999,
+    "mean_ms": 171.78587066666668,
+    "std_ms": 4.152269967353385
+   },
+   "build_seconds": 0.14220200688578188,
+   "logical_bytes": 2133394,
+   "peak_process_rss_kib": 585668,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "cached",
+   "raw_sha256": "c22de0ccdf96de6cf14a15dd078c1e7bcf2f22ff3332b4661a7ebde1bc4edef4",
+   "process_wall_seconds": 4.81
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 13.907193755963817,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 153.78898099999998,
+    "p95_ms": 169.3980859,
+    "p99_ms": 183.97511126999996,
+    "mean_ms": 144.23551624,
+    "std_ms": 24.84571772291177
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 153.958158,
+    "p95_ms": 207.64936799999998,
+    "p99_ms": 217.9964696,
+    "mean_ms": 159.179719,
+    "std_ms": 33.24127462273667
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1197.162946,
+    "p95_ms": 1403.3875249,
+    "p99_ms": 1421.71859858,
+    "mean_ms": 1269.7962166666666,
+    "std_ms": 110.76092314442606
+   },
+   "build_seconds": 1.0316613919567317,
+   "logical_bytes": 14973866,
+   "peak_process_rss_kib": 640160,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "reference",
+   "raw_sha256": "723972b969e64f93c8aa4c0d9d8351a64acd58349b3e34581409833c4cfc7dd9",
+   "process_wall_seconds": 17.54
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 5.970629258081317,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 11.9176705,
+    "p95_ms": 13.8512547,
+    "p99_ms": 14.00677193,
+    "mean_ms": 10.79004254,
+    "std_ms": 2.5504215906336287
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 95.585212,
+    "p95_ms": 197.27259019999997,
+    "p99_ms": 217.32130604,
+    "mean_ms": 120.12759820000001,
+    "std_ms": 51.129486427660545
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1260.152437,
+    "p95_ms": 1458.8590099,
+    "p99_ms": 1476.52181638,
+    "mean_ms": 1309.8934016666665,
+    "std_ms": 124.42495449398108
+   },
+   "build_seconds": 0.7126214080490172,
+   "logical_bytes": 17071018,
+   "peak_process_rss_kib": 646912,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 2,
+   "mode": "cached",
+   "raw_sha256": "b31e8f550fb9d67c23e5ce90bedfd911de3b04ddc847f1cbb432aa456a5d881e",
+   "process_wall_seconds": 9.38
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 0.1765288971364498,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 1.757239,
+    "p95_ms": 2.3664890499999998,
+    "p99_ms": 2.884762819999998,
+    "mean_ms": 1.8286761599999997,
+    "std_ms": 0.33889257784562704
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 1.561541,
+    "p95_ms": 4.495440799999999,
+    "p99_ms": 5.06997376,
+    "mean_ms": 2.2789074,
+    "std_ms": 1.4681102464039406
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 14.424963,
+    "p95_ms": 14.9097696,
+    "p99_ms": 14.952863520000001,
+    "mean_ms": 14.417629,
+    "std_ms": 0.44883771847740295
+   },
+   "build_seconds": 0.015375544084236026,
+   "logical_bytes": 233846,
+   "peak_process_rss_kib": 579196,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "reference",
+   "raw_sha256": "3497c6b2c0217cbfa202532128a1463abd5d46e803f668792cd3f3524594eec1",
+   "process_wall_seconds": 2.78
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.09939745115116239,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 0.226016,
+    "p95_ms": 0.2762775499999999,
+    "p99_ms": 0.3720444599999999,
+    "mean_ms": 0.23293578000000004,
+    "std_ms": 0.03488553333649351
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 2.873161,
+    "p95_ms": 6.266836999999999,
+    "p99_ms": 6.9443801999999994,
+    "mean_ms": 3.5901486,
+    "std_ms": 1.7755687824134103
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 17.643583,
+    "p95_ms": 19.1757034,
+    "p99_ms": 19.31189188,
+    "mean_ms": 17.347419,
+    "std_ms": 1.7651600461102674
+   },
+   "build_seconds": 0.01202265010215342,
+   "logical_bytes": 266614,
+   "peak_process_rss_kib": 578936,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "cached",
+   "raw_sha256": "8f39ba7808b95a66ea91cfb9434a459094133eb7b3c94d7e5fa8734f85e35f84",
+   "process_wall_seconds": 2.57
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 1.1908082549925894,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 13.339203,
+    "p95_ms": 18.11247795,
+    "p99_ms": 19.062145689999998,
+    "mean_ms": 13.6240132,
+    "std_ms": 2.5360716251955506
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 9.644,
+    "p95_ms": 12.590385,
+    "p99_ms": 13.0608082,
+    "mean_ms": 10.269290999999999,
+    "std_ms": 1.510830205757351
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 88.263962,
+    "p95_ms": 95.792147,
+    "p99_ms": 96.461319,
+    "mean_ms": 91.046982,
+    "std_ms": 3.9468135548143977
+   },
+   "build_seconds": 0.09655714896507561,
+   "logical_bytes": 1871250,
+   "peak_process_rss_kib": 585276,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "reference",
+   "raw_sha256": "ba39ffbc42b641027b1025f395deecb6c000affed115f773c151d2daac81a316",
+   "process_wall_seconds": 3.58
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 0.5220606161747128,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 1.0014355,
+    "p95_ms": 1.0949634,
+    "p99_ms": 1.10804983,
+    "mean_ms": 1.00959022,
+    "std_ms": 0.04641232586168893
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 9.448341,
+    "p95_ms": 12.61183,
+    "p99_ms": 13.0957236,
+    "mean_ms": 10.122266199999999,
+    "std_ms": 1.628633361215151
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 104.276359,
+    "p95_ms": 109.504918,
+    "p99_ms": 109.9696788,
+    "mean_ms": 105.842425,
+    "std_ms": 3.0346736591367898
+   },
+   "build_seconds": 0.0857506759930402,
+   "logical_bytes": 2133394,
+   "peak_process_rss_kib": 586144,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "cached",
+   "raw_sha256": "9ca2bfbc634df03191ccf34bb5019d38d48e3d8faf71432d91d2abb1a45c2833",
+   "process_wall_seconds": 2.94
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": false,
+   "workload_seconds": 10.15347205917351,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 91.616387,
+    "p95_ms": 163.35748109999994,
+    "p99_ms": 188.18971540999996,
+    "mean_ms": 101.96901492,
+    "std_ms": 26.50967023351059
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 100.482154,
+    "p95_ms": 170.6157906,
+    "p99_ms": 182.36383732,
+    "mean_ms": 115.60525179999999,
+    "std_ms": 35.757988216436516
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1125.377893,
+    "p95_ms": 1176.5974689999998,
+    "p99_ms": 1181.1503202,
+    "mean_ms": 1046.184071,
+    "std_ms": 154.00155530883637
+   },
+   "build_seconds": 0.5915464970748872,
+   "logical_bytes": 14973866,
+   "peak_process_rss_kib": 640524,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "reference",
+   "raw_sha256": "d037109f17f4af55dbbd26a9940dd8a4d2fbf1f5413c34bc8d371a1f54f69bae",
+   "process_wall_seconds": 12.86
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_cost_not_predictive_evaluation",
+   "fixture_seed": 790,
+   "records": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "block_size": 128,
+   "device": "cpu",
+   "cache_keys": true,
+   "workload_seconds": 5.350454128114507,
+   "warmup": 5,
+   "query": {
+    "repetitions": 50,
+    "p50_ms": 9.760782500000001,
+    "p95_ms": 11.4052604,
+    "p99_ms": 12.37986123,
+    "mean_ms": 9.75886092,
+    "std_ms": 1.1616600657038327
+   },
+   "export": {
+    "repetitions": 5,
+    "p50_ms": 98.093518,
+    "p95_ms": 174.2681696,
+    "p99_ms": 189.39828032,
+    "mean_ms": 113.96934519999999,
+    "std_ms": 39.87979534700099
+   },
+   "restore": {
+    "repetitions": 3,
+    "p50_ms": 1020.461084,
+    "p95_ms": 1273.3466399,
+    "p99_ms": 1295.82535598,
+    "mean_ms": 1082.4398726666668,
+    "std_ms": 159.64743802113938
+   },
+   "build_seconds": 0.8992540899198502,
+   "logical_bytes": 17071018,
+   "peak_process_rss_kib": 646964,
+   "python": "3.12.14",
+   "numpy": "2.5.3",
+   "cpu": "",
+   "machine": "x86_64",
+   "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+   "scientific_experiments": 0,
+   "optimizer_steps": 0,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_context.py": "ed31b5c562b6820ccb5a3a2fb1f4eb0c56b56b5416c9b9072c4457bd08198e3e",
+    "src/mars_titan/memory/failure_ledger.py": "a2699db4d5fa495855a217563a720ab78bf95fb54479c5fba10520a85bfd8c10",
+    "src/mars_titan/memory/failure_ledger_state.py": "76048b5545c4adffda1b43f6623271eebbb047201a35f1515a2b0c1baaac376d"
+   },
+   "limitations": [
+    "Carga CPU concurrente durante la medida",
+    "RSS incluye imports y fixtures, no es memoria atribuible únicamente al libro",
+    "No se miden energía ni VRAM ni el recorrido de FinancialSession",
+    "No es una comparación de utilidad predictiva ni una aceleración frente a otra implementación"
+   ],
+   "round": 3,
+   "mode": "cached",
+   "raw_sha256": "58052f3ad80637495d0f1a1727630d921d1018612a1ba31cf5ad0b728b6fd9c4",
+   "process_wall_seconds": 8.28
+  }
+ ],
+ "limitations": [
+  "Solo tres repeticiones por configuración. Percentiles de consulta sobre 50 mediciones por repetición. Exportación cinco y recuperación tres, con alcance descriptivo.",
+  "Los bytes lógicos no son RAM. RSS incluye imports y fixtures.",
+  "Los buffers NumPy de esta versión usan el orden de bytes del host. La portabilidad entre órdenes de bytes distintos no se ha comprobado.",
+  "No se midieron energía ni VRAM ni transferencias GPU.",
+  "El benchmark aún no es un ejecutor público de FinancialSession. Se conservan programa y órdenes locales con su huella."
+ ]
+}

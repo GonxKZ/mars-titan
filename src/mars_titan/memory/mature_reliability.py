@@ -147,6 +147,20 @@ class ReliabilitySignal:
             state["reference"] = slowest * reference + (1.0 - slowest) * mean
             self._update(market, channel, score)
 
+    def expected_hits(self, markets):
+        """Velocidad más lenta del canal compartido de cada mercado, 0 antes de madurar nada.
+
+        Es el acierto esperado que P1 de #784 resta al de cada etiqueta, leído antes de que la
+        señal reciba las etiquetas del evento.
+        """
+        if self.config.independent or self.config.source != "mature_directional_hit":
+            raise ValueError("Solo la señal compartida de aciertos da un acierto esperado")
+        result = {}
+        for market in markets:
+            channels = self._markets.get(market)
+            result[market] = 0.0 if channels is None else channels[0]["values"][-1]
+        return result
+
     def values(self, flows):
         """Señal de cada fila como [filas][consumidores][velocidades] en FP64."""
         consumers = len(self.config.consumers)

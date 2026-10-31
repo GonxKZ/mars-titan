@@ -75,10 +75,12 @@ from .fractal_shared_operator import (
     parse_fractal_shared_operator,
 )
 from .holographic_network import (
+    AreaVotes,
     HolographicNetwork,
     HolographicNetworkConfig,
     area_layout,
     parse_holographic_network,
+    plastic_edges,
 )
 from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
@@ -86,7 +88,17 @@ from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .opponent_heads import OpponentHeads
-from .output_objectives import build_objective, check_objectives, objective_identity
+from .output_objectives import (
+    build_objective,
+    check_objectives,
+    declared_objective,
+    objective_identity,
+)
+from .plastic_bridge import (
+    MATURE_DIRECTIONAL_HIT,
+    ThreeFactorBridge,
+    parse_three_factor_bridge,
+)
 from .presence_modulation import (
     FILM,
     PRESENCE_MODULATIONS,
@@ -231,6 +243,9 @@ class FinancialConfig:
     memory_huber: HuberMemory | None = None
     memory_time_scales: ScaleInvariantTime | None = None
     differential_attention: str | None = None
+    # P1 de #784: pesos rápidos en las aristas entre áreas del puente de H1 o H2, que cambian
+    # con el error maduro. Sin declararlo, la identidad y el cálculo no cambian.
+    three_factor_bridge: ThreeFactorBridge | None = None
 
     def __post_init__(self):
         if self.temporal_encoder is not None and (
@@ -445,6 +460,24 @@ class FinancialConfig:
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
             )
         check_objectives(self)
+        # Los votos de las áreas desplazan el punto de la cabeza escalar y cada área aprende con
+        # la pérdida puntual de la receta. Los cuantiles y los objetivos de #749 serían otro
+        # contraste.
+        network = self.holographic_network
+        if (
+            network is not None
+            and network.area_predictions is not None
+            and (self.head == QUANTILE_HEAD or declared_objective(self) is not None)
+        ):
+            raise ValueError(
+                "Las predicciones por área de H1 usan la cabeza escalar sin objetivo de salida"
+            )
+        if (
+            network is not None
+            and network.area_predictions is not None
+            and self.three_factor_bridge is not None
+        ):
+            raise ValueError("Las predicciones por área de H1 y P1 necesitan controles separados")
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
@@ -505,6 +538,7 @@ class FinancialConfig:
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
         self._check_core_variants()
+        self._check_three_factor_bridge()
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
@@ -590,6 +624,29 @@ class FinancialConfig:
             or self.variant == "transformer_direct"
         ):
             raise ValueError(f"differential_attention admite {DIFFERENTIAL_ATTENTION} con MAC")
+
+    def _check_three_factor_bridge(self):
+        """P1 necesita aristas entre áreas del catálogo, así que H1 o H2 y no H3."""
+        object.__setattr__(
+            self, "three_factor_bridge", parse_three_factor_bridge(self.three_factor_bridge)
+        )
+        if self.three_factor_bridge is None:
+            return
+        if self.holographic_network is None or not plastic_edges(self.holographic_network):
+            raise ValueError("El puente de tres factores necesita las áreas de H1 o H2")
+        # F5 vuelve a calcular los tokens fila a fila, sin los pesos rápidos del recorrido.
+        if self.auxiliary_horizons is not None:
+            raise ValueError("Las cabezas auxiliares no reproducen los pesos rápidos del puente")
+        # La señal común de #791 tiene que existir y ser la compartida de aciertos.
+        reliability = self.mature_reliability
+        if self.three_factor_bridge.source == MATURE_DIRECTIONAL_HIT and (
+            reliability is None
+            or reliability.source != "mature_directional_hit"
+            or reliability.independent
+        ):
+            raise ValueError(
+                "El tercer factor común necesita la señal compartida de aciertos de #791"
+            )
 
     def identity(self):
         result = dict(
@@ -681,6 +738,8 @@ class FinancialConfig:
             result.update(memory_time_scales=self.memory_time_scales.identity())
         if self.differential_attention is not None:
             result.update(differential_attention=differential_identity())
+        if self.three_factor_bridge is not None:
+            result.update(three_factor_bridge=self.three_factor_bridge.identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -741,6 +800,12 @@ class PreparedDecisions:
     outputs: torch.Tensor | None = None
     # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
     surprise: torch.Tensor | None = None
+    # Solo con las predicciones por área de H1: [flujos, áreas] predicción de cada área, la
+    # referencia sin grafo más su voto, y los votos con su presencia y sus pesos.
+    area_predictions: torch.Tensor | None = None
+    area_votes: AreaVotes | None = None
+    # Solo con P1 de #784: [flujos, aristas] trazas de elegibilidad del puente, sin grafo.
+    bridge_traces: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -782,6 +847,8 @@ class FinancialPredictor(nn.Module):
             or config.differential_attention is not None
         ):
             raise ValueError("Las variantes del núcleo de #786 necesitan su propio contraste con C")
+        if local_control is not None and config.three_factor_bridge is not None:
+            raise ValueError("El puente de tres factores necesita su propio contraste con C")
         self.config = config
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -875,6 +942,11 @@ class FinancialPredictor(nn.Module):
             )
             if config.holographic_network is not None
             else None
+        )
+        # Con las predicciones por área, la fusión devuelve también los votos de las áreas.
+        self.votes_by_area = (
+            config.holographic_network is not None
+            and config.holographic_network.area_predictions is not None
         )
         # C2 deriva su semilla de la del predictor y no consume el generador global.
         self.axial_time_region = (
@@ -1607,7 +1679,7 @@ class FinancialPredictor(nn.Module):
             )
         return token, pending, execution.trace
 
-    def _fuse(self, price, inputs, presence):
+    def _fuse(self, price, inputs, presence, bridge=None):
         modulation = (
             self.regional_fusion
             if self.regional_fusion is not None
@@ -1617,8 +1689,13 @@ class FinancialPredictor(nn.Module):
         )
         if self.holographic_network is not None:
             # Los bloques por familia leen las entradas y los codificadores de la referencia.
+            # Con P1, `bridge` lleva los pesos rápidos de las filas y la lista de sus trazas.
+            edge_bias, traces = bridge if bridge is not None else (None, None)
+
             def modulation(blocks, presence):
-                return self.holographic_network(blocks, presence, inputs, self.encoders)
+                return self.holographic_network(
+                    blocks, presence, inputs, self.encoders, edge_bias=edge_bias, traces=traces
+                )
 
         return fuse_modalities(
             price,
@@ -1629,6 +1706,28 @@ class FinancialPredictor(nn.Module):
             modulation=modulation,
             branch=self.fusion_branch,
         )
+
+    def _voting_fuse(self, price, inputs, presence):
+        """Token fusionado con H1 y los votos de sus áreas."""
+        votes = None
+
+        def modulation(blocks, presence):
+            nonlocal votes
+            modulated, votes = self.holographic_network.forward_with_votes(
+                blocks, presence, inputs, self.encoders
+            )
+            return modulated
+
+        token = fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+        return token, votes
 
     def _axial_fuse(self, price, inputs, presence, history):
         """Token fusionado con C2 y el historial que deja la emisión."""
@@ -1707,6 +1806,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        bridge_bias=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -1715,6 +1815,8 @@ class FinancialPredictor(nn.Module):
         `session_complete=True` declara que el bloque contiene todas las filas de su instante,
         condición que exigen las operaciones por sesión de #749. Con #791, `reliability` es
         la señal de fiabilidad del mercado de cada fila, [filas, consumidores, velocidades].
+        Con P1 de #784, `bridge_bias` son los pesos rápidos del mercado de cada fila en las
+        aristas del puente, [filas, aristas].
         """
         with deferred_checks():
             return self._prepare(
@@ -1727,6 +1829,7 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                bridge_bias=bridge_bias,
             )
 
     def _prepare(
@@ -1741,6 +1844,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        bridge_bias=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1790,6 +1894,7 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
         else:
             self.reliability_gates.validate(reliability, len(batch.flow_ids))
+        self._check_bridge_bias(bridge_bias, len(batch.flow_ids))
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -1807,6 +1912,7 @@ class FinancialPredictor(nn.Module):
                 )
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
         local_result, regional_trace = None, None
+        bridge_traces = None if bridge_bias is None else []
         with torch.set_grad_enabled(differentiable), backend:
             # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
             # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
@@ -1816,7 +1922,7 @@ class FinancialPredictor(nn.Module):
             )
             for value, message in encoder_checks:
                 require_finite(value, message)
-            next_regions = None
+            next_regions = votes = None
             if self.regional_execution is not None:
                 token, next_context, regional_trace = self._program_fusion(
                     price, batch, context, context_selection
@@ -1829,8 +1935,12 @@ class FinancialPredictor(nn.Module):
             elif self.fractal_shared_operator is not None:
                 token = self._fractal_fuse(price, batch, received.inputs["prices"])
                 next_context = context
+            elif self.votes_by_area:
+                token, votes = self._voting_fuse(price, batch.inputs, batch.presence)
+                next_context = context
             else:
-                token = self._fuse(price, batch.inputs, batch.presence)
+                bridge = None if bridge_bias is None else (bridge_bias, bridge_traces)
+                token = self._fuse(price, batch.inputs, batch.presence, bridge)
                 next_context = context
             check_finite(token, "El token fusionado")
             observed = token
@@ -1890,7 +2000,7 @@ class FinancialPredictor(nn.Module):
                     context_id=control_context_id,
                     differentiable=differentiable,
                 )
-            quantiles = outputs = None
+            quantiles = outputs = area_predictions = None
             if self.config.head == QUANTILE_HEAD:
                 quantiles = self.head(encoded)
                 check_finite(quantiles, "Los cuantiles")
@@ -1900,6 +2010,11 @@ class FinancialPredictor(nn.Module):
                 if self.output_objective is not None:
                     outputs, point = self.output_objective(point, encoded, markets)
                     check_finite(outputs, "Las salidas del objetivo")
+                if votes is not None:
+                    # Cada área predice la referencia sin grafo más su voto, y la salida suma
+                    # la media de los votos con la lectura aprendida.
+                    area_predictions = point.detach().unsqueeze(-1) + votes.votes
+                    point = point + votes.shift
             check_finite(point, "La predicción")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
@@ -1925,7 +2040,34 @@ class FinancialPredictor(nn.Module):
             next_context,
             outputs,
             surprise=None if sink is None else sink[0],
+            area_predictions=area_predictions,
+            area_votes=votes,
+            bridge_traces=None if bridge_traces is None else bridge_traces[0],
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
+        )
+
+    def _check_bridge_bias(self, bias, rows):
+        """Pesos [filas, aristas] sin grafo, finitos y dentro de la cota del puente."""
+        config = self.config.three_factor_bridge
+        if config is None:
+            if bias is not None:
+                raise ValueError("El predictor no declara el puente de tres factores")
+            return
+        if (
+            not isinstance(bias, torch.Tensor)
+            or bias.shape != (rows, len(self.holographic_network.plastic_edges))
+            or bias.layout != torch.strided
+            or bias.dtype != self.head.weight.dtype
+            or bias.device != self.head.weight.device
+            or bias.requires_grad
+        ):
+            raise ValueError(
+                "El puente de tres factores necesita los pesos rápidos de sus filas y aristas"
+            )
+        # La cota es finita, así que NaN e infinito tampoco la cumplen.
+        require_true(
+            (bias.abs() <= config.budget).all(),
+            "Los pesos rápidos del puente deben ser finitos y estar dentro de su cota",
         )
 
     def export_state(self, state):

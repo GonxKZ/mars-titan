@@ -1,0 +1,859 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 784,
+ "scope": "three_factor_bridge_v1_cpu_technical_verification",
+ "implementation_commit": "5f76a2ba926168d1c0343d3cf0011872662b3840",
+ "base_commit": "71c617d3c880575b5f59b19e133dda8f0d4913c7",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "cuda_verification": "Pendiente en #816. La GPU estaba ocupada. Ninguna prueba CPU acredita esa ruta.",
+ "suite_counts": "Las suites se solapan. Sus recuentos no son una cantidad de pruebas distintas. Las omisiones no son casos aprobados.",
+ "quality_scope_commit": "64425c06f26c75cbdb7e776a41d5331c09aee1af",
+ "quality_scope": "La cobertura y el CRAP principales se midieron antes de fusionar H4 y el determinismo. Las suites posteriores comprueban esos cambios compartidos sobre la integración. No se ha repetido toda la regresión sobre el commit más reciente.",
+ "post_merge_source_identity_quality": {
+  "path": "src/mars_titan/training/financial_run.py",
+  "function": "ChronologicalTrainer._code",
+  "start_line": 1114,
+  "end_line": 1152,
+  "cyclomatic_complexity": 12,
+  "statements": 27,
+  "covered_statements": 17,
+  "coverage_fraction": 0.6296296296296297,
+  "branches": 20,
+  "covered_branches": 15,
+  "crap": 19.315957933241883,
+  "quality_sha256": "8ab050c45c35c09e38d7736157c7564dc49d178baf8d10161e03e2fb4311aa93",
+  "note": "Cobertura parcial de _code durante las 133 pruebas posteriores a la fusión. No es la cobertura del recorrido completo."
+ },
+ "changed_functions_tool_sha256": "4f5986c4b29b6f4bbacbdbc0b0219d441cbc9c4bcda1e1d3456d23271342061d",
+ "test_optimizers": "Los recorridos específicos de P1 usan RecordingOptimizer, que registra gradientes sin ajustar parámetros. Las regresiones mantienen la guarda local y omiten los pasos de optimizador antes de modificar pesos. Las mutaciones instalan un gancho que rechaza pasos de torch.optim y registran cero intentos.",
+ "numerical_correction": {
+  "commit": "5f76a2ba926168d1c0343d3cf0011872662b3840",
+  "behavior": "Si la suma de errores no negativos finitos desborda, se calcula la media con un escalado por el mayor error. Cuando la suma cabe se conserva el cálculo y el redondeo anteriores. No se recortan los datos.",
+  "quality": {
+   "schema_version": 1,
+   "measured_at": "2026-10-30T15:27:07.753779",
+   "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+   },
+   "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+   "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+   "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+   "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+   ],
+   "include": [
+    "src/mars_titan/memory/three_factor_bridge.py"
+   ],
+   "totals": {
+    "statements": 159,
+    "covered_statements": 158,
+    "branches": 74,
+    "covered_branches": 73
+   },
+   "files": [
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "source_sha256": "d7a8d1f5ef8050b492426bb2427d490ff5a34388ceb76b939bdabe12931966b3",
+     "statements": 159,
+     "covered_statements": 158,
+     "branches": 74,
+     "covered_branches": 73
+    }
+   ],
+   "functions": [
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.restore",
+     "start_line": 298,
+     "end_line": 333,
+     "cyclomatic_complexity": 23,
+     "statements": 18,
+     "covered_statements": 18,
+     "coverage_fraction": 1.0,
+     "branches": 12,
+     "covered_branches": 12,
+     "crap": 23.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity._checked",
+     "start_line": 263,
+     "end_line": 295,
+     "cyclomatic_complexity": 15,
+     "statements": 17,
+     "covered_statements": 17,
+     "coverage_fraction": 1.0,
+     "branches": 10,
+     "covered_branches": 10,
+     "crap": 15.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.hold",
+     "start_line": 139,
+     "end_line": 155,
+     "cyclomatic_complexity": 13,
+     "statements": 14,
+     "covered_statements": 14,
+     "coverage_fraction": 1.0,
+     "branches": 12,
+     "covered_branches": 12,
+     "crap": 13.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "_edge_list",
+     "start_line": 83,
+     "end_line": 98,
+     "cyclomatic_complexity": 12,
+     "statements": 3,
+     "covered_statements": 3,
+     "coverage_fraction": 1.0,
+     "branches": 2,
+     "covered_branches": 2,
+     "crap": 12.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity._update",
+     "start_line": 209,
+     "end_line": 239,
+     "cyclomatic_complexity": 10,
+     "statements": 24,
+     "covered_statements": 24,
+     "coverage_fraction": 1.0,
+     "branches": 6,
+     "covered_branches": 6,
+     "crap": 10.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity._checked_expectations",
+     "start_line": 157,
+     "end_line": 172,
+     "cyclomatic_complexity": 8,
+     "statements": 8,
+     "covered_statements": 8,
+     "coverage_fraction": 1.0,
+     "branches": 6,
+     "covered_branches": 6,
+     "crap": 8.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.settle",
+     "start_line": 183,
+     "end_line": 207,
+     "cyclomatic_complexity": 8,
+     "statements": 18,
+     "covered_statements": 18,
+     "coverage_fraction": 1.0,
+     "branches": 10,
+     "covered_branches": 10,
+     "crap": 8.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.export",
+     "start_line": 241,
+     "end_line": 261,
+     "cyclomatic_complexity": 7,
+     "statements": 2,
+     "covered_statements": 2,
+     "coverage_fraction": 1.0,
+     "branches": 0,
+     "covered_branches": 0,
+     "crap": 7.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity._third_factor",
+     "start_line": 174,
+     "end_line": 181,
+     "cyclomatic_complexity": 4,
+     "statements": 6,
+     "covered_statements": 6,
+     "coverage_fraction": 1.0,
+     "branches": 4,
+     "covered_branches": 4,
+     "crap": 4.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.__init__",
+     "start_line": 104,
+     "end_line": 112,
+     "cyclomatic_complexity": 3,
+     "statements": 8,
+     "covered_statements": 7,
+     "coverage_fraction": 0.875,
+     "branches": 2,
+     "covered_branches": 1,
+     "crap": 3.017578125
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "_real",
+     "start_line": 67,
+     "end_line": 70,
+     "cyclomatic_complexity": 3,
+     "statements": 3,
+     "covered_statements": 3,
+     "coverage_fraction": 1.0,
+     "branches": 2,
+     "covered_branches": 2,
+     "crap": 3.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "_market",
+     "start_line": 77,
+     "end_line": 80,
+     "cyclomatic_complexity": 3,
+     "statements": 3,
+     "covered_statements": 3,
+     "coverage_fraction": 1.0,
+     "branches": 2,
+     "covered_branches": 2,
+     "crap": 3.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.biases",
+     "start_line": 130,
+     "end_line": 137,
+     "cyclomatic_complexity": 3,
+     "statements": 6,
+     "covered_statements": 6,
+     "coverage_fraction": 1.0,
+     "branches": 4,
+     "covered_branches": 4,
+     "crap": 3.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity._state",
+     "start_line": 118,
+     "end_line": 128,
+     "cyclomatic_complexity": 2,
+     "statements": 4,
+     "covered_statements": 4,
+     "coverage_fraction": 1.0,
+     "branches": 2,
+     "covered_branches": 2,
+     "crap": 2.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "_sign",
+     "start_line": 73,
+     "end_line": 74,
+     "cyclomatic_complexity": 1,
+     "statements": 1,
+     "covered_statements": 1,
+     "coverage_fraction": 1.0,
+     "branches": 0,
+     "covered_branches": 0,
+     "crap": 1.0
+    },
+    {
+     "path": "src/mars_titan/memory/three_factor_bridge.py",
+     "function": "BridgePlasticity.keys",
+     "start_line": 114,
+     "end_line": 116,
+     "cyclomatic_complexity": 1,
+     "statements": 1,
+     "covered_statements": 1,
+     "coverage_fraction": 1.0,
+     "branches": 0,
+     "covered_branches": 0,
+     "crap": 1.0
+    }
+   ],
+   "shadowed_regions": [],
+   "coverage_sha256": "9ef4d236d8119cec833e330cf11c71b93ad6e6111e5ff428cde2bf35761dffdb",
+   "functions_measured": 16
+  },
+  "scope": "Solo el módulo del puente, con 91 casos técnicos. Es la cobertura de la corrección posterior, distinta de la cobertura principal anterior a la fusión."
+ },
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 1017,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "679b59a663e8787360e1a1e6077a9cd7e284e502278c3b9d0f8ed299559fa0e1",
+   "note": "En 64425c06f. Memoria, atención, gradientes, causalidad, recuperación, identidades y medidas de coste. Dos casos del inventario de protección omitidos y ocho casos CUDA fuera de la selección."
+  },
+  {
+   "name": "regression_of_changed_paths_training",
+   "tests": 1888,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 41,
+   "xml_sha256": "6611a63beb4969de7cf537246caed74fe0a77eb3c922c22abb5a2e59123766bc",
+   "note": "En 64425c06f. Módulos importadores de tests/training. Las omisiones conservan el bloqueo de aprendizaje."
+  },
+  {
+   "name": "regression_of_changed_paths_other",
+   "tests": 5536,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 124,
+   "xml_sha256": "2110fdde8a1e536646cb951cfc3ecaa68e5e71b318df4a5ceb536f42a4601827",
+   "note": "En 64425c06f. Resto de importadores. De las 124 omisiones, 85 corresponden al bloqueo de aprendizaje, 30 al ejecutable PPO ausente y nueve a la biblioteca de simulación ausente. El enlace episódico sí estaba declarado."
+  },
+  {
+   "name": "after_develop_merge_first_pass",
+   "tests": 133,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "8b3b7da7763f3cdec5907472359586fb7d7651cd8f929049f66d559e20d64bc9",
+   "note": "En 61bc4cf8f. Un fixture de H4 no declaraba three_factor_bridge. Se completó su configuración en 000f25e9d. Una prueba también omitió un enlace nativo no declarado en esta primera selección. La repetición siguiente declara el enlace y comprueba todos los casos."
+  },
+  {
+   "name": "after_develop_merge_corrected_fixture",
+   "tests": 133,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "1ce77953aee10b8cd2378842afbf60c30cdd9e4aa56c9a48126f74693fd2ccaf",
+   "note": "Contenido confirmado en 000f25e9d. Lectura y trazas del puente P1, integración de H4, determinismo de las recetas y composición de opciones, con el enlace episódico nativo declarado."
+  },
+  {
+   "name": "after_develop_merge_chronological_bridge",
+   "tests": 12,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "71b3096cb84444559a2b5c71b8bee907c1eb4d2fc3429cfbdca9d732e25da080",
+   "note": "En 000f25e9d. Recorrido P1 con error maduro, controles de media y señal compartida, causalidad ante cambios futuros, recuperación e igualdad de las trazas entre bloques. Usa un optimizador que registra gradientes sin ajustar pesos."
+  },
+  {
+   "name": "finite_error_mean_first_pass",
+   "tests": 4,
+   "failures": 2,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7b80689c1b0630a2abf64c5211ea98d3fb7a2276ebf287065e1592564a5c17c2",
+   "note": "En 000f25e9d con el nuevo caso: dos fallos por desbordamiento y dos casos aprobados. La corrección posterior queda comprobada en las suites siguientes."
+  },
+  {
+   "name": "finite_error_mean_memory_regression",
+   "tests": 91,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "c326735ebb427d1650c675a9406377f35f1dc72a597a463ef8989b2acced9697",
+   "note": "Contenido confirmado en 5f76a2ba9. Los 91 casos de la memoria, incluidos cero, el mínimo subnormal, 1e308 y el mayor FP64 finito. Ningún paso de optimizador."
+  },
+  {
+   "name": "final_after_develop_merge_and_numerical_correction",
+   "tests": 236,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f105fc4b6644799db20d8dd2f2bf39dd6f32429366df00eaf77f24ec23b1a5e6",
+   "note": "Contenido confirmado en 5f76a2ba9. Seis módulos: regla de memoria P1, lectura del puente, recorrido cronológico, H4, determinismo de las recetas y composición de opciones. Enlace episódico nativo declarado."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3613,
+   "covered_statements": 3064,
+   "branches": 1506,
+   "covered_branches": 1129
+  },
+  "files": [
+   {
+    "path": "benchmarks/three_factor_bridge_cost.py",
+    "source_sha256": "9da7353adf10bff4f37d1b498e483bbae9145b1d41d6c9f14fe702bc882b26ef",
+    "statements": 141,
+    "covered_statements": 137,
+    "branches": 40,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/memory/mature_reliability.py",
+    "source_sha256": "dafd84f94cd9ae6f05860a9545924b788b1383d85aede5b95f8b2a5680c74ea9",
+    "statements": 123,
+    "covered_statements": 123,
+    "branches": 54,
+    "covered_branches": 54
+   },
+   {
+    "path": "src/mars_titan/memory/three_factor_bridge.py",
+    "source_sha256": "01192d6141ef7f16a9ad8f9a3b9263cb21e00e4105fee946d382ab9a3cf414d0",
+    "statements": 155,
+    "covered_statements": 154,
+    "branches": 74,
+    "covered_branches": 73
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "0a5804c2aad49efd31fa8d218147d9998e9bffc045e1a465bc32d18582d40f24",
+    "statements": 941,
+    "covered_statements": 702,
+    "branches": 478,
+    "covered_branches": 282
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "8eb1ae7dae8e2601c5819d35e2303b5073ed0130aaa7760fb68d13db1aa50dec",
+    "statements": 219,
+    "covered_statements": 181,
+    "branches": 120,
+    "covered_branches": 88
+   },
+   {
+    "path": "src/mars_titan/models/titans/holographic_network.py",
+    "source_sha256": "728603b3b108b68543b7b1ea0e3f3bb3e922cb108c0eb072c49bbd39d6d56f18",
+    "statements": 360,
+    "covered_statements": 360,
+    "branches": 126,
+    "covered_branches": 126
+   },
+   {
+    "path": "src/mars_titan/models/titans/plastic_bridge.py",
+    "source_sha256": "4c869993ef351774aaedd7c3c93c06b4c143e176163cdac6c55067c7b8a41212",
+    "statements": 48,
+    "covered_statements": 48,
+    "branches": 16,
+    "covered_branches": 16
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "53b26348f9c25c4a6a63d4b4401759a7d3dd5433397abc530817312a712e2013",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "a4bef5808461f2e94085c07bf4cc70abfb17ae23008b5dd00fc9fead6fe60370",
+    "statements": 982,
+    "covered_statements": 825,
+    "branches": 420,
+    "covered_branches": 316
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "2d1828776b3b1cbe2c5ce331d8cba9b57797c9be3b63f8c61562b1550aae9f0d",
+    "statements": 28,
+    "covered_statements": 25,
+    "branches": 14,
+    "covered_branches": 11
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "0a184efbf77cf878dd8a40fb645c99537f56d731cc43caccfa2a50014f202e9f",
+    "statements": 375,
+    "covered_statements": 286,
+    "branches": 80,
+    "covered_branches": 62
+   }
+  ],
+  "max_crap": 1934.2291038629742,
+  "quality_sha256": "4d1a8f4933a2689b12f6078695e2889812651f0bff5f81d370cf321e115734cb",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "bd4ab35dd8b5cc7d930eee8a8e847467bf7d12b7",
+  "head": "64425c06f26c75cbdb7e776a41d5331c09aee1af",
+  "functions": 57,
+  "max_crap": 1934.2291038629742,
+  "changed_executable_lines": 419,
+  "changed_covered_lines": 415,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 123,
+    "crap": 1934.2291038629742,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 60,
+    "crap": 134.46909559671622,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalInference._observe",
+    "cyclomatic_complexity": 44,
+    "crap": 56.76171875,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 32,
+    "crap": 49.5988721425934,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer._replay",
+    "cyclomatic_complexity": 38,
+    "crap": 43.77491431610857,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/three_factor_bridge_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 24,
+    "crap": 24.149793398379934,
+    "changed_executable_lines": 48,
+    "changed_covered_lines": 45,
+    "changed_missing_lines": [
+     222,
+     226,
+     227
+    ],
+    "changed_missing_branches": [
+     [
+      221,
+      222
+     ],
+     [
+      225,
+      226
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/three_factor_bridge.py",
+    "function": "BridgePlasticity.__init__",
+    "cyclomatic_complexity": 3,
+    "crap": 3.017578125,
+    "changed_executable_lines": 9,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [
+     106
+    ],
+    "changed_missing_branches": [
+     [
+      105,
+      106
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "57 funciones medidas en 64425c06f frente a bd4ab35dd. Cobertura de sentencias de cada región de coverage.py y CRAP calculado con Radon. El máximo procede de FinancialConfig.__post_init__, anterior a P1 y parcialmente cubierta. Su única línea cambiada sí se ejecutó. Los recuentos agregados por función pueden solaparse cuando hay funciones anidadas y no se interpretan como líneas únicas.",
+  "changed_sha256": "bc2dff2429cd2575bfad9771e96bf62035720cb31c886232478a93b64e3abe55"
+ },
+ "mutations": {
+  "tree_commit": "f112d042e312d4daee7b1f426d4762af054ddf51",
+  "planned": 108,
+  "killed": 108,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "86d7ff5dbf874375ba22c416f6735f2eec578dc5d5ac4a1ec35338ecc0a7b4e0",
+  "executor_sha256": "5f87f95e4f25ac761031b6e1f4ef5a5579c6ed97a9352ea24c258b31869d753e",
+  "source_sha256": {
+   "src/mars_titan/memory/three_factor_bridge.py": "01192d6141ef7f16a9ad8f9a3b9263cb21e00e4105fee946d382ab9a3cf414d0",
+   "src/mars_titan/models/titans/plastic_bridge.py": "4c869993ef351774aaedd7c3c93c06b4c143e176163cdac6c55067c7b8a41212",
+   "src/mars_titan/memory/mature_reliability.py": "dafd84f94cd9ae6f05860a9545924b788b1383d85aede5b95f8b2a5680c74ea9"
+  },
+  "cases": [
+   "config_kind_undeclared",
+   "config_source_undeclared",
+   "config_rate_zero_admitted",
+   "config_rate_above_one_admitted",
+   "config_bool_admitted",
+   "config_upper_bound_open",
+   "config_budget_above_four_admitted",
+   "config_common_time_constant_admitted",
+   "config_time_constant_type_unchecked",
+   "config_time_constant_zero_admitted",
+   "config_time_constant_above_admitted",
+   "config_decay_doubled",
+   "config_role_single",
+   "identity_without_source",
+   "identity_credit_swapped",
+   "identity_expectation_swapped",
+   "parse_partial_admitted",
+   "parse_configuration_refused",
+   "config_rate_kept_as_given",
+   "config_budget_kept_as_given",
+   "edges_self_loop_admitted",
+   "edges_unsorted_admitted",
+   "edges_list_admitted",
+   "edges_out_of_range_admitted",
+   "edges_bool_area_admitted",
+   "edges_empty_admitted",
+   "edges_float_areas_admitted",
+   "market_without_slash_admitted",
+   "biases_read_by_flow",
+   "hold_rows_only",
+   "hold_nan_admitted",
+   "hold_negative_admitted",
+   "hold_above_one_admitted",
+   "hold_key_length_unchecked",
+   "hold_moment_type_unchecked",
+   "hold_repeated_key_admitted",
+   "hold_partial_on_refusal",
+   "hold_shares_the_input",
+   "error_gap_takes_the_signal",
+   "signal_market_missing_admitted",
+   "signal_type_unchecked",
+   "signal_range_unchecked",
+   "signal_dict_unchecked",
+   "common_full_gap",
+   "hit_ignores_the_outcome",
+   "sign_of_zero_negative",
+   "expected_fastest_speed",
+   "expected_before_maturing",
+   "expected_independent_admitted",
+   "expected_any_source_admitted",
+   "zero_expectation_divides",
+   "first_event_moves",
+   "no_lower_clip",
+   "label_without_trace_admitted",
+   "issued_unchecked",
+   "outcome_unchecked",
+   "error_unchecked",
+   "label_matures_twice",
+   "traces_popped_before_checking",
+   "labels_in_arrival_order",
+   "control_mean_of_the_event",
+   "control_counts_events",
+   "control_forgets_earlier_deltas",
+   "step_not_averaged",
+   "control_step_not_averaged",
+   "control_uses_each_delta",
+   "rate_ignored",
+   "homeostasis_skipped",
+   "homeostasis_always_scales",
+   "homeostasis_by_source",
+   "common_sets_an_error_expectation",
+   "first_expectation_from_zero",
+   "expectation_decay_swapped",
+   "expectation_from_the_last_label",
+   "events_count_labels",
+   "export_unsorted",
+   "export_shares_weights",
+   "restore_shares_weights",
+   "restore_market_fields_unchecked",
+   "restore_weights_type_unchecked",
+   "restore_weights_dtype_unchecked",
+   "restore_weights_shape_unchecked",
+   "restore_nan_weights_admitted",
+   "restore_count_type_unchecked",
+   "restore_events_type_unchecked",
+   "restore_no_events_admitted",
+   "restore_events_beyond_labels",
+   "restore_expectation_source_unchecked",
+   "restore_delta_sum_unchecked",
+   "restore_negative_expectation",
+   "restore_delta_sum_bound",
+   "restore_budget_unchecked",
+   "restore_top_fields_unchecked",
+   "restore_schema_unchecked",
+   "restore_identity_unchecked",
+   "restore_areas_unchecked",
+   "restore_edges_unchecked",
+   "restore_markets_type_unchecked",
+   "restore_market_name_unchecked",
+   "restore_pending_fields_unchecked",
+   "restore_flows_type_unchecked",
+   "restore_moments_type_unchecked",
+   "restore_moments_dtype_unchecked",
+   "restore_moments_shape_unchecked",
+   "restore_traces_type_unchecked",
+   "restore_traces_dtype_unchecked",
+   "restore_traces_shape_unchecked",
+   "restore_unsorted_admitted"
+  ],
+  "summary_sha256": "83bb97d4606eb3a6fd1f2e7870b9ab5c1d93e7d4e2b85c73cf67607b93347e6b",
+  "scope": "108 defectos dirigidos de la configuración, los estados rápidos y la señal madura. El caso de orden de llegada se repite con una prueba reforzada. Cada caso aprobado tiene G1 y G2 en verde y M1 con el fallo esperado, en copia aislada.",
+  "first_pass_killed": 107,
+  "reruns": [
+   {
+    "tree_commit": "5d20fcb5f87fedd478d7e698d123c4e64b12def6",
+    "cases": [
+     "bias_nan_admitted",
+     "labels_in_arrival_order"
+    ],
+    "killed": 2,
+    "recipes_sha256": "f0a0cd99ec548d5f96d5125b26023d979083ce9d0c159dfd94d43a6c95636cbb",
+    "source_sha256": {
+     "src/mars_titan/memory/three_factor_bridge.py": "01192d6141ef7f16a9ad8f9a3b9263cb21e00e4105fee946d382ab9a3cf414d0",
+     "src/mars_titan/models/titans/holographic_network.py": "728603b3b108b68543b7b1ea0e3f3bb3e922cb108c0eb072c49bbd39d6d56f18"
+    },
+    "summary_sha256": "e97248b105187dcfaa478c8f3a23e3ef9d45ce5cbaa816306ab1c45b48205555",
+    "reason": "Se reforzaron las pruebas del orden de llegada de etiquetas y del sesgo NaN. Los dos casos sustituyen sus primeras pasadas, no añaden identificadores nuevos."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "f112d042e312d4daee7b1f426d4762af054ddf51",
+    "planned": 63,
+    "killed": 63,
+    "recipes_sha256": "5e04b61e8edc61790c594d663f44228eabe1f7a609a0e4811237045ced7aca07",
+    "executor_sha256": "5f87f95e4f25ac761031b6e1f4ef5a5579c6ed97a9352ea24c258b31869d753e",
+    "source_sha256": {
+     "src/mars_titan/training/financial_run.py": "f1309f565c02938ca8307d600c3b9693cc9f9a021f90bd90a7dbc881c333d902",
+     "benchmarks/three_factor_bridge_cost.py": "9da7353adf10bff4f37d1b498e483bbae9145b1d41d6c9f14fe702bc882b26ef",
+     "src/mars_titan/models/titans/financial.py": "68728ca94990c8ffa3d8e010f3852355d3574280af98cbe0d8a0ecfa94b3d36b",
+     "src/mars_titan/models/titans/frozen_financial.py": "32b8cb8d1ceee9552e6f8d49ae25665eaf7be81537e75b7f7b2412014ffc6668",
+     "src/mars_titan/models/titans/holographic_network.py": "728603b3b108b68543b7b1ea0e3f3bb3e922cb108c0eb072c49bbd39d6d56f18",
+     "src/mars_titan/training/search_cases.py": "f386e963c0905c51a27c672ca1bf0f5b3d296f964b09cac55111f7060832dea7",
+     "src/mars_titan/training/titans_walk_forward.py": "0a184efbf77cf878dd8a40fb645c99537f56d731cc43caccfa2a50014f202e9f"
+    },
+    "cases": [
+     "bench_any_cuda_device",
+     "bench_existing_output_admitted",
+     "bench_forward_with_gradient",
+     "bench_guard_other_hook",
+     "bench_measure_drops_the_weights",
+     "bench_rule_without_expectation",
+     "bench_runs_before_refusing",
+     "bench_warmup_counted",
+     "bench_weights_for_both_modes",
+     "bench_weights_positive_only",
+     "bench_without_backward",
+     "bias_device_unchecked",
+     "bias_dtype_unchecked",
+     "bias_graph_admitted",
+     "bias_layout_unchecked",
+     "bias_mask_dropped",
+     "bias_nan_admitted",
+     "bias_scatter_transposed",
+     "bias_traces_nonempty_admitted",
+     "bias_traces_type_unchecked",
+     "bias_without_areas_admitted",
+     "bridge_recreated_each_call",
+     "code_without_rule",
+     "common_any_source",
+     "common_check_inverted",
+     "common_independent_signals",
+     "common_without_expectation",
+     "common_without_signal",
+     "declaration_admits_f5",
+     "declaration_without_areas",
+     "declaration_without_network",
+     "export_without_weights",
+     "fuse_drops_the_weights",
+     "identity_without_bridge",
+     "label_with_its_outcome",
+     "local_control_admitted",
+     "plastic_edges_with_self_loops",
+     "predictor_bias_budget_unchecked",
+     "predictor_bias_device_unchecked",
+     "predictor_bias_dtype_unchecked",
+     "predictor_bias_graph_admitted",
+     "predictor_bias_layout_unchecked",
+     "predictor_bias_shape_unchecked",
+     "registry_refuses",
+     "replay_keeps_every_row",
+     "restore_presence_unchecked",
+     "restore_skips_the_bridge",
+     "restore_traces_unchecked",
+     "run_without_bridge",
+     "signal_settles_first",
+     "source_modules_without_configuration",
+     "trace_counts_absent_queries",
+     "trace_mean_over_cycles_only",
+     "trace_of_the_reverse_edge",
+     "trace_with_graph",
+     "trace_without_scale",
+     "trace_without_weights",
+     "traces_not_held",
+     "traces_not_returned",
+     "undeclared_bias_admitted",
+     "walk_forward_without_configuration",
+     "walk_forward_without_rule",
+     "weights_not_read"
+    ],
+    "summary_sha256": "7d1f9b7d1fb11c9e8cd764a7032b121ec506c7635e07b4da650dfa2ef4d55faa",
+    "scope": "63 defectos dirigidos adicionales de la lectura, la integración cronológica y la medida de coste. El rechazo de NaN se repite con una prueba reforzada. Estas fuentes preceden a la fusión de H4 y del determinismo.",
+    "first_pass_killed": 62
+   },
+   {
+    "tree_commit": "000f25e9d4f0755a2f11059b58c474bc20a6a60e",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "ed4b83c63128f98c8168a30e06823b08ebd18f0125aeaada65e1eac9e80fd591",
+    "executor_sha256": "87d1385ad042d41b43a4c9e617a009120633786b6d612aedcddb54a44519a5f1",
+    "source_sha256": {
+     "src/mars_titan/training/financial_run.py": "ea2892cc9eca1643c4c636a82b2662e7070e22f426b4780804674e82ee4f722b"
+    },
+    "cases": [
+     "h4_data_source_when_disabled"
+    ],
+    "summary_sha256": "f036f1368395218bb451fa237c9e8146de22888a75b9b21982952febc818ae15",
+    "scope": "Un defecto del registro de fuentes H4 después de completar el fixture con el campo P1. Incluir una fuente H4 cuando la variante está desactivada provoca un fallo de aserción. G1 y G2 pasan, M1 falla y no hay omisiones ni intentos de optimizador."
+   },
+   {
+    "tree_commit": "5f76a2ba926168d1c0343d3cf0011872662b3840",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "f255a7ac130644d0b8a29b7defa65b9e46d977a5cd864c24f860ad94bfb1ff21",
+    "executor_sha256": "87d1385ad042d41b43a4c9e617a009120633786b6d612aedcddb54a44519a5f1",
+    "source_sha256": {
+     "src/mars_titan/memory/three_factor_bridge.py": "d7a8d1f5ef8050b492426bb2427d490ff5a34388ceb76b939bdabe12931966b3"
+    },
+    "cases": [
+     "finite_error_mean_without_overflow_handling"
+    ],
+    "summary_sha256": "8b57a82b6041494cddd26b3547caa0857c948d80645c7e87fdaf29a88d3fea2a",
+    "scope": "Un defecto adicional que retira el tratamiento del desbordamiento de la media. Cuatro casos: G1 y G2 pasan, M1 falla con el desbordamiento esperado en los dos extremos grandes. Sin omisiones ni intentos de optimizador."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c9919e27180d95073aa8a93846057e649d",
+  "preset": "native-candidate-cuda",
+  "used_by": "targeted_with_coverage, regression_of_changed_paths_training, regression_of_changed_paths_other, after_develop_merge_corrected_fixture, after_develop_merge_chronological_bridge",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "reports/engineering/three-factor-bridge-20261029/cost-cpu.json",
+  "sha256": "6010302816beed5d66da8c700282db42eac10a2c8496e7b73e8bafed91da064c"
+ }
+}
