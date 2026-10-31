@@ -1,0 +1,113 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 783,
+ "status": "spaced_preparation_cpu_fix_verified_full_regression_and_cuda_pending",
+ "implementation_commit": "a0f9f8ff9017bea9a6bd78b3d1fe20c2a878e6db",
+ "base_commit": "e37277f2a",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "regression_before_fix": {
+  "tests": 3721,
+  "failures": 36,
+  "errors": 0,
+  "skipped": 36,
+  "source_commit": "e37277f2a6ab6ef51510bc1ddc0d3d80c3191c35",
+  "stopped_batch": "other-88",
+  "xml_sha256": "2591a07153dc95ef290cb153490ba778d4dc56fc960e7effd19e3bc1123d1fdb"
+ },
+ "scope": "Evitar que la utilidad E2 se asigne a campos opcionales de H1 por posición al construir SpacedPreparation.",
+ "cuda_deselected": 4,
+ "limits": [
+  "Los 128 casos CPU son cuatro suites de E2 y no completan la regresión amplia de H1.",
+  "Las 24 tandas anteriores pertenecen a la fuente previa. Sus 36 fallos se conservan y no se convierten en aprobados.",
+  "Cuatro casos CUDA quedaron excluidos. La GPU estaba ocupada. No se afirma paridad CUDA nueva.",
+  "Las huellas de las demás fuentes de la regresión anterior permanecen iguales. Solo cambia spaced_session.py.",
+  "Cobertura y CRAP describen esta selección, sin garantía de ausencia de errores.",
+  "No se ha medido un efecto predictivo ni una aceleración."
+ ],
+ "suites": [
+  {
+   "name": "spaced_sessions_and_inference",
+   "tests": 128,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6f84a0868cbc433dbe33504b78da9f6bc73a29e7b505223f3ea96b885977bb52",
+   "note": "128 CPU aprobados, sin omisiones. Incluye las cinco políticas de retención, recuperación y variantes regionales. Cuatro casos CUDA excluidos."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 166,
+   "covered_statements": 164,
+   "branches": 44,
+   "covered_branches": 43
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "source_sha256": "820b9e8f91517a69ea1a92ce6d5a30db8af44a81726ce3689b2bc0bb12b0fd78",
+    "statements": 166,
+    "covered_statements": 164,
+    "branches": 44,
+    "covered_branches": 43
+   }
+  ],
+  "max_crap": 23.0,
+  "quality_sha256": "086fcc33618e23df75a33a68cb9003d0a3cc93d07123c896e54f0047a287c1e2",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "e37277f2a6ab6ef51510bc1ddc0d3d80c3191c35",
+  "head": "a0f9f8ff9017bea9a6bd78b3d1fe20c2a878e6db",
+  "functions": 1,
+  "max_crap": 4.0,
+  "changed_executable_lines": 0,
+  "changed_covered_lines": 0,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/spaced_session.py",
+    "function": "SpacedTitansBinding.prepare_block",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Una función de producción cambiada, medida con CRAP 4. Sus nueve sentencias están cubiertas.",
+  "changed_sha256": "7e2142e38b0dd248c6f3eaedef01d2bacbb4a560ab4b28775c53ba42ee12b209"
+ },
+ "mutations": {
+  "tree_commit": "a0f9f8ff9017bea9a6bd78b3d1fe20c2a878e6db",
+  "planned": 1,
+  "killed": 1,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "ec56db3a9d75e04625350e562c4f6848aff92b8337da31cfe476730dfdefa67a",
+  "executor_sha256": "bfa72f6c37147213214c19f2b00e6625fa9b2e397a27ad20bb67d26c3cbd055c",
+  "source_sha256": {
+   "src/mars_titan/memory/spaced_session.py": "820b9e8f91517a69ea1a92ce6d5a30db8af44a81726ce3689b2bc0bb12b0fd78"
+  },
+  "cases": [
+   "spaced_trace_is_stored_as_an_area_prediction"
+  ],
+  "summary_sha256": "16b7b7caf39e9182744604cbca4d4b9499477d07ea65e111e90f43313c3e7e00",
+  "scope": "La mutación devuelve el registro de utilidad al campo H1 equivocado. G1 y G2 verdes, M1 detectado, sin pasos de optimizador."
+ }
+}
