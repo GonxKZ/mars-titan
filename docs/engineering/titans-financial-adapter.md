@@ -12,7 +12,7 @@ La expansión de las llamadas recupera el AST de las sentencias anteriores y com
 
 Los 63 casos de contratos y componentes pasan y las 33 mutaciones dirigidas se detectan con G1 verde, M1 rojo y G2 verde, sin optimizador. Las selecciones se solapan y no se suman como casos distintos. Estas mutaciones comprueban conexión, precedencia, normalización, límites y exclusiones. No son una puntuación de mutación global. Los campos, sus valores por defecto y las identidades comprobadas se conservan. El código mantiene su procedencia nueva y los manifiestos no deben reutilizar huellas de otra ejecución.
 
-La regresión completa de modelos y consumidores está encolada detrás de H1. La unión de 349 módulos importadores y 120 módulos de modelos contiene 393 archivos, sin duplicarlos. La nueva organización solo cambia validación Python y no acredita una comprobación nueva de los operadores CUDA. La verificación general de CUDA continúa separada en #816. El aprendizaje y el test final siguen bloqueados.
+La regresión de modelos y consumidores terminó el 31 de octubre. La unión de 349 módulos importadores y 120 módulos de modelos contiene 393 archivos, sin duplicarlos. En 50 tandas pasan 8527 casos y se omiten 111, sin fallos ni errores. Son 72 omisiones por el bloqueo de aprendizaje, 30 por el ejecutable PPO ausente y nueve por la biblioteca de simulación ausente. Las fuentes y la protección conservan sus huellas al terminar. La nueva organización solo cambia validación Python y no acredita una comprobación nueva de los operadores CUDA. La verificación general de CUDA continúa separada en #816. El aprendizaje y el test final siguen bloqueados.
 
 ```bash
 uv --no-cache run --no-sync pytest -q -p no:cacheprovider \
