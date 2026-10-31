@@ -95,4 +95,19 @@ uv --no-cache run --no-sync python -m benchmarks.dendritic_session_cost \
   --sizes 64 256 --warmup 1 --repeats 3 --seconds 1800 --run
 ```
 
-Las ejecuciones pequeñas y las instrumentadas con cobertura verifican el medidor y no se presentan como medidas representativas de latencia. El RSS del proceso es global, sin atribuir un pico a cada modelo. No se miden energía, VRAM ni transferencias CUDA. Tres repeticiones no permiten estimar colas fiables. La comparación 64/256 todavía no se presenta como completada.
+Las ejecuciones pequeñas y las instrumentadas con cobertura verifican el medidor y no se presentan como medidas representativas de latencia. El [recibo del medidor](../../reports/engineering/dendritic-cost-driver-20261031/verification.json) conserva 30 casos CPU sin omisiones y nueve mutaciones detectadas. El análisis registra 220 de 230 sentencias y 45 de 48 ramas entre el medidor y los fixtures. Los callbacks de rechazo de optimizador y de plazo no se ejercitaron. El CRAP máximo es 33 en el resumen de resultados. Estas métricas no garantizan ausencia de errores.
+
+La [medida 64/256](../../reports/engineering/dendritic-cost-driver-20261031/cost-cpu.json), con código `aa7c01f46`, completó los 40 casos previstos. Se conciliaron diez calentamientos excluidos, treinta casos medidos, fuente común por tamaño, identidad del consumidor real, repetición de estados y paridad de referencia y ganancia cero, también en la decisión posterior a la recuperación. Los pesos y el RNG permanecieron iguales y no hubo intentos de optimizador.
+
+| Activos | Referencia, mediana en s | N2 con a=0 | Observable con a=1 | Prefijo pasado con a=1 | Constante con a=1 |
+| --- | --- | --- | --- | --- | --- |
+| 64 | 0,647 | 0,669 | 0,697 | 0,549 | 0,588 |
+| 256 | 2,267 | 1,979 | 2,096 | 1,946 | 1,998 |
+
+Los rangos se solapan. Con 256 activos, la referencia va de 1,849 a 2,275 s y el observable de 1,991 a 2,257 s. La ganancia cero va de 1,856 a 2,768 s, aunque su mediana sea inferior a la referencia. En 64 activos el control constante alcanza 1,134 s frente a su mediana de 0,588 s. No se establece una aceleración atribuible a N2 ni se elige un modelo por estas diferencias.
+
+La recuperación con 256 activos tiene medianas de 0,764 s para la referencia, 0,746 para ganancia cero, 0,767 para observable, 0,876 para prefijo y 0,751 para constante. El tamaño JSON lógico de la traza, con la convención del medidor, es 11 479 bytes por evento con 64 activos y 44 503 con 256. La referencia no genera esa traza. Los tamaños totales de archivos tras la decisión siguiente constan en cada caso. Son sumas lógicas, no espacio físico asignado ni pico transitorio.
+
+El bucle y sus comprobaciones duraron 285,32 s y el comando externo 290,18 s. Ambos contadores de RSS máximo registraron 922 516 KiB para el proceso completo. No hay pico de RAM por modelo ni ahorro de memoria demostrado. Se observó power-saver y había otras aplicaciones activas. No se aisló el almacenamiento ni se midieron energía, VRAM o transferencias CUDA. Tres muestras por configuración no estiman colas fiables.
+
+El resultado describe el coste de estos fixtures compactos con modelos sin entrenar y un solo indicador macro. No mide el corpus completo ni la utilidad financiera de la intervención. No hay mejora predictiva medida y N2 sigue desactivado por defecto.

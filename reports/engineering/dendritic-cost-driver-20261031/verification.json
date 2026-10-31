@@ -1,0 +1,246 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "cost_driver_verified_measurement_64_256_completed",
+ "implementation_commit": "aa7c01f46027fccb4aad0a96e2a27b290330d32f",
+ "base_commit": "a4e1d46c7e853eb65ce9a089b6d3ab6c48be43e5",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "Medidor reproducible de cinco configuraciones N2 y fixtures compartidos con las pruebas nativas.",
+ "limits": [
+  "La selección de 30 pruebas y las comprobaciones anteriores se solapan. No se suman como casos nuevos.",
+  "Los tiempos de pruebas y de cobertura no son los resultados de la medida 64/256.",
+  "La medida 64/256 terminó con 40 casos, diez calentamientos excluidos y treinta medidos. No hay mejora predictiva medida.",
+  "Los callbacks de rechazo de optimizador y de plazo no se ejercitaron. No se inyectaron pasos ni se agotó el presupuesto.",
+  "La memoria se registra para todo el proceso. No hay pico por variante, energía, VRAM ni transferencias CUDA.",
+  "La ganancia uno es un parámetro de fixture fijo, no un ajuste aprendido. No hay mejora predictiva medida."
+ ],
+ "suites": [
+  {
+   "name": "cost_protocol_native_cli_and_shared_fixtures",
+   "tests": 30,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "07b292d65468eb4558ba8c62750ae5de19575fdd8bc6457996dd1da82e777419",
+   "note": "30 CPU sin omisiones. Un caso CUDA excluido. Incluye CLI nativo de cinco casos y las pruebas previas del fixture."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 230,
+   "covered_statements": 220,
+   "branches": 48,
+   "covered_branches": 45
+  },
+  "files": [
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "source_sha256": "63aeb71eb9ca509acb7683a49b73d54e0c6f047e15aacb4d8b14be790b8917b2",
+    "statements": 190,
+    "covered_statements": 180,
+    "branches": 42,
+    "covered_branches": 39
+   },
+   {
+    "path": "tests/memory/dendritic_fixtures.py",
+    "source_sha256": "d1088e12e036da6bf618e4897e0978b07c86b3f1e85338ea50772c6d263bee87",
+    "statements": 40,
+    "covered_statements": 40,
+    "branches": 6,
+    "covered_branches": 6
+   }
+  ],
+  "max_crap": 33.0,
+  "quality_sha256": "67ab2a686e194c7a54c179f8af3908001373fe73f91479f665174633aacf4afb",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "a4e1d46c7e853eb65ce9a089b6d3ab6c48be43e5",
+  "head": "aa7c01f46027fccb4aad0a96e2a27b290330d32f",
+  "functions": 7,
+  "max_crap": 33.0,
+  "changed_executable_lines": 176,
+  "changed_covered_lines": 163,
+  "highest": [
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 33,
+    "crap": 33.0,
+    "changed_executable_lines": 26,
+    "changed_covered_lines": 26,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 27,
+    "crap": 27.354692192138945,
+    "changed_executable_lines": 93,
+    "changed_covered_lines": 83,
+    "changed_missing_lines": [
+     216,
+     217,
+     228,
+     247,
+     307,
+     308,
+     311,
+     369,
+     370,
+     371
+    ],
+    "changed_missing_branches": [
+     [
+      215,
+      216
+     ],
+     [
+      220,
+      228
+     ],
+     [
+      246,
+      247
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "study_protocol",
+    "cyclomatic_complexity": 11,
+    "crap": 11.0,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "_case",
+    "cyclomatic_complexity": 9,
+    "crap": 9.0,
+    "changed_executable_lines": 33,
+    "changed_covered_lines": 33,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "_common",
+    "cyclomatic_complexity": 3,
+    "crap": 3.0,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 15,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 27,
+    "crap": 27.354692192138945,
+    "changed_executable_lines": 93,
+    "changed_covered_lines": 83,
+    "changed_missing_lines": [
+     216,
+     217,
+     228,
+     247,
+     307,
+     308,
+     311,
+     369,
+     370,
+     371
+    ],
+    "changed_missing_branches": [
+     [
+      215,
+      216
+     ],
+     [
+      220,
+      228
+     ],
+     [
+      246,
+      247
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "main.refuse",
+    "cyclomatic_complexity": 1,
+    "crap": 2.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     307,
+     308
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "main.deadline",
+    "cyclomatic_complexity": 1,
+    "crap": 2.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     311
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "unmeasured": [],
+  "note": "El análisis de funciones cambiadas excluye tests por convención. Los tres factories compartidos de tests se miden en la calidad global. Dos callbacks permanecen sin ejecutar.",
+  "changed_sha256": "32b2a420efc0c1ea046e5b0c822d24cc787b33dd18856aa07f66439485b6b53c"
+ },
+ "mutations": {
+  "tree_commit": "aa7c01f46027fccb4aad0a96e2a27b290330d32f",
+  "planned": 9,
+  "killed": 9,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "c225078fb83d74f141647d4892ad7bb4a3179ffef17acd12b196a41b6248727f",
+  "executor_sha256": "bef0f4e0697fa9d32879ac490a7b53447613dfb0bdf1161a158edf053682c1e5",
+  "source_sha256": {
+   "benchmarks/dendritic_session_cost.py": "63aeb71eb9ca509acb7683a49b73d54e0c6f047e15aacb4d8b14be790b8917b2"
+  },
+  "cases": [
+   "duplicate_sizes_are_accepted",
+   "warmup_enters_measured_statistics",
+   "zero_gain_parity_is_not_checked",
+   "following_state_parity_is_not_checked",
+   "source_fingerprints_are_mixed",
+   "unpaired_exposure_is_accepted",
+   "activated_model_can_change_state_between_repetitions",
+   "driver_source_is_not_pinned",
+   "all_cases_silently_use_the_reference"
+  ],
+  "summary_sha256": "4ffbbaac5724d65e026ffa2e1ebe043f8b02e459333e78c784ba517647a25751",
+  "scope": "Nueve defectos dirigidos de límites, calentamiento, paridad, estado siguiente, fuente, exposición, reproducibilidad y consumidor real detectados con G1/M1/G2."
+ },
+ "cost": {
+  "receipt": "reports/engineering/dendritic-cost-driver-20261031/cost-cpu.json",
+  "sha256": "fe150ac0a9ca474663593b66af444d335d13fd7efb8d52d14ab8b4685cf1c95f"
+ }
+}
