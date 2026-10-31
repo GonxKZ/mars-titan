@@ -64,6 +64,19 @@ def test_frozen_consumer_accepts_the_registered_dendritic_operator():
     assert result.point_predictions.shape == (2,)
 
 
+def test_shared_neural_options_reject_a_view_from_another_snapshot():
+    from mars_titan.models.titans.frozen_financial import neural_options
+
+    model, cpu, _, plan = frame()
+    batch = DecisionBatch.from_validated(cpu, dtype=torch.float64)
+    view = plan.view(cpu)
+    assert neural_options(model, batch, context_id="a" * 64, dendritic_context=view) == {
+        "dendritic_context": view
+    }
+    with pytest.raises(ValueError):
+        neural_options(model, batch, context_id="b" * 64, dendritic_context=view)
+
+
 def test_one_event_context_drives_all_blocks_and_matches_the_full_group():
     model, cpu, _, plan = frame()
     consumer = FrozenFinancialConsumer(model.eval().requires_grad_(False))
@@ -129,7 +142,7 @@ def test_event_record_is_independent_and_tampering_with_immutable_metadata_is_de
         plan.record()
 
 
-def test_other_consumers_reject_n2_before_running_an_unregistered_composition():
+def test_e2_registers_n2_and_mechanisms_still_reject_unregistered_context():
     from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
     from mars_titan.memory.spaced_retention import SpacedRetentionConfig
     from mars_titan.memory.spaced_session import SpacedTitansBinding
@@ -156,8 +169,10 @@ def test_other_consumers_reject_n2_before_running_an_unregistered_composition():
     )
     retention = SpacedRetentionConfig(capacity=8)
     SpacedTitansBinding(FrozenFinancialConsumer(base, readout=readout), codec, retention, "m1")
-    with pytest.raises(ValueError, match="contexto N2"):
-        SpacedTitansBinding(FrozenFinancialConsumer(model, readout=readout), codec, retention, "m1")
+    spaced = SpacedTitansBinding(
+        FrozenFinancialConsumer(model, readout=readout), codec, retention, "m1"
+    )
+    assert "dendritic_session" in spaced.code()
 
 
 def test_plan_and_view_factories_reject_invalid_sources_before_use():

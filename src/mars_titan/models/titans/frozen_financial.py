@@ -356,6 +356,26 @@ class FrozenPreparation:
     quantiles: torch.Tensor | None = None
 
 
+def neural_options(predictor, batch, *, context_id, selection=None, dendritic_context=None):
+    """Opciones del núcleo comunes a la lectura ordinaria y a los diagnósticos E2."""
+    options = {}
+    if dendritic_context is not None:
+        if type(dendritic_context) is not DendriticView or predictor.active_dendrites is None:
+            raise ValueError("El consumidor no admite esta vista N2")
+        dendritic_context.validate(
+            batch,
+            predictor.config.active_dendrites,
+            predictor.config.seed,
+            context_id=context_id,
+        )
+        options["dendritic_context"] = dendritic_context
+    if predictor.local_control is not None:
+        options.update(control_selection=selection, control_context_id=context_id)
+    elif selection is not None:
+        raise ValueError("El predictor sin C no admite un plan de medición")
+    return options
+
+
 class FrozenFinancialConsumer:
     """Una preparación MAC por bloque y K lecturas posteriores con la misma cabeza.
 
@@ -490,24 +510,13 @@ class FrozenFinancialConsumer:
             raise ValueError("La preparación necesita un evento y corte únicos")
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
-        options = {}
-        if dendritic_context is not None:
-            if (
-                type(dendritic_context) is not DendriticView
-                or self.predictor.active_dendrites is None
-            ):
-                raise ValueError("El consumidor no admite esta vista N2")
-            dendritic_context.validate(
-                batch,
-                self.predictor.config.active_dendrites,
-                self.predictor.config.seed,
-                context_id=context_id,
-            )
-            options["dendritic_context"] = dendritic_context
-        if self.predictor.local_control is not None:
-            options.update(control_selection=selection, control_context_id=context_id)
-        elif selection is not None:
-            raise ValueError("El predictor sin C no admite un plan de medición")
+        options = neural_options(
+            self.predictor,
+            batch,
+            context_id=context_id,
+            selection=selection,
+            dendritic_context=dendritic_context,
+        )
         if not warmup and type(self.readout) is EpisodicReadout:
             self.readout.preflight_node_updates(
                 self.readout.config.refinements,

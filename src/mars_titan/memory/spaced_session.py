@@ -5,7 +5,7 @@ import inspect
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from mars_titan.models.titans.frozen_financial import FrozenPreparation
+from mars_titan.models.titans.frozen_financial import FrozenPreparation, neural_options
 
 from . import (
     spaced_regional_readout,
@@ -41,10 +41,6 @@ class SpacedTitansBinding(TitansBinding):
     """Mismo recorrido por bloques, con lectura K1 y retención E2 explícitas."""
 
     def __init__(self, consumer, codec, retention, admission):
-        _require(
-            consumer.predictor.active_dendrites is None,
-            "La sesión E2 todavía no registra el contexto N2",
-        )
         _require(admission == "m1", "E2 solo admite M1 y conserva separados los índices M2/M3")
         reference = RetentionConfig(
             capacity=retention.capacity, seed=retention.seed, frontier=min(retention.capacity, 8)
@@ -92,8 +88,13 @@ class SpacedTitansBinding(TitansBinding):
         if self.regional():
             modules += (spaced_regional_session, spaced_regional_readout)
         return {
-            m.__name__.rsplit(".", 1)[-1]: hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest()
-            for m in modules
+            **super().code(),
+            **{
+                m.__name__.rsplit(".", 1)[-1]: hashlib.sha256(
+                    Path(m.__file__).read_bytes()
+                ).hexdigest()
+                for m in modules
+            },
         }
 
     def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
@@ -124,7 +125,18 @@ class SpacedTitansBinding(TitansBinding):
             **scope,
         )
 
-    def prepare_block(self, session, batch, previous, *, context_id, snapshot, warmup, selection):
+    def prepare_block(
+        self,
+        session,
+        batch,
+        previous,
+        *,
+        context_id,
+        snapshot,
+        warmup,
+        selection,
+        dendritic_context=None,
+    ):
         if warmup:
             return super().prepare_block(
                 session,
@@ -134,13 +146,20 @@ class SpacedTitansBinding(TitansBinding):
                 snapshot=snapshot,
                 warmup=True,
                 selection=selection,
+                **(
+                    {"dendritic_context": dendritic_context}
+                    if dendritic_context is not None
+                    else {}
+                ),
             )
         self.consumer.verify(strong=False)
         model = self.consumer.predictor
-        options = (
-            {}
-            if model.local_control is None
-            else dict(control_selection=selection, control_context_id=context_id)
+        options = neural_options(
+            model,
+            batch,
+            context_id=context_id,
+            selection=selection,
+            dendritic_context=dendritic_context,
         )
         prepared = model.prepare(batch, previous, differentiable=False, **options)
         producer = (
@@ -159,12 +178,12 @@ class SpacedTitansBinding(TitansBinding):
             allow_mixed_markets=True,
         )
         return SpacedPreparation(
-            prediction.point_predictions,
-            prepared.next_state,
-            prediction.readout,
-            prepared.local_control,
-            prediction.quantiles,
-            trace,
+            point_predictions=prediction.point_predictions,
+            next_state=prepared.next_state,
+            readout=prediction.readout,
+            local_control=prepared.local_control,
+            quantiles=prediction.quantiles,
+            utility=trace,
         )
 
     def record_block(self, session, batch, result, *, warmup):
