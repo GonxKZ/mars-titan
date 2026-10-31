@@ -228,3 +228,18 @@ def verify(session, bundle, pending_keys, *, event_kind):
         pending_keys
     ):
         raise ValueError("El libro S2 no concilia con el corte y la cola financiera")
+
+
+def confirmed_book(session):
+    """Obtener una copia del libro confirmado, sin exponer el estado vivo del ejecutor."""
+    from .financial_session import FinancialSession, _check_callbacks
+
+    if type(session) is not FinancialSession or session._failure_config is None:
+        raise ValueError("La lectura analítica necesita una sesión S2 activa")
+    _check_callbacks(session)
+    before = session.snapshot()
+    session._verify_confirmed()
+    ledger = restore(session, session._bundle(before["state"]))
+    if session.snapshot() != before:
+        raise ValueError("La sesión cambió durante la lectura del libro confirmado")
+    return ledger

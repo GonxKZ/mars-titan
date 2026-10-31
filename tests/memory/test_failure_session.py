@@ -449,3 +449,24 @@ def test_failure_before_commit_keeps_the_confirmed_book_and_replays_the_same_upd
         labels = [native.Feedback(p.id, 0, moment(126), p.value + 1.0) for p in first.predictions]
         expected = reference.step(source["batches"][126], labels)
         assert replayed == [p.value for p in expected.predictions]
+
+
+def test_public_confirmed_book_is_a_copy_and_does_not_change_the_live_session(
+    native,
+    four_flow_source,
+    tmp_path,
+):
+    source = four_flow_source
+    engine = consumer(source)
+    config = policy(source, engine, tmp_path)
+    with open_session(native, source, engine, tmp_path / "public-book", config) as run:
+        step = run.step(source["batches"][125], [])
+        before = run.snapshot()
+        exported = api().confirmed_book(run)
+        exported.censor([(p.asset, p.decision_at) for p in step.predictions])
+        assert exported.counts()["pending"] == 0
+        assert book(run).counts()["pending"] == 4
+        assert run.snapshot() == before
+    with open_session(native, source, engine, tmp_path / "no-book", None) as baseline:
+        with pytest.raises(ValueError):
+            api().confirmed_book(baseline)
