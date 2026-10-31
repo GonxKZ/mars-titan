@@ -13,10 +13,11 @@ from mars_titan.calibration.cohort_feedback import CohortOutcome
 from mars_titan.models.quantile_head import LEVELS
 from mars_titan.models.titans import regional_mechanism_trace
 from mars_titan.models.titans.config import bounded_integer, canonical
-from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
+from mars_titan.models.titans.financial_inputs import FINAL_TEST_US, DecisionBatch
 from mars_titan.models.titans.mechanism_selection import check_trace
 
 from . import (
+    dendritic_session,
     mechanism_collection,
     mechanism_collection_record,
     mechanism_history,
@@ -122,6 +123,11 @@ class MechanismBinding(TitansBinding):
             + (("selection",) if self.consumer.policy is not None else ())
             + (("collection_packet",) if self.collections is not None else ())
             + (("regional_work",) if self.consumer.predictor.regional_execution is not None else ())
+            + (
+                ("dendritic_context",)
+                if self.consumer.predictor.active_dendrites is not None
+                else ()
+            )
         )
 
     @staticmethod
@@ -187,6 +193,8 @@ class MechanismBinding(TitansBinding):
         )
         if self.consumer.policy is not None:
             result["selection"] = None
+        if self.consumer.predictor.active_dendrites is not None:
+            result["dendritic_context"] = None
         if self.collections is not None:
             result["collection_packet"] = None
         if self.consumer.predictor.regional_execution is not None:
@@ -206,6 +214,11 @@ class MechanismBinding(TitansBinding):
         self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows, auxiliary
     ):
         flows = tuple(row.flow_id for row in rows)
+        dendritic = (
+            dendritic_session.prepare(session, rows, context_id)
+            if self.consumer.predictor.active_dendrites is not None
+            else None
+        )
         maturity = (
             None
             if warmup
@@ -224,6 +237,7 @@ class MechanismBinding(TitansBinding):
                 context_id=context_id,
                 matures_at=maturity,
                 snapshot=snapshot,
+                dendritic_plan=dendritic,
             )
         if collector is None and self.consumer.policy is not None and not warmup:
             selection["observation"] = mechanism_observations.extract_observation(
@@ -235,6 +249,8 @@ class MechanismBinding(TitansBinding):
                 context_id=context_id,
                 snapshot=snapshot,
             )
+        if dendritic is not None:
+            selection["dendritic_plan"] = dendritic
         event = (
             collector.emission_event()
             if collector is not None
@@ -251,13 +267,20 @@ class MechanismBinding(TitansBinding):
         )
         model = self.consumer.predictor
         for start in range(0, len(rows), batch_rows):
-            batch = session._decision_batch(rows[start : start + batch_rows])
+            block = rows[start : start + batch_rows]
+            options = {}
+            if dendritic is None:
+                batch = session._decision_batch(block)
+            else:
+                cpu = session._decision_cpu_batch(block)
+                options["dendritic_context"] = dendritic.view(cpu)
+                batch = DecisionBatch.from_validated(cpu, device=self.device, dtype=self.dtype)
             unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
             initial = model.initial_state(unknown) if unknown else None
             previous = session._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
             if collector is not None:
                 collector.add(rows[start : start + batch_rows], previous)
-            prepared = self.consumer.prepare(batch, previous, event)
+            prepared = self.consumer.prepare(batch, previous, event, **options)
             fast = session._fast_store.replace(fast, previous, prepared.next_state)
             event = prepared.event
         emission = self.consumer.finish(event)
@@ -306,6 +329,8 @@ class MechanismBinding(TitansBinding):
             work=work,
             auxiliary=self.consumer.export_state(emission.state),
         )
+        if dendritic is not None:
+            control["dendritic_context"] = dendritic.record()
         if self.consumer.policy is not None:
             control["selection"] = (
                 json.loads(emission.selection_json) if emission.selection_json is not None else None

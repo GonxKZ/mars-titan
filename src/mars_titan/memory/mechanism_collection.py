@@ -10,9 +10,11 @@ import torch
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
 from mars_titan.models.quantile_head import QuantileHead
 from mars_titan.models.titans import bridge_stopping_record, refinement_routes, regional_routes
+from mars_titan.models.titans.dendritic_context import DendriticPlan
 from mars_titan.models.titans.evidence_bridge import AdaptiveBridgeRead
 from mars_titan.models.titans.financial import _tensor_digest
-from mars_titan.models.titans.financial_inputs import DecisionBatch
+from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
+from mars_titan.models.titans.frozen_financial import neural_options
 from mars_titan.models.titans.mechanism_calibration import calibrate_event
 from mars_titan.models.titans.mechanism_catalog import MechanismAction
 from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
@@ -60,7 +62,18 @@ class MechanismCollector:
     La publicación durable del paquete corresponde al coordinador de su ejecución.
     """
 
-    def __init__(self, consumer, state, *, rows, cutoff, context_id, matures_at, snapshot=None):
+    def __init__(
+        self,
+        consumer,
+        state,
+        *,
+        rows,
+        cutoff,
+        context_id,
+        matures_at,
+        snapshot=None,
+        dendritic_plan=None,
+    ):
         if (
             type(consumer) is not FrozenMechanismConsumer
             or type(consumer.predictor.head) is not QuantileHead
@@ -82,6 +95,18 @@ class MechanismCollector:
         self._metadata = {r.flow_id: r.metadata() for r in supplied}
         flows = tuple(r.flow_id for r in supplied)
         options = {"observation": self.observation} if consumer.policy is not None else {}
+        model = consumer.predictor
+        if model.active_dendrites is not None and dendritic_plan is None:
+            dendritic_plan = DendriticPlan.create(
+                model.config.active_dendrites,
+                rows,
+                seed=model.config.seed,
+                input_contract=model.config.inputs.fingerprint(),
+                context_id=context_id,
+            )
+        self._dendritic_plan = dendritic_plan
+        if dendritic_plan is not None:
+            options["dendritic_plan"] = dendritic_plan
         self._event = consumer.begin(
             state,
             flow_ids=flows,
@@ -171,6 +196,11 @@ class MechanismCollector:
         if type(self.consumer) is not FrozenMechanismConsumer:
             raise ValueError("El consumidor de la colección cambió de tipo")
         self.consumer.verify()
+        if self.consumer.predictor.active_dendrites is not None and (
+            type(self._dendritic_plan) is not DendriticPlan
+            or self._dendritic_plan.source_id != self._event.dendritic_source_id
+        ):
+            raise ValueError("La colección N2 cambió el origen común del evento")
         if (
             self._event.context is not self._state.context
             or self._event.calibration is not self._state.calibration
@@ -287,9 +317,23 @@ class MechanismCollector:
         )
         if not masked_inputs(model.config.inputs.input_policy):
             raw.pop("presence")
-        batch = DecisionBatch.from_corpus(
-            raw, model.config.inputs, device=model.head.weight.device, dtype=model.head.weight.dtype
-        )
+        core_options = {}
+        if self._dendritic_plan is None:
+            batch = DecisionBatch.from_corpus(
+                raw,
+                model.config.inputs,
+                device=model.head.weight.device,
+                dtype=model.head.weight.dtype,
+            )
+        else:
+            cpu = validated_cpu_batch(raw, model.config.inputs)
+            view = self._dendritic_plan.view(cpu)
+            batch = DecisionBatch.from_validated(
+                cpu, device=model.head.weight.device, dtype=model.head.weight.dtype
+            )
+            core_options = neural_options(
+                model, batch, context_id=self._event.context_id, dendritic_context=view
+            )
         before = state_digest(model.export_state(fast_state))
         proposed = {flow: {} for flow in flows}
         work = dict.fromkeys(self._work, 0)
@@ -299,9 +343,9 @@ class MechanismCollector:
             routes = self._routes(context)
             if not any(routes[flow.split("/", 1)[0]] for flow in flows):
                 continue
-            options = {}
+            options = dict(core_options)
             if model.session_context is not None:
-                options = dict(
+                options.update(
                     context=self._event.context,
                     context_selection=tuple(
                         context == "parent" and bool(routes[f.split("/", 1)[0]]) for f in flows

@@ -166,6 +166,19 @@ class DendriticPlan:
             entries=[list(row) for row in self.entries],
         )
 
+    def validate_event(self, config, seed, *, input_contract, context_id, flows, at):
+        """Vincular una vez el origen completo con la cohorte de propuestas."""
+        self.record()
+        if (
+            self.configuration != _key(config, seed)
+            or self.input_contract != input_contract
+            or self.context_id != context_id
+            or sorted(row[0] for row in self.entries) != sorted(flows)
+            or any(row[2] != at for row in self.entries)
+        ):
+            raise ValueError("El origen N2 no corresponde a la configuración y cohorte")
+        return self.source_id
+
     def view(self, batch):
         if type(batch) is not CPUDecisionBatch or self._signature() != self._sealed:
             raise ValueError("La asignación N2 necesita un bloque CPU y una fuente intactos")

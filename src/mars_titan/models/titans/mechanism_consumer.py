@@ -21,6 +21,7 @@ from mars_titan.models.quantile_head import QuantileHead
 
 from . import regional_mechanism_trace, regional_routes
 from .config import bounded_integer, canonical
+from .dendritic_context import DendriticPlan, DendriticView
 from .episodic_readout import EpisodicReadout
 from .episodic_snapshot import EpisodeSnapshot
 from .financial import FinancialPredictor, _tensor_digest
@@ -30,6 +31,7 @@ from .frozen_financial import (
     _implementation,
     _numerics,
     _validate_intervention,
+    neural_options,
 )
 from .mechanism_calibration import _reserve_fits, _static_record, calibrate_event
 from .mechanism_catalog import MechanismAction, MechanismAvailability, MechanismCatalog
@@ -63,7 +65,7 @@ _SOURCES = (
 )
 
 
-def _code(*, policy=False, hierarchy=False, kronlstm=False):
+def _code(*, policy=False, hierarchy=False, kronlstm=False, dendrites=False):
     sources = _SOURCES + (
         (
             "mars_titan.models.titans.mechanism_policy",
@@ -73,7 +75,7 @@ def _code(*, policy=False, hierarchy=False, kronlstm=False):
         if policy
         else ()
     )
-    implementation = _implementation(hierarchy=hierarchy, kronlstm=kronlstm)
+    implementation = _implementation(hierarchy=hierarchy, kronlstm=kronlstm, dendrites=dendrites)
     return implementation | {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -128,8 +130,6 @@ class FrozenMechanismConsumer:
     ):
         if type(self) is not FrozenMechanismConsumer or type(predictor) is not FinancialPredictor:
             raise ValueError("El consumidor necesita un predictor financiero identificado")
-        if predictor.active_dendrites is not None:
-            raise ValueError("El consumidor de mecanismos todavía no registra el contexto N2")
         if policy is not None and action is not None:
             raise ValueError("La acción fija y el selector son modos excluyentes")
         action = MechanismAction() if action is None else action
@@ -203,6 +203,7 @@ class FrozenMechanismConsumer:
                 policy=policy is not None,
                 hierarchy=type(predictor.regional_execution) is RegionalHierarchy,
                 kronlstm=predictor.config.temporal_encoder is not None,
+                dendrites=predictor.active_dendrites is not None,
             ),
             _numerics(),
         )
@@ -329,6 +330,7 @@ class FrozenMechanismConsumer:
                     policy=self.policy is not None,
                     hierarchy=type(self.predictor.regional_execution) is RegionalHierarchy,
                     kronlstm=self.predictor.config.temporal_encoder is not None,
+                    dendrites=self.predictor.active_dendrites is not None,
                 )
                 != self._code
             ):
@@ -395,6 +397,7 @@ class FrozenMechanismConsumer:
         snapshot=None,
         warmup=False,
         observation=None,
+        dendritic_plan=None,
     ):
         self.verify()
         self._check_state(state)
@@ -412,6 +415,22 @@ class FrozenMechanismConsumer:
         bounded_integer(len(flow_ids), "filas del evento de mecanismos", 1, 8192)
         flows = tuple(flow_ids)
         self.predictor._check_flows(flows)
+        dendritic_source = None
+        if self.predictor.active_dendrites is not None:
+            if type(dendritic_plan) is not DendriticPlan:
+                raise ValueError(
+                    "La cohorte N2 necesita el origen completo antes de preparar bloques"
+                )
+            dendritic_source = dendritic_plan.validate_event(
+                self.predictor.config.active_dendrites,
+                self.predictor.config.seed,
+                input_contract=self.predictor.config.inputs.fingerprint(),
+                context_id=context_id,
+                flows=flows,
+                at=cutoff,
+            )
+        elif dendritic_plan is not None:
+            raise ValueError("El consumidor sin N2 no admite un origen dendrítico")
         if state.cutoff is not None and cutoff <= state.cutoff:
             raise ValueError("La decisión debe ser posterior al estado auxiliar")
         if warmup:
@@ -527,9 +546,10 @@ class FrozenMechanismConsumer:
             warmup,
             selection_json=selection_json,
             availability=tuple(availabilities.items()),
+            dendritic_source_id=dendritic_source,
         )
 
-    def prepare(self, batch, state, event):
+    def prepare(self, batch, state, event, *, dendritic_context=None):
         self.verify(strong=False)
         if type(batch) is not DecisionBatch:
             raise ValueError("El bloque de mecanismos no es una entrada financiera validada")
@@ -544,9 +564,19 @@ class FrozenMechanismConsumer:
             raise ValueError("El bloque no pertenece a la cohorte declarada")
         bounded_integer(len(batch.flow_ids), "lote del consumidor", 1, self.max_batch)
         plans = dict(event.plans)
-        options = {}
+        if self.predictor.active_dendrites is not None and (
+            type(dendritic_context) is not DendriticView
+            or dendritic_context.source_id != event.dendritic_source_id
+        ):
+            raise ValueError("El bloque N2 necesita una vista del origen completo de su evento")
+        options = neural_options(
+            self.predictor,
+            batch,
+            context_id=event.context_id,
+            dendritic_context=dendritic_context,
+        )
         if self.predictor.session_context is not None:
-            options = dict(
+            options.update(
                 context=event.context,
                 context_selection=tuple(
                     plans[flow.split("/", 1)[0]].applied.context == "parent"

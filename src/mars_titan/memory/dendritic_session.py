@@ -3,11 +3,12 @@
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.dendritic_context import DendriticPlan
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
 
 
 def enabled(session):
     return (
-        type(session.consumer) is FrozenFinancialConsumer
+        type(session.consumer) in (FrozenFinancialConsumer, FrozenMechanismConsumer)
         and session.consumer.predictor.active_dendrites is not None
     )
 
@@ -26,7 +27,7 @@ def prepare(session, rows, context_id):
 def verify(session, control, rows, cutoff):
     record = control.get("dendritic_context")
     if not enabled(session) or not rows:
-        if "dendritic_context" in control:
+        if "dendritic_context" in control and (not enabled(session) or record is not None):
             raise ValueError("Este evento no admite una traza de contexto N2")
         return
     if any(row.prediction_at != cutoff for row in rows):

@@ -188,7 +188,7 @@ def test_event_record_is_independent_and_tampering_with_immutable_metadata_is_de
         plan.record()
 
 
-def test_e2_registers_n2_and_mechanisms_still_reject_unregistered_context():
+def test_e2_and_mechanisms_register_the_dendritic_operator():
     from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
     from mars_titan.memory.spaced_retention import SpacedRetentionConfig
     from mars_titan.memory.spaced_session import SpacedTitansBinding
@@ -203,8 +203,8 @@ def test_e2_registers_n2_and_mechanisms_still_reject_unregistered_context():
         .requires_grad_(False)
     )
     FrozenMechanismConsumer(base)
-    with pytest.raises(ValueError, match="contexto N2"):
-        FrozenMechanismConsumer(model)
+    mechanism = FrozenMechanismConsumer(model)
+    assert "mars_titan.models.titans.dendritic_context" in mechanism.identity()["implementation"]
     codec = FrozenEpisodeCodec(base.config.inputs)
     readout = (
         EpisodicReadout(
