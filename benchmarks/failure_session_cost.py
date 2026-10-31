@@ -26,7 +26,7 @@ from pathlib import Path
 FAMILIES = ("scalar", "mechanism")
 
 
-def study_protocol(sizes, warmup, repeats):
+def study_protocol(sizes, warmup, repeats, decoded_cache_bytes=0, compare_decoded_cache=False):
     """Fijar tamaños y repeticiones acotados antes de crear cualquier ejecución."""
     if (
         type(sizes) is not list
@@ -37,6 +37,10 @@ def study_protocol(sizes, warmup, repeats):
         or not 0 <= warmup <= 3
         or type(repeats) is not int
         or not 1 <= repeats <= 10
+        or type(decoded_cache_bytes) is not int
+        or not 0 <= decoded_cache_bytes <= 64 * 1024**2
+        or type(compare_decoded_cache) is not bool
+        or (compare_decoded_cache and decoded_cache_bytes == 0)
     ):
         raise ValueError("La medida necesita tamaños únicos admitidos y repeticiones acotadas")
     return dict(
@@ -53,6 +57,10 @@ def study_protocol(sizes, warmup, repeats):
         episodic_capacity=64,
         failure_capacity="assets",
         failure_cache_keys=True,
+        decoded_cache_bytes=decoded_cache_bytes,
+        decoded_cache_budgets=[0, decoded_cache_bytes]
+        if compare_decoded_cache
+        else [decoded_cache_bytes],
         prefix_events=[125, 126, 127],
         measured_event=128,
         recovery_following_event=130,
@@ -60,51 +68,61 @@ def study_protocol(sizes, warmup, repeats):
     )
 
 
+def _groups(cases):
+    """Conservar fuente, familia y presupuesto de caché como ejes distintos."""
+    for assets in sorted({row["assets"] for row in cases}):
+        budgets = sorted({r.get("decoded_cache_bytes", 0) for r in cases if r["assets"] == assets})
+        for family in FAMILIES:
+            parent = [r for r in cases if (r["assets"], r["family"]) == (assets, family)]
+            for field in ("common_state_sha256", "next_state_sha256"):
+                if len({r[field] for r in parent}) != 1:
+                    raise ValueError("Cambió la emisión o el estado recuperado entre controles")
+            for budget in budgets:
+                yield (
+                    assets,
+                    family,
+                    budget,
+                    [r for r in parent if r.get("decoded_cache_bytes", 0) == budget],
+                )
+
+
 def summarize(cases):
     """Comparar cada familia con su propia referencia y exigir paridad completa."""
     result = []
-    for assets in sorted({row["assets"] for row in cases}):
-        for family in FAMILIES:
-            group = [r for r in cases if (r["assets"], r["family"]) == (assets, family)]
-            paired = [
-                [r["repetition"] for r in group if r["enabled"] is enabled and not r["warmup"]]
-                for enabled in (False, True)
-            ]
-            if set(paired[0]) != set(paired[1]) or any(
-                len(values) != len(set(values)) for values in paired
-            ):
-                raise ValueError("Las repeticiones medidas no están emparejadas")
-            for field in ("common_state_sha256", "next_state_sha256"):
-                if len({r[field] for r in group}) != 1:
-                    raise ValueError("Cambió la emisión o el estado recuperado entre controles")
-            reference = None
-            for enabled in (False, True):
-                rows = [r for r in group if r["enabled"] is enabled and not r["warmup"]]
-                if not rows:
-                    raise ValueError("Falta la referencia o una variante de la medida")
-                values = [r["step_seconds"] for r in rows]
-                median = statistics.median(values)
-                reference = median if not enabled else reference
-                result.append(
-                    dict(
-                        assets=assets,
-                        family=family,
-                        enabled=enabled,
-                        samples=len(rows),
-                        minimum_seconds=min(values),
-                        median_seconds=median,
-                        maximum_seconds=max(values),
-                        predictions_per_second=assets / median,
-                        relative_to_reference_percent=100 * (median - reference) / reference,
-                        recovery_median_seconds=statistics.median(
-                            r["recovery_seconds"] for r in rows
-                        ),
-                        persisted_median_bytes=statistics.median(
-                            r["persisted_bytes"] for r in rows
-                        ),
-                        book_median_bytes=statistics.median(r["book_bytes"] for r in rows),
-                    )
+    for assets, family, budget, group in _groups(cases):
+        paired = [
+            [r["repetition"] for r in group if r["enabled"] is enabled and not r["warmup"]]
+            for enabled in (False, True)
+        ]
+        if set(paired[0]) != set(paired[1]) or any(
+            len(values) != len(set(values)) for values in paired
+        ):
+            raise ValueError("Las repeticiones medidas no están emparejadas")
+        reference = None
+        for enabled in (False, True):
+            rows = [r for r in group if r["enabled"] is enabled and not r["warmup"]]
+            if not rows:
+                raise ValueError("Falta la referencia o una variante de la medida")
+            values = [r["step_seconds"] for r in rows]
+            median = statistics.median(values)
+            reference = median if not enabled else reference
+            result.append(
+                dict(
+                    assets=assets,
+                    family=family,
+                    decoded_cache_bytes=budget,
+                    enabled=enabled,
+                    samples=len(rows),
+                    minimum_seconds=min(values),
+                    median_seconds=median,
+                    maximum_seconds=max(values),
+                    predictions_per_second=assets / median,
+                    relative_to_reference_percent=100 * (median - reference) / reference,
+                    recovery_median_seconds=statistics.median(r["recovery_seconds"] for r in rows),
+                    persisted_median_bytes=statistics.median(r["persisted_bytes"] for r in rows),
+                    book_median_bytes=statistics.median(r["book_bytes"] for r in rows),
                 )
+            )
     return result
 
 
@@ -242,9 +260,13 @@ def main():
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--seconds", type=int, default=1800)
+    parser.add_argument("--decoded-cache-bytes", type=int, default=0)
+    parser.add_argument("--compare-decoded-cache", action="store_true")
     parser.add_argument("--run", action="store_true")
     args = parser.parse_args()
-    protocol = study_protocol(args.sizes, args.warmup, args.repeats)
+    protocol = study_protocol(
+        args.sizes, args.warmup, args.repeats, args.decoded_cache_bytes, args.compare_decoded_cache
+    )
     if not args.run:
         print(json.dumps(protocol, ensure_ascii=False))
         return
@@ -364,14 +386,20 @@ def main():
                     family: proof(torch, model.predictor.state_dict())[0]
                     for family, model in models.items()
                 }
-                controls = [(family, enabled) for family in FAMILIES for enabled in (False, True)]
+                controls = [
+                    (family, enabled, budget)
+                    for budget in protocol["decoded_cache_budgets"]
+                    for family in FAMILIES
+                    for enabled in (False, True)
+                ]
                 for repetition in range(args.warmup + args.repeats):
                     shift = repetition % len(controls)
-                    for family, enabled in controls[shift:] + controls[:shift]:
+                    for family, enabled, budget in controls[shift:] + controls[:shift]:
                         consumer = models[family]
                         config = policy(source, consumer, out)
                         config = replace(
                             config,
+                            decoded_cache_bytes=budget,
                             ledger=replace(
                                 config.ledger,
                                 capacity=assets,
@@ -381,7 +409,9 @@ def main():
                         )
                         if family == "mechanism":
                             config = replace(config, action_source="mechanism_trace_v1")
-                        directory = out / f"case-{assets}-{family}-{int(enabled)}-{repetition}"
+                        directory = (
+                            out / f"case-{assets}-{family}-{int(enabled)}-{budget}-{repetition}"
+                        )
                         record = _case(
                             native, source, consumer, directory, config if enabled else None, family
                         )
@@ -389,6 +419,7 @@ def main():
                             assets=assets,
                             family=family,
                             enabled=enabled,
+                            decoded_cache_bytes=budget,
                             repetition=repetition,
                             warmup=repetition < args.warmup,
                             data_source_sha256=source["spec"].source_sha256,

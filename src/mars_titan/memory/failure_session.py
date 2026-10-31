@@ -14,6 +14,7 @@ from mars_titan.models.titans.holographic_network import CATALOG
 
 from . import (
     failure_actions,
+    failure_cache,
     failure_context,
     failure_ledger,
     failure_ledger_state,
@@ -32,6 +33,7 @@ class FailureSessionConfig:
     mode: str = "confidence_only"
     constant_confidence: float = 0.75
     action_source: str = "fixed_predictor/no_external_tool"
+    decoded_cache_bytes: int = 0
 
     def __post_init__(self):
         if type(self.ledger) is not FailureLedgerConfig or self.mode not in (
@@ -41,6 +43,11 @@ class FailureSessionConfig:
         ):
             raise ValueError("S2 necesita un libro identificado y un modo de consumo admitido")
         failure_context._digest_id(self.macro_catalog_sha256, "El catálogo S2")
+        if (
+            type(self.decoded_cache_bytes) is not int
+            or not 0 <= self.decoded_cache_bytes <= 64 * 1024**2
+        ):
+            raise ValueError("El presupuesto de caché S2 debe estar entre cero y 64 MiB")
         if type(self.action_source) is not str or self.action_source not in (
             "fixed_predictor/no_external_tool",
             "mechanism_trace_v1",
@@ -55,7 +62,7 @@ class FailureSessionConfig:
         object.__setattr__(self, "catalog", Path(self.catalog))
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             kind="financial_failure_memory_v1",
             ledger=self.ledger.identity(),
@@ -65,6 +72,13 @@ class FailureSessionConfig:
             action=self.action_source,
             source_scope="frozen_consumer_identity_with_declared_fit_boundary",
         )
+        if self.decoded_cache_bytes:
+            result["decoded_cache"] = dict(
+                kind="event_local_verified_decode_v1",
+                maximum_bytes=self.decoded_cache_bytes,
+                accounting="reachable_python_objects_sys_getsizeof_not_rss",
+            )
+        return result
 
 
 def configure(config, binding, phase, *, lesions, spaced):
@@ -106,6 +120,7 @@ def code():
         failure_ledger_state,
         failure_producer,
         failure_actions,
+        failure_cache,
         inspect.getmodule(failure_producer.HolographicNetwork),
     )
     return {
@@ -118,6 +133,9 @@ def restore(session, bundle):
     producer, config = session._failure_producer, session._failure_config.ledger
     if bundle is None:
         return FailureLedger(producer.layout, config)
+    cached = failure_cache.lookup(session, bundle["failure_memory"])
+    if cached is not None:
+        return cached
     payload = session._read(bundle["failure_memory"], "failure_memory")
     if (
         type(payload) is not dict
@@ -161,7 +179,9 @@ def restore(session, bundle):
             ):
                 raise ValueError("El buffer S2 no conserva su representación de bytes CPU")
             context[name] = tensor.numpy().tobytes()
-    return FailureLedger.restore(producer.layout, config, state)
+    book = FailureLedger.restore(producer.layout, config, state)
+    failure_cache.remember(session, bundle["failure_memory"], book)
+    return book
 
 
 def stage(session, ledger):
