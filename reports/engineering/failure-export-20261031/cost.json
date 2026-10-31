@@ -1,0 +1,245 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "implementation_commit": "9ef2ffc62",
+ "kind": "technical_fixture_export_not_scientific_evaluation",
+ "device": "cpu",
+ "hardware": "AMD Ryzen 9 8945HS",
+ "numeric_threads": 1,
+ "power_profile": "power-saver",
+ "seed": 790,
+ "warmup_runs": 0,
+ "repetitions_per_size": 3,
+ "operation_order": [
+  "reader",
+  "write",
+  "counts"
+ ],
+ "concurrent_workload": "Regresión CPU de H1 y otras aplicaciones locales sin detener.",
+ "benchmark_sha256": "c3a3a61f102123f63dce13bc396d0122576f726dde98fc2663f376b05fa54c06",
+ "limits": [
+  "No se ha medido el recorrido financiero completo ni una aceleración frente a otro backend.",
+  "Sin calentamiento separado. El primer uso puede incluir inicialización de bibliotecas.",
+  "El pico de RSS abarca imports y construcción del fixture. No es memoria atribuible solo al exportador.",
+  "No se han medido energía, VRAM ni transferencias GPU.",
+  "Los archivos Parquet se conservan en almacenamiento local privado. Sus huellas y tamaños constan en estas medidas."
+ ],
+ "measurements": [
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_export_not_scientific_evaluation",
+   "rows": 64,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "batch_rows": 128,
+   "device": "cpu",
+   "arrow": "25.0.1",
+   "duckdb": "1.5.5",
+   "reader": {
+    "samples_ms": [
+     362.334367,
+     40.749301,
+     31.309523
+    ],
+    "median_ms": 40.749301,
+    "min_ms": 31.309523,
+    "max_ms": 362.334367
+   },
+   "write": {
+    "samples_ms": [
+     55.665744,
+     41.844311,
+     45.216756
+    ],
+    "median_ms": 45.216756,
+    "min_ms": 41.844311,
+    "max_ms": 55.665744
+   },
+   "counts": {
+    "samples_ms": [
+     87.779087,
+     68.726945,
+     74.099583
+    ],
+    "median_ms": 74.099583,
+    "min_ms": 68.726945,
+    "max_ms": 87.779087
+   },
+   "files": [
+    {
+     "path": "run-2/failure-snapshot-1b4c24fefb53aec2111ea0556e50ead276656e76e0aa7b3a8945dda396553eb4.parquet",
+     "bytes": 60240,
+     "sha256": "d839867ffa08c239587a70e61ad9e874ae6d762f03b843dfebab0bc083e937c5"
+    },
+    {
+     "path": "run-1/failure-snapshot-1b4c24fefb53aec2111ea0556e50ead276656e76e0aa7b3a8945dda396553eb4.parquet",
+     "bytes": 60240,
+     "sha256": "d839867ffa08c239587a70e61ad9e874ae6d762f03b843dfebab0bc083e937c5"
+    },
+    {
+     "path": "run-0/failure-snapshot-1b4c24fefb53aec2111ea0556e50ead276656e76e0aa7b3a8945dda396553eb4.parquet",
+     "bytes": 60240,
+     "sha256": "d839867ffa08c239587a70e61ad9e874ae6d762f03b843dfebab0bc083e937c5"
+    }
+   ],
+   "process_peak_rss_kib": 629736,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_export.py": "38601f6bf123736158f36fb8d49e63cf9618acae471a7d13f44123f1dc801758",
+    "src/mars_titan/memory/failure_ledger.py": "8cc59fc0723b425c4556068a4710cc8f04f01947ea7fd0c3bb5549b1bcddd55b",
+    "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf"
+   },
+   "limitations": [
+    "Tres repeticiones, sin intervalo inferencial",
+    "Pico de RSS incluye imports y construcción del fixture",
+    "Exportación acotada, no todo el historial",
+    "CPU concurrente con otras comprobaciones y power-saver",
+    "No mide VRAM, energía ni la sesión financiera completa"
+   ]
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_export_not_scientific_evaluation",
+   "rows": 512,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "batch_rows": 128,
+   "device": "cpu",
+   "arrow": "25.0.1",
+   "duckdb": "1.5.5",
+   "reader": {
+    "samples_ms": [
+     274.683904,
+     850.269434,
+     261.615659
+    ],
+    "median_ms": 274.683904,
+    "min_ms": 261.615659,
+    "max_ms": 850.269434
+   },
+   "write": {
+    "samples_ms": [
+     290.617799,
+     334.267214,
+     560.635742
+    ],
+    "median_ms": 334.267214,
+    "min_ms": 290.617799,
+    "max_ms": 560.635742
+   },
+   "counts": {
+    "samples_ms": [
+     304.353097,
+     296.479815,
+     283.995949
+    ],
+    "median_ms": 296.479815,
+    "min_ms": 283.995949,
+    "max_ms": 304.353097
+   },
+   "files": [
+    {
+     "path": "run-2/failure-snapshot-1575f40d519a9c843f8fc08db2cc40efc8026c8dcab30ba5b60d222fd519d55a.parquet",
+     "bytes": 356866,
+     "sha256": "05b940759763c4e116f7a227f7dd6d53de79c61384836ad5c3a081c788436387"
+    },
+    {
+     "path": "run-1/failure-snapshot-1575f40d519a9c843f8fc08db2cc40efc8026c8dcab30ba5b60d222fd519d55a.parquet",
+     "bytes": 356866,
+     "sha256": "05b940759763c4e116f7a227f7dd6d53de79c61384836ad5c3a081c788436387"
+    },
+    {
+     "path": "run-0/failure-snapshot-1575f40d519a9c843f8fc08db2cc40efc8026c8dcab30ba5b60d222fd519d55a.parquet",
+     "bytes": 356866,
+     "sha256": "05b940759763c4e116f7a227f7dd6d53de79c61384836ad5c3a081c788436387"
+    }
+   ],
+   "process_peak_rss_kib": 639820,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_export.py": "38601f6bf123736158f36fb8d49e63cf9618acae471a7d13f44123f1dc801758",
+    "src/mars_titan/memory/failure_ledger.py": "8cc59fc0723b425c4556068a4710cc8f04f01947ea7fd0c3bb5549b1bcddd55b",
+    "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf"
+   },
+   "limitations": [
+    "Tres repeticiones, sin intervalo inferencial",
+    "Pico de RSS incluye imports y construcción del fixture",
+    "Exportación acotada, no todo el historial",
+    "CPU concurrente con otras comprobaciones y power-saver",
+    "No mide VRAM, energía ni la sesión financiera completa"
+   ]
+  },
+  {
+   "schema_version": 1,
+   "kind": "technical_fixture_export_not_scientific_evaluation",
+   "rows": 4096,
+   "key_width": 64,
+   "macro_indicators": 140,
+   "area_flags": 17,
+   "batch_rows": 128,
+   "device": "cpu",
+   "arrow": "25.0.1",
+   "duckdb": "1.5.5",
+   "reader": {
+    "samples_ms": [
+     2410.740674,
+     2184.364299,
+     2208.025804
+    ],
+    "median_ms": 2208.025804,
+    "min_ms": 2184.364299,
+    "max_ms": 2410.740674
+   },
+   "write": {
+    "samples_ms": [
+     2214.936898,
+     2712.066325,
+     2433.089793
+    ],
+    "median_ms": 2433.089793,
+    "min_ms": 2214.936898,
+    "max_ms": 2712.066325
+   },
+   "counts": {
+    "samples_ms": [
+     3236.744603,
+     2141.177399,
+     2416.354483
+    ],
+    "median_ms": 2416.354483,
+    "min_ms": 2141.177399,
+    "max_ms": 3236.744603
+   },
+   "files": [
+    {
+     "path": "run-2/failure-snapshot-396ffff905d9da244292556248fb14bc3fabdcd9935abe53743b8b95423e7dd3.parquet",
+     "bytes": 2746250,
+     "sha256": "af9257bc3815820adee15dbd2a0a2227fb0f70c77d08724c50c6b9265a13dfa8"
+    },
+    {
+     "path": "run-1/failure-snapshot-396ffff905d9da244292556248fb14bc3fabdcd9935abe53743b8b95423e7dd3.parquet",
+     "bytes": 2746250,
+     "sha256": "af9257bc3815820adee15dbd2a0a2227fb0f70c77d08724c50c6b9265a13dfa8"
+    },
+    {
+     "path": "run-0/failure-snapshot-396ffff905d9da244292556248fb14bc3fabdcd9935abe53743b8b95423e7dd3.parquet",
+     "bytes": 2746250,
+     "sha256": "af9257bc3815820adee15dbd2a0a2227fb0f70c77d08724c50c6b9265a13dfa8"
+    }
+   ],
+   "process_peak_rss_kib": 674072,
+   "source_sha256": {
+    "src/mars_titan/memory/failure_export.py": "38601f6bf123736158f36fb8d49e63cf9618acae471a7d13f44123f1dc801758",
+    "src/mars_titan/memory/failure_ledger.py": "8cc59fc0723b425c4556068a4710cc8f04f01947ea7fd0c3bb5549b1bcddd55b",
+    "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf"
+   },
+   "limitations": [
+    "Tres repeticiones, sin intervalo inferencial",
+    "Pico de RSS incluye imports y construcción del fixture",
+    "Exportación acotada, no todo el historial",
+    "CPU concurrente con otras comprobaciones y power-saver",
+    "No mide VRAM, energía ni la sesión financiera completa"
+   ]
+  }
+ ]
+}

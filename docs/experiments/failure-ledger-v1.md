@@ -50,13 +50,33 @@ Los buffers se transportan como tensores `uint8` CPU de almacenamiento propio y 
 
 La [verificación de sesión](../../reports/engineering/failure-session-20261031/verification.json) registra 188 casos CPU sin omisiones y tres controles financieros originales. Incluye los 163 anteriores, así que las selecciones no se suman como muestras independientes. Sus 16 defectos dirigidos se detectan con controles verdes. Se comprueban la recuperación de Titans y GRU, paridad sin atenuación, error del punto real, orden de activos, instantánea común, calentamiento, cierre y replay tras un fallo antes del commit. Las 23 funciones cambiadas están medidas. `_prepare_event` mantiene CRAP 548,09 por su complejidad y recorridos aún no cubiertos en esta selección. No se afirma que toda la clase esté comprobada.
 
-La atenuación combinada con B4 o E2 y el consumidor de mecanismos se rechazan hasta definir su composición sin romper diagnósticos, cuantiles ni mediana. Faltan las comprobaciones CUDA de esta ruta, la regresión amplia correspondiente, el coste completo, el exportador analítico Arrow/DuckDB y el estudio científico. No hay mejora predictiva medida y la variante no se activa por defecto.
+La atenuación combinada con B4 o E2 y el consumidor de mecanismos se rechazan hasta definir su composición sin romper diagnósticos, cuantiles ni mediana. Faltan las comprobaciones CUDA de esta ruta, la regresión amplia correspondiente, el coste completo y el estudio científico. No hay mejora predictiva medida y la variante no se activa por defecto.
 
-## Regla propuesta y control contrastable
+## Exportación analítica implementada
+
+`memory.failure_session.confirmed_book(session)` obtiene una copia verificada del libro publicado. Cambiar esa copia no modifica la sesión. `memory.failure_export.failure_reader` ofrece lotes Arrow de hasta 512 filas. Se elige entre la instantánea anterior al feedback del corte y la retención posterior. Las etiquetas pendientes nunca se exportan. Un `as_of` distinto del reloj actual se rechaza, porque necesita su propio checkpoint y no un filtro sobre una selección posterior.
+
+La salida conserva la predicción emitida, el resultado maduro, sus fechas, la representación, las máscaras y las huellas. Las fechas macro desconocidas son valores nulos. Los metadatos declaran `history_complete=False`, el alcance elegido, los pendientes excluidos y el total admitido. Por tanto, este archivo no sustituye al historial completo ni al checkpoint para reanudar.
+
+`write_failures` reutiliza la escritura Parquet por lotes y publica un nombre derivado de la huella. Rechaza archivos existentes, incluso si otro escritor publica mientras se prepara la salida. `failure_counts` calcula conteos por mercado y mecanismo con DuckDB, un hilo, 64 MiB y sin archivos de desbordamiento. Estos conteos describen el conjunto exportado, no el error del predictor completo.
+
+El [recibo de exportación](../../reports/engineering/failure-export-20261031/verification.json) registra 43 casos CPU sin omisiones, incluidos 17 del exportador y 26 de sesión. Se detectaron 14 defectos del exportador y dos del accesor con controles G1/M1/G2 verdes. Las siete funciones nuevas están medidas, con CRAP máximo 8. El conjunto de fuente y pruebas registra 585 de 590 sentencias y 74 de 80 ramas cubiertas. No se suman estas selecciones solapadas con las anteriores como casos únicos.
+
+El [coste técnico](../../reports/engineering/failure-export-20261031/cost.json) usa fixtures con claves de 64 dimensiones, 140 indicadores y 17 marcas de actividad. Se hicieron tres repeticiones por tamaño en CPU, sin calentamiento separado, con hilos numéricos limitados a uno y otras comprobaciones en curso.
+
+| Fallos | Mediana de lectura Arrow, ms | Mediana de escritura Parquet, ms | Mediana del agregado DuckDB, ms | Pico de RSS del proceso, KiB |
+| --- | --- | --- | --- | --- |
+| 64 | 40,75 | 45,22 | 74,10 | 629 736 |
+| 512 | 274,68 | 334,27 | 296,48 | 639 820 |
+| 4096 | 2208,03 | 2433,09 | 2416,35 | 674 072 |
+
+El pico incluye imports y construcción de los fixtures. El primer uso puede incluir inicialización de bibliotecas. No se han medido la latencia completa de sesión, energía, VRAM ni transferencias GPU. Estas cifras no demuestran una aceleración ni una mejora predictiva.
+
+## Regla implementada y control contrastable
 
 Sean q y c claves normalizadas, k(q,c) = exp(−‖q−c‖² / (2h²)), con h positivo. La regla max_e k(q,c_e) no cambia al permutar los mismos contextos. Por tanto, ese desorden no permite contrastar la correspondencia entre contexto y fallo.
 
-La siguiente fase propone ponderar cada contexto por s_e = 1 − τ/|error_e|, solo para errores maduros estrictamente mayores que un umbral τ positivo, fijado con datos G admisibles. El riesgo sería max_e s_e k(q,c_e). La confianza c = 1 − strength × riesgo permanece entre cero y uno para strength entre cero y uno. Es una puntuación heurística, no una probabilidad calibrada. La similitud histórica tampoco demuestra que el siguiente resultado vaya a repetirse.
+La implementación pondera cada contexto por s_e = 1 − τ/|error_e|, solo para errores maduros estrictamente mayores que un umbral τ positivo, fijado con datos G admisibles. El riesgo es max_e s_e k(q,c_e). La confianza c = 1 − strength × riesgo permanece entre cero y uno para strength entre cero y uno. Es una puntuación heurística, no una probabilidad calibrada. La similitud histórica tampoco demuestra que el siguiente resultado vaya a repetirse.
 
 El control permuta los contextos entre las severidades maduras elegibles del mismo mercado y mecanismo. Si todas las severidades coinciden, vuelve a ser equivalente. Dos fixtures verifican esa invariancia y un caso con severidades distintas que sí cambia. No son resultados financieros.
 
@@ -90,4 +110,4 @@ Se hicieron tres repeticiones de cada configuración, alternando su orden. Cada 
 
 Los intervalos de la tabla son el mínimo y el máximo de las tres medianas, no intervalos de confianza. Con 4096 fallos, el trabajo completo medido del libro pasa de 10,15 a 13,91 s sin caché a 5,35 a 7,64 s con caché. No incluye la carga inicial de Python. El [recibo de coste](../../reports/engineering/failure-ledger-20261031/cost.json) registra también tiempo de proceso, dispersión, percentiles y pico de RSS. RSS incluye imports y fixtures, y no se presenta como memoria atribuible solo al libro. No se han medido energía, transferencias GPU ni latencia de `FinancialSession`.
 
-La conexión con el predictor, el productor del contexto real, los controles de consumo, su coste completo y el estudio predictivo siguen pendientes. No hay una mejora financiera medida.
+El productor y la conexión operativa con el predictor están implementados. Las composiciones indicadas, la procedencia auditada de los ajustes, el coste completo y el estudio predictivo siguen pendientes. No hay una mejora financiera medida.

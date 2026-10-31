@@ -1,0 +1,227 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "analytic_export_cpu_verified_full_session_cuda_and_scientific_study_pending",
+ "implementation_commit": "03c57466c1e035f80302b24ea47c9d51559b497c",
+ "base_commit": "be2973727",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "scope": "Exportación acotada de fallos maduros y copia verificable del libro confirmado de FinancialSession.",
+ "limits": [
+  "El conjunto exportado es la retención o la instantánea actual, no todo el historial.",
+  "Un instante anterior requiere su propio checkpoint. Filtrar una retención futura no reconstruye la selección antigua.",
+  "Los conteos DuckDB no son MAE ni evidencia de utilidad predictiva.",
+  "La selección de 43 casos se solapa con las 188 pruebas anteriores de sesión y núcleo. No se suman como casos únicos.",
+  "Faltan regresión amplia de S2, CUDA de la variante, coste de sesión completo, composiciones y procedencia auditada del ajuste.",
+  "Las 14 mutaciones del exportador y las dos del accesor se ejecutaron en sus revisiones indicadas. No se afirma repetir todos los defectos históricos."
+ ],
+ "suites": [
+  {
+   "name": "analytic_export_and_operational_session",
+   "tests": 43,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "380d39aa9aa8bbaa8a3a97b3c22ffcb863158d9ca8e5a595d83950f7f68c0687",
+   "note": "43 CPU, sin omisiones. Exportación, maduración, recuperación, aislamiento y controles de sesión."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 590,
+   "covered_statements": 585,
+   "branches": 80,
+   "covered_branches": 74
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/failure_export.py",
+    "source_sha256": "38601f6bf123736158f36fb8d49e63cf9618acae471a7d13f44123f1dc801758",
+    "statements": 65,
+    "covered_statements": 65,
+    "branches": 10,
+    "covered_branches": 10
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "source_sha256": "f11228b95dd5fe58a70aaf4952b74e1fed3e7e7ed85ef83eb18c49e68c539d04",
+    "statements": 121,
+    "covered_statements": 116,
+    "branches": 50,
+    "covered_branches": 44
+   },
+   {
+    "path": "tests/memory/test_failure_export.py",
+    "source_sha256": "80e721c84c300d4f305d689dae6b5c72f707a43ea28704ca60416ed45d5a1ac0",
+    "statements": 119,
+    "covered_statements": 119,
+    "branches": 0,
+    "covered_branches": 0
+   },
+   {
+    "path": "tests/memory/test_failure_session.py",
+    "source_sha256": "b56ae86bc603157710cff11ee1bf3fcfc9133d9dac527a3b890e45171571873c",
+    "statements": 285,
+    "covered_statements": 285,
+    "branches": 20,
+    "covered_branches": 20
+   }
+  ],
+  "max_crap": 21.0,
+  "quality_sha256": "ba402783a1f5ea60480a8a5982ac83cf5c28d3d1d6194c9837ea10a28d20405c",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "be29737278147c7ce16fedb769844a30b60c2c15",
+  "head": "03c57466c1e035f80302b24ea47c9d51559b497c",
+  "functions": 7,
+  "max_crap": 8.0,
+  "changed_executable_lines": 64,
+  "changed_covered_lines": 63,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/failure_export.py",
+    "function": "failure_reader",
+    "cyclomatic_complexity": 8,
+    "crap": 8.0,
+    "changed_executable_lines": 12,
+    "changed_covered_lines": 12,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "confirmed_book",
+    "cyclomatic_complexity": 4,
+    "crap": 4.016,
+    "changed_executable_lines": 11,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [
+     244
+    ],
+    "changed_missing_branches": [
+     [
+      243,
+      244
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_export.py",
+    "function": "_batches",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_export.py",
+    "function": "_row",
+    "cyclomatic_complexity": 3,
+    "crap": 3.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/failure_export.py",
+    "function": "write_failures",
+    "cyclomatic_complexity": 3,
+    "crap": 3.0,
+    "changed_executable_lines": 20,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "confirmed_book",
+    "cyclomatic_complexity": 4,
+    "crap": 4.016,
+    "changed_executable_lines": 11,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [
+     244
+    ],
+    "changed_missing_branches": [
+     [
+      243,
+      244
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Siete funciones nuevas de producción medidas desde be2973727. CRAP máximo 8. Cobertura de sentencias, con ramas publicadas aparte.",
+  "changed_sha256": "74d890eea3ae4cea95faf0ffea5160ae66d84e77fc2602496102851ef2d12b32"
+ },
+ "mutations": {
+  "tree_commit": "9ef2ffc62",
+  "planned": 14,
+  "killed": 14,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "6c590b2861a12a67f7cffa2a444933b024f1cf0b3863b989bc5e37b363032841",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_export.py": "38601f6bf123736158f36fb8d49e63cf9618acae471a7d13f44123f1dc801758"
+  },
+  "cases": [
+   "export_skips_checkpoint_validation",
+   "export_reconstructs_another_cutoff_by_assumption",
+   "snapshot_and_retention_are_confused",
+   "issued_prediction_is_replaced_by_target",
+   "unknown_macro_dates_are_fabricated",
+   "only_the_first_requested_batch_is_exported",
+   "batch_slice_grows_beyond_its_limit",
+   "empty_file_loses_the_declared_schema",
+   "publication_overwrites_a_concurrent_result",
+   "bounded_retention_is_called_complete_history",
+   "excluded_pending_rows_are_not_reported",
+   "duckdb_uses_more_threads_than_declared",
+   "duckdb_can_spill_despite_the_budget",
+   "parquet_roundtrip_changes_list_field_names"
+  ],
+  "summary_sha256": "467d1e2eb7aac3590bee03b7eb110f80eebfc4b19eca766b1981c0750f1e9941",
+  "scope": "14 defectos del exportador detectados con G1/M1/G2 verdes.",
+  "additional": [
+   {
+    "tree_commit": "03c57466c1e035f80302b24ea47c9d51559b497c",
+    "planned": 2,
+    "killed": 2,
+    "recipes_sha256": "26bba0fecd64b74928673f48e43725a4d56dfd0146664dcf159093519aca6cfa",
+    "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+    "source_sha256": {
+     "src/mars_titan/memory/failure_session.py": "f11228b95dd5fe58a70aaf4952b74e1fed3e7e7ed85ef83eb18c49e68c539d04"
+    },
+    "cases": [
+     "confirmed_book_allows_a_session_without_the_feature",
+     "confirmed_book_ignores_the_published_state"
+    ],
+    "summary_sha256": "82f03b76171a2fb2a614e1579478864ac0a2932680c724f798e28ff99a41e64f",
+    "scope": "Dos defectos del accesor del libro confirmado detectados con G1/M1/G2 verdes."
+   }
+  ]
+ },
+ "cost": {
+  "receipt": "reports/engineering/failure-export-20261031/cost.json",
+  "sha256": "9f1b27e34d0b09da4f9f6f6afb263d22c923754b4c5691420227358febb52b33"
+ }
+}
