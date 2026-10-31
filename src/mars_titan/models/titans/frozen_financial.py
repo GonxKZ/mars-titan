@@ -353,6 +353,8 @@ class FrozenFinancialConsumer:
             readout is not None and type(readout) is not EpisodicReadout
         ):
             raise ValueError("El consumidor necesita el predictor y lector identificados")
+        if predictor.dual_gates is not None:
+            raise ValueError("El consumidor N1 necesita una fuente madura registrada")
         if predictor.config.session_context is not None:
             raise ValueError("Este consumidor no gestiona el ciclo de sesión del contexto PT4")
         if predictor.regional_execution is not None:
