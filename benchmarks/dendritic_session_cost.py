@@ -1,8 +1,8 @@
 """Coste CPU de N2 en la sesión nativa con fixtures manuales y sin aprendizaje.
 
-Sin --run solo imprime el protocolo. La medida incluye step, publicación, maduración
-y lectura de un banco no vacío. La recuperación mantiene el modelo congelado residente.
-No mide calidad predictiva, codificación original del corpus, energía ni coste CUDA.
+Sin --run solo imprime el protocolo. La decisión medida consulta un banco no vacío.
+La maduración ocurre en el prefijo, fuera del intervalo de step. La recuperación
+mantiene el modelo residente. No mide calidad, codificación original, energía ni coste CUDA.
 """
 
 import argparse
@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 VARIANTS = ("reference", "zero_gain", "observable", "past_prefix", "constant")
+COMPOSITIONS = ("n2", "e2_reservoir", "e2_utility", "mechanisms", "collection")
 SETTINGS = (
     (None, 0.0),
     ("observable", 0.0),
@@ -31,9 +32,10 @@ SETTINGS = (
 )
 
 
-def study_protocol(sizes, warmup, repeats):
+def study_protocol(sizes, warmup, repeats, *, compositions=False):
     if (
-        type(sizes) is not list
+        type(compositions) is not bool
+        or type(sizes) is not list
         or not sizes
         or any(type(n) is not int or n not in (4, 64, 256) for n in sizes)
         or len(sizes) != len(set(sizes))
@@ -43,13 +45,14 @@ def study_protocol(sizes, warmup, repeats):
         or not 1 <= repeats <= 10
     ):
         raise ValueError("El protocolo N2 necesita tamaños únicos y repeticiones acotadas")
-    return dict(
+    variants = COMPOSITIONS if compositions else VARIANTS
+    result = dict(
         sizes=sizes,
-        variants=list(VARIANTS),
+        variants=list(variants),
         warmup=warmup,
         repeats=repeats,
-        total_cases=len(sizes) * len(VARIANTS) * (warmup + repeats),
-        measured_cases=len(sizes) * len(VARIANTS) * repeats,
+        total_cases=len(sizes) * len(variants) * (warmup + repeats),
+        measured_cases=len(sizes) * len(variants) * repeats,
         device="cpu",
         dtype="torch.float64",
         threads=1,
@@ -67,18 +70,32 @@ def study_protocol(sizes, warmup, repeats):
         following_event=128,
         parameter_fixture="reference_or_fixed_gain_0_or_1_no_fitting",
     )
+    if compositions:
+        result.update(
+            head="quantile_head_v1",
+            parameter_fixture="same_quantile_predictor_and_reader_fixed_gain_1_no_fitting",
+            parity_variants=[name for name in COMPOSITIONS if name != "e2_utility"],
+            comparison="integration_and_retention_with_the_same_quantile_head",
+        )
+    return result
 
 
-def summarize(cases):
+def summarize(cases, *, compositions=False):
     result = []
+    variants = COMPOSITIONS if compositions else VARIANTS
+    parity = (
+        [name for name in COMPOSITIONS if name != "e2_utility"]
+        if compositions
+        else ("reference", "zero_gain")
+    )
     for size in sorted({r["assets"] for r in cases}):
         group = [r for r in cases if r["assets"] == size and not r["warmup"]]
-        if {r["variant"] for r in group} != set(VARIANTS):
+        if {r["variant"] for r in group} != set(variants):
             raise ValueError("Faltan variantes del coste N2")
         if len({r["source_sha256"] for r in group}) != 1:
             raise ValueError("Las variantes no comparten fuente")
         repetitions = None
-        for variant in VARIANTS:
+        for variant in variants:
             rows = [r for r in group if r["variant"] == variant]
             if any(
                 type(r[k]) not in (int, float) or not math.isfinite(r[k]) or r[k] <= 0
@@ -94,10 +111,10 @@ def summarize(cases):
             ):
                 raise ValueError("Las repeticiones no están emparejadas")
             repetitions = set(current)
-            if variant in ("reference", "zero_gain"):
-                pair = [r for r in group if r["variant"] in ("reference", "zero_gain")]
+            if variant in parity:
+                pair = [r for r in group if r["variant"] in parity]
                 if any(len({r[k] for r in pair}) != 1 for k in ("common_sha256", "next_sha256")):
-                    raise ValueError("N2 a ganancia cero perdió paridad con la referencia")
+                    raise ValueError("El control equivalente perdió paridad con la referencia")
             values = [r["step_seconds"] for r in rows]
             result.append(
                 dict(
@@ -152,11 +169,46 @@ def _common(session, predictions):
     return proof(torch, data)[0]
 
 
-def _case(native, source, consumer, directory):
+def _composition_options(name):
+    from mars_titan.memory.native_mechanism_collection import MechanismCollectionConfig
+    from mars_titan.memory.spaced_retention import SpacedRetentionConfig
+
+    if name not in COMPOSITIONS:
+        raise ValueError("La composición N2 no está registrada")
+    if name.startswith("e2_"):
+        return dict(
+            retention=SpacedRetentionConfig(
+                policy=name.removeprefix("e2_"), capacity=64, frontier=2, seed=73
+            )
+        )
+    return dict(mechanism_collection=MechanismCollectionConfig()) if name == "collection" else {}
+
+
+def _models(source, *, compositions):
+    from tests.memory.dendritic_fixtures import engine
+
+    if not compositions:
+        return {
+            name: engine(source, mode, gain=gain, min_assets=20)
+            for name, (mode, gain) in zip(VARIANTS, SETTINGS, strict=True)
+        }
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    from mars_titan.models.titans.mechanism_consumer import FrozenMechanismConsumer
+
+    base = engine(source, "observable", gain=1.0, min_assets=20, head=QUANTILE_HEAD)
+    mechanisms = FrozenMechanismConsumer(base.predictor, readout=base.readout)
+    return dict(
+        n2=base, e2_reservoir=base, e2_utility=base, mechanisms=mechanisms, collection=mechanisms
+    )
+
+
+def _case(native, source, consumer, directory, *, composition=None):
     from tests.memory.dendritic_fixtures import run
     from tests.memory.test_financial_session import moment
 
     settings = dict(block_rows=64, capacity=64)
+    if composition is not None:
+        settings.update(_composition_options(composition))
     session = None
     try:
         session = run(native, directory, source, consumer, **settings)
@@ -169,11 +221,16 @@ def _case(native, source, consumer, directory):
         session.close()
         session = run(native, directory, source, consumer, resume=True, **settings)
         assert session.snapshot() == snapshot
+        bank_count = len(session.retained_episodes())
+        assert bank_count > 0
         start = time.perf_counter()
         third = session.step(source["batches"][127], [])
         elapsed = time.perf_counter() - start
         control = session._read(session._bundle(session.snapshot()["state"])["control"], "control")
-        assert control["snapshot_bytes"] > 0
+        if "snapshot_bytes" in control:
+            assert control["snapshot_bytes"] > 0
+        else:
+            assert control["snapshot_sha256"] is not None
         common = _common(session, third.predictions)
         context = control.get("dendritic_context")
         context_bytes = 0 if context is None else len(json.dumps(context, sort_keys=True).encode())
@@ -188,6 +245,11 @@ def _case(native, source, consumer, directory):
         consumer.verify(strong=True)
         return dict(
             consumer_id=consumer.model_id,
+            contract_id=session.contract_id,
+            binding_kind=session._binding.kind,
+            spaced_policy=getattr(getattr(session._binding, "spaced_config", None), "policy", None),
+            collection_enabled=getattr(session._binding, "collections", None) is not None,
+            bank_count_before_step=bank_count,
             step_seconds=elapsed,
             recovery_seconds=recovery,
             common_sha256=common,
@@ -210,8 +272,10 @@ def main():
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--seconds", type=int, default=1800)
     parser.add_argument("--run", action="store_true")
+    parser.add_argument("--compositions", action="store_true")
     args = parser.parse_args()
-    protocol = study_protocol(args.sizes, args.warmup, args.repeats)
+    protocol = study_protocol(args.sizes, args.warmup, args.repeats, compositions=args.compositions)
+    variants = tuple(protocol["variants"])
     if not args.run:
         print(json.dumps(protocol, ensure_ascii=False))
         return
@@ -240,7 +304,7 @@ def main():
         install_optimizer_guard,
         learning_blocked,
     )
-    from tests.memory.dendritic_fixtures import build_source, engine
+    from tests.memory.dendritic_fixtures import build_source
     from tests.memory.test_financial_session_controls import no_target_estimation
 
     if not learning_blocked() or torch.cuda.is_initialized():
@@ -261,7 +325,9 @@ def main():
     attempts = []
     report = dict(
         schema_version=1,
-        kind="dendritic_native_session_technical_cost",
+        kind="dendritic_composition_native_session_technical_cost"
+        if args.compositions
+        else "dendritic_native_session_technical_cost",
         status="running",
         measured_at_utc=datetime.now(UTC).isoformat(),
         protocol=protocol,
@@ -291,6 +357,11 @@ def main():
                 "src/mars_titan/models/titans/dendritic_context.py",
                 "src/mars_titan/models/titans/dendritic_regime.py",
                 "src/mars_titan/models/titans/active_dendrites.py",
+                "src/mars_titan/models/titans/mechanism_consumer.py",
+                "src/mars_titan/memory/financial_mechanisms.py",
+                "src/mars_titan/memory/mechanism_collection.py",
+                "src/mars_titan/memory/spaced_session.py",
+                "src/mars_titan/memory/spaced_retention.py",
             )
         },
         load_start=os.getloadavg(),
@@ -322,10 +393,7 @@ def main():
                 source = build_source(
                     out / f"fixture-{assets}", flows=tuple(f"US/T{i:04d}" for i in range(assets))
                 )
-                models = {
-                    name: engine(source, mode, gain=gain, min_assets=20)
-                    for name, (mode, gain) in zip(VARIANTS, SETTINGS, strict=True)
-                }
+                models = _models(source, compositions=args.compositions)
                 report["fixtures"].append(
                     dict(
                         assets=assets,
@@ -336,11 +404,12 @@ def main():
                 )
                 rng = torch.get_rng_state().clone()
                 for repetition in range(args.warmup + args.repeats):
-                    shift = repetition % len(VARIANTS)
-                    order = VARIANTS[shift:] + VARIANTS[:shift]
+                    shift = repetition % len(variants)
+                    order = variants[shift:] + variants[:shift]
                     for variant in order:
                         directory = out / f"case-{assets}-{variant}-{repetition}"
-                        record = _case(native, source, models[variant], directory)
+                        options = dict(composition=variant) if args.compositions else {}
+                        record = _case(native, source, models[variant], directory, **options)
                         assert record["consumer_id"] == models[variant].model_id
                         record.update(
                             assets=assets,
@@ -360,12 +429,14 @@ def main():
                             flush=True,
                         )
                     if repetition >= args.warmup:
-                        summarize(report["cases"])
+                        summarize(report["cases"], compositions=args.compositions)
                 assert torch.equal(rng, torch.get_rng_state())
                 for consumer in models.values():
                     consumer.verify(strong=True)
         assert not attempts and sha256(hold) == before
-        report.update(status="completed", summary=summarize(report["cases"]))
+        report.update(
+            status="completed", summary=summarize(report["cases"], compositions=args.compositions)
+        )
     except BaseException as error:
         report.update(status="failed", error_type=type(error).__name__, error=str(error))
         raise

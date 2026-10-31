@@ -58,7 +58,15 @@ def build_source(root, *, flows=FLOWS):
 
 
 def engine(
-    source, mode, *, admission="m1", gain=1.0, device="cpu", dtype=torch.float64, min_assets=2
+    source,
+    mode,
+    *,
+    admission="m1",
+    gain=1.0,
+    device="cpu",
+    dtype=torch.float64,
+    min_assets=2,
+    head=None,
 ):
     config = FinancialConfig(
         source["spec"],
@@ -67,6 +75,7 @@ def engine(
         active_dendrites=None
         if mode is None
         else dict(mode=mode, segments=4, min_assets=min_assets, recent_returns=21, min_returns=42),
+        **({"head": head} if head is not None else {}),
     )
     model = FinancialPredictor(config, dtype=dtype, device=device)
     if mode is not None:
@@ -100,13 +109,19 @@ def run(
     decision_start=125,
     admission="m1",
     capacity=8,
+    retention=None,
+    mechanism_collection=None,
 ):
     retention = (
-        MatureErrorConfig(capacity=capacity)
-        if admission == "m2"
-        else CompositeScoreConfig(SCALERS, capacity=capacity)
-        if admission == "m3"
-        else RetentionConfig(capacity=capacity, frontier=2, new_candidates=4)
+        retention
+        if retention is not None
+        else (
+            MatureErrorConfig(capacity=capacity)
+            if admission == "m2"
+            else CompositeScoreConfig(SCALERS, capacity=capacity)
+            if admission == "m3"
+            else RetentionConfig(capacity=capacity, frontier=2, new_candidates=4)
+        )
     )
     return FinancialSession(
         path,
@@ -123,4 +138,5 @@ def run(
         fold="0",
         block_rows=block_rows,
         resume=resume,
+        mechanism_collection=mechanism_collection,
     )
