@@ -1,6 +1,6 @@
 # Dos señales para las puertas de escritura y olvido, N1
 
-Está implementado el conversor de señales `DualNeuromodulation` y su uso por `FinancialPredictor.prepare`. Utiliza dos entradas numéricas explícitas y el hook `gate_shift` de la memoria existente. La generación de señales financieras maduras, su normalización, el control temporal barajado y su publicación nativa siguen pendientes. Los consumidores que todavía no registran esa fuente rechazan N1 al construir. No se ha entrenado ni evaluado científicamente esta variante.
+Está implementado el conversor de señales `DualNeuromodulation` y su uso por `FinancialPredictor.prepare`. Utiliza dos entradas numéricas explícitas y el hook `gate_shift` de la memoria existente. La [fuente madura](dual-neuromodulation-source-v1.md) ya implementa RMS, CUSUM saturado, control de prefijo pasado y estado recuperable. Su conexión con las emisiones y la publicación nativa sigue pendiente. Los consumidores que todavía no registran esa fuente rechazan N1 al construir. No se ha entrenado ni evaluado científicamente esta variante.
 
 ## Fuente y alcance
 
@@ -42,7 +42,7 @@ El estado rápido continúa perteneciendo al llamante. Los parámetros compartid
 
 ## Trabajo pendiente para la variante financiera
 
-Falta construir e a partir de una fuente preespecificada, como volatilidad del residuo ya maduro, y u mediante el CUSUM declarado del error financiero maduro y estandarizado. Ese error debe usar la predicción realmente emitida. Faltan ventana, normalización, inicialización, tratamiento de faltantes, publicación del estado y control causal barajado con versiones y pruebas propias. La anchura de cuantiles de la predicción actual solo está disponible después de calcularla y requeriría otro orden explícito de actualización.
+La fuente separada implementa e a partir del RMS de residuo maduro y u mediante un CUSUM saturado del error financiero emitido, con escala previa. Ese error debe usar la predicción realmente emitida. Ventana, normalización, inicio, eventos sin resultados, estado y control pasado tienen versión y pruebas propias. Faltan la procedencia nativa y su publicación conjunta. La anchura de cuantiles de la predicción actual solo está disponible después de calcularla y requeriría otro orden explícito de actualización.
 
 La sesión nativa debe usar el mismo snapshot de señales para todas las decisiones de un evento y actualizarlo únicamente con resultados admitidos, según el contrato de publicación. El acumulador de fiabilidad existente no se reutiliza sin cambios: su puntuación es direccional y su recorrido documentado aplica resultados antes de emitir. No equivale al error financiero o al orden requerido por esta variante.
 
