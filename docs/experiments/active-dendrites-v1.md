@@ -31,6 +31,10 @@ Hay `H S C + H` parámetros compartidos y ningún estado temporal ni banco. La p
 
 El `state_dict` permite recuperar los tensores del operador con la carga restringida de PyTorch. La identidad expone dimensiones, semilla, ecuación y límites. La recuperación de una sesión financiera y la validación de procedencia del contexto siguen pendientes y no quedan resueltas por ese archivo de pesos.
 
+El [recibo del 31 de octubre](../../reports/engineering/active-dendrites-20261031/verification.json) registra 41 casos CPU sin omisiones. Comprueban la referencia escalar, signos y desempates, paridad, gradientes por diferencias finitas, aislamiento del RNG y de las filas, presupuestos, errores y persistencia. Se cubrieron las 53 sentencias y 16 ramas del módulo. Sus cuatro funciones tienen un CRAP máximo de 16. Esto no equivale a comprobar todos los operandos de las condiciones ni garantiza ausencia de defectos.
+
+La primera pasada detectó nueve de diez mutaciones. La eliminación de la cota de ganancia sobrevivió porque el caso no activaba una unidad con una ganancia suficiente. Al añadir ese caso, la repetición detectó el defecto con controles G1/M1/G2 verdes. El recibo conserva ambas pasadas. Una prueba CUDA está preparada, pero se excluyó de la selección CPU porque la GPU estaba ocupada. Esa comprobación sigue pendiente.
+
 ## Integración pendiente
 
 N2 necesita una fuente de régimen que identifique corte, disponibilidad, representación y filas, y que publique el mismo contexto para todas las decisiones del grupo correspondiente. La fecha no puede comprobarse observando solo un tensor. Se ha localizado `memory/regimes.py`, que calcula regímenes observables a partir de ventanas pasadas y ofrece un control de calendario, pero aún no se ha conectado con N2.

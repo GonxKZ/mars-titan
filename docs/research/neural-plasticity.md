@@ -26,6 +26,8 @@ La búsqueda más reciente incluyó [SynGAP](https://arxiv.org/html/2608.14634v1
 
 La selección contextual mediante dendritas activas, estudiada en [Avoiding Catastrophe](https://doi.org/10.3389/fnbot.2022.846219), exigiría otro contraste sobre contexto, capacidad y especialización. No se añade a esta comparación. El proyecto ya dispone de propuestas de contexto y memoria compartida. Tampoco se añade replay, otro optimizador global ni una nueva modalidad para favorecer a las variantes.
 
+Por separado, N2 ya dispone de un [operador de modulación contextual](../experiments/active-dendrites-v1.md) con pruebas matemáticas y de gradientes CPU. Su ganancia residual es una adaptación propia para conservar la paridad inicial. El productor de contexto fechado, el control temporal y la conexión financiera siguen pendientes. No modifica los resultados anteriores de plasticidad ni demuestra una mejora predictiva.
+
 Las fuentes se consultaron el 20 de octubre de 2026. Las versiones de arXiv quedan fijadas en sus enlaces. Las huellas de los PDF inspeccionados se conservan en el [manifiesto de fuentes](../../reports/research/neural-plasticity-20261020/sources.json). La revisión es dirigida, no una demostración de ausencia de trabajos anteriores.
 
 ## Hipótesis y controles
