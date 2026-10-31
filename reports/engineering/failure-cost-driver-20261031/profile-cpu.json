@@ -1,0 +1,426 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "kind": "instrumented_diagnostic_not_latency_measurement",
+ "source_sha256": "305becf61d0543c90eba75eeef35bd4c0b4a4625849324f4533b1dc5c594cc1d",
+ "cases": 4,
+ "assets": 256,
+ "optimizer_attempts": 0,
+ "learning_hold_unchanged": true,
+ "elapsed_profile_self_seconds": 172.83270021799797,
+ "top_project_functions": [
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 258,
+   "function": "evidence",
+   "primitive_calls": 40960,
+   "calls": 40960,
+   "self_seconds": 0.7973043820000001,
+   "cumulative_seconds": 31.449480661000003
+  },
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 183,
+   "function": "_confirm",
+   "primitive_calls": 168960,
+   "calls": 168960,
+   "self_seconds": 0.20417726700000002,
+   "cumulative_seconds": 24.918062135000003
+  },
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 36,
+   "function": "_signature",
+   "primitive_calls": 169478,
+   "calls": 169478,
+   "self_seconds": 0.18289838800000002,
+   "cumulative_seconds": 24.753411131
+  },
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 277,
+   "function": "verify",
+   "primitive_calls": 35840,
+   "calls": 35840,
+   "self_seconds": 0.06705021700000001,
+   "cumulative_seconds": 24.525766489000002
+  },
+  {
+   "path": "src/mars_titan/data/cohort_files.py",
+   "line": 26,
+   "function": "safe_destination",
+   "primitive_calls": 169736,
+   "calls": 169736,
+   "self_seconds": 0.5213843060000001,
+   "cumulative_seconds": 23.143477934
+  },
+  {
+   "path": "src/mars_titan/data/temporal.py",
+   "line": 20,
+   "function": "__init__",
+   "primitive_calls": 4128,
+   "calls": 4128,
+   "self_seconds": 12.439053540000002,
+   "cumulative_seconds": 21.578838232000003
+  },
+  {
+   "path": "src/mars_titan/memory/session_artifacts.py",
+   "line": 21,
+   "function": "_payload",
+   "primitive_calls": 2734,
+   "calls": 7490457,
+   "self_seconds": 10.788912921000001,
+   "cumulative_seconds": 18.829735538
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 322,
+   "function": "restore",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.001804056,
+   "cumulative_seconds": 16.601913622
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger_state.py",
+   "line": 201,
+   "function": "restore",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.075867398,
+   "cumulative_seconds": 16.599840698
+  },
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 194,
+   "function": "_returns",
+   "primitive_calls": 81920,
+   "calls": 81920,
+   "self_seconds": 0.136999704,
+   "cumulative_seconds": 16.354488431
+  },
+  {
+   "path": "src/mars_titan/training/prefix_eligibility.py",
+   "line": 229,
+   "function": "_position",
+   "primitive_calls": 43520,
+   "calls": 43520,
+   "self_seconds": 0.101083793,
+   "cumulative_seconds": 12.559442036
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger_state.py",
+   "line": 106,
+   "function": "_restore_emissions",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.239395094,
+   "cumulative_seconds": 12.353578154000001
+  },
+  {
+   "path": "src/mars_titan/data/cohort_files.py",
+   "line": 27,
+   "function": "<genexpr>",
+   "primitive_calls": 2205536,
+   "calls": 2205536,
+   "self_seconds": 0.824538328,
+   "cumulative_seconds": 10.104250355000001
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 293,
+   "function": "restore",
+   "primitive_calls": 52806,
+   "calls": 52806,
+   "self_seconds": 0.512239768,
+   "cumulative_seconds": 9.573808672
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 167,
+   "function": "__init__",
+   "primitive_calls": 55366,
+   "calls": 55366,
+   "self_seconds": 0.766772334,
+   "cumulative_seconds": 7.458707653
+  },
+  {
+   "path": "src/mars_titan/memory/financial_session.py",
+   "line": 813,
+   "function": "<genexpr>",
+   "primitive_calls": 5140,
+   "calls": 5140,
+   "self_seconds": 0.006781666,
+   "cumulative_seconds": 7.102911372
+  },
+  {
+   "path": "src/mars_titan/memory/financial_state_artifacts.py",
+   "line": 44,
+   "function": "_header",
+   "primitive_calls": 468,
+   "calls": 468,
+   "self_seconds": 0.044217411000000005,
+   "cumulative_seconds": 6.012817779000001
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 237,
+   "function": "_digest",
+   "primitive_calls": 305858,
+   "calls": 305858,
+   "self_seconds": 1.427991723,
+   "cumulative_seconds": 5.738302118
+  },
+  {
+   "path": "src/mars_titan/models/titans/frozen_financial.py",
+   "line": 260,
+   "function": "_execution_signature",
+   "primitive_calls": 808,
+   "calls": 808,
+   "self_seconds": 0.7259437120000001,
+   "cumulative_seconds": 5.394143866
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 282,
+   "function": "verify",
+   "primitive_calls": 250492,
+   "calls": 250492,
+   "self_seconds": 0.23500656500000003,
+   "cumulative_seconds": 5.247152104
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 268,
+   "function": "export",
+   "primitive_calls": 187446,
+   "calls": 187446,
+   "self_seconds": 0.36910742300000005,
+   "cumulative_seconds": 4.754594171
+  },
+  {
+   "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+   "line": 280,
+   "function": "verify",
+   "primitive_calls": 481,
+   "calls": 481,
+   "self_seconds": 0.11062372100000001,
+   "cumulative_seconds": 4.579197314
+  },
+  {
+   "path": "src/mars_titan/memory/episodic_session.py",
+   "line": 742,
+   "function": "snapshot",
+   "primitive_calls": 7,
+   "calls": 82,
+   "self_seconds": 0.091975819,
+   "cumulative_seconds": 4.524409675
+  },
+  {
+   "path": "src/mars_titan/data/input_policy.py",
+   "line": 16,
+   "function": "validate_historical_vectors",
+   "primitive_calls": 59582,
+   "calls": 59582,
+   "self_seconds": 1.7259877890000002,
+   "cumulative_seconds": 4.195682047
+  },
+  {
+   "path": "src/mars_titan/models/titans/financial_blocks.py",
+   "line": 271,
+   "function": "_validate_references",
+   "primitive_calls": 788,
+   "calls": 788,
+   "self_seconds": 0.784064419,
+   "cumulative_seconds": 4.086018806
+  },
+  {
+   "path": "src/mars_titan/models/titans/config.py",
+   "line": 24,
+   "function": "canonical",
+   "primitive_calls": 360550,
+   "calls": 360550,
+   "self_seconds": 0.210611772,
+   "cumulative_seconds": 3.5303839530000003
+  },
+  {
+   "path": "src/mars_titan/memory/episodic_session.py",
+   "line": 357,
+   "function": "_rows",
+   "primitive_calls": 316,
+   "calls": 316,
+   "self_seconds": 0.592125558,
+   "cumulative_seconds": 3.432052429
+  },
+  {
+   "path": "src/mars_titan/memory/session_artifacts.py",
+   "line": 157,
+   "function": "_bytes",
+   "primitive_calls": 3212,
+   "calls": 3212,
+   "self_seconds": 0.054204487,
+   "cumulative_seconds": 2.972161959
+  },
+  {
+   "path": "src/mars_titan/models/titans/financial.py",
+   "line": 1510,
+   "function": "_validate_state",
+   "primitive_calls": 1800,
+   "calls": 1800,
+   "self_seconds": 0.035709158000000005,
+   "cumulative_seconds": 2.901103834
+  },
+  {
+   "path": "src/mars_titan/models/titans/financial_blocks.py",
+   "line": 62,
+   "function": "_decode",
+   "primitive_calls": 992,
+   "calls": 992,
+   "self_seconds": 0.039983467,
+   "cumulative_seconds": 2.6986846530000004
+  }
+ ],
+ "failure_functions": [
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 322,
+   "function": "restore",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.001804056,
+   "cumulative_seconds": 16.601913622
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger_state.py",
+   "line": 201,
+   "function": "restore",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.075867398,
+   "cumulative_seconds": 16.599840698
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger_state.py",
+   "line": 106,
+   "function": "_restore_emissions",
+   "primitive_calls": 84,
+   "calls": 84,
+   "self_seconds": 0.239395094,
+   "cumulative_seconds": 12.353578154000001
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 293,
+   "function": "restore",
+   "primitive_calls": 52806,
+   "calls": 52806,
+   "self_seconds": 0.512239768,
+   "cumulative_seconds": 9.573808672
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 167,
+   "function": "__init__",
+   "primitive_calls": 55366,
+   "calls": 55366,
+   "self_seconds": 0.766772334,
+   "cumulative_seconds": 7.458707653
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 237,
+   "function": "_digest",
+   "primitive_calls": 305858,
+   "calls": 305858,
+   "self_seconds": 1.427991723,
+   "cumulative_seconds": 5.738302118
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 282,
+   "function": "verify",
+   "primitive_calls": 250492,
+   "calls": 250492,
+   "self_seconds": 0.23500656500000003,
+   "cumulative_seconds": 5.247152104
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 268,
+   "function": "export",
+   "primitive_calls": 187446,
+   "calls": 187446,
+   "self_seconds": 0.36910742300000005,
+   "cumulative_seconds": 4.754594171
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 113,
+   "function": "__post_init__",
+   "primitive_calls": 55366,
+   "calls": 55366,
+   "self_seconds": 0.13720864000000002,
+   "cumulative_seconds": 2.5038778440000002
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 192,
+   "function": "logical_bytes",
+   "primitive_calls": 106,
+   "calls": 106,
+   "self_seconds": 0.13495325800000002,
+   "cumulative_seconds": 2.3848596900000003
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 210,
+   "function": "_budget",
+   "primitive_calls": 104,
+   "calls": 104,
+   "self_seconds": 0.001434334,
+   "cumulative_seconds": 2.325641656
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger.py",
+   "line": 317,
+   "function": "export",
+   "primitive_calls": 108,
+   "calls": 108,
+   "self_seconds": 0.001827653,
+   "cumulative_seconds": 2.221647365
+  },
+  {
+   "path": "src/mars_titan/memory/failure_ledger_state.py",
+   "line": 45,
+   "function": "export",
+   "primitive_calls": 108,
+   "calls": 108,
+   "self_seconds": 0.10910515100000001,
+   "cumulative_seconds": 2.2195660690000003
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 248,
+   "function": "normalized_key",
+   "primitive_calls": 57926,
+   "calls": 57926,
+   "self_seconds": 0.057685949,
+   "cumulative_seconds": 2.163064884
+  },
+  {
+   "path": "src/mars_titan/memory/failure_context.py",
+   "line": 70,
+   "function": "normalized_key",
+   "primitive_calls": 113292,
+   "calls": 113292,
+   "self_seconds": 0.606654353,
+   "cumulative_seconds": 1.594808009
+  }
+ ],
+ "limits": [
+  "El perfil cubre el recorrido completo de cuatro casos, incluidos preparación y comprobaciones. No corresponde solo al intervalo de decisión.",
+  "Los tiempos acumulados de funciones anidadas se solapan y no deben sumarse.",
+  "La instrumentación modifica los tiempos. No se mezclan con las 24 muestras sin instrumentación.",
+  "Todavía no se ha implementado ni medido una optimización."
+ ]
+}

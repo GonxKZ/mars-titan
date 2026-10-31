@@ -154,3 +154,7 @@ uv --no-cache run --no-sync python -m benchmarks.failure_session_cost \
   --output "$(mktemp -d "${TMPDIR:?}/failure-cost.XXXXXX")/run" \
   --sizes 64 256 --warmup 1 --repeats 3 --seconds 1800 --run
 ```
+
+El [perfil diagnóstico posterior](../../reports/engineering/failure-cost-driver-20261031/profile-cpu.json) recorre cuatro casos de 256 activos con instrumentación. Registra 84 restauraciones del libro, con 16,60 s acumulados, y 52 806 reconstrucciones de contexto, con 9,57 s. Las consultas geométricas suman 1,33 s en 2560 llamadas. También aparecen verificaciones de procedencia y serialización entre los recorridos costosos compartidos. Los tiempos acumulados se solapan y no corresponden solo al intervalo de decisión.
+
+La siguiente hipótesis técnica es evitar reconstrucciones repetidas del mismo estado confirmado dentro de una generación, conservando la verificación de huellas y el aislamiento de las propuestas. El perfil no demuestra que esa modificación vaya a acelerar el recorrido. Necesita una referencia, pruebas adversariales y una repetición del coste con el mismo protocolo antes de adoptarse.
