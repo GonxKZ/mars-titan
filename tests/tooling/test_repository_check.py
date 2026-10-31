@@ -18,6 +18,7 @@ def public_repository(tmp_path, monkeypatch):
         "CITATION.cff": "title: Proyecto de prueba\n",
         "uv.lock": "version = 1\n",
         "docs/references/catalogs.json": "[]\n",
+        "docs/references/README.md": "La biblioteca reúne **0 referencias bibliográficas**.\n",
         ".github/planning/issues.json": json.dumps({"issues": [], "labels": [], "milestones": []}),
         "data/catalogs/macro-indicators.csv": "id,input_ids,kind,formula,verification_status\n",
     }.items():
@@ -44,6 +45,42 @@ def test_existing_local_links_and_external_urls_are_accepted(public_repository):
     (root / "README.md").write_text(
         "[Cita](CITATION.cff) y [fuente](https://example.org/research).\n"
     )
+    assert checker.main() == 0
+
+
+def test_the_library_must_state_the_count_of_its_catalogs(public_repository, capsys):
+    checker, root = public_repository
+    catalog = [
+        dict(
+            id="lehmann1990fads",
+            title="Fads, Martingales, and Market Efficiency",
+            authors=["Bruce N. Lehmann"],
+            url="https://doi.org/10.2307/2937816",
+            access="Metadatos comprobados",
+            redistribution="unknown",
+            phase=[4],
+        )
+    ]
+    write(
+        root,
+        {
+            "docs/references/catalogs.json": json.dumps(
+                [dict(sources="finance-sources.json", bibliography="finance.bib")]
+            ),
+            "docs/references/finance-sources.json": json.dumps(catalog),
+            "docs/references/finance.bib": "@article{lehmann1990fads,\n  title = {Fads}\n}\n",
+        },
+    )
+    library = root / "docs/references/README.md"
+    for text in (
+        "**0 referencias bibliográficas**",
+        "**1 referencias bibliográficas** y **1 referencias bibliográficas**",
+        "una referencia",
+    ):
+        library.write_text(f"La biblioteca reúne {text}.\n")
+        assert checker.main() == 1
+        assert "debe declarar una vez sus 1 referencias" in capsys.readouterr().out
+    library.write_text("La biblioteca reúne **1 referencias bibliográficas**.\n")
     assert checker.main() == 0
 
 

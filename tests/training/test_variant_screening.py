@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 
 import pytest
 
-from mars_titan.models.baselines import same_inputs_lightgbm
+from mars_titan.models.baselines import qlib_lightgbm
 from mars_titan.training import variant_screening as screening
 from mars_titan.training.screening_cohorts import ORIGIN_FOLDS
 
@@ -124,8 +124,8 @@ MODELS = (*COMMON, "models")
 def test_the_registered_common_controls_are_those_of_their_modules(protocol):
     models = protocol["common_controls"]["models"]
     assert tuple(models) == screening.COMMON and protocol["common_controls"]["date"] == "2026-10-28"
-    assert models["lightgbm"]["config"]["parameters"] == same_inputs_lightgbm.PARAMETERS
-    assert models["lightgbm"]["config"]["source"] == same_inputs_lightgbm.QLIB_SOURCE
+    assert models["lightgbm"]["config"]["parameters"] == qlib_lightgbm.PARAMETERS
+    assert models["lightgbm"]["config"]["source"] == qlib_lightgbm.QLIB_SOURCE
     assert models["momentum_reversal"]["config"]["reversal_sessions"] == 5
     family = protocol["common_controls"]["family"]
     assert family["role"] == "reported_outside_the_decisions" and family["metric"] == "session_ic"

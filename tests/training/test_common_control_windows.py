@@ -18,7 +18,7 @@ from mars_titan.data.storage import sha256
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import ForecastPanel
-from mars_titan.models.baselines import momentum_reversal
+from mars_titan.models.baselines import momentum_reversal, qlib_lightgbm
 from mars_titan.models.baselines import same_inputs_lightgbm as lightgbm_control
 from mars_titan.training import common_control_windows as windows
 from mars_titan.training import selection
@@ -239,7 +239,7 @@ def doubled_fit(monkeypatch, learning_doubles):
 
     Puntúa con la predicción original aunque una prueba sustituya después la de la emisión.
     """
-    calls, score = [], lightgbm_control.predict
+    calls, score = [], qlib_lightgbm.predict
 
     def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         calls.append(dict(train=train, validation=validation, config=config, seed=seed))
@@ -254,8 +254,8 @@ def doubled_fit(monkeypatch, learning_doubles):
         ]
         return booster, series
 
-    monkeypatch.setattr(lightgbm_control, "fit", fit)
-    monkeypatch.setattr(lightgbm_control, "load", Booster.from_text)
+    monkeypatch.setattr(qlib_lightgbm, "fit", fit)
+    monkeypatch.setattr(qlib_lightgbm, "load", Booster.from_text)
     return calls
 
 
@@ -299,7 +299,7 @@ def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_
     since = window_phases(fold, 0, 1)["train"].decision_start
     train = doubled_fit[0]["train"]
     assert train.panel.prediction_at.min() >= since and report["train_rows"] == train.panel.rows
-    labels, kept = lightgbm_control.session_labels(train.panel)
+    labels, kept = qlib_lightgbm.session_labels(train.panel)
     assert report["fit_rows"] == int(kept.sum())
     # Las rondas son la época común de las tres series de validación por diez.
     series = []
@@ -309,7 +309,7 @@ def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_
             [
                 sd.session_correlations(
                     call["validation"].panel,
-                    lightgbm_control.predict(booster, call["validation"].features, rounds),
+                    qlib_lightgbm.predict(booster, call["validation"].features, rounds),
                     min_assets=3,
                 )
                 for rounds in range(10, 1001, 10)
@@ -400,7 +400,7 @@ def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
 ):
     manifest, protocol = view
     output = tmp_path / "tabular"
-    original = lightgbm_control.fit
+    original = qlib_lightgbm.fit
     stop = types.SimpleNamespace(requested=False)
 
     def interrupted(train, validation, config, seed, *, min_assets, check_stop=None):
@@ -410,11 +410,11 @@ def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
                 check_stop()
         return original(train, validation, config, seed, min_assets=min_assets)
 
-    monkeypatch.setattr(lightgbm_control, "fit", interrupted)
+    monkeypatch.setattr(qlib_lightgbm, "fit", interrupted)
     paused = tabular(manifest, protocol, output, stop=stop)
     assert paused["status"] == "paused" and sorted(paused["fits"]) == ["42"]
     assert not (output / "fits" / "seed-43.json").exists()
-    monkeypatch.setattr(lightgbm_control, "fit", original)
+    monkeypatch.setattr(qlib_lightgbm, "fit", original)
     resumed = tabular(manifest, protocol, output)
     assert resumed["status"] == "completed"
     assert [call["seed"] for call in doubled_fit] == [42, 43, 44]
@@ -440,10 +440,10 @@ def test_the_tabular_window_needs_valid_distinct_seeds(view, tmp_path, seeds, do
 
 def test_the_emitted_validation_must_be_the_scored_one(view, tmp_path, doubled_fit, monkeypatch):
     manifest, protocol = view
-    original = lightgbm_control.predict
+    original = qlib_lightgbm.predict
     # La emisión usa otra predicción que la puntuada al elegir las rondas.
     monkeypatch.setattr(
-        lightgbm_control,
+        qlib_lightgbm,
         "predict",
         lambda booster, values, rounds: original(booster, values, rounds)[::-1].copy(),
     )
