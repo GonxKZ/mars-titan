@@ -1,0 +1,265 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "benchmark_verified_cost_run_in_progress",
+ "implementation_commit": "7483e0327ea892a6c5e460041653c05906f0bbc2",
+ "base_commit": "4e81dc826",
+ "device": "cpu",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "Arnés técnico de coste integral S2 con banco M1, lector K1 y recuperación.",
+ "limits": [
+  "La medida64/256 todavía está en marcha y no se publica como resultado completado.",
+  "La cobertura une pruebas del resumen y una ejecución CLI instrumentada con cuatro activos. Los tiempos de esa ejecución no son resultados de coste publicados.",
+  "Las 13 pruebas incluyen dos ejecuciones nativas reales con y sin calentamiento.",
+  "El pico RSS del arnés corresponde al proceso completo, no a cada configuración.",
+  "No se afirma mejora predictiva ni rendimiento sobre el corpus completo."
+ ],
+ "suites": [
+  {
+   "name": "bounded_cost_protocol_and_native_execution",
+   "tests": 13,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "01ae9d55c6ee6f79dcb2583c9aec32f7b6646dbb414eeb54a31cd4efc07399c9",
+   "note": "13 CPU sin omisiones. Emparejamiento, separación de familias, exclusión de calentamiento, integridad y ejecución nativa con y sin calentamiento."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 286,
+   "covered_statements": 275,
+   "branches": 52,
+   "covered_branches": 48
+  },
+  "files": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "source_sha256": "06ec998e8bb00d65c6290d72e6113ecb146eda7f319d4b10ebbe1b471656c43d",
+    "statements": 216,
+    "covered_statements": 205,
+    "branches": 44,
+    "covered_branches": 40
+   },
+   {
+    "path": "tests/benchmarks/test_failure_session_cost.py",
+    "source_sha256": "a3055c76b7cf0707f004db8dabc4536a39dea532d0faa53aabe37514e07fe4f2",
+    "statements": 70,
+    "covered_statements": 70,
+    "branches": 8,
+    "covered_branches": 8
+   }
+  ],
+  "max_crap": 29.358625585405488,
+  "quality_sha256": "94dc513f1ecbf7e96a7a535e99d8c130995a0259dd7aec78eea79eab90e32215",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "4e81dc8263721eb483fbc90632ad0e4b047035ab",
+  "head": "7483e0327ea892a6c5e460041653c05906f0bbc2",
+  "functions": 8,
+  "max_crap": 29.358625585405488,
+  "changed_executable_lines": 202,
+  "changed_covered_lines": 188,
+  "highest": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 29,
+    "crap": 29.358625585405488,
+    "changed_executable_lines": 97,
+    "changed_covered_lines": 87,
+    "changed_missing_lines": [
+     249,
+     250,
+     259,
+     281,
+     338,
+     339,
+     342,
+     420,
+     421,
+     422
+    ],
+    "changed_missing_branches": [
+     [
+      248,
+      249
+     ],
+     [
+      252,
+      259
+     ],
+     [
+      280,
+      281
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 26,
+    "crap": 26.0845,
+    "changed_executable_lines": 21,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [
+     84
+    ],
+    "changed_missing_branches": [
+     [
+      83,
+      84
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "_case",
+    "cyclomatic_complexity": 15,
+    "crap": 15.0,
+    "changed_executable_lines": 43,
+    "changed_covered_lines": 43,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "study_protocol",
+    "cyclomatic_complexity": 11,
+    "crap": 11.0,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "_common",
+    "cyclomatic_complexity": 5,
+    "crap": 5.0,
+    "changed_executable_lines": 13,
+    "changed_covered_lines": 13,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 29,
+    "crap": 29.358625585405488,
+    "changed_executable_lines": 97,
+    "changed_covered_lines": 87,
+    "changed_missing_lines": [
+     249,
+     250,
+     259,
+     281,
+     338,
+     339,
+     342,
+     420,
+     421,
+     422
+    ],
+    "changed_missing_branches": [
+     [
+      248,
+      249
+     ],
+     [
+      252,
+      259
+     ],
+     [
+      280,
+      281
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 26,
+    "crap": 26.0845,
+    "changed_executable_lines": 21,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [
+     84
+    ],
+    "changed_missing_branches": [
+     [
+      83,
+      84
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "main.refuse",
+    "cyclomatic_complexity": 1,
+    "crap": 2.0,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     338,
+     339
+    ],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/failure_session_cost.py",
+    "function": "main.alarm",
+    "cyclomatic_complexity": 1,
+    "crap": 2.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     342
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "unmeasured": [],
+  "note": "Ocho funciones nuevas medidas. CRAP máximo29,36. La cobertura de CLI se obtuvo con una ejecución técnica independiente.",
+  "changed_sha256": "9807845f0685437752f1709578d3107afee3a8f9cadb69225aa0691083a780ca"
+ },
+ "mutations": {
+  "tree_commit": "7483e0327ea892a6c5e460041653c05906f0bbc2",
+  "planned": 9,
+  "killed": 9,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "45f4aaf588fe3b234cf3f21e846bf53770b7eb09e33fbfca5bcfb0b212811e9f",
+  "executor_sha256": "c8035f1f90b4f5672ac065163bd4ef98fd220559f689fd8525811a4b8569891b",
+  "source_sha256": {
+   "benchmarks/failure_session_cost.py": "06ec998e8bb00d65c6290d72e6113ecb146eda7f319d4b10ebbe1b471656c43d"
+  },
+  "cases": [
+   "different_model_families_are_mixed",
+   "warmup_timings_enter_the_summary",
+   "state_or_forecast_parity_is_not_checked",
+   "unpaired_exposure_is_accepted",
+   "duplicate_sizes_are_not_rejected",
+   "negative_warmup_is_accepted",
+   "warmup_summary_is_published_before_measured_controls",
+   "reference_silently_enables_failure_memory",
+   "benchmark_source_is_not_pinned"
+  ],
+  "summary_sha256": "74953bb4398ecd1330bd37f2da89d3509b69313bb76a0690bff90cbba8761123",
+  "scope": "Nueve defectos dirigidos detectados con G1/M1/G2 verdes, sin optimizador."
+ }
+}
