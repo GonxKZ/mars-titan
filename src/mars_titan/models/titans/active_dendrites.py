@@ -1,4 +1,4 @@
-"""Operador contextual N2, todavía sin productor temporal ni conexión financiera.
+"""Operador contextual N2 con modulación residual de paridad inicial.
 
 Para la unidad i y el segmento j, r_ij = U_ij c. Se elige el primer segmento
 con mayor |r_ij| y se conserva su signo en d_i. La adaptación financiera usa
@@ -8,7 +8,7 @@ Iyer y otros (2022), sección 3, usan h_i sigmoid(d_i) y añaden kWTA y pesos
 dispersos. Aquí se conserva su selección firmada, pero la ganancia residual
 permite paridad inicial y con contexto nulo. No se implementan aquellas
 otras piezas ni se heredan sus resultados. La fecha del contexto corresponde
-al productor, aún pendiente, y no puede validarse a partir de sus valores.
+al productor y no puede validarse a partir de sus valores en este operador.
 """
 
 import math
@@ -52,7 +52,7 @@ class ActiveDendrites(nn.Module):
     def identity(self):
         return dict(
             kind="active_dendrites_v1",
-            scope="neural_operator_only_pending_temporal_integration",
+            scope="pointwise_neural_operator",
             hidden_size=self.hidden_size,
             context_size=self.context_size,
             segments=self.segments,

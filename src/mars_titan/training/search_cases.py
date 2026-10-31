@@ -74,6 +74,7 @@ PREDICTOR_CHANGES = (
     "memory_huber",
     "memory_time_scales",
     "differential_attention",
+    "active_dendrites",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -107,7 +108,8 @@ def checked_predictor_changes(changes):
             "axial_time_region, fractal_shared_operator, session_ic_objective, "
             "cross_asset_attention, asset_groups, sector_map, laplace_scale_head, "
             "auxiliary_horizons, opponent_heads, "
-            "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
+            "mature_reliability, memory_huber, memory_time_scales y active_dendrites "
+            "como objetos no vacíos, y "
             "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs y "
             "differential_attention como nombres no vacíos"
         )

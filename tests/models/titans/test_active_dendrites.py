@@ -147,6 +147,7 @@ def test_empty_rows_and_weights_only_roundtrip():
     values, context = torch.ones(1, 3, dtype=torch.float64), torch.ones(1, 2, dtype=torch.float64)
     assert torch.equal(restored(values, context), module(values, context))
     assert restored.identity() == module.identity()
+    assert restored.identity()["scope"] == "pointwise_neural_operator"
 
 
 @pytest.mark.parametrize(

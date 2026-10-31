@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "active_dendrites_variants",
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-masked.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "implementation_scope": "financial_predictor_only_pending_durable_session",
+  "arms": {
+    "reference": {
+      "role": "El mismo predictor sin N2",
+      "predictor_changes": {}
+    },
+    "dendritic_observable": {
+      "role": "N2 con régimen observable de la ventana recibida",
+      "predictor_changes": {
+        "active_dendrites": {
+          "mode": "observable",
+          "segments": 4,
+          "min_assets": 20,
+          "recent_returns": 21,
+          "min_returns": 42
+        }
+      }
+    },
+    "dendritic_past_prefix_control": {
+      "role": "Control con un prefijo anterior elegible elegido con semilla",
+      "predictor_changes": {
+        "active_dendrites": {
+          "mode": "shuffled_past_prefix",
+          "segments": 4,
+          "min_assets": 20,
+          "recent_returns": 21,
+          "min_returns": 42
+        }
+      }
+    },
+    "dendritic_constant_control": {
+      "role": "Contexto constante con el mismo enmascarado de régimen desconocido",
+      "predictor_changes": {
+        "active_dendrites": {
+          "mode": "constant",
+          "segments": 4,
+          "min_assets": 20,
+          "recent_returns": 21,
+          "min_returns": 42
+        }
+      }
+    }
+  }
+}

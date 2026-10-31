@@ -379,6 +379,8 @@ class FrozenFinancialConsumer:
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
+        if predictor.active_dendrites is not None:
+            raise ValueError("El consumidor congelado aún no registra el contexto N2 por sesión")
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
