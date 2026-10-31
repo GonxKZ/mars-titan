@@ -147,7 +147,7 @@ def _restore_failures(book, payload, emissions):
             raise ValueError("El fallo S2 repite o no encuentra su emisión")
         emission = emissions[key]
         target = _number(row["target"])
-        available, received = _clock(row["available_at"]), _clock(row["received_at"])
+        available, received = _clock(row["available_at"]), _clock(row["received_at"], terminal=True)
         if not emission.context.prediction_at < available <= received <= book.clock:
             raise ValueError("El fallo S2 recuperado no había madurado en su recepción")
         error = _number(target - emission.prediction)
@@ -210,7 +210,7 @@ def restore(layout, configuration, payload):
     ):
         raise ValueError("El libro S2 recuperado no conserva su contrato")
     if payload["clock"] is not None:
-        book.begin(payload["clock"])
+        book.begin(payload["clock"], settlement=True)
     _restore_last(book, payload["last"])
     emissions = _restore_emissions(book, payload["emissions"])
     failures = _restore_failures(book, payload["failures"], emissions)

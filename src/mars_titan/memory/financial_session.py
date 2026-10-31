@@ -26,6 +26,7 @@ from . import (
     area_query_bridge,
     associative_memory,
     episodic_session,
+    failure_session,
     financial_consumers,
     financial_state_artifacts,
     kernel_memory,
@@ -139,6 +140,8 @@ def _check_callbacks(instance):
         current += (lesion_session.signature(instance._lesion_plan),)
     if instance._salience_config is not None:
         current += (_canonical(salience_session.contract(instance._salience_config)),)
+    if instance._failure_config is not None:
+        current += (failure_session.signature(instance),)
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
 
@@ -212,6 +215,7 @@ class FinancialSession(EpisodicSession):
         regional_max_attempts=2,
         lesions=None,
         salience=None,
+        failure_memory=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -265,6 +269,14 @@ class FinancialSession(EpisodicSession):
         self._binding, self._binding_versions = binding, _binding_signature(binding)
         self.output, self.native, self.codec = Path(output), native, codec
         self.consumer, self.prefixes, self.phase = consumer, prefixes, phase
+        self._failure_config = failure_memory
+        self._failure_producer = failure_session.configure(
+            failure_memory,
+            binding,
+            phase,
+            lesions=self._lesion_plan is not None,
+            spaced=type(binding) is spaced_session.SpacedTitansBinding,
+        )
         self.admission, self.block_rows, self.max_input_blocks = (
             admission,
             block_rows,
@@ -312,6 +324,8 @@ class FinancialSession(EpisodicSession):
             code.update(lesion_session.code())
         if self._salience_config is not None:
             code.update(salience_session.code())
+        if self._failure_config is not None:
+            code.update(failure_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -369,6 +383,8 @@ class FinancialSession(EpisodicSession):
             contract["lesions"] = self._lesion_plan.identity()
         if self._salience_config is not None:
             contract["salience"] = salience_session.contract(self._salience_config)
+        if self._failure_config is not None:
+            contract["failure_memory"] = self._failure_config.identity()
         if spaced_session.enabled(self):
             contract.update(
                 schema_version=3,
@@ -405,6 +421,8 @@ class FinancialSession(EpisodicSession):
             self._runtime_contract += (
                 _canonical(salience_session.contract(self._salience_config)),
             )
+        if self._failure_config is not None:
+            self._runtime_contract += (failure_session.signature(self),)
         self._prototype = binding.bank(
             native,
             retention,
@@ -498,6 +516,8 @@ class FinancialSession(EpisodicSession):
             fields.add("lesions")
         if self._salience_config is not None:
             fields.add("salience")
+        if self._failure_config is not None:
+            fields.add("failure_memory")
         if spaced_session.enabled(self):
             fields.add("spaced")
         if type(self._binding) is MechanismBinding:
@@ -1000,9 +1020,17 @@ class FinancialSession(EpisodicSession):
                         for r, route in zip(rows, event_routes.tolist(), strict=True)
                     )
                 values = [v + c for v, c in zip(values, corrections, strict=True)]
+        failure_ref = None
+        if self._failure_config is not None:
+            values, failure_ref, diagnostics = failure_session.prepare(
+                self, bundle, rows, values, cutoff, warmup=warmup
+            )
+            control["failure_memory"] = diagnostics
         if not warmup:
             pending = self._append_pending(pending, rows)
         extra = {}
+        if self._failure_config is not None:
+            extra["failure_memory"] = failure_ref
         if self._salience_config is not None:
             extra["salience"] = bundle["salience"] if bundle else None
         if spaced_session.enabled(self):
@@ -1086,6 +1114,10 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if self._failure_config is not None:
+            extra["failure_memory"] = failure_session.settlement(
+                self, bundle, self._inflight["cutoff"]
+            )
         if self._salience_config is not None:
             extra["salience"] = bundle["salience"] if bundle else None
         if spaced_session.enabled(self):
@@ -1280,6 +1312,10 @@ class FinancialSession(EpisodicSession):
             bundle["lesions"] = lesion_session.resolve(
                 self, proposed, outcomes, excluded, finalized
             )
+        if self._failure_config is not None:
+            bundle["failure_memory"] = failure_session.resolve(
+                self, proposed, outcomes, excluded, finalized
+            )
         self._verify_bundle(bundle, event_kind=self._inflight["kind"])
         self.consumer.verify()
         self._proposal = bundle
@@ -1343,6 +1379,10 @@ class FinancialSession(EpisodicSession):
             spaced_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
         if self._lesion_plan is not None:
             lesion_session.verify(self, bundle, [_row_key(row) for row in pending["rows"]])
+        if self._failure_config is not None:
+            failure_session.verify(
+                self, bundle, [_row_key(row) for row in pending["rows"]], event_kind=event_kind
+            )
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if self.associative is not None:
@@ -1504,6 +1544,8 @@ class FinancialSession(EpisodicSession):
                 names += ("lesions",)
             if self._salience_config is not None:
                 names += ("salience",)
+            if self._failure_config is not None:
+                names += ("failure_memory",)
             if spaced_session.enabled(self):
                 names += ("spaced",)
             if type(self._binding) is MechanismBinding:

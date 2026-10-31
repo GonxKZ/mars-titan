@@ -18,8 +18,14 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US, FLOW_ID, HI
 from .failure_context import FailureContext, FailureContextLayout
 
 
-def _clock(value):
-    if type(value) is not int or not HISTORICAL_START_US <= value < FINAL_TEST_US:
+def _clock(value, *, terminal=False):
+    if (
+        type(terminal) is not bool
+        or type(value) is not int
+        or not HISTORICAL_START_US <= value
+        or value > FINAL_TEST_US
+        or (value == FINAL_TEST_US and not terminal)
+    ):
         raise ValueError("El corte S2 no es válido o pertenece al test reservado")
     return value
 
@@ -152,8 +158,8 @@ class FailureLedger:
         self._retained, self._snapshot = (), ()
         self._issued = self._resolved = self._censored = self._admitted = 0
 
-    def begin(self, at):
-        _clock(at)
+    def begin(self, at, *, settlement=False):
+        _clock(at, terminal=settlement)
         if self.clock is not None and at < self.clock:
             raise ValueError("S2 no permite retroceder el reloj")
         if (
