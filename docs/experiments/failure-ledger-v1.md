@@ -28,7 +28,15 @@ El codec GRU de 128 dimensiones admite claves nulas. El contexto puede conservar
 
 Los fallos sin clave direccional siguen sujetos a la capacidad y retención del libro. Pueden desplazar otros fallos, un coste que debe contrastarse. No se reserva una caché normalizada adicional para ellos. El [recibo de esta política](../../reports/engineering/failure-zero-keys-20261031/verification.json) registra 118 casos CPU sin omisiones, 14 defectos nuevos detectados y la repetición de los 57 anteriores. Las identidades y los bytes del contexto anterior se contrastan con referencias fijas. No se ha medido una mejora financiera.
 
-El productor en desarrollo detectó además que el consumidor congelado todavía rechaza H1. Ese registro pertenece a #783 y debe completarse antes de afirmar que se captura su actividad en una sesión real. El coste anterior del libro corresponde al código de la caché previo a esta política y no mide ese recorrido nuevo.
+El registro congelado de H1 de #783 se incorpora como dependencia experimental de [#826](https://github.com/GonxKZ/mars-titan/pull/826). Sus pruebas CUDA y su regresión amplia posterior siguen pendientes. El coste anterior del libro corresponde al código de la caché previo a esta política y no mide el productor ni el recorrido de sesión nuevo.
+
+## Productor desde el consumidor real
+
+`memory.failure_producer` obtiene el codec y el grafo del enlace financiero real. Admite los consumidores escalares de Titans, retención espaciada y GRU. Comprueba sus identidades, la congelación de pesos, el catálogo macro y su huella, la estructura del grafo y las cinco modalidades de `DecisionRow`. Recalcula la huella de las entradas antes de capturar el contexto. No conserva una referencia al modelo ni reejecuta el predictor o la proyección de clave.
+
+El catálogo se lee con un límite de 2 MiB y 682 filas. Sus indicadores deben ser únicos y pertenecer a las doce familias admitidas. La actividad se contrasta con los buffers estructurales del consumidor H1/H2/H3 y sus áreas o ranuras. Las fechas macro individuales siguen desconocidas salvo que una fuente verificada las aporte. No se deducen del logaritmo de la edad.
+
+La [verificación del productor](../../reports/engineering/failure-producer-20261031/verification.json) registra 163 casos CPU sin omisiones, 45 del productor y 118 del núcleo, con los codecs reales de 64 y 128 dimensiones. Sus 16 defectos dirigidos se detectan con controles verdes. Las seis funciones de producción nuevas están medidas, con CRAP máximo 20,18. Este diagnóstico no garantiza ausencia de errores. La integración con emisión, maduración, recuperación y publicación atómica de `FinancialSession` todavía está pendiente. Tampoco está integrado el exportador analítico Arrow/DuckDB ni el estudio científico.
 
 ## Regla propuesta y control contrastable
 
