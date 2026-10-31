@@ -1,0 +1,214 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "composition_cost_driver_verified_measurement_64_256_completed",
+ "implementation_commit": "5d9c0554ef6f45a11aa7e9618af9060d08443c41",
+ "base_commit": "efb73bf1533735957644f9b0e3262db6eae42ddc",
+ "training_runs": 0,
+ "scientific_experiments": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "device": "cpu",
+ "dtype": "torch.float64",
+ "changed_fixture_functions": [
+  {
+   "path": "tests/memory/dendritic_fixtures.py",
+   "function": "engine",
+   "statements": 8,
+   "covered_statements": 8,
+   "branches": 2,
+   "covered_branches": 2,
+   "crap": 5.0
+  },
+  {
+   "path": "tests/memory/dendritic_fixtures.py",
+   "function": "run",
+   "statements": 2,
+   "covered_statements": 2,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 4.0
+  }
+ ],
+ "scope": "Modo opcional --compositions, manteniendo el modo original. Misma cabeza de cuantiles, predictor y lector congelados para N2, E2reservoir, E2utility, mecanismos y recogida.",
+ "red_stage": {
+  "log_sha256": "4794ba37f72a3cf679a6f6eadb0b1d8f22341a255bcd4154b317b5705a2cb567",
+  "note": "La prueba inicial fallaba porque el protocolo todavía no admitía compositions."
+ },
+ "limits": [
+  "La selección pasa 53 CPU sin omisiones y excluye un CUDA anterior. No se repite toda la batería ni se ejerce GPU.",
+  "El nuevo caso nativo de CLI se comprueba con cuatro y 256 activos. Los tiempos de esas pruebas y las ejecuciones de cobertura no se publican como medidas representativas.",
+  "La medida aparte completó 40 casos, diez calentamientos excluidos y treinta medidos, con una fuente por tamaño. No hay mejora predictiva medida.",
+  "La emisión utiliza K1. La recogida explora las rutas admisibles K1/K2/K4. Su tiempo forma parte del intervalo de decisión.",
+  "El intervalo de step no recibe etiquetas nuevas. La maduración que puebla el banco está en el prefijo.",
+  "La cabeza común es quantile_head_v1. Los resultados no se comparan directamente con el estudio anterior de cabeza escalar.",
+  "La cobertura del medidor es parcial. Los callbacks de rechazo de optimizador y plazo no se ejecutan. CRAP no acredita ausencia de errores.",
+  "El detector de funciones cambiadas excluye tests/. Las dos funciones de fixtures modificadas se miden por separado en este recibo.",
+  "Las comprobaciones CLI de mutación leen solo la referencia Git del árbol original mediante GIT_DIR. Todos los módulos Python y archivos bajo prueba proceden de la copia aislada, con verificación de ubicación y huellas. No se crean commits ficticios.",
+  "Pico RSS global, sin pico por variante, energía o transferencias CUDA. Otras aplicaciones activas y perfil power-saver. Tres repeticiones descriptivas.",
+  "PT4, selector, puentes regionales y calibración están desactivados en la medida. Sus costes no se deducen de estos resultados."
+ ],
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "54dc700117040b0d224867491ac45d3c21e966554a65e992d37abdeafacbda95"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "4f0684520b38bcb42548b1d7a1241625d64ba4b74a1efd60618b254380a59523"
+  }
+ ],
+ "suites": [
+  {
+   "name": "driver_and_shared_fixture_regression",
+   "tests": 53,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "0206a4c9d53ab1ae6a94f6525a1903c4bc68f144acb76db8b17a4b20def31a8a",
+   "note": "53 CPU correctos y cero omisiones. Un CUDA excluido. Incluye el modo anterior, el nuevo, la CLI de ambos tamaños y las sesiones N2/E2 existentes."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 263,
+   "covered_statements": 253,
+   "branches": 60,
+   "covered_branches": 57
+  },
+  "files": [
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "source_sha256": "7b2bbc254109f772e7a76afbb19f6e00ecd1c83273068162b217950351ef8bb7",
+    "statements": 223,
+    "covered_statements": 213,
+    "branches": 54,
+    "covered_branches": 51
+   },
+   {
+    "path": "tests/memory/dendritic_fixtures.py",
+    "source_sha256": "41105b36369add317b601999c68b5e5bbac77cc76eee85ebca818080d310c79a",
+    "statements": 40,
+    "covered_statements": 40,
+    "branches": 6,
+    "covered_branches": 6
+   }
+  ],
+  "max_crap": 37.0,
+  "quality_sha256": "663e5dccfa8c89fc1d41f606f88fa1e94fefaab37e5291a3bab63ce833860cea",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "efb73bf1533735957644f9b0e3262db6eae42ddc",
+  "head": "5d9c0554ef6f45a11aa7e9618af9060d08443c41",
+  "functions": 6,
+  "max_crap": 37.0,
+  "changed_executable_lines": 50,
+  "changed_covered_lines": 50,
+  "highest": [
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "summarize",
+    "cyclomatic_complexity": 37,
+    "crap": 37.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 28,
+    "crap": 28.345339853702637,
+    "changed_executable_lines": 11,
+    "changed_covered_lines": 11,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "study_protocol",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "_case",
+    "cyclomatic_complexity": 13,
+    "crap": 13.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/dendritic_session_cost.py",
+    "function": "_composition_options",
+    "cyclomatic_complexity": 4,
+    "crap": 4.0,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Seis funciones del medidor modificadas medidas y ninguna sin medir. Las funciones de fixtures se registran por separado.",
+  "changed_sha256": "bf004f367f419b9df6de2fe36783178e39eb1236308712a1b0e6f2b070ad1526"
+ },
+ "mutations": {
+  "tree_commit": "5d9c0554ef6f45a11aa7e9618af9060d08443c41",
+  "planned": 10,
+  "killed": 10,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "44065daedb81927c6c4da2bc0be9c784098908550793a71df1e369dbe696e71f",
+  "executor_sha256": "89f5e82d9c36ae08c9cb07f49e51786c716a2ffe3f97258ae9faeb038c54f7fe",
+  "source_sha256": {
+   "benchmarks/dendritic_session_cost.py": "7b2bbc254109f772e7a76afbb19f6e00ecd1c83273068162b217950351ef8bb7"
+  },
+  "cases": [
+   "composition_protocol_uses_original_variants",
+   "parity_ignores_collection",
+   "parity_forces_utility_to_match",
+   "composition_options_are_ignored",
+   "scalar_head_contaminates_comparison",
+   "mechanisms_use_the_plain_consumer",
+   "collection_is_not_activated",
+   "utility_is_renamed_reservoir",
+   "collection_metadata_is_false",
+   "measured_bank_has_no_mature_prefix"
+  ],
+  "summary_sha256": "52c013f2de328814d1314e69477a4d32a51c6237bddfb24dd62c7b9b9a17564c",
+  "scope": "Diez defectos del modo, cabeza común, paridad, retención, recogida, identificación real y banco poblado detectados con G1/G2 verdes y M1 rojo, sin pasos de optimizador."
+ },
+ "native_link": {
+  "role": "Enlace nativo existente utilizado en CPU, sin nueva compilación ni ejecución CUDA.",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "reports/engineering/dendritic-composition-cost-20261031/cost-cpu.json",
+  "sha256": "662b26e01e59a077a4b4de9d86ae73a6a52c9422a3d83ee7617f2dbb38d54d57"
+ }
+}

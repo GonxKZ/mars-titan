@@ -89,7 +89,7 @@ El [recibo de la composición](../../reports/engineering/dendritic-spaced-202610
 
 Se detectaron diez mutaciones distintas con G1 y G2 verdes y M1 rojo y cero intentos de optimizador. Incluyen pérdida de contexto en emisión y calentamiento, campos de cuantiles y utilidad, dependencias heredadas, lector regional, selección de C y aceptación de vistas incompatibles. La comprobación de C usa el modelo anterior sin N2 y no habilita esa combinación. Las dos mutaciones de opciones de una pasada intermedia se repitieron en el lote final y se cuentan una sola vez.
 
-Los dos archivos de producción seleccionados cubren 368 de 406 sentencias y 147 de 178 ramas. Las cinco funciones modificadas están medidas, incluido el constructor cuya guarda se suprime sin añadir líneas. El resumen completa ese caso mediante comparación AST con la base. El CRAP máximo de esas funciones es 9,29. El helper de opciones cubre sus once sentencias y ocho ramas. La preparación congelada y el resto de los archivos conservan cobertura parcial. CUDA y las medidas de coste de esta composición siguen pendientes.
+Los dos archivos de producción seleccionados cubren 368 de 406 sentencias y 147 de 178 ramas. Las cinco funciones modificadas están medidas, incluido el constructor cuya guarda se suprime sin añadir líneas. El resumen completa ese caso mediante comparación AST con la base. El CRAP máximo de esas funciones es 9,29. El helper de opciones cubre sus once sentencias y ocho ramas. La preparación congelada y el resto de los archivos conservan cobertura parcial. CUDA sigue pendiente. El coste de E2 con reservorio y utilidad se recoge en la comparación de composiciones que aparece al final.
 
 ## Propuestas de mecanismos con un origen común
 
@@ -107,7 +107,7 @@ Se comprueban los tres contextos N2, bloques particionados y reordenados, fuente
 
 Las 21 mutaciones dirigidas se detectaron con G1 y G2 verdes y M1 rojo, sin intentos de optimizador. El resumen conserva también el rechazo inicial de N2 y el fallo intermedio de un fixture que nombraba una ruta inexistente, corregida a `k4cr` sin modificar producción. Los seis archivos seleccionados cubren 970 de 1.105 sentencias y 370 de 484 ramas. Las catorce funciones modificadas están medidas. El CRAP máximo es 140,35 en `MechanismCollector.add`. El nuevo validador cubre cuatro sentencias y dos ramas. La cobertura de los archivos existentes sigue siendo parcial y el lector adaptativo no se ha ejercitado en esta selección.
 
-El caso CUDA de mecanismos prepara la comparación con CPU FP32, banco poblado y recuperación, sin TF32. Pytest lo ha recogido y no se ha ejecutado. Usa la tolerancia técnica de los fixtures N2, `rtol=atol=2e-5`, sin modificar la del corpus. La GPU seguía ocupada en la comprobación de disponibilidad. Ese caso no cubre la recogida regional en CUDA. Tampoco se han medido el coste integral ni una mejora predictiva de esta composición. El control C y otras operaciones globales sin integración propia siguen pendientes. E2 y los mecanismos tienen integraciones separadas. No se han habilitado todos sus cruces.
+El caso CUDA de mecanismos prepara la comparación con CPU FP32, banco poblado y recuperación, sin TF32. Pytest lo ha recogido y no se ha ejecutado. Usa la tolerancia técnica de los fixtures N2, `rtol=atol=2e-5`, sin modificar la del corpus. La GPU seguía ocupada en la comprobación de disponibilidad. Ese caso no cubre la recogida regional en CUDA. El coste técnico de la sesión ordinaria de mecanismos y de su recogida se recoge al final. El coste del corpus completo y una mejora predictiva siguen sin medirse. El control C y otras operaciones globales sin integración propia siguen pendientes. E2 y los mecanismos tienen integraciones separadas. No se han habilitado todos sus cruces.
 
 ## Medidor técnico de coste
 
@@ -143,3 +143,25 @@ La recuperación con 256 activos tiene medianas de 0,764 s para la referencia, 0
 El bucle y sus comprobaciones duraron 285,32 s y el comando externo 290,18 s. Ambos contadores de RSS máximo registraron 922 516 KiB para el proceso completo. No hay pico de RAM por modelo ni ahorro de memoria demostrado. Se observó power-saver y había otras aplicaciones activas. No se aisló el almacenamiento ni se midieron energía, VRAM o transferencias CUDA. Tres muestras por configuración no estiman colas fiables.
 
 El resultado describe el coste de estos fixtures compactos con modelos sin entrenar y un solo indicador macro. No mide el corpus completo ni la utilidad financiera de la intervención. No hay mejora predictiva medida y N2 sigue desactivado por defecto.
+
+## Coste de E2 y mecanismos con la misma cabeza
+
+El modo `--compositions` reutiliza el medidor y los fixtures anteriores. Compara N2, E2 con reservorio, E2 por utilidad, mecanismos K1 y mecanismos con recogida. Todas las configuraciones utilizan `quantile_head_v1`, el mismo predictor y lector congelados y ganancia N2 igual a uno. Así el cambio de cabeza queda fuera de este contraste. Los tiempos no son directamente comparables con el estudio anterior de cabeza escalar.
+
+La [ejecución](../../reports/engineering/dendritic-composition-cost-20261031/cost-cpu.json), con código `5d9c0554e`, completó 40 casos de 64/256 activos, diez calentamientos excluidos y treinta medidos. Usa un hilo, CPU FP64, H32, bloque 64, capacidad 64 y M1. La emisión tiene K1. La recogida explora las rutas admisibles K1/K2/K4 y su tiempo está incluido. PT4, el selector, los puentes regionales y la calibración están desactivados en esta medida. La decisión medida no recibe etiquetas nuevas. La maduración de los eventos anteriores ocurre en el prefijo y llena el banco antes de medir. La recuperación mantiene el modelo residente.
+
+Se conciliaron consumidor aplicado, tipo real del enlace, política E2, recogida activada y contrato de sesión. Las cinco configuraciones comparten las huellas de parámetros del predictor y el lector y una fuente por tamaño. N2, E2 con reservorio y ambas configuraciones de mecanismos conservan predicciones, estado rápido y contenidos y procedencia del banco, incluida la decisión siguiente tras recuperar. E2 por utilidad reproduce sus propias repeticiones, pero puede conservar otros episodios. No se le exige coincidir con el reservorio.
+
+| Configuración | Decisión de 64 activos, mediana en s | Decisión de 256 activos, mediana en s |
+| --- | --- | --- |
+| N2 | 0,675 | 1,890 |
+| E2 con reservorio | 0,845 | 2,729 |
+| E2 por utilidad | 0,878 | 2,359 |
+| Mecanismos K1 | 0,799 | 2,642 |
+| Mecanismos con recogida | 0,956 | 3,432 |
+
+Hay sobrecoste observado en estas condiciones. Con 256 activos los rangos de N2 son 1,809–1,914 s, los de E2 con reservorio 2,204–2,915 s, los de E2 por utilidad 2,124–2,746 s, los de mecanismos 2,414–3,006 s y los de recogida 3,131–3,486 s. Son tres repeticiones descriptivas, con otras aplicaciones activas y almacenamiento sin aislar. No se derivan percentiles de cola ni una afirmación general a partir de estas muestras. No hay mejora predictiva medida.
+
+Las medianas de recuperación de 256 activos, en el mismo orden, son 0,858 / 1,196 / 0,915 / 1,158 / 1,681 s. El bucle completo tardó 356,22 s y el comando externo 361,98 s. El pico RSS global fue 936872 KiB. No es memoria por configuración ni demuestra ahorro de RAM. Los tamaños lógicos de archivo después de avanzar a la decisión siguiente van de 19.968.648 bytes para N2 a 23.175.718 para la recogida en 256 activos. No son espacio físico ni pico transitorio. La traza N2 ocupa 11479/44503 bytes JSON con 64/256 activos. No se midieron energía ni transferencias CUDA y se mantuvo power-saver.
+
+El [recibo del medidor](../../reports/engineering/dendritic-composition-cost-20261031/verification.json) conserva 53 casos CPU sin omisiones y un CUDA anterior excluido. Incluye pruebas de la CLI con cuatro y 256 activos. Diez mutaciones dirigidas detectadas con G1/G2 verdes y M1 rojo, sin intentos de optimizador. Cobertura de 253/263 sentencias y 57/60 ramas entre medidor y fixtures. Las seis funciones modificadas del medidor están medidas, con CRAP máximo 37. Las dos funciones de fixtures modificadas se registran por separado. Los callbacks de rechazo de optimizador y plazo no se han ejercitado y la cobertura sigue siendo parcial.
