@@ -12,9 +12,16 @@ import torch
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.holographic_network import CATALOG
 
-from . import failure_context, failure_ledger, failure_ledger_state, failure_producer
+from . import (
+    failure_actions,
+    failure_context,
+    failure_ledger,
+    failure_ledger_state,
+    failure_producer,
+)
 from .failure_ledger import FailureLedger, FailureLedgerConfig
 from .failure_producer import FailureContextProducer
+from .financial_mechanisms import MechanismBinding
 
 
 @dataclass(frozen=True)
@@ -24,6 +31,7 @@ class FailureSessionConfig:
     catalog: Path = CATALOG
     mode: str = "confidence_only"
     constant_confidence: float = 0.75
+    action_source: str = "fixed_predictor/no_external_tool"
 
     def __post_init__(self):
         if type(self.ledger) is not FailureLedgerConfig or self.mode not in (
@@ -33,6 +41,11 @@ class FailureSessionConfig:
         ):
             raise ValueError("S2 necesita un libro identificado y un modo de consumo admitido")
         failure_context._digest_id(self.macro_catalog_sha256, "El catálogo S2")
+        if type(self.action_source) is not str or self.action_source not in (
+            "fixed_predictor/no_external_tool",
+            "mechanism_trace_v1",
+        ):
+            raise ValueError("S2 necesita una procedencia de acción admitida")
         if (
             type(self.constant_confidence) not in (float, int)
             or not math.isfinite(self.constant_confidence)
@@ -49,7 +62,7 @@ class FailureSessionConfig:
             macro_catalog_sha256=self.macro_catalog_sha256,
             mode=self.mode,
             constant_confidence=self.constant_confidence,
-            action="fixed_predictor/no_external_tool",
+            action=self.action_source,
             source_scope="frozen_consumer_identity_with_declared_fit_boundary",
         )
 
@@ -69,6 +82,11 @@ def configure(config, binding, phase, *, lesions, spaced):
         )
     if config.mode != "confidence_only" and (lesions or spaced):
         raise ValueError("La atenuación S2 con B4 o E2 necesita una composición propia")
+    mechanisms = type(binding) is MechanismBinding
+    if mechanisms != (config.action_source == "mechanism_trace_v1"):
+        raise ValueError("La procedencia de acción S2 no corresponde al enlace financiero")
+    if mechanisms and config.mode != "confidence_only":
+        raise ValueError("La atenuación con mecanismos necesita componer cuantiles y calibración")
     return FailureContextProducer(
         binding, macro_catalog_sha256=config.macro_catalog_sha256, catalog=config.catalog
     )
@@ -87,6 +105,7 @@ def code():
         failure_ledger,
         failure_ledger_state,
         failure_producer,
+        failure_actions,
         inspect.getmodule(failure_producer.HolographicNetwork),
     )
     return {
@@ -154,14 +173,19 @@ def stage(session, ledger):
     return session._stage(dict(encoding="context_uint8_tensors_v1", state=state), "failure_memory")
 
 
-def prepare(session, bundle, rows, values, cutoff, *, warmup):
+def prepare(session, bundle, rows, values, cutoff, *, warmup, control=None):
     ledger = restore(session, bundle)
     if warmup:
         return values, stage(session, ledger), dict(mode="warmup", emitted=0)
     ledger.begin(cutoff)
+    actions = (
+        failure_actions.emission_actions(rows, values, control)
+        if session._failure_config.action_source == "mechanism_trace_v1"
+        else ["fixed_predictor/no_external_tool"] * len(rows)
+    )
     contexts = [
-        session._failure_producer.capture(row, action="fixed_predictor/no_external_tool")
-        for row in rows
+        session._failure_producer.capture(row, action=action)
+        for row, action in zip(rows, actions, strict=True)
     ]
     scores = [ledger.query(context) for context in contexts]
     config = session._failure_config

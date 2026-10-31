@@ -28,6 +28,7 @@ from mars_titan.models.titans.holographic_network import (
 from .episodic_session import DecisionRow, _canonical
 from .failure_context import MAX_MACRO_INDICATORS, FailureContext, FailureContextLayout
 from .financial_consumers import CandidateBinding, TitansBinding
+from .financial_mechanisms import MechanismBinding
 from .spaced_session import SpacedTitansBinding
 
 MAX_CATALOG_BYTES = 2 * 1024**2
@@ -138,8 +139,13 @@ class FailureContextProducer:
     _specification: object
 
     def __init__(self, binding, *, macro_catalog_sha256, catalog=CATALOG):
-        if type(binding) not in (TitansBinding, SpacedTitansBinding, CandidateBinding):
-            raise ValueError("El productor S2 necesita un enlace financiero escalar admitido")
+        if type(binding) not in (
+            TitansBinding,
+            SpacedTitansBinding,
+            CandidateBinding,
+            MechanismBinding,
+        ):
+            raise ValueError("El productor S2 necesita un enlace financiero admitido")
         binding.check()
         specification, codec = binding.input_spec, binding.codec
         if not masked_inputs(specification.input_policy):

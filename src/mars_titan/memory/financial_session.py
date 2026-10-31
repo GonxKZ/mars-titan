@@ -1023,7 +1023,7 @@ class FinancialSession(EpisodicSession):
         failure_ref = None
         if self._failure_config is not None:
             values, failure_ref, diagnostics = failure_session.prepare(
-                self, bundle, rows, values, cutoff, warmup=warmup
+                self, bundle, rows, values, cutoff, warmup=warmup, control=control
             )
             control["failure_memory"] = diagnostics
         if not warmup:
@@ -1038,7 +1038,7 @@ class FinancialSession(EpisodicSession):
         if lesion_ledger is not None:
             extra["lesions"] = lesion_session.stage(self, lesion_ledger)
         if type(self._binding) is MechanismBinding:
-            extra = dict(
+            extra.update(
                 mechanisms=self._stage(control.pop("auxiliary"), "mechanisms"),
                 mechanism_history=bundle["mechanism_history"]
                 if bundle
