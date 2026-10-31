@@ -2,7 +2,7 @@
  "schema_version": 1,
  "date": "2026-10-30",
  "issue": 783,
- "status": "technical_verification_in_progress",
+ "status": "cpu_verification_complete_cuda_pending",
  "implementation_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
  "parent_pr": 818,
  "device": "cpu",
@@ -409,19 +409,19 @@
  "importer_audit": {
   "total": 394,
   "covered_by_targeted_suite": 41,
-  "remaining": 353,
+  "remaining": 0,
   "training": 82,
   "other": 271,
-  "status": "queued_after_issue_747",
-  "note": "Regresión por tandas y procesos nuevos entre ellas, después de #747. El grafo estático no acredita detectar toda importación dinámica.",
+  "status": "completed_with_omissions",
+  "note": "Las 45 tandas de los 353 módulos restantes terminaron sin fallos ni errores. Las 166 omisiones se clasifican en broad_regression. El grafo estático no acredita detectar toda importación dinámica.",
   "source_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
   "source_manifest_sha256": "0b816e8fce89f9db8fd9d38ad9724f1037ad763db02af625c0e7d08402706b9a",
   "batch_modules": 8,
   "workers": 2,
-  "memory_limit_bytes": 6442450944
+  "memory_limit_bytes": 6442450944,
+  "completed_after_targeted": 353
  },
  "limits": [
-  "Falta la regresión de los importadores no cubiertos por la selección dirigida.",
   "Faltan las comprobaciones CUDA y el coste de esta revisión en CUDA, recogidos en #816.",
   "La integración en develop depende de P1, PR #818.",
   "Los niveles 2 y 3, H5 a H7 y los embeddings de pertenencia siguen pendientes en #783.",
@@ -572,5 +572,393 @@
   "cpu_cases": 10,
   "cuda_cases_not_executed": 6,
   "initial_fixture_failure": "Un caso inicial de la prueba de fila sin áreas usaba getattr con el nombre de un parámetro anidado. Se conserva su fallo y se corrigió el acceso a named_parameters, sin cambiar el modelo."
- }
+ },
+ "broad_regression": {
+  "schema_version": 1,
+  "suites": [
+   {
+    "name": "other-0",
+    "tests": 61,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "806ca7feaf601ef97578f38585ac1465a16b3f77b66d801536fcc3f9372d202e"
+   },
+   {
+    "name": "other-104",
+    "tests": 226,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "3c77314e66e010cb0287ac26e9a1074c00e0944dd7773ef5ce068b3f998d99bf"
+   },
+   {
+    "name": "other-112",
+    "tests": 244,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "13be312372b0218abb08fc5bb5264aa9b670d1dd9ddeafc9a10b07d2fe2d3b1a"
+   },
+   {
+    "name": "other-120",
+    "tests": 201,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "fd6371789f8925f17825a5eeb1789b58ef40df260b9dc60058630b941bbb40fb"
+   },
+   {
+    "name": "other-128",
+    "tests": 157,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "5017df480b6b41c2a52f2fc815e317d9dc93d5036fe78d853c9a89db8b09a3cd"
+   },
+   {
+    "name": "other-136",
+    "tests": 122,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "9d8ba47e3a0b3c8c24ee3588ff74d3b4924e96e64f465e0fabeb0b84de8eac33"
+   },
+   {
+    "name": "other-144",
+    "tests": 239,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "6b48fbc40a6cf710696f4c652dada27db4655fb41352ed9863d2f0b680055ee7"
+   },
+   {
+    "name": "other-152",
+    "tests": 185,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "1a8bd3384387d67f7e010b059671ce42db5f7a1bef16e35a7d48d7e744105197"
+   },
+   {
+    "name": "other-16",
+    "tests": 51,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 6,
+    "xml_sha256": "76f262ac7af6c2c176789532c659a32164f53cfb437ebb092938bb9785a3413d"
+   },
+   {
+    "name": "other-160",
+    "tests": 215,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "266511531ca10797d34770bbacd3d6cd9571a040ed34623dd611c2095f58b049"
+   },
+   {
+    "name": "other-168",
+    "tests": 231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "b45ca66d95f99701af4e3228c2f7c12ebb468f78c7addb209f40875539060997"
+   },
+   {
+    "name": "other-176",
+    "tests": 196,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "xml_sha256": "f25c4c10a3aa65a2fa5ac8b2b05e2a729d17ad0761bf62362700ddbdf7d4fffa"
+   },
+   {
+    "name": "other-184",
+    "tests": 112,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 21,
+    "xml_sha256": "b6ef1d035bed601bed54ff8cfab96e7590a186e2aebaac6e3443e1e0a75424ec"
+   },
+   {
+    "name": "other-192",
+    "tests": 104,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 7,
+    "xml_sha256": "2a686dc3f0279b6896a2d2ba34f1e73bfde6a44e26ef8fe7afbaf2ab3a65b4f1"
+   },
+   {
+    "name": "other-200",
+    "tests": 98,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "xml_sha256": "84f9cc5e33b829c9d1142aa0736f752dec98414de0e2fe17deac986d1c9db6ca"
+   },
+   {
+    "name": "other-208",
+    "tests": 126,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 9,
+    "xml_sha256": "5074ef95b0fda8aabcfcbe7b1c8a5b51d328147da3423b13e0c59fc8d9065f7a"
+   },
+   {
+    "name": "other-216",
+    "tests": 96,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "e8462c3d7a3eb8caff779cb08132c7ecd36fb0a507804300d09738f961b23fd2"
+   },
+   {
+    "name": "other-224",
+    "tests": 184,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 7,
+    "xml_sha256": "aa48551f8e2b129964e39bb750f98024c6059ad60c3b213b0ce5192c812c5759"
+   },
+   {
+    "name": "other-232",
+    "tests": 265,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 40,
+    "xml_sha256": "170ade4816d79520c2cd3cf96218b4313e5c8aed0525d9fbfc99bc3f2e13292e"
+   },
+   {
+    "name": "other-24",
+    "tests": 60,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "d0d659f4b7367419af01b10cd6ba212a8332a406f3f01bb676aea1429008bd73"
+   },
+   {
+    "name": "other-240",
+    "tests": 155,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "xml_sha256": "c132d5d1c0627f5467a9c9caca50705d8823482e45fcc33fd1c04fd7a7127c45"
+   },
+   {
+    "name": "other-248",
+    "tests": 160,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "18cad950b9ea1fb0501874891bfad922a95660feeae8fed8d394cee5aa2ab938"
+   },
+   {
+    "name": "other-256",
+    "tests": 205,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "558dea7001928d2e7d78ebb2489f07c9de58912f802dad512944e8286dbb23b1"
+   },
+   {
+    "name": "other-264",
+    "tests": 168,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "xml_sha256": "fc0b2d16d95bb72a00f75a6012d3530f0967c8b39f53c62e4bf57318cd23dc60"
+   },
+   {
+    "name": "other-32",
+    "tests": 114,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "0ebe8bbd36182af1c3d5d08add6e83f3c9c284934d2b03523d3d26fdb075aa11"
+   },
+   {
+    "name": "other-40",
+    "tests": 75,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "b5834bd3bcc7a9e912c389f19476841249806942a8d5db04be0ca69d020fff10"
+   },
+   {
+    "name": "other-48",
+    "tests": 113,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "765c7849e1e44486b6302926ecf1acb7edef00e44cf6ccc4e00eabd459c63c64"
+   },
+   {
+    "name": "other-56",
+    "tests": 98,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "1d86796fba631c9266ce786158647d8e525826482c598e3bf15caacf5e551ceb"
+   },
+   {
+    "name": "other-64",
+    "tests": 206,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "49df8c641d8b5afe2ad094c31a05345ddb744230da56a9bacc34013d8eae0a79"
+   },
+   {
+    "name": "other-72",
+    "tests": 164,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "409f42d1290fc3e41d047baef54e3e07713576fc159873f482802f84fc0f7955"
+   },
+   {
+    "name": "other-8",
+    "tests": 233,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "xml_sha256": "d31a91ad8e2d294018b75651b57a9b8b12fc5392c89288660753a6921d6cc899"
+   },
+   {
+    "name": "other-80",
+    "tests": 148,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "1cd088387e238598571137926b73276b337fa890c2632bb181caf37cfbc4d4fb"
+   },
+   {
+    "name": "other-88",
+    "tests": 240,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "b14767dbd0038b0a07c60719e37292db18c65c1a4b18d26f94a2de578159ccde"
+   },
+   {
+    "name": "other-96",
+    "tests": 314,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "4e9e784f3a0941b3602b6644d88c552756d27812a7f0ff26695a2e1d3b3ce0f0"
+   },
+   {
+    "name": "training-0",
+    "tests": 258,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 18,
+    "xml_sha256": "2b7d3b2cc105a55e3a298489f67da801846e23b372b59d4237931fcccf9dc00c"
+   },
+   {
+    "name": "training-16",
+    "tests": 175,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "0dc387b714c20e4fc6b6a3de725589303adfc2fd1736d5175e5158c41d495e03"
+   },
+   {
+    "name": "training-24",
+    "tests": 106,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "e488d4f4202a7230365f4f451991abf57cc9ebfc45a678d78652caefbcdb230f"
+   },
+   {
+    "name": "training-32",
+    "tests": 150,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "xml_sha256": "8fb269fd0c0c79a1d2a65decd791dfc8275ba763d86f0dc4af3911023e7ca154"
+   },
+   {
+    "name": "training-40",
+    "tests": 155,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "xml_sha256": "ed0c8e33ac3c35b16eb70e0a06d19428bc070b63d5dd2827d6d4d87ade0cb693"
+   },
+   {
+    "name": "training-48",
+    "tests": 163,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "xml_sha256": "0475ab434fd21c429082e113ccfa670c90f6c43f123e4e815fff79271f12d041"
+   },
+   {
+    "name": "training-56",
+    "tests": 152,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 15,
+    "xml_sha256": "a19aaf6b1b47941593b8de8504612c25e5f40ddc4673671223b77c3b625f65f9"
+   },
+   {
+    "name": "training-64",
+    "tests": 104,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "xml_sha256": "de897bbfa74b09723cca0790a1615a4eba9da2bcd4de63dbd659c7c5fe1be685"
+   },
+   {
+    "name": "training-72",
+    "tests": 264,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "xml_sha256": "81ac382aadace5af2b497bcf485d05f6675d68a0f656f8d42bf608bcda6c41d4"
+   },
+   {
+    "name": "training-8",
+    "tests": 270,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "8c01ac8fa8a4d213d26fca74739c39237a4c1e289c16ddb2ad7ca68e010f72bd"
+   },
+   {
+    "name": "training-80",
+    "tests": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "955940e435b712154238ca7206d23c3d99c910a7455bddda0013a228adb49904"
+   }
+  ],
+  "totals": {
+   "tests": 7406,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 166
+  },
+  "passed": 7240,
+  "omissions": {
+   "learning_hold": 127,
+   "ppo_executable_unavailable": 30,
+   "simulation_library_unavailable": 9
+  },
+  "modules": 353,
+  "omission_notes": [
+   "La etiqueta alternativa «Lanza un ajuste nativo y espera a que se levante el bloqueo» corresponde a una omisión adicional por aprendizaje."
+  ],
+  "source_commit": "66bd3ac247a404fbf58c50d84e94596c3ba62d10",
+  "source_manifest_unchanged": true,
+  "hold_sha256_unchanged": true,
+  "queue_exit_code": 0,
+  "modules_scope": "353 módulos restantes, en 45 tandas. Se solapan con comprobaciones anteriores. No se suman como observaciones científicas independientes.",
+  "source_manifest_sha256": "0b816e8fce89f9db8fd9d38ad9724f1037ad763db02af625c0e7d08402706b9a"
+ },
+ "updated_date": "2026-10-31"
 }
