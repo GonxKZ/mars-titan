@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **399 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **400 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 

@@ -1547,5 +1547,37 @@
       4
     ],
     "verification_date": "2026-10-30"
+  },
+  {
+    "id": "shinn2023reflexion",
+    "title": "Reflexion: Language Agents with Verbal Reinforcement Learning",
+    "authors": [
+      "Noah Shinn",
+      "Federico Cassano",
+      "Edward Berman",
+      "Ashwin Gopinath",
+      "Karthik Narasimhan",
+      "Shunyu Yao"
+    ],
+    "year": 2023,
+    "url": "https://arxiv.org/abs/2303.11366v4",
+    "access": "Ficha, resumen, algoritmo 1 y secciones 3 y 5 de arXiv v4 consultados. No se afirma una lectura completa ni una reproducción.",
+    "read_version": {
+      "type": "preprint",
+      "version": "arXiv:2303.11366v4",
+      "date": "2023-10-10",
+      "url": "https://arxiv.org/html/2303.11366v4",
+      "passages": [
+        "Algoritmo 1 y sección 3: actor, evaluador, reflexión y memoria acotada",
+        "Sección 5: óptimos locales y límites de las comprobaciones"
+      ]
+    },
+    "redistribution": "Se conserva el enlace. No se redistribuye el artículo.",
+    "relevance": "Antecedente de S2. El contexto numérico, la semejanza ponderada y la maduración financiera son propuestas propias.",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-31"
   }
 ]
